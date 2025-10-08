@@ -10,6 +10,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+///Defined on Environment Variables
+///e.g. Variable name: ConnectionStrings__AMSDev
+///e.g. Varialbe value: Server=MARK\SQLEXPRESS;Database=AMSDev;Trusted_Connection=True;TrustServerCertificate=True;
 builder.Services.AddDbContext<PortalDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("AMSDev")));
 

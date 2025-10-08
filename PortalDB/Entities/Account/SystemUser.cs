@@ -24,8 +24,6 @@ namespace PortalDB.Entities.Account
             set => EntraIdEncrypted = Encoding.UTF8.GetBytes(EncryptionHelper.Encrypt(value.ToString()));
         }
 
-
-        [MaxLength(50)]
         [Column("SystemUserFirstName")]
         public byte[]? FirstNameEncrypted { get; set; }
         [NotMapped]
@@ -35,7 +33,6 @@ namespace PortalDB.Entities.Account
             set => FirstNameEncrypted = string.IsNullOrEmpty(value) ? null : Encoding.UTF8.GetBytes(EncryptionHelper.Encrypt(value));
         }
 
-        [MaxLength(50)]
         [Column("SystemUserLastName")]
         public byte[]? LastNameEncrypted { get; set; }
         [NotMapped]
@@ -45,7 +42,6 @@ namespace PortalDB.Entities.Account
             set => LastNameEncrypted = string.IsNullOrEmpty(value) ? null : Encoding.UTF8.GetBytes(EncryptionHelper.Encrypt(value));
         }
 
-        [MaxLength(150)]
         [Column("SystemUserEmail")]
         public byte[]? EmailEncrypted { get; set; }
         [NotMapped]
