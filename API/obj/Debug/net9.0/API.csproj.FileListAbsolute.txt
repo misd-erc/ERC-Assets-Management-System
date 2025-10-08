@@ -166,3 +166,7 @@ C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\API\bin\Debug\net9.0
 C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\API\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
 C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\API\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
 C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\API\obj\Debug\net9.0\API.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\API\bin\Debug\net9.0\PortalCommon.dll
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\API\bin\Debug\net9.0\PortalTools.dll
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\API\bin\Debug\net9.0\PortalTools.pdb
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\API\bin\Debug\net9.0\PortalCommon.pdb

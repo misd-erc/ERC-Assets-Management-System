@@ -13,3 +13,6 @@ C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalDB\obj\Debug\n
 C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalDB\obj\Debug\net9.0\ref\PortalDB.dll
 C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalDB\bin\Debug\net9.0\PortalDB.runtimeconfig.json
 C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalDB\obj\Debug\net9.0\PortalDB.genruntimeconfig.cache
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalDB\bin\Debug\net9.0\PortalCommon.dll
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalDB\bin\Debug\net9.0\PortalCommon.pdb
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalDB\obj\Debug\net9.0\PortalDB.csproj.Up2Date

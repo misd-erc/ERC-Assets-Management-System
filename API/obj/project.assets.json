@@ -1711,6 +1711,19 @@
         "runtime": {
           "bin/placeholder/PortalDB.dll": {}
         }
+      },
+      "PortalTools/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "dependencies": {
+          "PortalCommon": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/PortalTools.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/PortalTools.dll": {}
+        }
       }
     }
   },
@@ -5172,6 +5185,11 @@
       "type": "project",
       "path": "../PortalDB/PortalDB.csproj",
       "msbuildProject": "../PortalDB/PortalDB.csproj"
+    },
+    "PortalTools/1.0.0": {
+      "type": "project",
+      "path": "../PortalTools/PortalTools.csproj",
+      "msbuildProject": "../PortalTools/PortalTools.csproj"
     }
   },
   "projectFileDependencyGroups": {
@@ -5181,6 +5199,7 @@
       "Microsoft.EntityFrameworkCore.SqlServer >= 9.0.9",
       "Microsoft.EntityFrameworkCore.Tools >= 9.0.9",
       "PortalDB >= 1.0.0",
+      "PortalTools >= 1.0.0",
       "Swashbuckle.AspNetCore >= 6.6.2"
     ]
   },
@@ -5218,6 +5237,9 @@
           "projectReferences": {
             "C:\\Users\\Mark-ERC\\Documents\\IS\\ERC-Assets-Management-System\\PortalDB\\PortalDB.csproj": {
               "projectPath": "C:\\Users\\Mark-ERC\\Documents\\IS\\ERC-Assets-Management-System\\PortalDB\\PortalDB.csproj"
+            },
+            "C:\\Users\\Mark-ERC\\Documents\\IS\\ERC-Assets-Management-System\\PortalTools\\PortalTools.csproj": {
+              "projectPath": "C:\\Users\\Mark-ERC\\Documents\\IS\\ERC-Assets-Management-System\\PortalTools\\PortalTools.csproj"
             }
           }
         }

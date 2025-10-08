@@ -7,8 +7,8 @@ namespace PortalTools.Utilities
 {
     public static class EncryptionHelper
     {
-        private static readonly byte[] Key = Encoding.UTF8.GetBytes("MySuperSecretKey123!MySuperSecretKey123!"); // 32 bytes for AES256
-        private static readonly byte[] IV = Encoding.UTF8.GetBytes("MySecretIV123456"); // 16 bytes
+        private static readonly byte[] Key = Encoding.UTF8.GetBytes("?rv$bwB9SKbYQSw*GZyQ?&x7mHC2kkJD"); // 32 bytes for AES256
+        private static readonly byte[] IV = Encoding.UTF8.GetBytes("NDZE5W*##cENbgWk"); // 16 bytes
 
         public static string Encrypt(string plainText)
         {

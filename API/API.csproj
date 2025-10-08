@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PortalDB\PortalDB.csproj" />
+    <ProjectReference Include="..\PortalTools\PortalTools.csproj" />
   </ItemGroup>
 
 </Project>
