@@ -11,7 +11,7 @@ namespace PortalDB.Services
         }
 
         #region Account
-        public DbSet<SystemUser> SystemUsers { get; set; }
+        public DbSet<TblSystemUser> SystemUsers { get; set; }
         #endregion
 
     }

@@ -6,8 +6,8 @@ using PortalTools.Utilities;
 
 namespace PortalDB.Entities.Account
 {
-    [Table("SystemUsers")]
-    public class SystemUser
+    [Table("tblSystemUsers", Schema = "dbo")]
+    public class TblSystemUser
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
