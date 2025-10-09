@@ -1,5 +1,5 @@
 # useful__commands
-- `Add-Migration <Migration_Name_> -p PortalDB -s API` to create migration using the db context on PortalDB in API project.
+- `Add-Migration <Migration_Name> -p PortalDB -s API` to create migration using the db context on PortalDB in API project.
 - `Update-Database -p PortalDB -s API` to update database and apply migration from PortalDB in API project.
 
 
@@ -15,4 +15,3 @@
 - Ids should always be long
 - Follow encrypted get/set form for contents that needs to be encrypted (e.g. EncryptedPassword, EncryptedApiKey).
 - All should be nullable (except primary key) even though we will make it as required to prevent future possible issues.
-- Add a comment if the column is foreign key (e.g. // Foreign Key to tblSystemUsers table).
