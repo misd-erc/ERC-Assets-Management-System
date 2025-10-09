@@ -2,6 +2,7 @@
 using PortalDB.Entities.Account;
 using PortalDB.Entities.Office;
 using PortalDB.Entities.Office.Division;
+using PortalDB.Entities.AuditTrail;
 
 namespace PortalDB.Services
 {
@@ -13,17 +14,21 @@ namespace PortalDB.Services
         }
 
         #region Account
-        public DbSet<TblSystemUser> SystemUsers { get; set; }
+        public DbSet<TblSystemUser> TblSystemUsers { get; set; }
         #endregion
 
         #region Office
 
-        public DbSet<TblOffice> Offices { get; set; }
+        public DbSet<TblOffice> TblOffices { get; set; }
 
         #region Division
-        public DbSet<TblDivision> Divisions { get; set; }
+        public DbSet<TblDivision> TblDivisions { get; set; }
         #endregion
 
+        #endregion
+
+        #region Audit Trail
+        public DbSet<TblAuditTrail> TblAuditTrails { get; set; }
         #endregion
 
     }

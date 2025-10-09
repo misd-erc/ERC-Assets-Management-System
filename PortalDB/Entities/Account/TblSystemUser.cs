@@ -1,8 +1,12 @@
-﻿using System;
+﻿using Microsoft.IdentityModel.Tokens;
+using PortalDB.Entities.AuditTrail;
+using PortalDB.Entities.Office;
+using PortalDB.Entities.Office.Division;
+using PortalTools.Utilities;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
-using PortalTools.Utilities;
 
 namespace PortalDB.Entities.Account
 {
@@ -15,40 +19,39 @@ namespace PortalDB.Entities.Account
         public long Id { get; set; }
 
         [Column("MicrosoftEntraId")]
-        public byte[]? EntraIdEncrypted { get; set; }
-
+        public string? EntraIdEncrypted { get; set; }
         [NotMapped]
-        public long EntraId
+        public long? EntraId
         {
-            get => EntraIdEncrypted == null || EntraIdEncrypted.Length == 0 ? 0 : long.Parse(EncryptionHelper.Decrypt(Encoding.UTF8.GetString(EntraIdEncrypted)));
-            set => EntraIdEncrypted = Encoding.UTF8.GetBytes(EncryptionHelper.Encrypt(value.ToString()));
+            get => long.TryParse(EntraIdEncrypted is null ? null : EncryptionHelper.Decrypt(EntraIdEncrypted), out var val) ? val : null;
+            set => EntraIdEncrypted = value.HasValue ? EncryptionHelper.Encrypt(value.Value.ToString()) : null;
         }
 
         [Column("SystemUserFirstName")]
-        public byte[]? FirstNameEncrypted { get; set; }
+        public string? FirstNameEncrypted { get; set; }
         [NotMapped]
         public string? FirstName
         {
-            get => FirstNameEncrypted == null || FirstNameEncrypted.Length == 0? null : EncryptionHelper.Decrypt(Encoding.UTF8.GetString(FirstNameEncrypted));
-            set => FirstNameEncrypted = string.IsNullOrEmpty(value) ? null : Encoding.UTF8.GetBytes(EncryptionHelper.Encrypt(value));
+            get => string.IsNullOrEmpty(FirstNameEncrypted) ? null : EncryptionHelper.Decrypt(FirstNameEncrypted);
+            set => FirstNameEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
         [Column("SystemUserLastName")]
-        public byte[]? LastNameEncrypted { get; set; }
+        public string? LastNameEncrypted { get; set; }
         [NotMapped]
         public string? LastName
         {
-            get => LastNameEncrypted == null || LastNameEncrypted.Length == 0 ? null : EncryptionHelper.Decrypt(Encoding.UTF8.GetString(LastNameEncrypted));
-            set => LastNameEncrypted = string.IsNullOrEmpty(value) ? null : Encoding.UTF8.GetBytes(EncryptionHelper.Encrypt(value));
+            get => string.IsNullOrEmpty(LastNameEncrypted) ? null : EncryptionHelper.Decrypt(LastNameEncrypted);
+            set => LastNameEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
         [Column("SystemUserEmail")]
-        public byte[]? EmailEncrypted { get; set; }
+        public string? EmailEncrypted { get; set; }
         [NotMapped]
         public string? Email
         {
-            get => EmailEncrypted == null || EmailEncrypted.Length == 0 ? null : EncryptionHelper.Decrypt(Encoding.UTF8.GetString(EmailEncrypted));
-            set => EmailEncrypted = string.IsNullOrEmpty(value) ? null : Encoding.UTF8.GetBytes(EncryptionHelper.Encrypt(value));
+            get => string.IsNullOrEmpty(EmailEncrypted) ? null : EncryptionHelper.Decrypt(EmailEncrypted);
+            set => EmailEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
         [MaxLength(1)]
@@ -62,5 +65,10 @@ namespace PortalDB.Entities.Account
         [MaxLength(20)]
         [Column("SystemUserLastLoginAt")]
         public DateTime? LastLoginAt { get; set; }
+
+        #region Foreign Key Collection
+        public virtual ICollection<TblAuditTrail> AuditTrail { get; set; } = new List<TblAuditTrail>();
+        #endregion
+
     }
 }

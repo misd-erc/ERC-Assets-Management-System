@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using PortalDB.Entities.Office.Division;
 
 namespace PortalDB.Entities.Office
 {
@@ -24,8 +20,9 @@ namespace PortalDB.Entities.Office
         [Column("OfficeAcronym")]
         public string? Acronym { get; set; }
 
-        #region Foreign Keys Collection
-        public virtual ICollection<Division.TblDivision> Divisions { get; set; } = new List<Division.TblDivision>();
+        #region Foreign Key Collection
+        public virtual ICollection<TblDivision> Divisions { get; set; } = new List<TblDivision>();
         #endregion
+
     }
 }

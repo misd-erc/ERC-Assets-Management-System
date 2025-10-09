@@ -12,6 +12,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PortalCommon\PortalCommon.csproj" />
+    <ProjectReference Include="..\PortalDB\PortalDB.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Services\Office\" />
   </ItemGroup>
 
 </Project>

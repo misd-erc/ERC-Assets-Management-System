@@ -51,8 +51,8 @@ namespace Tests.Azure
                 .Build();
 
             // Act
-            AuthenticationResult result = null;
-            Exception exception = null;
+            AuthenticationResult result = null!;
+            Exception exception = null!;
 
             try
             {

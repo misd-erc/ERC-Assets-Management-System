@@ -36,16 +36,16 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("SystemUserCreatedAt");
 
-                    b.Property<byte[]>("EmailEncrypted")
-                        .HasColumnType("varbinary(max)")
+                    b.Property<string>("EmailEncrypted")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("SystemUserEmail");
 
-                    b.Property<byte[]>("EntraIdEncrypted")
-                        .HasColumnType("varbinary(max)")
+                    b.Property<string>("EntraIdEncrypted")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("MicrosoftEntraId");
 
-                    b.Property<byte[]>("FirstNameEncrypted")
-                        .HasColumnType("varbinary(max)")
+                    b.Property<string>("FirstNameEncrypted")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("SystemUserFirstName");
 
                     b.Property<bool>("IsActive")
@@ -58,13 +58,55 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("SystemUserLastLoginAt");
 
-                    b.Property<byte[]>("LastNameEncrypted")
-                        .HasColumnType("varbinary(max)")
+                    b.Property<string>("LastNameEncrypted")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("SystemUserLastName");
 
                     b.HasKey("Id");
 
                     b.ToTable("tblSystemUsers", "dbo");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.AuditTrail.TblAuditTrail", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("AuditTrailId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("AuditTrailAction");
+
+                    b.Property<DateTime?>("ChangedAt")
+                        .HasMaxLength(20)
+                        .HasColumnType("datetime2")
+                        .HasColumnName("AuditTrailChangedAt");
+
+                    b.Property<long?>("ChangedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("AuditTrailChangedBySystemUserId");
+
+                    b.Property<byte[]>("ChangesEncrypted")
+                        .HasColumnType("varbinary(max)")
+                        .HasColumnName("AuditTrailChanges");
+
+                    b.Property<long?>("RecordId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("AuditTrailRecordId");
+
+                    b.Property<string>("TableName")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("AuditTrailTableName");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangedBy");
+
+                    b.ToTable("tblAuditTrails", "dbo");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.Office.Division.TblDivision", b =>
@@ -121,6 +163,15 @@ namespace PortalDB.Migrations
                     b.ToTable("tblOffices", "dbo");
                 });
 
+            modelBuilder.Entity("PortalDB.Entities.AuditTrail.TblAuditTrail", b =>
+                {
+                    b.HasOne("PortalDB.Entities.Account.TblSystemUser", "SystemUser")
+                        .WithMany("AuditTrail")
+                        .HasForeignKey("ChangedBy");
+
+                    b.Navigation("SystemUser");
+                });
+
             modelBuilder.Entity("PortalDB.Entities.Office.Division.TblDivision", b =>
                 {
                     b.HasOne("PortalDB.Entities.Office.TblOffice", "Office")
@@ -130,6 +181,11 @@ namespace PortalDB.Migrations
                         .IsRequired();
 
                     b.Navigation("Office");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.Account.TblSystemUser", b =>
+                {
+                    b.Navigation("AuditTrail");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.Office.TblOffice", b =>
