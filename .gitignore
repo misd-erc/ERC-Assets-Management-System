@@ -3,10 +3,8 @@
 ###############################
 
 # Build results
-API/[Bb]in/
-API/[Bb]in/[Dd]ebug/
-API/[Oo]bj/
-API/[Oo]bj/[Dd]ebug/
+[Bb]in/
+[Oo]bj/
 [Ll]og/
 [Ll]ogs/
 [Tt]emp/
