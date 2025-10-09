@@ -3,10 +3,10 @@
 ###############################
 
 # Build results
-[Bb]in/
-[Bb]in/[Dd]ebug/
-[Oo]bj/
-[Oo]bj/[Dd]ebug/
+API/[Bb]in/
+API/[Bb]in/[Dd]ebug/
+API/[Oo]bj/
+API/[Oo]bj/[Dd]ebug/
 [Ll]og/
 [Ll]ogs/
 [Tt]emp/
