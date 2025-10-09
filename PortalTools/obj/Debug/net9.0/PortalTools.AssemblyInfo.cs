@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PortalTools")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2211de447432c9a225b808be25610e0aa676806a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+88dcac06cee717ec7a01ea819a3007f9127410ac")]
 [assembly: System.Reflection.AssemblyProductAttribute("PortalTools")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PortalTools")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -2,19 +2,17 @@
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using PortalCommon.Constants;
 
 namespace PortalTools.Utilities
 {
     public static class EncryptionHelper
     {
-        private static readonly byte[] Key = Encoding.UTF8.GetBytes("?rv$bwB9SKbYQSw*GZyQ?&x7mHC2kkJD"); // 32 bytes for AES256
-        private static readonly byte[] IV = Encoding.UTF8.GetBytes("NDZE5W*##cENbgWk"); // 16 bytes
-
         public static string Encrypt(string plainText)
         {
             using var aes = Aes.Create();
-            aes.Key = Key;
-            aes.IV = IV;
+            aes.Key = EncryptionConstants.Key;
+            aes.IV = EncryptionConstants.IV;
 
             using var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
             using var ms = new MemoryStream();
@@ -28,8 +26,8 @@ namespace PortalTools.Utilities
         public static string Decrypt(string cipherText)
         {
             using var aes = Aes.Create();
-            aes.Key = Key;
-            aes.IV = IV;
+            aes.Key = EncryptionConstants.Key;
+            aes.IV = EncryptionConstants.IV;
 
             using var decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
             using var ms = new MemoryStream(Convert.FromBase64String(cipherText));

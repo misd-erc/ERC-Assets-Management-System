@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PortalDB")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7c4c767c8621d060b04473fe2c18390670a435af")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+88dcac06cee717ec7a01ea819a3007f9127410ac")]
 [assembly: System.Reflection.AssemblyProductAttribute("PortalDB")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PortalDB")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

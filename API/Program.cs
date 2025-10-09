@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PortalDB.Services;
+using PortalCommon.Utilities;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,11 +11,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-///Defined on Environment Variables
-///e.g. Variable name: ConnectionStrings__AMSDev
-///e.g. Varialbe value: Server=MARK\SQLEXPRESS;Database=AMSDev;Trusted_Connection=True;TrustServerCertificate=True;
 builder.Services.AddDbContext<PortalDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("AMSDev")));
+    options.UseSqlServer(DatabaseHelper.ConnectionString()));
 
 var app = builder.Build();
 
