@@ -4,7 +4,9 @@
 
 # Build results
 [Bb]in/
+[Bb]in/[Dd]ebug/
 [Oo]bj/
+[Oo]bj/[Dd]ebug/
 [Ll]og/
 [Ll]ogs/
 [Tt]emp/
