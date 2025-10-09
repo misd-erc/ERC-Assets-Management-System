@@ -4,6 +4,8 @@ using Microsoft.Identity.Client;
 using PortalCommon.Constants;
 using PortalTools.Utilities;
 using Xunit;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace Tests.Azure
 {
@@ -55,6 +57,13 @@ namespace Tests.Azure
             try
             {
                 result = await app.AcquireTokenForClient(new[] { graphScope }).ExecuteAsync();
+                //string accessToken = result.AccessToken;
+                //using var httpClient = new HttpClient();
+                //httpClient.DefaultRequestHeaders.Authorization =
+                //    new AuthenticationHeaderValue("Bearer", accessToken);
+                //var response = await httpClient.GetAsync("https://graph.microsoft.com/v1.0/users");
+                //var content = await response.Content.ReadAsStringAsync();
+
             }
             catch (Exception ex)
             {
