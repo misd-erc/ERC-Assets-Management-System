@@ -1,14 +1,14 @@
 ﻿using Microsoft.IdentityModel.Tokens;
-using PortalDB.Entities.AuditTrail;
-using PortalDB.Entities.Office;
-using PortalDB.Entities.Office.Division;
+using PortalDB.Entities.LOG.AuditTrail;
+using PortalDB.Entities.DBO.Office;
+using PortalDB.Entities.DBO.Office.Division;
 using PortalTools.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
-namespace PortalDB.Entities.Account
+namespace PortalDB.Entities.DBO.Account
 {
     [Table("tblSystemUsers", Schema = "dbo")]
     public class TblSystemUser

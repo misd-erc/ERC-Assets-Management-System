@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PortalDB.Entities.Account;
-using PortalDB.Entities.Office;
-using PortalDB.Entities.Office.Division;
-using PortalDB.Entities.AuditTrail;
+using PortalDB.Entities.LOG.AuditTrail;
+using PortalDB.Entities.DBO.Office;
+using PortalDB.Entities.DBO.Account;
+using PortalDB.Entities.DBO.Office.Division;
 
 namespace PortalDB.Services
 {

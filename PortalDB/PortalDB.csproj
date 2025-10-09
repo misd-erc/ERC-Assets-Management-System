@@ -29,6 +29,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Entities\INV\" />
+    <Folder Include="Entities\ASSET\" />
+    <Folder Include="Entities\ACCT\" />
     <Folder Include="Migrations\" />
     <Folder Include="Properties\" />
   </ItemGroup>

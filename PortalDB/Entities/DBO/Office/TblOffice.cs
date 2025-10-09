@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using PortalDB.Entities.Office.Division;
+using PortalDB.Entities.DBO.Office.Division;
 
-namespace PortalDB.Entities.Office
+namespace PortalDB.Entities.DBO.Office
 {
     [Table("tblOffices", Schema = "dbo")]
     public class TblOffice

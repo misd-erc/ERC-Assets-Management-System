@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PortalDB.Entities.Account;
 using PortalDB.Services;
 using System;
 using System.Linq;
 using System.Text.Json;
 using PortalCommon.Utilities;
-using PortalDB.Entities.AuditTrail;
+using PortalDB.Entities.LOG.AuditTrail;
+using PortalDB.Entities.DBO.Account;
 
 namespace PortalTools.Services.Account
 {

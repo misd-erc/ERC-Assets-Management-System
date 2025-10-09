@@ -22,7 +22,7 @@ namespace PortalDB.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("PortalDB.Entities.Account.TblSystemUser", b =>
+            modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemUser", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -67,7 +67,61 @@ namespace PortalDB.Migrations
                     b.ToTable("tblSystemUsers", "dbo");
                 });
 
-            modelBuilder.Entity("PortalDB.Entities.AuditTrail.TblAuditTrail", b =>
+            modelBuilder.Entity("PortalDB.Entities.DBO.Office.Division.TblDivision", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("DivisionId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Acronym")
+                        .HasMaxLength(15)
+                        .HasColumnType("nvarchar(15)")
+                        .HasColumnName("DivisionAcronym");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("DivisionName");
+
+                    b.Property<long>("OfficeId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("OfficeId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OfficeId");
+
+                    b.ToTable("tblDivisions", "dbo");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.DBO.Office.TblOffice", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("OfficeId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Acronym")
+                        .HasMaxLength(15)
+                        .HasColumnType("nvarchar(15)")
+                        .HasColumnName("OfficeAcronym");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("OfficeName");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblOffices", "dbo");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.LOG.AuditTrail.TblAuditTrail", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -106,75 +160,12 @@ namespace PortalDB.Migrations
 
                     b.HasIndex("ChangedBy");
 
-                    b.ToTable("tblAuditTrails", "dbo");
+                    b.ToTable("tblAuditTrails", "log");
                 });
 
-            modelBuilder.Entity("PortalDB.Entities.Office.Division.TblDivision", b =>
+            modelBuilder.Entity("PortalDB.Entities.DBO.Office.Division.TblDivision", b =>
                 {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("DivisionId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("Acronym")
-                        .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)")
-                        .HasColumnName("DivisionAcronym");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("DivisionName");
-
-                    b.Property<long>("OfficeId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("OfficeId");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OfficeId");
-
-                    b.ToTable("tblDivisions", "dbo");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.Office.TblOffice", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("OfficeId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("Acronym")
-                        .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)")
-                        .HasColumnName("OfficeAcronym");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("OfficeName");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblOffices", "dbo");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.AuditTrail.TblAuditTrail", b =>
-                {
-                    b.HasOne("PortalDB.Entities.Account.TblSystemUser", "SystemUser")
-                        .WithMany("AuditTrail")
-                        .HasForeignKey("ChangedBy");
-
-                    b.Navigation("SystemUser");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.Office.Division.TblDivision", b =>
-                {
-                    b.HasOne("PortalDB.Entities.Office.TblOffice", "Office")
+                    b.HasOne("PortalDB.Entities.DBO.Office.TblOffice", "Office")
                         .WithMany("Divisions")
                         .HasForeignKey("OfficeId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -183,12 +174,21 @@ namespace PortalDB.Migrations
                     b.Navigation("Office");
                 });
 
-            modelBuilder.Entity("PortalDB.Entities.Account.TblSystemUser", b =>
+            modelBuilder.Entity("PortalDB.Entities.LOG.AuditTrail.TblAuditTrail", b =>
+                {
+                    b.HasOne("PortalDB.Entities.DBO.Account.TblSystemUser", "SystemUser")
+                        .WithMany("AuditTrail")
+                        .HasForeignKey("ChangedBy");
+
+                    b.Navigation("SystemUser");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemUser", b =>
                 {
                     b.Navigation("AuditTrail");
                 });
 
-            modelBuilder.Entity("PortalDB.Entities.Office.TblOffice", b =>
+            modelBuilder.Entity("PortalDB.Entities.DBO.Office.TblOffice", b =>
                 {
                     b.Navigation("Divisions");
                 });

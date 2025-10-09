@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PortalDB.Entities.AuditTrail;
+using PortalDB.Entities.LOG.AuditTrail;
 using System;
 using System.Collections.Generic;
 using System.Linq;

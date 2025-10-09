@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PortalDB.Entities.Account;
+using PortalDB.Entities.DBO.Account;
 using PortalDB.Services;
 using System;
 using System.Collections.Generic;
