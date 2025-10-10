@@ -1,36 +1,58 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { Label } from '../ui/label';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Shield, Smartphone, ArrowLeft } from 'lucide-react';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuth } from '../../hooks';
 
 export function MFAVerification() {
-  const [code, setCode] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  const { verifyMFA, logout } = useAuthStore();
+  const [codes, setCodes] = useState(['', '', '', '', '', '']);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
+
+  const { verifyMFA, logout, isLoading, error } = useAuth();
+
+  const fullCode = codes.join('');
+
+  const handleChange = (index: number, value: string) => {
+    const newCodes = [...codes];
+    newCodes[index] = value.replace(/\D/g, '').slice(0, 1);
+    setCodes(newCodes);
+
+    if (value && index < 5) {
+      setActiveIndex(index + 1);
+      inputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !codes[index] && index > 0) {
+      setActiveIndex(index - 1);
+      inputsRef.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const newCodes = pastedData.split('').concat(Array(6 - pastedData.length).fill(''));
+    setCodes(newCodes);
+    setActiveIndex(Math.min(pastedData.length, 5));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const success = await verifyMFA(code);
-      if (!success) {
-        setError('Invalid verification code. Please try again.');
-        setCode('');
-      }
-    } catch (err) {
-      setError('Verification failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+    if (fullCode.length === 6) {
+      await verifyMFA(fullCode);
     }
   };
+
+  useEffect(() => {
+    inputsRef.current[0]?.focus();
+  }, []);
+
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -40,8 +62,8 @@ export function MFAVerification() {
           <div className="mx-auto w-16 h-16 bg-primary rounded-lg flex items-center justify-center">
             <Shield className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl">Two-Factor Authentication</h1>
-          <p className="text-muted-foreground">Enter the verification code to continue</p>
+          <h1 className="text-2xl font-semibold text-slate-900">Two-Factor Authentication</h1>
+          <p className="text-slate-600">Enter the verification code to continue</p>
         </div>
 
         {/* MFA Form */}
@@ -64,23 +86,35 @@ export function MFAVerification() {
               )}
               
               <div className="space-y-2">
-                <Label htmlFor="code">Verification Code</Label>
-                <Input
-                  id="code"
-                  type="text"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  className="text-center tracking-widest text-lg"
-                  placeholder="000000"
-                  maxLength={6}
-                  required
-                />
+                <label className="text-sm font-medium">Verification Code</label>
+                <div 
+                  className="flex justify-center space-x-2"
+                  onPaste={handlePaste}
+                >
+                  {codes.map((digit, index) => (
+                    <Input
+                      key={index}
+                      ref={(el) => { inputsRef.current[index] = el; }}
+                      type="text"
+                      value={digit}
+                      onChange={(e) => handleChange(index, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(index, e)}
+                      className="w-12 h-12 text-center text-lg font-mono tracking-widest rounded border-2 focus:border-blue-500 focus:outline-none"
+                      maxLength={1}
+                      autoComplete="one-time-code"
+                      placeholder="_"
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  Didn't receive the code? <button type="button" className="text-blue-600 hover:underline">Resend</button>
+                </p>
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isLoading || code.length !== 6}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isLoading || fullCode.length !== 6}
               >
                 {isLoading ? 'Verifying...' : 'Verify'}
               </Button>

@@ -1,38 +1,28 @@
 import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Shield, Lock, User } from 'lucide-react';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuth } from '../../hooks';
 import { MFAVerification } from './MFAVerification';
 
 const ercLogo = '/images/erc-logo.png';
 
 export function LoginScreen() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  
-  const { login, requireMFA } = useAuthStore();
+  const { control, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+  const { login, requireMFA, isLoading, hasError, error } = useAuth();
 
-    try {
-      const success = await login({ username, password });
-      if (!success) {
-        setError('Invalid username or password');
-      }
-    } catch (err) {
-      setError('Login failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+  const onSubmit = async (data: { username: string; password: string }) => {
+    await login(data);
   };
 
   if (requireMFA) {
@@ -60,54 +50,82 @@ export function LoginScreen() {
         {/* Login Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-center">Sign In</CardTitle>
+            <CardDescription className="text-center">
               Enter your credentials to access the Asset Management System
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <CardContent className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              
+
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="pl-9"
-                    placeholder="Enter your username"
-                    required
+                  <Controller
+                    name="username"
+                    control={control}
+                    rules={{
+                      required: 'Username is required',
+                      minLength: { value: 3, message: 'Username must be at least 3 characters' }
+                    }}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        id="username"
+                        type="text"
+                        className="pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter your username"
+                      />
+                    )}
                   />
                 </div>
+                {errors.username && (
+                  <p className="text-sm text-red-600">{errors.username.message}</p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-9"
-                    placeholder="Enter your password"
-                    required
+                  <Controller
+                    name="password"
+                    control={control}
+                    rules={{
+                      required: 'Password is required',
+                      minLength: { value: 6, message: 'Password must be at least 6 characters' }
+                    }}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        id="password"
+                        type="password"
+                        className="pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Enter your password"
+                      />
+                    )}
                   />
                 </div>
+                {errors.password && (
+                  <p className="text-sm text-red-600">{errors.password.message}</p>
+                )}
+                <a
+                  href="#"
+                  className="text-sm text-blue-600 hover:text-blue-500 text-right block"
+                >
+                  Forgot Password?
+                </a>
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full" 
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={isLoading}
               >
                 {isLoading ? 'Signing in...' : 'Sign In'}

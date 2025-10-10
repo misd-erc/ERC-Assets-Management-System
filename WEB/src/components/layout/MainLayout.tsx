@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
-import { Topbar } from './TopBar';
+import { TopBar as Topbar } from './TopBar';
 import { Dashboard } from '../dashboard/Dashboard';
+import { useIsMobile } from '../ui/use-mobile';
+import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
+import { Menu } from 'lucide-react';
+import { Button } from '../ui/button';
 
 export function MainLayout() {
   const [activeModule, setActiveModule] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const renderContent = () => {
     switch (activeModule) {
@@ -16,12 +22,22 @@ export function MainLayout() {
   };
 
   return (
-    <>
-      <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
-      <Topbar />
-      <main className="pl-64 pt-16 pr-6 pb-6 overflow-y-auto bg-gray-50 min-h-screen">
-        {renderContent()}
-      </main>
-    </>
+    <div className="flex h-screen overflow-hidden">
+      {isMobile ? (
+        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <SheetContent side="left" className="p-0 w-64 z-40">
+            <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} isMobile={isMobile} />
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} isMobile={isMobile} />
+      )}
+      <div className="flex flex-col flex-1">
+        <Topbar onMenuClick={() => setSidebarOpen(true)} isMobile={isMobile} />
+        <main className="flex-1 overflow-auto bg-gray-50 p-4 sm:p-6 md:p-8">
+          {renderContent()}
+        </main>
+      </div>
+    </div>
   );
 }
