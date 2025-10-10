@@ -1,23 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Search } from 'lucide-react';
+import { Bell, Search, Menu } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { useAuth } from '../../hooks';
 
-export const Topbar: React.FC = () => {
+interface TopbarProps {
+  onMenuClick?: () => void;
+  isMobile?: boolean;
+}
+
+export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { user } = useAuth();
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
+  const leftOffset = isMobile ? 'left-0' : 'left-64';
+  const searchFlex = isMobile ? 'flex-1' : 'flex-1 max-w-lg';
+
+  const userInitials = user?.name.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
+
   return (
     <header
-      className="fixed top-0 left-64 right-0 h-16 bg-white border-b border-gray-200 shadow-sm z-20 flex items-center justify-between px-6"
+      className={`fixed top-0 ${leftOffset} right-0 h-16 bg-white border-b border-gray-200 shadow-sm z-50 flex items-center justify-between px-4 sm:px-6`}
       role="banner"
     >
+      {isMobile && onMenuClick && (
+        <Button variant="ghost" size="sm" onClick={onMenuClick} className="mr-2">
+          <Menu className="w-5 h-5" />
+          <span className="sr-only">Open sidebar</span>
+        </Button>
+      )}
       {/* Search bar */}
-      <div className="flex-1 max-w-lg">
+      <div className={searchFlex}>
         <label htmlFor="search" className="sr-only">
           Search across all modules
         </label>
@@ -33,7 +51,7 @@ export const Topbar: React.FC = () => {
       </div>
 
       {/* Session info, notifications, user */}
-      <div className="flex items-center space-x-6 min-w-0">
+      <div className="flex items-center space-x-4 sm:space-x-6 min-w-0">
         <div className="flex items-center space-x-2 whitespace-nowrap">
           <span className="text-xs text-gray-500">Session Active</span>
           <span className="text-xs font-semibold text-gray-900">
@@ -50,11 +68,11 @@ export const Topbar: React.FC = () => {
 
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm select-none">
-            SA
+            {userInitials}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-gray-900 truncate">System Administrator</p>
-            <p className="text-xs text-gray-500 truncate">@admin</p>
+            <p className="text-sm font-semibold text-gray-900 truncate">{user?.name || 'User'}</p>
+            <p className="text-xs text-gray-500 truncate">@{user?.username || 'user'}</p>
           </div>
         </div>
       </div>

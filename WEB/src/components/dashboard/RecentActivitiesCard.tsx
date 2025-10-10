@@ -1,16 +1,18 @@
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
-import { 
-  Package, 
-  ArrowRightLeft, 
-  FileText, 
-  UserCheck, 
+import {
+  Package,
+  ArrowRightLeft,
+  FileText,
+  UserCheck,
   AlertTriangle,
   Clock,
   User
 } from 'lucide-react';
+import { useData } from '../../hooks';
 
 interface Activity {
   id: string;
@@ -23,62 +25,19 @@ interface Activity {
 }
 
 export function RecentActivitiesCard() {
-  const activities: Activity[] = [
-    {
-      id: '1',
-      type: 'issued',
-      title: 'Office Supplies Issued',
-      description: 'RIS-2024-156: 50 pcs bond paper, 10 pcs ballpen',
-      user: 'John Doe',
-      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-      status: 'completed'
-    },
-    {
-      id: '2',
-      type: 'transferred',
-      title: 'Equipment Transfer',
-      description: 'PTR-2024-089: 2 desktop computers from IT to Finance',
-      user: 'Jane Smith',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      status: 'pending'
-    },
-    {
-      id: '3',
-      type: 'created',
-      title: 'PAR Generated',
-      description: 'PAR-2024-245: Property acknowledgment for new laptops',
-      user: 'Mike Johnson',
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-      status: 'completed'
-    },
-    {
-      id: '4',
-      type: 'returned',
-      title: 'Equipment Returned',
-      description: 'RRPE-2024-034: Projector returned from Training Room',
-      user: 'Sarah Wilson',
-      timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
-      status: 'completed'
-    },
-    {
-      id: '5',
-      type: 'disposed',
-      title: 'Asset Disposal',
-      description: 'DISP-2024-012: Old CRT monitors disposed through auction',
-      user: 'Admin User',
-      timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8 hours ago
-      status: 'completed'
-    },
-    {
-      id: '6',
-      type: 'issued',
-      title: 'PPE Distribution',
-      description: 'Safety helmets and vests issued to field team',
-      user: 'Safety Officer',
-      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-      status: 'completed'
-    }
-  ];
+  const { risRequests } = useData();
+
+  const activities: Activity[] = useMemo(() => {
+    return risRequests.map((request) => ({
+      id: request.id,
+      type: 'issued' as const,
+      title: `RIS Request ${request.id}`,
+      description: `Items: ${request.items.map(item => `${item.quantity} ${item.name}`).join(', ')}`,
+      user: request.requester,
+      timestamp: request.dateRequested,
+      status: request.status as 'completed' | 'pending' | 'failed',
+    }));
+  }, [risRequests]);
 
   const getActivityIcon = (type: string) => {
     switch (type) {

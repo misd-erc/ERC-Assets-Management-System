@@ -33,6 +33,7 @@ interface NavigationGroup {
 interface SidebarProps {
   activeModule: string;
   onModuleChange: (id: string) => void;
+  isMobile?: boolean;
 }
 
 const navigationGroups: NavigationGroup[] = [
@@ -78,10 +79,10 @@ const navigationGroups: NavigationGroup[] = [
   },
 ];
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, isMobile }) => {
   return (
     <aside
-      className="fixed top-0 left-0 w-64 h-full bg-white border-r border-gray-200 shadow-sm z-10 flex flex-col"
+      className={`${isMobile ? 'w-full h-full' : 'fixed top-0 left-0 w-64 h-full z-40'} bg-white border-r border-gray-200 shadow-sm flex flex-col`}
       aria-label="Sidebar"
     >
       <div className="flex items-center space-x-3 px-4 py-4 border-b border-gray-200">

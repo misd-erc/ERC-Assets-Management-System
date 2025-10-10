@@ -1,5 +1,4 @@
-# TODO
-
-- [x] Fix compilation errors in calendar.tsx, chart.tsx, and missing Radix UI modules
-- [x] Test the dashboards in the browser to ensure they work correctly
-- [ ] Verify the loading state in onSave is working as expected
+- [x] Update MainLayout.tsx to flex h-screen overflow-hidden structure with Sidebar and flex-col for Topbar and main.
+- [x] Modify Sidebar.tsx to conditionally render as Sheet on mobile using useIsMobile, add isOpen state.
+- [x] Update TopBar.tsx to add hamburger button for mobile sidebar toggle, adjust positioning to full-width on mobile, offset on desktop.
+- [x] Ensure z-index: Sidebar z-40, Topbar z-50; responsive padding in main; no horizontal scroll.
