@@ -1,4 +1,9 @@
-- [x] Update MainLayout.tsx to flex h-screen overflow-hidden structure with Sidebar and flex-col for Topbar and main.
-- [x] Modify Sidebar.tsx to conditionally render as Sheet on mobile using useIsMobile, add isOpen state.
-- [x] Update TopBar.tsx to add hamburger button for mobile sidebar toggle, adjust positioning to full-width on mobile, offset on desktop.
-- [x] Ensure z-index: Sidebar z-40, Topbar z-50; responsive padding in main; no horizontal scroll.
+# Refactor Hooks Folder TODO
+
+- [x] Create src/hooks/auth/ directory
+- [x] Move src/hooks/useAuth.ts to src/hooks/auth/useAuth.ts
+- [x] Create src/hooks/data/ directory
+- [x] Move src/hooks/useData.ts to src/hooks/data/useData.ts
+- [x] Update src/hooks/index.ts to export from new paths
+- [x] Delete old useAuth.ts and useData.ts files
+- [x] Verify project builds without errors

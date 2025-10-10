@@ -85,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, 
       className={`${isMobile ? 'w-full h-full' : 'fixed top-0 left-0 w-64 h-full z-40'} bg-white border-r border-gray-200 shadow-sm flex flex-col`}
       aria-label="Sidebar"
     >
-      <div className="flex items-center space-x-3 px-4 py-4 border-b border-gray-200">
+      <div className="flex items-center space-x-3 px-4 py-[1.32rem] border-b border-gray-200">
         <img src="/images/erc-logo.png" alt="ERC Logo" className="w-8 h-8 rounded" />
         <div className="flex flex-col min-w-0">
           <p className="text-sm font-semibold text-gray-900 truncate">Energy Regulatory Commission</p>

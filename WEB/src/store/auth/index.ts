@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User, AuthStore, LoginCredentials } from '../types';
+import { User, AuthStore, LoginCredentials } from '../../types';
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   // Temporarily disabled localStorage loading to always show login on start

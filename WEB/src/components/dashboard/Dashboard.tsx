@@ -67,7 +67,7 @@ const kpiData: KPIData[] = [
 
 export function Dashboard({ onNavigate }: DashboardProps) {
   return (
-    <div className="space-y-8">
+    <div className="pl-64 pt-16 space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
