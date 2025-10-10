@@ -7,7 +7,7 @@ using PortalCommon.Utilities;
 using PortalDB.Entities.LOG.AuditTrail;
 using PortalDB.Entities.DBO.Account;
 
-namespace PortalTools.Services.Account
+namespace PortalTools.Services.DBO.Account
 {
     public class AccountEditTools
     {
@@ -31,7 +31,7 @@ namespace PortalTools.Services.Account
             if (model.Id == 0) // Insert
             {
                 await context.TblSystemUsers.AddAsync(model);
-                AuditTrailTool.TrackChanges<TblSystemUser>(context, null!, model, nameof(TblSystemUser), changedBy, "Insert");
+                AuditTrailTool.TrackChanges(context, null!, model, nameof(TblSystemUser), changedBy, "Insert");
             }
             else // Update
             {

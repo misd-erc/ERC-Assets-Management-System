@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalTools.Services.Account
+namespace PortalTools.Services.DBO.Account
 {
     public class AccountGetTools
     {
