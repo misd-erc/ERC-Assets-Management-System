@@ -1,4 +1,4 @@
-import { useDataStore } from '../store/data';
+import { useDataStore } from '../../store/data/';
 
 export const useData = () => {
   const data = useDataStore();

@@ -1,2 +1,2 @@
-export { useAuth } from './useAuth';
-export { useData } from './useData';
+export { useAuth } from './auth/useAuth';
+export { useData } from './data/useData';
