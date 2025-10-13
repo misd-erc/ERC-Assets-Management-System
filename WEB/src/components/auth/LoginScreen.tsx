@@ -10,7 +10,7 @@ import { useAuth } from '../../hooks';
 import { MFAVerification } from './MFAVerification';
 
 const ercLogo = '/images/erc-logo.png';
-const microsoftLogo = '/images/microsoft-logo.png';
+const microsoftLogo = '/images/microsoft-logo.svg';
 
 export function LoginScreen() {
   const { control, handleSubmit, formState: { errors } } = useForm({
