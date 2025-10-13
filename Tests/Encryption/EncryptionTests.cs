@@ -26,7 +26,7 @@ namespace Tests.Encryption
         public void Encrypt_Should_Not_Return_PlainText()
         {
             // Arrange
-            var plainText = "https://graph.microsoft.com/.default";
+            var plainText = "MARK\\SQLEXPRESS";
 
             // Act
             var encrypted = EncryptionHelper.Encrypt(plainText);

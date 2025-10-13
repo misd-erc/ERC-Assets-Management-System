@@ -10,6 +10,7 @@ import { useAuth } from '../../hooks';
 import { MFAVerification } from './MFAVerification';
 
 const ercLogo = '/images/erc-logo.png';
+const microsoftLogo = '/images/microsoft-logo.png';
 
 export function LoginScreen() {
   const { control, handleSubmit, formState: { errors } } = useForm({
@@ -52,7 +53,8 @@ export function LoginScreen() {
           <CardHeader>
             <CardTitle className="text-center">Sign In</CardTitle>
             <CardDescription className="text-center">
-              Enter your credentials to access the Asset Management System
+              {/* Enter your credentials to access the Asset Management System */}
+              Use your ERC-provided Microsoft account to access the system
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -63,7 +65,7 @@ export function LoginScreen() {
                 </Alert>
               )}
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -121,14 +123,24 @@ export function LoginScreen() {
                 >
                   Forgot Password?
                 </a>
-              </div>
+              </div> */}
 
               <Button
                 type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                disabled={isLoading}>
+                  {isLoading ? (
+                    'Signing in...'
+                  ) : (
+                    <>
+                      <img
+                        src={microsoftLogo}
+                        alt="Microsoft"
+                        className="w-5 h-5"
+                      />
+                      <span>Sign in with Microsoft</span>
+                    </>
+                  )}
               </Button>
             </form>
           </CardContent>
@@ -140,7 +152,7 @@ export function LoginScreen() {
             <div className="flex items-start space-x-2">
               <Shield className="w-4 h-4 text-blue-600 mt-0.5" />
               <div className="text-sm text-blue-800">
-                <p>This system is for authorized personnel only. All activities are logged and monitored.</p>
+                <p>This system is for ERC authorized personnel only. All activities are logged and monitored.</p>
               </div>
             </div>
           </CardContent>
