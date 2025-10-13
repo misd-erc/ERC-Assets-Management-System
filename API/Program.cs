@@ -11,8 +11,25 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+#region DB Connection
 builder.Services.AddDbContext<PortalDbContext>(options =>
     options.UseSqlServer(DatabaseHelper.ConnectionString()));
+#endregion
+
+#region Seeder Command
+// Check if we’re running in “seed mode”
+if (args.Contains("seed", StringComparer.OrdinalIgnoreCase))
+{
+    Console.WriteLine("Running database seeder...");
+
+    using var scope = builder.Services.BuildServiceProvider().CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<PortalDbContext>();
+    DbSeeder.Seed(context);
+
+    Console.WriteLine("Seeding completed successfully!");
+    return; // Exit the app after seeding
+}
+#endregion
 
 var app = builder.Build();
 

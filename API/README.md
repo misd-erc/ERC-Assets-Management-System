@@ -1,6 +1,7 @@
 # useful__commands
 - `Add-Migration <Migration_Name> -p PortalDB -s API` to create migration using the db context on PortalDB in API project.
 - `Update-Database -p PortalDB -s API` to update database and apply migration from PortalDB in API project.
+- `dotnet run -- seed` to run the seed data script.
 
 
 # naming__conventions
