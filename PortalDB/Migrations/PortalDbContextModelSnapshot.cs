@@ -165,7 +165,6 @@ namespace PortalDB.Migrations
                         .HasColumnName("AuditTrailAction");
 
                     b.Property<DateTime?>("ChangedAt")
-                        .HasMaxLength(20)
                         .HasColumnType("datetime2")
                         .HasColumnName("AuditTrailChangedAt");
 
@@ -188,6 +187,38 @@ namespace PortalDB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblAuditTrails", "log");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.LOG.TblErrorLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("ErrorLogId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Controller")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("ErrorLogController");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("ErrorLogCreatedAt");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ErrorLogDescription");
+
+                    b.Property<string>("Line")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("ErrorLogLine");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblErrorLogs", "log");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblOneTimePassword", b =>

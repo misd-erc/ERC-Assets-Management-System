@@ -56,11 +56,9 @@ namespace PortalTools.Services.DBO.Account
             }
             catch (DbUpdateException)
             {
-                //throw;
-                return 0;
+                throw;
             }
         }
-
 
         /// <summary>
         /// Updates an existing TblSystemUser.
@@ -84,7 +82,7 @@ namespace PortalTools.Services.DBO.Account
             }
             catch (DbUpdateException)
             {
-                return false;
+                throw;
             }
         }
 

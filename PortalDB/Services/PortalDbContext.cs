@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PortalDB.Entities.LOG.AuditTrail;
+using PortalDB.Entities.LOG;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office.Division;
@@ -30,6 +31,7 @@ namespace PortalDB.Services
 
         #region Audit Trail
         public DbSet<TblAuditTrail> TblAuditTrails { get; set; }
+        public DbSet<TblErrorLog> TblErrorLogs { get; set; }
         #endregion
 
     }

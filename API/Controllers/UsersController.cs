@@ -7,6 +7,7 @@ using PortalCommon.ViewModels.Account;
 using PortalCommon.ViewModels.SMTP;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Services;
+using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
 using PortalTools.Utilities;
 using System.Diagnostics;
@@ -96,7 +97,7 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
-                //Log the exception (not shown here for brevity)
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
 
