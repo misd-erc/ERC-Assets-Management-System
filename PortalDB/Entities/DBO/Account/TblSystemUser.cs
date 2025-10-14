@@ -18,6 +18,7 @@ namespace PortalDB.Entities.DBO.Account
         [Column("SystemUserId")]
         public long Id { get; set; }
 
+        // EntraId is ObjectId in Azure AD
         [Column("MicrosoftEntraId")]
         public string? EntraIdEncrypted { get; set; }
         [NotMapped]
