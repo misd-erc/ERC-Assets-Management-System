@@ -15,5 +15,6 @@ namespace PortalCommon.Enums
         public const string OPERATION_COMPLETED = "OPERATION_COMPLETED";
         public const string DATA_RETRIEVED = "DATA_RETRIEVED";
         public const string USER_AUTHENTICATED = "USER_AUTHENTICATED";
+        public const string NO_CONTENT = "NO_CONTENT";
     }
 }
