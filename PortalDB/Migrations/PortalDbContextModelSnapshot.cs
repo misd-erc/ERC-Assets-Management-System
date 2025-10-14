@@ -198,11 +198,6 @@ namespace PortalDB.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Controller")
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
-                        .HasColumnName("ErrorLogController");
-
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("ErrorLogCreatedAt");
@@ -210,6 +205,11 @@ namespace PortalDB.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("ErrorLogDescription");
+
+                    b.Property<string>("File")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("ErrorLogFile");
 
                     b.Property<string>("Line")
                         .HasMaxLength(30)

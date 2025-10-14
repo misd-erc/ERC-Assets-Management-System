@@ -54,8 +54,9 @@ namespace PortalTools.Services.DBO.Account
 
                 return isInsert ? model.Id : existingUser.Id;
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(AccountEditTools));
                 throw;
             }
         }
@@ -80,8 +81,9 @@ namespace PortalTools.Services.DBO.Account
                 return true;
 
             }
-            catch (DbUpdateException)
+            catch (DbUpdateException ex)
             {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(AccountEditTools));
                 throw;
             }
         }

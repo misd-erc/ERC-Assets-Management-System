@@ -12,7 +12,7 @@ namespace PortalTools.Services
         /// <summary>
         /// Logs an exception automatically detecting the calling controller or class.
         /// </summary>
-        public static async Task ErrorLogAsync(PortalDbContext context, Exception ex, string controllerName)
+        public static async Task ErrorLogAsync(PortalDbContext context, Exception ex, string file)
         {
             try
             {
@@ -28,7 +28,7 @@ namespace PortalTools.Services
 
                 var error = new TblErrorLog
                 {
-                    Controller = controllerName,
+                    File = file,
                     Line = lineNumber,
                     Description = BuildErrorDescription(ex),
                     CreatedAt = DateTime.UtcNow
