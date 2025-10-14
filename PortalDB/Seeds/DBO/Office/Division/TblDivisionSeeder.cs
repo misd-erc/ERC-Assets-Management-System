@@ -27,6 +27,8 @@ namespace PortalDB.Seeds.DBO.Office.Division
 
             var divisions = new List<TblDivision>
             {
+                Division(offices.Where(x => x.Name == TblOffice.OCCM).First().Id, "Internal Audit Division", "IAD"),
+
                 Division(offices.Where(x => x.Name == TblOffice.OGCS).First().Id, "Central Records Division", "CRD"),
 
                 Division(offices.Where(x => x.Name == TblOffice.FAS).First().Id, "Accounting Division", "AD"),

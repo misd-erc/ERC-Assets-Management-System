@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using PortalDB.Services;
 using PortalCommon.Utilities;
+using PortalDB.Services;
+using PortalTools.Services.DBO.Account;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,7 +16,6 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<PortalDbContext>(options =>
     options.UseSqlServer(DatabaseHelper.ConnectionString()));
 #endregion
-
 #region Seeder Command
 // Check if we’re running in “seed mode”
 if (args.Contains("seed", StringComparer.OrdinalIgnoreCase))
@@ -29,6 +29,10 @@ if (args.Contains("seed", StringComparer.OrdinalIgnoreCase))
     Console.WriteLine("Seeding completed successfully!");
     return; // Exit the app after seeding
 }
+#endregion
+#region Services
+builder.Services.AddScoped<AccountGetTools>();
+builder.Services.AddScoped<AccountEditTools>();
 #endregion
 
 var app = builder.Build();

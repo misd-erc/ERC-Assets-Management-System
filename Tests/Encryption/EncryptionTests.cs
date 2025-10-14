@@ -26,7 +26,7 @@ namespace Tests.Encryption
         public void Encrypt_Should_Not_Return_PlainText()
         {
             // Arrange
-            var plainText = "MARK\\SQLEXPRESS";
+            var plainText = "ams@admin.aipinas.com";
 
             // Act
             var encrypted = EncryptionHelper.Encrypt(plainText);

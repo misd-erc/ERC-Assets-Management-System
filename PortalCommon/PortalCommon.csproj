@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="ViewModels\" />
+    <PackageReference Include="MailKit" Version="4.14.1" />
   </ItemGroup>
 
 </Project>

@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Seeds.DBO.Office;
+using PortalDB.Seeds.DBO.Office.Division;
 
 namespace PortalDB.Services
 {
@@ -20,6 +22,9 @@ namespace PortalDB.Services
 
                 #region Office
                 TblOfficeSeeder.Seed(context);
+                #region Division
+                TblDivisionSeeder.Seed(context);
+                #endregion
                 #endregion
 
                 Console.WriteLine("Database seeding completed successfully!");

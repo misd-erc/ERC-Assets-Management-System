@@ -54,20 +54,18 @@ namespace PortalDB.Entities.DBO.Account
             set => EmailEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
-        [MaxLength(1)]
         [Column("SystemUserIsActive")]
         public bool IsActive { get; set; } = true;
 
-        [MaxLength(20)]
         [Column("SystemUserCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        [MaxLength(20)]
         [Column("SystemUserLastLoginAt")]
         public DateTime? LastLoginAt { get; set; }
 
         #region Foreign Key Collection
-        public virtual ICollection<TblAuditTrail> AuditTrail { get; set; } = new List<TblAuditTrail>();
+        //public virtual ICollection<TblAuditTrail> AuditTrail { get; set; } = new List<TblAuditTrail>();
+        public virtual ICollection<TblOneTimePassword> OneTimePassword { get; set; } = new List<TblOneTimePassword>();
         #endregion
 
     }

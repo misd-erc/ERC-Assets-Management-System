@@ -42,14 +42,16 @@ namespace PortalTools.Services
                     return; // No changes
             }
 
-            context.Set<TblAuditTrail>().Add(new TblAuditTrail
+            TblAuditTrail auditTrailInfo = new TblAuditTrail
             {
                 TableName = tableName,
                 RecordId = (updatedEntity ?? originalEntity!)!.GetPropertyValue<long>("Id"), // requires extension
                 Action = action,
                 Changes = changesJson,
                 ChangedBy = changedBy
-            });
+            };
+
+            context.Set<TblAuditTrail>().Add(auditTrailInfo);
         }
 
         /// <summary>

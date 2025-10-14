@@ -10,8 +10,7 @@ namespace PortalDB.Entities.DBO.Office
     {
 
         #region Constants
-        [NotMapped] public const string OCC = "Office of the Chairperson and CEO";
-        [NotMapped] public const string OC = "Office of the Commissioners";
+        [NotMapped] public const string OCCM = "Office of the CEO and Commissioner Members";
         [NotMapped] public const string OED = "Office of the Executive Director";
         [NotMapped] public const string OGCS = "Office of the General Counsel and Secretariat";
         [NotMapped] public const string BAC = "Bids and Awards Committee";

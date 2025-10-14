@@ -19,8 +19,7 @@ namespace PortalDB.Seeds.DBO.Office
 
             var offices = new List<TblOffice>
             {
-                Office("Office of the Chairperson and CEO", "OCC"),
-                Office("Office of the Commissioners", "OC"),
+                Office("Office of the CEO and Commissioner Members", "OCCM"),
                 Office("Office of the Executive Director", "OED"),
                 Office("Office of the General Counsel and Secretariat", "OGCS"),
                 Office("Bids and Awards Committee", "BAC"),
