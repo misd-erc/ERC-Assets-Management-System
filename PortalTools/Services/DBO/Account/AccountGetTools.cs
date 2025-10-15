@@ -28,5 +28,16 @@ namespace PortalTools.Services.DBO.Account
                 && x.Email == model.Email).FirstOrDefaultAsync();
         }
 
+        public async Task<bool> ValidateOTPAsync(TblOneTimePassword model)
+        {
+            bool isExisting = await _context.TblOneTimePasswords
+                .AnyAsync(x => x.SystemUserId == model.SystemUserId 
+                    && x.OTPEncrypted == model.OTPEncrypted);
+            
+            if(isExisting)
+                return true;
+            return false;
+        }
+
     }
 }

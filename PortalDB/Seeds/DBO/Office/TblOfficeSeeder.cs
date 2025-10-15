@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace PortalDB.Seeds.DBO.Office
 {
-    internal static class TblOfficeSeeder
+    internal static class TblSystemRoleSeeder
     {
         public static void Seed(PortalDbContext context)
         {

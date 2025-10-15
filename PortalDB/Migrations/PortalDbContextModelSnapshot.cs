@@ -54,6 +54,36 @@ namespace PortalDB.Migrations
                     b.ToTable("tblOneTimePasswords", "dbo");
                 });
 
+            modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemRole", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemRoleId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SystemRoleCreatedAt");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SystemRoleDescription");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("SystemRoleIsActive");
+
+                    b.Property<string>("RoleName")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SystemRoleName");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblSystemRoles", "dbo");
+                });
+
             modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemUser", b =>
                 {
                     b.Property<long>("Id")
@@ -91,7 +121,13 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SystemUserLastName");
 
+                    b.Property<long?>("SystemRoleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemUserSystemRoleId");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("SystemRoleId");
 
                     b.ToTable("tblSystemUsers", "dbo");
                 });
@@ -232,6 +268,15 @@ namespace PortalDB.Migrations
                     b.Navigation("SystemUser");
                 });
 
+            modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemUser", b =>
+                {
+                    b.HasOne("PortalDB.Entities.DBO.Account.TblSystemRole", "SystemRole")
+                        .WithMany("SystemUser")
+                        .HasForeignKey("SystemRoleId");
+
+                    b.Navigation("SystemRole");
+                });
+
             modelBuilder.Entity("PortalDB.Entities.DBO.Office.Division.TblDivision", b =>
                 {
                     b.HasOne("PortalDB.Entities.DBO.Office.TblOffice", "Office")
@@ -241,6 +286,11 @@ namespace PortalDB.Migrations
                         .IsRequired();
 
                     b.Navigation("Office");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemRole", b =>
+                {
+                    b.Navigation("SystemUser");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemUser", b =>

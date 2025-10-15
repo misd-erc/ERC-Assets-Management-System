@@ -21,7 +21,7 @@ namespace PortalDB.Services
             {
 
                 #region Office
-                TblOfficeSeeder.Seed(context);
+                TblSystemRoleSeeder.Seed(context);
                 #region Division
                 TblDivisionSeeder.Seed(context);
                 #endregion

@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalCommon.Enums;
 using PortalCommon.Responses;
 using PortalCommon.Utilities;
 using PortalCommon.ViewModels.Account;
+using PortalCommon.ViewModels.OTP;
 using PortalCommon.ViewModels.SMTP;
 using PortalDB.Entities.DBO.Account;
+using PortalCommon.ViewModels.Account;
 using PortalDB.Services;
 using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
@@ -16,7 +19,9 @@ using static System.Net.WebRequestMethods;
 
 namespace API.Controllers
 {
+
     [Route("api/[controller]")]
+    /*[Authorize]*/
     [ApiController]
     public class UsersController : ControllerBase
     {
@@ -33,6 +38,11 @@ namespace API.Controllers
             _options = options;
         }
 
+        #region GET
+
+        #endregion
+
+        #region POST
         // POST api/users/validation
         [HttpPost("validation")]
         public async Task<IActionResult> ValidateUser([FromBody] UserValidationViewModel model)
@@ -92,7 +102,12 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                return Ok(ApiResponse<object>.Ok(null, $"OTP has been sent to email address"));
+                UserEncryptedPublicViewModel publicVM = new()
+                {
+                    SystemUserIdEncrypted = EncryptionHelper.Encrypt(systemUserId.ToString()),
+                };
+
+                return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been sent to email address"));
 
             }
             catch (Exception ex)
@@ -103,7 +118,50 @@ namespace API.Controllers
 
         }
 
+        // POST api/users/otp/validation
+        [HttpPost("otp/validation")]
+        public async Task<IActionResult> ValidateOTP([FromBody] OTPValidationViewModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.SystemUserId) || string.IsNullOrWhiteSpace(model.OTP))
+                return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
 
+            try
+            {
+                TblOneTimePassword otpModel = new()
+                {
+                    SystemUserId = long.Parse(EncryptionHelper.Decrypt(model!.SystemUserId)),
+                    OTP = long.Parse(EncryptionHelper.Decrypt(model.OTP)),
+                };
+
+                bool isValid = await _accountGetTools.ValidateOTPAsync(otpModel);
+
+                if (isValid)
+                {
+
+                    var userInfo = await _accountGetTools.GetTblSystemUser(otpModel.SystemUserId);
+
+                    UserEncryptedPublicViewModel publicVM = new()
+                    {
+                        SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserId.ToString()),
+                        FirstNameEncrypted = userInfo!.FirstNameEncrypted!,
+                        LastNameEncrypted = userInfo.LastNameEncrypted!,
+                        EmailEncrypted = userInfo.EmailEncrypted!,
+                    };
+
+                    return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been verified"));
+                }
+                else
+                    return Ok(ApiResponse<object>.Ok(null, $"Invalid OTP"));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        #endregion
 
     }
 }

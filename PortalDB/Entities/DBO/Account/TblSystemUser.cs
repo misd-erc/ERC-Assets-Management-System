@@ -55,6 +55,11 @@ namespace PortalDB.Entities.DBO.Account
             set => EmailEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
+        [Column("SystemUserSystemRoleId")]
+        public long? SystemRoleId { get; set; }
+        [ForeignKey(nameof(SystemRoleId))]
+        public virtual TblSystemRole SystemRole { get; set; } = null!;
+
         [Column("SystemUserIsActive")]
         public bool IsActive { get; set; } = true;
 

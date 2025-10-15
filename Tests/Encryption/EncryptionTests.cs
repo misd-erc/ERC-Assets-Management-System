@@ -26,10 +26,12 @@ namespace Tests.Encryption
         public void Encrypt_Should_Not_Return_PlainText()
         {
             // Arrange
-            var plainText = "ams@admin.aipinas.com";
+            var plainText = "17";
+            var plainText2 = "20540";
 
             // Act
             var encrypted = EncryptionHelper.Encrypt(plainText);
+            var encrypted2 = EncryptionHelper.Encrypt(plainText2);
 
             // Assert
             Assert.NotEqual(plainText, encrypted);
