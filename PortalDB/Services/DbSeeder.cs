@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PortalDB.Entities.DBO.Office.Division;
+using PortalDB.Seeds.DBO.Account;
 using PortalDB.Seeds.DBO.Office;
 using PortalDB.Seeds.DBO.Office.Division;
 
@@ -19,9 +20,13 @@ namespace PortalDB.Services
 
             try
             {
+                #region Account
+                //TblSystemRoleSeeder.Seed(context);
+                TblSystemUserStatusSeeder.Seed(context);
+                #endregion
 
                 #region Office
-                TblSystemRoleSeeder.Seed(context);
+                TblOfficeSeeder.Seed(context);
                 #region Division
                 TblDivisionSeeder.Seed(context);
                 #endregion

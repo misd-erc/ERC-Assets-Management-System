@@ -25,7 +25,7 @@ namespace PortalDB.Entities.DBO.Office
         #endregion
 
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
         [Column("OfficeId")]
         public long Id { get; set; }
 

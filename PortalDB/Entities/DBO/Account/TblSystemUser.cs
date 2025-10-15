@@ -58,6 +58,9 @@ namespace PortalDB.Entities.DBO.Account
         [Column("SystemUserSystemRoleId")]
         public long? SystemRoleId { get; set; }
 
+        [Column("SystemUserStatus")]
+        public long StatusId { get; set; }
+
         [Column("SystemUserIsActive")]
         public bool IsActive { get; set; } = true;
 

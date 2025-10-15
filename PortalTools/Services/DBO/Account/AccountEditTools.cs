@@ -21,7 +21,7 @@ namespace PortalTools.Services.DBO.Account
         /// Updates an existing TblSystemUser.
         /// Returns true if update succeeds, false otherwise. This will be save first just to get the Id.
         /// </summary>
-        public async Task<long> EditTblSystemUserAsync(TblSystemUser model, PortalDbContext context)
+        public async Task<long> EditTblSystemUserAsync(TblSystemUser model, PortalDbContext context, bool isLogin = true)
         {
             if (model == null)
                 return 0;
@@ -31,6 +31,9 @@ namespace PortalTools.Services.DBO.Account
 
                 bool isInsert = model.EntraId == 0;
                 TblSystemUser? existingUser = null;
+
+                if (isLogin)
+                    model.LastLoginAt = DateTime.UtcNow;
 
                 if (isInsert)
                 {
@@ -48,6 +51,9 @@ namespace PortalTools.Services.DBO.Account
                     existingUser.Email = model.Email ?? existingUser.Email;
                     existingUser.IsActive = model.IsActive;
                     model.Id = existingUser.Id;
+
+                    //await context.TblSystemUsers.ExecuteUpdateAsync();
+
                 }
 
                 AuditTrailTool.TrackChanges(context, isInsert ? null! : existingUser!, model, nameof(TblSystemUser), model.Id, isInsert ? "Insert" : "Update");

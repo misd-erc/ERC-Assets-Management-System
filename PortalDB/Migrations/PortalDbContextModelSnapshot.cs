@@ -54,36 +54,6 @@ namespace PortalDB.Migrations
                     b.ToTable("tblOneTimePasswords", "dbo");
                 });
 
-            modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemRole", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("SystemRoleId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SystemRoleCreatedAt");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SystemRoleDescription");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("SystemRoleIsActive");
-
-                    b.Property<string>("RoleName")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SystemRoleName");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblSystemRoles", "dbo");
-                });
-
             modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemUser", b =>
                 {
                     b.Property<long>("Id")
@@ -121,25 +91,43 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SystemUserLastName");
 
+                    b.Property<long>("StatusId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemUserStatus");
+
                     b.Property<long?>("SystemRoleId")
                         .HasColumnType("bigint")
                         .HasColumnName("SystemUserSystemRoleId");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SystemRoleId");
-
                     b.ToTable("tblSystemUsers", "dbo");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemUserStatus", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemUserStatusId");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SystemUserCreatedAt");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SystemUserStatusName");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblSystemUserStatuses", "dbo");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.DBO.Office.Division.TblDivision", b =>
                 {
                     b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bigint")
                         .HasColumnName("DivisionId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Acronym")
                         .HasMaxLength(15)
@@ -165,11 +153,8 @@ namespace PortalDB.Migrations
             modelBuilder.Entity("PortalDB.Entities.DBO.Office.TblOffice", b =>
                 {
                     b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("bigint")
                         .HasColumnName("OfficeId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Acronym")
                         .HasMaxLength(15)
@@ -268,15 +253,6 @@ namespace PortalDB.Migrations
                     b.Navigation("SystemUser");
                 });
 
-            modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemUser", b =>
-                {
-                    b.HasOne("PortalDB.Entities.DBO.Account.TblSystemRole", "SystemRole")
-                        .WithMany("SystemUser")
-                        .HasForeignKey("SystemRoleId");
-
-                    b.Navigation("SystemRole");
-                });
-
             modelBuilder.Entity("PortalDB.Entities.DBO.Office.Division.TblDivision", b =>
                 {
                     b.HasOne("PortalDB.Entities.DBO.Office.TblOffice", "Office")
@@ -286,11 +262,6 @@ namespace PortalDB.Migrations
                         .IsRequired();
 
                     b.Navigation("Office");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemRole", b =>
-                {
-                    b.Navigation("SystemUser");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemUser", b =>

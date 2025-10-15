@@ -36,7 +36,7 @@ namespace PortalDB.Entities.DBO.Office.Division
         #endregion
 
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
         [Column("DivisionId")]
         public long Id { get; set; }
 
