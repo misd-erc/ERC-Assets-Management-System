@@ -57,8 +57,6 @@ namespace PortalDB.Entities.DBO.Account
 
         [Column("SystemUserSystemRoleId")]
         public long? SystemRoleId { get; set; }
-        [ForeignKey(nameof(SystemRoleId))]
-        public virtual TblSystemRole SystemRole { get; set; } = null!;
 
         [Column("SystemUserIsActive")]
         public bool IsActive { get; set; } = true;

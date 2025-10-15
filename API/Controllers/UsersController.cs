@@ -47,7 +47,7 @@ namespace API.Controllers
         [HttpPost("validation")]
         public async Task<IActionResult> ValidateUser([FromBody] UserValidationViewModel model)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.EntraId) || string.IsNullOrWhiteSpace(model.Email))
+            if (model == null || string.IsNullOrWhiteSpace(model.EntraIdEncrypted) || string.IsNullOrWhiteSpace(model.EmailEncrypted))
                 return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
 
             try
@@ -59,10 +59,10 @@ namespace API.Controllers
 
                 TblSystemUser user = new()
                 {
-                    EntraId = long.Parse(EncryptionHelper.Decrypt(model.EntraId)),
-                    FirstName = EncryptionHelper.Decrypt(model.FirstName),
-                    LastName = EncryptionHelper.Decrypt(model.LastName),
-                    Email = EncryptionHelper.Decrypt(model.Email)
+                    EntraId = long.Parse(EncryptionHelper.Decrypt(model.EntraIdEncrypted)),
+                    FirstName = EncryptionHelper.Decrypt(model.FirstNameEncrypted),
+                    LastName = EncryptionHelper.Decrypt(model.LastNameEncrypted),
+                    Email = EncryptionHelper.Decrypt(model.EmailEncrypted)
                 };
 
                 long systemUserId = await _accountEditTools.EditTblSystemUserAsync(user, context);

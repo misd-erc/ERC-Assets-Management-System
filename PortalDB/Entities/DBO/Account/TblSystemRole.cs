@@ -28,9 +28,5 @@ namespace PortalDB.Entities.DBO.Account
         [Column("SystemRoleCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        #region Foreign Key Collection
-        public virtual ICollection<TblSystemUser> SystemUser { get; set; } = new List<TblSystemUser>();
-        #endregion
-
     }
 }

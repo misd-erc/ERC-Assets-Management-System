@@ -5,9 +5,9 @@ namespace PortalCommon.ViewModels.Account
 {
     public class UserValidationViewModel
     {
-        public string EntraId { get; set; } = string.Empty;
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
+        public string EntraIdEncrypted { get; set; } = string.Empty;
+        public string FirstNameEncrypted { get; set; } = string.Empty;
+        public string LastNameEncrypted { get; set; } = string.Empty;
+        public string EmailEncrypted { get; set; } = string.Empty;
     }
 }
