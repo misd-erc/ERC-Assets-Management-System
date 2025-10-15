@@ -122,15 +122,15 @@ namespace API.Controllers
         [HttpPost("otp/validation")]
         public async Task<IActionResult> ValidateOTP([FromBody] OTPValidationViewModel model)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.SystemUserId) || string.IsNullOrWhiteSpace(model.OTP))
+            if (model == null || string.IsNullOrWhiteSpace(model.SystemUserIdEncrypted) || string.IsNullOrWhiteSpace(model.OTPEncrypted))
                 return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
 
             try
             {
                 TblOneTimePassword otpModel = new()
                 {
-                    SystemUserId = long.Parse(EncryptionHelper.Decrypt(model!.SystemUserId)),
-                    OTP = long.Parse(EncryptionHelper.Decrypt(model.OTP)),
+                    SystemUserId = long.Parse(EncryptionHelper.Decrypt(model!.SystemUserIdEncrypted)),
+                    OTP = long.Parse(EncryptionHelper.Decrypt(model.OTPEncrypted)),
                 };
 
                 bool isValid = await _accountGetTools.ValidateOTPAsync(otpModel);
@@ -142,7 +142,7 @@ namespace API.Controllers
 
                     UserEncryptedPublicViewModel publicVM = new()
                     {
-                        SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserId.ToString()),
+                        SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted),
                         FirstNameEncrypted = userInfo!.FirstNameEncrypted!,
                         LastNameEncrypted = userInfo.LastNameEncrypted!,
                         EmailEncrypted = userInfo.EmailEncrypted!,

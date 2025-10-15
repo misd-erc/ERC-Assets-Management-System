@@ -73,6 +73,7 @@ namespace PortalDB.Entities.DBO.Account
         #region Foreign Key Collection
         //public virtual ICollection<TblAuditTrail> AuditTrail { get; set; } = new List<TblAuditTrail>();
         public virtual ICollection<TblOneTimePassword> OneTimePassword { get; set; } = new List<TblOneTimePassword>();
+        public virtual ICollection<TblSessionToken> TblSessionToken { get; set; } = new List<TblSessionToken>();
         #endregion
 
     }

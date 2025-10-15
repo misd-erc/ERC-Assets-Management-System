@@ -8,7 +8,7 @@ namespace PortalCommon.ViewModels.OTP
 {
     public class OTPValidationViewModel
     {
-        public string OTP { get; set; } = string.Empty;
-        public string SystemUserId { get; set; } = string.Empty;
+        public string OTPEncrypted { get; set; } = string.Empty;
+        public string SystemUserIdEncrypted { get; set; } = string.Empty;
     }
 }

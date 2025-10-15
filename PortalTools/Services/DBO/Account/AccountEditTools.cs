@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PortalCommon.Utilities;
+using PortalDB.Entities.DBO.Account;
+using PortalDB.Entities.LOG.AuditTrail;
 using PortalDB.Services;
+using PortalTools.Utilities;
 using System;
 using System.Linq;
 using System.Text.Json;
-using PortalCommon.Utilities;
-using PortalDB.Entities.LOG.AuditTrail;
-using PortalDB.Entities.DBO.Account;
 
 namespace PortalTools.Services.DBO.Account
 {
@@ -52,7 +53,12 @@ namespace PortalTools.Services.DBO.Account
                     existingUser.IsActive = model.IsActive;
                     model.Id = existingUser.Id;
 
-                    //await context.TblSystemUsers.ExecuteUpdateAsync();
+                    if(isLogin)
+                        await context.TblSystemUsers.Where(u => u.Id == model.Id)
+                            .ExecuteUpdateAsync(u => u
+                                .SetProperty(x => x.FirstNameEncrypted, model.FirstNameEncrypted)
+                                .SetProperty(x => x.LastNameEncrypted, model.LastNameEncrypted)
+                                .SetProperty(x => x.LastLoginAt, model.LastLoginAt));
 
                 }
 

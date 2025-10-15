@@ -18,6 +18,7 @@ namespace PortalDB.Services
         public DbSet<TblSystemUser> TblSystemUsers { get; set; }
         public DbSet<TblOneTimePassword> TblOneTimePasswords { get; set; }
         public DbSet<TblSystemUserStatus> TblSystemUserStatuses { get; set; }
+        public DbSet<TblSessionToken> TblSessionTokens { get; set; }
         #endregion
 
         #region Office

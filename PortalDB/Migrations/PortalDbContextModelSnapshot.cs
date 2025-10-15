@@ -54,6 +54,38 @@ namespace PortalDB.Migrations
                     b.ToTable("tblOneTimePasswords", "dbo");
                 });
 
+            modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSessionToken", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("SessionTokenId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SessionTokenCreatedAt");
+
+                    b.Property<string>("Key")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SessionTokenKey");
+
+                    b.Property<long>("SystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemUserId");
+
+                    b.Property<DateTime?>("ValidUntil")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SessionTokenValidUntil");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SystemUserId");
+
+                    b.ToTable("tblSessionTokens", "dbo");
+                });
+
             modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemUser", b =>
                 {
                     b.Property<long>("Id")
@@ -253,6 +285,17 @@ namespace PortalDB.Migrations
                     b.Navigation("SystemUser");
                 });
 
+            modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSessionToken", b =>
+                {
+                    b.HasOne("PortalDB.Entities.DBO.Account.TblSystemUser", "SystemUser")
+                        .WithMany("TblSessionToken")
+                        .HasForeignKey("SystemUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SystemUser");
+                });
+
             modelBuilder.Entity("PortalDB.Entities.DBO.Office.Division.TblDivision", b =>
                 {
                     b.HasOne("PortalDB.Entities.DBO.Office.TblOffice", "Office")
@@ -267,6 +310,8 @@ namespace PortalDB.Migrations
             modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblSystemUser", b =>
                 {
                     b.Navigation("OneTimePassword");
+
+                    b.Navigation("TblSessionToken");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.DBO.Office.TblOffice", b =>
