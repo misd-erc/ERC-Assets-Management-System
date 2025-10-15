@@ -6,9 +6,9 @@ using PortalCommon.Responses;
 using PortalCommon.Utilities;
 using PortalCommon.ViewModels.Account;
 using PortalCommon.ViewModels.OTP;
+using PortalCommon.ViewModels.Session;
 using PortalCommon.ViewModels.SMTP;
 using PortalDB.Entities.DBO.Account;
-using PortalCommon.ViewModels.Account;
 using PortalDB.Services;
 using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
@@ -137,8 +137,20 @@ namespace API.Controllers
 
                 if (isValid)
                 {
+                    await using var context = new PortalDbContext(_options);
+                    await using var transaction = await context.Database.BeginTransactionAsync();
 
                     var userInfo = await _accountGetTools.GetTblSystemUser(otpModel.SystemUserId);
+
+                    TblSessionToken sessionToken = new()
+                    {
+                        SystemUserId = otpModel.SystemUserId,
+                        Key = EncryptionHelper.Encrypt(DateTime.UtcNow.ToString()),
+                        ValidUntil = DateTime.UtcNow.AddDays(1),
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    await _accountEditTools.AddTblSessionTokenAsync(sessionToken, context);
 
                     UserEncryptedPublicViewModel publicVM = new()
                     {
@@ -146,12 +158,62 @@ namespace API.Controllers
                         FirstNameEncrypted = userInfo!.FirstNameEncrypted!,
                         LastNameEncrypted = userInfo.LastNameEncrypted!,
                         EmailEncrypted = userInfo.EmailEncrypted!,
+                        ExpiryTokenEncrypted = EncryptionHelper.Encrypt(sessionToken.Key)
+                    };
+
+                    await context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been verified"));
+
+                }
+                else
+                    return Ok(ApiResponse<object>.ValidationFailed($"Invalid OTP"));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // POST api/users/expiry-token/validation
+        [HttpPost("expiry-token/validation")]
+        public async Task<IActionResult> ValidateSessionToken([FromBody] SessionTokenValidationViewModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.KeyEncrypted) || string.IsNullOrWhiteSpace(model.SystemUserIdEncrypted))
+                return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
+
+            try
+            {
+                TblSessionToken sessionTokenModel = new()
+                {
+                    Key = EncryptionHelper.Decrypt(model!.KeyEncrypted),
+                    SystemUserId = long.Parse(EncryptionHelper.Decrypt(model.SystemUserIdEncrypted)),
+                };
+
+                bool isValid = await _accountGetTools.ValidateTokenSessionAsync(sessionTokenModel);
+
+                if (isValid)
+                {
+
+                    var userInfo = await _accountGetTools.GetTblSystemUser(sessionTokenModel.SystemUserId);
+
+                    UserEncryptedPublicViewModel publicVM = new()
+                    {
+                        SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted),
+                        FirstNameEncrypted = userInfo!.FirstNameEncrypted!,
+                        LastNameEncrypted = userInfo.LastNameEncrypted!,
+                        EmailEncrypted = userInfo.EmailEncrypted!,
+                        ExpiryTokenEncrypted = model.KeyEncrypted
                     };
 
                     return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been verified"));
+
                 }
                 else
-                    return Ok(ApiResponse<object>.Ok(null, $"Invalid OTP"));
+                    return Ok(ApiResponse<object>.ValidationFailed($"Session token expired"));
 
             }
             catch (Exception ex)

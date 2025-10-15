@@ -12,5 +12,6 @@ namespace PortalCommon.ViewModels.Account
         public string FirstNameEncrypted { get; set; } = string.Empty;
         public string LastNameEncrypted { get; set; } = string.Empty;
         public string EmailEncrypted { get; set; } = string.Empty;
+        public string ExpiryTokenEncrypted { get; set; } = string.Empty;
     }
 }

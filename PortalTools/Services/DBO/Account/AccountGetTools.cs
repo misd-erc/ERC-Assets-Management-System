@@ -32,9 +32,22 @@ namespace PortalTools.Services.DBO.Account
         {
             bool isExisting = await _context.TblOneTimePasswords
                 .AnyAsync(x => x.SystemUserId == model.SystemUserId 
-                    && x.OTPEncrypted == model.OTPEncrypted);
+                    && x.OTPEncrypted == model.OTPEncrypted
+                    && x.ValidUntil <= DateTime.UtcNow);
             
             if(isExisting)
+                return true;
+            return false;
+        }
+
+        public async Task<bool> ValidateTokenSessionAsync(TblSessionToken model)
+        {
+            bool isValid = await _context.TblSessionTokens
+                .AnyAsync(x => x.SystemUserId == model.SystemUserId
+                    && x.Key == model.Key
+                    && x.ValidUntil <= DateTime.UtcNow);
+
+            if (isValid)
                 return true;
             return false;
         }

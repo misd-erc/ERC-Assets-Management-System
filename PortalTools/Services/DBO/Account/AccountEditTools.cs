@@ -100,5 +100,32 @@ namespace PortalTools.Services.DBO.Account
             }
         }
 
+        /// <summary>
+        /// Creates session token for expiry session
+        /// Returns true if update succeeds, false otherwise.
+        /// </summary>
+        public async Task<bool> AddTblSessionTokenAsync(TblSessionToken model, PortalDbContext context)
+        {
+            if (model == null)
+                return false;
+
+            try
+            {
+
+                await context.TblSessionTokens.Where(x => x.SystemUserId == model.SystemUserId).ExecuteDeleteAsync();
+                await context.TblSessionTokens.AddAsync(model);
+                await context.SaveChangesAsync();
+                AuditTrailTool.TrackChanges(context, null!, model, nameof(TblOneTimePassword), model.SystemUserId, "Insert");
+
+                return true;
+
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(AccountEditTools));
+                throw;
+            }
+        }
+
     }
 }
