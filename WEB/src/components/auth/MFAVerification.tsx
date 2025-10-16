@@ -3,12 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Alert, AlertDescription } from '../ui/alert';
-import { Shield, Smartphone, ArrowLeft } from 'lucide-react';
+import { Shield, ArrowLeft, Mail } from 'lucide-react';
 import { useAuth } from '../../hooks';
 
 export function MFAVerification() {
   const [codes, setCodes] = useState(['', '', '', '', '', '']);
-  const [activeIndex, setActiveIndex] = useState(0);
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   const { verifyMFA, logout, isLoading, error } = useAuth();
@@ -21,14 +20,12 @@ export function MFAVerification() {
     setCodes(newCodes);
 
     if (value && index < 5) {
-      setActiveIndex(index + 1);
       inputsRef.current[index + 1]?.focus();
     }
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && !codes[index] && index > 0) {
-      setActiveIndex(index - 1);
       inputsRef.current[index - 1]?.focus();
     }
   };
@@ -38,7 +35,6 @@ export function MFAVerification() {
     const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
     const newCodes = pastedData.split('').concat(Array(6 - pastedData.length).fill(''));
     setCodes(newCodes);
-    setActiveIndex(Math.min(pastedData.length, 5));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,8 +48,6 @@ export function MFAVerification() {
     inputsRef.current[0]?.focus();
   }, []);
 
-
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md space-y-6">
@@ -63,18 +57,18 @@ export function MFAVerification() {
             <Shield className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-semibold text-slate-900">Two-Factor Authentication</h1>
-          <p className="text-slate-600">Enter the verification code to continue</p>
+          <p className="text-slate-600">Enter the verification code sent to your email</p>
         </div>
 
         {/* MFA Form */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <Smartphone className="w-5 h-5" />
-              <span>Verification Required</span>
+              <Mail className="w-5 h-5" />
+              <span>Email Verification Required</span>
             </CardTitle>
             <CardDescription>
-              Enter the 6-digit code from your authenticator app or SMS
+              Enter the 6-digit code sent to your registered email address
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -84,10 +78,10 @@ export function MFAVerification() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">Verification Code</label>
-                <div 
+                <div
                   className="flex justify-center space-x-2"
                   onPaste={handlePaste}
                 >
@@ -119,9 +113,9 @@ export function MFAVerification() {
                 {isLoading ? 'Verifying...' : 'Verify'}
               </Button>
 
-              <Button 
-                type="button" 
-                variant="ghost" 
+              <Button
+                type="button"
+                variant="ghost"
                 className="w-full"
                 onClick={logout}
               >
@@ -138,8 +132,9 @@ export function MFAVerification() {
             <div className="text-sm text-blue-800">
               <p className="mb-2">Having trouble?</p>
               <ul className="space-y-1 text-xs">
-                <li>• Make sure your device time is correct</li>
-                <li>• Contact IT support if you've lost access to your authenticator</li>
+                <li>• Check your email inbox and spam folder</li>
+                <li>• The code is valid for 3 minutes</li>
+                <li>• Contact IT support if you've lost access to your email</li>
                 <li>• Emergency access: Contact your system administrator</li>
               </ul>
             </div>

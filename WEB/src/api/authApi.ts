@@ -1,45 +1,97 @@
 import axiosInstance from '../lib/axios';
-import { User, LoginCredentials } from '../types';
+import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserEncryptedPublicViewModel, ApiResponse } from '../types';
+import { encrypt, decrypt } from '../utils/encryption';
 
-export const login = async (credentials: LoginCredentials): Promise<{ user: User; token: string; requireMFA: boolean }> => {
-  // const response = await axiosInstance.post('/auth/login', credentials);
-  // return response.data;
+export const validateUser = async (userInfo: { entraId: string; firstName: string; lastName: string; email: string }): Promise<{ systemUserIdEncrypted: string }> => {
+  const payload: UserValidationViewModel = {
+    EntraIdEncrypted: encrypt(userInfo.entraId),
+    FirstNameEncrypted: encrypt(userInfo.firstName),
+    LastNameEncrypted: encrypt(userInfo.lastName),
+    EmailEncrypted: encrypt(userInfo.email)
+  };
 
-  // Mock implementation
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
+  const response = await axiosInstance.post<ApiResponse<UserEncryptedPublicViewModel>>('/users/validation', payload);
+  const data = response.data.data;
 
-  if (credentials.username === 'admin' && credentials.password === 'admin123') {
-    return {
-      user: { id: '1', name: 'Admin User', email: 'admin@example.com', username: 'admin', role: 'System Administrator' },
-      token: 'mock-token-123456789',
-      requireMFA: true
-    };
-  } else if (credentials.username === 'user' && credentials.password === 'user') {
-    return {
-      user: { id: '2', name: 'Regular User', email: 'user@example.com', username: 'user', role: 'user' },
-      token: 'mock-token-123456789',
-      requireMFA: true
-    };
+  if (!data || !data.SystemUserIdEncrypted) {
+    throw new Error('Invalid response from server');
   }
-  throw new Error('Invalid credentials');
+
+  return { systemUserIdEncrypted: data.SystemUserIdEncrypted };
 };
 
-export const verifyMFA = async (code: string): Promise<{ token: string }> => {
-  // const response = await axiosInstance.post('/auth/verify-mfa', { code });
-  // return response.data;
+export const validateOTP = async (systemUserIdEncrypted: string, otp: string): Promise<{ user: User; token: string }> => {
+  const payload: OTPValidationViewModel = {
+    SystemUserIdEncrypted: systemUserIdEncrypted,
+    OTPEncrypted: encrypt(otp)
+  };
 
-  // Mock implementation
-  await new Promise(resolve => setTimeout(resolve, 500));
+  const response = await axiosInstance.post<ApiResponse<UserEncryptedPublicViewModel>>('/users/otp/validation', payload);
+  const data = response.data.data;
 
-  if (code === '123456') {
-    return { token: 'mock-token-123456789' };
+  if (!data) {
+    throw new Error('Invalid OTP');
   }
-  throw new Error('Invalid verification code');
+
+  // Decrypt user data
+  const systemUserId = decrypt(data.SystemUserIdEncrypted);
+  const firstName = data.FirstNameEncrypted ? decrypt(data.FirstNameEncrypted) : '';
+  const lastName = data.LastNameEncrypted ? decrypt(data.LastNameEncrypted) : '';
+  const email = data.EmailEncrypted ? decrypt(data.EmailEncrypted) : '';
+  const token = data.ExpiryTokenEncrypted ? decrypt(data.ExpiryTokenEncrypted) : '';
+
+  const user: User = {
+    id: systemUserId,
+    name: `${firstName} ${lastName}`,
+    email: email,
+    username: email, // Use email as username
+    role: 'user', // Default role, could be determined by backend later
+    entraId: '', // Will be set from MSAL
+    firstName: firstName,
+    lastName: lastName
+  };
+
+  return { user, token };
+};
+
+export const validateSessionToken = async (token: string, systemUserIdEncrypted: string): Promise<{ user: User; token: string }> => {
+  const payload: SessionTokenValidationViewModel = {
+    KeyEncrypted: encrypt(token),
+    SystemUserIdEncrypted: systemUserIdEncrypted
+  };
+
+  const response = await axiosInstance.post<ApiResponse<UserEncryptedPublicViewModel>>('/users/expiry-token/validation', payload);
+  const data = response.data.data;
+
+  if (!data) {
+    throw new Error('Session expired');
+  }
+
+  // Decrypt user data
+  const systemUserId = decrypt(data.SystemUserIdEncrypted);
+  const firstName = data.FirstNameEncrypted ? decrypt(data.FirstNameEncrypted) : '';
+  const lastName = data.LastNameEncrypted ? decrypt(data.LastNameEncrypted) : '';
+  const email = data.EmailEncrypted ? decrypt(data.EmailEncrypted) : '';
+  const newToken = data.ExpiryTokenEncrypted ? decrypt(data.ExpiryTokenEncrypted) : '';
+
+  const user: User = {
+    id: systemUserId,
+    name: `${firstName} ${lastName}`,
+    email: email,
+    username: email,
+    role: 'user',
+    entraId: '', // Will be set from MSAL
+    firstName: firstName,
+    lastName: lastName
+  };
+
+  return { user, token: newToken };
 };
 
 export const logout = async (): Promise<void> => {
-  // await axiosInstance.post('/auth/logout');
-
-  // Mock implementation
+  // Clear local storage
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('user');
+  localStorage.removeItem('systemUserIdEncrypted');
   return Promise.resolve();
 };
