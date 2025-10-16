@@ -5,7 +5,7 @@
 # Build results
 [Bb]in/
 [Oo]bj/
-[Ll]og/
+#[Ll]og/
 [Ll]ogs/
 [Tt]emp/
 [Tt]mp/
