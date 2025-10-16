@@ -1,58 +1,185 @@
 import { create } from 'zustand';
-import { User, AuthStore, LoginCredentials } from '../../types';
+import { User, AuthStore } from '../../types';
+import { validateUser, validateOTP, validateSessionToken, logout as apiLogout } from '../../api/authApi';
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
-  // Temporarily disabled localStorage loading to always show login on start
-  // const token = localStorage.getItem('authToken');
-  // const userStr = localStorage.getItem('user');
-  // const user = userStr ? JSON.parse(userStr) : null;
-  // const isAuthenticated = !!token && !!user;
-
+  // Initialize from localStorage
   isAuthenticated: false,
   user: null,
   token: null,
   requireMFA: false,
   loading: false,
   error: '',
+  systemUserIdEncrypted: undefined,
 
-  login: async ({ username, password }: LoginCredentials) => {
-    set({ loading: true, error: '' });
-    // Mock login delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  // Initialize auth state on app start
+  initialize: async () => {
+    const token = localStorage.getItem('authToken');
+    const userStr = localStorage.getItem('user');
+    const systemUserIdEncrypted = localStorage.getItem('systemUserIdEncrypted');
 
-    if (username === 'admin' && password === 'admin123') {
-      const user: User = { id: '1', name: 'Admin User', email: 'admin@example.com', username: 'admin', role: 'System Administrator' };
-      set({ isAuthenticated: true, user, requireMFA: true, loading: false });
-      localStorage.setItem('user', JSON.stringify(user));
-      return true;
-    } else if (username === 'user' && password === 'user') {
-      const user: User = { id: '2', name: 'Regular User', email: 'user@example.com', username: 'user', role: 'user' };
-      set({ isAuthenticated: true, user, requireMFA: true, loading: false });
-      localStorage.setItem('user', JSON.stringify(user));
-      return true;
+    if (token && userStr && systemUserIdEncrypted) {
+      try {
+        set({ loading: true, error: '' });
+        const user = JSON.parse(userStr);
+
+        // Validate session token with backend
+        const result = await validateSessionToken(token, systemUserIdEncrypted);
+
+        set({
+          isAuthenticated: true,
+          user: { ...user, ...result.user },
+          token: result.token,
+          requireMFA: false,
+          loading: false,
+          systemUserIdEncrypted
+        });
+
+        // Update stored token if refreshed
+        localStorage.setItem('authToken', result.token);
+      } catch (error) {
+        // Session invalid, clear storage
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('systemUserIdEncrypted');
+        set({
+          isAuthenticated: false,
+          user: null,
+          token: null,
+          requireMFA: false,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Session expired'
+        });
+      }
     }
-    set({ error: 'Invalid credentials', loading: false });
-    return false;
+  },
+
+  login: async (userInfo: { entraId: string; firstName: string; lastName: string; email: string }) => {
+    set({ loading: true, error: '' });
+
+    try {
+      const result = await validateUser(userInfo);
+
+      // Store encrypted system user ID
+      localStorage.setItem('systemUserIdEncrypted', result.systemUserIdEncrypted);
+
+      set({
+        requireMFA: true,
+        loading: false,
+        systemUserIdEncrypted: result.systemUserIdEncrypted,
+        user: {
+          id: '', // Will be set after OTP validation
+          name: `${userInfo.firstName} ${userInfo.lastName}`,
+          email: userInfo.email,
+          username: userInfo.email,
+          role: 'user',
+          entraId: userInfo.entraId,
+          firstName: userInfo.firstName,
+          lastName: userInfo.lastName
+        }
+      });
+
+      return true;
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Login failed',
+        loading: false
+      });
+      return false;
+    }
   },
 
   verifyMFA: async (code: string) => {
     set({ loading: true, error: '' });
-    // Mock verify delay
-    await new Promise(resolve => setTimeout(resolve, 500));
 
-    if (code === '123456') {
-      const token = 'mock-token-123456789';
-      set({ token, requireMFA: false, loading: false });
-      localStorage.setItem('authToken', token);
-      return true;
+    const { systemUserIdEncrypted } = get();
+    if (!systemUserIdEncrypted) {
+      set({ error: 'No system user ID available', loading: false });
+      return false;
     }
-    set({ error: 'Invalid verification code', loading: false });
-    return false;
+
+    try {
+      const result = await validateOTP(systemUserIdEncrypted, code);
+
+      // Update user with decrypted data
+      const updatedUser: User = {
+        ...result.user,
+        entraId: get().user?.entraId || '' // Preserve Entra ID from MSAL
+      };
+
+      set({
+        isAuthenticated: true,
+        user: updatedUser,
+        token: result.token,
+        requireMFA: false,
+        loading: false
+      });
+
+      // Store in localStorage
+      localStorage.setItem('authToken', result.token);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      return true;
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'OTP verification failed',
+        loading: false
+      });
+      return false;
+    }
+  },
+
+  validateSession: async () => {
+    const { token, systemUserIdEncrypted } = get();
+    if (!token || !systemUserIdEncrypted) {
+      return false;
+    }
+
+    try {
+      set({ loading: true, error: '' });
+      const result = await validateSessionToken(token, systemUserIdEncrypted);
+
+      const updatedUser: User = {
+        ...get().user!,
+        ...result.user
+      };
+
+      set({
+        isAuthenticated: true,
+        user: updatedUser,
+        token: result.token,
+        requireMFA: false,
+        loading: false
+      });
+
+      // Update stored token
+      localStorage.setItem('authToken', result.token);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+
+      return true;
+    } catch (error) {
+      set({
+        isAuthenticated: false,
+        user: null,
+        token: null,
+        requireMFA: false,
+        loading: false,
+        error: error instanceof Error ? error.message : 'Session validation failed'
+      });
+      return false;
+    }
   },
 
   logout: () => {
-    set({ isAuthenticated: false, user: null, token: null, requireMFA: false, loading: false, error: '' });
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
+    apiLogout();
+    set({
+      isAuthenticated: false,
+      user: null,
+      token: null,
+      requireMFA: false,
+      loading: false,
+      error: '',
+      systemUserIdEncrypted: undefined
+    });
   },
 }));
