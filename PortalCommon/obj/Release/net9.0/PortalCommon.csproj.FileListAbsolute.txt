@@ -1,0 +1,12 @@
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalCommon\bin\Release\net9.0\PortalCommon.deps.json
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalCommon\bin\Release\net9.0\PortalCommon.dll
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalCommon\bin\Release\net9.0\PortalCommon.pdb
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalCommon\obj\Release\net9.0\PortalCommon.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalCommon\obj\Release\net9.0\PortalCommon.AssemblyInfoInputs.cache
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalCommon\obj\Release\net9.0\PortalCommon.AssemblyInfo.cs
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalCommon\obj\Release\net9.0\PortalCommon.csproj.CoreCompileInputs.cache
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalCommon\obj\Release\net9.0\PortalCommon.sourcelink.json
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalCommon\obj\Release\net9.0\PortalCommon.dll
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalCommon\obj\Release\net9.0\refint\PortalCommon.dll
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalCommon\obj\Release\net9.0\PortalCommon.pdb
+C:\Users\Mark-ERC\Documents\IS\ERC-Assets-Management-System\PortalCommon\obj\Release\net9.0\ref\PortalCommon.dll

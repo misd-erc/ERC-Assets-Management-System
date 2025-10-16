@@ -1,0 +1,50 @@
+[
+  {
+    "ContainingType": "API.Controllers.UsersController",
+    "Method": "ValidateSessionToken",
+    "RelativePath": "api/Users/expiry-token/validation",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "PortalCommon.ViewModels.Session.SessionTokenValidationViewModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API.Controllers.UsersController",
+    "Method": "ValidateOTP",
+    "RelativePath": "api/Users/otp/validation",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "PortalCommon.ViewModels.OTP.OTPValidationViewModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "API.Controllers.UsersController",
+    "Method": "ValidateUser",
+    "RelativePath": "api/Users/validation",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "PortalCommon.ViewModels.Account.UserValidationViewModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]
