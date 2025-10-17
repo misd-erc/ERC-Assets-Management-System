@@ -30,7 +30,7 @@ namespace PortalTools.Services.DBO.Account
             try
             {
 
-                bool isInsert = model.EntraId == 0;
+                bool isInsert = model.Id == 0;
                 TblSystemUser? existingUser = null;
 
                 if (isLogin)
