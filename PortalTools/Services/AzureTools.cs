@@ -16,7 +16,7 @@ namespace PortalTools.Services
         public AzureTools()
         {
             _confidentialClientApp = ConfidentialClientApplicationBuilder.Create(EncryptionHelper.Decrypt(AzureConstants.ClientId))
-                .WithClientSecret(EncryptionHelper.Decrypt(AzureConstants.ClientSecret))
+                .WithClientSecret(EncryptionHelper.Decrypt(AzureConstants.ClientSecretValue))
                 .WithAuthority(new Uri($"{EncryptionHelper.Decrypt(AzureConstants.Authority)}/{EncryptionHelper.Decrypt(AzureConstants.TenantId)}"))
                 .Build();
 

@@ -40,13 +40,16 @@ builder.Services.AddScoped<AccountEditTools>();
 #region CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowHttps3000",
+    options.AddPolicy("AllowFrontendClient",
         policy =>
         {
-            policy.WithOrigins("https://localhost:3000")
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
+            policy.WithOrigins(
+                "https://localhost:3000",
+                "https://ams-dev.erc.ph"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
         });
 });
 #endregion
@@ -80,7 +83,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowHttps3000");
+app.UseCors("AllowFrontendClient");
 
 app.UseAuthorization();
 
