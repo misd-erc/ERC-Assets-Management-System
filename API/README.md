@@ -17,6 +17,7 @@
 - Follow encrypted get/set form for contents that needs to be encrypted (e.g. EncryptedPassword, EncryptedApiKey).
 - All should be nullable (except primary key) even though we will make it as required to prevent future possible issues.
 
+
 # resetting__gitignore
 - `git add .`
 - `git commit -m "Save work before reapplying .gitignore"`

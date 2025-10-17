@@ -8,9 +8,7 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -18,6 +16,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<PortalDbContext>(options =>
     options.UseSqlServer(DatabaseHelper.ConnectionString()));
 #endregion
+
 #region Seeder Command
 // Check if we’re running in “seed mode”
 if (args.Contains("seed", StringComparer.OrdinalIgnoreCase))
@@ -32,12 +31,28 @@ if (args.Contains("seed", StringComparer.OrdinalIgnoreCase))
     return; // Exit the app after seeding
 }
 #endregion
+
 #region Services
 builder.Services.AddScoped<AccountGetTools>();
 builder.Services.AddScoped<AccountEditTools>();
 #endregion
-/*#region JWT
-builder.Services.AddAuthentication("Bearer")
+
+#region CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowHttps3000",
+        policy =>
+        {
+            policy.WithOrigins("https://localhost:3000") // ?? HTTPS instead of HTTP
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
+});
+#endregion
+
+#region JWT
+/*builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
@@ -51,8 +66,8 @@ builder.Services.AddAuthentication("Bearer")
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
         };
-    });
-#endregion*/
+    });*/
+#endregion
 
 var app = builder.Build();
 
@@ -64,6 +79,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowHttps3000");
 
 app.UseAuthorization();
 
