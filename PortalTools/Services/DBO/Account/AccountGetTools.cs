@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Services;
+using PortalTools.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,15 +20,17 @@ namespace PortalTools.Services.DBO.Account
             _context = context; 
         }
 
-        public IEnumerable<TblSystemUser> GetTblSystemUsers() => _context.TblSystemUsers;
+        public IQueryable<TblSystemUser> GetTblSystemUsers() => _context.TblSystemUsers;
         public async Task<TblSystemUser?> GetTblSystemUser(long id) => await _context.TblSystemUsers.Where(x => x.Id == id).FirstOrDefaultAsync();
-        public async Task<TblSystemUser?> GetTblSystemUserByEntraId(long entraId) => await _context.TblSystemUsers.Where(x => x.EntraId == entraId).FirstOrDefaultAsync();
-        public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAndEmail(TblSystemUser model)
+        public async Task<TblSystemUser?> GetTblSystemUserByEntraId(string entraIdEncrypted) => await _context.TblSystemUsers.Where(x => x.EntraIdEncrypted == entraIdEncrypted).FirstOrDefaultAsync();
+        public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAndEmail(long? entraId, string email)
         {
-            return await _context.TblSystemUsers.Where(x => x.EntraId == model.EntraId 
-                && x.Email == model.Email).FirstOrDefaultAsync();
-        }
+            var encryptedEntraId = EncryptionHelper.Encrypt(entraId.ToString());
+            var encryptedEmail = EncryptionHelper.Encrypt(email);
 
+            return await _context.TblSystemUsers.Where(x => x.EntraIdEncrypted == encryptedEntraId
+                && x.EmailEncrypted == encryptedEmail).FirstOrDefaultAsync();
+        }
         public async Task<bool> ValidateOTPAsync(TblOneTimePassword model)
         {
             bool isExisting = await _context.TblOneTimePasswords
@@ -39,7 +42,6 @@ namespace PortalTools.Services.DBO.Account
                 return true;
             return false;
         }
-
         public async Task<bool> ValidateTokenSessionAsync(TblSessionToken model)
         {
             bool isValid = await _context.TblSessionTokens

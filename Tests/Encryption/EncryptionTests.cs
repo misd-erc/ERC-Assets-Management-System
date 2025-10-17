@@ -10,7 +10,7 @@ namespace Tests.Encryption
         public void Encrypt_And_Decrypt_Should_Return_Original_Text()
         {
             // Arrange
-            var plainText = "MySecretPassword123!";
+            var plainText = "WoUe/OCHXrNOOK8yryE0LA==";
 
             // Act
             var encrypted = EncryptionHelper.Encrypt(plainText);
@@ -50,7 +50,7 @@ namespace Tests.Encryption
         public void Decrypt_Should_Throw_On_Invalid_Input()
         {
             // Arrange
-            var invalidCipher = "InvalidBase64@@@";
+            var invalidCipher = "WoUe/OCHXrNOOK8yryE0LA==";
 
             // Act & Assert
             Assert.ThrowsAny<System.Exception>(() => EncryptionHelper.Decrypt(invalidCipher));

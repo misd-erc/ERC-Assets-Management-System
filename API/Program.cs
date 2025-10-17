@@ -4,6 +4,7 @@ using PortalDB.Services;
 using PortalTools.Services.DBO.Account;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using PortalTools.Services.LOG;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,7 @@ if (args.Contains("seed", StringComparer.OrdinalIgnoreCase))
 #region Services
 builder.Services.AddScoped<AccountGetTools>();
 builder.Services.AddScoped<AccountEditTools>();
+builder.Services.AddScoped<LogGetTools>();
 #endregion
 
 #region CORS

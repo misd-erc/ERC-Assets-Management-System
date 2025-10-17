@@ -19,7 +19,7 @@ namespace Tests.Azure
             // Arrange + Act
             var tenantId = EncryptionHelper.Decrypt(AzureConstants.TenantId);
             var clientId = EncryptionHelper.Decrypt(AzureConstants.ClientId);
-            var clientSecret = EncryptionHelper.Decrypt(AzureConstants.ClientSecret);
+            var clientSecret = EncryptionHelper.Decrypt(AzureConstants.ClientSecretValue);
             var authority = EncryptionHelper.Decrypt(AzureConstants.Authority);
             var graphScope = EncryptionHelper.Decrypt(AzureConstants.GraphScope);
 
@@ -41,7 +41,7 @@ namespace Tests.Azure
         {
             // Arrange
             var clientId = EncryptionHelper.Decrypt(AzureConstants.ClientId);
-            var clientSecret = EncryptionHelper.Decrypt(AzureConstants.ClientSecret);
+            var clientSecret = EncryptionHelper.Decrypt(AzureConstants.ClientSecretValue);
             var authority = $"{EncryptionHelper.Decrypt(AzureConstants.Authority)}/{EncryptionHelper.Decrypt(AzureConstants.TenantId)}";
             var graphScope = EncryptionHelper.Decrypt(AzureConstants.GraphScope);
 

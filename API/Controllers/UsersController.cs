@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalCommon.Enums;
+using PortalCommon.ResponseModels.Account;
 using PortalCommon.Responses;
 using PortalCommon.Utilities;
 using PortalCommon.ViewModels.Account;
@@ -57,6 +58,8 @@ namespace API.Controllers
                 await using var context = new PortalDbContext(_options);
                 await using var transaction = await context.Database.BeginTransactionAsync();
 
+
+
                 TblSystemUser user = new()
                 {
                     EntraId = long.Parse(EncryptionHelper.Decrypt(model.EntraIdEncrypted)),
@@ -64,6 +67,8 @@ namespace API.Controllers
                     LastName = EncryptionHelper.Decrypt(model.LastNameEncrypted),
                     Email = EncryptionHelper.Decrypt(model.EmailEncrypted)
                 };
+
+                user.Id = (await _accountGetTools.GetTblSystemUserByEntraIdAndEmail(user.EntraId, user.Email))?.Id ?? 0;
 
                 long systemUserId = await _accountEditTools.EditTblSystemUserAsync(user, context);
 
@@ -102,7 +107,7 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicViewModel publicVM = new()
+                UserEncryptedPublicResponseModel publicVM = new()
                 {
                     SystemUserIdEncrypted = EncryptionHelper.Encrypt(systemUserId.ToString()),
                 };
@@ -170,7 +175,7 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicViewModel publicVM = new()
+                UserEncryptedPublicResponseModel publicVM = new()
                 {
                     SystemUserIdEncrypted = EncryptionHelper.Encrypt(user.Id.ToString()),
                 };
@@ -219,7 +224,7 @@ namespace API.Controllers
 
                     await _accountEditTools.AddTblSessionTokenAsync(sessionToken, context);
 
-                    UserEncryptedPublicViewModel publicVM = new()
+                    UserEncryptedPublicResponseModel publicVM = new()
                     {
                         SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted),
                         FirstNameEncrypted = userInfo!.FirstNameEncrypted!,
@@ -267,7 +272,7 @@ namespace API.Controllers
 
                     var userInfo = await _accountGetTools.GetTblSystemUser(sessionTokenModel.SystemUserId);
 
-                    UserEncryptedPublicViewModel publicVM = new()
+                    UserEncryptedPublicResponseModel publicVM = new()
                     {
                         SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted),
                         FirstNameEncrypted = userInfo!.FirstNameEncrypted!,

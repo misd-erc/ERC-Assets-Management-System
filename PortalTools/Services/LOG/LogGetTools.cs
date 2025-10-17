@@ -19,7 +19,7 @@ namespace PortalTools.Services.LOG
             _context = context;
         }
 
-        public IEnumerable<TblAuditTrail> GeetTblAuditTrails() => _context.TblAuditTrails;
+        public IEnumerable<TblAuditTrail> GetTblAuditTrails() => _context.TblAuditTrails;
 
     }
 }

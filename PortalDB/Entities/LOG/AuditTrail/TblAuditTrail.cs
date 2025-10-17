@@ -39,6 +39,6 @@ namespace PortalDB.Entities.LOG.AuditTrail
         //public virtual TblSystemUser SystemUser { get; set; } = null!;
 
         [Column("AuditTrailChangedAt")]
-        public DateTime? ChangedAt { get; set; } = DateTime.UtcNow;
+        public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
     }
 }

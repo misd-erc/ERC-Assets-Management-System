@@ -8,7 +8,6 @@ namespace PortalCommon.ViewModels.Session
 {
     public class SessionTokenValidationViewModel
     {
-
         public string SystemUserIdEncrypted { get; set; } = string.Empty;
         public string KeyEncrypted { get; set; } = string.Empty;
     }

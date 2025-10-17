@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalCommon.ViewModels.Account
+namespace PortalCommon.ResponseModels.Account
 {
-    public class UserEncryptedPublicViewModel
+    public class UserEncryptedPublicResponseModel
     {
         public string SystemUserIdEncrypted { get; set; } = string.Empty;
         public string FirstNameEncrypted { get; set; } = string.Empty;

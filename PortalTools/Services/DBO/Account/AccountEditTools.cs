@@ -13,9 +13,11 @@ namespace PortalTools.Services.DBO.Account
     public class AccountEditTools
     {
         private readonly DbContextOptions<PortalDbContext> _options;
-        public AccountEditTools(DbContextOptions<PortalDbContext> options)
+        private readonly AccountGetTools _accountGetTools;
+        public AccountEditTools(DbContextOptions<PortalDbContext> options, AccountGetTools accountGetTools)
         {
             _options = options;
+            _accountGetTools = accountGetTools;
         }
 
         /// <summary>
@@ -31,6 +33,7 @@ namespace PortalTools.Services.DBO.Account
             {
 
                 bool isInsert = model.Id == 0;
+
                 TblSystemUser? existingUser = null;
 
                 if (isLogin)
@@ -43,7 +46,8 @@ namespace PortalTools.Services.DBO.Account
                 }
                 else
                 {
-                    existingUser = await context.TblSystemUsers.FirstOrDefaultAsync(u => u.EntraIdEncrypted == model.EntraIdEncrypted && u.EmailEncrypted == model.EmailEncrypted);
+                    existingUser = await _accountGetTools.GetTblSystemUserByEntraIdAndEmail(model.EntraId, model.Email);
+
                     if (existingUser == null)
                         return 0;
 
