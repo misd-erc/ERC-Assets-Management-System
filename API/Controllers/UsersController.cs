@@ -120,9 +120,9 @@ namespace API.Controllers
 
         // POST api/users/otp/re-send
         [HttpPost("otp/re-send")]
-        public async Task<IActionResult> ResendOTP([FromBody]string systemUserIdEncrypted)
+        public async Task<IActionResult> ResendOTP([FromBody] ResendOTPViewModel model)
         {
-            if (string.IsNullOrWhiteSpace(systemUserIdEncrypted))
+            if (string.IsNullOrWhiteSpace(model.SystemUserIdEncrypted))
                 return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
 
             try
@@ -132,7 +132,7 @@ namespace API.Controllers
                 await using var context = new PortalDbContext(_options);
                 await using var transaction = await context.Database.BeginTransactionAsync();
 
-                TblSystemUser? user = await _accountGetTools.GetTblSystemUser(long.Parse(EncryptionHelper.Decrypt(systemUserIdEncrypted)));
+                TblSystemUser? user = await _accountGetTools.GetTblSystemUser(long.Parse(EncryptionHelper.Decrypt(model.SystemUserIdEncrypted)));
 
                 if (user != null)
                 {
