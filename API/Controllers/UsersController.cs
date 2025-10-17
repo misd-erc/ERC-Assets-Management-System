@@ -118,6 +118,73 @@ namespace API.Controllers
 
         }
 
+        // POST api/users/otp/re-send
+        [HttpPost("otp/re-send")]
+        public async Task<IActionResult> ResendOTP([FromBody]string systemUserId)
+        {
+            if (string.IsNullOrWhiteSpace(systemUserId))
+                return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
+
+            try
+            {
+
+                #region Transaction
+                await using var context = new PortalDbContext(_options);
+                await using var transaction = await context.Database.BeginTransactionAsync();
+
+                TblSystemUser? user = await _accountGetTools.GetTblSystemUser(long.Parse(EncryptionHelper.Decrypt(systemUserId)));
+
+                if (user != null)
+                {
+                    #region OTP Generation
+                    var (otp, expiry) = OTPHelper.GenerateTimedOTP(user.Id.ToString(), 3);
+
+                    TblOneTimePassword otpGenerated = new()
+                    {
+                        SystemUserId = user.Id,
+                        OTP = otp,
+                        ValidUntil = expiry
+                    };
+                    #endregion
+                    #region OTP Insert
+                    await _accountEditTools.AddTblOneTimePasswordAsync(otpGenerated, context);
+                    #endregion
+                    #region OTP Email Sender
+                    EmailViewModel newEmail = new()
+                    {
+                        Email = user.Email,
+                        Name = $"{user.FirstName} {user.LastName}",
+                        Subject = "Your AMS One-Time Password (OTP)",
+                        Body = $"Hello {user.FirstName},<br/><br/>Your One-Time Password (OTP) is: <strong>{otp}</strong><br/>This OTP is valid for 3 minutes.<br/><br/>If you did not request this, please contact support immediately.<br/><br/>Best regards,<br/>AMS Team"
+                    };
+
+                    //await EmailHelper.SendEmailAsync(newEmail);
+
+                    #endregion
+                }
+                else {
+                    throw new Exception("SystemUserId was not returned");
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                #endregion
+
+                UserEncryptedPublicViewModel publicVM = new()
+                {
+                    SystemUserIdEncrypted = EncryptionHelper.Encrypt(systemUserId.ToString()),
+                };
+
+                return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been sent to email address"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+
+        }
+
         // POST api/users/otp/validation
         [HttpPost("otp/validation")]
         public async Task<IActionResult> ValidateOTP([FromBody] OTPValidationViewModel model)
