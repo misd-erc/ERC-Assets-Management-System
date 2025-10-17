@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalCommon.ViewModels.OTP
+namespace PortalCommon.QueryParams.Session
 {
-    public class OTPValidationViewModel
+    public class SessionTokenValidationQueryParams
     {
-        public string OTPEncrypted { get; set; } = string.Empty;
         public string SystemUserIdEncrypted { get; set; } = string.Empty;
+        public string KeyEncrypted { get; set; } = string.Empty;
     }
 }

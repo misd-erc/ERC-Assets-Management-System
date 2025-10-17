@@ -2,12 +2,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalCommon.Enums;
+using PortalCommon.QueryParams.Account;
+using PortalCommon.QueryParams.OTP;
+using PortalCommon.QueryParams.Session;
 using PortalCommon.ResponseModels.Account;
 using PortalCommon.Responses;
 using PortalCommon.Utilities;
-using PortalCommon.ViewModels.Account;
-using PortalCommon.ViewModels.OTP;
-using PortalCommon.ViewModels.Session;
 using PortalCommon.ViewModels.SMTP;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Services;
@@ -46,7 +46,7 @@ namespace API.Controllers
         #region POST
         // POST api/users/validation
         [HttpPost("validation")]
-        public async Task<IActionResult> ValidateUser([FromBody] UserValidationViewModel model)
+        public async Task<IActionResult> ValidateUser([FromBody] UserValidationQueryParams model)
         {
             if (model == null || string.IsNullOrWhiteSpace(model.EntraIdEncrypted) || string.IsNullOrWhiteSpace(model.EmailEncrypted))
                 return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
@@ -125,7 +125,7 @@ namespace API.Controllers
 
         // POST api/users/otp/re-send
         [HttpPost("otp/re-send")]
-        public async Task<IActionResult> ResendOTP([FromBody] ResendOTPViewModel model)
+        public async Task<IActionResult> ResendOTP([FromBody] ResendOTPQueryParams model)
         {
             if (string.IsNullOrWhiteSpace(model.SystemUserIdEncrypted))
                 return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
@@ -192,7 +192,7 @@ namespace API.Controllers
 
         // POST api/users/otp/validation
         [HttpPost("otp/validation")]
-        public async Task<IActionResult> ValidateOTP([FromBody] OTPValidationViewModel model)
+        public async Task<IActionResult> ValidateOTP([FromBody] OTPValidationQueryParams model)
         {
             if (model == null || string.IsNullOrWhiteSpace(model.SystemUserIdEncrypted) || string.IsNullOrWhiteSpace(model.OTPEncrypted))
                 return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
@@ -252,7 +252,7 @@ namespace API.Controllers
 
         // POST api/users/expiry-token/validation
         [HttpPost("expiry-token/validation")]
-        public async Task<IActionResult> ValidateSessionToken([FromBody] SessionTokenValidationViewModel model)
+        public async Task<IActionResult> ValidateSessionToken([FromBody] SessionTokenValidationQueryParams model)
         {
             if (model == null || string.IsNullOrWhiteSpace(model.KeyEncrypted) || string.IsNullOrWhiteSpace(model.SystemUserIdEncrypted))
                 return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));

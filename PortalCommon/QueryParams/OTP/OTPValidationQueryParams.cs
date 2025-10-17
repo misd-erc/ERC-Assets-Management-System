@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalCommon.ViewModels.OTP
+namespace PortalCommon.QueryParams.OTP
 {
-    public class ResendOTPViewModel
+    public class OTPValidationQueryParams
     {
+        public string OTPEncrypted { get; set; } = string.Empty;
         public string SystemUserIdEncrypted { get; set; } = string.Empty;
     }
 }

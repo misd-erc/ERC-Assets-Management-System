@@ -1,9 +1,9 @@
 ﻿using PortalTools.Utilities;
 using System;
 
-namespace PortalCommon.ViewModels.Account
+namespace PortalCommon.QueryParams.Account
 {
-    public class UserValidationViewModel
+    public class UserValidationQueryParams
     {
         public string EntraIdEncrypted { get; set; } = string.Empty;
         public string FirstNameEncrypted { get; set; } = string.Empty;

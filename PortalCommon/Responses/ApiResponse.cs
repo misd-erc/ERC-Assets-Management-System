@@ -11,8 +11,35 @@ namespace PortalCommon.Responses
         public T? Data { get; set; }
 
         // ✅ Success responses
-        public static ApiResponse<T> Ok(T? data, string message = "Success") =>
-            new() { Success = true, Code = SuccessCodes.SUCCESS, Message = message, Data = data };
+        public static ApiResponse<T> Ok<T>(T? data, string message = "Success") =>
+              new() { Success = true, Code = SuccessCodes.SUCCESS, Message = message, Data = data };
+
+
+        public static ApiResponse<PaginatedResponse<T>> OkPaginated(
+            IEnumerable<T> items,
+            int pageNumber,
+            int pageSize,
+            int totalCount,
+            string message = "Success")
+        {
+            int totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+            var paginatedResponse = new PaginatedResponse<T>
+            {
+                Items = items,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount,
+                TotalPages = totalPages
+            };
+
+            return new ApiResponse<PaginatedResponse<T>>
+            {
+                Success = true,
+                Code = SuccessCodes.SUCCESS,
+                Message = message,
+                Data = paginatedResponse
+            };
+        }
 
         public static ApiResponse<T> Created(T data, string message = "Created") =>
             new() { Success = true, Code = SuccessCodes.CREATED, Message = message, Data = data };
