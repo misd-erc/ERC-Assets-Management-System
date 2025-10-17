@@ -43,7 +43,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowHttps3000",
         policy =>
         {
-            policy.WithOrigins("https://localhost:3000") // ?? HTTPS instead of HTTP
+            policy.WithOrigins("https://localhost:3000")
                   .AllowAnyHeader()
                   .AllowAnyMethod()
                   .AllowCredentials();
