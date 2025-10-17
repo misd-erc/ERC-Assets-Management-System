@@ -44,8 +44,8 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy.WithOrigins(
-                "https://localhost:3000",
-                "https://ams-dev.erc.ph"
+                "https://localhost:3000/",
+                "https://ams-dev.erc.ph/"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
