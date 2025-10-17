@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuthStore } from './store/auth';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { MFAVerification } from './components/auth/MFAVerification';
@@ -44,7 +44,12 @@ class ErrorBoundary extends React.Component<
 }
 
 function AppContent() {
-  const { isAuthenticated, requireMFA } = useAuthStore();
+  const { isAuthenticated, requireMFA, initialize } = useAuthStore();
+
+  // Initialize auth state on app start
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   if (!isAuthenticated) {
     return <LoginScreen />;

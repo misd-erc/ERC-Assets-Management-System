@@ -1,29 +1,81 @@
-import { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
 import { Alert, AlertDescription } from '../ui/alert';
-import { Shield, Lock, User } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { useAuth } from '../../hooks';
 import { MFAVerification } from './MFAVerification';
+import { PublicClientApplication, AuthenticationResult, AccountInfo } from '@azure/msal-browser';
 
 const ercLogo = '/images/erc-logo.png';
 const microsoftLogo = '/images/microsoft-logo.svg';
 
+// MSAL configuration
+const msalConfig = {
+  auth: {
+    clientId: process.env.REACT_APP_MSAL_CLIENT_ID || 'your-client-id',
+    authority: `https://login.microsoftonline.com/${process.env.REACT_APP_MSAL_TENANT_ID || 'common'}`,
+    redirectUri: 'http://localhost:4434',
+  },
+  cache: {
+    cacheLocation: 'localStorage',
+    storeAuthStateInCookie: false,
+  },
+};
+
 export function LoginScreen() {
-  const { control, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: {
-      username: '',
-      password: '',
-    },
-  });
+  const { login, requireMFA, isLoading, error } = useAuth();
+  const [msalLoading, setMsalLoading] = useState(false);
+  const [msalInstance, setMsalInstance] = useState<PublicClientApplication | null>(null);
 
-  const { login, requireMFA, isLoading, hasError, error } = useAuth();
+  useEffect(() => {
+    const initializeMSAL = async () => {
+      const instance = new PublicClientApplication(msalConfig);
+      await instance.initialize();
+      setMsalInstance(instance);
+    };
 
-  const onSubmit = async (data: { username: string; password: string }) => {
-    await login(data);
+    initializeMSAL();
+  }, []);
+
+  const handleMicrosoftLogin = async () => {
+    if (!msalInstance) {
+      console.error('MSAL not initialized');
+      return;
+    }
+
+    setMsalLoading(true);
+
+    try {
+      const loginRequest = {
+        scopes: ['openid', 'profile', 'email', 'User.Read'],
+        prompt: 'select_account',
+      };
+
+      const response: AuthenticationResult = await msalInstance.loginPopup(loginRequest);
+      const account: AccountInfo = response.account!;
+
+      // Extract user information
+      const entraId = account.localAccountId;
+      const email = account.username;
+      const name = account.name || '';
+      const [firstName, ...lastNameParts] = name.split(' ');
+      const lastName = lastNameParts.join(' ');
+
+      // Call our backend validation
+      await login({
+        entraId,
+        firstName: firstName || '',
+        lastName: lastName || '',
+        email,
+      });
+
+    } catch (error) {
+      console.error('MSAL login failed:', error);
+      // Error will be handled by the auth store
+    } finally {
+      setMsalLoading(false);
+    }
   };
 
   if (requireMFA) {
@@ -36,9 +88,9 @@ export function LoginScreen() {
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="mx-auto w-20 h-20 flex items-center justify-center">
-            <img 
+            <img
               src={ercLogo}
-              alt="Energy Regulatory Commission" 
+              alt="Energy Regulatory Commission"
               className="w-20 h-20 object-contain"
             />
           </div>
@@ -53,96 +105,34 @@ export function LoginScreen() {
           <CardHeader>
             <CardTitle className="text-center">Sign In</CardTitle>
             <CardDescription className="text-center">
-              {/* Enter your credentials to access the Asset Management System */}
               Use your ERC-provided Microsoft account to access the system
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <Button
+              onClick={handleMicrosoftLogin}
+              className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+              disabled={isLoading || msalLoading}
+            >
+              {isLoading || msalLoading ? (
+                'Signing in...'
+              ) : (
+                <>
+                  <img
+                    src={microsoftLogo}
+                    alt="Microsoft"
+                    className="w-5 h-5"
+                  />
+                  <span>Sign in with Microsoft</span>
+                </>
               )}
-
-              {/* <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Controller
-                    name="username"
-                    control={control}
-                    rules={{
-                      required: 'Username is required',
-                      minLength: { value: 3, message: 'Username must be at least 3 characters' }
-                    }}
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        id="username"
-                        type="text"
-                        className="pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter your username"
-                      />
-                    )}
-                  />
-                </div>
-                {errors.username && (
-                  <p className="text-sm text-red-600">{errors.username.message}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Controller
-                    name="password"
-                    control={control}
-                    rules={{
-                      required: 'Password is required',
-                      minLength: { value: 6, message: 'Password must be at least 6 characters' }
-                    }}
-                    render={({ field }) => (
-                      <Input
-                        {...field}
-                        id="password"
-                        type="password"
-                        className="pl-10 pr-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="Enter your password"
-                      />
-                    )}
-                  />
-                </div>
-                {errors.password && (
-                  <p className="text-sm text-red-600">{errors.password.message}</p>
-                )}
-                <a
-                  href="#"
-                  className="text-sm text-blue-600 hover:text-blue-500 text-right block"
-                >
-                  Forgot Password?
-                </a>
-              </div> */}
-
-              <Button
-                type="submit"
-                className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
-                disabled={isLoading}>
-                  {isLoading ? (
-                    'Signing in...'
-                  ) : (
-                    <>
-                      <img
-                        src={microsoftLogo}
-                        alt="Microsoft"
-                        className="w-5 h-5"
-                      />
-                      <span>Sign in with Microsoft</span>
-                    </>
-                  )}
-              </Button>
-            </form>
+            </Button>
           </CardContent>
         </Card>
 
