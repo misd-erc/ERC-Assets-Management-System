@@ -172,7 +172,7 @@ namespace API.Controllers
 
                 UserEncryptedPublicViewModel publicVM = new()
                 {
-                    SystemUserIdEncrypted = EncryptionHelper.Encrypt(systemUserId.ToString()),
+                    SystemUserIdEncrypted = EncryptionHelper.Encrypt(user.Id.ToString()),
                 };
 
                 return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been sent to email address"));
