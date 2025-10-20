@@ -39,7 +39,7 @@ namespace PortalDB.Entities.DBO.Account
 
     public class SystemUserEntity()
     {
-        [Column("SystemUserFirstNames")]
+        [Column("SystemUserFirstName")]
         public string? FirstNameEncrypted { get; set; }
         [NotMapped]
         public string? FirstName

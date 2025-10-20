@@ -87,7 +87,7 @@ namespace API.Controllers
                     .Take(query.PageSize)
                     .ToList();
 
-                List<VwSystemUser> userResponses = users.Select(x => new VwSystemUser
+                List<UserBasicResponseModel> userBasicResponses = users.Select(x => new UserBasicResponseModel
                 {
                     Id = x.Id,
                     FirstName = x.FirstName,
@@ -108,8 +108,8 @@ namespace API.Controllers
                     LastLoginAt = x.LastLoginAt
                 }).ToList();
 
-                return Ok(ApiResponse<VwSystemUser>.OkPaginated(
-                    userResponses,
+                return Ok(ApiResponse<UserBasicResponseModel>.OkPaginated(
+                    userBasicResponses,
                     query.PageNumber,
                     query.PageSize,
                     totalCount,
