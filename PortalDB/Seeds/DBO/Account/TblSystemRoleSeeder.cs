@@ -1,4 +1,5 @@
-﻿using PortalDB.Entities.DBO.Office;
+﻿using PortalDB.Entities.DBO.Account;
+using PortalDB.Entities.DBO.Office;
 using PortalDB.Services;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,31 +10,22 @@ namespace PortalDB.Seeds.DBO.Account
     {
         public static void Seed(PortalDbContext context)
         {
-            if (context.TblOffices.Any())
+            if (context.TblSystemRoles.Any())
                 return;
 
-            //TblSystemRoleSeeder SystemRole(string name, string description) => new() { 
-            //    Name = name, 
-            //    Acronym = acronym 
-            //};
+            TblSystemRole SystemRole(string name, string description) => new()
+            {
+                RoleName = name,
+                Description = description
+            };
 
-            //var offices = new List<TblOffice>
-            //{
-            //    Office("Office of the CEO and Commissioner Members", "OCCM"),
-            //    Office("Office of the Executive Director", "OED"),
-            //    Office("Office of the General Counsel and Secretariat", "OGCS"),
-            //    Office("Bids and Awards Committee", "BAC"),
-            //    Office("Legal Service", "LS"),
-            //    Office("Regulatory Operations Service", "ROS"),
-            //    Office("Market Operations Service", "MOS"),
-            //    Office("Central Records Division", "CRD"),
-            //    Office("Commission on Audit", "COA"),
-            //    Office("Consumer Affairs Service", "CAS"),
-            //    Office("Financial Administrative Service", "FAS"),
-            //    Office("Planning and Public Information Service", "PPIS")
-            //};
+            var roles = new List<TblSystemRole>
+            {
+                SystemRole("Administrator", "Oversees and manages all components of the system"),
+                SystemRole("Employee", "Default system role with basic privileges")
+            };
 
-            //context.TblOffices.AddRange(offices);
+            context.TblSystemRoles.AddRange(roles);
             context.SaveChanges();
         }
     }

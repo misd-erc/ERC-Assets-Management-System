@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PortalCommon.QueryParams.Account;
 using PortalCommon.Utilities;
+using PortalCommon.ViewModels.Account;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.LOG.AuditTrail;
 using PortalDB.Services;
@@ -24,7 +26,7 @@ namespace PortalTools.Services.DBO.Account
         /// Updates an existing TblSystemUser.
         /// Returns true if update succeeds, false otherwise. This will be save first just to get the Id.
         /// </summary>
-        public async Task<long> EditTblSystemUserAsync(TblSystemUser model, PortalDbContext context, bool isLogin = true)
+        public async Task<long> EditTblSystemUserForLoginAsync(TblSystemUser model, PortalDbContext context)
         {
             if (model == null)
                 return 0;
@@ -35,12 +37,11 @@ namespace PortalTools.Services.DBO.Account
                 bool isInsert = model.Id == 0;
 
                 TblSystemUser? existingUser = null;
-
-                if (isLogin)
-                    model.LastLoginAt = DateTime.UtcNow;
+                model.LastLoginAt = DateTime.UtcNow;
 
                 if (isInsert)
                 {
+                    model.StatusId = TblSystemUserStatus.Dictionary[TblSystemUserStatus.PENDING];
                     await context.TblSystemUsers.AddAsync(model);
                     await context.SaveChangesAsync();
                 }
@@ -57,18 +58,54 @@ namespace PortalTools.Services.DBO.Account
                     existingUser.IsActive = model.IsActive;
                     model.Id = existingUser.Id;
 
-                    if(isLogin)
-                        await context.TblSystemUsers.Where(u => u.Id == model.Id)
-                            .ExecuteUpdateAsync(u => u
-                                .SetProperty(x => x.FirstNameEncrypted, model.FirstNameEncrypted)
-                                .SetProperty(x => x.LastNameEncrypted, model.LastNameEncrypted)
-                                .SetProperty(x => x.LastLoginAt, model.LastLoginAt));
+                    await context.TblSystemUsers.Where(u => u.Id == model.Id)
+                        .ExecuteUpdateAsync(u => u
+                            .SetProperty(x => x.FirstNameEncrypted, model.FirstNameEncrypted)
+                            .SetProperty(x => x.LastNameEncrypted, model.LastNameEncrypted)
+                            .SetProperty(x => x.LastLoginAt, model.LastLoginAt));
 
                 }
 
                 AuditTrailTool.TrackChanges(context, isInsert ? null! : existingUser!, model, nameof(TblSystemUser), model.Id, isInsert ? "Insert" : "Update");
 
                 return isInsert ? model.Id : existingUser.Id;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(AccountEditTools));
+                throw;
+            }
+        }
+
+        public async Task<long> EditTblSystemUserAsync(EditSystemUserViewModel model, PortalDbContext context)
+        {
+            if (model == null)
+                return 0;
+
+            try
+            {
+
+                TblSystemUser? userCurrentInfo = await _accountGetTools.GetTblSystemUser(model.Id);
+                TblSystemUser userUpdatedInfo = new()
+                {
+                    Id = model.Id,
+                    SystemRoleId = model.SystemRoleId,
+                    StatusId = model.StatusId,
+                    IsActive = model.IsActive
+                };
+
+                if (userCurrentInfo == null)
+                    return 0;
+
+                await context.TblSystemUsers.Where(u => u.Id == userUpdatedInfo.Id)
+                    .ExecuteUpdateAsync(u => u
+                        .SetProperty(x => x.SystemRoleId, userUpdatedInfo.SystemRoleId)
+                        .SetProperty(x => x.StatusId, userUpdatedInfo.StatusId)
+                        .SetProperty(x => x.IsActive, userUpdatedInfo.IsActive));
+
+                AuditTrailTool.TrackChanges(context, userCurrentInfo, userUpdatedInfo, nameof(TblSystemUser), model.ActionBy, "Update");
+
+                return userUpdatedInfo.Id;
             }
             catch (DbUpdateException ex)
             {

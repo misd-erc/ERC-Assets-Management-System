@@ -1,5 +1,6 @@
 ﻿using System;
 using PortalCommon.Enums;
+using PortalCommon.ResponseModels.Pagination;
 
 namespace PortalCommon.Responses
 {
@@ -15,7 +16,7 @@ namespace PortalCommon.Responses
               new() { Success = true, Code = SuccessCodes.SUCCESS, Message = message, Data = data };
 
 
-        public static ApiResponse<PaginatedResponse<T>> OkPaginated(
+        public static ApiResponse<PaginatedResponseModel<T>> OkPaginated(
             IEnumerable<T> items,
             int pageNumber,
             int pageSize,
@@ -23,7 +24,7 @@ namespace PortalCommon.Responses
             string message = "Success")
         {
             int totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-            var paginatedResponse = new PaginatedResponse<T>
+            var paginatedResponse = new PaginatedResponseModel<T>
             {
                 Items = items,
                 PageNumber = pageNumber,
@@ -32,7 +33,7 @@ namespace PortalCommon.Responses
                 TotalPages = totalPages
             };
 
-            return new ApiResponse<PaginatedResponse<T>>
+            return new ApiResponse<PaginatedResponseModel<T>>
             {
                 Success = true,
                 Code = SuccessCodes.SUCCESS,
@@ -56,6 +57,9 @@ namespace PortalCommon.Responses
 
         public static ApiResponse<T> ValidationFailed(string message = "Validation failed") =>
             new() { Success = false, Code = ErrorCodes.VALIDATION_FAILED, Message = message };
+
+        public static ApiResponse<T> SessionTokenExpired(string message = "Session token expired") =>
+    new() { Success = false, Code = ErrorCodes.TOKEN_EXPIRED, Message = message };
 
         public static ApiResponse<T> Unauthorized(string message = "Unauthorized") =>
             new() { Success = false, Code = ErrorCodes.UNAUTHORIZED, Message = message };

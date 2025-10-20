@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalCommon.Responses
+namespace PortalCommon.ResponseModels.Pagination
 {
-    public class PaginatedResponse<T>
+    public class PaginatedResponseModel<T>
     {
         public IEnumerable<T> Items { get; set; } = Enumerable.Empty<T>();
         public int PageNumber { get; set; }

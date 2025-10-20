@@ -23,6 +23,7 @@ namespace PortalDB.Services
                 #region Account
                 //TblSystemRoleSeeder.Seed(context);
                 TblSystemUserStatusSeeder.Seed(context);
+                TblSystemRoleSeeder.Seed(context);
                 #endregion
 
                 #region Office

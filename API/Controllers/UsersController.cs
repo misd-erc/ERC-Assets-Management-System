@@ -8,6 +8,7 @@ using PortalCommon.QueryParams.Session;
 using PortalCommon.ResponseModels.Account;
 using PortalCommon.Responses;
 using PortalCommon.Utilities;
+using PortalCommon.ViewModels.Account;
 using PortalCommon.ViewModels.SMTP;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Services;
@@ -40,7 +41,7 @@ namespace API.Controllers
         }
 
         #region GET
-
+        
         #endregion
 
         #region POST
@@ -58,19 +59,17 @@ namespace API.Controllers
                 await using var context = new PortalDbContext(_options);
                 await using var transaction = await context.Database.BeginTransactionAsync();
 
-
-
                 TblSystemUser user = new()
                 {
                     EntraId = long.Parse(EncryptionHelper.Decrypt(model.EntraIdEncrypted)),
                     FirstName = EncryptionHelper.Decrypt(model.FirstNameEncrypted),
                     LastName = EncryptionHelper.Decrypt(model.LastNameEncrypted),
-                    Email = EncryptionHelper.Decrypt(model.EmailEncrypted)
+                    Email = EncryptionHelper.Decrypt(model.EmailEncrypted),
                 };
 
                 user.Id = (await _accountGetTools.GetTblSystemUserByEntraIdAndEmail(user.EntraId, user.Email))?.Id ?? 0;
 
-                long systemUserId = await _accountEditTools.EditTblSystemUserAsync(user, context);
+                long systemUserId = await _accountEditTools.EditTblSystemUserForLoginAsync(user, context);
 
                 if (systemUserId > 0)
                 {
@@ -113,6 +112,57 @@ namespace API.Controllers
                 };
 
                 return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been sent to email address"));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+
+        }
+
+        // POST api/users/validation
+        [HttpPost("edit")]
+        public async Task<IActionResult> EditUser([FromBody] EditSystemUserQueryParams model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.SystemUserIdEncrypted) || string.IsNullOrWhiteSpace(model.SystemRoleIdEncrypted) 
+                || string.IsNullOrWhiteSpace(model.StatusIdEncrypted) || string.IsNullOrWhiteSpace(model.IsActiveEncrypted) || string.IsNullOrWhiteSpace(model.ActionBySystemUserIdEncrypted))
+                return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
+
+            try
+            {
+
+                #region Transaction
+                await using var context = new PortalDbContext(_options);
+                await using var transaction = await context.Database.BeginTransactionAsync();
+
+                EditSystemUserViewModel user = new()
+                {
+                    Id = long.Parse(EncryptionHelper.Decrypt(model.SystemUserIdEncrypted)),
+                    SystemRoleId = long.Parse(EncryptionHelper.Decrypt(model.SystemRoleIdEncrypted)),
+                    StatusId = long.Parse(EncryptionHelper.Decrypt(model.StatusIdEncrypted)),
+                    IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEncrypted)),
+                    ActionBy = long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted))
+                };
+
+                #region Token Validator
+                if (!await ValidateSessionTokenInternally(user.ActionBy))
+                    return Ok(ApiResponse<object>.SessionTokenExpired());
+                #endregion
+
+                long systemUserId = await _accountEditTools.EditTblSystemUserAsync(user, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                #endregion
+
+                UserEncryptedPublicResponseModel publicVM = new()
+                {
+                    SystemUserIdEncrypted = EncryptionHelper.Decrypt(systemUserId.ToString())
+                };
+
+                return Ok(ApiResponse<object>.Ok(publicVM, $"System user account has been updated"));
 
             }
             catch (Exception ex)
@@ -226,11 +276,7 @@ namespace API.Controllers
 
                     UserEncryptedPublicResponseModel publicVM = new()
                     {
-                        SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted),
-                        FirstNameEncrypted = userInfo!.FirstNameEncrypted!,
-                        LastNameEncrypted = userInfo.LastNameEncrypted!,
-                        EmailEncrypted = userInfo.EmailEncrypted!,
-                        ExpiryTokenEncrypted = EncryptionHelper.Encrypt(sessionToken.Key)
+                        SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted)
                     };
 
                     await context.SaveChangesAsync();
@@ -274,11 +320,7 @@ namespace API.Controllers
 
                     UserEncryptedPublicResponseModel publicVM = new()
                     {
-                        SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted),
-                        FirstNameEncrypted = userInfo!.FirstNameEncrypted!,
-                        LastNameEncrypted = userInfo.LastNameEncrypted!,
-                        EmailEncrypted = userInfo.EmailEncrypted!,
-                        ExpiryTokenEncrypted = model.KeyEncrypted
+                        SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted)
                     };
 
                     return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been verified"));
@@ -295,6 +337,26 @@ namespace API.Controllers
             }
         }
 
+        #endregion
+
+        #region Internal Class Methods
+        private async Task<bool> ValidateSessionTokenInternally(long systemUserId)
+        {
+            try
+            {
+                bool isTokenValid = await _accountGetTools.ValidateTokenSessionBySystemUserIdAsync(systemUserId);
+
+                if (isTokenValid)
+                    return true;
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return false;
+            }
+
+            return false;
+        }
         #endregion
 
     }

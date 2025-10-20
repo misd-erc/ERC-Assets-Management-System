@@ -11,6 +11,12 @@ namespace PortalDB.Entities.DBO.Account
     [Table("tblSystemRoles", Schema = "dbo")]
     public class TblSystemRole
     {
+
+        #region Constants
+        [NotMapped] public const string ADMINISTRATOR = "Administrator";
+        [NotMapped] public const string EMPLOYEE = "Employee";
+        #endregion
+
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("SystemRoleId")]

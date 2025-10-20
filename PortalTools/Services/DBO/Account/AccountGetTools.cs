@@ -54,5 +54,17 @@ namespace PortalTools.Services.DBO.Account
             return false;
         }
 
+        public async Task<bool> ValidateTokenSessionBySystemUserIdAsync(long systemUserId)
+        {
+            bool isValid = await _context.TblSessionTokens
+                .AnyAsync(x => x.SystemUserId == systemUserId
+                    && x.ValidUntil <= DateTime.UtcNow);
+
+            if (isValid)
+                return true;
+
+            return false;
+        }
+
     }
 }
