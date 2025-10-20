@@ -78,6 +78,12 @@ namespace PortalDB.Entities.DBO.Account
         [Column("DivisionId")]
         public long? DivisionId { get; set; }
 
+        [Column("EmploymentTypeId")]
+        public long? EmploymentTypeId { get; set; }
+
+        [Column("PositionId")]
+        public long? PositionId { get; set; }
+
         [Column("SystemUserIsActive")]
         public bool IsActive { get; set; } = true;
 

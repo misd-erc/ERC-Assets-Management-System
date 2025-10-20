@@ -30,6 +30,8 @@ namespace PortalDB.Services
         #region Office
         public DbSet<TblOffice> TblOffices { get; set; }
         public DbSet<TblDivision> TblDivisions { get; set; }
+        public DbSet<TblPosition> TblPositions { get; set; }
+        public DbSet<TblEmploymentType> TblEmploymentTypes { get; set; }
         #endregion
 
         #region Audit Trail
