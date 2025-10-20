@@ -39,7 +39,7 @@ namespace PortalDB.Entities.DBO.Account
 
     public class SystemUserEntity()
     {
-        [Column("SystemUserFirstName")]
+        [Column("SystemUserFirstNames")]
         public string? FirstNameEncrypted { get; set; }
         [NotMapped]
         public string? FirstName
@@ -70,13 +70,13 @@ namespace PortalDB.Entities.DBO.Account
         public long? SystemRoleId { get; set; }
 
         [Column("SystemUserStatusId")]
-        public long StatusId { get; set; }
+        public long? StatusId { get; set; }
 
         [Column("OfficeId")]
-        public long OfficeId { get; set; }
+        public long? OfficeId { get; set; }
 
         [Column("DivisionId")]
-        public long DivisionId { get; set; }
+        public long? DivisionId { get; set; }
 
         [Column("SystemUserIsActive")]
         public bool IsActive { get; set; } = true;

@@ -35,7 +35,7 @@ namespace PortalDB.Entities.DBO.Account
         public string? DivisionName { get; set; }
 
         [Column("DivisionAcronym")]
-        public string? DivisionACronym { get; set; }
+        public string? DivisionAcronym { get; set; }
 
     }
 }

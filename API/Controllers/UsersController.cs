@@ -48,32 +48,81 @@ namespace API.Controllers
         #region GET
 
         // GET api/users/all
-        //[HttpGet("all")]
-        //public async Task<IActionResult> GetAllSystemUsers([FromQuery] PaginationGenericQueryParams query)
-        //{
-        //    try
-        //    {
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllSystemUsers([FromQuery] PaginationGenericQueryParams query)
+        {
+            try
+            {
 
-        //        List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers().ToListAsync();
+                IEnumerable<VwSystemUser?> users = await _accountGetTools.GetVwSystemUsers().ToListAsync();
 
-        //        if (!string.IsNullOrWhiteSpace(query.SearchString))
-        //        {
-        //            string searchLower = query.SearchString.ToLower();
-        //            users = users.Where(x =>
-        //                x.Email.ToLower().Contains(searchLower) ||
-        //                x.FirstName.ToLower().Contains(searchLower) ||
-        //                x.LastName.ToLower().Contains(searchLower) ||
-        //                x.TableName.ToLower().Contains(searchLower) ||
-        //                x.Action.ToLower().Contains(searchLower));
-        //        }
+                if (!string.IsNullOrWhiteSpace(query.SearchString))
+                {
+                    string searchLower = query.SearchString.ToLower();
+                    users = users.Where(x =>
+                        x.Email.ToLower().Contains(searchLower) ||
+                        x.FirstName.ToLower().Contains(searchLower) ||
+                        x.LastName.ToLower().Contains(searchLower) ||
+                        x.SystemRoleName.ToLower().Contains(searchLower) ||
+                        x.StatusName.ToLower().Contains(searchLower) ||
+                        x.OfficeName.ToLower().Contains(searchLower) ||
+                        x.OfficeAcronym.ToLower().Contains(searchLower) ||
+                        x.DivisionName.ToLower().Contains(searchLower) ||
+                        x.DivisionAcronym.ToLower().Contains(searchLower));
+                }
 
-        //    }
-        //    catch(Exception ex)
-        //    {
-        //        await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
-        //        return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-        //    }
-        //}
+                if (query.StartDate.HasValue)
+                    users = users.Where(x => x.CreatedAt >= query.StartDate.Value);
+
+                if (query.EndDate.HasValue)
+                    users = users.Where(x => x.CreatedAt <= query.EndDate.Value);
+
+                int totalCount = users.Count();
+
+                int skip = (query.PageNumber - 1) * query.PageSize;
+
+                var usersList = users
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(query.PageSize)
+                    .ToList();
+
+                List<VwSystemUser> userResponses = users.Select(x => new VwSystemUser
+                {
+                    Id = x.Id,
+                    FirstName = x.FirstName,
+                    LastName = x.LastName,
+                    Email = x.Email,
+                    SystemRoleId = x.SystemRoleId,
+                    SystemRoleName = x.SystemRoleName,
+                    StatusId = x.StatusId,
+                    StatusName = x.StatusName,
+                    OfficeId = x.OfficeId,
+                    OfficeName = x.OfficeName,
+                    OfficeAcronym  = x.OfficeAcronym,
+                    DivisionId = x.DivisionId,
+                    DivisionName = x.DivisionName,
+                    DivisionAcronym = x.DivisionAcronym,
+                    IsActive = x.IsActive,
+                    CreatedAt =  x.CreatedAt,
+                    LastLoginAt = x.LastLoginAt
+                }).ToList();
+
+                return Ok(ApiResponse<VwSystemUser>.OkPaginated(
+                    userResponses,
+                    query.PageNumber,
+                    query.PageSize,
+                    totalCount,
+                    "System users have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
 
         #endregion
 

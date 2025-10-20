@@ -58,10 +58,8 @@ namespace PortalDB.Services
 
                 if (isKeyless || isView)
                 {
-                    // ✅ Map it as a view so EF reads data but doesn't migrate schema
-                    modelBuilder.Entity(clrType).ToView($"{schema}.{tableName}");
-
-                    // ✅ This is the key fix: mark as ignored for migrations
+                    // Correct: pass view name and schema separately
+                    modelBuilder.Entity(clrType).ToView(tableName, schema);
                     modelBuilder.Entity(clrType).Metadata.SetIsTableExcludedFromMigrations(true);
                 }
                 else
