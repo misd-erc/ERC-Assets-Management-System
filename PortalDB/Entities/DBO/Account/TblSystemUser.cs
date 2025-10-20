@@ -11,8 +11,9 @@ using System.Text;
 namespace PortalDB.Entities.DBO.Account
 {
     [Table("tblSystemUsers", Schema = "dbo")]
-    public class TblSystemUser
+    public class TblSystemUser : SystemUserEntity
     {
+
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("SystemUserId")]
@@ -28,6 +29,16 @@ namespace PortalDB.Entities.DBO.Account
             set => EntraIdEncrypted = value.HasValue ? EncryptionHelper.Encrypt(value.Value.ToString()) : null;
         }
 
+        #region Foreign Key Collection
+        //public virtual ICollection<TblAuditTrail> AuditTrail { get; set; } = new List<TblAuditTrail>();
+        public virtual ICollection<TblOneTimePassword> OneTimePassword { get; set; } = new List<TblOneTimePassword>();
+        public virtual ICollection<TblSessionToken> TblSessionToken { get; set; } = new List<TblSessionToken>();
+        #endregion
+
+    }
+
+    public class SystemUserEntity()
+    {
         [Column("SystemUserFirstName")]
         public string? FirstNameEncrypted { get; set; }
         [NotMapped]
@@ -55,11 +66,17 @@ namespace PortalDB.Entities.DBO.Account
             set => EmailEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
-        [Column("SystemUserSystemRoleId")]
+        [Column("SystemRoleId")]
         public long? SystemRoleId { get; set; }
 
-        [Column("SystemUserStatus")]
+        [Column("SystemUserStatusId")]
         public long StatusId { get; set; }
+
+        [Column("OfficeId")]
+        public long OfficeId { get; set; }
+
+        [Column("DivisionId")]
+        public long DivisionId { get; set; }
 
         [Column("SystemUserIsActive")]
         public bool IsActive { get; set; } = true;
@@ -69,12 +86,6 @@ namespace PortalDB.Entities.DBO.Account
 
         [Column("SystemUserLastLoginAt")]
         public DateTime? LastLoginAt { get; set; }
-
-        #region Foreign Key Collection
-        //public virtual ICollection<TblAuditTrail> AuditTrail { get; set; } = new List<TblAuditTrail>();
-        public virtual ICollection<TblOneTimePassword> OneTimePassword { get; set; } = new List<TblOneTimePassword>();
-        public virtual ICollection<TblSessionToken> TblSessionToken { get; set; } = new List<TblSessionToken>();
-        #endregion
-
     }
+
 }

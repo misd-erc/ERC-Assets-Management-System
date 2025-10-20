@@ -12,8 +12,8 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    [Migration("20251020003305_AddedSystemRole")]
-    partial class AddedSystemRole
+    [Migration("20251020064607_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -132,6 +132,10 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("SystemUserCreatedAt");
 
+                    b.Property<long>("DivisionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DivisionId");
+
                     b.Property<string>("EmailEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SystemUserEmail");
@@ -156,13 +160,17 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SystemUserLastName");
 
+                    b.Property<long>("OfficeId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("OfficeId");
+
                     b.Property<long>("StatusId")
                         .HasColumnType("bigint")
-                        .HasColumnName("SystemUserStatus");
+                        .HasColumnName("SystemUserStatusId");
 
                     b.Property<long?>("SystemRoleId")
                         .HasColumnType("bigint")
-                        .HasColumnName("SystemUserSystemRoleId");
+                        .HasColumnName("SystemRoleId");
 
                     b.HasKey("Id");
 
@@ -186,6 +194,84 @@ namespace PortalDB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblSystemUserStatuses", "dbo");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.DBO.Account.VwSystemUser", b =>
+                {
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SystemUserCreatedAt");
+
+                    b.Property<string>("DivisionACronym")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DivisionAcronym");
+
+                    b.Property<long>("DivisionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DivisionId");
+
+                    b.Property<string>("DivisionName")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DivisionName");
+
+                    b.Property<string>("EmailEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SystemUserEmail");
+
+                    b.Property<string>("FirstNameEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SystemUserFirstName");
+
+                    b.Property<long?>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemUserId");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("SystemUserIsActive");
+
+                    b.Property<DateTime?>("LastLoginAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SystemUserLastLoginAt");
+
+                    b.Property<string>("LastNameEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SystemUserLastName");
+
+                    b.Property<string>("OfficeAcronym")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("OfficeAcronym");
+
+                    b.Property<long>("OfficeId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("OfficeId");
+
+                    b.Property<string>("OfficeName")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("OfficeName");
+
+                    b.Property<long>("StatusId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemUserStatusId");
+
+                    b.Property<string>("StatusName")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SystemUserStatusName");
+
+                    b.Property<long?>("SystemRoleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemRoleId");
+
+                    b.Property<string>("SystemRoleName")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SystemRoleName");
+
+                    b.ToTable("vwSystemUsers", "dbo", t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+
+                    b.ToView("dbo.vwSystemUsers", (string)null);
                 });
 
             modelBuilder.Entity("PortalDB.Entities.DBO.Office.Division.TblDivision", b =>

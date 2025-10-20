@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalCommon.QueryParams.AuditTrail
+namespace PortalCommon.QueryParams.Pagination
 {
-    public class AuditTrailQueryParams
+    public class PaginationGenericQueryParams
     {
         public string? SearchString { get; set; }
 

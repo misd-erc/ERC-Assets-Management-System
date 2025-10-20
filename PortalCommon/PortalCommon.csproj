@@ -10,4 +10,8 @@
     <PackageReference Include="MailKit" Version="4.14.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="QueryParams\AuditTrail\" />
+  </ItemGroup>
+
 </Project>

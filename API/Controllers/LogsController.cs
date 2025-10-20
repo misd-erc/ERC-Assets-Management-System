@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalCommon.Enums;
-using PortalCommon.QueryParams.AuditTrail;
+using PortalCommon.QueryParams.Pagination;
 using PortalCommon.ResponseModels.Log.AuditTrail;
 using PortalCommon.Responses;
 using PortalDB.Entities.DBO.Account;
@@ -37,7 +37,7 @@ namespace API.Controllers
         #region GET
         // GET api/logs/audit-trail/all
         [HttpGet("audit-trail/all")]
-        public async Task<IActionResult> GetAllAuditTrails([FromQuery] AuditTrailQueryParams query)
+        public async Task<IActionResult> GetAllAuditTrails([FromQuery] PaginationGenericQueryParams query)
         {
             try
             {
@@ -97,7 +97,7 @@ namespace API.Controllers
 
         // GET api/logs/audit-trail/systemUserIdEncrypted
         [HttpGet("audit-trail/all/{systemUserIdEncrypted}")]
-        public async Task<IActionResult> GetAllAuditTrailsBySystemUserId([FromQuery] AuditTrailQueryParams query, [FromRoute] string systemUserIdEncrypted)
+        public async Task<IActionResult> GetAllAuditTrailsBySystemUserId([FromQuery] PaginationGenericQueryParams query, [FromRoute] string systemUserIdEncrypted)
         {
             try
             {

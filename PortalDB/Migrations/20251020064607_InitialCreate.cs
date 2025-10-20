@@ -29,7 +29,7 @@ namespace PortalDB.Migrations
                     AuditTrailAction = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
                     AuditTrailChanges = table.Column<byte[]>(type: "varbinary(max)", nullable: true),
                     AuditTrailChangedBySystemUserId = table.Column<long>(type: "bigint", nullable: true),
-                    AuditTrailChangedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    AuditTrailChangedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -68,6 +68,23 @@ namespace PortalDB.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "tblSystemRoles",
+                schema: "dbo",
+                columns: table => new
+                {
+                    SystemRoleId = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SystemRoleName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SystemRoleDescription = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SystemRoleIsActive = table.Column<bool>(type: "bit", nullable: false),
+                    SystemRoleCreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tblSystemRoles", x => x.SystemRoleId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "tblSystemUsers",
                 schema: "dbo",
                 columns: table => new
@@ -78,8 +95,10 @@ namespace PortalDB.Migrations
                     SystemUserFirstName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     SystemUserLastName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     SystemUserEmail = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    SystemUserSystemRoleId = table.Column<long>(type: "bigint", nullable: true),
-                    SystemUserStatus = table.Column<long>(type: "bigint", nullable: false),
+                    SystemRoleId = table.Column<long>(type: "bigint", nullable: true),
+                    SystemUserStatusId = table.Column<long>(type: "bigint", nullable: false),
+                    OfficeId = table.Column<long>(type: "bigint", nullable: false),
+                    DivisionId = table.Column<long>(type: "bigint", nullable: false),
                     SystemUserIsActive = table.Column<bool>(type: "bit", nullable: false),
                     SystemUserCreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     SystemUserLastLoginAt = table.Column<DateTime>(type: "datetime2", nullable: true)
@@ -149,6 +168,30 @@ namespace PortalDB.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "tblSessionTokens",
+                schema: "dbo",
+                columns: table => new
+                {
+                    SessionTokenId = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    SystemUserId = table.Column<long>(type: "bigint", nullable: false),
+                    SessionTokenKey = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SessionTokenValidUntil = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    SessionTokenCreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tblSessionTokens", x => x.SessionTokenId);
+                    table.ForeignKey(
+                        name: "FK_tblSessionTokens_tblSystemUsers_SystemUserId",
+                        column: x => x.SystemUserId,
+                        principalSchema: "dbo",
+                        principalTable: "tblSystemUsers",
+                        principalColumn: "SystemUserId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_tblDivisions_OfficeId",
                 schema: "dbo",
@@ -159,6 +202,12 @@ namespace PortalDB.Migrations
                 name: "IX_tblOneTimePasswords_SystemUserId",
                 schema: "dbo",
                 table: "tblOneTimePasswords",
+                column: "SystemUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_tblSessionTokens_SystemUserId",
+                schema: "dbo",
+                table: "tblSessionTokens",
                 column: "SystemUserId");
         }
 
@@ -179,6 +228,14 @@ namespace PortalDB.Migrations
 
             migrationBuilder.DropTable(
                 name: "tblOneTimePasswords",
+                schema: "dbo");
+
+            migrationBuilder.DropTable(
+                name: "tblSessionTokens",
+                schema: "dbo");
+
+            migrationBuilder.DropTable(
+                name: "tblSystemRoles",
                 schema: "dbo");
 
             migrationBuilder.DropTable(

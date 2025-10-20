@@ -4,18 +4,23 @@ using Microsoft.EntityFrameworkCore;
 using PortalCommon.Enums;
 using PortalCommon.QueryParams.Account;
 using PortalCommon.QueryParams.OTP;
+using PortalCommon.QueryParams.Pagination;
 using PortalCommon.QueryParams.Session;
 using PortalCommon.ResponseModels.Account;
+using PortalCommon.ResponseModels.Log.AuditTrail;
 using PortalCommon.Responses;
 using PortalCommon.Utilities;
 using PortalCommon.ViewModels.Account;
 using PortalCommon.ViewModels.SMTP;
 using PortalDB.Entities.DBO.Account;
+using PortalDB.Entities.LOG.AuditTrail;
 using PortalDB.Services;
 using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
+using PortalTools.Services.LOG;
 using PortalTools.Utilities;
 using System.Diagnostics;
+using System.Text.Json;
 using System.Threading.Tasks;
 using static System.Net.WebRequestMethods;
 
@@ -41,7 +46,35 @@ namespace API.Controllers
         }
 
         #region GET
-        
+
+        // GET api/users/all
+        //[HttpGet("all")]
+        //public async Task<IActionResult> GetAllSystemUsers([FromQuery] PaginationGenericQueryParams query)
+        //{
+        //    try
+        //    {
+
+        //        List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers().ToListAsync();
+
+        //        if (!string.IsNullOrWhiteSpace(query.SearchString))
+        //        {
+        //            string searchLower = query.SearchString.ToLower();
+        //            users = users.Where(x =>
+        //                x.Email.ToLower().Contains(searchLower) ||
+        //                x.FirstName.ToLower().Contains(searchLower) ||
+        //                x.LastName.ToLower().Contains(searchLower) ||
+        //                x.TableName.ToLower().Contains(searchLower) ||
+        //                x.Action.ToLower().Contains(searchLower));
+        //        }
+
+        //    }
+        //    catch(Exception ex)
+        //    {
+        //        await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+        //        return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+        //    }
+        //}
+
         #endregion
 
         #region POST
