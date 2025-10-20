@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { User, AuthStore } from '../../types';
 import { validateUser, validateOTP, validateSessionToken, logout as apiLogout } from '../../api/authApi';
+import { toast } from 'sonner';
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   // Initialize from localStorage
@@ -79,13 +80,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         }
       });
 
-      return true;
+      return { success: true, message: result.message };
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Login failed',
         loading: false
       });
-      return false;
+      return { success: false, message: error instanceof Error ? error.message : 'Invalid response from server' };
     }
   },
 

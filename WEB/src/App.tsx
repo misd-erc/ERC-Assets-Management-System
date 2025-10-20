@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { MFAVerification } from './components/auth/MFAVerification';
 import { MainLayout } from './components/layout/MainLayout';
+import { Toaster } from './components/ui/sonner';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -51,23 +53,25 @@ function AppContent() {
     initialize();
   }, [initialize]);
 
-  if (!isAuthenticated) {
-    return <LoginScreen />;
-  }
-
-  if (requireMFA) {
-    return <MFAVerification />;
-  }
-
-  return <MainLayout />;
+  return (
+    <Routes>
+      <Route path="/" element={!isAuthenticated ? <LoginScreen /> : <Navigate to="/dashboard" />} />
+      <Route path="/mfa" element={requireMFA ? <MFAVerification /> : <Navigate to="/dashboard" />} />
+      <Route path="/dashboard" element={isAuthenticated && !requireMFA ? <MainLayout /> : <Navigate to="/" />} />
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
+  );
 }
 
 export default function App() {
   return (
-    <ErrorBoundary>
-      <div className="min-h-screen bg-background">
-        <AppContent />
-      </div>
-    </ErrorBoundary>
+    <Router>
+      <ErrorBoundary>
+        <div className="min-h-screen bg-background">
+          <AppContent />
+        </div>
+        <Toaster />
+      </ErrorBoundary>
+    </Router>
   );
 }
