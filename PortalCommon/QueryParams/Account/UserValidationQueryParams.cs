@@ -1,13 +1,14 @@
 ﻿using PortalTools.Utilities;
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace PortalCommon.QueryParams.Account
 {
     public class UserValidationQueryParams
     {
-        public string EntraIdEncrypted { get; set; } = string.Empty;
-        public string FirstNameEncrypted { get; set; } = string.Empty;
-        public string LastNameEncrypted { get; set; } = string.Empty;
-        public string EmailEncrypted { get; set; } = string.Empty;
+        [Required] public string EntraIdEncrypted { get; set; } = string.Empty;
+        [Required] public string FirstNameEncrypted { get; set; } = string.Empty;
+        [Required] public string LastNameEncrypted { get; set; } = string.Empty;
+        [Required] public string EmailEncrypted { get; set; } = string.Empty;
     }
 }
