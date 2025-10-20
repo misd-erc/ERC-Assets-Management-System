@@ -16,7 +16,7 @@ namespace PortalCommon.Utilities
                        $"Integrated Security={DatabaseConstants.IntegratedSecurity};" +
                        $"TrustServerCertificate={DatabaseConstants.TrustServerCertificate};";
             else
-                return $"Server={EncryptionHelper.Decrypt(DatabaseConstants.Server)};" +
+                return $"Server={EncryptionHelper.Decrypt(DatabaseConstants.Server)},{EncryptionHelper.Decrypt(DatabaseConstants.Port)};" +
                        $"Database={EncryptionHelper.Decrypt(DatabaseConstants.MainDatabaseName)};" +
                        $"User Id={EncryptionHelper.Decrypt(DatabaseConstants.UserId)};" +
                        $"Password={EncryptionHelper.Decrypt(DatabaseConstants.Password)};" +

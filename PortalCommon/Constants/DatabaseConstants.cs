@@ -9,12 +9,13 @@ namespace PortalCommon.Constants
     public static class DatabaseConstants
     {
 
-        public const string Server = "WoUe/OCHXrNOOK8yryE0LA==";          // Encrypted "MARK\\SQLEXPRESS"
-        public const string MainDatabaseName = "HN/TTTr7rUobk+oihoeeSA=="; // Encrypted "AMSDev"
-        public const string UserId = "OZW3iHtTQF9CtVqECovYAg==";          // Encrypted "sa"
-        public const string Password = "Yt6Ekb5u5+zMWyzt7MQlSg==";         // Encrypted "P@ssw0rd123"
+        public const string Server = "5ptAQJtB7+fgjhZPAxJE6XcH6Mcfvx3crgO+gDXqjRkXRVv0n7dYpp+O8sWfLk+L";
+        public const string MainDatabaseName = "Llen/ZQa0CDT8Euvg6JZkg==";
+        public const string UserId = "Llen/ZQa0CDT8Euvg6JZkg==";
+        public const string Password = "Gax/M5wQF/BNoR3r8FXL5Q==";
+        public const string Port = "xmOxfJ/eYSSQ/UMBZdnJpw==";
         public const bool TrustServerCertificate = true;
-        public const bool IntegratedSecurity = true;
+        public const bool IntegratedSecurity = false;
 
     }
 }

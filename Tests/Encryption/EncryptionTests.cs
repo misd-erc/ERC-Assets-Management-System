@@ -26,7 +26,7 @@ namespace Tests.Encryption
         public void Encrypt_Should_Not_Return_PlainText()
         {
             // Arrange
-            var plainText = "4";
+            var plainText = "1433";
 
             // Act
             var encrypted = EncryptionHelper.Encrypt(plainText);
