@@ -6,20 +6,22 @@ const KEY = CryptoJS.enc.Utf8.parse('?rv$bwB9SKbYQSw*GZyQ?&x7mHC2kkJD');
 const IV = CryptoJS.enc.Utf8.parse('NDZE5W*##cENbgWk');
 
 /**
- * Encrypts plain text into Base64 string using AES-256.
+ * Encrypts plain text into Base64 string using AES-256-CBC.
  * Matches the C# EncryptionHelper.Encrypt method.
  */
 export function encrypt(plainText: string): string {
   if (!plainText) return plainText;
 
-  const encrypted = CryptoJS.AES.encrypt(plainText, KEY, {
+  const encrypted = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(plainText), KEY, {
     iv: IV,
     mode: CryptoJS.mode.CBC,
     padding: CryptoJS.pad.Pkcs7
   });
 
-  return encrypted.toString(); // Base64 by default
+  // Important: use ciphertext.toString() instead of encrypted.toString()
+  return encrypted.ciphertext.toString(CryptoJS.enc.Base64);
 }
+
 
 /**
  * Decrypts Base64 string back to plain text using AES-256.
@@ -28,15 +30,18 @@ export function encrypt(plainText: string): string {
 export function decrypt(cipherText: string): string {
   if (!cipherText) return cipherText;
 
-  const decrypted = CryptoJS.AES.decrypt(cipherText, KEY, {
-    iv: IV,
-    mode: CryptoJS.mode.CBC,
-    padding: CryptoJS.pad.Pkcs7
-  });
+  const decrypted = CryptoJS.AES.decrypt(
+    { ciphertext: CryptoJS.enc.Base64.parse(cipherText) } as any,
+    KEY,
+    {
+      iv: IV,
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7
+    }
+  );
 
   return decrypted.toString(CryptoJS.enc.Utf8);
 }
-
 /**
  * Encrypts to raw byte array (Uint8Array) instead of Base64.
  * Matches the C# EncryptionHelper.EncryptToBytes method.

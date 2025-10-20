@@ -1,29 +1,30 @@
 import axiosInstance from '../lib/axios';
 import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserEncryptedPublicViewModel, ApiResponse } from '../types';
 import { encrypt, decrypt } from '../utils/encryption';
+import { guidToLongId } from '../utils/guidUtils';
 
-export const validateUser = async (userInfo: { entraId: string; firstName: string; lastName: string; email: string }): Promise<{ systemUserIdEncrypted: string }> => {
+export const validateUser = async (userInfo: { entraId: string; firstName: string; lastName: string; email: string }): Promise<{ systemUserIdEncrypted: string; message: string }> => {
   const payload: UserValidationViewModel = {
-    EntraIdEncrypted: encrypt(userInfo.entraId),
-    FirstNameEncrypted: encrypt(userInfo.firstName),
-    LastNameEncrypted: encrypt(userInfo.lastName),
-    EmailEncrypted: encrypt(userInfo.email)
+    entraIdEncrypted: encrypt(guidToLongId(userInfo.entraId)),
+    firstNameEncrypted: encrypt(userInfo.firstName),
+    lastNameEncrypted: encrypt(userInfo.lastName),
+    emailEncrypted: encrypt(userInfo.email)
   };
 
-  const response = await axiosInstance.post<ApiResponse<UserEncryptedPublicViewModel>>('/users/validation', payload);
+   const response = await axiosInstance.post<ApiResponse<UserEncryptedPublicViewModel>>('/Users/validation', payload);
   const data = response.data.data;
 
-  if (!data || !data.SystemUserIdEncrypted) {
+  if (!data || !data.systemUserIdEncrypted) {
     throw new Error('Invalid response from server');
   }
 
-  return { systemUserIdEncrypted: data.SystemUserIdEncrypted };
+  return { systemUserIdEncrypted: data.systemUserIdEncrypted, message: response.data.message };
 };
 
 export const validateOTP = async (systemUserIdEncrypted: string, otp: string): Promise<{ user: User; token: string }> => {
   const payload: OTPValidationViewModel = {
-    SystemUserIdEncrypted: systemUserIdEncrypted,
-    OTPEncrypted: encrypt(otp)
+    systemUserIdEncrypted: systemUserIdEncrypted,
+    otpEncrypted: encrypt(otp)
   };
 
   const response = await axiosInstance.post<ApiResponse<UserEncryptedPublicViewModel>>('/users/otp/validation', payload);
@@ -34,11 +35,11 @@ export const validateOTP = async (systemUserIdEncrypted: string, otp: string): P
   }
 
   // Decrypt user data
-  const systemUserId = decrypt(data.SystemUserIdEncrypted);
-  const firstName = data.FirstNameEncrypted ? decrypt(data.FirstNameEncrypted) : '';
-  const lastName = data.LastNameEncrypted ? decrypt(data.LastNameEncrypted) : '';
-  const email = data.EmailEncrypted ? decrypt(data.EmailEncrypted) : '';
-  const token = data.ExpiryTokenEncrypted ? decrypt(data.ExpiryTokenEncrypted) : '';
+  const systemUserId = decrypt(data.systemUserIdEncrypted);
+  const firstName = data.firstNameEncrypted ? decrypt(data.firstNameEncrypted) : '';
+  const lastName = data.lastNameEncrypted ? decrypt(data.lastNameEncrypted) : '';
+  const email = data.emailEncrypted ? decrypt(data.emailEncrypted) : '';
+  const token = data.expiryTokenEncrypted ? decrypt(data.expiryTokenEncrypted) : '';
 
   const user: User = {
     id: systemUserId,
@@ -57,7 +58,7 @@ export const validateOTP = async (systemUserIdEncrypted: string, otp: string): P
 export const validateSessionToken = async (token: string, systemUserIdEncrypted: string): Promise<{ user: User; token: string }> => {
   const payload: SessionTokenValidationViewModel = {
     KeyEncrypted: encrypt(token),
-    SystemUserIdEncrypted: systemUserIdEncrypted
+    systemUserIdEncrypted: systemUserIdEncrypted
   };
 
   const response = await axiosInstance.post<ApiResponse<UserEncryptedPublicViewModel>>('/users/expiry-token/validation', payload);
@@ -68,11 +69,11 @@ export const validateSessionToken = async (token: string, systemUserIdEncrypted:
   }
 
   // Decrypt user data
-  const systemUserId = decrypt(data.SystemUserIdEncrypted);
-  const firstName = data.FirstNameEncrypted ? decrypt(data.FirstNameEncrypted) : '';
-  const lastName = data.LastNameEncrypted ? decrypt(data.LastNameEncrypted) : '';
-  const email = data.EmailEncrypted ? decrypt(data.EmailEncrypted) : '';
-  const newToken = data.ExpiryTokenEncrypted ? decrypt(data.ExpiryTokenEncrypted) : '';
+  const systemUserId = decrypt(data.systemUserIdEncrypted);
+  const firstName = data.firstNameEncrypted ? decrypt(data.firstNameEncrypted) : '';
+  const lastName = data.lastNameEncrypted ? decrypt(data.lastNameEncrypted) : '';
+  const email = data.emailEncrypted ? decrypt(data.emailEncrypted) : '';
+  const newToken = data.expiryTokenEncrypted ? decrypt(data.expiryTokenEncrypted) : '';
 
   const user: User = {
     id: systemUserId,

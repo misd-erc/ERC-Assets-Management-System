@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Shield } from 'lucide-react';
 import { useAuth } from '../../hooks';
-import { MFAVerification } from './MFAVerification';
-import { PublicClientApplication, AuthenticationResult, AccountInfo } from '@azure/msal-browser';
+import { PublicClientApplication, AuthenticationResult, AccountInfo, BrowserAuthError } from '@azure/msal-browser';
+import { toast } from 'sonner';
 
 const ercLogo = '/images/erc-logo.png';
 const microsoftLogo = '/images/microsoft-logo.svg';
@@ -15,7 +16,7 @@ const msalConfig = {
   auth: {
     clientId: process.env.REACT_APP_MSAL_CLIENT_ID || 'your-client-id',
     authority: `https://login.microsoftonline.com/${process.env.REACT_APP_MSAL_TENANT_ID || 'common'}`,
-    redirectUri: 'http://localhost:4434',
+    redirectUri: process.env.REACT_APP_MSAL_REDIRECT_URI || 'http://localhost:3000',
   },
   cache: {
     cacheLocation: 'localStorage',
@@ -27,6 +28,7 @@ export function LoginScreen() {
   const { login, requireMFA, isLoading, error } = useAuth();
   const [msalLoading, setMsalLoading] = useState(false);
   const [msalInstance, setMsalInstance] = useState<PublicClientApplication | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const initializeMSAL = async () => {
@@ -40,7 +42,13 @@ export function LoginScreen() {
 
   const handleMicrosoftLogin = async () => {
     if (!msalInstance) {
-      console.error('MSAL not initialized');
+      toast.error('MSAL not initialized');
+      return;
+    }
+
+    // Prevent double login attempts
+    if (msalLoading) {
+      toast.error('Login already in progress. Please wait...');
       return;
     }
 
@@ -63,24 +71,35 @@ export function LoginScreen() {
       const lastName = lastNameParts.join(' ');
 
       // Call our backend validation
-      await login({
+      const result = await login({
         entraId,
         firstName: firstName || '',
         lastName: lastName || '',
         email,
       });
 
+      if (result.success) {
+        toast.success('OTP has been sent to your email. Please check your inbox.', {
+          duration: 3000,
+        });
+        setTimeout(() => navigate('/mfa'), 3000);
+      } else {
+        toast.error(result.message);
+      }
+
     } catch (error) {
-      console.error('MSAL login failed:', error);
-      // Error will be handled by the auth store
+      if (error instanceof BrowserAuthError && error.errorCode === 'interaction_in_progress') {
+        toast.error('Login already in progress. Please wait...');
+      } else {
+        console.error('MSAL login failed:', error);
+        toast.error('Something went wrong during login.');
+      }
     } finally {
       setMsalLoading(false);
     }
   };
 
-  if (requireMFA) {
-    return <MFAVerification />;
-  }
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">

@@ -2,28 +2,28 @@ import { User, LoginCredentials } from '../user';
 
 // Backend view model interfaces matching C# models
 export interface UserValidationViewModel {
-  EntraIdEncrypted: string;
-  FirstNameEncrypted: string;
-  LastNameEncrypted: string;
-  EmailEncrypted: string;
+  entraIdEncrypted: string;
+  firstNameEncrypted: string;
+  lastNameEncrypted: string;
+  emailEncrypted: string;
 }
 
 export interface OTPValidationViewModel {
-  SystemUserIdEncrypted: string;
-  OTPEncrypted: string;
+  systemUserIdEncrypted: string;
+  otpEncrypted: string;
 }
 
 export interface SessionTokenValidationViewModel {
   KeyEncrypted: string;
-  SystemUserIdEncrypted: string;
+  systemUserIdEncrypted: string;
 }
 
 export interface UserEncryptedPublicViewModel {
-  SystemUserIdEncrypted: string;
-  FirstNameEncrypted?: string;
-  LastNameEncrypted?: string;
-  EmailEncrypted?: string;
-  ExpiryTokenEncrypted?: string;
+  systemUserIdEncrypted: string;
+  firstNameEncrypted?: string;
+  lastNameEncrypted?: string;
+  emailEncrypted?: string;
+  expiryTokenEncrypted?: string;
 }
 
 export interface ApiResponse<T> {
@@ -45,7 +45,7 @@ export interface AuthState {
 
 export interface AuthActions {
   initialize: () => Promise<void>;
-  login: (userInfo: { entraId: string; firstName: string; lastName: string; email: string }) => Promise<boolean>;
+  login: (userInfo: { entraId: string; firstName: string; lastName: string; email: string }) => Promise<{ success: boolean; message: string }>;
   verifyMFA: (code: string) => Promise<boolean>;
   validateSession: () => Promise<boolean>;
   logout: () => void;
