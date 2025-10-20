@@ -22,6 +22,7 @@ namespace PortalTools.Services.DBO.Account
 
         public IQueryable<TblSystemUser> GetTblSystemUsers() => _context.TblSystemUsers;
         public IQueryable<VwSystemUser?> GetVwSystemUsers() => _context.VwSystemUsers;
+        public async Task<VwSystemUser?> GetVwSystemUser(long id) => await _context.VwSystemUsers.Where(x => x.Id == id).FirstOrDefaultAsync();
         public async Task<TblSystemUser?> GetTblSystemUser(long id) => await _context.TblSystemUsers.Where(x => x.Id == id).FirstOrDefaultAsync();
         public async Task<TblSystemUser?> GetTblSystemUserByEntraId(string entraIdEncrypted) => await _context.TblSystemUsers.Where(x => x.EntraIdEncrypted == entraIdEncrypted).FirstOrDefaultAsync();
         public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAndEmail(long? entraId, string email)

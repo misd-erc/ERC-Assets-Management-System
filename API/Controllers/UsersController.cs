@@ -124,6 +124,46 @@ namespace API.Controllers
             }
         }
 
+        // GET api/users/all
+        [HttpGet("all/{systemUserIdEncrypted}")]
+        public async Task   <IActionResult> GetSystemUserBySystemUserId([FromRoute] string systemUserIdEncrypted)
+        {
+            try
+            {
+
+                VwSystemUser user = await _accountGetTools.GetVwSystemUser(long.Parse(EncryptionHelper.Decrypt(systemUserIdEncrypted)));
+
+                UserBasicResponseModel userBasicResponse = new UserBasicResponseModel
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Email = user.Email,
+                    SystemRoleId = user.SystemRoleId,
+                    SystemRoleName = user.SystemRoleName,
+                    StatusId = user.StatusId,
+                    StatusName = user.StatusName,
+                    OfficeId = user.OfficeId,
+                    OfficeName = user.OfficeName,
+                    OfficeAcronym = user.OfficeAcronym,
+                    DivisionId = user.DivisionId,
+                    DivisionName = user.DivisionName,
+                    DivisionAcronym = user.DivisionAcronym,
+                    IsActive = user.IsActive,
+                    CreatedAt = user.CreatedAt,
+                    LastLoginAt = user.LastLoginAt
+                };
+
+                return Ok(ApiResponse<object>.Ok(userBasicResponse, $"System user have been retrieved"));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         #endregion
 
         #region POST
