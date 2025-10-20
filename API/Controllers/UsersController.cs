@@ -296,7 +296,7 @@ namespace API.Controllers
             }
         }
 
-        // POST api/users/expiry-token/validation
+        /*// POST api/users/expiry-token/validation
         [HttpPost("expiry-token/validation")]
         public async Task<IActionResult> ValidateSessionToken([FromBody] SessionTokenValidationQueryParams model)
         {
@@ -335,7 +335,7 @@ namespace API.Controllers
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
-        }
+        }*/
 
         #endregion
 
