@@ -24,14 +24,17 @@ namespace API.Controllers
         private readonly DbContextOptions<PortalDbContext> _options;
         private readonly LogGetTools _logGetTools;
         private readonly AccountGetTools _accountGetTools;
+        private readonly AuthTools _authTools;
 
         public LogsController(LogGetTools logGetTools,
             AccountGetTools accountGetTools,
-        DbContextOptions<PortalDbContext> options)
+        DbContextOptions<PortalDbContext> options,
+        AuthTools authTools)
         {
             _logGetTools = logGetTools;
             _options = options;
             _accountGetTools = accountGetTools;
+            _authTools = authTools;
         }
 
         #region GET
@@ -41,6 +44,12 @@ namespace API.Controllers
         {
             try
             {
+
+                #region Token Validator
+                if (!await _authTools.ValidateSessionTokenInternally(query.ActionBySystemUserIdEncrypted))
+                    return Ok(ApiResponse<object>.SessionTokenExpired());
+                #endregion
+
                 List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers().ToListAsync();
 
                 IQueryable<TblAuditTrail> auditTrailQuery = _logGetTools.GetTblAuditTrails();
@@ -101,6 +110,10 @@ namespace API.Controllers
         {
             try
             {
+                #region Token Validator
+                if (!await _authTools.ValidateSessionTokenInternally(query.ActionBySystemUserIdEncrypted))
+                    return Ok(ApiResponse<object>.SessionTokenExpired());
+                #endregion
 
                 TblSystemUser user = await _accountGetTools.GetTblSystemUser(long.Parse(EncryptionHelper.Decrypt(systemUserIdEncrypted)));
 

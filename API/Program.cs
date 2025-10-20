@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using PortalCommon.Utilities;
 using PortalDB.Services;
+using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using PortalTools.Services.LOG;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,8 @@ if (args.Contains("seed", StringComparer.OrdinalIgnoreCase))
 builder.Services.AddScoped<AccountGetTools>();
 builder.Services.AddScoped<AccountEditTools>();
 builder.Services.AddScoped<LogGetTools>();
+
+builder.Services.AddScoped<AuthTools>();
 #endregion
 
 #region CORS

@@ -6,6 +6,7 @@ using PortalCommon.QueryParams.Account;
 using PortalCommon.QueryParams.OTP;
 using PortalCommon.QueryParams.Pagination;
 using PortalCommon.QueryParams.Session;
+using PortalCommon.QueryParams.Universal;
 using PortalCommon.ResponseModels.Account;
 using PortalCommon.ResponseModels.Log.AuditTrail;
 using PortalCommon.Responses;
@@ -22,6 +23,7 @@ using PortalTools.Utilities;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static System.Net.WebRequestMethods;
 
 namespace API.Controllers
@@ -35,14 +37,17 @@ namespace API.Controllers
         private readonly DbContextOptions<PortalDbContext> _options;
         private readonly AccountGetTools _accountGetTools;
         private readonly AccountEditTools _accountEditTools;
+        private readonly AuthTools _authTools;
 
         public UsersController(AccountGetTools accountGetTools, 
             AccountEditTools accountEditTools,
-            DbContextOptions<PortalDbContext> options)
+            DbContextOptions<PortalDbContext> options,
+            AuthTools authTools)
         {
             _accountGetTools = accountGetTools;
             _accountEditTools = accountEditTools;
             _options = options;
+            _authTools = authTools;
         }
 
         #region GET
@@ -53,6 +58,10 @@ namespace API.Controllers
         {
             try
             {
+                #region Token Validator
+                if (!await _authTools.ValidateSessionTokenInternally(query.ActionBySystemUserIdEncrypted))
+                    return Ok(ApiResponse<object>.SessionTokenExpired());
+                #endregion
 
                 IEnumerable<VwSystemUser?> users = await _accountGetTools.GetVwSystemUsers().ToListAsync();
 
@@ -126,12 +135,17 @@ namespace API.Controllers
 
         // GET api/users/all
         [HttpGet("all/{systemUserIdEncrypted}")]
-        public async Task   <IActionResult> GetSystemUserBySystemUserId([FromRoute] string systemUserIdEncrypted)
+        public async Task   <IActionResult> GetSystemUserBySystemUserId([FromQuery] SoloQueryParams query, [FromRoute] string systemUserIdEncrypted)
         {
             try
             {
 
-                VwSystemUser user = await _accountGetTools.GetVwSystemUser(long.Parse(EncryptionHelper.Decrypt(systemUserIdEncrypted)));
+                #region Token Validator
+                if (!await _authTools.ValidateSessionTokenInternally(query.ActionBySystemUserIdEncrypted))
+                    return Ok(ApiResponse<object>.SessionTokenExpired());
+                #endregion
+
+                VwSystemUser? user = await _accountGetTools.GetVwSystemUser(long.Parse(EncryptionHelper.Decrypt(systemUserIdEncrypted)));
 
                 UserBasicResponseModel userBasicResponse = new UserBasicResponseModel
                 {
@@ -269,7 +283,7 @@ namespace API.Controllers
                 };
 
                 #region Token Validator
-                if (!await ValidateSessionTokenInternally(user.ActionBy))
+                if (!await _authTools.ValidateSessionTokenInternally(user.ActionBy))
                     return Ok(ApiResponse<object>.SessionTokenExpired());
                 #endregion
 
@@ -459,26 +473,6 @@ namespace API.Controllers
             }
         }*/
 
-        #endregion
-
-        #region Internal Class Methods
-        private async Task<bool> ValidateSessionTokenInternally(long systemUserId)
-        {
-            try
-            {
-                bool isTokenValid = await _accountGetTools.ValidateTokenSessionBySystemUserIdAsync(systemUserId);
-
-                if (isTokenValid)
-                    return true;
-            }
-            catch (Exception ex)
-            {
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
-                return false;
-            }
-
-            return false;
-        }
         #endregion
 
     }

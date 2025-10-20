@@ -17,5 +17,6 @@ namespace PortalCommon.QueryParams.Pagination
         public DateTime? StartDate { get; set; }
 
         public DateTime? EndDate { get; set; }
+        public long ActionBySystemUserIdEncrypted { get; set; }
     }
 }
