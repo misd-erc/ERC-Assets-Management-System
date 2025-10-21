@@ -37,6 +37,9 @@ namespace PortalDB.Entities.DBO.Office
         [Column("OfficeAcronym")]
         public string? Acronym { get; set; }
 
+        [Column("OfficeCreatedAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
         #region Foreign Key Collection
         public virtual ICollection<TblDivision> Divisions { get; set; } = new List<TblDivision>();
         #endregion

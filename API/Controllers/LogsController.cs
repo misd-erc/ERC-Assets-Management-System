@@ -46,7 +46,7 @@ namespace API.Controllers
             {
 
                 #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(query.ActionBySystemUserIdEncrypted))
+                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
                     return Ok(ApiResponse<object>.SessionTokenExpired());
                 #endregion
 
@@ -111,7 +111,7 @@ namespace API.Controllers
             try
             {
                 #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(query.ActionBySystemUserIdEncrypted))
+                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
                     return Ok(ApiResponse<object>.SessionTokenExpired());
                 #endregion
 

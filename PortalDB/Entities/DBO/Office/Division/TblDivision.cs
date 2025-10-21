@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace PortalDB.Entities.DBO.Office.Division
 {
     [Table("tblDivisions", Schema = "dbo")]
-    public class TblDivision
+    public class TblDivision : DivisionEntity
     {
 
         #region Constants
@@ -40,6 +40,10 @@ namespace PortalDB.Entities.DBO.Office.Division
         [Column("DivisionId")]
         public long Id { get; set; }
 
+    }
+
+    public class DivisionEntity()
+    {
         [Column("OfficeId")]
         public long OfficeId { get; set; }
         [ForeignKey(nameof(OfficeId))]
@@ -52,5 +56,8 @@ namespace PortalDB.Entities.DBO.Office.Division
         [MaxLength(15)]
         [Column("DivisionAcronym")]
         public string? Acronym { get; set; }
+
+        [Column("DivisionCreatedAt")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

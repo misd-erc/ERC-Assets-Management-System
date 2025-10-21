@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PortalDB.Entities.DBO.Account;
+using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Services;
 using PortalTools.Utilities;
 using System;

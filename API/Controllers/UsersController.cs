@@ -14,6 +14,7 @@ using PortalCommon.Utilities;
 using PortalCommon.ViewModels.Account;
 using PortalCommon.ViewModels.SMTP;
 using PortalDB.Entities.DBO.Account;
+using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Entities.LOG.AuditTrail;
 using PortalDB.Services;
 using PortalTools.Services;
@@ -59,7 +60,7 @@ namespace API.Controllers
             try
             {
                 #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(query.ActionBySystemUserIdEncrypted))
+                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
                     return Ok(ApiResponse<object>.SessionTokenExpired());
                 #endregion
 
@@ -96,7 +97,7 @@ namespace API.Controllers
                     .Take(query.PageSize)
                     .ToList();
 
-                List<UserBasicResponseModel> userBasicResponses = users.Select(x => new UserBasicResponseModel
+                List<UserBasicResponseModel> userBasicResponses = usersList.Select(x => new UserBasicResponseModel
                 {
                     Id = x.Id,
                     FirstName = x.FirstName,
@@ -141,7 +142,7 @@ namespace API.Controllers
             {
 
                 #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(query.ActionBySystemUserIdEncrypted))
+                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
                     return Ok(ApiResponse<object>.SessionTokenExpired());
                 #endregion
 

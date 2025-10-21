@@ -9,6 +9,6 @@ namespace PortalCommon.QueryParams.Universal
 {
     public class SoloQueryParams
     {
-        [Required] public long ActionBySystemUserIdEncrypted { get; set; }
+        [Required] public string ActionBySystemUserIdEncrypted { get; set; }
     }
 }

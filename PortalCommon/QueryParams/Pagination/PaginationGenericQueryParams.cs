@@ -18,6 +18,6 @@ namespace PortalCommon.QueryParams.Pagination
         public DateTime? StartDate { get; set; }
 
         public DateTime? EndDate { get; set; }
-        [Required] public long ActionBySystemUserIdEncrypted { get; set; }
+        [Required] public string ActionBySystemUserIdEncrypted { get; set; }
     }
 }

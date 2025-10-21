@@ -16,7 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\DBO\Office\" />
     <Folder Include="Services\ACCT\" />
     <Folder Include="Services\ASSET\" />
     <Folder Include="Services\INV\" />

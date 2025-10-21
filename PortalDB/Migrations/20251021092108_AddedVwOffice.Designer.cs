@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251021092108_AddedVwOffice")]
+    partial class AddedVwOffice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -318,48 +321,6 @@ namespace PortalDB.Migrations
                     b.ToTable("tblDivisions", "dbo");
                 });
 
-            modelBuilder.Entity("PortalDB.Entities.DBO.Office.Division.VwDivision", b =>
-                {
-                    b.Property<string>("Acronym")
-                        .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)")
-                        .HasColumnName("DivisionAcronym");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("DivisionCreatedAt");
-
-                    b.Property<long?>("Id")
-                        .HasColumnType("bigint")
-                        .HasColumnName("DivisionId");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("DivisionName");
-
-                    b.Property<string>("OfficeAcronym")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("OfficeAcronym");
-
-                    b.Property<long>("OfficeId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("OfficeId");
-
-                    b.Property<string>("OfficeName")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("OfficeName");
-
-                    b.HasIndex("OfficeId");
-
-                    b.ToTable("vwDivisions", "dbo", t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
-
-                    b.ToView("vwDivisions", "dbo");
-                });
-
             modelBuilder.Entity("PortalDB.Entities.DBO.Office.TblEmploymentType", b =>
                 {
                     b.Property<long>("Id")
@@ -538,17 +499,6 @@ namespace PortalDB.Migrations
                 {
                     b.HasOne("PortalDB.Entities.DBO.Office.TblOffice", "Office")
                         .WithMany("Divisions")
-                        .HasForeignKey("OfficeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Office");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.DBO.Office.Division.VwDivision", b =>
-                {
-                    b.HasOne("PortalDB.Entities.DBO.Office.TblOffice", "Office")
-                        .WithMany()
                         .HasForeignKey("OfficeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
