@@ -24,24 +24,31 @@ namespace PortalTools.Services.DBO.Account
         public IQueryable<VwSystemUser?> GetVwSystemUsers() => _context.VwSystemUsers;
         public async Task<VwSystemUser?> GetVwSystemUser(long id) => await _context.VwSystemUsers.Where(x => x.Id == id).FirstOrDefaultAsync();
         public async Task<TblSystemUser?> GetTblSystemUser(long id) => await _context.TblSystemUsers.Where(x => x.Id == id).FirstOrDefaultAsync();
-        public async Task<TblSystemUser?> GetTblSystemUserByEntraId(string entraIdEncrypted) => await _context.TblSystemUsers.Where(x => x.EntraIdEncrypted == entraIdEncrypted).FirstOrDefaultAsync();
-        public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAndEmail(long? entraId, string email)
+        public async Task<TblSystemUser?> GetTblSystemUserByEntraId(long entraId) => await _context.TblSystemUsers.Where(x => x.EntraId == entraId).FirstOrDefaultAsync();
+        public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAndEmail(long entraId, string email)
         {
-            var encryptedEntraId = EncryptionHelper.Encrypt(entraId.ToString());
-            var encryptedEmail = EncryptionHelper.Encrypt(email);
+            TblSystemUser? user = new TblSystemUser();
+            user = await _context.TblSystemUsers.Where(x => x.EntraId == entraId).FirstOrDefaultAsync();
 
-            return await _context.TblSystemUsers.Where(x => x.EntraIdEncrypted == encryptedEntraId
-                && x.EmailEncrypted == encryptedEmail).FirstOrDefaultAsync();
+            if (user != null && user.Email != email)
+                throw new UnauthorizedAccessException("Email does not match the provided Entra ID.");
+
+            return user;
         }
         public async Task<bool> ValidateOTPAsync(TblOneTimePassword model)
         {
-            bool isExisting = await _context.TblOneTimePasswords
-                .AnyAsync(x => x.SystemUserId == model.SystemUserId 
-                    && x.OTPEncrypted == model.OTPEncrypted
-                    && x.ValidUntil <= DateTime.UtcNow);
+            TblOneTimePassword? otpInfo = new TblOneTimePassword();
+
+            otpInfo = await _context.TblOneTimePasswords.Where(x => x.SystemUserId == model.SystemUserId && x.ValidUntil >= DateTime.UtcNow).FirstOrDefaultAsync();
+
+            if (otpInfo == null)
+                throw new KeyNotFoundException("OTP connected to SystemUserId not found");
+
+            bool isExisting = otpInfo.OTP == model.OTP;
             
             if(isExisting)
                 return true;
+
             return false;
         }
         public async Task<bool> ValidateTokenSessionAsync(TblSessionToken model)
@@ -49,7 +56,7 @@ namespace PortalTools.Services.DBO.Account
             bool isValid = await _context.TblSessionTokens
                 .AnyAsync(x => x.SystemUserId == model.SystemUserId
                     && x.Key == model.Key
-                    && x.ValidUntil <= DateTime.UtcNow);
+                    && x.ValidUntil >= DateTime.UtcNow);
 
             if (isValid)
                 return true;
@@ -60,7 +67,7 @@ namespace PortalTools.Services.DBO.Account
         {
             bool isValid = await _context.TblSessionTokens
                 .AnyAsync(x => x.SystemUserId == systemUserId
-                    && x.ValidUntil <= DateTime.UtcNow);
+                    && x.ValidUntil >= DateTime.UtcNow);
 
             if (isValid)
                 return true;

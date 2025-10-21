@@ -19,15 +19,8 @@ namespace PortalDB.Entities.DBO.Account
         [Column("SystemUserId")]
         public long Id { get; set; }
 
-        // EntraId is ObjectId in Azure AD
         [Column("MicrosoftEntraId")]
-        public string? EntraIdEncrypted { get; set; }
-        [NotMapped]
-        public long? EntraId
-        {
-            get => long.TryParse(EntraIdEncrypted is null ? null : EncryptionHelper.Decrypt(EntraIdEncrypted), out var val) ? val : null;
-            set => EntraIdEncrypted = value.HasValue ? EncryptionHelper.Encrypt(value.Value.ToString()) : null;
-        }
+        public long EntraId { get; set; }
 
         #region Foreign Key Collection
         //public virtual ICollection<TblAuditTrail> AuditTrail { get; set; } = new List<TblAuditTrail>();

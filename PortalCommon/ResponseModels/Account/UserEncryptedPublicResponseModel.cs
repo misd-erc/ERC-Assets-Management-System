@@ -9,6 +9,5 @@ namespace PortalCommon.ResponseModels.Account
     public class UserEncryptedPublicResponseModel
     {
         public string SystemUserIdEncrypted { get; set; } = string.Empty;
-        public string ExpiryTokenEncrypted { get; set; } = string.Empty;
     }
 }

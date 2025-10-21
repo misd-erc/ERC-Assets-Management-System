@@ -210,7 +210,7 @@ namespace API.Controllers
                 if (systemUserId > 0)
                 {
                     #region OTP Generation
-                    var (otp, expiry) = OTPHelper.GenerateTimedOTP(user.EntraId.ToString(), 3);
+                    var (otp, expiry) = OTPHelper.GenerateTimedOTP(user.EntraId.ToString(), 10);
 
                     TblOneTimePassword otpGenerated = new()
                     {
@@ -231,7 +231,7 @@ namespace API.Controllers
                         Body = $"Hello {user.FirstName},<br/><br/>Your One-Time Password (OTP) is: <strong>{otp}</strong><br/>This OTP is valid for 3 minutes.<br/><br/>If you did not request this, please contact support immediately.<br/><br/>Best regards,<br/>AMS Team"
                     };
 
-                    //await EmailHelper.SendEmailAsync(newEmail);
+                    await EmailHelper.SendEmailAsync(newEmail);
 
                     #endregion
                 }
@@ -328,7 +328,7 @@ namespace API.Controllers
                 if (user != null)
                 {
                     #region OTP Generation
-                    var (otp, expiry) = OTPHelper.GenerateTimedOTP(user.Id.ToString(), 3);
+                    var (otp, expiry) = OTPHelper.GenerateTimedOTP(user.Id.ToString(), 10);
 
                     TblOneTimePassword otpGenerated = new()
                     {
@@ -349,7 +349,7 @@ namespace API.Controllers
                         Body = $"Hello {user.FirstName},<br/><br/>Your One-Time Password (OTP) is: <strong>{otp}</strong><br/>This OTP is valid for 3 minutes.<br/><br/>If you did not request this, please contact support immediately.<br/><br/>Best regards,<br/>AMS Team"
                     };
 
-                    //await EmailHelper.SendEmailAsync(newEmail);
+                    await EmailHelper.SendEmailAsync(newEmail);
 
                     #endregion
                 }
