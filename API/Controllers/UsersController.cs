@@ -210,7 +210,7 @@ namespace API.Controllers
                 if (systemUserId > 0)
                 {
                     #region OTP Generation
-                    var (otp, expiry) = OTPHelper.GenerateTimedOTP(user.EntraId.ToString(), 10);
+                    var (otp, expiry) = OTPHelper.GenerateTimedOTP(user.EntraId.ToString(), 3);
 
                     TblOneTimePassword otpGenerated = new()
                     {
@@ -328,7 +328,7 @@ namespace API.Controllers
                 if (user != null)
                 {
                     #region OTP Generation
-                    var (otp, expiry) = OTPHelper.GenerateTimedOTP(user.Id.ToString(), 10);
+                    var (otp, expiry) = OTPHelper.GenerateTimedOTP(user.Id.ToString(), 3);
 
                     TblOneTimePassword otpGenerated = new()
                     {
