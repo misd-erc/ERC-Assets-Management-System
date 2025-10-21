@@ -91,6 +91,10 @@ namespace PortalTools.Services.DBO.Account
                     Id = model.Id,
                     SystemRoleId = model.SystemRoleId,
                     StatusId = model.StatusId,
+                    OfficeId = model.OfficeId,
+                    DivisionId = model.DivisionId,
+                    EmploymentTypeId = model.EmploymentTypeId,
+                    PositionId = model.PositionId,
                     IsActive = model.IsActive
                 };
 
@@ -101,6 +105,10 @@ namespace PortalTools.Services.DBO.Account
                     .ExecuteUpdateAsync(u => u
                         .SetProperty(x => x.SystemRoleId, userUpdatedInfo.SystemRoleId)
                         .SetProperty(x => x.StatusId, userUpdatedInfo.StatusId)
+                        .SetProperty(x => x.OfficeId, userUpdatedInfo.OfficeId)
+                        .SetProperty(x => x.DivisionId, userUpdatedInfo.DivisionId)
+                        .SetProperty(x => x.EmploymentTypeId, userUpdatedInfo.EmploymentTypeId)
+                        .SetProperty(x => x.PositionId, userUpdatedInfo.PositionId)
                         .SetProperty(x => x.IsActive, userUpdatedInfo.IsActive));
 
                 AuditTrailTool.TrackChanges(context, userCurrentInfo, userUpdatedInfo, nameof(TblSystemUser), model.ActionBy, "Update");
