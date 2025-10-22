@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { User, AuthStore } from '../../types';
-import { validateUser, validateOTP, validateSessionToken, logout as apiLogout } from '../../api/authApi';
+import { validateUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '../../api/authApi';
+import { generateSessionToken, saveSession, loadSession, clearSession } from '../../services/authService';
 import { toast } from 'sonner';
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -15,34 +16,36 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   // Initialize auth state on app start
   initialize: async () => {
-    const token = localStorage.getItem('authToken');
-    const userStr = localStorage.getItem('user');
-    const systemUserIdEncrypted = localStorage.getItem('systemUserIdEncrypted');
+    // Load session from localStorage
+    const session = loadSession();
 
-    if (token && userStr && systemUserIdEncrypted) {
+    if (session) {
       try {
         set({ loading: true, error: '' });
-        const user = JSON.parse(userStr);
 
-        // Validate session token with backend
-        const result = await validateSessionToken(token, systemUserIdEncrypted);
+        // Check if userDetails exist in localStorage
+        const storedUserDetails = localStorage.getItem('userDetails');
+        if (!storedUserDetails && session.systemUserIdEncrypted) {
+          // Fetch user details if not present
+          const userDetails = await getUserDetails(session.systemUserIdEncrypted, session.systemUserIdEncrypted);
+          localStorage.setItem('userDetails', JSON.stringify(userDetails));
+        }
+
+        // Validate session token with backend (optional, can be removed if not needed)
+        // For now, we'll trust the local session if it's not expired
+        // const result = await validateSessionToken(session.sessionToken, session.systemUserIdEncrypted);
 
         set({
           isAuthenticated: true,
-          user: { ...user, ...result.user },
-          token: result.token,
+          user: session.user,
+          token: session.sessionToken,
           requireMFA: false,
           loading: false,
-          systemUserIdEncrypted
+          systemUserIdEncrypted: session.systemUserIdEncrypted
         });
-
-        // Update stored token if refreshed
-        localStorage.setItem('authToken', result.token);
       } catch (error) {
         // Session invalid, clear storage
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
-        localStorage.removeItem('systemUserIdEncrypted');
+        clearSession();
         set({
           isAuthenticated: false,
           user: null,
@@ -108,17 +111,29 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         entraId: get().user?.entraId || '' // Preserve Entra ID from MSAL
       };
 
+      // Fetch and store user details
+      const userDetails = await getUserDetails(systemUserIdEncrypted, systemUserIdEncrypted);
+      localStorage.setItem('userDetails', JSON.stringify(userDetails));
+
+      // Generate session token and set expiration (1 day from now)
+      const sessionToken = generateSessionToken();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 1 day
+
+      // Save session to localStorage
+      saveSession({
+        sessionToken,
+        systemUserIdEncrypted: result.systemUserIdEncrypted,
+        expiresAt,
+        user: updatedUser
+      });
+
       set({
         isAuthenticated: true,
         user: updatedUser,
-        token: result.token,
+        token: sessionToken, // Store session token in state
         requireMFA: false,
         loading: false
       });
-
-      // Store in localStorage
-      localStorage.setItem('authToken', result.token);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
 
       return true;
     } catch (error) {
@@ -172,7 +187,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   logout: () => {
-    apiLogout();
+    clearSession();
+    localStorage.removeItem('userDetails');
     set({
       isAuthenticated: false,
       user: null,

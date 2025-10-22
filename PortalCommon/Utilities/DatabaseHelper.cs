@@ -21,6 +21,7 @@ namespace PortalCommon.Utilities
                        $"User Id={EncryptionHelper.Decrypt(DatabaseConstants.UserId)};" +
                        $"Password={EncryptionHelper.Decrypt(DatabaseConstants.Password)};" +
                        $"TrustServerCertificate={DatabaseConstants.TrustServerCertificate};";
+                      
         }
     }
 }

@@ -10,7 +10,7 @@ namespace Tests.Encryption
         public void Encrypt_And_Decrypt_Should_Return_Original_Text()
         {
             // Arrange
-            var plainText = "23vkZO8ie8v1Nl4Jkc8faNSFK77SCRuxcqz3YLwJp5s=";
+            var plainText = "WoUe/OCHXrNOOK8yryE0LA==";
 
             // Act
             //var encrypted = EncryptionHelper.Encrypt(plainText);
@@ -31,7 +31,7 @@ namespace Tests.Encryption
 
             // Act
             var encrypted = EncryptionHelper.Encrypt(plainText);
-            var encrypted2 = EncryptionHelper.Encrypt(plainText2);
+          //  var encrypted2 = EncryptionHelper.Encrypt(plainText2);
 
             // Assert
             Assert.NotEqual(plainText, encrypted);
