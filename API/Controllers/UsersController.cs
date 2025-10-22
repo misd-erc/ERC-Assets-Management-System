@@ -353,15 +353,27 @@ namespace API.Controllers
                     await _accountEditTools.AddTblOneTimePasswordAsync(otpGenerated, context);
                     #endregion
                     #region OTP Email Sender
-                    EmailViewModel newEmail = new()
+                    var renderer = new RazorRendererTools();
+
+                    EmailViewModel otpEmailPreModel = new()
+                    {
+                        Subject = "Your AMS One-Time Password (OTP)",
+                        Name = user.FirstName,
+                        Body = otp.ToString()
+                    };
+
+                    string htmlBody = await renderer.RenderAsync("OTPEmailTemplate.cshtml", otpEmailPreModel);
+
+                    EmailViewModel emailModel = new()
                     {
                         Email = user.Email,
                         Name = $"{user.FirstName} {user.LastName}",
                         Subject = "Your AMS One-Time Password (OTP)",
-                        Body = $"Hello {user.FirstName},<br/><br/>Your One-Time Password (OTP) is: <strong>{otp}</strong><br/>This OTP is valid for 3 minutes.<br/><br/>If you did not request this, please contact support immediately.<br/><br/>Best regards,<br/>AMS Team"
+                        Body = htmlBody,
+                        IsHTML = true
                     };
 
-                    await EmailHelper.SendEmailAsync(newEmail);
+                    await EmailHelper.SendEmailAsync(emailModel);
 
                     #endregion
                 }
