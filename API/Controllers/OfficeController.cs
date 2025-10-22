@@ -176,6 +176,7 @@ namespace API.Controllers
                 List<VwDivisionResponseModel> divisionsResponses = divisionsList.Select(x => new VwDivisionResponseModel
                 {
                     Id = x.Id,
+                    OfficeId = x.OfficeId,
                     Name = x.Name,
                     Acronym = x.Acronym,
                     OfficeName = x.OfficeName,
@@ -190,6 +191,40 @@ namespace API.Controllers
                     totalCount,
                     "Divisions have been retrieved"
                 ));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // GET api/office/division/all
+        [HttpGet("division/all/{divisionId}")]
+        public async Task<IActionResult> GetDivisionByDivisionId([FromQuery] SoloQueryParams query, [FromRoute] long divisionId)
+        {
+            try
+            {
+                #region Token Validator
+                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
+                    return Ok(ApiResponse<object>.SessionTokenExpired());
+                #endregion
+
+                VwDivision? division = await _officeGetTools.GetVwDivision(divisionId);
+
+                VwDivisionResponseModel divisionResponse = new ()
+                {
+                    Id = division.Id,
+                    OfficeId = division.OfficeId,
+                    Name = division.Name,
+                    Acronym = division.Acronym,
+                    OfficeName = division.OfficeName,
+                    OfficeAcronym = division.OfficeAcronym,
+                    CreatedAt = division.CreatedAt
+                };
+
+                return Ok(ApiResponse<VwDivisionResponseModel>.Ok(divisionResponse, "Division have been retrieved"));
 
             }
             catch (Exception ex)
