@@ -21,7 +21,7 @@ builder.Services.AddDbContext<PortalDbContext>(options =>
 #endregion
 
 #region Seeder Command
-// Check if we’re running in “seed mode”
+// Check if weï¿½re running in ï¿½seed modeï¿½
 if (args.Contains("seed", StringComparer.OrdinalIgnoreCase))
 {
     Console.WriteLine("Running database seeder...");

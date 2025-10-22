@@ -68,7 +68,7 @@ namespace PortalCommon.Utilities
         /// <returns>Tuple of OTP string and expiry DateTime</returns>
         public static (long Otp, DateTime Expiry) GenerateTimedOTP(string secret, int expiryMinutes = 5)
         {
-            var otp = GenerateNumericOTP(6);
+            var otp = new Random().Next(100000, 999999);
             var expiry = DateTime.UtcNow.AddMinutes(expiryMinutes);
 
             // Optionally, use the hash for verification

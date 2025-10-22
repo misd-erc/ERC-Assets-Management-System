@@ -10,17 +10,20 @@ namespace PortalCommon.Utilities
         /// </summary>
         public static string ConnectionString()
         {
-            if (DatabaseConstants.IntegratedSecurity)
-                return $"Server={EncryptionHelper.Decrypt(DatabaseConstants.Server)};" +
-                       $"Database={EncryptionHelper.Decrypt(DatabaseConstants.MainDatabaseName)};" +
-                       $"Integrated Security={DatabaseConstants.IntegratedSecurity};" +
-                       $"TrustServerCertificate={DatabaseConstants.TrustServerCertificate};";
-            else
-                return $"Server={EncryptionHelper.Decrypt(DatabaseConstants.Server)},{EncryptionHelper.Decrypt(DatabaseConstants.Port)};" +
-                       $"Database={EncryptionHelper.Decrypt(DatabaseConstants.MainDatabaseName)};" +
-                       $"User Id={EncryptionHelper.Decrypt(DatabaseConstants.UserId)};" +
-                       $"Password={EncryptionHelper.Decrypt(DatabaseConstants.Password)};" +
-                       $"TrustServerCertificate={DatabaseConstants.TrustServerCertificate};";
+            //if (DatabaseConstants.IntegratedSecurity)
+            //    return $"Server={EncryptionHelper.Decrypt(DatabaseConstants.Server)};" +
+            //           $"Database={EncryptionHelper.Decrypt(DatabaseConstants.MainDatabaseName)};" +
+            //           $"Integrated Security={DatabaseConstants.IntegratedSecurity};" +
+            //           $"TrustServerCertificate={DatabaseConstants.TrustServerCertificate};";
+            //else
+            //    return $"Server={EncryptionHelper.Decrypt(DatabaseConstants.Server)},{EncryptionHelper.Decrypt(DatabaseConstants.Port)};" +
+            //           $"Database={EncryptionHelper.Decrypt(DatabaseConstants.MainDatabaseName)};" +
+            //           $"User Id={EncryptionHelper.Decrypt(DatabaseConstants.UserId)};" +
+            //           $"Password={EncryptionHelper.Decrypt(DatabaseConstants.Password)};" +
+            //           $"TrustServerCertificate={DatabaseConstants.TrustServerCertificate};";
+
+            return "Data Source=JEYMS;Initial Catalog=AMSDev;Integrated Security=True;TrustServerCertificate=True;";
+
         }
     }
 }
