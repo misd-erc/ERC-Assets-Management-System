@@ -18,11 +18,11 @@ namespace PortalDB.Entities.DBO.Office
 
         [MaxLength(100)]
         [Column("PositionName")]
-        public string? PositionName { get; set; }
+        public string? Name { get; set; }
 
         [MaxLength(10)]
         [Column("PositionAcronym")]
-        public string? PositionAcronym { get; set; }
+        public string? Acronym { get; set; }
 
         [MaxLength(5)]
         [Column("PositionSalaryGrade")]

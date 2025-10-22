@@ -26,7 +26,7 @@ namespace Tests.Encryption
         public void Encrypt_Should_Not_Return_PlainText()
         {
             // Arrange
-            var plainText = "927738";
+            var plainText = "924479";
             var plainText2 = "2";
 
             // Act

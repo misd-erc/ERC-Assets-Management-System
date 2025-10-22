@@ -23,7 +23,7 @@ namespace PortalTools.Services.DBO.Account
         }
 
         /// <summary>
-        /// Updates an existing TblSystemUser.
+        /// Updates an existing TblSystemUser for Login.
         /// Returns true if update succeeds, false otherwise. This will be save first just to get the Id.
         /// </summary>
         public async Task<long> EditTblSystemUserForLoginAsync(TblSystemUser model, PortalDbContext context)
@@ -52,10 +52,10 @@ namespace PortalTools.Services.DBO.Account
                     if (existingUser == null)
                         return 0;
 
-                    existingUser.FirstName = model.FirstName ?? existingUser.FirstName;
-                    existingUser.LastName = model.LastName ?? existingUser.LastName;
-                    existingUser.Email = model.Email ?? existingUser.Email;
-                    existingUser.IsActive = model.IsActive;
+                    //existingUser.FirstName = model.FirstName ?? existingUser.FirstName;
+                    //existingUser.LastName = model.LastName ?? existingUser.LastName;
+                    //existingUser.Email = model.Email ?? existingUser.Email;
+                    //existingUser.IsActive = model.IsActive;
                     model.Id = existingUser.Id;
 
                     await context.TblSystemUsers.Where(u => u.Id == model.Id)
@@ -77,6 +77,10 @@ namespace PortalTools.Services.DBO.Account
             }
         }
 
+        /// <summary>
+        /// Updates an existing TblSystemUser.
+        /// Returns true if update succeeds, false otherwise. This will be save first just to get the Id.
+        /// </summary>
         public async Task<long> EditTblSystemUserAsync(EditSystemUserViewModel model, PortalDbContext context)
         {
             if (model == null)

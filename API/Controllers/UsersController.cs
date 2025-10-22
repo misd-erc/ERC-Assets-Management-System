@@ -178,7 +178,6 @@ namespace API.Controllers
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
-
         #endregion
 
         #region POST
@@ -263,7 +262,7 @@ namespace API.Controllers
         [HttpPost("edit")]
         public async Task<IActionResult> EditUser([FromBody] EditSystemUserQueryParams model)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.SystemUserIdEncrypted) || string.IsNullOrWhiteSpace(model.SystemRoleIdEncrypted) 
+            if (model == null || string.IsNullOrWhiteSpace(model.SystemRoleIdEncrypted) 
                 || string.IsNullOrWhiteSpace(model.StatusIdEncrypted) || string.IsNullOrWhiteSpace(model.IsActiveEncrypted) || string.IsNullOrWhiteSpace(model.ActionBySystemUserIdEncrypted))
                 return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
 
@@ -276,7 +275,7 @@ namespace API.Controllers
 
                 EditSystemUserViewModel user = new()
                 {
-                    Id = long.Parse(EncryptionHelper.Decrypt(model.SystemUserIdEncrypted)),
+                    Id = string.IsNullOrEmpty(model.SystemUserIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.SystemUserIdEncrypted)),
                     SystemRoleId = long.Parse(EncryptionHelper.Decrypt(model.SystemRoleIdEncrypted)),
                     StatusId = long.Parse(EncryptionHelper.Decrypt(model.StatusIdEncrypted)),
                     IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEncrypted)),
@@ -299,7 +298,7 @@ namespace API.Controllers
                     SystemUserIdEncrypted = EncryptionHelper.Decrypt(systemUserId.ToString())
                 };
 
-                return Ok(ApiResponse<object>.Ok(publicVM, $"System user account has been updated"));
+                return Ok(ApiResponse<object>.Ok(publicVM, $"System user account has been {(string.IsNullOrEmpty(model.SystemUserIdEncrypted) ? "added":"updated")}"));
 
             }
             catch (Exception ex)

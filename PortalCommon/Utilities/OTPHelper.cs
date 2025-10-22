@@ -28,11 +28,12 @@ namespace PortalCommon.Utilities
                 otpBuilder.Append(b % 10);
             }
 
-            // Convert string to long
-            if (long.TryParse(otpBuilder.ToString(), out var otpValue))
+            // Ensure fixed length by padding with zeros on the left
+            var otpString = otpBuilder.ToString().PadLeft(length, '0').Substring(0, length);
+
+            if (long.TryParse(otpString, out var otpValue))
                 return otpValue;
 
-            // Fallback in case TryParse fails (should not happen)
             return 0;
         }
 
