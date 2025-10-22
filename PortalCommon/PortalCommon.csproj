@@ -1,17 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="MailKit" Version="4.14.1" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="MailKit" Version="4.14.1" />
+		<PackageReference Include="RazorLight" Version="2.3.1" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="QueryParams\AuditTrail\" />
-  </ItemGroup>
+	<ItemGroup>
+		<Folder Include="QueryParams\AuditTrail\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Remove="Partials\**\*.cshtml" />
+		<None Include="Partials\**\*.cshtml" CopyToOutputDirectory="Always" />
+	</ItemGroup>
 
 </Project>

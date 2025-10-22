@@ -16,25 +16,25 @@ namespace PortalCommon.Utilities
             if (length <= 0)
                 throw new ArgumentException("OTP length must be greater than zero.", nameof(length));
 
-            var randomNumber = new byte[length];
+            // Example: for 6 digits -> min = 100000, max = 999999
+            long min = (long)Math.Pow(10, length - 1);
+            long max = (long)Math.Pow(10, length) - 1;
+
+            // Use a cryptographically secure random number
+            var randomBytes = new byte[8];
             using (var rng = RandomNumberGenerator.Create())
             {
-                rng.GetBytes(randomNumber);
+                rng.GetBytes(randomBytes);
             }
 
-            var otpBuilder = new StringBuilder(length);
-            foreach (var b in randomNumber)
-            {
-                otpBuilder.Append(b % 10);
-            }
+            // Convert random bytes into a positive long number
+            var randomValue = BitConverter.ToUInt64(randomBytes, 0);
 
-            // Ensure fixed length by padding with zeros on the left
-            var otpString = otpBuilder.ToString().PadLeft(length, '0').Substring(0, length);
+            // Map random value into the desired range
+            long range = max - min + 1;
+            long otp = (long)(min + ((long)(randomValue % (ulong)range)));
 
-            if (long.TryParse(otpString, out var otpValue))
-                return otpValue;
-
-            return 0;
+            return otp;
         }
 
         /// <summary>
