@@ -8,12 +8,12 @@ namespace PortalCommon.Constants
 {
     public static class AzureConstants
     {
-        public const string TenantId = "JEvCi69uc4QwK8yIxbVpLz9qbcKo8q1/x6DtRAKp1IaHYv1YbnKDUi6P1zZi6IZ0";
-        public const string ClientId = "FQhEhmVVc3o32pXXchPKfBqDshZ5U6mtN7oSj/mONrlu0t5rp9A53XuXopvEX4LK";
-        public const string ObjectId = "UV+F/QSpW3HAD+WvwmpniEEjxJY3PUgSLG1ekNqGonsMXw4ugbDancRYqsGpRSay";
-        public const string ClientSecretId = "dEL14somWDhZ3018vLjkNRUrurjNmbcwk1pFz83SiuAvkP1tPVR8CjAJfmJjaiGn";
-        public const string ClientSecretValue = "HBVCu5gC51IVwpCilFFTHitNICzAsduKW6HzXsgVJYyiYsOOnkfMLmMT5chWKRs9";
-        public const string Authority = "tJxPb3k6l37LZhWTlOBVpxf9/UoMkUhDTeYr6XQCw4S6O90zWIZ3QajqOdoVh+Q4";
-        public const string GraphScope = "05UJ4pgdPTT/r5DliJ3d23xeoeauQIo0YQTRz7b5lQsGZfX1gSUEZuGbA8vs3Uvd";
+        public static readonly string TenantId = EnvironmentConstants.ERC_AMS_AZURE_TENANT_ID;
+        public static readonly string ClientId = EnvironmentConstants.ERC_AMS_AZURE_CLIENT_ID;
+        public static readonly string ObjectId = EnvironmentConstants.ERC_AMS_AZURE_OBJECT_ID;
+        public static readonly string ClientSecretId = EnvironmentConstants.ERC_AMS_AZURE_CLIENT_SECRET_ID;
+        public static readonly string ClientSecretValue = EnvironmentConstants.ERC_AMS_AZURE_CLIENT_SECRET_VALUE;
+        public static readonly string Authority = EnvironmentConstants.ERC_AMS_AZURE_AUTHORITY;
+        public static readonly string GraphScope = EnvironmentConstants.ERC_AMS_AZURE_GRAPH_SCOPE;
     }
 }

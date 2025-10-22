@@ -1,4 +1,4 @@
-﻿using PortalTools.Utilities;
+﻿using PortalCommon.Utilities;
 
 namespace Tests.Encryption
 {
@@ -10,7 +10,7 @@ namespace Tests.Encryption
         public void Encrypt_And_Decrypt_Should_Return_Original_Text()
         {
             // Arrange
-            var plainText = "WoUe/OCHXrNOOK8yryE0LA==";
+            var plainText = "I3i6gwaMocz221Nd/UoSI0ffnz2WIpNEa/KqTAzA6Cw=";
 
             // Act
             //var encrypted = EncryptionHelper.Encrypt(plainText);
@@ -26,7 +26,7 @@ namespace Tests.Encryption
         public void Encrypt_Should_Not_Return_PlainText()
         {
             // Arrange
-            var plainText = "924479";
+            var plainText = "noreply@erc.ph";
             var plainText2 = "2";
 
             // Act

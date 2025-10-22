@@ -8,7 +8,7 @@ namespace PortalCommon.ViewModels.SMTP
 {
     public class EmailViewModel
     {
-        public string? Email { get; set; }
+        public List<string>? Emails { get; set; } = new();
         public string? Name { get; set; }
         public string? Subject { get; set; }
         public string? Body { get; set; }

@@ -1,5 +1,5 @@
 ﻿using PortalDB.Entities.DBO.Account;
-using PortalTools.Utilities;
+using PortalCommon.Utilities;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 

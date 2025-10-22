@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using PortalCommon.Constants;
 
-namespace PortalTools.Utilities
+namespace PortalCommon.Utilities
 {
     public static class EncryptionHelper
     {

@@ -3,7 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Entities.LOG.AuditTrail;
-using PortalTools.Utilities;
+using PortalCommon.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

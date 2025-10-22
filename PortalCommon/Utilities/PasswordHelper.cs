@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace PortalTools.Utilities
+namespace PortalCommon.Utilities
 {
     public static class PasswordHelper
     {

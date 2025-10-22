@@ -1,5 +1,4 @@
-﻿using PortalTools.Utilities;
-
+﻿
 namespace PortalCommon.Constants
 {
     /// <summary>
@@ -9,13 +8,13 @@ namespace PortalCommon.Constants
     public static class DatabaseConstants
     {
 
-        public const string Server = "23vkZO8ie8v1Nl4Jkc8faNSFK77SCRuxcqz3YLwJp5s=";
-        public const string MainDatabaseName = "yb8L07YzpWO8AkF467Qf0Q==";
-        public const string UserId = "";
-        public const string Password = "";
-        public const string Port = "";
-        public const bool TrustServerCertificate = true;
-        public const bool IntegratedSecurity = true;
+        public static readonly string Server = EnvironmentConstants.ERC_AMS_DB_SERVER;
+        public static readonly string MainDatabaseName = EnvironmentConstants.ERC_AMS_DB_NAME;
+        public static readonly string UserId = EnvironmentConstants.ERC_AMS_DB_USER;
+        public static readonly string Password = EnvironmentConstants.ERC_AMS_DB_PASSWORD;
+        public static readonly string Port = EnvironmentConstants.ERC_AMS_DB_PORT;
+        public static readonly bool TrustServerCertificate = true;
+        public static readonly bool IntegratedSecurity = true;
 
     }
 }

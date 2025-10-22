@@ -1,5 +1,4 @@
-﻿using PortalTools.Utilities;
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace PortalCommon.QueryParams.Account

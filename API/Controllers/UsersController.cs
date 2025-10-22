@@ -20,7 +20,7 @@ using PortalDB.Services;
 using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
 using PortalTools.Services.LOG;
-using PortalTools.Utilities;
+using PortalCommon.Utilities;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -236,14 +236,14 @@ namespace API.Controllers
 
                     EmailViewModel emailModel = new()
                     {
-                        Email = user.Email,
+                        Emails = new List<string> { user.Email },
                         Name = $"{user.FirstName} {user.LastName}",
                         Subject = "Your AMS One-Time Password (OTP)",
                         Body = htmlBody,
                         IsHTML = true
                     };
 
-                    await EmailHelper.SendEmailAsync(emailModel);
+                    await AzureTools.SendEmailAsync(emailModel, _options);
 
                     #endregion
                 }
@@ -366,14 +366,14 @@ namespace API.Controllers
 
                     EmailViewModel emailModel = new()
                     {
-                        Email = user.Email,
+                        Emails = new List<string> { user.Email },
                         Name = $"{user.FirstName} {user.LastName}",
                         Subject = "Your AMS One-Time Password (OTP)",
                         Body = htmlBody,
                         IsHTML = true
                     };
 
-                    await EmailHelper.SendEmailAsync(emailModel);
+                    await AzureTools.SendEmailAsync(emailModel, _options);
 
                     #endregion
                 }

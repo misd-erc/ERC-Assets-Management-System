@@ -2,7 +2,7 @@
 using PortalDB.Entities.LOG.AuditTrail;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Office.Division;
-using PortalTools.Utilities;
+using PortalCommon.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.Identity.Client;
 using PortalCommon.Constants;
-using PortalTools.Utilities;
+using PortalCommon.Utilities;
 using Xunit;
 using System.Net.Http;
 using System.Net.Http.Headers;
