@@ -15,6 +15,8 @@ import {
   FolderOpen,
   CheckCircle,
   Send,
+  Calendar,
+  MessageSquare,
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
@@ -23,6 +25,7 @@ interface NavigationItem {
   title: string;
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   badge?: string;
+  adminOnly?: boolean;
 }
 
 interface NavigationGroup {
@@ -48,7 +51,8 @@ const navigationGroups: NavigationGroup[] = [
     items: [
       { id: 'category-management', title: 'Category Management', icon: FolderOpen },
       { id: 'deliveries-receipts', title: 'Delivery & Receipt of Items', icon: Package },
-      { id: 'supply-management', title: 'Supply Management', icon: Send },
+      { id: 'supplies-inventory', title: 'Supplies Inventory', icon: Send },
+      { id: 'supply-management', title: 'RIS & Stock Management', icon: Send },
       { id: 'transfers-returns', title: 'Transfers & Returns', icon: ArrowRightLeft },
       { id: 'disposals', title: 'Disposal of Properties', icon: Trash2 },
       { id: 'contracts', title: 'Contract Management', icon: FileText },
@@ -69,12 +73,19 @@ const navigationGroups: NavigationGroup[] = [
     ],
   },
   {
+    title: 'Tools & Communication',
+    items: [
+      { id: 'calendar-notifications', title: 'Calendar & Notifications', icon: Calendar },
+      { id: 'communication-tools', title: 'Communication Tools', icon: MessageSquare },
+    ],
+  },
+  {
     title: 'Administration',
     items: [
-      { id: 'users-roles', title: 'User Management', icon: Users },
-      { id: 'roles-management', title: 'Roles Management', icon: Shield },
-      { id: 'settings', title: 'System Settings', icon: Settings },
-      { id: 'audit-logs', title: 'Audit Logs', icon: FileSearch },
+      { id: 'users-roles', title: 'User Management', icon: Users, adminOnly: true },
+      { id: 'roles-management', title: 'Roles Management', icon: Shield, adminOnly: true },
+      { id: 'settings', title: 'System Settings', icon: Settings, adminOnly: true },
+      { id: 'audit-logs', title: 'Audit Logs', icon: FileSearch, adminOnly: true },
     ],
   },
 ];
@@ -106,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, 
               {group.title}
             </h3>
             <ul className="mt-2 space-y-1" role="list">
-              {group.items.map(({ id, title, icon: Icon, badge }) => (
+              {group.items.map(({ id, title, icon: Icon, badge, adminOnly }) => (
                 <li key={id}>
                   <button
                     onClick={() => onModuleChange(id)}
@@ -127,6 +138,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, 
                     {badge && (
                       <Badge variant="destructive" className="ml-auto text-xs">
                         {badge}
+                      </Badge>
+                    )}
+                    {adminOnly && (
+                      <Badge variant="secondary" className="ml-auto text-xs">
+                        Admin
                       </Badge>
                     )}
                   </button>

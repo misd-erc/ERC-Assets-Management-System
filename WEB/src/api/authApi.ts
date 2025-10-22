@@ -3,6 +3,50 @@ import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenVali
 import { encrypt, decrypt } from '../utils/encryption';
 import { guidToLongId } from '../utils/guidUtils';
 
+
+export interface UserDetails {
+  id: number;
+  FirstName: string;
+  LastName: string;
+  Email: string;
+  StatusName: string;
+  SystemRoleName: string;
+  OfficeName: string;
+  OfficeAcronym: string;
+  DivisionName: string;
+  DivisionAcronym: string;
+  IsActive: boolean;
+  CreatedAt: string;
+  LastLoginAt: string;
+}
+
+export const getUserDetails = async (systemUserIdEncrypted: string, actionBySystemUserIdEncrypted: string): Promise<UserDetails> => {
+  const sanitizedId = systemUserIdEncrypted.replace(/^\uFEFF/, '');
+  const response = await axiosInstance.get<ApiResponse<UserDetails>>(
+    `/Users/all/${encodeURIComponent(sanitizedId)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(actionBySystemUserIdEncrypted.replace(/^\uFEFF/, ''))}`
+  );
+  return response.data.data;
+};
+
+export const editUserDetails = async (userData: {
+  systemUserIdEncrypted: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  actionBySystemUserIdEncrypted: string;
+}): Promise<{ message: string }> => {
+  const payload = {
+    SystemUserIdEncrypted: encrypt(userData.systemUserIdEncrypted),
+    FirstNameEncrypted: encrypt(userData.firstName),
+    LastNameEncrypted: encrypt(userData.lastName),
+    EmailEncrypted: encrypt(userData.email),
+    ActionBySystemUserIdEncrypted: encrypt(userData.actionBySystemUserIdEncrypted)
+  };
+
+  const response = await axiosInstance.post<ApiResponse<any>>('/Users/edit-profile', payload);
+  return { message: response.data.message };
+};
+
 export const validateUser = async (userInfo: { entraId: string; firstName: string; lastName: string; email: string }): Promise<{ systemUserIdEncrypted: string; message: string }> => {
   const payload: UserValidationViewModel = {
     entraIdEncrypted: encrypt(guidToLongId(userInfo.entraId)),
@@ -21,7 +65,7 @@ export const validateUser = async (userInfo: { entraId: string; firstName: strin
   return { systemUserIdEncrypted: data.systemUserIdEncrypted, message: response.data.message };
 };
 
-export const validateOTP = async (systemUserIdEncrypted: string, otp: string): Promise<{ user: User; token: string }> => {
+export const validateOTP = async (systemUserIdEncrypted: string, otp: string): Promise<{ user: User; systemUserIdEncrypted: string }> => {
   const payload: OTPValidationViewModel = {
     systemUserIdEncrypted: systemUserIdEncrypted,
     otpEncrypted: encrypt(otp)
@@ -39,7 +83,6 @@ export const validateOTP = async (systemUserIdEncrypted: string, otp: string): P
   const firstName = data.firstNameEncrypted ? decrypt(data.firstNameEncrypted) : '';
   const lastName = data.lastNameEncrypted ? decrypt(data.lastNameEncrypted) : '';
   const email = data.emailEncrypted ? decrypt(data.emailEncrypted) : '';
-  const token = data.expiryTokenEncrypted ? decrypt(data.expiryTokenEncrypted) : '';
 
   const user: User = {
     id: systemUserId,
@@ -52,7 +95,7 @@ export const validateOTP = async (systemUserIdEncrypted: string, otp: string): P
     lastName: lastName
   };
 
-  return { user, token };
+  return { user, systemUserIdEncrypted: data.systemUserIdEncrypted };
 };
 
 export const validateSessionToken = async (token: string, systemUserIdEncrypted: string): Promise<{ user: User; token: string }> => {

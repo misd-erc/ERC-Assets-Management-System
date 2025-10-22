@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
-import { TopBar as Topbar } from './TopBar';
+import { TopBar } from './TopBar';
 import { Dashboard } from '../dashboard/Dashboard';
 import { useIsMobile } from '../ui/use-mobile';
-import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
-import { Menu } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Sheet, SheetContent } from '../ui/sheet';
 
 export function MainLayout() {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -33,7 +31,7 @@ export function MainLayout() {
         <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} isMobile={isMobile} />
       )}
       <div className="flex flex-col flex-1">
-        <Topbar onMenuClick={() => setSidebarOpen(true)} isMobile={isMobile} />
+        <TopBar onMenuClick={() => setSidebarOpen(true)} isMobile={isMobile} onNavigate={setActiveModule} />
         <main className="flex-1 overflow-auto bg-gray-50 p-4 sm:p-6 md:p-8">
           {renderContent()}
         </main>

@@ -19,14 +19,13 @@ const msalConfig = {
     redirectUri: process.env.REACT_APP_MSAL_REDIRECT_URI || 'http://localhost:3000',
   },
   cache: {
-    cacheLocation: 'localStorage',
+    cacheLocation: 'sessionStorage',
     storeAuthStateInCookie: false,
   },
 };
 
 export function LoginScreen() {
   const { login, requireMFA, isLoading, error } = useAuth();
-  const [msalLoading, setMsalLoading] = useState(false);
   const [msalInstance, setMsalInstance] = useState<PublicClientApplication | null>(null);
   const navigate = useNavigate();
 
@@ -40,19 +39,51 @@ export function LoginScreen() {
     initializeMSAL();
   }, []);
 
+  useEffect(() => {
+    if (msalInstance) {
+      msalInstance.handleRedirectPromise().then((response: AuthenticationResult | null) => {
+        if (response) {
+          const account: AccountInfo = response.account!;
+
+          // Extract user information
+          const entraId = account.localAccountId;
+          const email = account.username;
+          const name = account.name || '';
+          const [firstName, ...lastNameParts] = name.split(' ');
+          const lastName = lastNameParts.join(' ');
+
+          // Call our backend validation
+          login({
+            entraId,
+            firstName: firstName || '',
+            lastName: lastName || '',
+            email,
+          }).then((result) => {
+            if (result.success) {
+              toast.success('OTP has been sent to your email. Please check your inbox.', {
+                duration: 3000,
+              });
+              setTimeout(() => navigate('/mfa'), 3000);
+            } else {
+              toast.error(result.message);
+            }
+          }).catch((error) => {
+            console.error('Login failed:', error);
+            toast.error('Something went wrong during login.');
+          });
+        }
+      }).catch((error) => {
+        console.error('MSAL redirect failed:', error);
+        toast.error('Something went wrong during login.');
+      });
+    }
+  }, [msalInstance, login, navigate]);
+
   const handleMicrosoftLogin = async () => {
     if (!msalInstance) {
       toast.error('MSAL not initialized');
       return;
     }
-
-    // Prevent double login attempts
-    if (msalLoading) {
-      toast.error('Login already in progress. Please wait...');
-      return;
-    }
-
-    setMsalLoading(true);
 
     try {
       const loginRequest = {
@@ -60,42 +91,10 @@ export function LoginScreen() {
         prompt: 'select_account',
       };
 
-      const response: AuthenticationResult = await msalInstance.loginPopup(loginRequest);
-      const account: AccountInfo = response.account!;
-
-      // Extract user information
-      const entraId = account.localAccountId;
-      const email = account.username;
-      const name = account.name || '';
-      const [firstName, ...lastNameParts] = name.split(' ');
-      const lastName = lastNameParts.join(' ');
-
-      // Call our backend validation
-      const result = await login({
-        entraId,
-        firstName: firstName || '',
-        lastName: lastName || '',
-        email,
-      });
-
-      if (result.success) {
-        toast.success('OTP has been sent to your email. Please check your inbox.', {
-          duration: 3000,
-        });
-        setTimeout(() => navigate('/mfa'), 3000);
-      } else {
-        toast.error(result.message);
-      }
-
+      await msalInstance.loginRedirect(loginRequest);
     } catch (error) {
-      if (error instanceof BrowserAuthError && error.errorCode === 'interaction_in_progress') {
-        toast.error('Login already in progress. Please wait...');
-      } else {
-        console.error('MSAL login failed:', error);
-        toast.error('Something went wrong during login.');
-      }
-    } finally {
-      setMsalLoading(false);
+      console.error('MSAL login failed:', error);
+      toast.error('Something went wrong during login.');
     }
   };
 
@@ -137,9 +136,9 @@ export function LoginScreen() {
             <Button
               onClick={handleMicrosoftLogin}
               className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
-              disabled={isLoading || msalLoading}
+              disabled={isLoading}
             >
-              {isLoading || msalLoading ? (
+              {isLoading ? (
                 'Signing in...'
               ) : (
                 <>
