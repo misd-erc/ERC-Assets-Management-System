@@ -414,9 +414,6 @@ namespace API.Controllers
                 {
                     SystemUserId = long.Parse(EncryptionHelper.Decrypt(model!.SystemUserIdEncrypted)),
                     OTP = long.Parse(EncryptionHelper.Decrypt(model.OTPEncrypted)),
-
-
-
                 };
                 
 
