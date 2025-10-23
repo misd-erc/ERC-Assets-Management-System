@@ -57,6 +57,12 @@ namespace PortalDB.Entities.DBO.Office.Division
         [Column("DivisionAcronym")]
         public string? Acronym { get; set; }
 
+        [Column("DivisionIsActive")]
+        public bool? IsActive { get; set; } = true;
+
+        [Column("DivisionIsDeleted")]
+        public bool IsDeleted { get; set; } = false;
+
         [Column("DivisionCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

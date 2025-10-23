@@ -37,6 +37,12 @@ namespace PortalDB.Entities.DBO.Account
         [Column("SystemUserStatusName")]
         public string? Name { get; set; }
 
+        [Column("SystemUserStatusIsActive")]
+        public bool IsActive { get; set; } = true;
+
+        [Column("SystemUserStatusIsDeleted")]
+        public bool IsDeleted { get; set; } = false;
+
         [Column("SystemUserCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

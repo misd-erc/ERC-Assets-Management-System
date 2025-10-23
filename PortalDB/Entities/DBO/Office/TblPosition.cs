@@ -28,6 +28,12 @@ namespace PortalDB.Entities.DBO.Office
         [Column("PositionSalaryGrade")]
         public string? SalaryGrade { get; set; }
 
+        [Column("PositionIsActive")]
+        public bool? IsActive { get; set; } = true;
+
+        [Column("PositionIsDeleted")]
+        public bool IsDeleted { get; set; } = false;
+
         [Column("PositionCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

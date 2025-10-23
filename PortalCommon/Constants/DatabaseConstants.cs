@@ -8,13 +8,13 @@ namespace PortalCommon.Constants
     public static class DatabaseConstants
     {
 
-        public static readonly string Server = EnvironmentConstants.ERC_AMS_DB_SERVER;
-        public static readonly string MainDatabaseName = EnvironmentConstants.ERC_AMS_DB_NAME;
-        public static readonly string UserId = EnvironmentConstants.ERC_AMS_DB_USER;
-        public static readonly string Password = EnvironmentConstants.ERC_AMS_DB_PASSWORD;
-        public static readonly string Port = EnvironmentConstants.ERC_AMS_DB_PORT;
-        public static readonly bool TrustServerCertificate = true;
-        public static readonly bool IntegratedSecurity = true;
+        public static readonly string SERVER = EnvironmentConstants.ERC_AMS_DB_SERVER;
+        public static readonly string MAIN_DATABASE_NAME = EnvironmentConstants.ERC_AMS_DB_NAME;
+        public static readonly string USER_ID = EnvironmentConstants.ERC_AMS_DB_USER;
+        public static readonly string PASSWORD = EnvironmentConstants.ERC_AMS_DB_PASSWORD;
+        public static readonly string PORT = EnvironmentConstants.ERC_AMS_DB_PORT;
+        public static readonly bool TRUST_SERVER_CERTIFICATE = true;
+        public static readonly bool INTEGRATED_SECURITY = true;
 
     }
 }

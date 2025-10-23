@@ -7,8 +7,8 @@ using Microsoft.Graph.Users.Item.SendMail;
 using Microsoft.Identity.Client;
 using Microsoft.Kiota.Abstractions;
 using PortalCommon.Constants;
+using PortalCommon.Models.ViewModels.Email;
 using PortalCommon.Utilities;
-using PortalCommon.ViewModels.SMTP;
 using PortalDB.Services;
 using PortalTools.Services.DBO.Account;
 using System;
@@ -26,9 +26,9 @@ namespace PortalTools.Services
 
         public AzureTools(DbContextOptions<PortalDbContext> options)
         {
-            _confidentialClientApp = ConfidentialClientApplicationBuilder.Create(EncryptionHelper.Decrypt(AzureConstants.ClientId))
-                .WithClientSecret(EncryptionHelper.Decrypt(AzureConstants.ClientSecretValue))
-                .WithAuthority(new Uri($"{EncryptionHelper.Decrypt(AzureConstants.Authority)}/{EncryptionHelper.Decrypt(AzureConstants.TenantId)}"))
+            _confidentialClientApp = ConfidentialClientApplicationBuilder.Create(EncryptionHelper.Decrypt(AzureConstants.CLIENT_ID))
+                .WithClientSecret(EncryptionHelper.Decrypt(AzureConstants.CLIENT_SECRET_VALUE))
+                .WithAuthority(new Uri($"{EncryptionHelper.Decrypt(AzureConstants.AUTHORITY)}/{EncryptionHelper.Decrypt(AzureConstants.TENANT_ID)}"))
                 .Build();
             _httpClient = new HttpClient();
         }
@@ -39,7 +39,7 @@ namespace PortalTools.Services
         private async Task<string> GetAccessTokenAsync()
         {
             var result = await _confidentialClientApp
-                .AcquireTokenForClient(new[] { EncryptionHelper.Decrypt(AzureConstants.GraphScope) })
+                .AcquireTokenForClient(new[] { EncryptionHelper.Decrypt(AzureConstants.GRAPH_SCOPE) })
                 .ExecuteAsync();
 
             return result.AccessToken;
@@ -74,9 +74,9 @@ namespace PortalTools.Services
             if (_graphClient != null)
                 return _graphClient;
 
-            var tenantId = EncryptionHelper.Decrypt(AzureConstants.TenantId);
-            var clientId = EncryptionHelper.Decrypt(AzureConstants.ClientId);
-            var clientSecret = EncryptionHelper.Decrypt(AzureConstants.ClientSecretValue);
+            var tenantId = EncryptionHelper.Decrypt(AzureConstants.TENANT_ID);
+            var clientId = EncryptionHelper.Decrypt(AzureConstants.CLIENT_ID);
+            var clientSecret = EncryptionHelper.Decrypt(AzureConstants.CLIENT_SECRET_VALUE);
 
             if (string.IsNullOrWhiteSpace(tenantId) ||
                 string.IsNullOrWhiteSpace(clientId) ||
@@ -86,7 +86,7 @@ namespace PortalTools.Services
             }
 
             var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
-            _graphClient = new GraphServiceClient(credential, new[] { EncryptionHelper.Decrypt(AzureConstants.GraphScope) });
+            _graphClient = new GraphServiceClient(credential, new[] { EncryptionHelper.Decrypt(AzureConstants.GRAPH_SCOPE) });
 
             return _graphClient;
         }
@@ -117,7 +117,7 @@ namespace PortalTools.Services
                     }).ToList() ?? new List<Recipient>()
                 };
 
-                await graphClient.Users[EncryptionHelper.Decrypt(EmailConstants.NoReplyEmail)]
+                await graphClient.Users[EncryptionHelper.Decrypt(EmailConstants.NO_REPLY_EMAIL)]
                     .SendMail
                     .PostAsync(new SendMailPostRequestBody
                     {

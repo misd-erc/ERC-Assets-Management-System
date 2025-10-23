@@ -17,11 +17,11 @@ namespace Tests.Azure
         public void AzureConstants_Should_Have_Valid_Decrypted_Keys()
         {
             // Arrange + Act
-            var tenantId = EncryptionHelper.Decrypt(AzureConstants.TenantId);
-            var clientId = EncryptionHelper.Decrypt(AzureConstants.ClientId);
-            var clientSecret = EncryptionHelper.Decrypt(AzureConstants.ClientSecretValue);
-            var authority = EncryptionHelper.Decrypt(AzureConstants.Authority);
-            var graphScope = EncryptionHelper.Decrypt(AzureConstants.GraphScope);
+            var tenantId = EncryptionHelper.Decrypt(AzureConstants.TENANT_ID);
+            var clientId = EncryptionHelper.Decrypt(AzureConstants.CLIENT_ID);
+            var clientSecret = EncryptionHelper.Decrypt(AzureConstants.CLIENT_SECRET_VALUE);
+            var authority = EncryptionHelper.Decrypt(AzureConstants.AUTHORITY);
+            var graphScope = EncryptionHelper.Decrypt(AzureConstants.GRAPH_SCOPE);
 
             // Assert
             Assert.False(string.IsNullOrWhiteSpace(tenantId), "TenantId is missing or invalid.");
@@ -40,10 +40,10 @@ namespace Tests.Azure
         public async Task Should_Connect_To_Azure_And_Get_Access_Token()
         {
             // Arrange
-            var clientId = EncryptionHelper.Decrypt(AzureConstants.ClientId);
-            var clientSecret = EncryptionHelper.Decrypt(AzureConstants.ClientSecretValue);
-            var authority = $"{EncryptionHelper.Decrypt(AzureConstants.Authority)}/{EncryptionHelper.Decrypt(AzureConstants.TenantId)}";
-            var graphScope = EncryptionHelper.Decrypt(AzureConstants.GraphScope);
+            var clientId = EncryptionHelper.Decrypt(AzureConstants.CLIENT_ID);
+            var clientSecret = EncryptionHelper.Decrypt(AzureConstants.CLIENT_SECRET_VALUE);
+            var authority = $"{EncryptionHelper.Decrypt(AzureConstants.AUTHORITY)}/{EncryptionHelper.Decrypt(AzureConstants.TENANT_ID)}";
+            var graphScope = EncryptionHelper.Decrypt(AzureConstants.GRAPH_SCOPE);
 
             var app = ConfidentialClientApplicationBuilder.Create(clientId)
                 .WithClientSecret(clientSecret)

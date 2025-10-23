@@ -21,15 +21,15 @@ namespace PortalTools.Services.DBO.Account
             _context = context; 
         }
 
-        public IQueryable<TblSystemUser> GetTblSystemUsers() => _context.TblSystemUsers;
-        public IQueryable<VwSystemUser?> GetVwSystemUsers() => _context.VwSystemUsers;
-        public async Task<VwSystemUser?> GetVwSystemUser(long id) => await _context.VwSystemUsers.Where(x => x.Id == id).FirstOrDefaultAsync();
-        public async Task<TblSystemUser?> GetTblSystemUser(long id) => await _context.TblSystemUsers.Where(x => x.Id == id).FirstOrDefaultAsync();
-        public async Task<TblSystemUser?> GetTblSystemUserByEntraId(long entraId) => await _context.TblSystemUsers.Where(x => x.EntraId == entraId).FirstOrDefaultAsync();
+        public IQueryable<TblSystemUser> GetTblSystemUsers() => _context.TblSystemUsers.Where(x => !x.IsDeleted);
+        public IQueryable<VwSystemUser?> GetVwSystemUsers() => _context.VwSystemUsers.Where(x => !x.IsDeleted);
+        public async Task<VwSystemUser?> GetVwSystemUser(long id) => await _context.VwSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblSystemUser?> GetTblSystemUser(long id) => await _context.TblSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblSystemUser?> GetTblSystemUserByEntraId(long entraId) => await _context.TblSystemUsers.Where(x => !x.IsDeleted && x.EntraId == entraId).FirstOrDefaultAsync();
         public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAndEmail(long entraId, string email)
         {
             TblSystemUser? user = new TblSystemUser();
-            user = await _context.TblSystemUsers.Where(x => x.EntraId == entraId).FirstOrDefaultAsync();
+            user = await GetTblSystemUserByEntraId(entraId);
 
             if (user != null && user.Email != email)
                 throw new UnauthorizedAccessException("Email does not match the provided Entra ID.");
@@ -40,7 +40,7 @@ namespace PortalTools.Services.DBO.Account
         {
             TblOneTimePassword? otpInfo = new TblOneTimePassword();
 
-            otpInfo = await _context.TblOneTimePasswords.Where(x => x.SystemUserId == model.SystemUserId && x.ValidUntil >= DateTime.UtcNow).FirstOrDefaultAsync();
+            otpInfo = await _context.TblOneTimePasswords.Where(x => !x.IsDeleted && x.SystemUserId == model.SystemUserId && x.ValidUntil >= DateTime.UtcNow).FirstOrDefaultAsync();
 
             if (otpInfo == null)
                 throw new KeyNotFoundException("OTP connected to SystemUserId not found");
@@ -55,7 +55,7 @@ namespace PortalTools.Services.DBO.Account
         public async Task<bool> ValidateTokenSessionAsync(TblSessionToken model)
         {
             bool isValid = await _context.TblSessionTokens
-                .AnyAsync(x => x.SystemUserId == model.SystemUserId
+                .AnyAsync(x => !x.IsDeleted && x.SystemUserId == model.SystemUserId
                     && x.Key == model.Key
                     && x.ValidUntil >= DateTime.UtcNow);
 
@@ -67,7 +67,7 @@ namespace PortalTools.Services.DBO.Account
         public async Task<bool> ValidateTokenSessionBySystemUserIdAsync(long systemUserId)
         {
             bool isValid = await _context.TblSessionTokens
-                .AnyAsync(x => x.SystemUserId == systemUserId
+                .AnyAsync(x => !x.IsDeleted && x.SystemUserId == systemUserId
                     && x.ValidUntil >= DateTime.UtcNow);
 
             if (isValid)

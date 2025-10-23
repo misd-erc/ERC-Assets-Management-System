@@ -1,12 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalCommon.Enums;
-using PortalCommon.QueryParams.Office;
-using PortalCommon.QueryParams.Pagination;
-using PortalCommon.QueryParams.Universal;
-using PortalCommon.ResponseModels.Account;
-using PortalCommon.ResponseModels.Office;
-using PortalCommon.Responses;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Office.Division;
@@ -15,6 +9,12 @@ using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
 using PortalTools.Services.DBO.Office;
 using PortalCommon.Utilities;
+using PortalCommon.Models.Responses;
+using PortalCommon.Models.QueryParams.Office;
+using PortalCommon.Models.QueryParams.Pagination;
+using PortalCommon.Models.QueryParams.Universal;
+using PortalCommon.Models.ResponseModels.Account;
+using PortalCommon.Models.ResponseModels.Office;
 
 namespace API.Controllers
 {

@@ -1,13 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PortalCommon.QueryParams.Account;
+using PortalCommon.Models.ViewModels.Account;
+using PortalCommon.Models.QueryParams.Account;
 using PortalCommon.Utilities;
-using PortalCommon.ViewModels.Account;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.LOG.AuditTrail;
 using PortalDB.Services;
 using System;
 using System.Linq;
 using System.Text.Json;
+using PortalCommon.Constants;
 
 namespace PortalTools.Services.DBO.Account
 {
@@ -61,11 +62,12 @@ namespace PortalTools.Services.DBO.Account
                         .ExecuteUpdateAsync(u => u
                             .SetProperty(x => x.FirstNameEncrypted, model.FirstNameEncrypted)
                             .SetProperty(x => x.LastNameEncrypted, model.LastNameEncrypted)
-                            .SetProperty(x => x.LastLoginAt, model.LastLoginAt));
+                            .SetProperty(x => x.LastLoginAt, model.LastLoginAt)
+                            .SetProperty(x => x.IsActive, model.IsActive));
 
                 }
 
-                AuditTrailTool.TrackChanges(context, isInsert ? null! : existingUser!, model, nameof(TblSystemUser), model.Id, isInsert ? "Insert" : "Update");
+                AuditTrailTool.TrackChanges(context, isInsert ? null! : existingUser!, model, nameof(TblSystemUser), UniversalConstants.SYSTEM_ID, isInsert ? "Insert" : "Update");
 
                 return isInsert ? model.Id : existingUser.Id;
             }
@@ -137,10 +139,11 @@ namespace PortalTools.Services.DBO.Account
             try
             {
 
-                await context.TblOneTimePasswords.Where(x => x.SystemUserId == model.SystemUserId).ExecuteDeleteAsync();
+                await context.TblOneTimePasswords.Where(x => x.SystemUserId == model.SystemUserId).ExecuteSoftDeleteAsync();
                 await context.TblOneTimePasswords.AddAsync(model);
                 await context.SaveChangesAsync();
-                AuditTrailTool.TrackChanges(context, null!, model, nameof(TblOneTimePassword), model.SystemUserId, "Insert");
+
+                AuditTrailTool.TrackChanges(context, null!, model, nameof(TblOneTimePassword), UniversalConstants.SYSTEM_ID, "Insert");
 
                 return true;
 
@@ -164,10 +167,10 @@ namespace PortalTools.Services.DBO.Account
             try
             {
 
-                await context.TblSessionTokens.Where(x => x.SystemUserId == model.SystemUserId).ExecuteDeleteAsync();
+                await context.TblSessionTokens.Where(x => x.SystemUserId == model.SystemUserId).ExecuteSoftDeleteAsync();
                 await context.TblSessionTokens.AddAsync(model);
                 await context.SaveChangesAsync();
-                AuditTrailTool.TrackChanges(context, null!, model, nameof(TblOneTimePassword), model.SystemUserId, "Insert");
+                AuditTrailTool.TrackChanges(context, null!, model, nameof(TblOneTimePassword), UniversalConstants.SYSTEM_ID, "Insert");
 
                 return true;
 

@@ -20,14 +20,14 @@ namespace PortalTools.Services.DBO.Office
             _context = context;
         }
 
-        public IQueryable<TblOffice> GetTblOffices() => _context.TblOffices;
-        public async Task<TblOffice?> GetTblOffice(long id) => await _context.TblOffices.Where(x => x.Id == id).FirstOrDefaultAsync();
-        public IQueryable<VwDivision> GetVwDivisions() => _context.VwDivisions;
-        public async Task<VwDivision?> GetVwDivision(long id) => await _context.VwDivisions.Where(x => x.Id == id).FirstOrDefaultAsync();
-        public IQueryable<VwDivision?> GetVwDivisionsByOfficeId(long officeId) => _context.VwDivisions.Where(x => x.OfficeId == officeId);
-        public IQueryable<TblEmploymentType> GetTblEmploymentTypes() => _context.TblEmploymentTypes;
-        public async Task<TblEmploymentType?> GetTblEmploymentType(long id) => await _context.TblEmploymentTypes.Where(x => x.Id == id).FirstOrDefaultAsync();
-        public IQueryable<TblPosition> GetTblPositions() => _context.TblPositions;
-        public async Task<TblPosition?> GetTblPosition(long id) => await _context.TblPositions.Where(x => x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<TblOffice> GetTblOffices() => _context.TblOffices.Where(x => !x.IsDeleted);
+        public async Task<TblOffice?> GetTblOffice(long id) => await _context.TblOffices.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<VwDivision> GetVwDivisions() => _context.VwDivisions.Where(x => !x.IsDeleted);
+        public async Task<VwDivision?> GetVwDivision(long id) => await _context.VwDivisions.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<VwDivision?> GetVwDivisionsByOfficeId(long officeId) => _context.VwDivisions.Where(x => !x.IsDeleted && x.OfficeId == officeId);
+        public IQueryable<TblEmploymentType> GetTblEmploymentTypes() => _context.TblEmploymentTypes.Where(x => !x.IsDeleted);
+        public async Task<TblEmploymentType?> GetTblEmploymentType(long id) => await _context.TblEmploymentTypes.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<TblPosition> GetTblPositions() => _context.TblPositions.Where(x => !x.IsDeleted);
+        public async Task<TblPosition?> GetTblPosition(long id) => await _context.TblPositions.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
     }
 }

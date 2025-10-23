@@ -2,17 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalCommon.Enums;
-using PortalCommon.QueryParams.Account;
-using PortalCommon.QueryParams.OTP;
-using PortalCommon.QueryParams.Pagination;
-using PortalCommon.QueryParams.Session;
-using PortalCommon.QueryParams.Universal;
-using PortalCommon.ResponseModels.Account;
-using PortalCommon.ResponseModels.Log.AuditTrail;
-using PortalCommon.Responses;
+using PortalCommon.Models.QueryParams.Session;
+using PortalCommon. Models.ResponseModels.Log.AuditTrail;
 using PortalCommon.Utilities;
-using PortalCommon.ViewModels.Account;
-using PortalCommon.ViewModels.SMTP;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Entities.LOG.AuditTrail;
@@ -26,6 +18,14 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static System.Net.WebRequestMethods;
+using PortalCommon.Models.Responses;
+using PortalCommon.Models.QueryParams.Account;
+using PortalCommon.Models.QueryParams.OTP;
+using PortalCommon.Models.QueryParams.Pagination;
+using PortalCommon.Models.QueryParams.Universal;
+using PortalCommon.Models.ResponseModels.Account;
+using PortalCommon.Models.ViewModels.Account;
+using PortalCommon.Models.ViewModels.Email;
 
 namespace API.Controllers
 {
@@ -178,6 +178,7 @@ namespace API.Controllers
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+        
         #endregion
 
         #region POST

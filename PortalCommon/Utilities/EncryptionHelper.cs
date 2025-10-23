@@ -18,7 +18,7 @@ namespace PortalCommon.Utilities
                 return plainText;
 
             using var aes = Aes.Create();
-            aes.Key = EncryptionConstants.Key;
+            aes.Key = EncryptionConstants.KEY;
             aes.IV = EncryptionConstants.IV;
 
             using var ms = new MemoryStream();
@@ -44,7 +44,7 @@ namespace PortalCommon.Utilities
             var cipherBytes = Convert.FromBase64String(cipherText);
 
             using var aes = Aes.Create();
-            aes.Key = EncryptionConstants.Key;
+            aes.Key = EncryptionConstants.KEY;
             aes.IV = EncryptionConstants.IV;
 
             using var ms = new MemoryStream(cipherBytes);
@@ -63,7 +63,7 @@ namespace PortalCommon.Utilities
                 return Array.Empty<byte>();
 
             using var aes = Aes.Create();
-            aes.Key = EncryptionConstants.Key;
+            aes.Key = EncryptionConstants.KEY;
             aes.IV = EncryptionConstants.IV;
 
             using var ms = new MemoryStream();
@@ -85,7 +85,7 @@ namespace PortalCommon.Utilities
                 return null!;
 
             using var aes = Aes.Create();
-            aes.Key = EncryptionConstants.Key;
+            aes.Key = EncryptionConstants.KEY;
             aes.IV = EncryptionConstants.IV;
 
             using var ms = new MemoryStream(cipherBytes);

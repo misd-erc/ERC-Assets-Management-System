@@ -10,17 +10,17 @@ namespace PortalCommon.Utilities
         /// </summary>
         public static string ConnectionString()
         {
-            if (DatabaseConstants.IntegratedSecurity)
-                return $"Server={EncryptionHelper.Decrypt(DatabaseConstants.Server)};" +
-                       $"Database={EncryptionHelper.Decrypt(DatabaseConstants.MainDatabaseName)};" +
-                       $"Integrated Security={DatabaseConstants.IntegratedSecurity};" +
-                       $"TrustServerCertificate={DatabaseConstants.TrustServerCertificate};";
+            if (DatabaseConstants.INTEGRATED_SECURITY)
+                return $"Server={EncryptionHelper.Decrypt(DatabaseConstants.SERVER)};" +
+                       $"Database={EncryptionHelper.Decrypt(DatabaseConstants.MAIN_DATABASE_NAME)};" +
+                       $"Integrated Security={DatabaseConstants.INTEGRATED_SECURITY};" +
+                       $"TrustServerCertificate={DatabaseConstants.TRUST_SERVER_CERTIFICATE};";
             else
-                return $"Server={EncryptionHelper.Decrypt(DatabaseConstants.Server)},{EncryptionHelper.Decrypt(DatabaseConstants.Port)};" +
-                       $"Database={EncryptionHelper.Decrypt(DatabaseConstants.MainDatabaseName)};" +
-                       $"User Id={EncryptionHelper.Decrypt(DatabaseConstants.UserId)};" +
-                       $"Password={EncryptionHelper.Decrypt(DatabaseConstants.Password)};" +
-                       $"TrustServerCertificate={DatabaseConstants.TrustServerCertificate};";
+                return $"Server={EncryptionHelper.Decrypt(DatabaseConstants.SERVER)},{EncryptionHelper.Decrypt(DatabaseConstants.PORT)};" +
+                       $"Database={EncryptionHelper.Decrypt(DatabaseConstants.MAIN_DATABASE_NAME)};" +
+                       $"User Id={EncryptionHelper.Decrypt(DatabaseConstants.USER_ID)};" +
+                       $"Password={EncryptionHelper.Decrypt(DatabaseConstants.PASSWORD)};" +
+                       $"TrustServerCertificate={DatabaseConstants.TRUST_SERVER_CERTIFICATE};";
                       
         }
     }

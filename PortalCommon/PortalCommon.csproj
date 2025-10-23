@@ -14,7 +14,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="QueryParams\AuditTrail\" />
+		<Folder Include="Models\QueryParams\AuditTrail\" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -29,6 +29,9 @@ namespace PortalDB.Entities.DBO.Account
         [Column("SessionTokenValidUntil")]
         public DateTime? ValidUntil { get; set; }
 
+        [Column("SessionTokenIsDeleted")]
+        public bool IsDeleted { get; set; } = false;
+
         [Column("SessionTokenCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

@@ -1,9 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalCommon.Enums;
-using PortalCommon.QueryParams.Pagination;
-using PortalCommon.ResponseModels.Log.AuditTrail;
-using PortalCommon.Responses;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.LOG.AuditTrail;
 using PortalDB.Services;
@@ -12,6 +9,9 @@ using PortalTools.Services.DBO.Account;
 using PortalTools.Services.LOG;
 using PortalCommon.Utilities;
 using System.Text.Json;
+using PortalCommon.Models.Responses;
+using PortalCommon.Models.QueryParams.Pagination;
+using PortalCommon.Models.ResponseModels.Log.AuditTrail;
 
 namespace API.Controllers
 {

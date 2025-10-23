@@ -35,6 +35,10 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("OneTimePasswordCreatedAt");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("OneTimePasswordIsDeleted");
+
                     b.Property<string>("OTPEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("OneTimePasswordOTP");
@@ -66,6 +70,10 @@ namespace PortalDB.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("SessionTokenCreatedAt");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("SessionTokenIsDeleted");
 
                     b.Property<string>("Key")
                         .HasColumnType("nvarchar(max)")
@@ -106,6 +114,10 @@ namespace PortalDB.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("SystemRoleIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("SystemRoleIsDeleted");
 
                     b.Property<string>("RoleName")
                         .HasColumnType("nvarchar(max)")
@@ -153,6 +165,10 @@ namespace PortalDB.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("SystemUserIsActive");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("SystemUserIsDeleted");
+
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("SystemUserLastLoginAt");
@@ -191,6 +207,14 @@ namespace PortalDB.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("SystemUserCreatedAt");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("SystemUserStatusIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("SystemUserStatusIsDeleted");
 
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)")
@@ -238,6 +262,10 @@ namespace PortalDB.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("SystemUserIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("SystemUserIsDeleted");
 
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("datetime2")
@@ -302,6 +330,14 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("DivisionCreatedAt");
 
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("DivisionIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("DivisionIsDeleted");
+
                     b.Property<string>("Name")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
@@ -332,6 +368,14 @@ namespace PortalDB.Migrations
                     b.Property<long?>("Id")
                         .HasColumnType("bigint")
                         .HasColumnName("DivisionId");
+
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("DivisionIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("DivisionIsDeleted");
 
                     b.Property<string>("Name")
                         .HasMaxLength(50)
@@ -373,6 +417,14 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("EmploymentTypeCreatedAt");
 
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("EmploymentTypeIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("EmploymentTypeIsDeleted");
+
                     b.Property<string>("Name")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
@@ -398,6 +450,14 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("OfficeCreatedAt");
 
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("OfficeIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("OfficeIsDeleted");
+
                     b.Property<string>("Name")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
@@ -417,16 +477,24 @@ namespace PortalDB.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("PositionCreatedAt");
-
-                    b.Property<string>("PositionAcronym")
+                    b.Property<string>("Acronym")
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)")
                         .HasColumnName("PositionAcronym");
 
-                    b.Property<string>("PositionName")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PositionCreatedAt");
+
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("PositionIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("PositionIsDeleted");
+
+                    b.Property<string>("Name")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("PositionName");

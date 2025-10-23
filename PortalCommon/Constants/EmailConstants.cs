@@ -8,6 +8,6 @@ namespace PortalCommon.Constants
 {
     public static class EmailConstants
     {
-        public static readonly string NoReplyEmail = EnvironmentConstants.ERC_AMS_EMAIL_NO_REPLY;
+        public static readonly string NO_REPLY_EMAIL = EnvironmentConstants.ERC_AMS_EMAIL_NO_REPLY;
     }
 }

@@ -31,8 +31,13 @@ namespace PortalDB.Entities.DBO.Account
         [Column("SystemRoleIsActive")]
         public bool IsActive { get; set; } = true;
 
+        [Column("SystemRoleIsDeleted")]
+        public bool IsDeleted { get; set; } = false;
+
         [Column("SystemRoleCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+
 
     }
 }

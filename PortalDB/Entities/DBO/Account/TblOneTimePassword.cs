@@ -36,6 +36,9 @@ namespace PortalDB.Entities.DBO.Account
         [Column("OneTimePasswordValidUntil")]
         public DateTime? ValidUntil { get; set; }
 
+        [Column("OneTimePasswordIsDeleted")]
+        public bool IsDeleted { get; set; } = false;
+
         [Column("OneTimePasswordCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

@@ -37,6 +37,12 @@ namespace PortalDB.Entities.DBO.Office
         [Column("OfficeAcronym")]
         public string? Acronym { get; set; }
 
+        [Column("OfficeIsActive")]
+        public bool? IsActive { get; set; } = true;
+
+        [Column("OfficeIsDeleted")]
+        public bool IsDeleted { get; set; } = false;
+
         [Column("OfficeCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

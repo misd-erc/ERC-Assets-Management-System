@@ -20,6 +20,12 @@ namespace PortalDB.Entities.DBO.Office
         [Column("EmploymentTypeName")]
         public string? Name { get; set; }
 
+        [Column("EmploymentTypeIsActive")]
+        public bool? IsActive { get; set; } = true;
+
+        [Column("EmploymentTypeIsDeleted")]
+        public bool IsDeleted { get; set; } = false;
+
         [Column("EmploymentTypeCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
