@@ -19,32 +19,35 @@ namespace PortalTools.Services
         /// <param name="query">The query to soft delete</param>
         /// <param name="changedBy">Optional user id for audit trail</param>
         /// <returns>Number of affected rows</returns>
-        public static async Task<int> ExecuteSoftDeleteAsync<T>(this IQueryable<T> query, long deletedBy = 0) where T : class
+        public static async Task<int> ExecuteSoftDeleteAsync<T>(
+            this IQueryable<T> query,
+            PortalDbContext context,
+            long changedBy = 0
+        ) where T : class
         {
-            await using var context = new PortalDbContext(new DbContextOptions<PortalDbContext>());
-
             var items = await query.ToListAsync();
             foreach (var item in items)
             {
                 var type = item.GetType();
 
-                var original = item;
+                // Track original values
+                var original = item; // clone if needed
 
+                // Soft delete properties
                 var isDeletedProp = type.GetProperty("IsDeleted");
                 if (isDeletedProp != null)
                     isDeletedProp.SetValue(item, true);
 
-                try
-                {
-                    AuditTrailTool.TrackChanges(context, original, item, type.Name, deletedBy, "Delete");
-                }
-                catch (Exception ex) 
-                {
-                    await ErrorTool.ErrorLogAsync(context, ex, nameof(AccountEditTools));
-                }
+                var deletedAtProp = type.GetProperty("DeletedAt");
+                if (deletedAtProp != null)
+                    deletedAtProp.SetValue(item, DateTime.UtcNow);
+
+                AuditTrailTool.TrackChanges(context, original, item, type.Name, changedBy, "Delete");
+                
             }
 
             return await context.SaveChangesAsync();
         }
+
     }
 }

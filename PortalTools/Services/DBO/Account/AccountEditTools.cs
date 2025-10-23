@@ -139,7 +139,7 @@ namespace PortalTools.Services.DBO.Account
             try
             {
 
-                await context.TblOneTimePasswords.Where(x => x.SystemUserId == model.SystemUserId).ExecuteSoftDeleteAsync();
+                await context.TblOneTimePasswords.Where(x => x.SystemUserId == model.SystemUserId).ExecuteSoftDeleteAsync(context);
                 await context.TblOneTimePasswords.AddAsync(model);
                 await context.SaveChangesAsync();
 
@@ -167,7 +167,7 @@ namespace PortalTools.Services.DBO.Account
             try
             {
 
-                await context.TblSessionTokens.Where(x => x.SystemUserId == model.SystemUserId).ExecuteSoftDeleteAsync();
+                await context.TblSessionTokens.Where(x => x.SystemUserId == model.SystemUserId).ExecuteSoftDeleteAsync(context);
                 await context.TblSessionTokens.AddAsync(model);
                 await context.SaveChangesAsync();
                 AuditTrailTool.TrackChanges(context, null!, model, nameof(TblOneTimePassword), UniversalConstants.SYSTEM_ID, "Insert");
