@@ -26,12 +26,18 @@ namespace Tests.Encryption
         public void Encrypt_Should_Not_Return_PlainText()
         {
             // Arrange
-            var plainText = "noreply@erc.ph";
-            var plainText2 = "2";
+            var plainText = "ercazuredb2blob";
+            var plainText2 = "1yxp+EZX1bHZN1IEG9GiZyY2/OBEXjkls5xkohkdqIKA8LVGUvgoTm31GcqnyNDAqqHynCOHkSrE+ASt8i8ctA==";
+            var plainText3 = "core.windows.net";
+            var plainText4 = "https";
+            var plainText5 = "ams-container";
 
             // Act
             var encrypted = EncryptionHelper.Encrypt(plainText);
-          //  var encrypted2 = EncryptionHelper.Encrypt(plainText2);
+            var encrypted2 = EncryptionHelper.Encrypt(plainText2);
+            var encrypted3 = EncryptionHelper.Encrypt(plainText3);
+            var encrypted4 = EncryptionHelper.Encrypt(plainText4);
+            var encrypted5 = EncryptionHelper.Encrypt(plainText5);
 
             // Assert
             Assert.NotEqual(plainText, encrypted);

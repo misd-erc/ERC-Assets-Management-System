@@ -17,6 +17,11 @@ namespace PortalCommon.Constants
         public static readonly string ERC_AMS_AZURE_CLIENT_SECRET_ID = Environment.GetEnvironmentVariable(nameof(ERC_AMS_AZURE_CLIENT_SECRET_ID))!;
         public static readonly string ERC_AMS_AZURE_AUTHORITY = Environment.GetEnvironmentVariable(nameof(ERC_AMS_AZURE_AUTHORITY))!;
         public static readonly string ERC_AMS_AZURE_GRAPH_SCOPE = Environment.GetEnvironmentVariable(nameof(ERC_AMS_AZURE_GRAPH_SCOPE))!;
+        public static readonly string ERC_AMS_AZURE_BLOB_STORAGE_ACCOUNT_KEY = Environment.GetEnvironmentVariable(nameof(ERC_AMS_AZURE_BLOB_STORAGE_ACCOUNT_KEY))!;
+        public static readonly string ERC_AMS_AZURE_BLOB_STORAGE_ACCOUNT_NAME = Environment.GetEnvironmentVariable(nameof(ERC_AMS_AZURE_BLOB_STORAGE_ACCOUNT_NAME))!;
+        public static readonly string ERC_AMS_AZURE_BLOB_STORAGE_CONTAINER_NAME = Environment.GetEnvironmentVariable(nameof(ERC_AMS_AZURE_BLOB_STORAGE_CONTAINER_NAME))!;
+        public static readonly string ERC_AMS_AZURE_BLOB_STORAGE_DEFAULT_ENDPOINT_PROTOCOL = Environment.GetEnvironmentVariable(nameof(ERC_AMS_AZURE_BLOB_STORAGE_DEFAULT_ENDPOINT_PROTOCOL))!;
+        public static readonly string ERC_AMS_AZURE_BLOB_STORAGE_ENDPOINT_SUFFIX = Environment.GetEnvironmentVariable(nameof(ERC_AMS_AZURE_BLOB_STORAGE_ENDPOINT_SUFFIX))!;
         #endregion
 
         #region Encryption

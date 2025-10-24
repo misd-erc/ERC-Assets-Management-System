@@ -1,4 +1,6 @@
 ﻿using Azure.Identity;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
@@ -9,9 +11,12 @@ using Microsoft.Kiota.Abstractions;
 using PortalCommon.Constants;
 using PortalCommon.Models.ViewModels.Email;
 using PortalCommon.Utilities;
+using PortalDB;
 using PortalDB.Services;
-using PortalTools.Services.DBO.Account;
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
@@ -33,6 +38,7 @@ namespace PortalTools.Services
             _httpClient = new HttpClient();
         }
 
+        #region Azure Entra
         /// <summary>
         /// Authenticates to Azure and retrieves an access token for Microsoft Graph.
         /// </summary>
@@ -65,7 +71,9 @@ namespace PortalTools.Services
 
             return await response.Content.ReadAsStringAsync(); // returns JSON string of Entra users
         }
+        #endregion
 
+        #region Azure Email
         /// <summary>
         /// Initializes the Microsoft Graph client using Azure AD credentials from environment variables.
         /// </summary>
@@ -138,6 +146,109 @@ namespace PortalTools.Services
                 throw;
             }
         }
+        #endregion
+
+        #region Azure Blob Storage
+
+        private static readonly string _fixedContainerName =
+            EncryptionHelper.Decrypt(AzureConstants.BLOB_STORAGE_CONTAINER_NAME);
+
+        private static BlobServiceClient GetBlobServiceClient()
+        {
+            var accountName = EncryptionHelper.Decrypt(AzureConstants.BLOB_STORAGE_ACCOUNT_NAME);
+            var accountKey = EncryptionHelper.Decrypt(AzureConstants.BLOB_STORAGE_ACCOUNT_KEY);
+            var protocol = EncryptionHelper.Decrypt(AzureConstants.BLOB_STORAGE_DEFAULT_ENDPOINT_PROTOCOL);
+            var endpointSuffix = EncryptionHelper.Decrypt(AzureConstants.BLOB_STORAGE_ENDPOINT_SUFFIX);
+
+            var connectionString =
+                $"DefaultEndpointsProtocol={protocol};AccountName={accountName};AccountKey={accountKey};EndpointSuffix={endpointSuffix}";
+
+            return new BlobServiceClient(connectionString);
+        }
+
+        private static BlobContainerClient GetContainerClient()
+        {
+            var blobServiceClient = GetBlobServiceClient();
+            var containerClient = blobServiceClient.GetBlobContainerClient(_fixedContainerName);
+            containerClient.CreateIfNotExists();
+            return containerClient;
+        }
+
+        public static async Task<bool> UploadFileAsync(string blobName, Stream fileStream, string contentType = "application/octet-stream")
+        {
+            try
+            {
+                var containerClient = GetContainerClient();
+                var blobClient = containerClient.GetBlobClient(blobName);
+
+                await blobClient.UploadAsync(fileStream, new BlobHttpHeaders { ContentType = contentType });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AzureTools] Upload failed: {ex.Message}");
+                return false;
+            }
+        }
+
+        public static async Task<Stream?> DownloadFileAsync(string blobName)
+        {
+            try
+            {
+                var containerClient = GetContainerClient();
+                var blobClient = containerClient.GetBlobClient(blobName);
+
+                if (!await blobClient.ExistsAsync())
+                    return null;
+
+                var downloadInfo = await blobClient.DownloadAsync();
+                return downloadInfo.Value.Content;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AzureTools] Download failed: {ex.Message}");
+                return null;
+            }
+        }
+
+        public static async Task<bool> DeleteFileAsync(string blobName)
+        {
+            try
+            {
+                var containerClient = GetContainerClient();
+                var blobClient = containerClient.GetBlobClient(blobName);
+
+                var response = await blobClient.DeleteIfExistsAsync();
+                return response.Value;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AzureTools] Delete failed: {ex.Message}");
+                return false;
+            }
+        }
+
+        public static async Task<List<string>> ListFilesAsync()
+        {
+            var containerClient = GetContainerClient();
+            var files = new List<string>();
+
+            await foreach (BlobItem blobItem in containerClient.GetBlobsAsync())
+                files.Add(blobItem.Name);
+
+            return files;
+        }
+
+        public static string GetBlobUrl(string blobName)
+        {
+            var accountName = EncryptionHelper.Decrypt(AzureConstants.BLOB_STORAGE_ACCOUNT_NAME);
+            var endpointSuffix = EncryptionHelper.Decrypt(AzureConstants.BLOB_STORAGE_ENDPOINT_SUFFIX);
+            var protocol = EncryptionHelper.Decrypt(AzureConstants.BLOB_STORAGE_DEFAULT_ENDPOINT_PROTOCOL);
+
+            return $"{protocol}://{accountName}.blob.{endpointSuffix}/{_fixedContainerName}/{blobName}";
+        }
+
+        #endregion
 
     }
 }
