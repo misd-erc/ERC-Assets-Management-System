@@ -8,6 +8,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.ComponentModel.DataAnnotations.Schema;
+using PortalDB.Entities.DBO.Storage;
 
 namespace PortalDB.Services
 {
@@ -25,6 +26,7 @@ namespace PortalDB.Services
         public DbSet<TblSystemUserStatus> TblSystemUserStatuses { get; set; }
         public DbSet<TblSessionToken> TblSessionTokens { get; set; }
         public DbSet<TblSystemRole> TblSystemRoles { get; set; }
+        public DbSet<TblFileStorage> TblFileStorages { get; set; }
         #endregion
 
         #region Office

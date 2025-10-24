@@ -12,6 +12,7 @@ using PortalCommon.Constants;
 using PortalCommon.Models.ViewModels.Email;
 using PortalCommon.Utilities;
 using PortalDB;
+using PortalDB.Entities.DBO.Storage;
 using PortalDB.Services;
 using System;
 using System.Collections.Generic;
@@ -174,6 +175,9 @@ namespace PortalTools.Services
             return containerClient;
         }
 
+        /// <summary>
+        /// Uploads a file stream to Azure Blob Storage.
+        /// </summary>
         public static async Task<bool> UploadFileAsync(string blobName, Stream fileStream, string contentType = "application/octet-stream")
         {
             try
@@ -191,6 +195,65 @@ namespace PortalTools.Services
             }
         }
 
+        /// <summary>
+        /// Uploads a file, generates a unique blob name using BlobHelper, 
+        /// saves metadata in TblFileStorage, and returns the new record ID.
+        /// </summary>
+        public static async Task<long?> UploadFileAndSaveToDbAsync(
+            DbContextOptions<PortalDbContext> options,
+            Stream fileStream,
+            string originalFileName,
+            string contentType,
+            long uploadedBy,
+            string folderName // 👈 NEW PARAMETER
+        )
+        {
+            try
+            {
+                // ✅ Ensure folder name is normalized (no leading/trailing slashes)
+                folderName = folderName?.Trim().Trim('/');
+
+                // ✅ Generate unique blob name with folder prefix
+                var uniqueFileName = BlobHelper.GenerateUniqueBlobName(originalFileName);
+                var blobName = string.IsNullOrWhiteSpace(folderName)
+                    ? uniqueFileName
+                    : $"{folderName}/{uniqueFileName}";
+
+                // ✅ Upload to Azure Blob Storage
+                var uploadSuccess = await UploadFileAsync(blobName, fileStream, contentType);
+                if (!uploadSuccess)
+                    return null;
+
+                // ✅ Save metadata in DB
+                using var context = new PortalDbContext(options);
+
+                var fileRecord = new TblFileStorage
+                {
+                    BlobName = blobName,
+                    OriginalFileName = originalFileName,
+                    ContentType = contentType,
+                    UploadedBy = uploadedBy,
+                    UploadedAt = DateTime.UtcNow,
+                    FolderName = folderName, // 👈 Save flat folder name
+                    IsActive = true
+                };
+
+                await context.TblFileStorages.AddAsync(fileRecord);
+                await context.SaveChangesAsync();
+
+                return fileRecord.Id;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AzureTools] UploadFileAndSaveToDbAsync failed: {ex.Message}");
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(options), ex, nameof(AzureTools));
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Downloads a file stream from Azure Blob Storage.
+        /// </summary>
         public static async Task<Stream?> DownloadFileAsync(string blobName)
         {
             try
@@ -211,23 +274,55 @@ namespace PortalTools.Services
             }
         }
 
-        public static async Task<bool> DeleteFileAsync(string blobName)
+        /// <summary>
+        /// Soft-deletes a blob: removes it from Azure Blob Storage and marks the DB record inactive.
+        /// </summary>
+        public static async Task<bool> DeleteFileAsync(string blobName, DbContextOptions<PortalDbContext> options)
         {
             try
             {
                 var containerClient = GetContainerClient();
                 var blobClient = containerClient.GetBlobClient(blobName);
 
+                // ✅ Delete from Azure Blob Storage
                 var response = await blobClient.DeleteIfExistsAsync();
-                return response.Value;
+
+                if (response.Value)
+                {
+                    // ✅ Soft delete in database
+                    using var context = new PortalDbContext(options);
+                    var fileRecord = await context.TblFileStorages
+                        .FirstOrDefaultAsync(f => f.BlobName == blobName && f.IsActive);
+
+                    if (fileRecord != null)
+                    {
+                        fileRecord.IsActive = false;
+                        context.TblFileStorages.Update(fileRecord);
+                        await context.SaveChangesAsync();
+                    }
+
+                    return true;
+                }
+
+                return false;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[AzureTools] Delete failed: {ex.Message}");
+                try
+                {
+                    using var context = new PortalDbContext(options);
+                    await ErrorTool.ErrorLogAsync(context, ex, nameof(AzureTools));
+                }
+                catch { /* Ignore nested logging issues */ }
+
                 return false;
             }
         }
 
+        /// <summary>
+        /// Lists all blobs in the fixed container.
+        /// </summary>
         public static async Task<List<string>> ListFilesAsync()
         {
             var containerClient = GetContainerClient();
@@ -239,6 +334,9 @@ namespace PortalTools.Services
             return files;
         }
 
+        /// <summary>
+        /// Gets the full public (or SAS-based) URL of a blob.
+        /// </summary>
         public static string GetBlobUrl(string blobName)
         {
             var accountName = EncryptionHelper.Decrypt(AzureConstants.BLOB_STORAGE_ACCOUNT_NAME);
