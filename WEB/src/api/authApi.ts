@@ -22,11 +22,10 @@ export interface UserDetails {
 
 export interface EditUserPayload {
   systemUserIdEncrypted: string;
-  systemRoleIdEncrypted: string;
-  statusIdEncrypted: string;
-  isActiveEncrypted: string;
+  firstName: string;
+  lastName: string;
+  employeeIdEncrypted: string;
   actionBySystemUserIdEncrypted: string;
-  profileImageBase64?: string;
 }
 
 export const getUserDetails = async (systemUserIdEncrypted: string, actionBySystemUserIdEncrypted: string): Promise<UserDetails> => {
@@ -88,11 +87,10 @@ export const editUserDetails = async (userData: {
 export const editUserProfile = async (payload: EditUserPayload): Promise<{ message: string }> => {
   const encryptedPayload = {
     systemUserIdEncrypted: encrypt(payload.systemUserIdEncrypted),
-    systemRoleIdEncrypted: encrypt(payload.systemRoleIdEncrypted),
-    statusIdEncrypted: encrypt(payload.statusIdEncrypted),
-    isActiveEncrypted: encrypt(payload.isActiveEncrypted),
-    actionBySystemUserIdEncrypted: encrypt(payload.actionBySystemUserIdEncrypted),
-    profileImageBase64: payload.profileImageBase64 ? encrypt(payload.profileImageBase64) : undefined
+    firstNameEncrypted: encrypt(payload.firstName),
+    lastNameEncrypted: encrypt(payload.lastName),
+    employeeIdEncrypted: encrypt(payload.employeeIdEncrypted),
+    actionBySystemUserIdEncrypted: encrypt(payload.actionBySystemUserIdEncrypted)
   };
 
   const response = await axiosInstance.patch<ApiResponse<any>>('/Users/edit', encryptedPayload);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../store/auth';
-import { getUserDetails, UserDetails } from '../api/authApi';
+import { getUserDetails } from '../api/authApi';
+import { UserDetails } from '../types/user';
 import { handleSessionExpired, getSessionToken } from '../utils/sessionUtils';
 
 export const useUserProfile = () => {
@@ -25,6 +26,11 @@ export const useUserProfile = () => {
       const stored = localStorage.getItem('userProfile');
       if (stored) {
         const parsed = JSON.parse(stored);
+        // Include profilePictureId from separate localStorage key
+        const profilePictureId = localStorage.getItem('profilePictureId');
+        if (profilePictureId) {
+          parsed.profilePictureId = profilePictureId;
+        }
         if (isMounted) {
           setUserProfile(parsed);
           setLoading(false);
@@ -36,8 +42,13 @@ export const useUserProfile = () => {
       // Fetch from API if not in localStorage
       console.log('[useUserProfile] Fetching from API...');
       const data = await getUserDetails(token, token);
-      
+
       if (isMounted) {
+        // Include profilePictureId from separate localStorage key
+        const profilePictureId = localStorage.getItem('profilePictureId');
+        if (profilePictureId) {
+          (data as any).profilePictureId = profilePictureId;
+        }
         localStorage.setItem('userProfile', JSON.stringify(data));
         setUserProfile(data);
         setLoading(false);

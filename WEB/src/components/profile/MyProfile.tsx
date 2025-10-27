@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
@@ -17,12 +17,18 @@ import {
   User,
   Save,
   X,
-  Upload
+  Camera,
+  Loader2
 } from 'lucide-react';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useAuthStore } from '../../store/auth';
 import { editUserProfile } from '../../api/authApi';
+import { getUserAuditTrail } from '../../api/userApi';
+import { uploadProfilePicture, retrieveFile } from '../../api/storageApi';
+import { timeAgo } from '../../utils/dateUtils';
+import { AuditTrailItem } from '../../types/audit';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 export const MyProfile = React.memo(() => {
   const { userProfile, loading, refreshProfile } = useUserProfile();
@@ -33,14 +39,39 @@ export const MyProfile = React.memo(() => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    role: '',
-    status: '',
-    phone: '',
-    location: ''
+    employeeId: ''
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Profile picture state
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
+
+  // Load profile picture on mount
+  React.useEffect(() => {
+    const loadProfilePicture = async () => {
+      const profilePictureId = localStorage.getItem('profilePictureId');
+      if (profilePictureId) {
+        try {
+          const url = await retrieveFile(profilePictureId);
+          setProfilePictureUrl(url);
+        } catch (error) {
+          console.error('Failed to load profile picture:', error);
+          // Fallback to initials
+        }
+      }
+    };
+    loadProfilePicture();
+  }, []);
+
+  // Audit trail state
+  const [auditLogs, setAuditLogs] = useState<AuditTrailItem[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditHasMore, setAuditHasMore] = useState(true);
 
   // Cancel edit mode when switching away from Details tab
   React.useEffect(() => {
@@ -48,6 +79,34 @@ export const MyProfile = React.memo(() => {
       setIsEditing(false);
     }
   }, [activeTab]);
+
+  // Fetch audit trail on tab switch to activity
+  React.useEffect(() => {
+    if (activeTab === 'activity' && systemUserIdEncrypted) {
+      fetchAuditTrail();
+    }
+  }, [activeTab, systemUserIdEncrypted]);
+
+  const fetchAuditTrail = async () => {
+    if (!systemUserIdEncrypted) return;
+
+    setAuditLoading(true);
+    setAuditError(null);
+    try {
+      const response = await getUserAuditTrail(systemUserIdEncrypted, auditPage, 10);
+      if (response.success) {
+        setAuditLogs(response.data.items);
+        setAuditHasMore(auditPage < response.data.totalPages);
+      } else {
+        setAuditError('Failed to load audit trail');
+      }
+    } catch (error) {
+      console.error('Failed to fetch audit trail:', error);
+      setAuditError('Failed to load audit trail');
+    } finally {
+      setAuditLoading(false);
+    }
+  };
 
   const formatDate = (dateStr: string, format: string) => {
     try {
@@ -72,12 +131,8 @@ export const MyProfile = React.memo(() => {
     setFormData({
       firstName: userProfile.firstName || '',
       lastName: userProfile.lastName || '',
-      role: userProfile.role || 'User',
-      status: userProfile.status || (userProfile.isActive ? 'Active' : 'Inactive'),
-      phone: '+63 917 123 4567', // Placeholder
-      location: userProfile.officeName || 'Quezon City, Philippines' // Placeholder
+      employeeId: userProfile.employeeId || ''
     });
-    setImagePreview(userProfile.profileImage || null);
   };
 
   const handleCancel = () => {
@@ -85,10 +140,7 @@ export const MyProfile = React.memo(() => {
     setFormData({
       firstName: '',
       lastName: '',
-      role: '',
-      status: '',
-      phone: '',
-      location: ''
+      employeeId: ''
     });
     setSelectedImage(null);
     setImagePreview(null);
@@ -103,6 +155,48 @@ export const MyProfile = React.memo(() => {
         setImagePreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (< 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Only JPG, JPEG, and PNG files are allowed');
+      return;
+    }
+
+    if (!systemUserIdEncrypted) return;
+
+    setUploadingPicture(true);
+    try {
+      const response = await uploadProfilePicture(file, systemUserIdEncrypted, systemUserIdEncrypted);
+      const newUrl = await retrieveFile(response.fileStorageIdEncrypted);
+
+      // Store in localStorage
+      localStorage.setItem('profilePictureId', response.fileStorageIdEncrypted);
+
+      // Update state
+      setProfilePictureUrl(newUrl);
+      toast.success('Profile picture updated successfully');
+    } catch (error) {
+      console.error('Failed to upload profile picture:', error);
+      toast.error('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingPicture(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -126,18 +220,12 @@ export const MyProfile = React.memo(() => {
 
     setSaving(true);
     try {
-      let base64Image: string | undefined;
-      if (selectedImage) {
-        base64Image = await convertToBase64(selectedImage);
-      }
-
       const payload = {
         systemUserIdEncrypted,
-        systemRoleIdEncrypted: formData.role,
-        statusIdEncrypted: formData.status,
-        isActiveEncrypted: formData.status === 'Active' ? 'true' : 'false',
-        actionBySystemUserIdEncrypted: systemUserIdEncrypted,
-        profileImageBase64: base64Image
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        employeeIdEncrypted: formData.employeeId,
+        actionBySystemUserIdEncrypted: systemUserIdEncrypted
       };
 
       await editUserProfile(payload);
@@ -147,10 +235,7 @@ export const MyProfile = React.memo(() => {
         ...userProfile,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        role: formData.role,
-        status: formData.status,
-        isActive: formData.status === 'Active',
-        profileImage: base64Image || userProfile.profileImage
+        employeeId: formData.employeeId
       };
       localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
 
@@ -207,10 +292,49 @@ export const MyProfile = React.memo(() => {
       {/* Persistent Profile Card */}
       <Card className="rounded-xl shadow-sm border-gray-200 mb-6">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-xl shadow-sm">
-                {initials}
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <div className="relative">
+                {profilePictureUrl ? (
+                  <img
+                    src={profilePictureUrl}
+                    alt="Profile"
+                    className="w-20 h-20 rounded-full object-cover shadow-sm"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-xl shadow-sm">
+                    {initials}
+                  </div>
+                )}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0 bg-white border-2 border-white shadow-md hover:bg-gray-50"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingPicture}
+                      >
+                        {uploadingPicture ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Camera className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Upload a new profile picture</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleProfilePictureUpload}
+                  accept=".jpg,.jpeg,.png"
+                  className="hidden"
+                />
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900">{fullName}</h3>
@@ -219,6 +343,34 @@ export const MyProfile = React.memo(() => {
                   <Badge className={`rounded-full px-3 py-1 bg-blue-100 text-blue-800 border-blue-200`}>{roleBadge}</Badge>
                   <Badge className={`rounded-full px-3 py-1 ${userProfile.isActive ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>{statusBadge}</Badge>
                 </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-0 h-auto font-normal"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingPicture}
+                      >
+                        {uploadingPicture ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="w-4 h-4 mr-1" />
+                            {profilePictureUrl ? 'Change Picture' : 'Upload Image'}
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Upload a new profile picture</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
             <Button
@@ -263,16 +415,23 @@ export const MyProfile = React.memo(() => {
         <TabsContent value="overview" className="space-y-6">
           {/* Two-Column Layout */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Contact Information */}
+            {/* Personal Details */}
             <Card className="rounded-xl shadow-sm border-gray-200">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-gray-600" />
-                  Contact Information
+                  <User className="w-5 h-5 text-gray-600" />
+                  Personal Details
                 </CardTitle>
-                <p className="text-sm text-gray-500">Your contact details</p>
+                <p className="text-sm text-gray-500">Your personal information</p>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Full Name</Label>
+                    <p className="text-gray-900">{fullName}</p>
+                  </div>
+                </div>
                 <div className="flex items-center gap-3">
                   <Mail className="w-4 h-4 text-gray-400" />
                   <div>
@@ -281,17 +440,17 @@ export const MyProfile = React.memo(() => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Phone className="w-4 h-4 text-gray-400" />
+                  <Briefcase className="w-4 h-4 text-gray-400" />
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Phone</Label>
-                    <p className="text-gray-900">+63 917 123 4567</p>
+                    <Label className="text-sm font-medium text-gray-700">Role</Label>
+                    <p className="text-gray-900">{userProfile.role || 'User'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <Building className="w-4 h-4 text-gray-400" />
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Location</Label>
-                    <p className="text-gray-900">Quezon City, Philippines</p>
+                    <Label className="text-sm font-medium text-gray-700">Employee ID</Label>
+                    <p className="text-gray-900">{userProfile.employeeId || 'N/A'}</p>
                   </div>
                 </div>
               </CardContent>
@@ -365,38 +524,7 @@ export const MyProfile = React.memo(() => {
               <p className="text-sm text-gray-500">View your personal information</p>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Avatar Upload Section - Only show when editing */}
-              {isEditing && (
-                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-lg shadow-sm">
-                    {imagePreview ? (
-                      <img src={imagePreview} alt="Preview" className="w-full h-full rounded-full object-cover" />
-                    ) : (
-                      initials
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-sm font-medium text-gray-700">Profile Picture</Label>
-                    <p className="text-xs text-gray-500">Upload a new profile picture</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Image
-                    </Button>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </div>
-                </div>
-              )}
+
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left Column */}
@@ -432,12 +560,6 @@ export const MyProfile = React.memo(() => {
                     )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Username</Label>
-                    <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
-                      <p className="text-gray-900">@{userProfile.email ? userProfile.email.split('@')[0] : 'unknown'}</p>
-                    </div>
-                  </div>
-                  <div>
                     <Label className="text-sm font-medium text-gray-700">Email Address</Label>
                     <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
                       <p className="text-gray-900">{userProfile.email || 'N/A'}</p>
@@ -447,62 +569,25 @@ export const MyProfile = React.memo(() => {
                 {/* Right Column */}
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">Phone Number</Label>
+                    <Label className="text-sm font-medium text-gray-700">Role</Label>
+                    <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
+                      <p className="text-gray-900">{userProfile.role || 'User'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Employee ID</Label>
                     {isEditing ? (
                       <Input
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        value={formData.employeeId}
+                        onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
                         className="mt-1 border-blue-500 focus:ring-blue-500"
-                        placeholder="Enter phone number"
+                        placeholder="Enter employee ID"
                       />
                     ) : (
                       <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
-                        <p className="text-gray-900">+63 917 123 4567</p>
+                        <p className="text-gray-900">{userProfile.employeeId || 'N/A'}</p>
                       </div>
                     )}
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Role</Label>
-                    {isEditing ? (
-                      <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                        <SelectTrigger className="mt-1 border-blue-500 focus:ring-blue-500">
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="User">User</SelectItem>
-                          <SelectItem value="Admin">Admin</SelectItem>
-                          <SelectItem value="Manager">Manager</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
-                        <p className="text-gray-900">{userProfile.role || 'User'}</p>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Status</Label>
-                    {isEditing ? (
-                      <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                        <SelectTrigger className="mt-1 border-blue-500 focus:ring-blue-500">
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Active">Active</SelectItem>
-                          <SelectItem value="Inactive">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
-                        <p className="text-gray-900">{userProfile.isActive ? 'Active' : 'Inactive'}</p>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Office Location</Label>
-                    <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
-                      <p className="text-gray-900">{userProfile.officeName || 'N/A'}</p>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -540,41 +625,53 @@ export const MyProfile = React.memo(() => {
               <p className="text-sm text-gray-500">Your recent actions in the system</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="w-2 h-2 rounded-full bg-blue-600 mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Updated asset record PPE-2024-0234</p>
-                  <p className="text-xs text-gray-500">2 hours ago</p>
+              {auditLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading audit trail...</p>
                 </div>
-              </div>
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="w-2 h-2 rounded-full bg-blue-600 mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Approved RIS Request #156</p>
-                  <p className="text-xs text-gray-500">3 hours ago</p>
+              ) : auditError ? (
+                <div className="text-center py-8">
+                  <p className="text-red-500">{auditError}</p>
+                  <Button
+                    variant="outline"
+                    onClick={fetchAuditTrail}
+                    className="mt-2"
+                  >
+                    Retry
+                  </Button>
                 </div>
-              </div>
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="w-2 h-2 rounded-full bg-blue-600 mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Generated Monthly Report</p>
-                  <p className="text-xs text-gray-500">1 day ago</p>
+              ) : auditLogs.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No activity found</p>
                 </div>
-              </div>
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="w-2 h-2 rounded-full bg-blue-600 mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Created new PAR #PAR-2024-089</p>
-                  <p className="text-xs text-gray-500">2 days ago</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="w-2 h-2 rounded-full bg-blue-600 mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">Logged in to system</p>
-                  <p className="text-xs text-gray-500">3 days ago</p>
-                </div>
-              </div>
+              ) : (
+                <>
+                  {auditLogs.map((log, index) => (
+                    <div key={index} className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="w-2 h-2 rounded-full bg-blue-600 mt-2"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {log.action} {log.table} record #{log.recordId}
+                        </p>
+                        <p className="text-xs text-gray-500">{timeAgo(log.date)}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {auditHasMore && (
+                    <div className="text-center pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setAuditPage(prev => prev + 1);
+                          fetchAuditTrail();
+                        }}
+                      >
+                        Load More
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

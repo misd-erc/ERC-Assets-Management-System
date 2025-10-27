@@ -9,6 +9,23 @@ export interface User {
   lastName?: string;
 }
 
+export interface UserDetails {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt: string;
+  divisionName?: string;
+  officeName?: string;
+  role?: string;
+  status?: string;
+  profileImage?: string;
+  profilePictureId?: string;
+  employeeId?: string;
+}
+
 export interface LoginCredentials {
   username: string;
   password: string;
