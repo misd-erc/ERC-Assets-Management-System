@@ -13,7 +13,7 @@ namespace PortalDB.Entities.DBO.Storage
     {
 
         #region Constants
-        [NotMapped] public const string USERS_PROFILE_PICTURES = "users/profile-pictures";
+        [NotMapped] public const string USER_PROFILE_PICTURE = "user/profile-picture";
         #endregion
 
         [Key]
@@ -45,6 +45,9 @@ namespace PortalDB.Entities.DBO.Storage
 
         [Column("FileStorageIsActive")]
         public bool IsActive { get; set; } = true;
+
+        [Column("FileStorageIsDeleted")]
+        public bool IsDeleted { get; set; } = false;
     }
 
 }

@@ -182,5 +182,43 @@ namespace PortalTools.Services.DBO.Account
             }
         }
 
+        /// <summary>
+        /// Updating profile picture of an existing TblSystemUser.
+        /// Returns true if update succeeds, false otherwise. This will be save first just to get the Id.
+        /// </summary>
+        public async Task<bool> UpdateTblSystemUserProfilePictureAsync(EditSystemUserProfilePictureViewModel model, PortalDbContext context)
+        {
+            if (model == null)
+                return false;
+
+            try
+            {
+
+                TblSystemUser? userCurrentInfo = await _accountGetTools.GetTblSystemUser(model.SystemUserId);
+                TblSystemUser userUpdatedInfo = new()
+                {
+                    ProfilePictureFileStorageId = model.FileStorageId
+                };
+
+                if (userCurrentInfo == null)
+                    return false;
+
+                await context.TblSystemUsers.Where(u => u.Id == model.SystemUserId)
+                    .ExecuteUpdateAsync(u => u
+                        .SetProperty(x => x.ProfilePictureFileStorageId, userUpdatedInfo.ProfilePictureFileStorageId));
+
+                AuditTrailTool.TrackChanges(context, userCurrentInfo, userUpdatedInfo, nameof(TblSystemUser), model.SystemUserId, "Update");
+
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(AccountEditTools));
+                throw;
+            }
+        }
+
+
+
     }
 }

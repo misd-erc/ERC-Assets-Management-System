@@ -1,31 +1,37 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using API.Attributes;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using PortalAPI.Attributes;
 using PortalCommon.Enums;
+using PortalCommon.Models.QueryParams.Account;
+using PortalCommon.Models.QueryParams.OTP;
+using PortalCommon.Models.QueryParams.Pagination;
 using PortalCommon.Models.QueryParams.Session;
+using PortalCommon.Models.QueryParams.Universal;
+using PortalCommon.Models.QueryParams.Uploader;
+using PortalCommon.Models.ResponseModels.Account;
 using PortalCommon. Models.ResponseModels.Log.AuditTrail;
+using PortalCommon.Models.ResponseModels.Uploader;
+using PortalCommon.Models.Responses;
+using PortalCommon.Models.ViewModels.Account;
+using PortalCommon.Models.ViewModels.Email;
+using PortalCommon.Utilities;
 using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office.Division;
+using PortalDB.Entities.DBO.Storage;
 using PortalDB.Entities.LOG.AuditTrail;
 using PortalDB.Services;
 using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
 using PortalTools.Services.LOG;
-using PortalCommon.Utilities;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Tasks;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static System.Net.WebRequestMethods;
-using PortalCommon.Models.Responses;
-using PortalCommon.Models.QueryParams.Account;
-using PortalCommon.Models.QueryParams.OTP;
-using PortalCommon.Models.QueryParams.Pagination;
-using PortalCommon.Models.QueryParams.Universal;
-using PortalCommon.Models.ResponseModels.Account;
-using PortalCommon.Models.ViewModels.Account;
-using PortalCommon.Models.ViewModels.Email;
 
 namespace API.Controllers
 {
@@ -55,20 +61,18 @@ namespace API.Controllers
 
         // GET api/users/all
         [HttpGet("all")]
-        public async Task<IActionResult> GetAllSystemUsers([FromQuery] PaginationGenericQueryParams query)
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSystemUsers([FromQuery] PaginationGenericQueryParams model)
         {
             try
             {
-                #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
-                    return Ok(ApiResponse<object>.SessionTokenExpired());
-                #endregion
 
                 IEnumerable<VwSystemUser?> users = await _accountGetTools.GetVwSystemUsers().ToListAsync();
 
-                if (!string.IsNullOrWhiteSpace(query.SearchString))
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
-                    string searchLower = query.SearchString.ToLower();
+                    string searchLower = model.SearchString.ToLower();
                     users = users.Where(x =>
                         x.Email.ToLower().Contains(searchLower) ||
                         x.FirstName.ToLower().Contains(searchLower) ||
@@ -81,20 +85,20 @@ namespace API.Controllers
                         x.DivisionAcronym.ToLower().Contains(searchLower));
                 }
 
-                if (query.StartDate.HasValue)
-                    users = users.Where(x => x.CreatedAt >= query.StartDate.Value);
+                if (model.StartDate.HasValue)
+                    users = users.Where(x => x.CreatedAt >= model.StartDate.Value);
 
-                if (query.EndDate.HasValue)
-                    users = users.Where(x => x.CreatedAt <= query.EndDate.Value);
+                if (model.EndDate.HasValue)
+                    users = users.Where(x => x.CreatedAt <= model.EndDate.Value);
 
                 int totalCount = users.Count();
 
-                int skip = (query.PageNumber - 1) * query.PageSize;
+                int skip = (model.PageNumber - 1) * model.PageSize;
 
                 var usersList = users
                     .OrderByDescending(x => x.CreatedAt)
                     .Skip(skip)
-                    .Take(query.PageSize)
+                    .Take(model.PageSize)
                     .ToList();
 
                 List<UserBasicResponseModel> userBasicResponses = usersList.Select(x => new UserBasicResponseModel
@@ -120,8 +124,8 @@ namespace API.Controllers
 
                 return Ok(ApiResponse<UserBasicResponseModel>.OkPaginated(
                     userBasicResponses,
-                    query.PageNumber,
-                    query.PageSize,
+                    model.PageNumber,
+                    model.PageSize,
                     totalCount,
                     "System users have been retrieved"
                 ));
@@ -136,15 +140,12 @@ namespace API.Controllers
 
         // GET api/users/all
         [HttpGet("all/{systemUserIdEncrypted}")]
-        public async Task   <IActionResult> GetSystemUserBySystemUserId([FromQuery] SoloQueryParams query, [FromRoute] string systemUserIdEncrypted)
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task   <IActionResult> GetSystemUserBySystemUserId([FromQuery] SoloQueryParams model, [FromRoute] string systemUserIdEncrypted)
         {
             try
             {
-
-                #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
-                    return Ok(ApiResponse<object>.SessionTokenExpired());
-                #endregion
 
                 VwSystemUser? user = await _accountGetTools.GetVwSystemUser(long.Parse(EncryptionHelper.Decrypt(systemUserIdEncrypted)));
 
@@ -184,10 +185,9 @@ namespace API.Controllers
         #region POST
         // POST api/users/validation
         [HttpPost("validation")]
+        [ValidateModelRequiredFields]
         public async Task<IActionResult> ValidateUser([FromBody] UserValidationQueryParams model)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.EntraIdEncrypted) || string.IsNullOrWhiteSpace(model.EmailEncrypted))
-                return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
 
             try
             {
@@ -273,11 +273,9 @@ namespace API.Controllers
 
         // POST api/users/validation
         [HttpPost("edit")]
+        [ValidateModelRequiredFields]
         public async Task<IActionResult> EditUser([FromBody] EditSystemUserQueryParams model)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.SystemRoleIdEncrypted) 
-                || string.IsNullOrWhiteSpace(model.StatusIdEncrypted) || string.IsNullOrWhiteSpace(model.IsActiveEncrypted) || string.IsNullOrWhiteSpace(model.ActionBySystemUserIdEncrypted))
-                return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
 
             try
             {
@@ -324,10 +322,9 @@ namespace API.Controllers
 
         // POST api/users/otp/re-send
         [HttpPost("otp/re-send")]
+        [ValidateModelRequiredFields]
         public async Task<IActionResult> ResendOTP([FromBody] ResendOTPQueryParams model)
         {
-            if (string.IsNullOrWhiteSpace(model.SystemUserIdEncrypted))
-                return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
 
             try
             {
@@ -403,10 +400,9 @@ namespace API.Controllers
 
         // POST api/users/otp/validation
         [HttpPost("otp/validation")]
+        [ValidateModelRequiredFields]
         public async Task<IActionResult> ValidateOTP([FromBody] OTPValidationQueryParams model)
         {
-            if (model == null || string.IsNullOrWhiteSpace(model.SystemUserIdEncrypted) || string.IsNullOrWhiteSpace(model.OTPEncrypted))
-                return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
 
             try
             {

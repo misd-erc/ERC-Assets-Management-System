@@ -5,6 +5,7 @@ using PortalDB.Services;
 using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
 using PortalTools.Services.DBO.Office;
+using PortalTools.Services.DBO.Storage;
 using PortalTools.Services.LOG;
 using System.Text;
 
@@ -40,6 +41,7 @@ builder.Services.AddScoped<AccountGetTools>();
 builder.Services.AddScoped<AccountEditTools>();
 builder.Services.AddScoped<OfficeGetTools>();
 builder.Services.AddScoped<OfficeEditTools>();
+builder.Services.AddScoped<StorageGetTools>();
 builder.Services.AddScoped<LogGetTools>();
 
 builder.Services.AddScoped<AuthTools>();

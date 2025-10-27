@@ -65,6 +65,9 @@ namespace PortalDB.Entities.DBO.Account
         [Column("SystemUserStatusId")]
         public long? StatusId { get; set; }
 
+        [Column("SystemUserProfilePictureFileStorageId")]
+        public long? ProfilePictureFileStorageId { get; set; }
+
         [Column("OfficeId")]
         public long? OfficeId { get; set; }
 

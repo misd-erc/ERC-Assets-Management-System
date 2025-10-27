@@ -25,6 +25,9 @@ namespace PortalDB.Entities.DBO.Account
         [Column("SystemUserStatusName")]
         public string? StatusName { get; set; }
 
+        [Column("SystemUserProfilePictureOriginalFileName")]
+        public string? ProfilePictureFileName { get; set; }
+
         [Column("OfficeName")]
         public string? OfficeName { get; set; }
 

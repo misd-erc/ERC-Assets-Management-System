@@ -175,6 +175,29 @@ namespace PortalTools.Services
             return containerClient;
         }
 
+        public static async Task<Stream?> GetFileStreamAsync(string blobName)
+        {
+            try
+            {
+                var containerClient = GetContainerClient(); // your existing method that builds the client
+                var blobClient = containerClient.GetBlobClient(blobName);
+
+                if (!await blobClient.ExistsAsync())
+                    return null;
+
+                var memoryStream = new MemoryStream();
+                await blobClient.DownloadToAsync(memoryStream);
+                memoryStream.Position = 0; // reset to beginning
+
+                return memoryStream;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+
         /// <summary>
         /// Uploads a file stream to Azure Blob Storage.
         /// </summary>
@@ -345,6 +368,7 @@ namespace PortalTools.Services
 
             return $"{protocol}://{accountName}.blob.{endpointSuffix}/{_fixedContainerName}/{blobName}";
         }
+
 
         #endregion
 

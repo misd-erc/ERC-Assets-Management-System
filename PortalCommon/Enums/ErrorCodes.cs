@@ -15,6 +15,7 @@ namespace PortalCommon.Enums
         public const string DATABASE_ERROR = "ERR_DATABASE";
         public const string CONCURRENCY_ERROR = "ERR_CONCURRENCY";
         public const string SERVER_ERROR = "ERR_SERVER";
+        public const string UPLOAD_FAILED = "ERR_UPLOAD";
 
         // Authentication & Authorization
         public const string UNAUTHORIZED = "ERR_UNAUTHORIZED";

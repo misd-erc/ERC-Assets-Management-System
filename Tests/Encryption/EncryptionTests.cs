@@ -26,7 +26,7 @@ namespace Tests.Encryption
         public void Encrypt_Should_Not_Return_PlainText()
         {
             // Arrange
-            var plainText = "ercazuredb2blob";
+            var plainText = "4";
             var plainText2 = "1yxp+EZX1bHZN1IEG9GiZyY2/OBEXjkls5xkohkdqIKA8LVGUvgoTm31GcqnyNDAqqHynCOHkSrE+ASt8i8ctA==";
             var plainText3 = "core.windows.net";
             var plainText4 = "https";
