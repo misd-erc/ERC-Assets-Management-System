@@ -1,0 +1,152 @@
+import { toast } from 'sonner';
+import { sanitizeSystemUserId } from './sanitizationUtils';
+
+/**
+ * Session Management Utilities
+ * Centralized functions for handling user sessions, token validation, and logout
+ */
+
+/**
+ * Get the session token from localStorage
+ * @returns The systemUserIdEncrypted token or null if not found
+ */
+export const getSessionToken = (): string | null => {
+  return localStorage.getItem('systemUserIdEncrypted');
+};
+
+/**
+ * Check if a valid session token exists
+ * @returns true if token exists, false otherwise
+ */
+export const isSessionValid = (): boolean => {
+  const token = getSessionToken();
+  return token !== null && token.trim() !== '';
+};
+
+/**
+ * Clear all session data from localStorage
+ * Removes all user-related data including tokens, profile, and user details
+ */
+export const clearSession = (): void => {
+  // Clear all possible session-related items
+  const sessionKeys = [
+    'userProfile',
+    'token',
+    'systemUserIdEncrypted',
+    'userDetails',
+    'authToken',
+    'user',
+    'sessionToken',
+    'expiresAt'
+  ];
+
+  sessionKeys.forEach(key => {
+    localStorage.removeItem(key);
+  });
+
+  console.log('[Session] All session data cleared');
+};
+
+/**
+ * Redirect user to login page with session expired message
+ * Shows a toast notification and performs redirect
+ * @param message Optional custom message to display
+ */
+export const redirectToLogin = (message: string = 'Your session has expired. Please log in again.'): void => {
+  // Show toast notification
+  toast.error(message, {
+    duration: 3000,
+    position: 'top-center',
+  });
+
+  console.log('[Session] Redirecting to login:', message);
+
+  // Small delay to ensure toast is visible before redirect
+  setTimeout(() => {
+    window.location.href = '/';
+  }, 500);
+};
+
+/**
+ * Handle session expiration
+ * Clears session data and redirects to login
+ * @param message Optional custom message
+ */
+export const handleSessionExpired = (message?: string): void => {
+  clearSession();
+  redirectToLogin(message);
+};
+
+/**
+ * Validate if the response indicates a session error
+ * @param response API response object
+ * @returns true if session is invalid, false otherwise
+ */
+export const isSessionError = (response: any): boolean => {
+  if (!response || typeof response !== 'object') {
+    return false;
+  }
+
+  // Check for explicit session error indicators
+  return (
+    response.success === false ||
+    response.code === 'ERR_SERVER' ||
+    response.code === 'ERR_UNAUTHORIZED' ||
+    response.code === 'ERR_SESSION_EXPIRED' ||
+    response.message?.toLowerCase().includes('session expired') ||
+    response.message?.toLowerCase().includes('invalid token')
+  );
+};
+
+/**
+ * Store session token in localStorage using user.id from localStorage
+ * Always uses the correct encrypted user ID from the user object
+ */
+export const setSessionToken = (): void => {
+  try {
+    const userRaw = localStorage.getItem('user');
+    const parsedUser = userRaw ? JSON.parse(userRaw) : null;
+    const userId = parsedUser?.id?.trim();
+
+    if (userId) {
+      const sanitizedToken = sanitizeSystemUserId(userId);
+      localStorage.setItem('systemUserIdEncrypted', sanitizedToken);
+      localStorage.setItem('ActionBySystemUserIdEncrypted', sanitizedToken);
+      console.log('[Session] Token updated from user.id');
+    } else {
+      console.warn('[Session] No valid user.id found, keeping previous token');
+    }
+  } catch (error) {
+    console.error('[Session] Failed to update session token:', error);
+  }
+};
+
+/**
+ * Sync systemUserIdEncrypted with ActionBySystemUserIdEncrypted
+ * Ensures both tokens are identical, using ActionBySystemUserIdEncrypted as the source of truth
+ */
+export const syncSessionIds = (): void => {
+  const systemId = localStorage.getItem('systemUserIdEncrypted');
+  const actionId = localStorage.getItem('ActionBySystemUserIdEncrypted');
+
+  if (actionId && systemId !== actionId) {
+    localStorage.setItem('systemUserIdEncrypted', actionId);
+    console.log('[Session] Synced systemUserIdEncrypted with ActionBySystemUserIdEncrypted');
+  }
+};
+
+/**
+ * Get all session data for debugging
+ * @returns Object containing all session-related localStorage items
+ */
+export const getSessionDebugInfo = (): Record<string, string | null> => {
+  return {
+    systemUserIdEncrypted: localStorage.getItem('systemUserIdEncrypted'),
+    ActionBySystemUserIdEncrypted: localStorage.getItem('ActionBySystemUserIdEncrypted'),
+    userProfile: localStorage.getItem('userProfile'),
+    userDetails: localStorage.getItem('userDetails'),
+    token: localStorage.getItem('token'),
+    authToken: localStorage.getItem('authToken'),
+    user: localStorage.getItem('user'),
+  };
+};

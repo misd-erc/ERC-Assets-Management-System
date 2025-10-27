@@ -1,4 +1,5 @@
 import { User } from '../types';
+import { sanitizeSystemUserId } from '../utils/sanitizationUtils';
 
 export interface SessionData {
   sessionToken: string;
@@ -30,7 +31,7 @@ export const getSystemUserIdEncrypted = (): string | null => {
  */
 export const saveSession = (sessionData: SessionData): void => {
   localStorage.setItem('sessionToken', sessionData.sessionToken);
-  localStorage.setItem('systemUserIdEncrypted', sessionData.systemUserIdEncrypted);
+  localStorage.setItem('systemUserIdEncrypted', sanitizeSystemUserId(sessionData.systemUserIdEncrypted));
   localStorage.setItem('expiresAt', sessionData.expiresAt);
   localStorage.setItem('user', JSON.stringify(sessionData.user));
 };

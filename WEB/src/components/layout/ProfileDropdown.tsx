@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Settings, Shield, LogOut, ChevronDown } from 'lucide-react';
+import { User, LogOut, ChevronDown } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -19,8 +19,9 @@ import {
 } from '../ui/dialog';
 import { useAuth } from '../../hooks';
 import { MyProfile } from '../profile/MyProfile';
-import { AccountSettings } from '../profile/AccountSettings';
-import { SecurityPrivacy } from '../profile/SecurityPrivacy';
+import { useNavigate } from 'react-router-dom';
+import { getUserDetails } from '../../api/authApi';
+import { useAuthStore } from '../../store/auth';
 
 interface ProfileDropdownProps {
   onNavigate?: (module: string) => void;
@@ -28,18 +29,18 @@ interface ProfileDropdownProps {
 
 export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onNavigate }) => {
   const { logout } = useAuth();
-  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
-  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
-  const [securityDialogOpen, setSecurityDialogOpen] = useState(false);
+  const navigate = useNavigate();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const { systemUserIdEncrypted } = useAuthStore();
+  const [isFetchingProfile, setIsFetchingProfile] = useState(false);
 
   // Get user details from localStorage
-  const getUserDetails = () => {
+  const getUserDetailsFromStorage = () => {
     const stored = localStorage.getItem('userDetails');
     return stored ? JSON.parse(stored) : null;
   };
 
-  const userDetails = getUserDetails();
+  const userDetails = getUserDetailsFromStorage();
   const userName = userDetails ? `${userDetails.firstName} ${userDetails.lastName}` : 'User';
   const userEmail = userDetails ? userDetails.email : 'user@example.com';
 
@@ -63,6 +64,23 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onNavigate }) 
   const handleLogout = () => {
     logout();
     setLogoutDialogOpen(false);
+  };
+
+  const handleMyProfileClick = async () => {
+    if (!systemUserIdEncrypted) return;
+
+    setIsFetchingProfile(true);
+    try {
+      const userData = await getUserDetails(systemUserIdEncrypted, systemUserIdEncrypted);
+      localStorage.setItem('userProfile', JSON.stringify(userData));
+      navigate('/profile');
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+      // Still navigate, will show fallback
+      navigate('/profile');
+    } finally {
+      setIsFetchingProfile(false);
+    }
   };
 
   return (
@@ -126,7 +144,8 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onNavigate }) 
               {/* Menu Items */}
               <DropdownMenuItem
                 className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-slate-50"
-                onClick={() => setProfileDialogOpen(true)}
+                onClick={handleMyProfileClick}
+                disabled={isFetchingProfile}
               >
                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                   <User className="w-4 h-4 text-blue-600" />
@@ -134,32 +153,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onNavigate }) 
                 <div>
                   <p className="text-sm font-medium text-slate-900">My Profile</p>
                   <p className="text-xs text-slate-500">View and edit your profile</p>
-                </div>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-slate-50"
-                onClick={() => setSettingsDialogOpen(true)}
-              >
-                <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-                  <Settings className="w-4 h-4 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-900">Account Settings</p>
-                  <p className="text-xs text-slate-500">Manage your preferences</p>
-                </div>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem
-                className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-slate-50"
-                onClick={() => setSecurityDialogOpen(true)}
-              >
-                <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
-                  <Shield className="w-4 h-4 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-900">Security & Privacy</p>
-                  <p className="text-xs text-slate-500">Manage security settings</p>
                 </div>
               </DropdownMenuItem>
 
@@ -181,36 +174,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onNavigate }) 
           </DropdownMenuContent>
         </AnimatePresence>
       </DropdownMenu>
-
-      {/* Profile Dialog */}
-      <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>My Profile</DialogTitle>
-          </DialogHeader>
-          <MyProfile />
-        </DialogContent>
-      </Dialog>
-
-      {/* Settings Dialog */}
-      <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Account Settings</DialogTitle>
-          </DialogHeader>
-          <AccountSettings />
-        </DialogContent>
-      </Dialog>
-
-      {/* Security Dialog */}
-      <Dialog open={securityDialogOpen} onOpenChange={setSecurityDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Security & Privacy</DialogTitle>
-          </DialogHeader>
-          <SecurityPrivacy />
-        </DialogContent>
-      </Dialog>
 
       {/* Logout Confirmation Dialog */}
       <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
