@@ -150,6 +150,7 @@ namespace API.Controllers
         [HttpGet("all/{systemUserIdEncrypted}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
+        [DecodeRouteParameter(nameof(systemUserIdEncrypted))]
         public async Task   <IActionResult> GetSystemUserBySystemUserId([FromQuery] SoloQueryParams model, [FromRoute] string systemUserIdEncrypted)
         {
             try

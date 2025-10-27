@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PortalCommon.Models.ViewModels.Account;
+using PortalCommon.Constants;
 using PortalCommon.Models.QueryParams.Account;
+using PortalCommon.Models.ViewModels.Account;
 using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.LOG.AuditTrail;
@@ -8,7 +9,7 @@ using PortalDB.Services;
 using System;
 using System.Linq;
 using System.Text.Json;
-using PortalCommon.Constants;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace PortalTools.Services.DBO.Account
 {
@@ -67,9 +68,10 @@ namespace PortalTools.Services.DBO.Account
 
                 }
 
-                AuditTrailTool.TrackChanges(context, isInsert ? null! : existingUser!, model, nameof(TblSystemUser), UniversalConstants.SYSTEM_ID, isInsert ? "Insert" : "Update");
+                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} system user information for user {model.Id} base on Microsoft Entra authenticated information", actionBy: UniversalConstants.SYSTEM_ID,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingUser!, model, nameof(TblSystemUser), UniversalConstants.SYSTEM_ID, isInsert ? "Insert" : "Update"));
 
-                return isInsert ? model.Id : existingUser.Id;
+                return isInsert? model.Id: existingUser.Id;
             }
             catch (DbUpdateException ex)
             {

@@ -1,6 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using API.Attributes;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PortalAPI.Attributes;
 using PortalCommon.Enums;
+using PortalCommon.Models.QueryParams.Office;
+using PortalCommon.Models.QueryParams.Pagination;
+using PortalCommon.Models.QueryParams.Universal;
+using PortalCommon.Models.ResponseModels.Account;
+using PortalCommon.Models.ResponseModels.Office;
+using PortalCommon.Models.Responses;
+using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Office.Division;
@@ -8,13 +17,6 @@ using PortalDB.Services;
 using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
 using PortalTools.Services.DBO.Office;
-using PortalCommon.Utilities;
-using PortalCommon.Models.Responses;
-using PortalCommon.Models.QueryParams.Office;
-using PortalCommon.Models.QueryParams.Pagination;
-using PortalCommon.Models.QueryParams.Universal;
-using PortalCommon.Models.ResponseModels.Account;
-using PortalCommon.Models.ResponseModels.Office;
 
 namespace API.Controllers
 {
@@ -48,39 +50,37 @@ namespace API.Controllers
 
         // GET api/office/all
         [HttpGet("all")]
-        public async Task<IActionResult> GetAllOffices([FromQuery] PaginationGenericQueryParams query)
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllOffices([FromQuery] PaginationGenericQueryParams model)
         {
             try
             {
-                #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
-                    return Ok(ApiResponse<object>.SessionTokenExpired());
-                #endregion
 
                 IEnumerable<TblOffice?> offices = await _officeGetTools.GetTblOffices().ToListAsync();
 
-                if (!string.IsNullOrWhiteSpace(query.SearchString))
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
-                    string searchLower = query.SearchString.ToLower();
+                    string searchLower = model.SearchString.ToLower();
                     offices = offices.Where(x =>
                         x.Name.ToLower().Contains(searchLower) ||
                         x.Acronym.ToLower().Contains(searchLower));
                 }
 
-                if (query.StartDate.HasValue)
-                    offices = offices.Where(x => x.CreatedAt >= query.StartDate.Value);
+                if (model.StartDate.HasValue)
+                    offices = offices.Where(x => x.CreatedAt >= model.StartDate.Value);
 
-                if (query.EndDate.HasValue)
-                    offices = offices.Where(x => x.CreatedAt <= query.EndDate.Value);
+                if (model.EndDate.HasValue)
+                    offices = offices.Where(x => x.CreatedAt <= model.EndDate.Value);
 
                 int totalCount = offices.Count();
 
-                int skip = (query.PageNumber - 1) * query.PageSize;
+                int skip = (model.PageNumber - 1) * model.PageSize;
 
                 var officesList = offices
                     .OrderByDescending(x => x.CreatedAt)
                     .Skip(skip)
-                    .Take(query.PageSize)
+                    .Take(model.PageSize)
                     .ToList();
 
                 List<OfficeResponseModel> officesResponses = officesList.Select(x => new OfficeResponseModel
@@ -91,10 +91,11 @@ namespace API.Controllers
                     CreatedAt = x.CreatedAt
                 }).ToList();
 
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed offices", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
                 return Ok(ApiResponse<OfficeResponseModel>.OkPaginated(
                     officesResponses,
-                    query.PageNumber,
-                    query.PageSize,
+                    model.PageNumber,
+                    model.PageSize,
                     totalCount,
                     "Offices have been retrieved"
                 ));
@@ -109,14 +110,13 @@ namespace API.Controllers
 
         // GET api/office/all/{officeId}
         [HttpGet("all/{officeId}")]
-        public async Task<IActionResult> GetOfficeByOfficeId([FromQuery] SoloQueryParams query, [FromRoute] long officeId)
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        [DecodeRouteParameter(nameof(officeId))]
+        public async Task<IActionResult> GetOfficeByOfficeId([FromQuery] SoloQueryParams model, [FromRoute] long officeId)
         {
             try
             {
-                #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
-                    return Ok(ApiResponse<object>.SessionTokenExpired());
-                #endregion
 
                 TblOffice? office = await _officeGetTools.GetTblOffice(officeId);
 
@@ -128,6 +128,7 @@ namespace API.Controllers
                     CreatedAt = office.CreatedAt
                 };
 
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed office information for office {officeId}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
                 return Ok(ApiResponse<DivisionResponseModel>.Ok(newOfficeResponse, "Office have been retrieved"));
 
             }
@@ -140,20 +141,18 @@ namespace API.Controllers
 
         // GET api/office/division/all
         [HttpGet("division/all")]
-        public async Task<IActionResult> GetAllDivisions([FromQuery] PaginationGenericQueryParams query)
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllDivisions([FromQuery] PaginationGenericQueryParams model)
         {
             try
             {
-                #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
-                    return Ok(ApiResponse<object>.SessionTokenExpired());
-                #endregion
 
                 IEnumerable<VwDivision?> divisions = await _officeGetTools.GetVwDivisions().ToListAsync();
 
-                if (!string.IsNullOrWhiteSpace(query.SearchString))
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
-                    string searchLower = query.SearchString.ToLower();
+                    string searchLower = model.SearchString.ToLower();
                     divisions = divisions.Where(x =>
                         x.Name.ToLower().Contains(searchLower) ||
                         x.Acronym.ToLower().Contains(searchLower) ||
@@ -161,20 +160,20 @@ namespace API.Controllers
                         x.OfficeAcronym.ToLower().Contains(searchLower));
                 }
 
-                if (query.StartDate.HasValue)
-                    divisions = divisions.Where(x => x.CreatedAt >= query.StartDate.Value);
+                if (model.StartDate.HasValue)
+                    divisions = divisions.Where(x => x.CreatedAt >= model.StartDate.Value);
 
-                if (query.EndDate.HasValue)
-                    divisions = divisions.Where(x => x.CreatedAt <= query.EndDate.Value);
+                if (model.EndDate.HasValue)
+                    divisions = divisions.Where(x => x.CreatedAt <= model.EndDate.Value);
 
                 int totalCount = divisions.Count();
 
-                int skip = (query.PageNumber - 1) * query.PageSize;
+                int skip = (model.PageNumber - 1) * model.PageSize;
 
                 var divisionsList = divisions
                     .OrderByDescending(x => x.CreatedAt)
                     .Skip(skip)
-                    .Take(query.PageSize)
+                    .Take(model.PageSize)
                     .ToList();
 
                 List<VwDivisionResponseModel> divisionsResponses = divisionsList.Select(x => new VwDivisionResponseModel
@@ -188,10 +187,11 @@ namespace API.Controllers
                     CreatedAt = x.CreatedAt
                 }).ToList();
 
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed divisions", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
                 return Ok(ApiResponse<VwDivisionResponseModel>.OkPaginated(
                     divisionsResponses,
-                    query.PageNumber,
-                    query.PageSize,
+                    model.PageNumber,
+                    model.PageSize,
                     totalCount,
                     "Divisions have been retrieved"
                 ));
@@ -206,14 +206,13 @@ namespace API.Controllers
 
         // GET api/office/division/all
         [HttpGet("division/all/{divisionId}")]
-        public async Task<IActionResult> GetDivisionByDivisionId([FromQuery] SoloQueryParams query, [FromRoute] long divisionId)
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        [DecodeRouteParameter(nameof(divisionId))]
+        public async Task<IActionResult> GetDivisionByDivisionId([FromQuery] SoloQueryParams model, [FromRoute] long divisionId)
         {
             try
             {
-                #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
-                    return Ok(ApiResponse<object>.SessionTokenExpired());
-                #endregion
 
                 VwDivision? division = await _officeGetTools.GetVwDivision(divisionId);
 
@@ -228,6 +227,7 @@ namespace API.Controllers
                     CreatedAt = division.CreatedAt
                 };
 
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed division information for division {divisionId}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
                 return Ok(ApiResponse<VwDivisionResponseModel>.Ok(divisionResponse, "Division have been retrieved"));
 
             }
@@ -240,46 +240,45 @@ namespace API.Controllers
 
         // GET api/office/employment-types/all
         [HttpGet("employment-type/all")]
-        public async Task<IActionResult> GetAllEmploymentTypes([FromQuery] PaginationGenericQueryParams query)
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllEmploymentTypes([FromQuery] PaginationGenericQueryParams model)
         {
             try
             {
-                #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
-                    return Ok(ApiResponse<object>.SessionTokenExpired());
-                #endregion
 
                 IEnumerable<TblEmploymentType?> employmentTypes = await _officeGetTools.GetTblEmploymentTypes().ToListAsync();
 
-                if (!string.IsNullOrWhiteSpace(query.SearchString))
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
-                    string searchLower = query.SearchString.ToLower();
+                    string searchLower = model.SearchString.ToLower();
                     employmentTypes = employmentTypes.Where(x =>
                         x.Name.ToLower().Contains(searchLower));
                 }
 
-                if (query.StartDate.HasValue)
-                    employmentTypes = employmentTypes.Where(x => x.CreatedAt >= query.StartDate.Value);
+                if (model.StartDate.HasValue)
+                    employmentTypes = employmentTypes.Where(x => x.CreatedAt >= model.StartDate.Value);
 
-                if (query.EndDate.HasValue)
-                    employmentTypes = employmentTypes.Where(x => x.CreatedAt <= query.EndDate.Value);
+                if (model.EndDate.HasValue)
+                    employmentTypes = employmentTypes.Where(x => x.CreatedAt <= model.EndDate.Value);
 
                 int totalCount = employmentTypes.Count();
 
-                int skip = (query.PageNumber - 1) * query.PageSize;
+                int skip = (model.PageNumber - 1) * model.PageSize;
 
                 var employmentTypesList = employmentTypes
                     .OrderByDescending(x => x.CreatedAt)
                     .Skip(skip)
-                    .Take(query.PageSize)
+                    .Take(model.PageSize)
                     .ToList();
 
                 List<TblEmploymentType?> officesResponses = employmentTypesList;
 
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed employment types", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
                 return Ok(ApiResponse<TblEmploymentType?>.OkPaginated(
                     officesResponses,
-                    query.PageNumber,
-                    query.PageSize,
+                    model.PageNumber,
+                    model.PageSize,
                     totalCount,
                     "Employment types have been retrieved"
                 ));
@@ -294,17 +293,17 @@ namespace API.Controllers
 
         // GET api/office/employment-types/all/{employmentTypeId}
         [HttpGet("employment-type/all/{employmentTypeId}")]
-        public async Task<IActionResult> GetAllEmploymentTypeByEmploymentTypeId([FromQuery] SoloQueryParams query, [FromRoute] long employmentTypeId)
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        [DecodeRouteParameter(nameof(employmentTypeId))]
+        public async Task<IActionResult> GetAllEmploymentTypeByEmploymentTypeId([FromQuery] SoloQueryParams model, [FromRoute] long employmentTypeId)
         {
             try
             {
-                #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
-                    return Ok(ApiResponse<object>.SessionTokenExpired());
-                #endregion
 
                 TblEmploymentType? employmentType = await _officeGetTools.GetTblEmploymentType(employmentTypeId);
 
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed employment type information for employment type {employmentTypeId}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
                 return Ok(ApiResponse<TblEmploymentType>.Ok(employmentType, "Employment type have been retrieved"));
             }
             catch (Exception ex)
@@ -316,48 +315,48 @@ namespace API.Controllers
 
         // GET api/office/positions/all
         [HttpGet("position/all")]
-        public async Task<IActionResult> GetAllPositions([FromQuery] PaginationGenericQueryParams query)
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+
+        public async Task<IActionResult> GetAllPositions([FromQuery] PaginationGenericQueryParams model)
         {
             try
             {
-                #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
-                    return Ok(ApiResponse<object>.SessionTokenExpired());
-                #endregion
 
                 IEnumerable<TblPosition?> positions = await _officeGetTools.GetTblPositions().ToListAsync();
 
-                if (!string.IsNullOrWhiteSpace(query.SearchString))
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
-                    string searchLower = query.SearchString.ToLower();
+                    string searchLower = model.SearchString.ToLower();
                     positions = positions.Where(x =>
                         x.Name.ToLower().Contains(searchLower) ||
                         x.Acronym.ToLower().Contains(searchLower) ||
                         x.SalaryGrade.ToLower().Contains(searchLower));
                 }
 
-                if (query.StartDate.HasValue)
-                    positions = positions.Where(x => x.CreatedAt >= query.StartDate.Value);
+                if (model.StartDate.HasValue)
+                    positions = positions.Where(x => x.CreatedAt >= model.StartDate.Value);
 
-                if (query.EndDate.HasValue)
-                    positions = positions.Where(x => x.CreatedAt <= query.EndDate.Value);
+                if (model.EndDate.HasValue)
+                    positions = positions.Where(x => x.CreatedAt <= model.EndDate.Value);
 
                 int totalCount = positions.Count();
 
-                int skip = (query.PageNumber - 1) * query.PageSize;
+                int skip = (model.PageNumber - 1) * model.PageSize;
 
                 var positionsList = positions
                     .OrderByDescending(x => x.CreatedAt)
                     .Skip(skip)
-                    .Take(query.PageSize)
+                    .Take(model.PageSize)
                     .ToList();
 
                 List<TblPosition?> positionsResponses = positionsList;
 
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed positions", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
                 return Ok(ApiResponse<TblPosition?>.OkPaginated(
                     positionsList,
-                    query.PageNumber,
-                    query.PageSize,
+                    model.PageNumber,
+                    model.PageSize,
                     totalCount,
                     "Positions have been retrieved"
                 ));
@@ -372,17 +371,17 @@ namespace API.Controllers
 
         // GET api/office/position/all
         [HttpGet("position/all/{positionId}")]
-        public async Task<IActionResult> GetPositionByPositionId([FromQuery] SoloQueryParams query, [FromRoute] long positionId)
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        [DecodeRouteParameter(nameof(positionId))]
+        public async Task<IActionResult> GetPositionByPositionId([FromQuery] SoloQueryParams model, [FromRoute] long positionId)
         {
             try
             {
-                #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(long.Parse(EncryptionHelper.Decrypt(query.ActionBySystemUserIdEncrypted))))
-                    return Ok(ApiResponse<object>.SessionTokenExpired());
-                #endregion
 
                 TblPosition? position = await _officeGetTools.GetTblPosition(positionId);
 
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed position information for position {positionId}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
                 return Ok(ApiResponse<TblPosition>.Ok(position, "Employment type have been retrieved"));
 
             }
@@ -399,6 +398,8 @@ namespace API.Controllers
 
         // POST api/office/edit
         [HttpPost("edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
         public async Task<IActionResult> EditOffice([FromQuery] EditOfficeQueryParams model)
         {
 

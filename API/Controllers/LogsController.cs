@@ -108,6 +108,7 @@ namespace API.Controllers
         [HttpGet("audit-trail/all/{systemUserIdEncrypted}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
+        [DecodeRouteParameter(nameof(systemUserIdEncrypted))]
         public async Task<IActionResult> GetAllAuditTrailsBySystemUserId([FromQuery] PaginationGenericQueryParams model, [FromRoute] string systemUserIdEncrypted)
         {
             try

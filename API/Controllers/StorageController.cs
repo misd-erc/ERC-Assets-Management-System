@@ -99,6 +99,8 @@ namespace API.Controllers
 
         [HttpGet("retrieve/{fileStorageIdEncrypted}")]
         [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        [DecodeRouteParameter(nameof(fileStorageIdEncrypted))]
         public async Task<IActionResult> GetFileById([FromQuery] SoloQueryParams model, [FromRoute] string fileStorageIdEncrypted)
         {
             try

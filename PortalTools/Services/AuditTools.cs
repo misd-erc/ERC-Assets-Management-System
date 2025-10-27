@@ -56,6 +56,7 @@ namespace PortalTools.Services
             };
 
             context.Set<TblAuditTrail>().Add(auditTrailInfo);
+            context.SaveChanges();
 
             return auditTrailInfo.Id;
         }
