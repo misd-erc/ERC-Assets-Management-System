@@ -1,4 +1,5 @@
 import axios, { type AxiosInstance, type AxiosResponse, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { getSessionToken, handleSessionExpired, isSessionError } from '../utils/sessionUtils';
 
 const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -13,19 +14,23 @@ const axiosInstance: AxiosInstance = axios.create({
 // Request interceptor: Add auth token and request ID
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Add auth token if exists
-    const token = localStorage.getItem('authToken');
+    // Add systemUserIdEncrypted token if exists (this is our session token)
+    const token = getSessionToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      // Also add as custom header for backend compatibility
+      config.headers['X-System-User-Id'] = token;
     }
 
     // Add request ID for tracking
     config.headers['X-Request-ID'] = Date.now().toString();
 
+    console.log('[Axios] Request:', config.method?.toUpperCase(), config.url);
+
     return config;
   },
   (error: AxiosError) => {
-    console.error('Request error:', error);
+    console.error('[Axios] Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -33,36 +38,71 @@ axiosInstance.interceptors.request.use(
 // Response interceptor: Handle errors globally with retry logic
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
+    // Check for invalid session in successful responses
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      if (isSessionError(response.data)) {
+        console.error('[Axios] Session error detected in response:', response.data);
+        
+        // Handle session expiration
+        handleSessionExpired(
+          response.data.message || 'Your session has expired. Please log in again.'
+        );
+
+        return Promise.reject(new Error('Session expired'));
+      }
+    }
+
     return response;
   },
   async (error: AxiosError) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+    // Handle 401 Unauthorized - session expired or invalid token
     if (error.response?.status === 401 && !originalRequest._retry) {
-      // Handle token refresh or logout
-      console.error('Unauthorized access - token may be expired');
-      // Clear invalid token
-      localStorage.removeItem('authToken');
-      // Could dispatch logout action here if store is available
-      // For now, just reject
-    } else if (error.response?.status === 403) {
-      console.error('Forbidden access');
-    } else if (error.response?.status === 500) {
-      console.error('Server error');
-    } else if (error.response?.status === 429) {
-      console.error('Rate limited');
+      console.error('[Axios] Unauthorized access - token may be expired');
+      
+      // Clear session and redirect to login
+      handleSessionExpired('Your session has expired. Please log in again.');
+      
+      return Promise.reject(error);
+    } 
+    
+    // Handle 403 Forbidden
+    else if (error.response?.status === 403) {
+      console.error('[Axios] Forbidden access - insufficient permissions');
+    } 
+    
+    // Handle 500 Server Error
+    else if (error.response?.status === 500) {
+      console.error('[Axios] Server error');
+      
+      // Check if response data indicates session error
+      if (error.response.data && isSessionError(error.response.data)) {
+        handleSessionExpired('Your session has expired. Please log in again.');
+        return Promise.reject(error);
+      }
+    } 
+    
+    // Handle 429 Rate Limiting
+    else if (error.response?.status === 429) {
+      console.error('[Axios] Rate limited');
       // Could implement exponential backoff here
-    } else if (!error.response && error.code === 'NETWORK_ERROR') {
-      console.error('Network error - check connection');
+    } 
+    
+    // Handle Network Errors
+    else if (!error.response && error.code === 'NETWORK_ERROR') {
+      console.error('[Axios] Network error - check connection');
     }
 
-    // Retry logic for certain errors
+    // Retry logic for certain errors (only for GET requests)
     if (
       (!error.response || error.response.status >= 500) &&
       !originalRequest._retry &&
       (originalRequest.method === 'get' || originalRequest.method === 'GET')
     ) {
       originalRequest._retry = true;
+      console.log('[Axios] Retrying request after 1 second...');
+      
       // Wait 1 second before retry
       await new Promise(resolve => setTimeout(resolve, 1000));
       return axiosInstance(originalRequest);

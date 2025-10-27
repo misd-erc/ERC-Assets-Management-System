@@ -1,5 +1,6 @@
 import axiosInstance from '../lib/axios';
-import { User } from '../types';
+import { User, ApiResponse } from '../types';
+import { getUserDetails, UserDetails } from './authApi';
 
 export const getUsers = async (): Promise<User[]> => {
   // const response = await axiosInstance.get('/users');
@@ -36,4 +37,27 @@ export const deleteUser = async (id: string): Promise<void> => {
 
   // Mock implementation
   return Promise.resolve();
+};
+
+/**
+ * Validate user session by calling the Users/all API
+ * This is used to check if the token is still valid
+ * 
+ * @param systemUserIdEncrypted - The encrypted system user ID (token)
+ * @returns Promise<UserDetails> - User details if session is valid
+ * @throws Error if session is invalid or expired
+ */
+export const validateUserSession = async (systemUserIdEncrypted: string): Promise<UserDetails> => {
+  console.log('[UserAPI] Validating session with token');
+  
+  try {
+    // Call getUserDetails which internally calls /Users/all/{token}?ActionBySystemUserIdEncrypted={token}
+    const userDetails = await getUserDetails(systemUserIdEncrypted, systemUserIdEncrypted);
+    
+    console.log('[UserAPI] Session validation successful');
+    return userDetails;
+  } catch (error) {
+    console.error('[UserAPI] Session validation failed:', error);
+    throw error;
+  }
 };

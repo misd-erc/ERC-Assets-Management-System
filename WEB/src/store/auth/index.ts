@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { User, AuthStore } from '../../types';
 import { validateUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '../../api/authApi';
-import { generateSessionToken, saveSession, loadSession, clearSession } from '../../services/authService';
+import { generateSessionToken, saveSession, loadSession, clearSession as clearAuthSession } from '../../services/authService';
+import { clearSession, setSessionToken, getSessionToken, syncSessionIds } from '../../utils/sessionUtils';
 import { toast } from 'sonner';
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -16,16 +17,25 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   // Initialize auth state on app start
   initialize: async () => {
+    console.log('[AuthStore] Initializing auth state...');
+
+    // Sync session IDs on app initialization
+    syncSessionIds();
+
     // Load session from localStorage
     const session = loadSession();
+    const token = getSessionToken();
 
-    if (session) {
+    if (session && token) {
       try {
         set({ loading: true, error: '' });
+
+        console.log('[AuthStore] Session found, validating...');
 
         // Check if userDetails exist in localStorage
         const storedUserDetails = localStorage.getItem('userDetails');
         if (!storedUserDetails && session.systemUserIdEncrypted) {
+          console.log('[AuthStore] Fetching user details...');
           // Fetch user details if not present
           const userDetails = await getUserDetails(session.systemUserIdEncrypted, session.systemUserIdEncrypted);
           localStorage.setItem('userDetails', JSON.stringify(userDetails));
@@ -43,9 +53,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           loading: false,
           systemUserIdEncrypted: session.systemUserIdEncrypted
         });
+
+        console.log('[AuthStore] Auth state initialized successfully');
       } catch (error) {
-        // Session invalid, clear storage
+        console.error('[AuthStore] Session validation failed:', error);
+
+        // Session invalid, clear storage using centralized utility
         clearSession();
+        clearAuthSession();
+
         set({
           isAuthenticated: false,
           user: null,
@@ -55,6 +71,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           error: error instanceof Error ? error.message : 'Session expired'
         });
       }
+    } else {
+      console.log('[AuthStore] No session found');
+      // No token, redirect to login
+      set({ loading: false });
     }
   },
 
@@ -62,10 +82,24 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ loading: true, error: '' });
 
     try {
+      console.log('[AuthStore] Validating user...');
       const result = await validateUser(userInfo);
 
-      // Store encrypted system user ID
-      localStorage.setItem('systemUserIdEncrypted', result.systemUserIdEncrypted);
+      // Store user data in localStorage first
+      const tempUser = {
+        id: result.systemUserIdEncrypted, // Temporary ID, will be updated after MFA
+        name: `${userInfo.firstName} ${userInfo.lastName}`,
+        email: userInfo.email,
+        username: userInfo.email,
+        role: 'user',
+        entraId: userInfo.entraId,
+        firstName: userInfo.firstName,
+        lastName: userInfo.lastName
+      };
+      localStorage.setItem('user', JSON.stringify(tempUser));
+
+      // Store encrypted system user ID using centralized utility (will use user.id from localStorage)
+      setSessionToken();
 
       set({
         requireMFA: true,
@@ -83,8 +117,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         }
       });
 
+      console.log('[AuthStore] User validated, MFA required');
       return { success: true, message: result.message };
     } catch (error) {
+      console.error('[AuthStore] Login failed:', error);
       set({
         error: error instanceof Error ? error.message : 'Login failed',
         loading: false
@@ -172,6 +208,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       localStorage.setItem('authToken', result.token);
       localStorage.setItem('user', JSON.stringify(updatedUser));
 
+      // Update session token using the correct user.id
+      setSessionToken();
+
       return true;
     } catch (error) {
       set({
@@ -187,8 +226,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   logout: () => {
+    console.log('[AuthStore] Logging out...');
+    
+    // Clear all session data using centralized utilities
     clearSession();
-    localStorage.removeItem('userDetails');
+    clearAuthSession();
+    
     set({
       isAuthenticated: false,
       user: null,
@@ -198,5 +241,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       error: '',
       systemUserIdEncrypted: undefined
     });
+    
+    console.log('[AuthStore] Logout complete');
   },
 }));

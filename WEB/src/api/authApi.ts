@@ -2,29 +2,67 @@ import axiosInstance from '../lib/axios';
 import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserEncryptedPublicViewModel, ApiResponse } from '../types';
 import { encrypt, decrypt } from '../utils/encryption';
 import { guidToLongId } from '../utils/guidUtils';
+import { sanitizeSystemUserId } from '../utils/sanitizationUtils';
 
 
 export interface UserDetails {
   id: number;
-  FirstName: string;
-  LastName: string;
-  Email: string;
-  StatusName: string;
-  SystemRoleName: string;
-  OfficeName: string;
-  OfficeAcronym: string;
-  DivisionName: string;
-  DivisionAcronym: string;
-  IsActive: boolean;
-  CreatedAt: string;
-  LastLoginAt: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt: string;
+  divisionName?: string;
+  officeName?: string;
+  role?: string;
+  status?: string;
+  profileImage?: string; 
+}
+
+export interface EditUserPayload {
+  systemUserIdEncrypted: string;
+  systemRoleIdEncrypted: string;
+  statusIdEncrypted: string;
+  isActiveEncrypted: string;
+  actionBySystemUserIdEncrypted: string;
+  profileImageBase64?: string;
 }
 
 export const getUserDetails = async (systemUserIdEncrypted: string, actionBySystemUserIdEncrypted: string): Promise<UserDetails> => {
-  const sanitizedId = systemUserIdEncrypted.replace(/^\uFEFF/, '');
+  // Retrieve tokens directly from localStorage to ensure we use the latest synced values
+  const currentSystemId = localStorage.getItem('systemUserIdEncrypted');
+  const currentActionId = localStorage.getItem('ActionBySystemUserIdEncrypted');
+
+  // Use localStorage values if available, fallback to passed parameters
+  const finalSystemId = currentSystemId || systemUserIdEncrypted;
+  const finalActionId = currentActionId || actionBySystemUserIdEncrypted;
+
+  // Debug: Log both tokens and assert equality
+  console.log('[AuthAPI] getUserDetails - systemUserIdEncrypted:', finalSystemId);
+  console.log('[AuthAPI] getUserDetails - ActionBySystemUserIdEncrypted:', finalActionId);
+
+  if (finalSystemId !== finalActionId) {
+    console.warn('[AuthAPI] Token mismatch detected! Syncing before API call.');
+    // Auto-correct by syncing them
+    if (finalActionId) {
+      localStorage.setItem('systemUserIdEncrypted', finalActionId);
+      console.log('[AuthAPI] Synced systemUserIdEncrypted with ActionBySystemUserIdEncrypted');
+    }
+  }
+
+  const sanitizedId = sanitizeSystemUserId(finalSystemId);
+  const sanitizedActionId = sanitizeSystemUserId(finalActionId);
+
   const response = await axiosInstance.get<ApiResponse<UserDetails>>(
-    `/Users/all/${encodeURIComponent(sanitizedId)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(actionBySystemUserIdEncrypted.replace(/^\uFEFF/, ''))}`
+    `/Users/all/${encodeURIComponent(sanitizedId)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(sanitizedActionId)}`
   );
+
+  // Check for invalid session
+  if (!response.data.success || response.data.code === 'ERR_SERVER') {
+    throw new Error('Session expired');
+  }
+
   return response.data.data;
 };
 
@@ -44,6 +82,20 @@ export const editUserDetails = async (userData: {
   };
 
   const response = await axiosInstance.post<ApiResponse<any>>('/Users/edit-profile', payload);
+  return { message: response.data.message };
+};
+
+export const editUserProfile = async (payload: EditUserPayload): Promise<{ message: string }> => {
+  const encryptedPayload = {
+    systemUserIdEncrypted: encrypt(payload.systemUserIdEncrypted),
+    systemRoleIdEncrypted: encrypt(payload.systemRoleIdEncrypted),
+    statusIdEncrypted: encrypt(payload.statusIdEncrypted),
+    isActiveEncrypted: encrypt(payload.isActiveEncrypted),
+    actionBySystemUserIdEncrypted: encrypt(payload.actionBySystemUserIdEncrypted),
+    profileImageBase64: payload.profileImageBase64 ? encrypt(payload.profileImageBase64) : undefined
+  };
+
+  const response = await axiosInstance.patch<ApiResponse<any>>('/Users/edit', encryptedPayload);
   return { message: response.data.message };
 };
 
