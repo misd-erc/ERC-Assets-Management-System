@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Services;
@@ -56,7 +57,9 @@ namespace PortalTools.Services.DBO.Office
 
                 }
 
-                AuditTrailTool.TrackChanges(context, isInsert ? null! : existingOffice!, model, nameof(TblOffice), model.Id, isInsert ? "Insert" : "Update");
+                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} an office", actionBy: model.Id,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingOffice!, model, nameof(TblOffice), model.Id, isInsert ? "Insert" : "Update"));
+                
 
                 return isInsert ? model.Id : existingOffice.Id;
             }

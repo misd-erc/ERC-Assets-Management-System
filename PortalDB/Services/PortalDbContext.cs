@@ -40,6 +40,7 @@ namespace PortalDB.Services
         #region Audit Trail
         public DbSet<TblAuditTrail> TblAuditTrails { get; set; }
         public DbSet<TblErrorLog> TblErrorLogs { get; set; }
+        public DbSet<TblActivityLog> TblActivityLogs { get; set; }
         #endregion
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -52,10 +52,10 @@ namespace PortalTools.Services.DBO.Account
                     if (existingUser == null)
                         return 0;
 
-                    //existingUser.FirstName = model.FirstName ?? existingUser.FirstName;
-                    //existingUser.LastName = model.LastName ?? existingUser.LastName;
-                    //existingUser.Email = model.Email ?? existingUser.Email;
-                    //existingUser.IsActive = model.IsActive;
+                    existingUser.FirstName = model.FirstName ?? existingUser.FirstName;
+                    existingUser.LastName = model.LastName ?? existingUser.LastName;
+                    existingUser.Email = model.Email ?? existingUser.Email;
+                    existingUser.IsActive = model.IsActive;
                     model.Id = existingUser.Id;
 
                     await context.TblSystemUsers.Where(u => u.Id == model.Id)
@@ -116,7 +116,8 @@ namespace PortalTools.Services.DBO.Account
                         .SetProperty(x => x.PositionId, userUpdatedInfo.PositionId)
                         .SetProperty(x => x.IsActive, userUpdatedInfo.IsActive));
 
-                AuditTrailTool.TrackChanges(context, userCurrentInfo, userUpdatedInfo, nameof(TblSystemUser), model.ActionBy, "Update");
+                await AuditTrailTool.LogActivityAsync(_options, $"Updated system user information", actionBy: model.ActionBy,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, userCurrentInfo, userUpdatedInfo, nameof(TblSystemUser), model.ActionBy, "Update"));
 
                 return userUpdatedInfo.Id;
             }
@@ -207,7 +208,8 @@ namespace PortalTools.Services.DBO.Account
                     .ExecuteUpdateAsync(u => u
                         .SetProperty(x => x.ProfilePictureFileStorageId, userUpdatedInfo.ProfilePictureFileStorageId));
 
-                AuditTrailTool.TrackChanges(context, userCurrentInfo, userUpdatedInfo, nameof(TblSystemUser), model.SystemUserId, "Update");
+                await AuditTrailTool.LogActivityAsync(_options, $"Updated system user profile picture", actionBy: model.SystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, userCurrentInfo, userUpdatedInfo, nameof(TblSystemUser), model.SystemUserId, "Update"));
 
                 return true;
             }

@@ -1,5 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PortalCommon.Utilities;
+using PortalDB.Entities.LOG;
 using PortalDB.Entities.LOG.AuditTrail;
+using PortalDB.Services;
+using PortalTools.Services.LOG;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +18,7 @@ namespace PortalTools.Services
         /// <summary>
         /// Adds an audit trail record for an entity change
         /// </summary>
-        public static void TrackChanges<T>(
+        public static long TrackChanges<T>(
             DbContext context,
             T originalEntity,
             T updatedEntity,
@@ -23,7 +27,7 @@ namespace PortalTools.Services
             string action = "Update") where T : class
         {
             if (originalEntity == null && updatedEntity == null)
-                return;
+                return 0;
 
             string changesJson;
 
@@ -39,7 +43,7 @@ namespace PortalTools.Services
             {
                 changesJson = BuildChanges(originalEntity, updatedEntity);
                 if (string.IsNullOrWhiteSpace(changesJson))
-                    return; // No changes
+                    return 0; // No changes
             }
 
             TblAuditTrail auditTrailInfo = new TblAuditTrail
@@ -52,6 +56,39 @@ namespace PortalTools.Services
             };
 
             context.Set<TblAuditTrail>().Add(auditTrailInfo);
+
+            return auditTrailInfo.Id;
+        }
+
+        /// <summary>
+        /// Records a user activity (and optionally links it to an audit trail entry)
+        /// </summary>
+        public static async Task LogActivityAsync(
+            DbContextOptions<PortalDbContext> options,
+            string actionDescription,
+            long actionBy,
+            long? linkedAuditTrailId = null)
+        {
+            try
+            {
+                await using var context = new PortalDbContext(options);
+                LogEditTools logEditTools = new(options);
+
+                TblActivityLog activityLog = new TblActivityLog
+                {
+                    Action = actionDescription,
+                    AuditTrailId = linkedAuditTrailId,
+                    ActionBy = actionBy,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await logEditTools.AddTblActivityLogAsync(activityLog, context);
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(options), ex, nameof(AuditTrailTool));
+            }
         }
 
         /// <summary>
@@ -81,5 +118,7 @@ namespace PortalTools.Services
         {
             return (TValue)obj.GetType().GetProperty(propName)!.GetValue(obj)!;
         }
+
+
     }
 }

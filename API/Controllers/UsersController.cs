@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Graph.Models;
 using PortalAPI.Attributes;
+using PortalCommon.Constants;
 using PortalCommon.Enums;
 using PortalCommon.Models.QueryParams.Account;
 using PortalCommon.Models.QueryParams.OTP;
@@ -27,6 +29,7 @@ using PortalDB.Services;
 using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
 using PortalTools.Services.LOG;
+using System;
 using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -44,15 +47,18 @@ namespace API.Controllers
         private readonly DbContextOptions<PortalDbContext> _options;
         private readonly AccountGetTools _accountGetTools;
         private readonly AccountEditTools _accountEditTools;
+        private readonly LogEditTools _logEditTools;
         private readonly AuthTools _authTools;
 
         public UsersController(AccountGetTools accountGetTools, 
             AccountEditTools accountEditTools,
+            LogEditTools logEditTools,
             DbContextOptions<PortalDbContext> options,
             AuthTools authTools)
         {
             _accountGetTools = accountGetTools;
             _accountEditTools = accountEditTools;
+            _logEditTools = logEditTools;
             _options = options;
             _authTools = authTools;
         }
@@ -118,10 +124,12 @@ namespace API.Controllers
                     DivisionName = x.DivisionName,
                     DivisionAcronym = x.DivisionAcronym,
                     IsActive = x.IsActive,
+                    ProfilePictureStorageFileId = x.ProfilePictureFileStorageId,
                     CreatedAt =  x.CreatedAt,
                     LastLoginAt = x.LastLoginAt
                 }).ToList();
 
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed system users", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
                 return Ok(ApiResponse<UserBasicResponseModel>.OkPaginated(
                     userBasicResponses,
                     model.PageNumber,
@@ -165,11 +173,13 @@ namespace API.Controllers
                     DivisionId = user.DivisionId,
                     DivisionName = user.DivisionName,
                     DivisionAcronym = user.DivisionAcronym,
+                    ProfilePictureStorageFileId = user.ProfilePictureFileStorageId,
                     IsActive = user.IsActive,
                     CreatedAt = user.CreatedAt,
                     LastLoginAt = user.LastLoginAt
                 };
 
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system user information for user {user.Id}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
                 return Ok(ApiResponse<object>.Ok(userBasicResponse, $"System user have been retrieved"));
 
             }
@@ -247,6 +257,7 @@ namespace API.Controllers
                     await AzureTools.SendEmailAsync(emailModel, _options);
 
                     #endregion
+
                 }
                 else
                     throw new Exception("SystemUserId was not returned");
@@ -260,6 +271,7 @@ namespace API.Controllers
                     SystemUserIdEncrypted = EncryptionHelper.Encrypt(systemUserId.ToString()),
                 };
 
+                await AuditTrailTool.LogActivityAsync(_options, $"Microsoft Entra information validated", actionBy: user.Id);
                 return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been sent to email address"));
 
             }
@@ -273,6 +285,7 @@ namespace API.Controllers
 
         // POST api/users/validation
         [HttpPost("edit")]
+        [ValidateSessionToken]
         [ValidateModelRequiredFields]
         public async Task<IActionResult> EditUser([FromBody] EditSystemUserQueryParams model)
         {
@@ -292,11 +305,6 @@ namespace API.Controllers
                     IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEncrypted)),
                     ActionBy = long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted))
                 };
-
-                #region Token Validator
-                if (!await _authTools.ValidateSessionTokenInternally(user.ActionBy))
-                    return Ok(ApiResponse<object>.SessionTokenExpired());
-                #endregion
 
                 long systemUserId = await _accountEditTools.EditTblSystemUserAsync(user, context);
 
@@ -388,6 +396,7 @@ namespace API.Controllers
                     SystemUserIdEncrypted = EncryptionHelper.Encrypt(user.Id.ToString()),
                 };
 
+                await AuditTrailTool.LogActivityAsync(_options, $"Re-sent email otp", actionBy: user.Id);
                 return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been sent to email address"));
             }
             catch (Exception ex)
@@ -440,11 +449,14 @@ namespace API.Controllers
                     await context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
+                    await AuditTrailTool.LogActivityAsync(_options, $"OTP has been verified", actionBy: sessionToken.SystemUserId);
+                    await AuditTrailTool.LogActivityAsync(_options, $"Successfully logged in", actionBy: sessionToken.SystemUserId);
                     return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been verified"));
 
                 }
                 else
-                    return Ok(ApiResponse<object>.ValidationFailed($"Invalid OTP"));
+                await AuditTrailTool.LogActivityAsync(_options, $"OTP invalid", actionBy: otpModel.SystemUserId);
+                return Ok(ApiResponse<object>.ValidationFailed($"Invalid OTP"));
 
             }
             catch (Exception ex)

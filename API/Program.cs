@@ -42,6 +42,7 @@ builder.Services.AddScoped<AccountEditTools>();
 builder.Services.AddScoped<OfficeGetTools>();
 builder.Services.AddScoped<OfficeEditTools>();
 builder.Services.AddScoped<StorageGetTools>();
+builder.Services.AddScoped<LogEditTools>();
 builder.Services.AddScoped<LogGetTools>();
 
 builder.Services.AddScoped<AuthTools>();
