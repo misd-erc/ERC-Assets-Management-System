@@ -88,6 +88,7 @@ namespace API.Controllers
                     Id = x.Id,
                     Name = x.Name,
                     Acronym = x.Acronym,
+                    IsActive = x.IsActive,
                     CreatedAt = x.CreatedAt
                 }).ToList();
 
@@ -125,6 +126,7 @@ namespace API.Controllers
                     Id = office.Id,
                     Name = office.Name,
                     Acronym = office.Acronym,
+                    IsActive = office.IsActive,
                     CreatedAt = office.CreatedAt
                 };
 
@@ -184,6 +186,7 @@ namespace API.Controllers
                     Acronym = x.Acronym,
                     OfficeName = x.OfficeName,
                     OfficeAcronym = x.OfficeAcronym,
+                    IsActive = x.IsActive,
                     CreatedAt = x.CreatedAt
                 }).ToList();
 
@@ -224,6 +227,7 @@ namespace API.Controllers
                     Acronym = division.Acronym,
                     OfficeName = division.OfficeName,
                     OfficeAcronym = division.OfficeAcronym,
+                    IsActive = division.IsActive,
                     CreatedAt = division.CreatedAt
                 };
 
@@ -382,7 +386,7 @@ namespace API.Controllers
                 TblPosition? position = await _officeGetTools.GetTblPosition(positionId);
 
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed position information for position {positionId}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
-                return Ok(ApiResponse<TblPosition>.Ok(position, "Employment type have been retrieved"));
+                return Ok(ApiResponse<TblPosition>.Ok(position, "Position have been retrieved"));
 
             }
             catch (Exception ex)

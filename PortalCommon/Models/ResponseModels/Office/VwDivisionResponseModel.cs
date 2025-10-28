@@ -14,6 +14,7 @@ namespace PortalCommon.Models.ResponseModels.Office
         public string? Acronym { get; set; }
         public string? OfficeName { get; set; }
         public string? OfficeAcronym { get; set; }
+        public bool? IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

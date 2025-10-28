@@ -190,7 +190,100 @@ namespace API.Controllers
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
-        
+
+        // GET api/users/system-role/all
+        [HttpGet("system-role/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSystemRoles([FromQuery] PaginationGenericQueryParams model)
+        {
+            try
+            {
+
+                IEnumerable<TblSystemRole?> roles = await _accountGetTools.GetSystemRoles().ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    roles = roles.Where(x =>
+                        x.RoleName.ToLower().Contains(searchLower) ||
+                        x.Description.ToLower().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    roles = roles.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    roles = roles.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = roles.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var rolesList = roles
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                List<TblSystemRole> roleResponses = rolesList.Select(x => new TblSystemRole
+                {
+                    Id = x.Id,
+                    RoleName = x.RoleName,
+                    Description = x.Description,
+                    IsActive = x.IsActive,
+                    CreatedAt = x.CreatedAt
+                }).ToList();
+
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed system roles", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                return Ok(ApiResponse<TblSystemRole>.OkPaginated(
+                    roleResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "System roles have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // GET api/users/system-role/all
+        [HttpGet("system-role/all/{systemRoleIdEncryptedId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        [DecodeRouteParameter(nameof(systemRoleIdEncryptedId))]
+        public async Task<IActionResult> GetSystemRoleBySystemRoleId([FromQuery] SoloQueryParams model, [FromRoute] string systemRoleIdEncryptedId)
+        {
+            try
+            {
+
+                TblSystemRole? role = await _accountGetTools.GetSystemRole(long.Parse(EncryptionHelper.Decrypt(systemRoleIdEncryptedId)));
+
+                TblSystemRole roleResponse = new TblSystemRole
+                {
+                    Id = role.Id,
+                    RoleName = role.RoleName,
+                    Description = role.Description,
+                    IsActive = role.IsActive,
+                    CreatedAt = role.CreatedAt
+                };
+
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system role information for system role {role.Id}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                return Ok(ApiResponse<object>.Ok(roleResponse, $"System role have been retrieved"));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         #endregion
 
         #region POST
