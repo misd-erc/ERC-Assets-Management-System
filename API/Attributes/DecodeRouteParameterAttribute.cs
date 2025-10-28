@@ -21,17 +21,25 @@ namespace API.Attributes
         {
             foreach (var paramName in _parameterNames)
             {
-                if (context.ActionArguments.ContainsKey(paramName) &&
-                    context.ActionArguments[paramName] is string encodedValue &&
+                if (context.ActionArguments.TryGetValue(paramName, out var value) &&
+                    value is string encodedValue &&
                     !string.IsNullOrWhiteSpace(encodedValue))
                 {
-                    // Decode the URL-encoded parameter value
-                    string decodedValue = HttpUtility.UrlDecode(encodedValue);
-                    context.ActionArguments[paramName] = decodedValue;
+                    // Re-normalize lost route-safe characters
+                    string normalized = encodedValue
+                        .Replace(" ", "+")      // Recover lost '+'
+                        .Replace("%2F", "/")    // Optional: re-allow slash if you know your data can contain them
+                        .Replace("%5C", "\\");  // Optional: if you expect backslashes
+
+                    // Decode full URI
+                    string decoded = Uri.UnescapeDataString(normalized);
+
+                    context.ActionArguments[paramName] = decoded;
                 }
             }
 
             base.OnActionExecuting(context);
         }
+
     }
 }
