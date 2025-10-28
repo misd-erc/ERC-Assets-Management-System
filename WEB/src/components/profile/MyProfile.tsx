@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import {
   Mail,
   Phone,
@@ -22,6 +23,8 @@ import { useUserProfile } from '../../hooks/useUserProfile';
 import { useAuthStore } from '../../store/auth';
 import { editUserProfile } from '../../api/authApi';
 import { getUserAuditTrail } from '../../api/userApi';
+import { getActivities, getAuditTrail } from '../../api/auditApi';
+import { ActivityItem } from '../../types/audit';
 import { uploadProfilePicture, retrieveFile } from '../../api/uploadApi';
 import { timeAgo } from '../../utils/dateUtils';
 import { AuditTrailItem } from '../../types/audit';
@@ -57,42 +60,84 @@ export const MyProfile = React.memo(() => {
     loadProfilePicture();
   }, []);
 
-  // Audit trail state
-  const [auditLogs, setAuditLogs] = useState<AuditTrailItem[]>([]);
-  const [auditLoading, setAuditLoading] = useState(false);
-  const [auditError, setAuditError] = useState<string | null>(null);
-  const [auditPage, setAuditPage] = useState(1);
-  const [auditHasMore, setAuditHasMore] = useState(true);
+  // Activity state for Activity tab
+  const [activityLogs, setActivityLogs] = useState<ActivityItem[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityError, setActivityError] = useState<string | null>(null);
+  const [activityPage, setActivityPage] = useState(1);
+  const [activityTotalPages, setActivityTotalPages] = useState(1);
+
+  // Audit trail state for Audit Trail tab
+  const [auditTrailLogs, setAuditTrailLogs] = useState<AuditTrailItem[]>([]);
+  const [auditTrailLoading, setAuditTrailLoading] = useState(false);
+  const [auditTrailError, setAuditTrailError] = useState<string | null>(null);
+  const [auditTrailPage, setAuditTrailPage] = useState(1);
+  const [auditTrailTotalPages, setAuditTrailTotalPages] = useState(1);
 
 
 
-  // Fetch audit trail on tab switch to activity
+  // Fetch data on tab switch to activity or auditTrail
   React.useEffect(() => {
-    if (activeTab === 'activity' && systemUserIdEncrypted) {
-      fetchAuditTrail();
+    if (activeTab === 'activity') {
+      fetchActivities();
     }
-  }, [activeTab, systemUserIdEncrypted]);
+    if (activeTab === 'auditTrail') {
+      fetchAuditTrailForAuditTab();
+    }
+  }, [activeTab, activityPage]);
 
-  const fetchAuditTrail = async () => {
-    if (!systemUserIdEncrypted) return;
+  React.useEffect(() => {
+    if (activeTab === 'auditTrail') {
+      fetchAuditTrailForAuditTab();
+    }
+  }, [auditTrailPage]);
 
-    setAuditLoading(true);
-    setAuditError(null);
+  const fetchActivities = async () => {
+    if (!systemUserIdEncrypted) {
+      setActivityError('User ID not available');
+      return;
+    }
+    setActivityLoading(true);
+    setActivityError(null);
     try {
-      const response = await getUserAuditTrail(systemUserIdEncrypted, auditPage, 10);
+      const response = await getActivities(systemUserIdEncrypted, activityPage, 10);
       if (response.success) {
-        setAuditLogs(response.data.items);
-        setAuditHasMore(auditPage < response.data.totalPages);
+        setActivityLogs(response.data.items);
+        setActivityTotalPages(response.data.totalPages);
       } else {
-        setAuditError('Failed to load audit trail');
+        setActivityError('Failed to load activities');
       }
     } catch (error) {
-      console.error('Failed to fetch audit trail:', error);
-      setAuditError('Failed to load audit trail');
+      console.error('Failed to fetch activities:', error);
+      setActivityError('Failed to load activities');
     } finally {
-      setAuditLoading(false);
+      setActivityLoading(false);
     }
   };
+
+  const fetchAuditTrailForAuditTab = async () => {
+    if (!systemUserIdEncrypted) {
+      setAuditTrailError('User ID not available');
+      return;
+    }
+    setAuditTrailLoading(true);
+    setAuditTrailError(null);
+    try {
+      const response = await getAuditTrail(systemUserIdEncrypted, auditTrailPage, 10);
+      if (response.success) {
+        setAuditTrailLogs(response.data.items);
+        setAuditTrailTotalPages(response.data.totalPages);
+      } else {
+        setAuditTrailError('Failed to load audit trail');
+      }
+    } catch (error) {
+      console.error('Failed to fetch audit trail for audit tab:', error);
+      setAuditTrailError('Failed to load audit trail');
+    } finally {
+      setAuditTrailLoading(false);
+    }
+  };
+
 
   const formatDate = (dateStr: string, format: string) => {
     try {
@@ -304,7 +349,7 @@ export const MyProfile = React.memo(() => {
       {/* Profile Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 lg:w-auto bg-gray-100 rounded-full p-1 h-12">
+          <TabsList className="grid w-full grid-cols-3 lg:w-auto bg-gray-100 rounded-full p-1 h-12">
             <TabsTrigger
               value="overview"
               className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-500 data-[state=active]:text-gray-900 data-[state=inactive]:bg-gray-50 data-[state=inactive]:text-gray-600"
@@ -316,6 +361,12 @@ export const MyProfile = React.memo(() => {
               className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-500 data-[state=active]:text-gray-900 data-[state=inactive]:bg-gray-50 data-[state=inactive]:text-gray-600"
             >
               Activity
+            </TabsTrigger>
+            <TabsTrigger
+              value="auditTrail"
+              className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-500 data-[state=active]:text-gray-900 data-[state=inactive]:bg-gray-50 data-[state=inactive]:text-gray-600"
+            >
+              Audit Trail
             </TabsTrigger>
           </TabsList>
         </div>
@@ -431,55 +482,172 @@ export const MyProfile = React.memo(() => {
         <TabsContent value="activity" className="space-y-6">
           <Card className="rounded-xl shadow-sm border-gray-200">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold text-gray-900">Recent Activity</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">Activity</CardTitle>
               <p className="text-sm text-gray-500">Your recent actions in the system</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {auditLoading ? (
+              {activityLoading ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">Loading audit trail...</p>
+                  <p className="text-gray-500">Loading activities...</p>
                 </div>
-              ) : auditError ? (
+              ) : activityError ? (
                 <div className="text-center py-8">
-                  <p className="text-red-500">{auditError}</p>
+                  <p className="text-red-500">{activityError}</p>
                   <Button
                     variant="outline"
-                    onClick={fetchAuditTrail}
+                    onClick={fetchActivities}
                     className="mt-2"
                   >
                     Retry
                   </Button>
                 </div>
-              ) : auditLogs.length === 0 ? (
+              ) : activityLogs.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No activity found</p>
+                  <p className="text-gray-500">No records found</p>
                 </div>
               ) : (
                 <>
-                  {auditLogs.map((log, index) => (
-                    <div key={index} className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="w-2 h-2 rounded-full bg-blue-600 mt-2"></div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          {log.action} {log.table} record #{log.recordId}
-                        </p>
-                        <p className="text-xs text-gray-500">{timeAgo(log.date)}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {auditHasMore && (
-                    <div className="text-center pt-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setAuditPage(prev => prev + 1);
-                          fetchAuditTrail();
-                        }}
-                      >
-                        Load More
-                      </Button>
-                    </div>
-                  )}
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Action</TableHead>
+                        <TableHead>Action By</TableHead>
+                        <TableHead>Date & Time</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {activityLogs.map((log, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{log.action}</TableCell>
+                          <TableCell>{log.actionBy}</TableCell>
+                          <TableCell>{formatDate(log.createdAt, 'Month DD, YYYY HH:mm')}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <div className="flex justify-between items-center pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (activityPage > 1) {
+                          setActivityPage(prev => prev - 1);
+                        }
+                      }}
+                      disabled={activityPage === 1}
+                    >
+                      Prev
+                    </Button>
+                    <span className="text-sm text-gray-500">
+                      Page {activityPage} of {activityTotalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (activityPage < activityTotalPages) {
+                          setActivityPage(prev => prev + 1);
+                        }
+                      }}
+                      disabled={activityPage === activityTotalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Audit Trail Tab */}
+        <TabsContent value="auditTrail" className="space-y-6">
+          <Card className="rounded-xl shadow-sm border-gray-200">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold text-gray-900">Audit Trail</CardTitle>
+              <p className="text-sm text-gray-500">Detailed log of your actions in the system</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {auditTrailLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading audit trail...</p>
+                </div>
+              ) : auditTrailError ? (
+                <div className="text-center py-8">
+                  <p className="text-red-500">{auditTrailError}</p>
+                  <Button
+                    variant="outline"
+                    onClick={fetchAuditTrailForAuditTab}
+                    className="mt-2"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : auditTrailLogs.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No audit logs found</p>
+                </div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Table Name</TableHead>
+                        <TableHead>Action</TableHead>
+                        <TableHead>Action By</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Changes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {auditTrailLogs.map((log, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{log.table}</TableCell>
+                          <TableCell>{log.action}</TableCell>
+                          <TableCell>{log.actionBy}</TableCell>
+                          <TableCell>{formatDate(log.date, 'Month DD, YYYY HH:mm')}</TableCell>
+                          <TableCell>
+                            {log.changes.length > 0 ? (
+                              <ul className="list-disc list-inside text-sm">
+                                {log.changes.map((change, idx) => (
+                                  <li key={idx}>
+                                    {change.field}: {change.oldValue} → {change.newValue}
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <span className="text-gray-500">No changes</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <div className="flex justify-between items-center pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (auditTrailPage > 1) {
+                          setAuditTrailPage(prev => prev - 1);
+                        }
+                      }}
+                      disabled={auditTrailPage === 1}
+                    >
+                      Prev
+                    </Button>
+                    <span className="text-sm text-gray-500">
+                      Page {auditTrailPage} of {auditTrailTotalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (auditTrailPage < auditTrailTotalPages) {
+                          setAuditTrailPage(prev => prev + 1);
+                        }
+                      }}
+                      disabled={auditTrailPage === auditTrailTotalPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </>
               )}
             </CardContent>

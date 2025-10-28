@@ -1,12 +1,12 @@
-# Simplify My Profile Page
+# TODO: Update My Profile Page Layout and Integrations
 
 ## Tasks
-- [x] Create TODO.md with plan
-- [x] Remove editing-related state variables (isEditing, formData, saving)
-- [x] Remove editing-related functions (handleEditProfile, handleCancel, handleSave)
-- [x] Remove the useEffect that cancels edit mode when switching tabs
-- [x] Remove the "Edit Profile" button from the persistent profile card
-- [x] Remove the "Details" TabsTrigger from TabsList
-- [x] Update TabsList grid-cols from 3 to 2
-- [x] Remove the entire "Details" TabsContent block
-- [x] Verify Overview and Activity tabs remain intact
+- [x] Update src/api/auditApi.ts: Add getActivities and getAuditTrail API functions
+- [x] Update src/components/profile/MyProfile.tsx: Add local states for activityLogs, activityLoading, activityPage, activityTotalPages
+- [x] Update src/components/profile/MyProfile.tsx: Update useEffect to fetch data for Activity and Audit Trail tabs
+- [x] Update src/components/profile/MyProfile.tsx: Modify Activity tab content to use table with columns: Action | Action By | Date
+- [x] Update src/components/profile/MyProfile.tsx: Add pagination footer for Activity tab (Prev/Next buttons and "Page {x} of {y}")
+- [x] Update src/components/profile/MyProfile.tsx: Update fetch functions to use new API functions with Axios
+- [x] Update src/components/profile/MyProfile.tsx: Handle loading states, errors, and empty states
+- [x] Update src/components/profile/MyProfile.tsx: Ensure date formatting and UI consistency
+- [ ] Test API integrations and verify functionality

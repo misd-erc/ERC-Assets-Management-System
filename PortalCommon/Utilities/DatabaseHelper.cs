@@ -10,7 +10,10 @@ namespace PortalCommon.Utilities
         /// </summary>
         public static string ConnectionString()
         {
-            return EncryptionHelper.Decrypt(DatabaseConstants.MAIN_DATABASE);
+            //return EncryptionHelper.Decrypt(DatabaseConstants.MAIN_DATABASE);
+
+            return "Data Source=JEYMS;Initial Catalog=amsDev;Integrated Security=True;Trust Server Certificate=True;";
+
         }
     }
 }
