@@ -63,7 +63,6 @@ namespace PortalTools.Services.DBO.Account
                 return true;
             return false;
         }
-
         public async Task<bool> ValidateTokenSessionBySystemUserIdAsync(long systemUserId)
         {
             bool isValid = await _context.TblSessionTokens
@@ -75,6 +74,9 @@ namespace PortalTools.Services.DBO.Account
 
             return false;
         }
+        public IQueryable<TblSystemRole?> GetSystemRoles() => _context.TblSystemRoles.Where(x => !x.IsDeleted);
+        public async Task<TblSystemRole?> GetSystemRole(long id) => await _context.TblSystemRoles.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblSystemRole?> GetSystemRoleByName(string name) => await _context.TblSystemRoles.Where(x => !x.IsDeleted && x.RoleName == name).FirstOrDefaultAsync();
 
     }
 }

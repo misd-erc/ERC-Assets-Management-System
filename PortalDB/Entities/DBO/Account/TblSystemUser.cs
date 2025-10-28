@@ -65,6 +65,15 @@ namespace PortalDB.Entities.DBO.Account
         [Column("SystemUserStatusId")]
         public long? StatusId { get; set; }
 
+        [Column("SystemUserEmployeeId")]
+        public string? SystemUserEmployeeIdEncrypted { get; set; }
+        [NotMapped]
+        public string? SystemUserEmployeeId
+        {
+            get => string.IsNullOrEmpty(SystemUserEmployeeIdEncrypted) ? null : EncryptionHelper.Decrypt(SystemUserEmployeeIdEncrypted);
+            set => SystemUserEmployeeIdEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+        }
+
         [Column("SystemUserProfilePictureFileStorageId")]
         public long? ProfilePictureFileStorageId { get; set; }
 

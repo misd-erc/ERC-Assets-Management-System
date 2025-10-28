@@ -42,7 +42,11 @@ namespace PortalTools.Services.DBO.Account
 
                 if (isInsert)
                 {
+                    var role = _accountGetTools.GetSystemRoleByName(TblSystemRole.EMPLOYEE);
+                    model.SystemRoleId = role?.Id;
+
                     model.StatusId = TblSystemUserStatus.Dictionary[TblSystemUserStatus.PENDING];
+                    model.SystemRoleId = role?.Id;
                     await context.TblSystemUsers.AddAsync(model);
                     await context.SaveChangesAsync();
                 }

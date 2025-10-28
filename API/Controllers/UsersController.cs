@@ -302,6 +302,10 @@ namespace API.Controllers
                 {
                     Id = string.IsNullOrEmpty(model.SystemUserIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.SystemUserIdEncrypted)),
                     SystemRoleId = long.Parse(EncryptionHelper.Decrypt(model.SystemRoleIdEncrypted)),
+                    OfficeId = long.Parse(EncryptionHelper.Decrypt(model.OfficeIdEncrypted)),
+                    DivisionId = long.Parse(EncryptionHelper.Decrypt(model.DivisionIdEncrypted)),
+                    EmploymentTypeId = long.Parse(EncryptionHelper.Decrypt(model.EmploymentTypeIdEncrypted)),
+                    PositionId = long.Parse(EncryptionHelper.Decrypt(model.PositionIdEncrypted)),
                     StatusId = long.Parse(EncryptionHelper.Decrypt(model.StatusIdEncrypted)),
                     IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEncrypted)),
                     ActionBy = long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted))
