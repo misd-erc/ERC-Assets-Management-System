@@ -9,8 +9,10 @@
 	<ItemGroup>
 		<PackageReference Include="Azure.Identity" Version="1.17.0" />
 		<PackageReference Include="MailKit" Version="4.14.1" />
-		<PackageReference Include="Microsoft.Graph" Version="5.94.0" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.10" />
+		<PackageReference Include="Microsoft.Graph" Version="5.95.0" />
 		<PackageReference Include="RazorLight" Version="2.3.1" />
+		<PackageReference Include="System.Text.Json" Version="9.0.10" />
 	</ItemGroup>
 
 	<ItemGroup>

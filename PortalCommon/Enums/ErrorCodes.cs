@@ -19,6 +19,8 @@ namespace PortalCommon.Enums
 
         // Authentication & Authorization
         public const string UNAUTHORIZED = "ERR_UNAUTHORIZED";
+        public const string INACTIVE = "ERR_INACTIVE";
+        public const string SUSPENDED = "ERR_SUSPENDED";
         public const string FORBIDDEN = "ERR_FORBIDDEN";
         public const string TOKEN_EXPIRED = "ERR_TOKEN_EXPIRED";
         public const string INVALID_CREDENTIALS = "ERR_INVALID_CREDENTIALS";

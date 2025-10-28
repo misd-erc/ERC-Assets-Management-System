@@ -321,7 +321,6 @@ namespace API.Controllers
         [HttpGet("position/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-
         public async Task<IActionResult> GetAllPositions([FromQuery] PaginationGenericQueryParams model)
         {
             try

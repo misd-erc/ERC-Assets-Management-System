@@ -77,6 +77,7 @@ namespace PortalTools.Services.DBO.Account
         public IQueryable<TblSystemRole?> GetSystemRoles() => _context.TblSystemRoles.Where(x => !x.IsDeleted);
         public async Task<TblSystemRole?> GetSystemRole(long id) => await _context.TblSystemRoles.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public async Task<TblSystemRole?> GetSystemRoleByName(string name) => await _context.TblSystemRoles.Where(x => !x.IsDeleted && x.RoleName == name).FirstOrDefaultAsync();
+        //public async Task<bool> ValidateSystemUserIfActive(long id) => _context.TblSystemUsers.Where(x => !x.IsDeleted && x.Id == id && x.StatusId == TblSystemUserStatus.dc);
 
     }
 }
