@@ -1,297 +1,615 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+import React, { useState, useRef, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
-import { Separator } from '../ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { Input } from '../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import {
-  User,
   Mail,
+  Phone,
+  MapPin,
   Building,
+  Briefcase,
   Calendar,
-  Clock,
-  Edit,
+  Edit2,
+  User,
   Save,
   X,
-  CheckCircle,
-  AlertCircle,
+  Camera,
   Loader2
 } from 'lucide-react';
-import { useAuth } from '../../hooks';
-import { getUserDetails, editUserDetails, UserDetails } from '../../api/authApi';
+import { useUserProfile } from '../../hooks/useUserProfile';
+import { useAuthStore } from '../../store/auth';
+import { editUserProfile } from '../../api/authApi';
+import { getUserAuditTrail } from '../../api/userApi';
+import { uploadProfilePicture, retrieveFile } from '../../api/storageApi';
+import { timeAgo } from '../../utils/dateUtils';
+import { AuditTrailItem } from '../../types/audit';
 import { toast } from 'sonner';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
-export function MyProfile() {
-  const { user } = useAuth();
-  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
+export const MyProfile = React.memo(() => {
+  const { userProfile, loading, refreshProfile } = useUserProfile();
+  const { systemUserIdEncrypted } = useAuthStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    email: ''
+    employeeId: ''
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    loadUserDetails();
+  // Profile picture state
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
+
+  // Load profile picture on mount
+  React.useEffect(() => {
+    const loadProfilePicture = async () => {
+      const profilePictureId = localStorage.getItem('profilePictureId');
+      if (profilePictureId) {
+        try {
+          const url = await retrieveFile(profilePictureId);
+          setProfilePictureUrl(url);
+        } catch (error) {
+          console.error('Failed to load profile picture:', error);
+          // Fallback to initials
+        }
+      }
+    };
+    loadProfilePicture();
   }, []);
 
-  const loadUserDetails = async () => {
-    if (!user?.id) return;
+  // Audit trail state
+  const [auditLogs, setAuditLogs] = useState<AuditTrailItem[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditHasMore, setAuditHasMore] = useState(true);
 
+  // Cancel edit mode when switching away from Details tab
+  React.useEffect(() => {
+    if (activeTab !== 'details') {
+      setIsEditing(false);
+    }
+  }, [activeTab]);
+
+  // Fetch audit trail on tab switch to activity
+  React.useEffect(() => {
+    if (activeTab === 'activity' && systemUserIdEncrypted) {
+      fetchAuditTrail();
+    }
+  }, [activeTab, systemUserIdEncrypted]);
+
+  const fetchAuditTrail = async () => {
+    if (!systemUserIdEncrypted) return;
+
+    setAuditLoading(true);
+    setAuditError(null);
     try {
-      setLoading(true);
-      const details = await getUserDetails(user.id, user.id); // Using user.id as actionBy
-      setUserDetails(details);
-      setFormData({
-        firstName: details.FirstName,
-        lastName: details.LastName,
-        email: details.Email
-      });
+      const response = await getUserAuditTrail(systemUserIdEncrypted, auditPage, 10);
+      if (response.success) {
+        setAuditLogs(response.data.items);
+        setAuditHasMore(auditPage < response.data.totalPages);
+      } else {
+        setAuditError('Failed to load audit trail');
+      }
     } catch (error) {
-      toast.error('Failed to load user details');
-      console.error('Error loading user details:', error);
+      console.error('Failed to fetch audit trail:', error);
+      setAuditError('Failed to load audit trail');
     } finally {
-      setLoading(false);
+      setAuditLoading(false);
     }
   };
 
-  const handleSave = async () => {
-    if (!user?.id || !userDetails) return;
-
+  const formatDate = (dateStr: string, format: string) => {
     try {
-      setSaving(true);
-      await editUserDetails({
-        systemUserIdEncrypted: user.id,
+      if (!dateStr) return 'N/A';
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return 'Invalid Date';
+      if (format === 'Month DD, YYYY') {
+        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      } else if (format === 'Month DD, YYYY HH:mm') {
+        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + ' ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      }
+      return dateStr;
+    } catch {
+      return 'Invalid Date';
+    }
+  };
+
+  const handleEditProfile = () => {
+    if (!userProfile) return;
+    setIsEditing(true);
+    setActiveTab('details');
+    setFormData({
+      firstName: userProfile.firstName || '',
+      lastName: userProfile.lastName || '',
+      employeeId: userProfile.employeeId || ''
+    });
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setFormData({
+      firstName: '',
+      lastName: '',
+      employeeId: ''
+    });
+    setSelectedImage(null);
+    setImagePreview(null);
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (< 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Only JPG, JPEG, and PNG files are allowed');
+      return;
+    }
+
+    if (!systemUserIdEncrypted) return;
+
+    setUploadingPicture(true);
+    try {
+      const response = await uploadProfilePicture(file, systemUserIdEncrypted, systemUserIdEncrypted);
+      const newUrl = await retrieveFile(response.fileStorageIdEncrypted);
+
+      // Store in localStorage
+      localStorage.setItem('profilePictureId', response.fileStorageIdEncrypted);
+
+      // Update state
+      setProfilePictureUrl(newUrl);
+      toast.success('Profile picture updated successfully');
+    } catch (error) {
+      console.error('Failed to upload profile picture:', error);
+      toast.error('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingPicture(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSave = async () => {
+    if (!systemUserIdEncrypted || !userProfile) return;
+
+    // Validate
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      toast.error('First name and last name are required');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        systemUserIdEncrypted,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email,
-        actionBySystemUserIdEncrypted: user.id
-      });
+        employeeIdEncrypted: formData.employeeId,
+        actionBySystemUserIdEncrypted: systemUserIdEncrypted
+      };
 
+      await editUserProfile(payload);
+
+      // Update localStorage
+      const updatedProfile = {
+        ...userProfile,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        employeeId: formData.employeeId
+      };
+      localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+
+      // Refresh profile
+      await refreshProfile();
+
+      setIsEditing(false);
       toast.success('Profile updated successfully');
-      setEditing(false);
-      await loadUserDetails(); // Reload data
     } catch (error) {
+      console.error('Failed to update profile:', error);
       toast.error('Failed to update profile');
-      console.error('Error updating profile:', error);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCancel = () => {
-    if (userDetails) {
-      setFormData({
-        firstName: userDetails.FirstName,
-        lastName: userDetails.LastName,
-        email: userDetails.Email
-      });
-    }
-    setEditing(false);
-  };
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
-  if (!userDetails) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-slate-600">Failed to load user details</p>
+      <div className="pl-64 pt-16 space-y-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900">My Profile</h1>
+          <p className="text-sm text-gray-500 mt-1">Loading profile information...</p>
         </div>
       </div>
     );
   }
+
+  if (!userProfile) {
+    return (
+      <div className="pl-64 pt-16 space-y-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900">My Profile</h1>
+          <p className="text-sm text-gray-500 mt-1">No user data available.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const fullName = `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || 'Unknown User';
+  const initials = ((userProfile.firstName || '')[0] || '') + ((userProfile.lastName || '')[0] || '') || 'U';
+  const statusBadge = userProfile.isActive ? 'Active' : 'Inactive';
+  const roleBadge = 'User'; // Assuming role is not in API, or add if available
+  const dateJoined = formatDate(userProfile.createdAt, 'Month DD, YYYY');
+  const lastLogin = formatDate(userProfile.lastLoginAt, 'Month DD, YYYY HH:mm');
 
   return (
-    <div className="space-y-6">
+    <div className="pl-64 pt-16 space-y-8">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold text-slate-900">My Profile</h1>
-          <p className="text-slate-600 mt-1">View and manage your account information</p>
-        </div>
-        {!editing && (
-          <Button onClick={() => setEditing(true)} className="flex items-center gap-2">
-            <Edit className="w-4 h-4" />
-            Edit Profile
-          </Button>
-        )}
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">My Profile</h1>
+        <p className="text-sm text-gray-500 mt-1">View and manage your profile information</p>
       </div>
 
+      {/* Persistent Profile Card */}
+      <Card className="rounded-xl shadow-sm border-gray-200 mb-6">
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <div className="relative">
+                {profilePictureUrl ? (
+                  <img
+                    src={profilePictureUrl}
+                    alt="Profile"
+                    className="w-20 h-20 rounded-full object-cover shadow-sm"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-xl shadow-sm">
+                    {initials}
+                  </div>
+                )}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0 bg-white border-2 border-white shadow-md hover:bg-gray-50"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingPicture}
+                      >
+                        {uploadingPicture ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Camera className="w-4 h-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Upload a new profile picture</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleProfilePictureUpload}
+                  accept=".jpg,.jpeg,.png"
+                  className="hidden"
+                />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">{fullName}</h3>
+                <p className="text-gray-500">@{userProfile.email ? userProfile.email.split('@')[0] : 'unknown'}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge className={`rounded-full px-3 py-1 bg-blue-100 text-blue-800 border-blue-200`}>{roleBadge}</Badge>
+                  <Badge className={`rounded-full px-3 py-1 ${userProfile.isActive ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>{statusBadge}</Badge>
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-0 h-auto font-normal"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingPicture}
+                      >
+                        {uploadingPicture ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="w-4 h-4 mr-1" />
+                            {profilePictureUrl ? 'Change Picture' : 'Upload Image'}
+                          </>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Upload a new profile picture</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              className="text-blue-600 border-blue-600 hover:bg-blue-50 rounded-lg px-4 py-2"
+              onClick={handleEditProfile}
+              disabled={isEditing}
+            >
+              <Edit2 className="w-4 h-4 mr-2" />
+              Edit Profile
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Profile Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3 lg:w-auto bg-gray-100 rounded-full p-1 h-12">
+            <TabsTrigger
+              value="overview"
+              className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-500 data-[state=active]:text-gray-900 data-[state=inactive]:bg-gray-50 data-[state=inactive]:text-gray-600"
+            >
+              Overview
+            </TabsTrigger>
+            <TabsTrigger
+              value="details"
+              className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-500 data-[state=active]:text-gray-900 data-[state=inactive]:bg-gray-50 data-[state=inactive]:text-gray-600"
+            >
+              Details
+            </TabsTrigger>
+            <TabsTrigger
+              value="activity"
+              className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-500 data-[state=active]:text-gray-900 data-[state=inactive]:bg-gray-50 data-[state=inactive]:text-gray-600"
+            >
+              Activity
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Overview</CardTitle>
-              <CardDescription>Your basic account information and status</CardDescription>
+          {/* Two-Column Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Personal Details */}
+            <Card className="rounded-xl shadow-sm border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <User className="w-5 h-5 text-gray-600" />
+                  Personal Details
+                </CardTitle>
+                <p className="text-sm text-gray-500">Your personal information</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Full Name</Label>
+                    <p className="text-gray-900">{fullName}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Mail className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Email</Label>
+                    <p className="text-gray-900">{userProfile.email || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Briefcase className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Role</Label>
+                    <p className="text-gray-900">{userProfile.role || 'User'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Building className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Employee ID</Label>
+                    <p className="text-gray-900">{userProfile.employeeId || 'N/A'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Employment Information */}
+            <Card className="rounded-xl shadow-sm border-gray-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Building className="w-5 h-5 text-gray-600" />
+                  Employment Information
+                </CardTitle>
+                <p className="text-sm text-gray-500">Your work details</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <Building className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Division</Label>
+                    <p className="text-gray-900">{userProfile.divisionName || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Briefcase className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Office</Label>
+                    <p className="text-gray-900">{userProfile.officeName || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Date Joined</Label>
+                    <p className="text-gray-900">{dateJoined}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Last Login</Label>
+                    <p className="text-gray-900">{lastLogin}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* About Section */}
+          <Card className="rounded-xl shadow-sm border-gray-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <User className="w-5 h-5 text-gray-600" />
+                About
+              </CardTitle>
+              <p className="text-sm text-gray-500">Brief description</p>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Profile Header */}
-              <div className="flex items-start gap-6">
-                <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center">
-                  <User className="w-10 h-10 text-blue-600" />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <h3 className="text-xl font-semibold text-slate-900">
-                    {userDetails.FirstName} {userDetails.LastName}
-                  </h3>
-                  <p className="text-slate-600">{userDetails.Email}</p>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-green-100 text-green-800 border-green-200">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      {userDetails.StatusName}
-                    </Badge>
-                    <Badge variant="outline">
-                      {userDetails.SystemRoleName}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Quick Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                  <Building className="w-5 h-5 text-slate-600" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">Office</p>
-                    <p className="text-sm text-slate-600">{userDetails.OfficeName} ({userDetails.OfficeAcronym})</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                  <Building className="w-5 h-5 text-slate-600" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">Division</p>
-                    <p className="text-sm text-slate-600">{userDetails.DivisionName} ({userDetails.DivisionAcronym})</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                  <Calendar className="w-5 h-5 text-slate-600" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">Member Since</p>
-                    <p className="text-sm text-slate-600">{new Date(userDetails.CreatedAt).toLocaleDateString()}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                  <Clock className="w-5 h-5 text-slate-600" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">Last Login</p>
-                    <p className="text-sm text-slate-600">
-                      {userDetails.LastLoginAt ? new Date(userDetails.LastLoginAt).toLocaleString() : 'Never'}
-                    </p>
-                  </div>
-                </div>
-              </div>
+            <CardContent>
+              <p className="text-gray-700">
+                Dedicated professional committed to efficient asset management and compliance with government regulations.
+                Experienced in overseeing system operations and ensuring data integrity across all ERC asset management processes.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
 
         {/* Details Tab */}
         <TabsContent value="details" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Manage your personal details and contact information</CardDescription>
+          <Card className="rounded-xl shadow-sm border-gray-200">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold text-gray-900">Personal Details</CardTitle>
+              <p className="text-sm text-gray-500">View your personal information</p>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    {editing ? (
+
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Column */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">First Name</Label>
+                    {isEditing ? (
                       <Input
-                        id="firstName"
                         value={formData.firstName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                        className="mt-1 border-blue-500 focus:ring-blue-500"
+                        placeholder="Enter first name"
                       />
                     ) : (
-                      <p className="text-sm text-slate-900 p-3 bg-slate-50 rounded-md">{userDetails.FirstName}</p>
+                      <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
+                        <p className="text-gray-900">{userProfile.firstName || 'N/A'}</p>
+                      </div>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    {editing ? (
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Last Name</Label>
+                    {isEditing ? (
                       <Input
-                        id="lastName"
                         value={formData.lastName}
-                        onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                        className="mt-1 border-blue-500 focus:ring-blue-500"
+                        placeholder="Enter last name"
                       />
                     ) : (
-                      <p className="text-sm text-slate-900 p-3 bg-slate-50 rounded-md">{userDetails.LastName}</p>
+                      <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
+                        <p className="text-gray-900">{userProfile.lastName || 'N/A'}</p>
+                      </div>
                     )}
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  {editing ? (
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    />
-                  ) : (
-                    <p className="text-sm text-slate-900 p-3 bg-slate-50 rounded-md">{userDetails.Email}</p>
-                  )}
-                </div>
-
-                {/* Read-only fields */}
-                <div className="space-y-2">
-                  <Label>System Role</Label>
-                  <p className="text-sm text-slate-900 p-3 bg-slate-50 rounded-md">{userDetails.SystemRoleName}</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <p className="text-sm text-slate-900 p-3 bg-slate-50 rounded-md">{userDetails.StatusName}</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Office</Label>
-                    <p className="text-sm text-slate-900 p-3 bg-slate-50 rounded-md">{userDetails.OfficeName} ({userDetails.OfficeAcronym})</p>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Email Address</Label>
+                    <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
+                      <p className="text-gray-900">{userProfile.email || 'N/A'}</p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Division</Label>
-                    <p className="text-sm text-slate-900 p-3 bg-slate-50 rounded-md">{userDetails.DivisionName} ({userDetails.DivisionAcronym})</p>
+                </div>
+                {/* Right Column */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Role</Label>
+                    <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
+                      <p className="text-gray-900">{userProfile.role || 'User'}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Employee ID</Label>
+                    {isEditing ? (
+                      <Input
+                        value={formData.employeeId}
+                        onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                        className="mt-1 border-blue-500 focus:ring-blue-500"
+                        placeholder="Enter employee ID"
+                      />
+                    ) : (
+                      <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
+                        <p className="text-gray-900">{userProfile.employeeId || 'N/A'}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {editing && (
-                <div className="flex justify-end gap-2 pt-4 border-t">
-                  <Button variant="outline" onClick={handleCancel} disabled={saving}>
+              {/* Save/Cancel Buttons - Only show when editing */}
+              {isEditing && (
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={handleCancel}
+                    className="px-6 py-2"
+                  >
                     <X className="w-4 h-4 mr-2" />
                     Cancel
                   </Button>
-                  <Button onClick={handleSave} disabled={saving}>
-                    {saving ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4 mr-2" />
-                    )}
-                    Save Changes
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {saving ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </div>
               )}
@@ -301,45 +619,64 @@ export function MyProfile() {
 
         {/* Activity Tab */}
         <TabsContent value="activity" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Activity</CardTitle>
-              <CardDescription>Recent activity and account events</CardDescription>
+          <Card className="rounded-xl shadow-sm border-gray-200">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg font-semibold text-gray-900">Recent Activity</CardTitle>
+              <p className="text-sm text-gray-500">Your recent actions in the system</p>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-900">Account Created</p>
-                    <p className="text-xs text-slate-500">{new Date(userDetails.CreatedAt).toLocaleString()}</p>
-                  </div>
+            <CardContent className="space-y-4">
+              {auditLoading ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading audit trail...</p>
                 </div>
-
-                {userDetails.LastLoginAt && (
-                  <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                    <Clock className="w-5 h-5 text-blue-600" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-900">Last Login</p>
-                      <p className="text-xs text-slate-500">{new Date(userDetails.LastLoginAt).toLocaleString()}</p>
+              ) : auditError ? (
+                <div className="text-center py-8">
+                  <p className="text-red-500">{auditError}</p>
+                  <Button
+                    variant="outline"
+                    onClick={fetchAuditTrail}
+                    className="mt-2"
+                  >
+                    Retry
+                  </Button>
+                </div>
+              ) : auditLogs.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No activity found</p>
+                </div>
+              ) : (
+                <>
+                  {auditLogs.map((log, index) => (
+                    <div key={index} className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="w-2 h-2 rounded-full bg-blue-600 mt-2"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {log.action} {log.table} record #{log.recordId}
+                        </p>
+                        <p className="text-xs text-gray-500">{timeAgo(log.date)}</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg">
-                  <User className="w-5 h-5 text-purple-600" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-900">Profile Status</p>
-                    <p className="text-xs text-slate-500">
-                      {userDetails.IsActive ? 'Active account' : 'Inactive account'}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                  ))}
+                  {auditHasMore && (
+                    <div className="text-center pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setAuditPage(prev => prev + 1);
+                          fetchAuditTrail();
+                        }}
+                      >
+                        Load More
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
   );
-}
+});
+

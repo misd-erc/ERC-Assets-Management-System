@@ -1,48 +1,40 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/auth';
 import { LoginScreen } from './components/auth/LoginScreen';
 import { MFAVerification } from './components/auth/MFAVerification';
 import { MainLayout } from './components/layout/MainLayout';
 import { Toaster } from './components/ui/sonner';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { isSessionValid } from './utils/sessionUtils';
 
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error?: Error }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
+// Protected Route Component
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, requireMFA } = useAuthStore();
+  const hasValidSession = isSessionValid();
+
+  console.log('[ProtectedRoute] Auth check:', { isAuthenticated, requireMFA, hasValidSession });
+
+  // If no valid session token, redirect to login
+  if (!hasValidSession) {
+    console.log('[ProtectedRoute] No valid session, redirecting to login');
+    return <Navigate to="/" replace />;
   }
 
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
+  // If MFA is required, redirect to MFA page
+  if (requireMFA) {
+    console.log('[ProtectedRoute] MFA required, redirecting to MFA');
+    return <Navigate to="/mfa" replace />;
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo);
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
+    console.log('[ProtectedRoute] Not authenticated, redirecting to login');
+    return <Navigate to="/" replace />;
   }
 
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h1>
-            <p className="text-gray-600 mb-4">Please refresh the page or contact support if the problem persists.</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Refresh Page
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
+  // All checks passed, render the protected content
+  return <>{children}</>;
 }
 
 function AppContent() {
@@ -50,15 +42,52 @@ function AppContent() {
 
   // Initialize auth state on app start
   useEffect(() => {
+    console.log('[App] Initializing application...');
     initialize();
   }, [initialize]);
 
+  // Sync session IDs on every page load
+  useEffect(() => {
+    import('./utils/sessionUtils').then(({ syncSessionIds }) => {
+      syncSessionIds();
+    });
+  }, []);
+
   return (
     <Routes>
-      <Route path="/" element={!isAuthenticated ? <LoginScreen /> : <Navigate to="/dashboard" />} />
-      <Route path="/mfa" element={requireMFA ? <MFAVerification /> : <Navigate to="/dashboard" />} />
-      <Route path="/dashboard" element={isAuthenticated && !requireMFA ? <MainLayout /> : <Navigate to="/" />} />
-      <Route path="*" element={<Navigate to="/" />} />
+      {/* Public Routes */}
+      <Route 
+        path="/" 
+        element={!isAuthenticated ? <LoginScreen /> : <Navigate to="/dashboard" replace />} 
+      />
+      
+      {/* MFA Route */}
+      <Route 
+        path="/mfa" 
+        element={requireMFA ? <MFAVerification /> : <Navigate to="/dashboard" replace />} 
+      />
+      
+      {/* Protected Routes */}
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <MainLayout />
+          </ProtectedRoute>
+        } 
+      />
+      
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <MainLayout />
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Catch all - redirect to home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
@@ -67,9 +96,18 @@ export default function App() {
   return (
     <Router>
       <ErrorBoundary>
-        <div className="min-h-screen bg-background">
-          <AppContent />
-        </div>
+        <Suspense fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        }>
+          <div className="min-h-screen bg-background">
+            <AppContent />
+          </div>
+        </Suspense>
         <Toaster />
       </ErrorBoundary>
     </Router>
