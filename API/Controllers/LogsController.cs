@@ -52,8 +52,6 @@ namespace API.Controllers
             try
             {
 
-                List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers().ToListAsync();
-
                 IQueryable<TblAuditTrail> auditTrailQuery = _logGetTools.GetTblAuditTrails();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
@@ -79,6 +77,16 @@ namespace API.Controllers
                     .Skip(skip)
                     .Take(model.PageSize)
                     .ToList();
+
+                var systemUserIds = auditTrailList
+                    .Where(x => x.ChangedBy.HasValue)
+                    .Select(x => x.ChangedBy.Value)
+                    .Distinct()
+                    .ToList();
+
+                List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers()
+                    .Where(x => systemUserIds.Contains(x.Id))
+                    .ToListAsync();
 
                 List<AuditTrailResponseModel> auditTrailResponses = auditTrailList.Select(x => new AuditTrailResponseModel
                 {
@@ -116,7 +124,6 @@ namespace API.Controllers
         {
             try
             {
-
 
                 TblSystemUser user = await _accountGetTools.GetTblSystemUser(long.Parse(EncryptionHelper.Decrypt(systemUserIdEncrypted)));
 
@@ -182,8 +189,6 @@ namespace API.Controllers
             try
             {
 
-                List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers().ToListAsync();
-
                 IQueryable<TblActivityLog> activityLogQuery = _logGetTools.GetTblActivityLogs();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
@@ -215,8 +220,18 @@ namespace API.Controllers
                     .Distinct()
                     .ToList();
 
+                var systemUserIds = activityLogList
+                    .Where(x => x.ActionBy.HasValue)
+                    .Select(x => x.ActionBy.Value)
+                    .Distinct()
+                    .ToList();
+
                 List<TblAuditTrail> auditTrails = await _logGetTools.GetTblAuditTrails()
                     .Where(x => auditTrailIds.Contains(x.Id))
+                    .ToListAsync();
+
+                List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers()
+                    .Where(x => systemUserIds.Contains(x.Id))
                     .ToListAsync();
 
                 List<ActivityResponseModel> activityResponses = (await Task.WhenAll(
