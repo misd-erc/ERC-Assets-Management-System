@@ -115,6 +115,7 @@ namespace API.Controllers
                     Email = x.Email,
                     SystemRoleId = x.SystemRoleId,
                     SystemRoleName = x.SystemRoleName,
+                    EmployeeId = x.EmployeeId,
                     StatusId = x.StatusId,
                     StatusName = x.StatusName,
                     OfficeId = x.OfficeId,
@@ -166,6 +167,7 @@ namespace API.Controllers
                     Email = user.Email,
                     SystemRoleId = user.SystemRoleId,
                     SystemRoleName = user.SystemRoleName,
+                    EmployeeId = user.EmployeeId,
                     StatusId = user.StatusId,
                     StatusName = user.StatusName,
                     OfficeId = user.OfficeId,
@@ -306,6 +308,7 @@ namespace API.Controllers
                     FirstName = EncryptionHelper.Decrypt(model.FirstNameEncrypted),
                     LastName = EncryptionHelper.Decrypt(model.LastNameEncrypted),
                     Email = EncryptionHelper.Decrypt(model.EmailEncrypted),
+                    EmployeeId = model.EmployeeIdEncrypted != null? EncryptionHelper.Decrypt(model.EmployeeIdEncrypted) : null
                 };
 
                 user.Id = (await _accountGetTools.GetTblSystemUserByEntraIdAndEmail(user.EntraId, user.Email))?.Id ?? 0;

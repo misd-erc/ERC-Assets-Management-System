@@ -66,12 +66,12 @@ namespace PortalDB.Entities.DBO.Account
         public long? StatusId { get; set; }
 
         [Column("SystemUserEmployeeId")]
-        public string? SystemUserEmployeeIdEncrypted { get; set; }
+        public string? EmployeeIdEncrypted { get; set; }
         [NotMapped]
-        public string? SystemUserEmployeeId
+        public string? EmployeeId
         {
-            get => string.IsNullOrEmpty(SystemUserEmployeeIdEncrypted) ? null : EncryptionHelper.Decrypt(SystemUserEmployeeIdEncrypted);
-            set => SystemUserEmployeeIdEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+            get => string.IsNullOrEmpty(EmployeeIdEncrypted) ? null : EncryptionHelper.Decrypt(EmployeeIdEncrypted);
+            set => EmployeeIdEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
         [Column("SystemUserProfilePictureFileStorageId")]

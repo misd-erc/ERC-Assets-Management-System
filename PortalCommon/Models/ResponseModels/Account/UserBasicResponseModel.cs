@@ -17,6 +17,7 @@ namespace PortalCommon.Models.ResponseModels.Account
         public long? StatusId { get; set; }
         public long? OfficeId { get; set; }
         public long? DivisionId { get; set; }
+        public string? EmployeeId { get; set; }
         public long? ProfilePictureStorageFileId { get; set; }
         public bool IsActive { get; set; }
         public string? SystemRoleName { get; set; }
