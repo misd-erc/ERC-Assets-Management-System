@@ -30,11 +30,7 @@ namespace PortalCommon.Constants
         #endregion
 
         #region Database
-        public static readonly string ERC_AMS_DB_SERVER = Environment.GetEnvironmentVariable(nameof(ERC_AMS_DB_SERVER))!;
-        public static readonly string ERC_AMS_DB_NAME = Environment.GetEnvironmentVariable(nameof(ERC_AMS_DB_NAME))!;
-        public static readonly string ERC_AMS_DB_USER = Environment.GetEnvironmentVariable(nameof(ERC_AMS_DB_USER))!;
-        public static readonly string ERC_AMS_DB_PASSWORD = Environment.GetEnvironmentVariable(nameof(ERC_AMS_DB_PASSWORD))!;
-        public static readonly string ERC_AMS_DB_PORT = Environment.GetEnvironmentVariable(nameof(ERC_AMS_DB_PORT))!;
+        public static readonly string ERC_AMS_DB_CONNECTION = Environment.GetEnvironmentVariable(nameof(ERC_AMS_DB_CONNECTION))!;
         #endregion
 
         #region Email
