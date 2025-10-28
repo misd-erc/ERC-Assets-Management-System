@@ -10,8 +10,11 @@ import { AuditTrailResponse } from '../types/audit';
  */
 export const getAuditTrail = async (token: string, page: number = 1, pageSize: number = 10): Promise<AuditTrailResponse> => {
   try {
-    const response = await axiosInstance.get(`/Logs/audit-trail/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}&pageNumber=${page}&pageSize=${pageSize}`);
+        const response = await axiosInstance.get(
+      `/Logs/audit-trail/all/${encodeURIComponent(token)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}&pageNumber=${page}&pageSize=${pageSize}`
+    );
     return response.data;
+
   } catch (error) {
     console.error('[AuditAPI] Failed to fetch audit trail:', error);
     throw error;

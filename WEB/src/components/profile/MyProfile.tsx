@@ -4,8 +4,6 @@ import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { Input } from '../ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import {
   Mail,
   Phone,
@@ -24,7 +22,7 @@ import { useUserProfile } from '../../hooks/useUserProfile';
 import { useAuthStore } from '../../store/auth';
 import { editUserProfile } from '../../api/authApi';
 import { getUserAuditTrail } from '../../api/userApi';
-import { uploadProfilePicture, retrieveFile } from '../../api/storageApi';
+import { uploadProfilePicture, retrieveFile } from '../../api/uploadApi';
 import { timeAgo } from '../../utils/dateUtils';
 import { AuditTrailItem } from '../../types/audit';
 import { toast } from 'sonner';
@@ -33,14 +31,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 export const MyProfile = React.memo(() => {
   const { userProfile, loading, refreshProfile } = useUserProfile();
   const { systemUserIdEncrypted } = useAuthStore();
-  const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
-  const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    employeeId: ''
-  });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -73,12 +64,7 @@ export const MyProfile = React.memo(() => {
   const [auditPage, setAuditPage] = useState(1);
   const [auditHasMore, setAuditHasMore] = useState(true);
 
-  // Cancel edit mode when switching away from Details tab
-  React.useEffect(() => {
-    if (activeTab !== 'details') {
-      setIsEditing(false);
-    }
-  }, [activeTab]);
+
 
   // Fetch audit trail on tab switch to activity
   React.useEffect(() => {
@@ -122,28 +108,6 @@ export const MyProfile = React.memo(() => {
     } catch {
       return 'Invalid Date';
     }
-  };
-
-  const handleEditProfile = () => {
-    if (!userProfile) return;
-    setIsEditing(true);
-    setActiveTab('details');
-    setFormData({
-      firstName: userProfile.firstName || '',
-      lastName: userProfile.lastName || '',
-      employeeId: userProfile.employeeId || ''
-    });
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
-    setFormData({
-      firstName: '',
-      lastName: '',
-      employeeId: ''
-    });
-    setSelectedImage(null);
-    setImagePreview(null);
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -209,48 +173,7 @@ export const MyProfile = React.memo(() => {
     });
   };
 
-  const handleSave = async () => {
-    if (!systemUserIdEncrypted || !userProfile) return;
 
-    // Validate
-    if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      toast.error('First name and last name are required');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const payload = {
-        systemUserIdEncrypted,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        employeeIdEncrypted: formData.employeeId,
-        actionBySystemUserIdEncrypted: systemUserIdEncrypted
-      };
-
-      await editUserProfile(payload);
-
-      // Update localStorage
-      const updatedProfile = {
-        ...userProfile,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        employeeId: formData.employeeId
-      };
-      localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
-
-      // Refresh profile
-      await refreshProfile();
-
-      setIsEditing(false);
-      toast.success('Profile updated successfully');
-    } catch (error) {
-      console.error('Failed to update profile:', error);
-      toast.error('Failed to update profile');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -373,15 +296,7 @@ export const MyProfile = React.memo(() => {
                 </TooltipProvider>
               </div>
             </div>
-            <Button
-              variant="outline"
-              className="text-blue-600 border-blue-600 hover:bg-blue-50 rounded-lg px-4 py-2"
-              onClick={handleEditProfile}
-              disabled={isEditing}
-            >
-              <Edit2 className="w-4 h-4 mr-2" />
-              Edit Profile
-            </Button>
+
           </div>
         </CardContent>
       </Card>
@@ -389,18 +304,12 @@ export const MyProfile = React.memo(() => {
       {/* Profile Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 lg:w-auto bg-gray-100 rounded-full p-1 h-12">
+          <TabsList className="grid w-full grid-cols-2 lg:w-auto bg-gray-100 rounded-full p-1 h-12">
             <TabsTrigger
               value="overview"
               className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-500 data-[state=active]:text-gray-900 data-[state=inactive]:bg-gray-50 data-[state=inactive]:text-gray-600"
             >
               Overview
-            </TabsTrigger>
-            <TabsTrigger
-              value="details"
-              className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-500 data-[state=active]:text-gray-900 data-[state=inactive]:bg-gray-50 data-[state=inactive]:text-gray-600"
-            >
-              Details
             </TabsTrigger>
             <TabsTrigger
               value="activity"
@@ -516,106 +425,7 @@ export const MyProfile = React.memo(() => {
           </Card>
         </TabsContent>
 
-        {/* Details Tab */}
-        <TabsContent value="details" className="space-y-6">
-          <Card className="rounded-xl shadow-sm border-gray-200">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold text-gray-900">Personal Details</CardTitle>
-              <p className="text-sm text-gray-500">View your personal information</p>
-            </CardHeader>
-            <CardContent className="space-y-6">
 
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column */}
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">First Name</Label>
-                    {isEditing ? (
-                      <Input
-                        value={formData.firstName}
-                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                        className="mt-1 border-blue-500 focus:ring-blue-500"
-                        placeholder="Enter first name"
-                      />
-                    ) : (
-                      <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
-                        <p className="text-gray-900">{userProfile.firstName || 'N/A'}</p>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Last Name</Label>
-                    {isEditing ? (
-                      <Input
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                        className="mt-1 border-blue-500 focus:ring-blue-500"
-                        placeholder="Enter last name"
-                      />
-                    ) : (
-                      <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
-                        <p className="text-gray-900">{userProfile.lastName || 'N/A'}</p>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Email Address</Label>
-                    <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
-                      <p className="text-gray-900">{userProfile.email || 'N/A'}</p>
-                    </div>
-                  </div>
-                </div>
-                {/* Right Column */}
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Role</Label>
-                    <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
-                      <p className="text-gray-900">{userProfile.role || 'User'}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">Employee ID</Label>
-                    {isEditing ? (
-                      <Input
-                        value={formData.employeeId}
-                        onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                        className="mt-1 border-blue-500 focus:ring-blue-500"
-                        placeholder="Enter employee ID"
-                      />
-                    ) : (
-                      <div className="border border-gray-300 rounded-lg p-3 bg-gray-50 mt-1">
-                        <p className="text-gray-900">{userProfile.employeeId || 'N/A'}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Save/Cancel Buttons - Only show when editing */}
-              {isEditing && (
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    onClick={handleCancel}
-                    className="px-6 py-2"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    {saving ? 'Saving...' : 'Save Changes'}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         {/* Activity Tab */}
         <TabsContent value="activity" className="space-y-6">
