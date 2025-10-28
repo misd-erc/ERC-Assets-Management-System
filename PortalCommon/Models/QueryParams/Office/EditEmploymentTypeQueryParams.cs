@@ -8,11 +8,10 @@ using System.Threading.Tasks;
 
 namespace PortalCommon.Models.QueryParams.Office
 {
-    public class EditOfficeQueryParams
+    public class EditEmploymentTypeQueryParams
     {
-        [Required] public string OfficeIdEncrypted { get; set; } = string.Empty;
+        [Required] public string EmploymentTypeIdEncrypted { get; set; } = string.Empty;
         [Required] public string NameEncrypted { get; set; } = string.Empty;
-        [Required] public string AcronymEncrypted { get; set; } = string.Empty;
         [Required] public string IsActiveEncrypted { get; set; } = string.Empty;
         [Required] public string ActionBySystemUserIdEncrypted { get; set; } = string.Empty;
     }

@@ -267,13 +267,13 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicResponseModel publicVM = new()
+                UserEncryptedPublicResponseModel publicRM = new()
                 {
                     SystemUserIdEncrypted = EncryptionHelper.Encrypt(systemUserId.ToString()),
                 };
 
                 await AuditTrailTool.LogActivityAsync(_options, $"Microsoft Entra information validated", actionBy: user.Id);
-                return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been sent to email address"));
+                return Ok(ApiResponse<object>.Ok(publicRM, $"OTP has been sent to email address"));
 
             }
             catch (Exception ex)
@@ -313,12 +313,12 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicResponseModel publicVM = new()
+                UserEncryptedPublicResponseModel publicRM = new()
                 {
                     SystemUserIdEncrypted = EncryptionHelper.Decrypt(systemUserId.ToString())
                 };
 
-                return Ok(ApiResponse<object>.Ok(publicVM, $"System user account has been {(string.IsNullOrEmpty(model.SystemUserIdEncrypted) ? "added":"updated")}"));
+                return Ok(ApiResponse<object>.Ok(publicRM, $"System user account has been {(string.IsNullOrEmpty(model.SystemUserIdEncrypted) ? "added":"updated")}"));
 
             }
             catch (Exception ex)
@@ -392,13 +392,13 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicResponseModel publicVM = new()
+                UserEncryptedPublicResponseModel publicRM = new()
                 {
                     SystemUserIdEncrypted = EncryptionHelper.Encrypt(user.Id.ToString()),
                 };
 
                 await AuditTrailTool.LogActivityAsync(_options, $"Re-sent email otp", actionBy: user.Id);
-                return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been sent to email address"));
+                return Ok(ApiResponse<object>.Ok(publicRM, $"OTP has been sent to email address"));
             }
             catch (Exception ex)
             {
@@ -442,7 +442,7 @@ namespace API.Controllers
 
                     await _accountEditTools.AddTblSessionTokenAsync(sessionToken, context);
 
-                    UserEncryptedPublicResponseModel publicVM = new()
+                    UserEncryptedPublicResponseModel publicRM = new()
                     {
                         SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted)
                     };
@@ -452,7 +452,7 @@ namespace API.Controllers
 
                     await AuditTrailTool.LogActivityAsync(_options, $"OTP has been verified", actionBy: sessionToken.SystemUserId);
                     await AuditTrailTool.LogActivityAsync(_options, $"Successfully logged in", actionBy: sessionToken.SystemUserId);
-                    return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been verified"));
+                    return Ok(ApiResponse<object>.Ok(publicRM, $"OTP has been verified"));
 
                 }
                 else
@@ -489,12 +489,12 @@ namespace API.Controllers
 
                     var userInfo = await _accountGetTools.GetTblSystemUser(sessionTokenModel.SystemUserId);
 
-                    UserEncryptedPublicResponseModel publicVM = new()
+                    UserEncryptedPublicResponseModel publicRM = new()
                     {
                         SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted)
                     };
 
-                    return Ok(ApiResponse<object>.Ok(publicVM, $"OTP has been verified"));
+                    return Ok(ApiResponse<object>.Ok(publicRM, $"OTP has been verified"));
 
                 }
                 else

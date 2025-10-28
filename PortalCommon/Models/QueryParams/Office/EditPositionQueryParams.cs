@@ -8,11 +8,12 @@ using System.Threading.Tasks;
 
 namespace PortalCommon.Models.QueryParams.Office
 {
-    public class EditOfficeQueryParams
+    public class EditPositionQueryParams
     {
-        [Required] public string OfficeIdEncrypted { get; set; } = string.Empty;
+        [Required] public string PositionIdEncrypted { get; set; } = string.Empty;
         [Required] public string NameEncrypted { get; set; } = string.Empty;
         [Required] public string AcronymEncrypted { get; set; } = string.Empty;
+        [Required] public string SalaraGradeEncrypted { get; set; } = string.Empty;
         [Required] public string IsActiveEncrypted { get; set; } = string.Empty;
         [Required] public string ActionBySystemUserIdEncrypted { get; set; } = string.Empty;
     }

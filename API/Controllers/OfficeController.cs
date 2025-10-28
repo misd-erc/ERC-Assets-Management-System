@@ -403,9 +403,6 @@ namespace API.Controllers
         public async Task<IActionResult> EditOffice([FromQuery] EditOfficeQueryParams model)
         {
 
-            if (model == null || string.IsNullOrWhiteSpace(model.NameEncrypted) || string.IsNullOrWhiteSpace(model.AcronymEncrypted))
-                return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
-
             try
             {
                 #region Transaction
@@ -416,7 +413,8 @@ namespace API.Controllers
                 {
                     Id = string.IsNullOrEmpty(model.OfficeIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.OfficeIdEncrypted)),
                     Name = EncryptionHelper.Decrypt(model.NameEncrypted),
-                    Acronym = EncryptionHelper.Decrypt(model.AcronymEncrypted)
+                    Acronym = EncryptionHelper.Decrypt(model.AcronymEncrypted),
+                    IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEncrypted))
                 };
 
                 long officeId = await _officeEditTools.EditTblOfficeAsync(office, context);
@@ -425,12 +423,139 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicResponseModel publicVM = new()
+                UserEncryptedPublicResponseModel publicRM = new()
                 {
                     SystemUserIdEncrypted = model.ActionBySystemUserIdEncrypted
                 };
 
-                return Ok(ApiResponse<object>.Ok(publicVM, $"Office has been {(string.IsNullOrEmpty(model.OfficeIdEncrypted) ? "added" : "updated")}"));
+                return Ok(ApiResponse<object>.Ok(publicRM, $"Office has been {(string.IsNullOrEmpty(model.OfficeIdEncrypted) ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // POST api/office/division/edit
+        [HttpPost("division/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditDivision([FromQuery] EditDivisionQueryParams model)
+        {
+
+            try
+            {
+                #region Transaction
+                await using var context = new PortalDbContext(_options);
+                await using var transaction = await context.Database.BeginTransactionAsync();
+
+                TblDivision division = new()
+                {
+                    Id = string.IsNullOrEmpty(model.DivisionIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.DivisionIdEncrypted)),
+                    Name = EncryptionHelper.Decrypt(model.NameEncrypted),
+                    Acronym = EncryptionHelper.Decrypt(model.AcronymEncrypted),
+                    OfficeId = string.IsNullOrEmpty(model.OfficeIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.OfficeIdEncrypted)),
+                    IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEnrypted))
+                };
+
+                long divisionId = await _officeEditTools.EditTblDivisionAsync(division, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                #endregion
+
+                UserEncryptedPublicResponseModel publicRM = new()
+                {
+                    SystemUserIdEncrypted = model.ActionBySystemUserIdEncrypted
+                };
+
+                return Ok(ApiResponse<object>.Ok(publicRM, $"Division has been {(string.IsNullOrEmpty(model.DivisionIdEncrypted) ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // POST api/office/employment-type/edit
+        [HttpPost("employment-type/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditEmploymentType([FromQuery] EditEmploymentTypeQueryParams model)
+        {
+
+            try
+            {
+                #region Transaction
+                await using var context = new PortalDbContext(_options);
+                await using var transaction = await context.Database.BeginTransactionAsync();
+
+                TblEmploymentType employmentType = new()
+                {
+                    Id = string.IsNullOrEmpty(model.EmploymentTypeIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.EmploymentTypeIdEncrypted)),
+                    Name = EncryptionHelper.Decrypt(model.NameEncrypted),
+                    IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEncrypted))
+                };
+
+                long employmentTypeId = await _officeEditTools.EditTblEmploymentTypeAsync(employmentType, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                #endregion
+
+                UserEncryptedPublicResponseModel publicRM = new()
+                {
+                    SystemUserIdEncrypted = model.ActionBySystemUserIdEncrypted
+                };
+
+                return Ok(ApiResponse<object>.Ok(publicRM, $"Employment type has been {(string.IsNullOrEmpty(model.EmploymentTypeIdEncrypted) ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // POST api/office/employment-type/edit
+        [HttpPost("position/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditPosition([FromQuery] EditPositionQueryParams model)
+        {
+
+            try
+            {
+                #region Transaction
+                await using var context = new PortalDbContext(_options);
+                await using var transaction = await context.Database.BeginTransactionAsync();
+
+                TblPosition position = new()
+                {
+                    Id = string.IsNullOrEmpty(model.PositionIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.PositionIdEncrypted)),
+                    Name = EncryptionHelper.Decrypt(model.NameEncrypted),
+                    Acronym = EncryptionHelper.Decrypt(model.AcronymEncrypted),
+                    SalaryGrade = EncryptionHelper.Decrypt(model.SalaraGradeEncrypted),
+                    IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEncrypted))
+                };
+
+                long positionId = await _officeEditTools.EditTblPositionAsync(position, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                #endregion
+
+                UserEncryptedPublicResponseModel publicRM = new()
+                {
+                    SystemUserIdEncrypted = model.ActionBySystemUserIdEncrypted
+                };
+
+                return Ok(ApiResponse<object>.Ok(publicRM, $"Position has been {(string.IsNullOrEmpty(model.PositionIdEncrypted) ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
