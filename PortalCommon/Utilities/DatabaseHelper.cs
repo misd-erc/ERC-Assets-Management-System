@@ -10,7 +10,7 @@ namespace PortalCommon.Utilities
         /// </summary>
         public static string ConnectionString()
         {
-                return EncryptionHelper.Decrypt(DatabaseConstants.MAIN_DATABASE);
+            return EncryptionHelper.Decrypt(DatabaseConstants.MAIN_DATABASE);
         }
     }
 }
