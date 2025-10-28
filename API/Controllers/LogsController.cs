@@ -287,6 +287,107 @@ namespace API.Controllers
             }
         }
 
+        // GET api/logs/activities/all
+        [HttpGet("activities/all/{systemUserIdEncrypted}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        [DecodeRouteParameter(nameof(systemUserIdEncrypted))]
+        public async Task<IActionResult> GetAllActivitiesBySystemUserId([FromQuery] PaginationGenericQueryParams model, [FromRoute] string systemUserIdEncrypted)
+        {
+            try
+            {
+
+                long systemUserId = long.Parse(EncryptionHelper.Decrypt(systemUserIdEncrypted));
+
+                IQueryable<TblActivityLog> activityLogQuery = _logGetTools
+                    .GetTblActivityLogs()
+                    .Where(x => x.ActionBy == systemUserId);
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string search = $"%{model.SearchString.Trim()}%";
+                    activityLogQuery = activityLogQuery.Where(x =>
+                        EF.Functions.Like(x.Action, search));
+                }
+
+
+                if (model.StartDate.HasValue)
+                    activityLogQuery = activityLogQuery.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    activityLogQuery = activityLogQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = await activityLogQuery.CountAsync();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                List<TblActivityLog> activityLogList = await activityLogQuery
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToListAsync();
+
+                var auditTrailIds = activityLogList
+                    .Where(x => x.AuditTrailId.HasValue)
+                    .Select(x => x.AuditTrailId.Value)
+                    .Distinct()
+                    .ToList();
+
+                List<TblAuditTrail> auditTrails = await _logGetTools.GetTblAuditTrails()
+                    .Where(x => auditTrailIds.Contains(x.Id))
+                    .ToListAsync();
+
+                TblSystemUser? systemUser = await _accountGetTools.GetTblSystemUser(systemUserId);
+
+                List<ActivityResponseModel> activityResponses = (await Task.WhenAll(
+                    activityLogList.Select(async x =>
+                    {
+                        var auditTrail = x.AuditTrailId.HasValue
+                            ? auditTrails.FirstOrDefault(at => at.Id == x.AuditTrailId)
+                            : null;
+
+                        return new ActivityResponseModel
+                        {
+                            ActivityId = x.Id,
+                            AuditTrailId = x.AuditTrailId,
+                            Action = x.Action,
+                            ActionBySystemUserId = x.ActionBy,
+                            ActionBy = x.ActionBy == 0
+                                ? UniversalConstants.SYSTEM_NAME
+                                : $"{systemUser?.FirstName ?? ""} {systemUser?.LastName ?? ""}".Trim(),
+                            CreatedAt = x.CreatedAt,
+                            AuditTrail = auditTrail == null
+                                ? null
+                                : new AuditTrailResponseModel
+                                {
+                                    Table = auditTrail.TableName,
+                                    RecordId = auditTrail.RecordId,
+                                    Action = auditTrail.Action,
+                                    Changes = JsonSerializer.Deserialize<JsonElement>(auditTrail.Changes ?? "{}"),
+                                    ActionBySystemUserId = auditTrail.ChangedBy,
+                                    ActionBy = $"{systemUser?.FirstName ?? ""} {systemUser?.LastName ?? ""}".Trim(),
+                                    Date = auditTrail.ChangedAt
+                                }
+                        };
+                    })
+                )).ToList();
+
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed activity logs for user {systemUserId}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                return Ok(ApiResponse<ActivityResponseModel>.OkPaginated(
+                    activityResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Activity logs have been retrieved"
+                ));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(LogsController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         #endregion
 
     }
