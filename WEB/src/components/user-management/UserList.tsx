@@ -85,7 +85,7 @@ export const UserList: React.FC<UserListProps> = ({
                          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (user.position && user.position.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'All' || user.status === statusFilter;
-    const matchesRole = roleFilter === 'All' || user.role === roleFilter;
+    const matchesRole = roleFilter === 'All' || user.systemRoleName === roleFilter;
     return matchesSearch && matchesStatus && matchesRole;
   });
 
@@ -114,7 +114,7 @@ export const UserList: React.FC<UserListProps> = ({
         actionBySystemUserIdEncrypted: token
       });
       setUsers(users.map(user =>
-        user.id === userId ? { ...user, role: newRole } : user
+        user.id === userId ? { ...user, systemRoleName: newRole } : user
       ));
       toast.success('User role updated successfully');
     } catch (error) {
@@ -241,7 +241,7 @@ export const UserList: React.FC<UserListProps> = ({
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <span>{user.role}</span>
+                      <span>{user.systemRoleName}</span>
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(user.status)}>

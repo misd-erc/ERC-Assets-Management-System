@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Bell, Search, Menu, Clock, Command } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -26,16 +26,8 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigat
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const { logout } = useAuth();
 
-  // Get user details from localStorage
-  const getUserDetails = () => {
-    const stored = localStorage.getItem('userDetails');
-    return stored ? JSON.parse(stored) : null;
-  };
-
-  const userDetails = getUserDetails();
-  const userName = userDetails ? `${userDetails.firstName} ${userDetails.lastName}` : 'User';
-
-  useEffect(() => {
+  // Update current time every minute
+  React.useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
@@ -98,7 +90,9 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigat
             </Badge>
           </Button>
 
-          <ProfileDropdown onNavigate={onNavigate} />
+          <ProfileDropdown
+            onNavigate={onNavigate}
+          />
         </div>
       </header>
 
