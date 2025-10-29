@@ -75,13 +75,8 @@ axiosInstance.interceptors.response.use(
     // Handle 500 Server Error
     else if (error.response?.status === 500) {
       console.error('[Axios] Server error');
-      
-      // Check if response data indicates session error
-      if (error.response.data && isSessionError(error.response.data)) {
-        handleSessionExpired('Your session has expired. Please log in again.');
-        return Promise.reject(error);
-      }
-    } 
+      // Do not treat 500 as session error - it's a server issue
+    }
     
     // Handle 429 Rate Limiting
     else if (error.response?.status === 429) {
