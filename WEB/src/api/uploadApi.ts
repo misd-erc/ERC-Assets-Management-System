@@ -9,13 +9,13 @@ export const uploadProfilePicture = async (
   file: File,
   systemUserIdEncrypted: string,
   actionBySystemUserIdEncrypted: string
-): Promise<UploadProfilePictureResponse> => {
+): Promise<string> => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('systemUserIdEncrypted', systemUserIdEncrypted);
   formData.append('actionBySystemUserIdEncrypted', actionBySystemUserIdEncrypted);
 
-  const response = await axiosInstance.post<ApiResponse<UploadProfilePictureResponse>>(
+  const response = await axiosInstance.post(
     '/Storage/upload/user/profile-picture',
     formData,
     {
@@ -29,7 +29,7 @@ export const uploadProfilePicture = async (
     throw new Error(response.data.message || 'Failed to upload profile picture');
   }
 
-  return response.data.data;
+  return response.data.data.fileIdEncrypted as string;
 };
 
 export const retrieveFile = async (fileStorageIdEncrypted: string): Promise<string> => {

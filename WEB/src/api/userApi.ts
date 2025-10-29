@@ -1,6 +1,6 @@
 import axiosInstance from '../lib/axios';
 import { User, ApiResponse, Office, Division, EmploymentType, Position, SystemRole } from '../types';
-import { getUserDetails, UserDetails } from './authApi';
+import { UserDetails, getUserDetails } from './authApi';
 import { getAuditTrail } from './auditApi';
 
 export interface UserListResponse {
@@ -155,3 +155,29 @@ export const getSystemRoles = async (token: string): Promise<SystemRole[]> => {
   );
   return Array.isArray(response.data.data.items) ? response.data.data.items : [];
 };
+
+/**
+ * Get user details for the current logged-in user
+ * @param systemUserIdEncrypted - The encrypted system user ID
+ * @param token - The action by system user ID encrypted (token)
+ * @returns Axios promise for user details
+ */
+export const getCurrentUserDetails = async (systemUserIdEncrypted: string, token: string) => {
+  return axiosInstance.get(`/Users/all/${encodeURIComponent(systemUserIdEncrypted)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`);
+};
+
+/**
+ * Retrieve user profile picture
+ * @param fileIdEncrypted - The encrypted file storage ID
+ * @param token - The action by system user ID encrypted (token)
+ * @returns Promise with blob response for the profile picture
+ */
+export const getUserPhoto = async (fileIdEncrypted: string, token: string) => {
+  const response = await axiosInstance.get(
+    `/Storage/retrieve/${encodeURIComponent(fileIdEncrypted)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`,
+    { responseType: 'blob' }
+  );
+  return response;
+};
+
+

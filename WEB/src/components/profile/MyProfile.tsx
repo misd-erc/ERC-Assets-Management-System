@@ -19,17 +19,20 @@ import {
   Camera,
   Loader2
 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useUserProfile } from '../../hooks/useUserProfile';
 import { useAuthStore } from '../../store/auth';
 import { editUserProfile } from '../../api/authApi';
-import { getUserAuditTrail } from '../../api/userApi';
+import { getUserAuditTrail, getUserPhoto } from '../../api/userApi';
 import { getActivities, getAuditTrail } from '../../api/auditApi';
 import { ActivityItem } from '../../types/audit';
 import { uploadProfilePicture, retrieveFile } from '../../api/uploadApi';
+import { getUserDetails } from '../../api/authApi';
 import { timeAgo } from '../../utils/dateUtils';
 import { AuditTrailItem } from '../../types/audit';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { encrypt } from '../../utils/encryption';
 
 export const MyProfile = React.memo(() => {
   const { userProfile, loading, refreshProfile } = useUserProfile();
@@ -46,17 +49,26 @@ export const MyProfile = React.memo(() => {
   // Load profile picture on mount
   React.useEffect(() => {
     const loadProfilePicture = async () => {
-      const profilePictureId = localStorage.getItem('profilePictureId');
-      if (profilePictureId) {
-        try {
-          const url = await retrieveFile(profilePictureId);
-          setProfilePictureUrl(url);
-        } catch (error) {
-          console.error('Failed to load profile picture:', error);
-          // Fallback to initials
+      const stored = localStorage.getItem('userDetails');
+      const token = localStorage.getItem('ActionBySystemUserIdEncrypted');
+
+      if (!stored || !token) return;
+
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed?.profilePictureStorageFileId) {
+          const fileIdEncrypted = encrypt(String(parsed.profilePictureStorageFileId));
+          console.log('[MyProfile] Loading profile picture from localStorage');
+          const photoResponse = await getUserPhoto(fileIdEncrypted, token);
+          const imageUrl = URL.createObjectURL(photoResponse.data);
+          setProfilePictureUrl(imageUrl);
+          console.log('[MyProfile] Profile picture loaded from localStorage');
         }
+      } catch (error) {
+        console.warn('Failed to load profile picture from localStorage:', error);
       }
     };
+
     loadProfilePicture();
   }, []);
 
@@ -188,15 +200,25 @@ export const MyProfile = React.memo(() => {
 
     setUploadingPicture(true);
     try {
-      const response = await uploadProfilePicture(file, systemUserIdEncrypted, systemUserIdEncrypted);
-      const newUrl = await retrieveFile(response.fileStorageIdEncrypted);
+      const fileStorageIdEncrypted = await uploadProfilePicture(file, systemUserIdEncrypted, systemUserIdEncrypted);
+      const photoResponse = await getUserPhoto(fileStorageIdEncrypted, systemUserIdEncrypted);
+      const newUrl = URL.createObjectURL(photoResponse.data);
 
-      // Store in localStorage
-      localStorage.setItem('profilePictureId', response.fileStorageIdEncrypted);
+      // Update localStorage userDetails by calling getUserDetails
+      const updatedDetails = await getUserDetails(systemUserIdEncrypted, systemUserIdEncrypted);
+      localStorage.setItem('userDetails', JSON.stringify(updatedDetails));
+
+      // Update profilePictureId in localStorage with the new data
+      if (updatedDetails.profilePictureStorageFileId) {
+        localStorage.setItem('profilePictureId', updatedDetails.profilePictureStorageFileId);
+      }
 
       // Update state
       setProfilePictureUrl(newUrl);
       toast.success('Profile picture updated successfully');
+
+      // Notify other components to update profile picture
+      window.dispatchEvent(new CustomEvent('profilePictureUpdated'));
     } catch (error) {
       console.error('Failed to upload profile picture:', error);
       toast.error('Failed to upload image. Please try again.');
@@ -263,17 +285,15 @@ export const MyProfile = React.memo(() => {
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
               <div className="relative">
-                {profilePictureUrl ? (
-                  <img
-                    src={profilePictureUrl}
-                    alt="Profile"
-                    className="w-20 h-20 rounded-full object-cover shadow-sm"
+                <Avatar className="w-20 h-20 border-2 border-blue-200">
+                  <AvatarImage
+                    src={profilePictureUrl || undefined}
+                    alt={`${userProfile.firstName} ${userProfile.lastName}`}
                   />
-                ) : (
-                  <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-semibold text-xl shadow-sm">
+                  <AvatarFallback className="text-xl font-semibold text-blue-700 bg-blue-50">
                     {initials}
-                  </div>
-                )}
+                  </AvatarFallback>
+                </Avatar>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>

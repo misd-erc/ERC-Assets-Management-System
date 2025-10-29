@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, LogOut, ChevronDown } from 'lucide-react';
-import { Avatar, AvatarFallback } from '../ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import {
@@ -18,34 +18,181 @@ import {
   DialogTitle,
 } from '../ui/dialog';
 import { useAuth } from '../../hooks';
-import { MyProfile } from '../profile/MyProfile';
-import { useNavigate } from 'react-router-dom';
-import { getUserDetails } from '../../api/authApi';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { getCurrentUserDetails, getUserPhoto } from '../../api/userApi';
+import { encrypt } from '../../utils/encryption';
 import { useAuthStore } from '../../store/auth';
 
 interface ProfileDropdownProps {
   onNavigate?: (module: string) => void;
+  user?: {
+    firstName: string;
+    lastName: string;
+    systemRoleName: string;
+    imageUrl?: string;
+  };
+  isLoading?: boolean;
 }
 
-export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onNavigate }) => {
+export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
+  onNavigate,
+  user: propUser,
+  isLoading = false
+}) => {
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const location = useLocation();
   const { systemUserIdEncrypted } = useAuthStore();
-  const [isFetchingProfile, setIsFetchingProfile] = useState(false);
 
-  // Get user details from localStorage
-  const getUserDetailsFromStorage = () => {
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [isFetchingProfile, setIsFetchingProfile] = useState(false);
+  const [photoFetched, setPhotoFetched] = useState(false);
+
+  const [user, setUser] = useState<{
+    firstName: string;
+    lastName: string;
+    systemRoleName: string;
+    imageUrl?: string;
+  }>((() => {
     const stored = localStorage.getItem('userDetails');
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) {
+      return {
+        firstName: 'User',
+        lastName: '',
+        systemRoleName: 'NO ROLE ASSIGNED',
+      };
+    }
+
+    try {
+      const parsed = JSON.parse(stored);
+      // Note: Profile picture will be loaded asynchronously in useEffect
+
+      return {
+        firstName: parsed?.firstName || 'User',
+        lastName: parsed?.lastName || '',
+        systemRoleName: parsed?.systemRoleName || 'NO ROLE ASSIGNED',
+        imageUrl: undefined,
+      };
+    } catch (error) {
+      console.error('Failed to parse userDetails from localStorage:', error);
+      return {
+        firstName: 'User',
+        lastName: '',
+        systemRoleName: 'NO ROLE ASSIGNED',
+      };
+    }
+  })());
+
+  // Load profile picture from localStorage on mount
+  useEffect(() => {
+    const loadProfilePicture = async () => {
+      const stored = localStorage.getItem('userDetails');
+      const token = localStorage.getItem('ActionBySystemUserIdEncrypted');
+
+      if (!stored || !token) return;
+
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed?.profilePictureStorageFileId) {
+          const fileIdEncrypted = encrypt(String(parsed.profilePictureStorageFileId));
+          console.log('[ProfileDropdown] Loading profile picture from localStorage');
+          const photoResponse = await getUserPhoto(fileIdEncrypted, token);
+          const imageUrl = URL.createObjectURL(photoResponse.data);
+          setUser(prev => ({ ...prev, imageUrl }));
+          setPhotoFetched(true);
+          console.log('[ProfileDropdown] Profile picture loaded from localStorage');
+        }
+      } catch (error) {
+        console.warn('Failed to load profile picture from localStorage:', error);
+      }
+    };
+
+    loadProfilePicture();
+
+    // Listen for profile picture updates
+    const handleProfilePictureUpdate = () => {
+      console.log('[ProfileDropdown] Profile picture update event received');
+      loadProfilePicture();
+    };
+
+    window.addEventListener('profilePictureUpdated', handleProfilePictureUpdate);
+
+    return () => {
+      window.removeEventListener('profilePictureUpdated', handleProfilePictureUpdate);
+    };
+  }, []);
+
+  // Fetch user details only when landing on the dashboard
+  useEffect(() => {
+    const fetchUserData = async () => {
+      console.log('[ProfileDropdown] Starting to fetch user data');
+      try {
+        const systemUserIdEncrypted = localStorage.getItem('SystemUserIdEncrypted');
+        const token = localStorage.getItem('ActionBySystemUserIdEncrypted');
+
+        console.log('[ProfileDropdown] Retrieved tokens:', { systemUserIdEncrypted: !!systemUserIdEncrypted, token: !!token });
+
+        if (!systemUserIdEncrypted || !token) {
+          console.warn('Missing tokens in localStorage');
+          return;
+        }
+
+        console.log('[ProfileDropdown] Calling getCurrentUserDetails API');
+        const userResponse = await getCurrentUserDetails(systemUserIdEncrypted, token);
+        console.log('[ProfileDropdown] getCurrentUserDetails response:', userResponse);
+
+        if (userResponse.data.success && userResponse.data.data) {
+          const { firstName, lastName, systemRoleName, profilePictureStorageFileId } = userResponse.data.data;
+
+          let imageUrl: string | undefined;
+          if (profilePictureStorageFileId && !photoFetched) {
+            try {
+              const fileIdEncrypted = encrypt(String(profilePictureStorageFileId));
+              console.log('[ProfileDropdown] Calling getUserPhoto API');
+              const photoResponse = await getUserPhoto(fileIdEncrypted, token);
+              imageUrl = URL.createObjectURL(photoResponse.data);
+              setPhotoFetched(true);
+              console.log('[ProfileDropdown] getUserPhoto success');
+            } catch (photoError) {
+              console.warn('Failed to fetch profile picture:', photoError);
+            }
+          }
+
+          setUser({
+            firstName,
+            lastName,
+            systemRoleName: systemRoleName || 'NO ROLE ASSIGNED',
+            imageUrl,
+          });
+        } else if (propUser) {
+          setUser(propUser);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+        if (propUser) setUser(propUser);
+      }
+    };
+
+    // ✅ Trigger API calls only when landing on the dashboard
+    if (location.pathname.startsWith('/dashboard')) {
+      console.log('[ProfileDropdown] User landed on dashboard — triggering API calls');
+      fetchUserData();
+    }
+  }, [propUser, location.pathname]);
+
+  const getUserEmailFromStorage = () => {
+    const stored = localStorage.getItem('userDetails');
+    return stored ? JSON.parse(stored)?.email : 'user@example.com';
   };
 
-  const userDetails = getUserDetailsFromStorage();
-  const userName = userDetails ? `${userDetails.firstName} ${userDetails.lastName}` : 'User';
-  const userEmail = userDetails ? userDetails.email : 'user@example.com';
+  const userEmail = getUserEmailFromStorage();
 
   const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase();
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -71,12 +218,19 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onNavigate }) 
 
     setIsFetchingProfile(true);
     try {
-      const userData = await getUserDetails(systemUserIdEncrypted, systemUserIdEncrypted);
+      const token = localStorage.getItem('ActionBySystemUserIdEncrypted');
+      if (!token) {
+        console.error('No token found in localStorage');
+        navigate('/profile');
+        return;
+      }
+      console.log('[ProfileDropdown] Calling getCurrentUserDetails for profile click');
+      const userData = await getCurrentUserDetails(systemUserIdEncrypted, token);
+      console.log('[ProfileDropdown] Profile click API response:', userData);
       localStorage.setItem('userProfile', JSON.stringify(userData));
       navigate('/profile');
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
-      // Still navigate, will show fallback
       navigate('/profile');
     } finally {
       setIsFetchingProfile(false);
@@ -87,19 +241,30 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onNavigate }) 
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="flex items-center gap-3 px-3 py-2 h-auto hover:bg-slate-100">
+          <Button
+            variant="ghost"
+            className="flex items-center gap-3 px-3 py-2 h-auto hover:bg-slate-100"
+          >
             <Avatar className="w-8 h-8 border-2 border-blue-200">
+              <AvatarImage
+                src={user.imageUrl || undefined}
+                alt={`${user.firstName} ${user.lastName}`}
+              />
               <AvatarFallback className="text-sm font-semibold text-blue-700 bg-blue-50">
-                {getInitials(userName)}
+                {getInitials(`${user.firstName} ${user.lastName}`)}
               </AvatarFallback>
             </Avatar>
             <div className="flex flex-col items-start text-left">
               <span className="text-sm font-medium text-slate-900 truncate max-w-32">
-                {userName}
+                {`${user.firstName} ${user.lastName}`}
               </span>
               <div className="flex items-center gap-2">
-                <Badge className={`text-xs px-2 py-0.5 border ${getRoleBadgeColor('user')}`}>
-                  USER
+                <Badge
+                  className={`text-xs px-2 py-0.5 border ${getRoleBadgeColor(
+                    user.systemRoleName.toLowerCase()
+                  )}`}
+                >
+                  {user.systemRoleName.toUpperCase()}
                 </Badge>
               </div>
             </div>
@@ -108,40 +273,40 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onNavigate }) 
         </DropdownMenuTrigger>
 
         <AnimatePresence>
-          <DropdownMenuContent
-            align="end"
-            className="w-64 p-2"
-            asChild
-          >
+          <DropdownMenuContent align="end" className="w-64 p-2" asChild>
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {/* User Info Header */}
               <div className="px-3 py-4 border-b border-slate-200">
                 <div className="flex items-center gap-3">
                   <Avatar className="w-12 h-12 border-2 border-blue-200">
+                    <AvatarImage
+                      src={user.imageUrl || undefined}
+                      alt={`${user.firstName} ${user.lastName}`}
+                    />
                     <AvatarFallback className="text-lg font-semibold text-blue-700 bg-blue-50">
-                      {getInitials(userName)}
+                      {getInitials(`${user.firstName} ${user.lastName}`)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-slate-900 truncate">
-                      {userName}
+                      {`${user.firstName} ${user.lastName}`}
                     </p>
-                    <p className="text-xs text-slate-500 truncate">
-                      @{userEmail}
-                    </p>
-                    <Badge className={`text-xs px-2 py-0.5 mt-1 border ${getRoleBadgeColor('user')}`}>
-                      USER
+                    <p className="text-xs text-slate-500 truncate">@{userEmail}</p>
+                    <Badge
+                      className={`text-xs px-2 py-0.5 mt-1 border ${getRoleBadgeColor(
+                        user.systemRoleName.toLowerCase()
+                      )}`}
+                    >
+                      {user.systemRoleName.toUpperCase()}
                     </Badge>
                   </div>
                 </div>
               </div>
 
-              {/* Menu Items */}
               <DropdownMenuItem
                 className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-slate-50"
                 onClick={handleMyProfileClick}
@@ -175,7 +340,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ onNavigate }) 
         </AnimatePresence>
       </DropdownMenu>
 
-      {/* Logout Confirmation Dialog */}
       <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>

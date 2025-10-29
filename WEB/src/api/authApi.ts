@@ -17,7 +17,8 @@ export interface UserDetails {
   officeName?: string;
   role?: string;
   status?: string;
-  profileImage?: string; 
+  profileImage?: string;
+  profilePictureStorageFileId?: string;
 }
 
 export interface EditUserPayload {
