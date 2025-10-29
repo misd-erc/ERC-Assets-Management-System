@@ -4,11 +4,52 @@ export interface User {
   email: string;
   username: string;
   role: string;
+  position?: string;
+  status?: 'Active' | 'Inactive' | 'Suspended';
+  department?: string;
+  dateCreated?: string;
+  lastLogin?: string;
   entraId?: string;
   firstName?: string;
   lastName?: string;
+  officeId?: string;
+  divisionId?: string;
+  employmentTypeId?: string;
+  positionId?: string;
 }
 
+export interface Office {
+  id: number;
+  name: string;
+  acronym: string;
+  isActive: boolean;
+}
+
+export interface Division {
+  id: number;
+  name: string;
+  officeId: number;
+  acronym: string;
+}
+
+export interface EmploymentType {
+  id: number;
+  name: string;
+}
+
+export interface Position {
+  id: number;
+  name: string;
+}
+
+export interface SystemRole {
+  id: number;
+  roleName: string;
+  description: string;
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt: string;
+}
 export interface UserDetails {
   id: number;
   firstName: string;

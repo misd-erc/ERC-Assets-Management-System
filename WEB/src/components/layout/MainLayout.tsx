@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { Dashboard } from '../dashboard/Dashboard';
 import { MyProfile } from '../profile/MyProfile';
+import UserManagement from '../../pages/UserManagement';
 import { useIsMobile } from '../ui/use-mobile';
 import { Sheet, SheetContent } from '../ui/sheet';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
@@ -36,6 +37,14 @@ export function MainLayout() {
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
               <Dashboard onNavigate={setActiveModule} />
+            </Suspense>
+          </ErrorBoundary>
+        );
+      case 'users-roles':
+        return (
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <UserManagement />
             </Suspense>
           </ErrorBoundary>
         );

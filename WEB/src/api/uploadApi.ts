@@ -16,7 +16,7 @@ export const uploadProfilePicture = async (
   formData.append('actionBySystemUserIdEncrypted', actionBySystemUserIdEncrypted);
 
   const response = await axiosInstance.post<ApiResponse<UploadProfilePictureResponse>>(
-    '/api/Storage/upload/user/profile-picture',
+    '/Storage/upload/user/profile-picture',
     formData,
     {
       headers: {
@@ -34,7 +34,7 @@ export const uploadProfilePicture = async (
 
 export const retrieveFile = async (fileStorageIdEncrypted: string): Promise<string> => {
   const response = await axiosInstance.get(
-    `/api/Storage/retrieve/${encodeURIComponent(fileStorageIdEncrypted)}`,
+    `/Storage/retrieve/${encodeURIComponent(fileStorageIdEncrypted)}`,
     {
       responseType: 'blob', // Assuming the response is a blob for the image
     }

@@ -54,7 +54,7 @@ export const getUserDetails = async (systemUserIdEncrypted: string, actionBySyst
   const sanitizedActionId = sanitizeSystemUserId(finalActionId);
 
   const response = await axiosInstance.get<ApiResponse<UserDetails>>(
-    `/Users/all/${encodeURIComponent(sanitizedId)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(sanitizedActionId)}`
+    `/Users/all/${encodeURIComponent(sanitizedActionId)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(sanitizedActionId)}`
   );
 
   // Check for invalid session

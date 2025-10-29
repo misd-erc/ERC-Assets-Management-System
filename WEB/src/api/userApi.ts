@@ -1,17 +1,47 @@
 import axiosInstance from '../lib/axios';
-import { User, ApiResponse } from '../types';
+import { User, ApiResponse, Office, Division, EmploymentType, Position, SystemRole } from '../types';
 import { getUserDetails, UserDetails } from './authApi';
 import { getAuditTrail } from './auditApi';
 
-export const getUsers = async (): Promise<User[]> => {
-  // const response = await axiosInstance.get('/users');
-  // return response.data;
+export interface UserListResponse {
+  success: boolean;
+  data: {
+    items: User[];
+    pageNumber: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+  };
+}
 
-  // Mock implementation
-  return [
-    { id: '1', name: 'Admin User', email: 'admin@example.com', username: 'admin', role: 'System Administrator' },
-    { id: '2', name: 'Regular User', email: 'user@example.com', username: 'user', role: 'user' },
-  ];
+export const getUsers = async (token: string, page: number = 1, pageSize: number = 10): Promise<UserListResponse> => {
+  const response = await axiosInstance.get<UserListResponse>(
+    `/Users/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}&pageNumber=${page}&pageSize=${pageSize}`
+  );
+
+  // Map API response to User type
+  const mappedItems = response.data.data.items.map((item: any) => ({
+    id: item.id.toString(),
+    name: `${item.firstName} ${item.lastName}`,
+    email: item.email,
+    username: item.email.split('@')[0], // Use email prefix as username
+    role: item.role || 'User', // Default if not provided
+    position: item.position || '',
+    status: (item.isActive ? 'Active' : 'Inactive') as 'Active' | 'Inactive' | 'Suspended',
+    department: item.department || '',
+    dateCreated: item.createdAt,
+    lastLogin: item.lastLoginAt,
+    firstName: item.firstName,
+    lastName: item.lastName
+  }));
+
+  return {
+    ...response.data,
+    data: {
+      ...response.data.data,
+      items: mappedItems
+    }
+  };
 };
 
 export const createUser = async (user: Omit<User, 'id'>): Promise<User> => {
@@ -28,7 +58,9 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
   // return response.data;
 
   // Mock implementation
-  const user = await getUsers().then(users => users.find(u => u.id === id));
+  const token = localStorage.getItem('systemUserIdEncrypted') || '';
+  const response = await getUsers(token);
+  const user = response.data.items.find(u => u.id === id);
   if (!user) throw new Error('User not found');
   return { ...user, ...updates };
 };
@@ -48,12 +80,12 @@ export const deleteUser = async (id: string): Promise<void> => {
  * @returns Promise<UserDetails> - User details if session is valid
  * @throws Error if session is invalid or expired
  */
-export const validateUserSession = async (systemUserIdEncrypted: string): Promise<UserDetails> => {
+export const validateUserSession = async (actionBySystemUserIdEncrypted: string): Promise<UserDetails> => {
   console.log('[UserAPI] Validating session with token');
 
   try {
     // Call getUserDetails which internally calls /Users/all/{token}?ActionBySystemUserIdEncrypted={token}
-    const userDetails = await getUserDetails(systemUserIdEncrypted, systemUserIdEncrypted);
+    const userDetails = await getUserDetails(actionBySystemUserIdEncrypted, actionBySystemUserIdEncrypted);
 
     console.log('[UserAPI] Session validation successful');
     return userDetails;
@@ -72,4 +104,54 @@ export const validateUserSession = async (systemUserIdEncrypted: string): Promis
  */
 export const getUserAuditTrail = async (systemUserIdEncrypted: string, page: number = 1, pageSize: number = 10) => {
   return getAuditTrail(systemUserIdEncrypted, page, pageSize);
+};
+
+export const editUser = async (payload: {
+  systemUserIdEncrypted: string;
+  systemRoleIdEncrypted?: string;
+  officeIdEncrypted?: string;
+  divisionIdEncrypted?: string;
+  employmentTypeIdEncrypted?: string;
+  positionIdEncrypted?: string;
+  statusIdEncrypted?: string;
+  isActiveEncrypted?: string;
+  actionBySystemUserIdEncrypted: string;
+}): Promise<{ message: string }> => {
+  const response = await axiosInstance.post<ApiResponse<any>>('/Users/edit', payload);
+  return { message: response.data.message };
+};
+
+export const getOffices = async (token: string): Promise<Office[]> => {
+  const response = await axiosInstance.get<{ data: { items: Office[] } }>(
+    `/Office/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`
+  );
+  return Array.isArray(response.data.data.items) ? response.data.data.items : [];
+};
+
+export const getDivisions = async (token: string): Promise<Division[]> => {
+  const response = await axiosInstance.get<{ data: { items: Division[] } }>(
+    `/Office/division/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`
+  );
+  return Array.isArray(response.data.data.items) ? response.data.data.items : [];
+};
+
+export const getEmploymentTypes = async (token: string): Promise<EmploymentType[]> => {
+  const response = await axiosInstance.get<{ data: { items: EmploymentType[] } }>(
+    `/Office/employment-type/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`
+  );
+  return Array.isArray(response.data.data.items) ? response.data.data.items : [];
+};
+
+export const getPositions = async (token: string): Promise<Position[]> => {
+  const response = await axiosInstance.get<{ data: { items: Position[] } }>(
+    `/Office/position/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`
+  );
+  return Array.isArray(response.data.data.items) ? response.data.data.items : [];
+};
+
+export const getSystemRoles = async (token: string): Promise<SystemRole[]> => {
+  const response = await axiosInstance.get<{ data: { items: SystemRole[] } }>(
+    `/Users/system-role/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`
+  );
+  return Array.isArray(response.data.data.items) ? response.data.data.items : [];
 };

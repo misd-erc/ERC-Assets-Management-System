@@ -89,7 +89,6 @@ export const isSessionError = (response: any): boolean => {
 
   // Check for explicit session error indicators
   return (
-    response.success === false ||
     response.code === 'ERR_SERVER' ||
     response.code === 'ERR_UNAUTHORIZED' ||
     response.code === 'ERR_SESSION_EXPIRED' ||
