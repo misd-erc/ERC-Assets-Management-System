@@ -4,6 +4,7 @@ export interface User {
   email: string;
   username: string;
   role: string;
+  systemRoleName: string;
   position?: string;
   status?: 'Active' | 'Inactive' | 'Suspended';
   department?: string;
@@ -16,6 +17,9 @@ export interface User {
   divisionId?: string;
   employmentTypeId?: string;
   positionId?: string;
+  officeName?: string;
+  divisionName?: string;
+  profilePictureStorageFileId?: number;
 }
 
 export interface Office {

@@ -1,5 +1,5 @@
-import React, { useState, Suspense } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, Suspense, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { Dashboard } from '../dashboard/Dashboard';
@@ -17,21 +17,34 @@ const LoadingFallback = () => (
 
 export function MainLayout() {
   const location = useLocation();
-  const [activeModule, setActiveModule] = useState('dashboard');
+  const navigate = useNavigate();
+  const [activeModule, setActiveModule] = useState(() => {
+    // Initialize activeModule based on current pathname
+    if (location.pathname === '/profile') return 'profile';
+    return 'dashboard';
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  const renderContent = () => {
-    if (location.pathname === '/profile') {
-      return (
-        <ErrorBoundary>
-          <Suspense fallback={<LoadingFallback />}>
-            <MyProfile />
-          </Suspense>
-        </ErrorBoundary>
-      );
+  // Sync navigation when activeModule changes
+  useEffect(() => {
+    if (activeModule === 'profile') {
+      navigate('/profile');
+    } else {
+      navigate('/dashboard');
     }
+  }, [activeModule, navigate]);
+
+  const renderContent = () => {
     switch (activeModule) {
+      case 'profile':
+        return (
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <MyProfile />
+            </Suspense>
+          </ErrorBoundary>
+        );
       case 'dashboard':
         return (
           <ErrorBoundary>

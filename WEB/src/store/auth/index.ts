@@ -92,6 +92,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         email: userInfo.email,
         username: userInfo.email,
         role: 'user',
+        systemRoleName: 'user',
         entraId: userInfo.entraId,
         firstName: userInfo.firstName,
         lastName: userInfo.lastName
@@ -111,6 +112,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           email: userInfo.email,
           username: userInfo.email,
           role: 'user',
+          systemRoleName: 'user',
           entraId: userInfo.entraId,
           firstName: userInfo.firstName,
           lastName: userInfo.lastName

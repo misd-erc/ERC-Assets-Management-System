@@ -141,6 +141,7 @@ export const validateOTP = async (systemUserIdEncrypted: string, otp: string): P
     email: email,
     username: email, // Use email as username
     role: 'user', // Default role, could be determined by backend later
+    systemRoleName: 'user',
     entraId: '', // Will be set from MSAL
     firstName: firstName,
     lastName: lastName
@@ -175,6 +176,7 @@ export const validateSessionToken = async (token: string, systemUserIdEncrypted:
     email: email,
     username: email,
     role: 'user',
+    systemRoleName: 'user',
     entraId: '', // Will be set from MSAL
     firstName: firstName,
     lastName: lastName

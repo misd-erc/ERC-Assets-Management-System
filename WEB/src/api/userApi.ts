@@ -26,13 +26,18 @@ export const getUsers = async (token: string, page: number = 1, pageSize: number
     email: item.email,
     username: item.email.split('@')[0], // Use email prefix as username
     role: item.role || 'User', // Default if not provided
+    systemRoleName: item.systemRoleName || item.role || 'User',
     position: item.position || '',
     status: (item.isActive ? 'Active' : 'Inactive') as 'Active' | 'Inactive' | 'Suspended',
     department: item.department || '',
     dateCreated: item.createdAt,
     lastLogin: item.lastLoginAt,
     firstName: item.firstName,
-    lastName: item.lastName
+    lastName: item.lastName,
+    officeName: item.officeName,
+    divisionName: item.divisionName,
+    employmentTypeId: item.employmentTypeId,
+    profilePictureStorageFileId: item.profilePictureStorageFileId
   }));
 
   return {

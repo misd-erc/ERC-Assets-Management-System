@@ -20,7 +20,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { useUserProfile } from '../../hooks/useUserProfile';
 import { useAuthStore } from '../../store/auth';
 import { editUserProfile } from '../../api/authApi';
 import { getUserAuditTrail, getUserPhoto } from '../../api/userApi';
@@ -35,8 +34,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/
 import { encrypt } from '../../utils/encryption';
 
 export const MyProfile = React.memo(() => {
-  const { userProfile, loading, refreshProfile } = useUserProfile();
   const { systemUserIdEncrypted } = useAuthStore();
+  const [userDetails, setUserDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -46,17 +46,22 @@ export const MyProfile = React.memo(() => {
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
   const [uploadingPicture, setUploadingPicture] = useState(false);
 
-  // Load profile picture on mount
+  // Load user details and profile picture on mount
   React.useEffect(() => {
-    const loadProfilePicture = async () => {
+    const loadUserDetails = async () => {
       const stored = localStorage.getItem('userDetails');
       const token = localStorage.getItem('ActionBySystemUserIdEncrypted');
 
-      if (!stored || !token) return;
+      if (!stored) {
+        setLoading(false);
+        return;
+      }
 
       try {
         const parsed = JSON.parse(stored);
-        if (parsed?.profilePictureStorageFileId) {
+        setUserDetails(parsed);
+
+        if (parsed?.profilePictureStorageFileId && token) {
           const fileIdEncrypted = encrypt(String(parsed.profilePictureStorageFileId));
           console.log('[MyProfile] Loading profile picture from localStorage');
           const photoResponse = await getUserPhoto(fileIdEncrypted, token);
@@ -65,11 +70,13 @@ export const MyProfile = React.memo(() => {
           console.log('[MyProfile] Profile picture loaded from localStorage');
         }
       } catch (error) {
-        console.warn('Failed to load profile picture from localStorage:', error);
+        console.warn('Failed to load user details from localStorage:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadProfilePicture();
+    loadUserDetails();
   }, []);
 
   // Activity state for Activity tab
@@ -253,7 +260,7 @@ export const MyProfile = React.memo(() => {
     );
   }
 
-  if (!userProfile) {
+  if (!userDetails) {
     return (
       <div className="pl-64 pt-16 space-y-8">
         <div className="mb-6">
@@ -264,12 +271,12 @@ export const MyProfile = React.memo(() => {
     );
   }
 
-  const fullName = `${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || 'Unknown User';
-  const initials = ((userProfile.firstName || '')[0] || '') + ((userProfile.lastName || '')[0] || '') || 'U';
-  const statusBadge = userProfile.isActive ? 'Active' : 'Inactive';
+  const fullName = `${userDetails.firstName || ''} ${userDetails.lastName || ''}`.trim() || 'Unknown User';
+  const initials = ((userDetails.firstName || '')[0] || '') + ((userDetails.lastName || '')[0] || '') || 'U';
+  const statusBadge = userDetails.isActive ? 'Active' : 'Inactive';
   const roleBadge = 'User'; // Assuming role is not in API, or add if available
-  const dateJoined = formatDate(userProfile.createdAt, 'Month DD, YYYY');
-  const lastLogin = formatDate(userProfile.lastLoginAt, 'Month DD, YYYY HH:mm');
+  const dateJoined = formatDate(userDetails.createdAt, 'Month DD, YYYY');
+  const lastLogin = formatDate(userDetails.lastLoginAt, 'Month DD, YYYY HH:mm');
 
   return (
     <div className="pl-64 pt-16 space-y-8">
@@ -288,7 +295,7 @@ export const MyProfile = React.memo(() => {
                 <Avatar className="w-20 h-20 border-2 border-blue-200">
                   <AvatarImage
                     src={profilePictureUrl || undefined}
-                    alt={`${userProfile.firstName} ${userProfile.lastName}`}
+                    alt={`${userDetails.firstName} ${userDetails.lastName}`}
                   />
                   <AvatarFallback className="text-xl font-semibold text-blue-700 bg-blue-50">
                     {initials}
@@ -326,10 +333,10 @@ export const MyProfile = React.memo(() => {
               </div>
               <div>
                 <h3 className="text-xl font-semibold text-gray-900">{fullName}</h3>
-                <p className="text-gray-500">@{userProfile.email ? userProfile.email.split('@')[0] : 'unknown'}</p>
+                <p className="text-gray-500">@{userDetails.email ? userDetails.email.split('@')[0] : 'unknown'}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge className={`rounded-full px-3 py-1 bg-blue-100 text-blue-800 border-blue-200`}>{roleBadge}</Badge>
-                  <Badge className={`rounded-full px-3 py-1 ${userProfile.isActive ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>{statusBadge}</Badge>
+                  <Badge className={`rounded-full px-3 py-1 ${userDetails.isActive ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>{statusBadge}</Badge>
                 </div>
                 <TooltipProvider>
                   <Tooltip>
@@ -416,21 +423,21 @@ export const MyProfile = React.memo(() => {
                   <Mail className="w-4 h-4 text-gray-400" />
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Email</Label>
-                    <p className="text-gray-900">{userProfile.email || 'N/A'}</p>
+                    <p className="text-gray-900">{userDetails.email || 'N/A'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Briefcase className="w-4 h-4 text-gray-400" />
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Role</Label>
-                    <p className="text-gray-900">{userProfile.role || 'User'}</p>
+                    <p className="text-gray-900">{userDetails.systemRoleName || 'User'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Building className="w-4 h-4 text-gray-400" />
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Employee ID</Label>
-                    <p className="text-gray-900">{userProfile.employeeId || 'N/A'}</p>
+                    <p className="text-gray-900">{userDetails.employeeId || 'N/A'}</p>
                   </div>
                 </div>
               </CardContent>
@@ -450,14 +457,14 @@ export const MyProfile = React.memo(() => {
                   <Building className="w-4 h-4 text-gray-400" />
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Division</Label>
-                    <p className="text-gray-900">{userProfile.divisionName || 'N/A'}</p>
+                    <p className="text-gray-900">{userDetails.divisionName || 'N/A'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Briefcase className="w-4 h-4 text-gray-400" />
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Office</Label>
-                    <p className="text-gray-900">{userProfile.officeName || 'N/A'}</p>
+                    <p className="text-gray-900">{userDetails.officeName || 'N/A'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">

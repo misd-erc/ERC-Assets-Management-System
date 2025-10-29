@@ -221,17 +221,17 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       const token = localStorage.getItem('ActionBySystemUserIdEncrypted');
       if (!token) {
         console.error('No token found in localStorage');
-        navigate('/profile');
+        onNavigate?.('profile');
         return;
       }
       console.log('[ProfileDropdown] Calling getCurrentUserDetails for profile click');
       const userData = await getCurrentUserDetails(systemUserIdEncrypted, token);
       console.log('[ProfileDropdown] Profile click API response:', userData);
       localStorage.setItem('userProfile', JSON.stringify(userData));
-      navigate('/profile');
+      onNavigate?.('profile');
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
-      navigate('/profile');
+      onNavigate?.('profile');
     } finally {
       setIsFetchingProfile(false);
     }
