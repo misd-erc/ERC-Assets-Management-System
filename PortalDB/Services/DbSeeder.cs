@@ -31,6 +31,9 @@ namespace PortalDB.Services
                 #region Division
                 TblDivisionSeeder.Seed(context);
                 #endregion
+
+                TblEmploymentTypeSeeder.Seed(context);
+                TblPositionSeeder.Seed(context);
                 #endregion
 
                 Console.WriteLine("Database seeding completed successfully!");
