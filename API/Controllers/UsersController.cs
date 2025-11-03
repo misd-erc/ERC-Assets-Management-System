@@ -362,7 +362,7 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicResponseModel publicRM = new()
+                UserSimplePublicResponseModel publicRM = new()
                 {
                     SystemUserId = systemUserId
                 };
@@ -412,7 +412,7 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicResponseModel publicRM = new()
+                UserSimplePublicResponseModel publicRM = new()
                 {
                     SystemUserId = systemUserId,
                     SessionKey = model.SessionKey
@@ -492,7 +492,7 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicResponseModel publicRM = new()
+                UserSimplePublicResponseModel publicRM = new()
                 {
                     SystemUserId = user.Id
                 };
@@ -541,7 +541,7 @@ namespace API.Controllers
 
                     await _accountEditTools.AddTblSessionTokenAsync(sessionToken, context);
 
-                    UserEncryptedPublicResponseModel publicRM = new()
+                    UserSimplePublicResponseModel publicRM = new()
                     {
                         SystemUserId = model.SystemUserId,
                         SessionKey = sessionToken.Key
@@ -589,7 +589,7 @@ namespace API.Controllers
 
                     var userInfo = await _accountGetTools.GetTblSystemUser(sessionTokenModel.SystemUserId);
 
-                    UserEncryptedPublicResponseModel publicRM = new()
+                    UserSimplePublicResponseModel publicRM = new()
                     {
                         SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted)
                     };

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace PortalCommon.Models.ResponseModels.Account
 {
-    public class UserEncryptedPublicResponseModel
+    public class UserSimplePublicResponseModel
     {
         public long SystemUserId { get; set; }
         public string SessionKey { get; set; } = string.Empty;

@@ -422,7 +422,7 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicResponseModel publicRM = new()
+                UserSimplePublicResponseModel publicRM = new()
                 {
                     SystemUserId = model.ActionBySystemUserId,
                     SessionKey = model.SessionKey
@@ -466,7 +466,7 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicResponseModel publicRM = new()
+                UserSimplePublicResponseModel publicRM = new()
                 {
                     SystemUserId = model.ActionBySystemUserId,
                     SessionKey = model.SessionKey
@@ -508,7 +508,7 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicResponseModel publicRM = new()
+                UserSimplePublicResponseModel publicRM = new()
                 {
                     SystemUserId = model.ActionBySystemUserId,
                     SessionKey = model.SessionKey
@@ -552,7 +552,7 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 #endregion
 
-                UserEncryptedPublicResponseModel publicRM = new()
+                UserSimplePublicResponseModel publicRM = new()
                 {
                     SystemUserId = model.ActionBySystemUserId,
                     SessionKey = model.SessionKey
