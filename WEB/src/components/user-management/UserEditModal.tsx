@@ -126,7 +126,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         employmentTypeIdEncrypted: encrypt(formData.employmentTypeId),
         positionIdEncrypted: encrypt(formData.positionId),
         statusIdEncrypted: encrypt(statusId),
-        isActiveEncrypted: encrypt(formData.isActive ? "1" : "0"),
+        isActiveEncrypted: encrypt(formData.isActive ? 'true' : 'false'),
         actionBySystemUserIdEncrypted: token,
       };
 
