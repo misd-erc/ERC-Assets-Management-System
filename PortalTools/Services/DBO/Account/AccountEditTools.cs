@@ -119,8 +119,8 @@ namespace PortalTools.Services.DBO.Account
                         .SetProperty(x => x.PositionId, userUpdatedInfo.PositionId)
                         .SetProperty(x => x.IsActive, userUpdatedInfo.IsActive));
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Updated system user information", actionBy: model.ActionBy,
-                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, userCurrentInfo, userUpdatedInfo, nameof(TblSystemUser), model.ActionBy, "Update"));
+                await AuditTrailTool.LogActivityAsync(_options, $"Updated system user information", actionBy: model.ActionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, userCurrentInfo, userUpdatedInfo, nameof(TblSystemUser), model.ActionBySystemUserId, "Update"));
 
                 return userUpdatedInfo.Id;
             }

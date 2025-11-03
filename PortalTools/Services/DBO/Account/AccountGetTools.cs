@@ -63,6 +63,7 @@ namespace PortalTools.Services.DBO.Account
                 return true;
             return false;
         }
+        public async Task<TblSessionToken?> GetTblSessionToken(string sessionKey) => await _context.TblSessionTokens.Where(x => !x.IsDeleted && x.Key == sessionKey).FirstOrDefaultAsync();
         public async Task<bool> ValidateTokenSessionBySystemUserIdAsync(long systemUserId)
         {
             bool isValid = await _context.TblSessionTokens
@@ -73,6 +74,14 @@ namespace PortalTools.Services.DBO.Account
                 return true;
 
             return false;
+        }
+        public async Task<long> GetSystemUserIdBySessionKey(string sessionKey)
+        {
+            TblSessionToken? sessionToken = await GetTblSessionToken(sessionKey) ?? throw new UnauthorizedAccessException("Session not found.");
+            if (sessionToken.ValidUntil < DateTime.UtcNow)
+                throw new UnauthorizedAccessException("Session expired.");
+
+            return sessionToken.SystemUserId;
         }
         public IQueryable<TblSystemRole?> GetSystemRoles() => _context.TblSystemRoles.Where(x => !x.IsDeleted);
         public async Task<TblSystemRole?> GetSystemRole(long id) => await _context.TblSystemRoles.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();

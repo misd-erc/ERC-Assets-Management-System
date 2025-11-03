@@ -9,6 +9,6 @@ namespace PortalCommon.Models.QueryParams.OTP
 {
     public class ResendOTPQueryParams
     {
-        [Required] public string SystemUserIdEncrypted { get; set; } = string.Empty;
+        [Required] public long SystemUserId { get; set; }
     }
 }

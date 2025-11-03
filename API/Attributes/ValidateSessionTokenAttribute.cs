@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace PortalAPI.Attributes
 {
     /// <summary>
-    /// Validates the session token using the ActionBySystemUserIdEncrypted property
+    /// Validates the session token using the ActionBySystemUserId property
     /// from the incoming model. Returns SessionTokenExpired() if invalid.
     /// </summary>
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
@@ -21,32 +21,40 @@ namespace PortalAPI.Attributes
         {
             try
             {
-                // 🔍 Find any action parameter that has a property named ActionBySystemUserIdEncrypted
+
                 var modelObj = context.ActionArguments.Values
-                    .FirstOrDefault(arg => arg?.GetType().GetProperty("ActionBySystemUserIdEncrypted") != null);
+                    .FirstOrDefault(arg => arg?.GetType().GetProperty("ActionBySystemUserId") != null && arg?.GetType().GetProperty("SessionKey") != null);
 
                 if (modelObj == null)
                 {
-                    context.Result = new JsonResult(ApiResponse<object>.NoContent("Missing ActionBySystemUserIdEncrypted in request model."));
+                    context.Result = new JsonResult(ApiResponse<object>.NoContent("Missing ActionBySystemUserId o SessionKey in request model."));
                     return;
                 }
 
-                // 🧩 Get encrypted ID
-                var encryptedId = modelObj.GetType()
-                    .GetProperty("ActionBySystemUserIdEncrypted")
+                var ActionBySystemUserId = modelObj.GetType()
+                    .GetProperty("ActionBySystemUserId")
                     ?.GetValue(modelObj)?
                     .ToString();
 
-                if (string.IsNullOrWhiteSpace(encryptedId))
+                var sessionKey = modelObj.GetType()
+                    .GetProperty("SessionKey")
+                    ?.GetValue(modelObj)?
+                    .ToString();
+
+                if (string.IsNullOrWhiteSpace(ActionBySystemUserId))
                 {
-                    context.Result = new JsonResult(ApiResponse<object>.Unauthorized("Invalid or missing encrypted user ID."));
+                    context.Result = new JsonResult(ApiResponse<object>.Unauthorized("Invalid or missing system user id."));
                     return;
                 }
 
-                // 🔓 Decrypt and validate token
-                var userId = long.Parse(EncryptionHelper.Decrypt(encryptedId));
+                if (string.IsNullOrWhiteSpace(sessionKey))
+                {
+                    context.Result = new JsonResult(ApiResponse<object>.Unauthorized("Invalid or missing session key."));
+                    return;
+                }
 
-                // ✅ Resolve AuthTools from DI container
+                long userId = long.Parse(ActionBySystemUserId);
+
                 var authTools = context.HttpContext.RequestServices.GetService<AuthTools>();
                 if (authTools == null)
                 {
@@ -54,14 +62,13 @@ namespace PortalAPI.Attributes
                     return;
                 }
 
-                bool isValid = await authTools.ValidateSessionTokenInternally(userId);
+                bool isValid = await authTools.ValidateSessionTokenInternally(userId, sessionKey);
                 if (!isValid)
                 {
                     context.Result = new JsonResult(ApiResponse<object>.SessionTokenExpired());
                     return;
                 }
 
-                // 🎯 Continue to controller action
                 await next();
             }
             catch (Exception ex)

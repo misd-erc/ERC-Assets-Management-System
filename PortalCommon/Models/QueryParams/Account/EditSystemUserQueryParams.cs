@@ -9,15 +9,15 @@ namespace PortalCommon.Models.QueryParams.Account
 {
     public class EditSystemUserQueryParams
     {
-
-        [Required] public string SystemUserIdEncrypted { get; set; } = string.Empty;
-        [Required] public string SystemRoleIdEncrypted { get; set; } = string.Empty;
-        [Required] public string OfficeIdEncrypted { get; set; } = string.Empty;
-        [Required] public string DivisionIdEncrypted { get; set; } = string.Empty;
-        [Required] public string EmploymentTypeIdEncrypted { get; set; } = string.Empty;
-        [Required] public string PositionIdEncrypted { get; set; } = string.Empty;
-        [Required] public string StatusIdEncrypted { get; set; } = string.Empty;
-        [Required] public string IsActiveEncrypted { get; set; } = string.Empty;
-        [Required] public string ActionBySystemUserIdEncrypted { get; set; } = string.Empty;
+        [Required] public long SystemUserId { get; set; }
+        [Required] public long SystemRoleId { get; set; }
+        [Required] public long OfficeId { get; set; }
+        [Required] public long DivisionId { get; set; }
+        [Required] public long EmploymentTypeId { get; set; }
+        [Required] public long PositionId { get; set; }
+        [Required] public long StatusId { get; set; }
+        [Required] public bool IsActive { get; set; }
+        [Required] public long ActionBySystemUserId { get; set; }
+        [Required] public string SessionKey { get; set; } = string.Empty;
     }
 }

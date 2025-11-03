@@ -75,6 +75,7 @@ namespace API.Controllers
             {
 
                 IEnumerable<VwSystemUser?> users = await _accountGetTools.GetVwSystemUsers().ToListAsync();
+                long systemUserId = await _accountGetTools.GetSystemUserIdBySessionKey(model.SessionKey);
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -130,7 +131,7 @@ namespace API.Controllers
                     LastLoginAt = x.LastLoginAt
                 }).ToList();
 
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed system users", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed system users", actionBy: systemUserId);
                 return Ok(ApiResponse<UserBasicResponseModel>.OkPaginated(
                     userBasicResponses,
                     model.PageNumber,
@@ -148,16 +149,15 @@ namespace API.Controllers
         }
 
         // GET api/users/all
-        [HttpGet("all/{systemUserIdEncrypted}")]
+        [HttpGet("all/{systemUserId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        [DecodeRouteParameter(nameof(systemUserIdEncrypted))]
-        public async Task   <IActionResult> GetSystemUserBySystemUserId([FromQuery] SoloQueryParams model, [FromRoute] string systemUserIdEncrypted)
+        public async Task   <IActionResult> GetSystemUserBySystemUserId([FromQuery] SoloQueryParams model, [FromRoute] long systemUserId)
         {
             try
             {
 
-                VwSystemUser? user = await _accountGetTools.GetVwSystemUser(long.Parse(EncryptionHelper.Decrypt(systemUserIdEncrypted)));
+                VwSystemUser? user = await _accountGetTools.GetVwSystemUser(systemUserId);
 
                 UserBasicResponseModel userBasicResponse = new UserBasicResponseModel
                 {
@@ -182,7 +182,7 @@ namespace API.Controllers
                     LastLoginAt = user.LastLoginAt
                 };
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system user information for user {user.Id}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system user information for user {user.Id}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<object>.Ok(userBasicResponse, $"System user have been retrieved"));
 
             }
@@ -237,7 +237,7 @@ namespace API.Controllers
                     CreatedAt = x.CreatedAt
                 }).ToList();
 
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed system roles", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed system roles", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<TblSystemRole>.OkPaginated(
                     roleResponses,
                     model.PageNumber,
@@ -255,16 +255,15 @@ namespace API.Controllers
         }
 
         // GET api/users/system-role/all
-        [HttpGet("system-role/all/{systemRoleIdEncryptedId}")]
+        [HttpGet("system-role/all/{systemRoleId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        [DecodeRouteParameter(nameof(systemRoleIdEncryptedId))]
-        public async Task<IActionResult> GetSystemRoleBySystemRoleId([FromQuery] SoloQueryParams model, [FromRoute] string systemRoleIdEncryptedId)
+        public async Task<IActionResult> GetSystemRoleBySystemRoleId([FromQuery] SoloQueryParams model, [FromRoute] long systemRoleId)
         {
             try
             {
 
-                TblSystemRole? role = await _accountGetTools.GetSystemRole(long.Parse(EncryptionHelper.Decrypt(systemRoleIdEncryptedId)));
+                TblSystemRole? role = await _accountGetTools.GetSystemRole(systemRoleId);
 
                 TblSystemRole roleResponse = new TblSystemRole
                 {
@@ -275,7 +274,7 @@ namespace API.Controllers
                     CreatedAt = role.CreatedAt
                 };
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system role information for system role {role.Id}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system role information for system role {role.Id}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<object>.Ok(roleResponse, $"System role have been retrieved"));
 
             }
@@ -304,11 +303,11 @@ namespace API.Controllers
 
                 TblSystemUser user = new()
                 {
-                    EntraId = long.Parse(EncryptionHelper.Decrypt(model.EntraIdEncrypted)),
-                    FirstName = EncryptionHelper.Decrypt(model.FirstNameEncrypted),
-                    LastName = EncryptionHelper.Decrypt(model.LastNameEncrypted),
-                    Email = EncryptionHelper.Decrypt(model.EmailEncrypted),
-                    EmployeeId = model.EmployeeIdEncrypted != null? EncryptionHelper.Decrypt(model.EmployeeIdEncrypted) : null
+                    EntraId = model.EntraId,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    Email = model.Email,
+                    EmployeeId = model.EmployeeId ?? null
                 };
 
                 user.Id = (await _accountGetTools.GetTblSystemUserByEntraIdAndEmail(user.EntraId, user.Email))?.Id ?? 0;
@@ -365,7 +364,7 @@ namespace API.Controllers
 
                 UserEncryptedPublicResponseModel publicRM = new()
                 {
-                    SystemUserIdEncrypted = EncryptionHelper.Encrypt(systemUserId.ToString()),
+                    SystemUserId = systemUserId
                 };
 
                 await AuditTrailTool.LogActivityAsync(_options, $"Microsoft Entra information validated", actionBy: user.Id);
@@ -396,15 +395,15 @@ namespace API.Controllers
 
                 EditSystemUserViewModel user = new()
                 {
-                    Id = string.IsNullOrEmpty(model.SystemUserIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.SystemUserIdEncrypted)),
-                    SystemRoleId = long.Parse(EncryptionHelper.Decrypt(model.SystemRoleIdEncrypted)),
-                    OfficeId = long.Parse(EncryptionHelper.Decrypt(model.OfficeIdEncrypted)),
-                    DivisionId = long.Parse(EncryptionHelper.Decrypt(model.DivisionIdEncrypted)),
-                    EmploymentTypeId = long.Parse(EncryptionHelper.Decrypt(model.EmploymentTypeIdEncrypted)),
-                    PositionId = long.Parse(EncryptionHelper.Decrypt(model.PositionIdEncrypted)),
-                    StatusId = long.Parse(EncryptionHelper.Decrypt(model.StatusIdEncrypted)),
-                    IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEncrypted)),
-                    ActionBy = long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted))
+                    Id = model.SystemUserId,
+                    SystemRoleId = model.SystemRoleId,
+                    OfficeId = model.OfficeId,
+                    DivisionId = model.DivisionId,
+                    EmploymentTypeId = model.EmploymentTypeId,
+                    PositionId = model.PositionId,
+                    StatusId = model.StatusId,
+                    IsActive = model.IsActive,
+                    ActionBySystemUserId = model.ActionBySystemUserId
                 };
 
                 long systemUserId = await _accountEditTools.EditTblSystemUserAsync(user, context);
@@ -415,10 +414,11 @@ namespace API.Controllers
 
                 UserEncryptedPublicResponseModel publicRM = new()
                 {
-                    SystemUserIdEncrypted = EncryptionHelper.Decrypt(systemUserId.ToString())
+                    SystemUserId = systemUserId,
+                    SessionKey = model.SessionKey
                 };
 
-                return Ok(ApiResponse<object>.Ok(publicRM, $"System user account has been {(string.IsNullOrEmpty(model.SystemUserIdEncrypted) ? "added":"updated")}"));
+                return Ok(ApiResponse<object>.Ok(publicRM, $"System user account has been {(model.SystemUserId == 0? "added":"updated")}"));
 
             }
             catch (Exception ex)
@@ -442,7 +442,7 @@ namespace API.Controllers
                 await using var context = new PortalDbContext(_options);
                 await using var transaction = await context.Database.BeginTransactionAsync();
 
-                TblSystemUser? user = await _accountGetTools.GetTblSystemUser(long.Parse(EncryptionHelper.Decrypt(model.SystemUserIdEncrypted)));
+                TblSystemUser? user = await _accountGetTools.GetTblSystemUser(model.SystemUserId);
 
                 if (user != null)
                 {
@@ -494,7 +494,7 @@ namespace API.Controllers
 
                 UserEncryptedPublicResponseModel publicRM = new()
                 {
-                    SystemUserIdEncrypted = EncryptionHelper.Encrypt(user.Id.ToString()),
+                    SystemUserId = user.Id
                 };
 
                 await AuditTrailTool.LogActivityAsync(_options, $"Re-sent email otp", actionBy: user.Id);
@@ -518,11 +518,10 @@ namespace API.Controllers
             {
                 TblOneTimePassword otpModel = new()
                 {
-                    SystemUserId = long.Parse(EncryptionHelper.Decrypt(model!.SystemUserIdEncrypted)),
-                    OTP = long.Parse(EncryptionHelper.Decrypt(model.OTPEncrypted)),
+                    SystemUserId = model!.SystemUserId,
+                    OTP = model.OTP
                 };
                 
-
                 bool isValid = await _accountGetTools.ValidateOTPAsync(otpModel);
 
                 if (isValid)
@@ -544,7 +543,8 @@ namespace API.Controllers
 
                     UserEncryptedPublicResponseModel publicRM = new()
                     {
-                        SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted)
+                        SystemUserId = model.SystemUserId,
+                        SessionKey = sessionToken.Key
                     };
 
                     await context.SaveChangesAsync();

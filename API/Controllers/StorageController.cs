@@ -64,7 +64,7 @@ namespace API.Controllers
                     stream,
                     file.FileName,
                     file.ContentType,
-                    long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)),
+                    model.ActionBySystemUserId,
                     TblFileStorage.USER_PROFILE_PICTURE
                 );
 
@@ -73,7 +73,7 @@ namespace API.Controllers
 
                 EditSystemUserProfilePictureViewModel profileVM = new()
                 {
-                    SystemUserId = long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)),
+                    SystemUserId = model.ActionBySystemUserId,
                     FileStorageId = fileId.Value
                 };
 
@@ -84,7 +84,7 @@ namespace API.Controllers
 
                 UploaderResponseModel uploaderRM = new()
                 {
-                    FileIdEncrypted = EncryptionHelper.Encrypt(fileId.ToString()!)
+                    FileId = fileId
                 };
 
                 return Ok(ApiResponse<object>.Ok(uploaderRM, $"Profile picture has been uploaded"));
@@ -97,17 +97,14 @@ namespace API.Controllers
             }
         }
 
-        [HttpGet("retrieve/{fileStorageIdEncrypted}")]
+        [HttpGet("retrieve/{fileStorageId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        [DecodeRouteParameter(nameof(fileStorageIdEncrypted))]
-        public async Task<IActionResult> GetFileById([FromQuery] SoloQueryParams model, [FromRoute] string fileStorageIdEncrypted)
+        [DecodeRouteParameter(nameof(fileStorageId))]
+        public async Task<IActionResult> GetFileById([FromQuery] SoloQueryParams model, [FromRoute] long fileStorageId)
         {
             try
             {
-                
-                // Decrypt ID
-                var fileStorageId = long.Parse(EncryptionHelper.Decrypt(fileStorageIdEncrypted));
 
                 // Retrieve record
                 var fileRecord = await _storageGetTools.GetTblFileStorage(fileStorageId);

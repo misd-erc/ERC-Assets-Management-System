@@ -92,7 +92,7 @@ namespace API.Controllers
                     CreatedAt = x.CreatedAt
                 }).ToList();
 
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed offices", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed offices", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<OfficeResponseModel>.OkPaginated(
                     officesResponses,
                     model.PageNumber,
@@ -113,7 +113,6 @@ namespace API.Controllers
         [HttpGet("all/{officeId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        [DecodeRouteParameter(nameof(officeId))]
         public async Task<IActionResult> GetOfficeByOfficeId([FromQuery] SoloQueryParams model, [FromRoute] long officeId)
         {
             try
@@ -130,7 +129,7 @@ namespace API.Controllers
                     CreatedAt = office.CreatedAt
                 };
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed office information for office {officeId}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed office information for office {officeId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<DivisionResponseModel>.Ok(newOfficeResponse, "Office have been retrieved"));
 
             }
@@ -190,7 +189,7 @@ namespace API.Controllers
                     CreatedAt = x.CreatedAt
                 }).ToList();
 
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed divisions", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed divisions", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<VwDivisionResponseModel>.OkPaginated(
                     divisionsResponses,
                     model.PageNumber,
@@ -211,7 +210,6 @@ namespace API.Controllers
         [HttpGet("division/all/{divisionId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        [DecodeRouteParameter(nameof(divisionId))]
         public async Task<IActionResult> GetDivisionByDivisionId([FromQuery] SoloQueryParams model, [FromRoute] long divisionId)
         {
             try
@@ -231,7 +229,7 @@ namespace API.Controllers
                     CreatedAt = division.CreatedAt
                 };
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed division information for division {divisionId}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed division information for division {divisionId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<VwDivisionResponseModel>.Ok(divisionResponse, "Division have been retrieved"));
 
             }
@@ -278,7 +276,7 @@ namespace API.Controllers
 
                 List<TblEmploymentType?> officesResponses = employmentTypesList;
 
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed employment types", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed employment types", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<TblEmploymentType?>.OkPaginated(
                     officesResponses,
                     model.PageNumber,
@@ -299,7 +297,6 @@ namespace API.Controllers
         [HttpGet("employment-type/all/{employmentTypeId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        [DecodeRouteParameter(nameof(employmentTypeId))]
         public async Task<IActionResult> GetAllEmploymentTypeByEmploymentTypeId([FromQuery] SoloQueryParams model, [FromRoute] long employmentTypeId)
         {
             try
@@ -307,7 +304,7 @@ namespace API.Controllers
 
                 TblEmploymentType? employmentType = await _officeGetTools.GetTblEmploymentType(employmentTypeId);
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed employment type information for employment type {employmentTypeId}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed employment type information for employment type {employmentTypeId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<TblEmploymentType>.Ok(employmentType, "Employment type have been retrieved"));
             }
             catch (Exception ex)
@@ -355,7 +352,7 @@ namespace API.Controllers
 
                 List<TblPosition?> positionsResponses = positionsList;
 
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed positions", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed positions", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<TblPosition?>.OkPaginated(
                     positionsList,
                     model.PageNumber,
@@ -376,7 +373,6 @@ namespace API.Controllers
         [HttpGet("position/all/{positionId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        [DecodeRouteParameter(nameof(positionId))]
         public async Task<IActionResult> GetPositionByPositionId([FromQuery] SoloQueryParams model, [FromRoute] long positionId)
         {
             try
@@ -384,7 +380,7 @@ namespace API.Controllers
 
                 TblPosition? position = await _officeGetTools.GetTblPosition(positionId);
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed position information for position {positionId}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed position information for position {positionId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<TblPosition>.Ok(position, "Position have been retrieved"));
 
             }
@@ -414,10 +410,10 @@ namespace API.Controllers
 
                 TblOffice office = new()
                 {
-                    Id = string.IsNullOrEmpty(model.OfficeIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.OfficeIdEncrypted)),
-                    Name = EncryptionHelper.Decrypt(model.NameEncrypted),
-                    Acronym = EncryptionHelper.Decrypt(model.AcronymEncrypted),
-                    IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEncrypted))
+                    Id = model.OfficeId,
+                    Name = model.Name,
+                    Acronym = model.Acronym,
+                    IsActive = model.IsActive
                 };
 
                 long officeId = await _officeEditTools.EditTblOfficeAsync(office, context);
@@ -428,10 +424,11 @@ namespace API.Controllers
 
                 UserEncryptedPublicResponseModel publicRM = new()
                 {
-                    SystemUserIdEncrypted = model.ActionBySystemUserIdEncrypted
+                    SystemUserId = model.ActionBySystemUserId,
+                    SessionKey = model.SessionKey
                 };
 
-                return Ok(ApiResponse<object>.Ok(publicRM, $"Office has been {(string.IsNullOrEmpty(model.OfficeIdEncrypted) ? "added" : "updated")}"));
+                return Ok(ApiResponse<object>.Ok(publicRM, $"Office has been {(model.OfficeId == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
@@ -456,11 +453,11 @@ namespace API.Controllers
 
                 TblDivision division = new()
                 {
-                    Id = string.IsNullOrEmpty(model.DivisionIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.DivisionIdEncrypted)),
-                    Name = EncryptionHelper.Decrypt(model.NameEncrypted),
-                    Acronym = EncryptionHelper.Decrypt(model.AcronymEncrypted),
-                    OfficeId = string.IsNullOrEmpty(model.OfficeIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.OfficeIdEncrypted)),
-                    IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEnrypted))
+                    Id = model.DivisionId,
+                    Name = model.Name,
+                    Acronym = model.Acronym,
+                    OfficeId = model.OfficeId,
+                    IsActive = model.IsActive
                 };
 
                 long divisionId = await _officeEditTools.EditTblDivisionAsync(division, context);
@@ -471,10 +468,11 @@ namespace API.Controllers
 
                 UserEncryptedPublicResponseModel publicRM = new()
                 {
-                    SystemUserIdEncrypted = model.ActionBySystemUserIdEncrypted
+                    SystemUserId = model.ActionBySystemUserId,
+                    SessionKey = model.SessionKey
                 };
 
-                return Ok(ApiResponse<object>.Ok(publicRM, $"Division has been {(string.IsNullOrEmpty(model.DivisionIdEncrypted) ? "added" : "updated")}"));
+                return Ok(ApiResponse<object>.Ok(publicRM, $"Division has been {(model.DivisionId == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
@@ -499,9 +497,9 @@ namespace API.Controllers
 
                 TblEmploymentType employmentType = new()
                 {
-                    Id = string.IsNullOrEmpty(model.EmploymentTypeIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.EmploymentTypeIdEncrypted)),
-                    Name = EncryptionHelper.Decrypt(model.NameEncrypted),
-                    IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEncrypted))
+                    Id = model.EmploymentTypeId,
+                    Name = model.Name,
+                    IsActive = model.IsActive
                 };
 
                 long employmentTypeId = await _officeEditTools.EditTblEmploymentTypeAsync(employmentType, context);
@@ -512,10 +510,11 @@ namespace API.Controllers
 
                 UserEncryptedPublicResponseModel publicRM = new()
                 {
-                    SystemUserIdEncrypted = model.ActionBySystemUserIdEncrypted
+                    SystemUserId = model.ActionBySystemUserId,
+                    SessionKey = model.SessionKey
                 };
 
-                return Ok(ApiResponse<object>.Ok(publicRM, $"Employment type has been {(string.IsNullOrEmpty(model.EmploymentTypeIdEncrypted) ? "added" : "updated")}"));
+                return Ok(ApiResponse<object>.Ok(publicRM, $"Employment type has been {(model.EmploymentTypeId == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
@@ -540,11 +539,11 @@ namespace API.Controllers
 
                 TblPosition position = new()
                 {
-                    Id = string.IsNullOrEmpty(model.PositionIdEncrypted) ? 0 : long.Parse(EncryptionHelper.Decrypt(model.PositionIdEncrypted)),
-                    Name = EncryptionHelper.Decrypt(model.NameEncrypted),
-                    Acronym = EncryptionHelper.Decrypt(model.AcronymEncrypted),
-                    SalaryGrade = EncryptionHelper.Decrypt(model.SalaraGradeEncrypted),
-                    IsActive = bool.Parse(EncryptionHelper.Decrypt(model.IsActiveEncrypted))
+                    Id = model.PositionId,
+                    Name = model.Name,
+                    Acronym = model.Acronym,
+                    SalaryGrade = model.SalaraGrade,
+                    IsActive = model.IsActive
                 };
 
                 long positionId = await _officeEditTools.EditTblPositionAsync(position, context);
@@ -555,10 +554,11 @@ namespace API.Controllers
 
                 UserEncryptedPublicResponseModel publicRM = new()
                 {
-                    SystemUserIdEncrypted = model.ActionBySystemUserIdEncrypted
+                    SystemUserId = model.ActionBySystemUserId,
+                    SessionKey = model.SessionKey
                 };
 
-                return Ok(ApiResponse<object>.Ok(publicRM, $"Position has been {(string.IsNullOrEmpty(model.PositionIdEncrypted) ? "added" : "updated")}"));
+                return Ok(ApiResponse<object>.Ok(publicRM, $"Position has been {(model.PositionId == 0? "added" : "updated")}"));
 
             }
             catch (Exception ex)

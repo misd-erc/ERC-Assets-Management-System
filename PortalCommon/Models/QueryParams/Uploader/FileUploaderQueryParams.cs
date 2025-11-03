@@ -9,6 +9,7 @@ namespace PortalCommon.Models.QueryParams.Uploader
 {
     public class FileUploaderQueryParams
     {
-        [Required] public string ActionBySystemUserIdEncrypted { get; set; }
+        [Required] public long ActionBySystemUserId { get; set; }
+        [Required] public string SessionKey { get; set; } = string.Empty;
     }
 }

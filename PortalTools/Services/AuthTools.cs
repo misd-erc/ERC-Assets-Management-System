@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PortalDB.Entities.DBO.Account;
 using PortalDB.Services;
 using PortalTools.Services.DBO.Account;
 using System;
@@ -24,11 +25,17 @@ namespace PortalTools.Services
         /// Validates a session token for the specified system user ID.
         /// Returns true if valid, false otherwise.
         /// </summary>
-        public async Task<bool> ValidateSessionTokenInternally(long systemUserId)
+        public async Task<bool> ValidateSessionTokenInternally(long systemUserId, string sessionKey)
         {
             try
             {
-                bool isTokenValid = await _accountGetTools.ValidateTokenSessionBySystemUserIdAsync(systemUserId);
+                TblSessionToken sessionModel = new()
+                {
+                    Key = sessionKey,
+                    SystemUserId = systemUserId
+                };
+
+                bool isTokenValid = await _accountGetTools.ValidateTokenSessionAsync(sessionModel);
                 return isTokenValid;
             }
             catch (Exception ex)

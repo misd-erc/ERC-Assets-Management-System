@@ -8,6 +8,6 @@ namespace PortalCommon.Models.ResponseModels.Uploader
 {
     public class UploaderResponseModel
     {
-        public string? FileIdEncrypted { get; set; }
+        public long? FileId { get; set; }
     }
 }

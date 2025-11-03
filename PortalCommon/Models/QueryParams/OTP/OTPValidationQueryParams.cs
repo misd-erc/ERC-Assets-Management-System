@@ -9,7 +9,7 @@ namespace PortalCommon.Models.QueryParams.OTP
 {
     public class OTPValidationQueryParams
     {
-        [Required] public string OTPEncrypted { get; set; } = string.Empty;
-        [Required] public string SystemUserIdEncrypted { get; set; } = string.Empty;
+        [Required] public long OTP { get; set; }
+        [Required] public long SystemUserId { get; set; }
     }
 }

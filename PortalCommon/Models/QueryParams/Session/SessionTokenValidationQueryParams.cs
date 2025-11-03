@@ -9,7 +9,7 @@ namespace PortalCommon.Models.QueryParams.Session
 {
     public class SessionTokenValidationQueryParams
     {
-        [Required] public string SystemUserIdEncrypted { get; set; } = string.Empty;
-        [Required] public string KeyEncrypted { get; set; } = string.Empty;
+        [Required] public long SystemUserId { get; set; }
+        [Required] public string Key { get; set; } = string.Empty;
     }
 }

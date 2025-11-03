@@ -99,7 +99,7 @@ namespace API.Controllers
                     Date = x.ChangedAt
                 }).ToList();
 
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed audit trails", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed audit trails", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<AuditTrailResponseModel>.OkPaginated(
                     auditTrailResponses,
                     model.PageNumber,
@@ -115,17 +115,16 @@ namespace API.Controllers
             }
         }
 
-        // GET api/logs/audit-trail/systemUserIdEncrypted
-        [HttpGet("audit-trail/all/{systemUserIdEncrypted}")]
+        // GET api/logs/audit-trail/systemUserId
+        [HttpGet("audit-trail/all/{systemUserId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        [DecodeRouteParameter(nameof(systemUserIdEncrypted))]
-        public async Task<IActionResult> GetAllAuditTrailsBySystemUserId([FromQuery] PaginationGenericQueryParams model, [FromRoute] string systemUserIdEncrypted)
+        public async Task<IActionResult> GetAllAuditTrailsBySystemUserId([FromQuery] PaginationGenericQueryParams model, [FromRoute] long systemUserId)
         {
             try
             {
 
-                TblSystemUser? user = await _accountGetTools.GetTblSystemUser(long.Parse(EncryptionHelper.Decrypt(systemUserIdEncrypted)));
+                TblSystemUser? user = await _accountGetTools.GetTblSystemUser(systemUserId);
 
                 IQueryable<TblAuditTrail> auditTrailQuery = _logGetTools.GetTblAuditTrails().Where(x => x.ChangedBy == user.Id);
 
@@ -164,7 +163,7 @@ namespace API.Controllers
                     Date = x.ChangedAt
                 }).ToList();
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed audit trail for user {long.Parse(EncryptionHelper.Decrypt(systemUserIdEncrypted))}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed audit trail for user {systemUserId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<AuditTrailResponseModel>.OkPaginated(
                     auditTrailResponses,
                     model.PageNumber,
@@ -271,7 +270,7 @@ namespace API.Controllers
                     })
                 )).ToList();
 
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed activity logs", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed activity logs", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<ActivityResponseModel>.OkPaginated(
                     activityResponses,
                     model.PageNumber,
@@ -288,16 +287,13 @@ namespace API.Controllers
         }
 
         // GET api/logs/activities/all
-        [HttpGet("activities/all/{systemUserIdEncrypted}")]
+        [HttpGet("activities/all/{systemUserId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        [DecodeRouteParameter(nameof(systemUserIdEncrypted))]
-        public async Task<IActionResult> GetAllActivitiesBySystemUserId([FromQuery] PaginationGenericQueryParams model, [FromRoute] string systemUserIdEncrypted)
+        public async Task<IActionResult> GetAllActivitiesBySystemUserId([FromQuery] PaginationGenericQueryParams model, [FromRoute] long systemUserId)
         {
             try
             {
-
-                long systemUserId = long.Parse(EncryptionHelper.Decrypt(systemUserIdEncrypted));
 
                 IQueryable<TblActivityLog> activityLogQuery = _logGetTools
                     .GetTblActivityLogs()
@@ -372,7 +368,7 @@ namespace API.Controllers
                     })
                 )).ToList();
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed activity logs for user {systemUserId}", actionBy: long.Parse(EncryptionHelper.Decrypt(model.ActionBySystemUserIdEncrypted)));
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed activity logs for user {systemUserId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<ActivityResponseModel>.OkPaginated(
                     activityResponses,
                     model.PageNumber,
