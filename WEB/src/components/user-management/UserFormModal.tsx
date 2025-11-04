@@ -1,4 +1,4 @@
- import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { createUser, updateUser, editUser } from '../../api/userApi';
 import { User } from '../../types/user';
 import { toast } from 'sonner';
+import { useAuthStore } from '../../store/auth';
 
 
 interface UserFormModalProps {
@@ -79,18 +80,17 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
     try {
       if (user) {
         // Update existing user
-        const token = localStorage.getItem('systemUserIdEncrypted') || '';
+        const token = localStorage.getItem('ActionBySystemUserId') || '';
         const statusId = formData.status === 'Active' ? '0' : formData.status === 'Inactive' ? '1' : '2';
         await editUser({
-          systemUserIdEncrypted: token,
-          systemRoleIdEncrypted: formData.role || undefined,
-          officeIdEncrypted: formData.officeId || undefined,
-          divisionIdEncrypted: formData.divisionId || undefined,
-          employmentTypeIdEncrypted: formData.employmentTypeId || '0',
-          positionIdEncrypted: formData.positionId || '0',
-          statusIdEncrypted: statusId,
-          isActiveEncrypted: formData.status === 'Active' ? 'true' : 'false',
-          actionBySystemUserIdEncrypted: token
+          systemUserId: parseInt(user.id, 10),
+          systemRoleId: formData.role ? parseInt(formData.role, 10) : undefined,
+          officeId: formData.officeId ? parseInt(formData.officeId, 10) : undefined,
+          divisionId: formData.divisionId ? parseInt(formData.divisionId, 10) : undefined,
+          employmentTypeId: parseInt(formData.employmentTypeId || '0', 10),
+          positionId: parseInt(formData.positionId || '0', 10),
+          isActive: formData.status === 'Active',
+          actionBySystemUserId: parseInt(token, 10)
         });
         toast.success('User updated successfully');
       } else {

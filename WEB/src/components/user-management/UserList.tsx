@@ -68,9 +68,7 @@ export const UserList: React.FC<UserListProps> = ({
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { systemUserId } = useAuthStore.getState();
-      const token = systemUserId || '';
-      const response = await getUsers(token, currentPage);
+      const response = await getUsers(currentPage);
       setUsers(response.data.items);
       setTotalPages(response.data.totalPages);
     } catch (error: any) {
@@ -114,12 +112,18 @@ export const UserList: React.FC<UserListProps> = ({
 
   const handleChangeRole = async (userId: string, newRole: string) => {
     try {
-      const { systemUserId } = useAuthStore.getState();
-      const token = systemUserId || '';
+      const token = localStorage.getItem('systemUserId') || '';
+      const user = users.find(u => u.id === userId);
+      if (!user) {
+        toast.error('User not found');
+        return;
+      }
+
       await editUser({
-        systemUserIdEncrypted: userId,
-        systemRoleIdEncrypted: newRole,
-        actionBySystemUserIdEncrypted: token
+        systemUserId: parseInt(userId, 10),
+        systemRoleId: parseInt(newRole, 10),
+        isActive: user.status === 'Active',
+        actionBySystemUserId: parseInt(token, 10)
       });
       setUsers(users.map(user =>
         user.id === userId ? { ...user, systemRoleName: newRole } : user

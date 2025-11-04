@@ -43,6 +43,7 @@ export interface AuthState {
   loading: boolean;
   error: string;
   systemUserId?: string;
+  plainSystemUserId?: string;
 }
 
 export interface AuthActions {

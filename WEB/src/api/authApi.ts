@@ -29,24 +29,16 @@ export interface EditUserPayload {
   actionBySystemUserId: string;
 }
 
-export const getUserDetails = async (systemUserId: string, actionBySystemUserId: string): Promise<UserDetails> => {
+export const getUserDetails = async (): Promise<UserDetails> => {
   // Retrieve tokens directly from localStorage to ensure we use the latest synced values
-  const currentSystemId = localStorage.getItem('systemUserId');
-  const currentActionId = localStorage.getItem('ActionBySystemUserIdEncrypted');
+  const currentSystemId = String(localStorage.getItem('systemUserId'));
 
-  // Use localStorage values if available, fallback to passed parameters
-  const finalSystemId = currentSystemId || systemUserId;
-  const finalActionId = currentActionId || actionBySystemUserId;
 
-  // Debug: Log both tokens and assert equality
-  console.log('[AuthAPI] getUserDetails - systemUserId:', finalSystemId);
-  console.log('[AuthAPI] getUserDetails - ActionBySystemUserIdEncrypted:', finalActionId);
-
-  if (finalSystemId !== finalActionId) {
+  if (currentSystemId !== currentSystemId) {
     console.warn('[AuthAPI] Token mismatch detected! Syncing before API call.');
     // Auto-correct by syncing them
-    if (finalActionId) {
-      localStorage.setItem('systemUserId', finalActionId);
+    if (currentSystemId) {
+      localStorage.setItem('systemUserId', currentSystemId);
       console.log('[AuthAPI] Synced systemUserId with ActionBySystemUserIdEncrypted');
     }
   }
@@ -55,7 +47,7 @@ export const getUserDetails = async (systemUserId: string, actionBySystemUserId:
   const sessionKey = localStorage.getItem('sessionToken') || '';
 
   const response = await axiosInstance.get<ApiResponse<UserDetails>>(
-    `/Users/all/${encodeURIComponent(finalSystemId)}?ActionBySystemUserId=${encodeURIComponent(finalActionId)}&SessionKey=${encodeURIComponent(sessionKey)}`
+    `/Users/all/${encodeURIComponent(currentSystemId)}?ActionBySystemUserId=${encodeURIComponent(currentSystemId)}&SessionKey=${encodeURIComponent(sessionKey)}`
   );
 
   // Check for invalid session

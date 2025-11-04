@@ -5,6 +5,7 @@ import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import {
   Mail,
   Phone,
@@ -17,24 +18,22 @@ import {
   Save,
   X,
   Camera,
-  Loader2
+  Loader2,
+  Eye
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useAuthStore } from '../../store/auth';
-import { editUserProfile } from '../../api/authApi';
-import { getUserAuditTrail, getUserPhoto } from '../../api/userApi';
+import { getUserPhoto } from '../../api/userApi';
 import { getActivities, getAuditTrail } from '../../api/auditApi';
-import { ActivityItem } from '../../types/audit';
-import { uploadProfilePicture, retrieveFile } from '../../api/uploadApi';
+import { ActivityItem, AuditTrailItem } from '../../types/audit';
+import { uploadProfilePicture } from '../../api/uploadApi';
 import { getUserDetails } from '../../api/authApi';
-import { timeAgo } from '../../utils/dateUtils';
-import { AuditTrailItem } from '../../types/audit';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { decrypt } from '../../utils/encryption';
+import { encrypt, decrypt } from '../../utils/encryption';
 
 
-export const MyProfile = React.memo(() => {
+export const MyProfile = () => {
   const { systemUserId } = useAuthStore();
   const [userDetails, setUserDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +50,7 @@ export const MyProfile = React.memo(() => {
   React.useEffect(() => {
     const loadUserDetails = async () => {
       const stored = localStorage.getItem('userDetails');
-      const token = localStorage.getItem('ActionBySystemUserIdEncrypted');
+      const token = localStorage.getItem('sessionToken');
 
       if (!stored) {
         setLoading(false);
@@ -65,8 +64,9 @@ export const MyProfile = React.memo(() => {
 
         if (parsed?.profilePictureStorageFileId && token) {
           const fileIdEncrypted = String(parsed.profilePictureStorageFileId);
+          const userId = parsed?.id || systemUserId;
           console.log('[MyProfile] Loading profile picture from localStorage');
-          const photoResponse = await getUserPhoto(fileIdEncrypted, token);
+          const photoResponse = await getUserPhoto(fileIdEncrypted, userId);
           const imageUrl = URL.createObjectURL(photoResponse.data);
           setProfilePictureUrl(imageUrl);
           console.log('[MyProfile] Profile picture loaded from localStorage');
@@ -95,6 +95,11 @@ export const MyProfile = React.memo(() => {
   const [auditTrailPage, setAuditTrailPage] = useState(1);
   const [auditTrailTotalPages, setAuditTrailTotalPages] = useState(1);
 
+  // Modal state for viewing details
+  const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
+  const [selectedAuditTrail, setSelectedAuditTrail] = useState<AuditTrailItem | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
 
 
   // Fetch data on tab switch to activity or auditTrail
@@ -114,7 +119,8 @@ export const MyProfile = React.memo(() => {
   }, [auditTrailPage]);
 
   const fetchActivities = async () => {
-    if (!systemUserId) {
+    const userId = systemUserId || localStorage.getItem('systemUserId');
+    if (!userId) {
       setActivityError('User ID not available');
       return;
     }
@@ -122,7 +128,7 @@ export const MyProfile = React.memo(() => {
     setActivityLoading(true);
     setActivityError(null);
     try {
-      const response = await getActivities(systemUserId, sessionKey, activityPage, 10);
+      const response = await getActivities(userId, sessionKey, activityPage, 10);
       if (response.success) {
         setActivityLogs(response.data.items);
         setActivityTotalPages(response.data.totalPages);
@@ -138,7 +144,8 @@ export const MyProfile = React.memo(() => {
   };
 
   const fetchAuditTrailForAuditTab = async () => {
-    if (!systemUserId) {
+    const userId = systemUserId || localStorage.getItem('systemUserId');
+    if (!userId) {
       setAuditTrailError('User ID not available');
       return;
     }
@@ -146,7 +153,7 @@ export const MyProfile = React.memo(() => {
     setAuditTrailLoading(true);
     setAuditTrailError(null);
     try {
-      const response = await getAuditTrail(systemUserId, sessionKey, auditTrailPage, 10);
+      const response = await getAuditTrail(userId, sessionKey, auditTrailPage, 10);
       if (response.success) {
         setAuditTrailLogs(response.data.items);
         setAuditTrailTotalPages(response.data.totalPages);
@@ -207,16 +214,19 @@ export const MyProfile = React.memo(() => {
       return;
     }
 
-    if (!systemUserId) return;
+    const id = systemUserId || localStorage.getItem("systemUserId");
+    if (!id) { toast.error("User ID missing — please re-login."); return; }
 
     setUploadingPicture(true);
+    console.log("[MyProfile] Uploading profile picture...");
     try {
-      const fileStorageIdEncrypted = await uploadProfilePicture(file, systemUserId, systemUserId);
-      const photoResponse = await getUserPhoto(fileStorageIdEncrypted, systemUserId);
+      const token = localStorage.getItem("sessionToken") || localStorage.getItem("sessionKey");
+      const fileStorageId = await uploadProfilePicture(file, id, String(token));
+      const photoResponse = await getUserPhoto(fileStorageId, id);
       const newUrl = URL.createObjectURL(photoResponse.data);
 
       // Update localStorage userDetails by calling getUserDetails
-      const updatedDetails = await getUserDetails(systemUserId, systemUserId);
+      const updatedDetails = await getUserDetails();
       localStorage.setItem('userDetails', JSON.stringify(updatedDetails));
 
       // Update profilePictureId in localStorage with the new data
@@ -251,11 +261,30 @@ export const MyProfile = React.memo(() => {
     });
   };
 
+  // Modal handlers
+  const openActivityModal = (activity: ActivityItem) => {
+    setSelectedActivity(activity);
+    setSelectedAuditTrail(null);
+    setIsModalOpen(true);
+  };
+
+  const openAuditTrailModal = (auditTrail: AuditTrailItem) => {
+    setSelectedAuditTrail(auditTrail);
+    setSelectedActivity(null);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedActivity(null);
+    setSelectedAuditTrail(null);
+  };
+
 
 
   if (loading) {
-    return (
-      <div className="pl-64 pt-16 space-y-8">
+  return (
+    <div className="pl-64 pt-16 space-y-8">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-gray-900">My Profile</h1>
           <p className="text-sm text-gray-500 mt-1">Loading profile information...</p>
@@ -312,7 +341,7 @@ export const MyProfile = React.memo(() => {
                         variant="outline"
                         size="sm"
                         className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0 bg-white border-2 border-white shadow-md hover:bg-gray-50"
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                         disabled={uploadingPicture}
                       >
                         {uploadingPicture ? (
@@ -328,6 +357,7 @@ export const MyProfile = React.memo(() => {
                   </Tooltip>
                 </TooltipProvider>
                 <input
+                  id="profilePictureInput"
                   type="file"
                   ref={fileInputRef}
                   onChange={handleProfilePictureUpload}
@@ -349,7 +379,7 @@ export const MyProfile = React.memo(() => {
                         variant="ghost"
                         size="sm"
                         className="mt-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-0 h-auto font-normal"
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
                         disabled={uploadingPicture}
                       >
                         {uploadingPicture ? (
@@ -544,6 +574,7 @@ export const MyProfile = React.memo(() => {
                         <TableHead>Action</TableHead>
                         <TableHead>Action By</TableHead>
                         <TableHead>Date & Time</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -552,6 +583,17 @@ export const MyProfile = React.memo(() => {
                           <TableCell>{log.action}</TableCell>
                           <TableCell>{log.actionBy}</TableCell>
                           <TableCell>{formatDate(log.createdAt, 'Month DD, YYYY HH:mm')}</TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openActivityModal(log)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              View Details
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -626,6 +668,7 @@ export const MyProfile = React.memo(() => {
                         <TableHead>Action By</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Changes</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -647,6 +690,17 @@ export const MyProfile = React.memo(() => {
                             ) : (
                               <span className="text-gray-500">No changes</span>
                             )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openAuditTrailModal(log)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              View Details
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -685,7 +739,96 @@ export const MyProfile = React.memo(() => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Details Modal */}
+      <Dialog open={isModalOpen} onOpenChange={closeModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{selectedActivity ? 'Activity Details' : 'Audit Trail Details'}</DialogTitle>
+          </DialogHeader>
+          {selectedActivity && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Activity ID</Label>
+                  <p className="text-gray-900">{selectedActivity.activityId}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Action</Label>
+                  <p className="text-gray-900">{selectedActivity.action}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Action By</Label>
+                  <p className="text-gray-900">{selectedActivity.actionBy}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Created At</Label>
+                  <p className="text-gray-900">{formatDate(selectedActivity.createdAt, 'Month DD, YYYY HH:mm')}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Audit Trail ID</Label>
+                  <p className="text-gray-900">{selectedActivity.auditTrailId || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Action By System User ID</Label>
+                  <p className="text-gray-900">{selectedActivity.actionBySystemUserId}</p>
+                </div>
+              </div>
+              {selectedActivity.auditTrail && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Audit Trail Details</Label>
+                  <pre className="text-sm text-gray-600 bg-gray-50 p-2 rounded mt-1 overflow-auto">
+                    {JSON.stringify(selectedActivity.auditTrail, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
+          {selectedAuditTrail && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Table</Label>
+                  <p className="text-gray-900">{selectedAuditTrail.table}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Record ID</Label>
+                  <p className="text-gray-900">{selectedAuditTrail.recordId}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Action</Label>
+                  <p className="text-gray-900">{selectedAuditTrail.action}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Action By</Label>
+                  <p className="text-gray-900">{selectedAuditTrail.actionBy}</p>
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-sm font-medium text-gray-700">Date</Label>
+                  <p className="text-gray-900">{formatDate(selectedAuditTrail.date, 'Month DD, YYYY HH:mm')}</p>
+                </div>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-gray-700">Changes</Label>
+                {selectedAuditTrail.changes.length > 0 ? (
+                  <div className="mt-2 space-y-2">
+                    {selectedAuditTrail.changes.map((change, idx) => (
+                      <div key={idx} className="bg-gray-50 p-3 rounded border">
+                        <div className="font-medium text-gray-900">{change.field}</div>
+                        <div className="text-sm text-red-600">Old: {change.oldValue}</div>
+                        <div className="text-sm text-green-600">New: {change.newValue}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 mt-1">No changes recorded</p>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
-});
+};
 

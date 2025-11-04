@@ -41,7 +41,7 @@ export const useUserProfile = () => {
 
       // Fetch from API if not in localStorage
       console.log('[useUserProfile] Fetching from API...');
-      const data = await getUserDetails(token, token);
+      const data = await getUserDetails();
 
       if (isMounted) {
         // Include profilePictureId from separate localStorage key
@@ -80,7 +80,7 @@ export const useUserProfile = () => {
     
     try {
       console.log('[useUserProfile] Refreshing profile...');
-      const data = await getUserDetails(token, token);
+      const data = await getUserDetails();
       localStorage.setItem('userProfile', JSON.stringify(data));
       setUserProfile(data);
       console.log('[useUserProfile] Profile refreshed successfully');

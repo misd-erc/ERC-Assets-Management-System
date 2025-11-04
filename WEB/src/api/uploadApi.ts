@@ -7,13 +7,13 @@ export interface UploadProfilePictureResponse {
 
 export const uploadProfilePicture = async (
   file: File,
-  systemUserIdEncrypted: string,
-  actionBySystemUserIdEncrypted: string
+  userId: string,
+  token: string
 ): Promise<string> => {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('systemUserIdEncrypted', systemUserIdEncrypted);
-  formData.append('actionBySystemUserIdEncrypted', actionBySystemUserIdEncrypted);
+  formData.append('ActionBySystemUserId ', userId);
+  formData.append('SessionKey', token);
 
   const response = await axiosInstance.post(
     '/Storage/upload/user/profile-picture',

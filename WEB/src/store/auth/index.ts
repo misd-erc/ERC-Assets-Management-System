@@ -15,6 +15,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   loading: false,
   error: '',
   systemUserId: undefined,
+  plainSystemUserId: undefined,
 
   // Initialize auth state on app start
   initialize: async () => {
@@ -38,7 +39,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         if (!storedUserDetails && session.systemUserId) {
           console.log('[AuthStore] Fetching user details...');
           // Fetch user details if not present
-          const userDetails = await getUserDetails(session.systemUserId, session.systemUserId);
+          const userDetails = await getUserDetails();
           const encryptedUserDetails = encrypt(JSON.stringify(userDetails));
           localStorage.setItem('userDetails', encryptedUserDetails);
         }
@@ -122,7 +123,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const result = await validateOTP(systemUserId, code);
 
       // Fetch and store user details
-      const userDetails = await getUserDetails(result.systemUserId, result.systemUserId);
+      const userDetails = await getUserDetails();
       const encryptedUserDetails = encrypt(JSON.stringify(userDetails));
       localStorage.setItem('userDetails', encryptedUserDetails);
 
@@ -162,7 +163,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         user: updatedUser,
         token: sessionToken, // Store session token in state
         requireMFA: false,
-        loading: false
+        loading: false,
+        plainSystemUserId: result.systemUserId
       });
 
       return true;
