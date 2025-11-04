@@ -15,8 +15,11 @@ export interface UserListResponse {
 }
 
 export const getUsers = async (token: string, page: number = 1, pageSize: number = 10): Promise<UserListResponse> => {
+  // Get session key from localStorage
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
   const response = await axiosInstance.get<UserListResponse>(
-    `/Users/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}&pageNumber=${page}&pageSize=${pageSize}`
+    `/Users/all?ActionBySystemUserId=${encodeURIComponent(token)}&SessionKey=${encodeURIComponent(sessionKey)}&pageNumber=${page}&pageSize=${pageSize}`
   );
 
   // Map API response to User type
@@ -63,7 +66,7 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
   // return response.data;
 
   // Mock implementation
-  const token = localStorage.getItem('systemUserIdEncrypted') || '';
+  const token = localStorage.getItem('systemUserId') || '';
   const response = await getUsers(token);
   const user = response.data.items.find(u => u.id === id);
   if (!user) throw new Error('User not found');
@@ -107,8 +110,8 @@ export const validateUserSession = async (actionBySystemUserIdEncrypted: string)
  * @param pageSize - Number of items per page (default: 10)
  * @returns Promise<AuditTrailResponse>
  */
-export const getUserAuditTrail = async (systemUserIdEncrypted: string, page: number = 1, pageSize: number = 10) => {
-  return getAuditTrail(systemUserIdEncrypted, page, pageSize);
+export const getUserAuditTrail = async (systemUserIdEncrypted: string, sessionKey: string, page: number = 1, pageSize: number = 10) => {
+  return getAuditTrail(systemUserIdEncrypted, sessionKey, page, pageSize);
 };
 
 export const editUser = async (payload: {
@@ -180,18 +183,24 @@ export const getSystemRoles = async (token: string): Promise<SystemRole[]> => {
  * @returns Axios promise for user details
  */
 export const getCurrentUserDetails = async (systemUserIdEncrypted: string, token: string) => {
-  return axiosInstance.get(`/Users/all/${encodeURIComponent(systemUserIdEncrypted)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`);
+  // Get session key from localStorage
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
+  return axiosInstance.get(`/Users/all/${encodeURIComponent(systemUserIdEncrypted)}?ActionBySystemUserId=${encodeURIComponent(token)}&SessionKey=${encodeURIComponent(sessionKey)}`);
 };
 
 /**
  * Retrieve user profile picture
- * @param fileIdEncrypted - The encrypted file storage ID
+ * @param fileId - The file storage ID (not encrypted)
  * @param token - The action by system user ID encrypted (token)
  * @returns Promise with blob response for the profile picture
  */
-export const getUserPhoto = async (fileIdEncrypted: string, token: string) => {
+export const getUserPhoto = async (fileId: string, token: string) => {
+  // Get session key from localStorage
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
   const response = await axiosInstance.get(
-    `/Storage/retrieve/${encodeURIComponent(fileIdEncrypted)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`,
+    `/Storage/retrieve/${fileId}?ActionBySystemUserId=${encodeURIComponent(token)}&SessionKey=${encodeURIComponent(sessionKey)}`,
     { responseType: 'blob' }
   );
   return response;

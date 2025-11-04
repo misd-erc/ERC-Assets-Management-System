@@ -1,7 +1,12 @@
-# TODO: Remove Encrypted Fields from Auth API
+# Session Expiration Fix on Page Refresh
+
+## Problem
+On page refresh, the app only checks for token presence but not expiration. Users with expired sessions are not redirected to login immediately.
+
+## Solution
+Modify ProtectedRoute component to check session expiration and redirect if expired.
 
 ## Tasks
-- [x] Update src/types/auth/index.ts: Rename UserEncryptedPublicViewModel to UserPublicViewModel and remove "Encrypted" from field names
-- [x] Update src/api/authApi.ts: Change all function parameters, variables, localStorage keys, and API calls to use plain names (remove "Encrypted" suffix)
-- [x] Update src/store/auth/index.ts: Fix references to systemUserIdEncrypted
-- [x] Verify changes compile and no references are broken
+- [x] Add utility function to check if session is expired
+- [x] Modify ProtectedRoute component to check expiration
+- [ ] Test the fix

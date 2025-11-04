@@ -6,14 +6,22 @@ import { MFAVerification } from './components/auth/MFAVerification';
 import { MainLayout } from './components/layout/MainLayout';
 import { Toaster } from './components/ui/sonner';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
-import { isSessionValid } from './utils/sessionUtils';
+import { isSessionValid, isSessionExpired, handleSessionExpired } from './utils/sessionUtils';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, requireMFA } = useAuthStore();
+  const { requireMFA } = useAuthStore();
   const hasValidSession = isSessionValid();
+  const isExpired = isSessionExpired();
 
-  console.log('[ProtectedRoute] Auth check:', { isAuthenticated, requireMFA, hasValidSession });
+  console.log('[ProtectedRoute] Auth check:', { requireMFA, hasValidSession, isExpired });
+
+  // If session is expired, handle expiration and redirect
+  if (isExpired) {
+    console.log('[ProtectedRoute] Session expired, handling expiration');
+    handleSessionExpired('Your session has expired. Please log in again.');
+    return <Navigate to="/" replace />;
+  }
 
   // If no valid session token, redirect to login
   if (!hasValidSession) {
@@ -27,13 +35,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/mfa" replace />;
   }
 
-  // If not authenticated, redirect to login
-  if (!isAuthenticated) {
-    console.log('[ProtectedRoute] Not authenticated, redirecting to login');
-    return <Navigate to="/" replace />;
-  }
-
-  // All checks passed, render the protected content
+  // Session is valid and not expired, allow access
+  // The auth store will handle authentication state internally
   return <>{children}</>;
 }
 

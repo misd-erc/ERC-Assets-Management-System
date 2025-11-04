@@ -25,6 +25,7 @@ export interface UserPublicViewModel {
   lastName?: string;
   email?: string;
   expiryToken?: string;
+  sessionKey?: string;
 }
 
 export interface ApiResponse<T> {

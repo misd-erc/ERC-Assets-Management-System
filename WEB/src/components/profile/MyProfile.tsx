@@ -31,6 +31,7 @@ import { timeAgo } from '../../utils/dateUtils';
 import { AuditTrailItem } from '../../types/audit';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { decrypt } from '../../utils/encryption';
 
 
 export const MyProfile = React.memo(() => {
@@ -58,7 +59,8 @@ export const MyProfile = React.memo(() => {
       }
 
       try {
-        const parsed = JSON.parse(stored);
+        const decrypted = decrypt(stored);
+        const parsed = JSON.parse(decrypted);
         setUserDetails(parsed);
 
         if (parsed?.profilePictureStorageFileId && token) {
@@ -116,10 +118,11 @@ export const MyProfile = React.memo(() => {
       setActivityError('User ID not available');
       return;
     }
+    const sessionKey = localStorage.getItem('sessionToken') || '';
     setActivityLoading(true);
     setActivityError(null);
     try {
-      const response = await getActivities(systemUserId, activityPage, 10);
+      const response = await getActivities(systemUserId, sessionKey, activityPage, 10);
       if (response.success) {
         setActivityLogs(response.data.items);
         setActivityTotalPages(response.data.totalPages);
@@ -139,10 +142,11 @@ export const MyProfile = React.memo(() => {
       setAuditTrailError('User ID not available');
       return;
     }
+    const sessionKey = localStorage.getItem('sessionToken') || '';
     setAuditTrailLoading(true);
     setAuditTrailError(null);
     try {
-      const response = await getAuditTrail(systemUserId, auditTrailPage, 10);
+      const response = await getAuditTrail(systemUserId, sessionKey, auditTrailPage, 10);
       if (response.success) {
         setAuditTrailLogs(response.data.items);
         setAuditTrailTotalPages(response.data.totalPages);

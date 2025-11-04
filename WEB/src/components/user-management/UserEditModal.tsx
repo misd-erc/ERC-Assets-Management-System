@@ -86,7 +86,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const fetchDropdownData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('ActionBySystemUserIdEncrypted') || '';
+      const token = localStorage.getItem('ActionBySystemUserId') || '';
 
       const [officesData, divisionsData, employmentTypesData, positionsData, rolesData] = await Promise.all([
         getOffices(token),
@@ -114,7 +114,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
     try {
       setSaving(true);
-      const token = localStorage.getItem('ActionBySystemUserIdEncrypted') || '';
+      const token = localStorage.getItem('ActionBySystemUserId') || '';
 
       const statusId = formData.isActive ? '0' : '1'; // 0 for Active, 1 for Inactive
 

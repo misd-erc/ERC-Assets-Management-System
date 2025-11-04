@@ -32,9 +32,12 @@ export const uploadProfilePicture = async (
   return response.data.data.fileIdEncrypted as string;
 };
 
-export const retrieveFile = async (fileStorageIdEncrypted: string): Promise<string> => {
+export const retrieveFile = async (fileStorageId: string, token: string): Promise<string> => {
+  // Get session key from localStorage
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
   const response = await axiosInstance.get(
-    `/Storage/retrieve/${encodeURIComponent(fileStorageIdEncrypted)}`,
+    `/Storage/retrieve/${fileStorageId}?ActionBySystemUserId=${encodeURIComponent(token)}&SessionKey=${encodeURIComponent(sessionKey)}`,
     {
       responseType: 'blob', // Assuming the response is a blob for the image
     }
