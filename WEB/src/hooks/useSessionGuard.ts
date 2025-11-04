@@ -38,7 +38,7 @@ export const useSessionGuard = (validateWithBackend: boolean = false) => {
           console.log('[SessionGuard] Validating token with backend...');
           
           // Call the Users/all API to validate the token
-          await getUserDetails(token, token);
+          await getUserDetails();
           
           console.log('[SessionGuard] Token validated successfully');
           setIsValid(true);

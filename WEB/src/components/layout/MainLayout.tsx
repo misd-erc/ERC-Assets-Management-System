@@ -26,11 +26,20 @@ export function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
 
+  // Sync activeModule with location changes
+  useEffect(() => {
+    if (location.pathname === '/profile') {
+      setActiveModule('profile');
+    } else if (location.pathname === '/dashboard') {
+      setActiveModule('dashboard');
+    }
+  }, [location.pathname]);
+
   // Sync navigation when activeModule changes
   useEffect(() => {
     if (activeModule === 'profile') {
       navigate('/profile');
-    } else {
+    } else if (activeModule === 'dashboard') {
       navigate('/dashboard');
     }
   }, [activeModule, navigate]);

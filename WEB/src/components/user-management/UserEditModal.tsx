@@ -19,6 +19,7 @@ import {
 import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
 import { User, Office, Division, EmploymentType, Position, SystemRole } from '../../types/user';
+import { useAuthStore } from '../../store/auth';
 import {
   getOffices,
   getDivisions,
@@ -27,7 +28,7 @@ import {
   getSystemRoles,
   editUser
 } from '../../api/userApi';
-import { encrypt } from '../../utils/encryption';
+
 
 
 interface UserEditModalProps {
@@ -86,14 +87,13 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const fetchDropdownData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('ActionBySystemUserIdEncrypted') || '';
 
       const [officesData, divisionsData, employmentTypesData, positionsData, rolesData] = await Promise.all([
-        getOffices(token),
-        getDivisions(token),
-        getEmploymentTypes(token),
-        getPositions(token),
-        getSystemRoles(token),
+        getOffices(),
+        getDivisions(),
+        getEmploymentTypes(),
+        getPositions(),
+        getSystemRoles(),
       ]);
 
       setOffices(officesData);
@@ -114,20 +114,19 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
     try {
       setSaving(true);
-      const token = localStorage.getItem('ActionBySystemUserIdEncrypted') || '';
+      const token = localStorage.getItem('systemUserId') || '';
 
       const statusId = formData.isActive ? '0' : '1'; // 0 for Active, 1 for Inactive
 
       const payload = {
-        systemUserIdEncrypted: token,
-        systemRoleIdEncrypted: formData.roleId ? encrypt(formData.roleId) : undefined,
-        officeIdEncrypted: formData.officeId ? encrypt(formData.officeId) : undefined,
-        divisionIdEncrypted: formData.divisionId ? encrypt(formData.divisionId) : undefined,
-        employmentTypeIdEncrypted: encrypt(formData.employmentTypeId),
-        positionIdEncrypted: encrypt(formData.positionId),
-        statusIdEncrypted: encrypt(statusId),
-        isActiveEncrypted: encrypt(formData.isActive ? "1" : "0"),
-        actionBySystemUserIdEncrypted: token,
+        systemUserId: parseInt(selectedUser.id, 10),
+        systemRoleId: formData.roleId ? parseInt(formData.roleId, 10) : undefined,
+        officeId: formData.officeId ? parseInt(formData.officeId, 10) : undefined,
+        divisionId: formData.divisionId ? parseInt(formData.divisionId, 10) : undefined,
+        employmentTypeId: parseInt(formData.employmentTypeId, 10),
+        positionId: parseInt(formData.positionId, 10),
+        isActive: formData.isActive,
+        actionBySystemUserId: parseInt(token, 10),
       };
 
       await editUser(payload);

@@ -1,12 +1,10 @@
-# TODO: Modernize UserDetailsDrawer Design
+# Fix getUserPhoto() Issue in ProfileDropdown.tsx
 
 ## Tasks
-- [x] Import Card component from UI library
-- [x] Enhance header section: Wrap in Card with shadow and rounded corners, style avatar with gradient background and border, refine status/role badges for polished look
-- [x] Improve details section: Style each info item as distinct blocks with better spacing, subtle backgrounds, and improved typography
-- [x] Adjust overall layout: Increase padding, use consistent spacing, add subtle shadows and modern borders, ensure responsive design
-- [x] Refine colors and themes: Use professional neutral colors (grays, subtle blues) for better contrast and aesthetics
-- [x] Adjust typography: Improve font weights and sizes for clear hierarchy
-
-## Followup Steps
-- [x] Run the app to verify the design visually in the browser
+- [ ] 1. Correct token key references in ProfileDropdown.tsx (change 'sessionKey' to 'sessionToken')
+- [ ] 2. Remove all obsolete decrypt() calls (replace decrypt(stored) with stored, JSON.parse(decrypted) with JSON.parse(stored))
+- [ ] 3. Update getUserPhoto() call to use correct parameters (change getUserPhoto(fileIdEncrypted, token) to getUserPhoto(fileId, systemUserId))
+- [ ] 4. Clean early-return condition (remove 'if (!stored || !token) return;')
+- [ ] 5. Add debug logs (add console.log for retrieving photo)
+- [ ] 6. Verify getUserPhoto() implementation in userApi.ts (already correct)
+- [ ] 7. Rebuild and test

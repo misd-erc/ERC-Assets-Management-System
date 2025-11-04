@@ -60,12 +60,17 @@ axiosInstance.interceptors.response.use(
     // Handle 401 Unauthorized - session expired or invalid token
     if (error.response?.status === 401 && !originalRequest._retry) {
       console.error('[Axios] Unauthorized access - token may be expired');
-      
-      // Clear session and redirect to login
-      handleSessionExpired('Your session has expired. Please log in again.');
-      
+
+      // Skip redirect for user list API to prevent logout on user management page
+      const isUserListApi = originalRequest.url?.includes('/Users/all');
+
+      if (!isUserListApi) {
+        // Clear session and redirect to login for other APIs
+        handleSessionExpired('Your session has expired. Please log in again.');
+      }
+
       return Promise.reject(error);
-    } 
+    }
     
     // Handle 403 Forbidden
     else if (error.response?.status === 403) {

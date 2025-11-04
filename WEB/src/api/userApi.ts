@@ -14,9 +14,13 @@ export interface UserListResponse {
   };
 }
 
-export const getUsers = async (token: string, page: number = 1, pageSize: number = 10): Promise<UserListResponse> => {
+export const getUsers = async (page: number = 1, pageSize: number = 10): Promise<UserListResponse> => {
+  // Get system user ID and session key from localStorage
+  const systemUserId = localStorage.getItem('systemUserId') || '';
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
   const response = await axiosInstance.get<UserListResponse>(
-    `/Users/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}&pageNumber=${page}&pageSize=${pageSize}`
+    `/Users/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}&pageNumber=${page}&pageSize=${pageSize}`
   );
 
   // Map API response to User type
@@ -63,8 +67,7 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
   // return response.data;
 
   // Mock implementation
-  const token = localStorage.getItem('systemUserIdEncrypted') || '';
-  const response = await getUsers(token);
+  const response = await getUsers();
   const user = response.data.items.find(u => u.id === id);
   if (!user) throw new Error('User not found');
   return { ...user, ...updates };
@@ -81,16 +84,15 @@ export const deleteUser = async (id: string): Promise<void> => {
  * Validate user session by calling the Users/all API
  * This is used to check if the token is still valid
  *
- * @param systemUserIdEncrypted - The encrypted system user ID (token)
  * @returns Promise<UserDetails> - User details if session is valid
  * @throws Error if session is invalid or expired
  */
-export const validateUserSession = async (actionBySystemUserIdEncrypted: string): Promise<UserDetails> => {
+export const validateUserSession = async (): Promise<UserDetails> => {
   console.log('[UserAPI] Validating session with token');
 
   try {
     // Call getUserDetails which internally calls /Users/all/{token}?ActionBySystemUserIdEncrypted={token}
-    const userDetails = await getUserDetails(actionBySystemUserIdEncrypted, actionBySystemUserIdEncrypted);
+    const userDetails = await getUserDetails();
 
     console.log('[UserAPI] Session validation successful');
     return userDetails;
@@ -102,61 +104,96 @@ export const validateUserSession = async (actionBySystemUserIdEncrypted: string)
 
 /**
  * Get audit trail for the current user
- * @param systemUserIdEncrypted - The encrypted system user ID (token)
  * @param page - Page number for pagination (default: 1)
  * @param pageSize - Number of items per page (default: 10)
  * @returns Promise<AuditTrailResponse>
  */
-export const getUserAuditTrail = async (systemUserIdEncrypted: string, page: number = 1, pageSize: number = 10) => {
-  return getAuditTrail(systemUserIdEncrypted, page, pageSize);
+export const getUserAuditTrail = async (page: number = 1, pageSize: number = 10) => {
+  // Get system user ID and session key from localStorage
+  const systemUserId = localStorage.getItem('systemUserId') || '';
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
+  return getAuditTrail(systemUserId, sessionKey, page, pageSize);
 };
 
 export const editUser = async (payload: {
-  systemUserIdEncrypted: string;
-  systemRoleIdEncrypted?: string;
-  officeIdEncrypted?: string;
-  divisionIdEncrypted?: string;
-  employmentTypeIdEncrypted?: string;
-  positionIdEncrypted?: string;
-  statusIdEncrypted?: string;
-  isActiveEncrypted?: string;
-  actionBySystemUserIdEncrypted: string;
+  systemUserId: number;
+  systemRoleId?: number;
+  officeId?: number;
+  divisionId?: number;
+  employmentTypeId?: number;
+  positionId?: number;
+  statusId?: number;
+  isActive: boolean;
+  actionBySystemUserId: number;
 }): Promise<{ message: string }> => {
-  const response = await axiosInstance.post<ApiResponse<any>>('/Users/edit', payload);
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
+  const requestPayload = {
+    model: {
+      systemUserId: payload.systemUserId,
+      systemRoleId: payload.systemRoleId,
+      officeId: payload.officeId,
+      divisionId: payload.divisionId,
+      employmentTypeId: payload.employmentTypeId,
+      positionId: payload.positionId,
+      statusId: payload.statusId,
+      isActive: payload.isActive,
+      actionBySystemUserId: payload.actionBySystemUserId,
+    },
+    sessionKey: sessionKey
+  };
+
+  const response = await axiosInstance.post<ApiResponse<any>>('/Users/edit', requestPayload);
   return { message: response.data.message };
 };
 
-export const getOffices = async (token: string): Promise<Office[]> => {
+export const getOffices = async (): Promise<Office[]> => {
+  // Get system user ID from localStorage
+  const systemUserId = localStorage.getItem('systemUserId') || '';
+const sessionKey = localStorage.getItem('sessionToken') || '';
   const response = await axiosInstance.get<{ data: { items: Office[] } }>(
-    `/Office/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`
+    `/Office/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
   );
   return Array.isArray(response.data.data.items) ? response.data.data.items : [];
 };
 
-export const getDivisions = async (token: string): Promise<Division[]> => {
+export const getDivisions = async (): Promise<Division[]> => {
+  // Get system user ID from localStorage
+  const systemUserId = localStorage.getItem('systemUserId') || '';
+const sessionKey = localStorage.getItem('sessionToken') || '';
   const response = await axiosInstance.get<{ data: { items: Division[] } }>(
-    `/Office/division/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`
+    `/Office/division/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
   );
   return Array.isArray(response.data.data.items) ? response.data.data.items : [];
 };
 
-export const getEmploymentTypes = async (token: string): Promise<EmploymentType[]> => {
+export const getEmploymentTypes = async (): Promise<EmploymentType[]> => {
+  // Get system user ID from localStorage
+  const systemUserId = localStorage.getItem('systemUserId') || '';
+const sessionKey = localStorage.getItem('sessionToken') || '';
   const response = await axiosInstance.get<{ data: { items: EmploymentType[] } }>(
-    `/Office/employment-type/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`
+    `/Office/employment-type/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
   );
   return Array.isArray(response.data.data.items) ? response.data.data.items : [];
 };
 
-export const getPositions = async (token: string): Promise<Position[]> => {
+export const getPositions = async (): Promise<Position[]> => {
+  // Get system user ID from localStorage
+  const systemUserId = localStorage.getItem('systemUserId') || '';
+const sessionKey = localStorage.getItem('sessionToken') || '';
   const response = await axiosInstance.get<{ data: { items: Position[] } }>(
-    `/Office/position/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`
+    `/Office/position/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
   );
   return Array.isArray(response.data.data.items) ? response.data.data.items : [];
 };
 
-export const getSystemRoles = async (token: string): Promise<SystemRole[]> => {
+export const getSystemRoles = async (): Promise<SystemRole[]> => {
+  // Get system user ID from localStorage
+  const systemUserId = localStorage.getItem('systemUserId') || '';
+const sessionKey = localStorage.getItem('sessionToken') || '';
   const response = await axiosInstance.get<{ data: { items: SystemRole[] } }>(
-    `/Users/system-role/all?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`
+    `/Users/system-role/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
   );
   return Array.isArray(response.data.data.items) ? response.data.data.items : [];
 };
@@ -168,18 +205,24 @@ export const getSystemRoles = async (token: string): Promise<SystemRole[]> => {
  * @returns Axios promise for user details
  */
 export const getCurrentUserDetails = async (systemUserIdEncrypted: string, token: string) => {
-  return axiosInstance.get(`/Users/all/${encodeURIComponent(systemUserIdEncrypted)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`);
+  // Get session key from localStorage
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
+  return axiosInstance.get(`/Users/all/${encodeURIComponent(systemUserIdEncrypted)}?ActionBySystemUserId=${encodeURIComponent(token)}&SessionKey=${encodeURIComponent(sessionKey)}`);
 };
 
 /**
  * Retrieve user profile picture
- * @param fileIdEncrypted - The encrypted file storage ID
- * @param token - The action by system user ID encrypted (token)
+ * @param fileId - The file storage ID (not encrypted)
+ * @param userId - The system user ID
  * @returns Promise with blob response for the profile picture
  */
-export const getUserPhoto = async (fileIdEncrypted: string, token: string) => {
+export const getUserPhoto = async (fileId: string, userId: string) => {
+  // Get session key from localStorage
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
   const response = await axiosInstance.get(
-    `/Storage/retrieve/${encodeURIComponent(fileIdEncrypted)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}`,
+    `/Storage/retrieve/${fileId}?ActionBySystemUserId=${encodeURIComponent(userId)}&SessionKey=${encodeURIComponent(sessionKey)}`,
     { responseType: 'blob' }
   );
   return response;

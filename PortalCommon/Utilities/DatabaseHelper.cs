@@ -11,6 +11,8 @@ namespace PortalCommon.Utilities
         public static string ConnectionString()
         {
             return EncryptionHelper.Decrypt(DatabaseConstants.MAIN_DATABASE);
+
+
         }
     }
 }

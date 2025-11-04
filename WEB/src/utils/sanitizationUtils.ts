@@ -4,8 +4,8 @@
  */
 
 /**
- * Sanitizes systemUserIdEncrypted by removing BOM (Byte Order Mark) character
- * @param id The systemUserIdEncrypted string to sanitize
+ * Sanitizes systemUserId by removing BOM (Byte Order Mark) character
+ * @param id The systemUserId string to sanitize
  * @returns The sanitized string with BOM removed
  */
 export const sanitizeSystemUserId = (id: string): string => {

@@ -1,6 +1,6 @@
 import axiosInstance from '../lib/axios';
-import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserEncryptedPublicViewModel, ApiResponse } from '../types';
-import { encrypt, decrypt } from '../utils/encryption';
+import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserPublicViewModel, ApiResponse } from '../types';
+
 import { guidToLongId } from '../utils/guidUtils';
 import { sanitizeSystemUserId } from '../utils/sanitizationUtils';
 
@@ -22,40 +22,32 @@ export interface UserDetails {
 }
 
 export interface EditUserPayload {
-  systemUserIdEncrypted: string;
+  systemUserId: string;
   firstName: string;
   lastName: string;
-  employeeIdEncrypted: string;
-  actionBySystemUserIdEncrypted: string;
+  employeeId: string;
+  actionBySystemUserId: string;
 }
 
-export const getUserDetails = async (systemUserIdEncrypted: string, actionBySystemUserIdEncrypted: string): Promise<UserDetails> => {
+export const getUserDetails = async (): Promise<UserDetails> => {
   // Retrieve tokens directly from localStorage to ensure we use the latest synced values
-  const currentSystemId = localStorage.getItem('systemUserIdEncrypted');
-  const currentActionId = localStorage.getItem('ActionBySystemUserIdEncrypted');
+  const currentSystemId = String(localStorage.getItem('systemUserId'));
 
-  // Use localStorage values if available, fallback to passed parameters
-  const finalSystemId = currentSystemId || systemUserIdEncrypted;
-  const finalActionId = currentActionId || actionBySystemUserIdEncrypted;
 
-  // Debug: Log both tokens and assert equality
-  console.log('[AuthAPI] getUserDetails - systemUserIdEncrypted:', finalSystemId);
-  console.log('[AuthAPI] getUserDetails - ActionBySystemUserIdEncrypted:', finalActionId);
-
-  if (finalSystemId !== finalActionId) {
+  if (currentSystemId !== currentSystemId) {
     console.warn('[AuthAPI] Token mismatch detected! Syncing before API call.');
     // Auto-correct by syncing them
-    if (finalActionId) {
-      localStorage.setItem('systemUserIdEncrypted', finalActionId);
-      console.log('[AuthAPI] Synced systemUserIdEncrypted with ActionBySystemUserIdEncrypted');
+    if (currentSystemId) {
+      localStorage.setItem('systemUserId', currentSystemId);
+      console.log('[AuthAPI] Synced systemUserId with ActionBySystemUserIdEncrypted');
     }
   }
 
-  const sanitizedId = sanitizeSystemUserId(finalSystemId);
-  const sanitizedActionId = sanitizeSystemUserId(finalActionId);
+  // Get session key from localStorage
+  const sessionKey = localStorage.getItem('sessionToken') || '';
 
   const response = await axiosInstance.get<ApiResponse<UserDetails>>(
-    `/Users/all/${encodeURIComponent(sanitizedActionId)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(sanitizedActionId)}`
+    `/Users/all/${encodeURIComponent(currentSystemId)}?ActionBySystemUserId=${encodeURIComponent(currentSystemId)}&SessionKey=${encodeURIComponent(sessionKey)}`
   );
 
   // Check for invalid session
@@ -67,18 +59,18 @@ export const getUserDetails = async (systemUserIdEncrypted: string, actionBySyst
 };
 
 export const editUserDetails = async (userData: {
-  systemUserIdEncrypted: string;
+  systemUserId: string;
   firstName: string;
   lastName: string;
   email: string;
-  actionBySystemUserIdEncrypted: string;
+  actionBySystemUserId: string;
 }): Promise<{ message: string }> => {
   const payload = {
-    SystemUserIdEncrypted: encrypt(userData.systemUserIdEncrypted),
-    FirstNameEncrypted: encrypt(userData.firstName),
-    LastNameEncrypted: encrypt(userData.lastName),
-    EmailEncrypted: encrypt(userData.email),
-    ActionBySystemUserIdEncrypted: encrypt(userData.actionBySystemUserIdEncrypted)
+    SystemUserId: userData.systemUserId,
+    FirstName: userData.firstName,
+    LastName: userData.lastName,
+    Email: userData.email,
+    ActionBySystemUserId: userData.actionBySystemUserId
   };
 
   const response = await axiosInstance.post<ApiResponse<any>>('/Users/edit-profile', payload);
@@ -86,92 +78,92 @@ export const editUserDetails = async (userData: {
 };
 
 export const editUserProfile = async (payload: EditUserPayload): Promise<{ message: string }> => {
-  const encryptedPayload = {
-    systemUserIdEncrypted: encrypt(payload.systemUserIdEncrypted),
-    firstNameEncrypted: encrypt(payload.firstName),
-    lastNameEncrypted: encrypt(payload.lastName),
-    employeeIdEncrypted: encrypt(payload.employeeIdEncrypted),
-    actionBySystemUserIdEncrypted: encrypt(payload.actionBySystemUserIdEncrypted)
+  const plainPayload = {
+    systemUserId: payload.systemUserId,
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    employeeId: payload.employeeId,
+    actionBySystemUserId: payload.actionBySystemUserId
   };
 
-  const response = await axiosInstance.patch<ApiResponse<any>>('/Users/edit', encryptedPayload);
+  const response = await axiosInstance.patch<ApiResponse<any>>('/Users/edit', plainPayload);
   return { message: response.data.message };
 };
 
-export const validateUser = async (userInfo: { entraId: string; firstName: string; lastName: string; email: string }): Promise<{ systemUserIdEncrypted: string; message: string }> => {
+export const validateUser = async (userInfo: { entraId: string; firstName: string; lastName: string; email: string; employeeId?: string }): Promise<{ systemUserId: string; message: string }> => {
   const payload: UserValidationViewModel = {
-    entraIdEncrypted: encrypt(guidToLongId(userInfo.entraId)),
-    firstNameEncrypted: encrypt(userInfo.firstName),
-    lastNameEncrypted: encrypt(userInfo.lastName),
-    emailEncrypted: encrypt(userInfo.email)
+    entraId: guidToLongId(userInfo.entraId),
+    firstName: userInfo.firstName,
+    lastName: userInfo.lastName,
+    email: userInfo.email,
+    employeeId: userInfo.employeeId || ''
   };
 
-   const response = await axiosInstance.post<ApiResponse<UserEncryptedPublicViewModel>>('/Users/validation', payload);
-  const data = response.data.data;
+  console.log('[AuthAPI] validateUser - payload:', payload);
 
-  if (!data || !data.systemUserIdEncrypted) {
+  const response = await axiosInstance.post<ApiResponse<UserPublicViewModel>>('/Users/validation', payload);
+  console.log('[AuthAPI] validateUser - response:', response);
+  console.log('[AuthAPI] validateUser - response.data:', response.data);
+
+  const data = response.data.data;
+  console.log('[AuthAPI] validateUser - data:', data);
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Validation failed');
+  }
+
+  if (!data || !data.systemUserId) {
+    console.error('[AuthAPI] validateUser - Invalid response structure:', { data, systemUserId: data?.systemUserId });
     throw new Error('Invalid response from server');
   }
 
-  return { systemUserIdEncrypted: data.systemUserIdEncrypted, message: response.data.message };
+  return { systemUserId: data.systemUserId.toString(), message: response.data.message };
 };
 
-export const validateOTP = async (systemUserIdEncrypted: string, otp: string): Promise<{ user: User; systemUserIdEncrypted: string }> => {
+export const validateOTP = async (systemUserId: string, otp: string): Promise<{ systemUserId: string; sessionKey: string }> => {
   const payload: OTPValidationViewModel = {
-    systemUserIdEncrypted: systemUserIdEncrypted,
-    otpEncrypted: encrypt(otp)
+    systemUserId: systemUserId,
+    otp: otp
   };
 
-  const response = await axiosInstance.post<ApiResponse<UserEncryptedPublicViewModel>>('/users/otp/validation', payload);
+  const response = await axiosInstance.post<ApiResponse<UserPublicViewModel>>('/users/otp/validation', payload);
   const data = response.data.data;
 
   if (!data) {
     throw new Error('Invalid OTP');
   }
 
-  // Decrypt user data
-  const systemUserId = decrypt(data.systemUserIdEncrypted);
-  const firstName = data.firstNameEncrypted ? decrypt(data.firstNameEncrypted) : '';
-  const lastName = data.lastNameEncrypted ? decrypt(data.lastNameEncrypted) : '';
-  const email = data.emailEncrypted ? decrypt(data.emailEncrypted) : '';
+  const sessionKey = data.sessionKey || '';
 
-  const user: User = {
-    id: systemUserId,
-    name: `${firstName} ${lastName}`,
-    email: email,
-    username: email, // Use email as username
-    role: 'user', // Default role, could be determined by backend later
-    systemRoleName: 'user',
-    entraId: '', // Will be set from MSAL
-    firstName: firstName,
-    lastName: lastName
-  };
+  // Save session key and systemUserId to localStorage
+  localStorage.setItem('sessionToken', sessionKey);
+  localStorage.setItem('systemUserId', data.systemUserId.toString());
 
-  return { user, systemUserIdEncrypted: data.systemUserIdEncrypted };
+  return { systemUserId: data.systemUserId.toString(), sessionKey };
 };
 
-export const validateSessionToken = async (token: string, systemUserIdEncrypted: string): Promise<{ user: User; token: string }> => {
+export const validateSessionToken = async (token: string, systemUserId: string): Promise<{ user: User; token: string }> => {
   const payload: SessionTokenValidationViewModel = {
-    KeyEncrypted: encrypt(token),
-    systemUserIdEncrypted: systemUserIdEncrypted
+    Key: token,
+    systemUserId: systemUserId
   };
 
-  const response = await axiosInstance.post<ApiResponse<UserEncryptedPublicViewModel>>('/users/expiry-token/validation', payload);
+  const response = await axiosInstance.post<ApiResponse<UserPublicViewModel>>('/users/expiry-token/validation', payload);
   const data = response.data.data;
 
   if (!data) {
     throw new Error('Session expired');
   }
 
-  // Decrypt user data
-  const systemUserId = decrypt(data.systemUserIdEncrypted);
-  const firstName = data.firstNameEncrypted ? decrypt(data.firstNameEncrypted) : '';
-  const lastName = data.lastNameEncrypted ? decrypt(data.lastNameEncrypted) : '';
-  const email = data.emailEncrypted ? decrypt(data.emailEncrypted) : '';
-  const newToken = data.expiryTokenEncrypted ? decrypt(data.expiryTokenEncrypted) : '';
+  // Use plain user data
+  const userId = data.systemUserId;
+  const firstName = data.firstName || '';
+  const lastName = data.lastName || '';
+  const email = data.email || '';
+  const newToken = data.expiryToken || '';
 
   const user: User = {
-    id: systemUserId,
+    id: userId.toString(),
     name: `${firstName} ${lastName}`,
     email: email,
     username: email,
@@ -190,5 +182,6 @@ export const logout = async (): Promise<void> => {
   localStorage.removeItem('authToken');
   localStorage.removeItem('user');
   localStorage.removeItem('systemUserIdEncrypted');
+  localStorage.removeItem('systemUserId');
   return Promise.resolve();
 };

@@ -3,7 +3,7 @@ import { sanitizeSystemUserId } from '../utils/sanitizationUtils';
 
 export interface SessionData {
   sessionToken: string;
-  systemUserIdEncrypted: string;
+  systemUserId: string;
   expiresAt: string;
   user: User;
 }
@@ -20,20 +20,25 @@ export const generateSessionToken = (): string => {
 };
 
 /**
- * Retrieves systemUserIdEncrypted from localStorage
+ * Retrieves systemUserId from localStorage
  */
-export const getSystemUserIdEncrypted = (): string | null => {
-  return localStorage.getItem('systemUserIdEncrypted');
+export const getSystemUserId = (): string | null => {
+  return localStorage.getItem('systemUserId');
 };
 
 /**
  * Saves session data to localStorage
  */
 export const saveSession = (sessionData: SessionData): void => {
+  // Ensure user.id matches systemUserId
+  const updatedUser = {
+    ...sessionData.user,
+    id: sessionData.systemUserId
+  };
   localStorage.setItem('sessionToken', sessionData.sessionToken);
-  localStorage.setItem('systemUserIdEncrypted', sanitizeSystemUserId(sessionData.systemUserIdEncrypted));
+  localStorage.setItem('systemUserId', sessionData.systemUserId);
   localStorage.setItem('expiresAt', sessionData.expiresAt);
-  localStorage.setItem('user', JSON.stringify(sessionData.user));
+  localStorage.setItem('user', JSON.stringify(updatedUser));
 };
 
 /**
@@ -42,11 +47,11 @@ export const saveSession = (sessionData: SessionData): void => {
  */
 export const loadSession = (): SessionData | null => {
   const sessionToken = localStorage.getItem('sessionToken');
-  const systemUserIdEncrypted = localStorage.getItem('systemUserIdEncrypted');
+  const systemUserId = localStorage.getItem('systemUserId');
   const expiresAt = localStorage.getItem('expiresAt');
   const userStr = localStorage.getItem('user');
 
-  if (!sessionToken || !systemUserIdEncrypted || !expiresAt || !userStr) {
+  if (!sessionToken || !systemUserId || !expiresAt || !userStr) {
     return null;
   }
 
@@ -63,7 +68,7 @@ export const loadSession = (): SessionData | null => {
 
     return {
       sessionToken,
-      systemUserIdEncrypted,
+      systemUserId: systemUserId,
       expiresAt,
       user
     };
@@ -80,6 +85,9 @@ export const loadSession = (): SessionData | null => {
 export const clearSession = (): void => {
   localStorage.removeItem('sessionToken');
   localStorage.removeItem('systemUserIdEncrypted');
+  localStorage.removeItem('systemUserId');
+  localStorage.removeItem('ActionBySystemUserIdEncrypted');
+  localStorage.removeItem('ActionBySystemUserId');
   localStorage.removeItem('expiresAt');
   localStorage.removeItem('user');
 };

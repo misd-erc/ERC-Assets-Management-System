@@ -19,6 +19,7 @@ import {
 import { getUsers, deleteUser, editUser } from '../../api/userApi';
 import { User } from '../../types/user';
 import { toast } from 'sonner';
+import { useAuthStore } from '../../store/auth';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -67,13 +68,17 @@ export const UserList: React.FC<UserListProps> = ({
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('systemUserIdEncrypted') || '';
-      const response = await getUsers(token, currentPage);
+      const response = await getUsers(currentPage);
       setUsers(response.data.items);
       setTotalPages(response.data.totalPages);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch users:', error);
-      toast.error('Failed to load users');
+      // Check if it's a 401 error (unauthorized) and show appropriate message
+      if (error.response?.status === 401) {
+        toast.error('You do not have permission to view users or your session has expired.');
+      } else {
+        toast.error('Failed to load users');
+      }
     } finally {
       setLoading(false);
     }
@@ -107,11 +112,18 @@ export const UserList: React.FC<UserListProps> = ({
 
   const handleChangeRole = async (userId: string, newRole: string) => {
     try {
-      const token = localStorage.getItem('systemUserIdEncrypted') || '';
+      const token = localStorage.getItem('systemUserId') || '';
+      const user = users.find(u => u.id === userId);
+      if (!user) {
+        toast.error('User not found');
+        return;
+      }
+
       await editUser({
-        systemUserIdEncrypted: userId,
-        systemRoleIdEncrypted: newRole, // Assuming role is encrypted, but for now using plain
-        actionBySystemUserIdEncrypted: token
+        systemUserId: parseInt(userId, 10),
+        systemRoleId: parseInt(newRole, 10),
+        isActive: user.status === 'Active',
+        actionBySystemUserId: parseInt(token, 10)
       });
       setUsers(users.map(user =>
         user.id === userId ? { ...user, systemRoleName: newRole } : user

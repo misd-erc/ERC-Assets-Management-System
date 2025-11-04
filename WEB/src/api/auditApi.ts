@@ -3,15 +3,16 @@ import { AuditTrailResponse, ActivityResponse } from '../types/audit';
 
 /**
  * Fetch audit trail logs for the current user
- * @param token - The ActionBySystemUserIdEncrypted token from localStorage
+ * @param token - The ActionBySystemUserId token from localStorage
+ * @param sessionKey - The SessionKey from localStorage
  * @param page - Page number for pagination (default: 1)
  * @param pageSize - Number of items per page (default: 10)
  * @returns Promise<AuditTrailResponse>
  */
-export const getAuditTrail = async (token: string, page: number = 1, pageSize: number = 10): Promise<AuditTrailResponse> => {
+export const getAuditTrail = async (token: string, sessionKey: string, page: number = 1, pageSize: number = 10): Promise<AuditTrailResponse> => {
   try {
         const response = await axiosInstance.get(
-      `/Logs/audit-trail/all/${encodeURIComponent(token)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}&pageNumber=${page}&pageSize=${pageSize}`
+      `/Logs/audit-trail/all/${encodeURIComponent(token)}?ActionBySystemUserId=${encodeURIComponent(token)}&SessionKey=${encodeURIComponent(sessionKey)}&pageNumber=${page}&pageSize=${pageSize}`
     );
     return response.data;
 
@@ -23,15 +24,16 @@ export const getAuditTrail = async (token: string, page: number = 1, pageSize: n
 
 /**
  * Fetch activity logs for the current user
- * @param token - The ActionBySystemUserIdEncrypted token from localStorage
+ * @param token - The ActionBySystemUserId token from localStorage
+ * @param sessionKey - The SessionKey from localStorage
  * @param page - Page number for pagination (default: 1)
  * @param pageSize - Number of items per page (default: 10)
  * @returns Promise<ActivityResponse>
  */
-export const getActivities = async (token: string, page: number = 1, pageSize: number = 10): Promise<ActivityResponse> => {
+export const getActivities = async (token: string, sessionKey: string, page: number = 1, pageSize: number = 10): Promise<ActivityResponse> => {
   try {
     const response = await axiosInstance.get(
-      `/Logs/activities/all/${encodeURIComponent(token)}?ActionBySystemUserIdEncrypted=${encodeURIComponent(token)}&pageNumber=${page}&pageSize=${pageSize}`
+      `/Logs/activities/all/${encodeURIComponent(token)}?ActionBySystemUserId=${encodeURIComponent(token)}&SessionKey=${encodeURIComponent(sessionKey)}&pageNumber=${page}&pageSize=${pageSize}`
     );
     return response.data;
   } catch (error) {

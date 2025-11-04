@@ -7,6 +7,7 @@ import { Shield } from 'lucide-react';
 import { useAuth } from '../../hooks';
 import { PublicClientApplication, AuthenticationResult, AccountInfo, BrowserAuthError } from '@azure/msal-browser';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 const ercLogo = '/images/erc-logo.png';
 const microsoftLogo = '/images/microsoft-logo.svg';
@@ -41,7 +42,7 @@ export function LoginScreen() {
 
   useEffect(() => {
     if (msalInstance) {
-      msalInstance.handleRedirectPromise().then((response: AuthenticationResult | null) => {
+      msalInstance.handleRedirectPromise().then(async (response: AuthenticationResult | null) => {
         if (response) {
           const account: AccountInfo = response.account!;
 
@@ -52,12 +53,31 @@ export function LoginScreen() {
           const [firstName, ...lastNameParts] = name.split(' ');
           const lastName = lastNameParts.join(' ');
 
+          // Extract employeeId from idTokenClaims if available
+          const claims = response.idTokenClaims as any;
+          let employeeId = claims?.employeeId || claims?.employee_id || claims?.['employee-id'] || (account as any).employeeId || (account as any).employee_Id || '';
+
+          // If employeeId is still empty, try to fetch from Microsoft Graph API
+          if (!employeeId && response.accessToken) {
+            try {
+              const graphResponse = await axios.get('https://graph.microsoft.com/v1.0/me?$select=id,displayName,employeeId', {
+                headers: {
+                  Authorization: `Bearer ${response.accessToken}`,
+                },
+              });
+              employeeId = graphResponse.data.employeeId || '';
+            } catch (graphError) {
+              console.warn('Failed to fetch employeeId from Microsoft Graph:', graphError);
+            }
+          }
+
           // Call our backend validation
           login({
             entraId,
             firstName: firstName || '',
             lastName: lastName || '',
             email,
+            employeeId,
           }).then((result) => {
             if (result.success) {
               toast.success('OTP has been sent to your email. Please check your inbox.', {

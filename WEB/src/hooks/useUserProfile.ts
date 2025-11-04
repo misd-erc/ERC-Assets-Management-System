@@ -5,13 +5,13 @@ import { UserDetails } from '../types/user';
 import { handleSessionExpired, getSessionToken } from '../utils/sessionUtils';
 
 export const useUserProfile = () => {
-  const { systemUserIdEncrypted } = useAuthStore();
+  const { systemUserId } = useAuthStore();
   const [userProfile, setUserProfile] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadUserProfile = useCallback(async (isMounted: boolean) => {
     // Use token from store or localStorage
-    const token = systemUserIdEncrypted || getSessionToken();
+    const token = systemUserId || getSessionToken();
     
     if (!token) {
       console.log('[useUserProfile] No token available');
@@ -41,7 +41,7 @@ export const useUserProfile = () => {
 
       // Fetch from API if not in localStorage
       console.log('[useUserProfile] Fetching from API...');
-      const data = await getUserDetails(token, token);
+      const data = await getUserDetails();
 
       if (isMounted) {
         // Include profilePictureId from separate localStorage key
@@ -66,10 +66,10 @@ export const useUserProfile = () => {
         }
       }
     }
-  }, [systemUserIdEncrypted]);
+  }, [systemUserId]);
 
   const refreshProfile = useCallback(async () => {
-    const token = systemUserIdEncrypted || getSessionToken();
+    const token = systemUserId || getSessionToken();
     
     if (!token) {
       console.log('[useUserProfile] No token available for refresh');
@@ -80,7 +80,7 @@ export const useUserProfile = () => {
     
     try {
       console.log('[useUserProfile] Refreshing profile...');
-      const data = await getUserDetails(token, token);
+      const data = await getUserDetails();
       localStorage.setItem('userProfile', JSON.stringify(data));
       setUserProfile(data);
       console.log('[useUserProfile] Profile refreshed successfully');
@@ -94,7 +94,7 @@ export const useUserProfile = () => {
     } finally {
       setLoading(false);
     }
-  }, [systemUserIdEncrypted]);
+  }, [systemUserId]);
 
   useEffect(() => {
     let isMounted = true;
