@@ -477,25 +477,13 @@ namespace API.Controllers
 
                 long systemUserId = await _accountEditTools.EditTblSystemUserForLoginAsync(user, context);
 
-                //TblSystemUser? updatedUserInfo = await _accountGetTools.GetTblSystemUser(systemUserId);
+                var (isAllowed, errorMsg) = await _authTools.ValidateUserStatusAsync(
+                    systemUserId,
+                    context,
+                    _options);
 
-                //if (!updatedUserInfo.IsActive)
-                //{
-
-                //    await AuditTrailTool.LogActivityAsync(_options, $"Login attempt failed due to inactive status", actionBy: systemUserId);
-                //    return StatusCode(401, ApiResponse<object>.Unauthorized("Account is inactive. Please contact the system administrator."));
-                //}
-                    
-                //if (updatedUserInfo.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.INACTIVE])
-                //{
-                //    await AuditTrailTool.LogActivityAsync(_options, $"Login attempt failed due to inactive status", actionBy: systemUserId);
-                //    return StatusCode(401, ApiResponse<object>.Unauthorized("Your account is inactive. Please contact the system administrator."));
-                //}
-                    
-                //if (updatedUserInfo.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.SUSPENDED]) {
-                //    await AuditTrailTool.LogActivityAsync(_options, $"Login attempt failed due to suspended status", actionBy: systemUserId);
-                //    return StatusCode(401, ApiResponse<object>.Unauthorized("Your account has been suspended. Please contact the system administrator."));
-                //}
+                if (!isAllowed)
+                    return StatusCode(401, ApiResponse<object>.Unauthorized(errorMsg!));
 
                 if (systemUserId > 0)
                 {
@@ -515,8 +503,8 @@ namespace API.Controllers
                     #region OTP Email Sender
                     await EmailTools.SendSystemEmailAsync(
                         _options,
-                        subject: "Your AMS One-Time Password (OTP)",
-                        templateNameOrBody: "OTPEmailTemplate.cshtml",
+                        subject: EmailConstants.SUBJECT_OTP_EMAIL,
+                        templateNameOrBody: EmailConstants.TEMPLATE_OTP_EMAIL,
                         recipient: user.Email,
                         model: new EmailViewModel
                         {
@@ -635,8 +623,8 @@ namespace API.Controllers
                     #region OTP Email Sender
                     await EmailTools.SendSystemEmailAsync(
                         _options,
-                        subject: "Your AMS One-Time Password (OTP)",
-                        templateNameOrBody: "OTPEmailTemplate.cshtml",
+                        subject: EmailConstants.SUBJECT_OTP_EMAIL,
+                        templateNameOrBody: EmailConstants.TEMPLATE_OTP_EMAIL,
                         recipient: user.Email,
                         model: new EmailViewModel
                         {

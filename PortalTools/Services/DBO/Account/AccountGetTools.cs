@@ -25,6 +25,7 @@ namespace PortalTools.Services.DBO.Account
         public IQueryable<VwSystemUser?> GetVwSystemUsers() => _context.VwSystemUsers.Where(x => !x.IsDeleted);
         public async Task<VwSystemUser?> GetVwSystemUser(long id) => await _context.VwSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public async Task<TblSystemUser?> GetTblSystemUser(long id) => await _context.TblSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblSystemUser?> GetTblSystemUserWithContext(long id, PortalDbContext context) => await context.TblSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public async Task<TblSystemUser?> GetTblSystemUserByEntraId(long entraId) => await _context.TblSystemUsers.Where(x => !x.IsDeleted && x.EntraId == entraId).FirstOrDefaultAsync();
         public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAndEmail(long entraId, string email)
         {
