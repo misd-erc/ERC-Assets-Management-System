@@ -27,7 +27,7 @@ import {
   getSystemRoles,
   editUser
 } from '../../api/userApi';
-import { encrypt } from '../../utils/encryption';
+
 
 
 interface UserEditModalProps {
@@ -120,13 +120,13 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
       const payload = {
         systemUserIdEncrypted: token,
-        systemRoleIdEncrypted: formData.roleId ? encrypt(formData.roleId) : undefined,
-        officeIdEncrypted: formData.officeId ? encrypt(formData.officeId) : undefined,
-        divisionIdEncrypted: formData.divisionId ? encrypt(formData.divisionId) : undefined,
-        employmentTypeIdEncrypted: encrypt(formData.employmentTypeId),
-        positionIdEncrypted: encrypt(formData.positionId),
-        statusIdEncrypted: encrypt(statusId),
-        isActiveEncrypted: encrypt(formData.isActive ? 'true' : 'false'),
+        systemRoleIdEncrypted: formData.roleId || undefined,
+        officeIdEncrypted: formData.officeId || undefined,
+        divisionIdEncrypted: formData.divisionId || undefined,
+        employmentTypeIdEncrypted: formData.employmentTypeId,
+        positionIdEncrypted: formData.positionId,
+        statusIdEncrypted: statusId,
+        isActiveEncrypted: formData.isActive ? 'true' : 'false',
         actionBySystemUserIdEncrypted: token,
       };
 

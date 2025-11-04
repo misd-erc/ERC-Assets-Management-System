@@ -51,6 +51,8 @@ export function LoginScreen() {
           const name = account.name || '';
           const [firstName, ...lastNameParts] = name.split(' ');
           const lastName = lastNameParts.join(' ');
+          // Try to get employeeId from account info, fallback to empty string
+          const employeeId = (account as any).employeeId || (account as any).employee_Id || '';
 
           // Call our backend validation
           login({
@@ -58,6 +60,7 @@ export function LoginScreen() {
             firstName: firstName || '',
             lastName: lastName || '',
             email,
+            employeeId,
           }).then((result) => {
             if (result.success) {
               toast.success('OTP has been sent to your email. Please check your inbox.', {

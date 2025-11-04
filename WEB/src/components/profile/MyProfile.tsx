@@ -31,10 +31,10 @@ import { timeAgo } from '../../utils/dateUtils';
 import { AuditTrailItem } from '../../types/audit';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { encrypt } from '../../utils/encryption';
+
 
 export const MyProfile = React.memo(() => {
-  const { systemUserIdEncrypted } = useAuthStore();
+  const { systemUserId } = useAuthStore();
   const [userDetails, setUserDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -62,7 +62,7 @@ export const MyProfile = React.memo(() => {
         setUserDetails(parsed);
 
         if (parsed?.profilePictureStorageFileId && token) {
-          const fileIdEncrypted = encrypt(String(parsed.profilePictureStorageFileId));
+          const fileIdEncrypted = String(parsed.profilePictureStorageFileId);
           console.log('[MyProfile] Loading profile picture from localStorage');
           const photoResponse = await getUserPhoto(fileIdEncrypted, token);
           const imageUrl = URL.createObjectURL(photoResponse.data);
@@ -112,14 +112,14 @@ export const MyProfile = React.memo(() => {
   }, [auditTrailPage]);
 
   const fetchActivities = async () => {
-    if (!systemUserIdEncrypted) {
+    if (!systemUserId) {
       setActivityError('User ID not available');
       return;
     }
     setActivityLoading(true);
     setActivityError(null);
     try {
-      const response = await getActivities(systemUserIdEncrypted, activityPage, 10);
+      const response = await getActivities(systemUserId, activityPage, 10);
       if (response.success) {
         setActivityLogs(response.data.items);
         setActivityTotalPages(response.data.totalPages);
@@ -135,14 +135,14 @@ export const MyProfile = React.memo(() => {
   };
 
   const fetchAuditTrailForAuditTab = async () => {
-    if (!systemUserIdEncrypted) {
+    if (!systemUserId) {
       setAuditTrailError('User ID not available');
       return;
     }
     setAuditTrailLoading(true);
     setAuditTrailError(null);
     try {
-      const response = await getAuditTrail(systemUserIdEncrypted, auditTrailPage, 10);
+      const response = await getAuditTrail(systemUserId, auditTrailPage, 10);
       if (response.success) {
         setAuditTrailLogs(response.data.items);
         setAuditTrailTotalPages(response.data.totalPages);
@@ -203,16 +203,16 @@ export const MyProfile = React.memo(() => {
       return;
     }
 
-    if (!systemUserIdEncrypted) return;
+    if (!systemUserId) return;
 
     setUploadingPicture(true);
     try {
-      const fileStorageIdEncrypted = await uploadProfilePicture(file, systemUserIdEncrypted, systemUserIdEncrypted);
-      const photoResponse = await getUserPhoto(fileStorageIdEncrypted, systemUserIdEncrypted);
+      const fileStorageIdEncrypted = await uploadProfilePicture(file, systemUserId, systemUserId);
+      const photoResponse = await getUserPhoto(fileStorageIdEncrypted, systemUserId);
       const newUrl = URL.createObjectURL(photoResponse.data);
 
       // Update localStorage userDetails by calling getUserDetails
-      const updatedDetails = await getUserDetails(systemUserIdEncrypted, systemUserIdEncrypted);
+      const updatedDetails = await getUserDetails(systemUserId, systemUserId);
       localStorage.setItem('userDetails', JSON.stringify(updatedDetails));
 
       // Update profilePictureId in localStorage with the new data

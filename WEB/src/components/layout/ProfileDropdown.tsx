@@ -20,7 +20,7 @@ import {
 import { useAuth } from '../../hooks';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getCurrentUserDetails, getUserPhoto } from '../../api/userApi';
-import { encrypt } from '../../utils/encryption';
+
 import { useAuthStore } from '../../store/auth';
 
 interface ProfileDropdownProps {
@@ -42,7 +42,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   const { logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { systemUserIdEncrypted } = useAuthStore();
+  const { systemUserId } = useAuthStore();
 
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [isFetchingProfile, setIsFetchingProfile] = useState(false);
@@ -94,7 +94,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       try {
         const parsed = JSON.parse(stored);
         if (parsed?.profilePictureStorageFileId) {
-          const fileIdEncrypted = encrypt(String(parsed.profilePictureStorageFileId));
+          const fileIdEncrypted = String(parsed.profilePictureStorageFileId);
           console.log('[ProfileDropdown] Loading profile picture from localStorage');
           const photoResponse = await getUserPhoto(fileIdEncrypted, token);
           const imageUrl = URL.createObjectURL(photoResponse.data);
@@ -147,7 +147,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           let imageUrl: string | undefined;
           if (profilePictureStorageFileId && !photoFetched) {
             try {
-              const fileIdEncrypted = encrypt(String(profilePictureStorageFileId));
+              const fileIdEncrypted = String(profilePictureStorageFileId);
               console.log('[ProfileDropdown] Calling getUserPhoto API');
               const photoResponse = await getUserPhoto(fileIdEncrypted, token);
               imageUrl = URL.createObjectURL(photoResponse.data);
@@ -214,7 +214,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   };
 
   const handleMyProfileClick = async () => {
-    if (!systemUserIdEncrypted) return;
+    if (!systemUserId) return;
 
     setIsFetchingProfile(true);
     try {
@@ -225,7 +225,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         return;
       }
       console.log('[ProfileDropdown] Calling getCurrentUserDetails for profile click');
-      const userData = await getCurrentUserDetails(systemUserIdEncrypted, token);
+      const userData = await getCurrentUserDetails(systemUserId, token);
       console.log('[ProfileDropdown] Profile click API response:', userData);
       localStorage.setItem('userProfile', JSON.stringify(userData));
       onNavigate?.('profile');

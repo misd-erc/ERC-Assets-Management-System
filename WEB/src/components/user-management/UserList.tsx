@@ -68,8 +68,8 @@ export const UserList: React.FC<UserListProps> = ({
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const { systemUserIdEncrypted } = useAuthStore.getState();
-      const token = systemUserIdEncrypted || '';
+      const { systemUserId } = useAuthStore.getState();
+      const token = systemUserId || '';
       const response = await getUsers(token, currentPage);
       setUsers(response.data.items);
       setTotalPages(response.data.totalPages);
@@ -114,8 +114,8 @@ export const UserList: React.FC<UserListProps> = ({
 
   const handleChangeRole = async (userId: string, newRole: string) => {
     try {
-      const { systemUserIdEncrypted } = useAuthStore.getState();
-      const token = systemUserIdEncrypted || '';
+      const { systemUserId } = useAuthStore.getState();
+      const token = systemUserId || '';
       await editUser({
         systemUserIdEncrypted: userId,
         systemRoleIdEncrypted: newRole,

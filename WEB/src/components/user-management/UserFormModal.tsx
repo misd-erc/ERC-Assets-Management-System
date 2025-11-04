@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { createUser, updateUser, editUser } from '../../api/userApi';
 import { User } from '../../types/user';
 import { toast } from 'sonner';
-import { encrypt } from '../../utils/encryption';
+
 
 interface UserFormModalProps {
   isOpen: boolean;
@@ -83,13 +83,13 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
         const statusId = formData.status === 'Active' ? '0' : formData.status === 'Inactive' ? '1' : '2';
         await editUser({
           systemUserIdEncrypted: token,
-          systemRoleIdEncrypted: formData.role ? encrypt(formData.role) : undefined,
-          officeIdEncrypted: formData.officeId ? encrypt(formData.officeId) : undefined,
-          divisionIdEncrypted: formData.divisionId ? encrypt(formData.divisionId) : undefined,
-          employmentTypeIdEncrypted: encrypt(formData.employmentTypeId ? formData.employmentTypeId : '0'),
-          positionIdEncrypted: encrypt(formData.positionId ? formData.positionId : '0'),
-          statusIdEncrypted: encrypt(statusId),
-          isActiveEncrypted: encrypt(formData.status === 'Active' ? 'true' : 'false'),
+          systemRoleIdEncrypted: formData.role || undefined,
+          officeIdEncrypted: formData.officeId || undefined,
+          divisionIdEncrypted: formData.divisionId || undefined,
+          employmentTypeIdEncrypted: formData.employmentTypeId || '0',
+          positionIdEncrypted: formData.positionId || '0',
+          statusIdEncrypted: statusId,
+          isActiveEncrypted: formData.status === 'Active' ? 'true' : 'false',
           actionBySystemUserIdEncrypted: token
         });
         toast.success('User updated successfully');

@@ -122,7 +122,19 @@ export const editUser = async (payload: {
   isActiveEncrypted?: string;
   actionBySystemUserIdEncrypted: string;
 }): Promise<{ message: string }> => {
-  const response = await axiosInstance.post<ApiResponse<any>>('/Users/edit', payload);
+  const plainPayload = {
+    systemUserId: payload.systemUserIdEncrypted,
+    systemRoleId: payload.systemRoleIdEncrypted,
+    officeId: payload.officeIdEncrypted,
+    divisionId: payload.divisionIdEncrypted,
+    employmentTypeId: payload.employmentTypeIdEncrypted,
+    positionId: payload.positionIdEncrypted,
+    statusId: payload.statusIdEncrypted,
+    isActive: payload.isActiveEncrypted,
+    actionBySystemUserId: payload.actionBySystemUserIdEncrypted
+  };
+
+  const response = await axiosInstance.post<ApiResponse<any>>('/Users/edit', plainPayload);
   return { message: response.data.message };
 };
 
