@@ -4,6 +4,7 @@ using PortalCommon.Utilities;
 using PortalDB.Services;
 using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
+using PortalTools.Services.DBO.Notification;
 using PortalTools.Services.DBO.Office;
 using PortalTools.Services.DBO.Storage;
 using PortalTools.Services.LOG;
@@ -44,6 +45,8 @@ builder.Services.AddScoped<OfficeEditTools>();
 builder.Services.AddScoped<StorageGetTools>();
 builder.Services.AddScoped<LogEditTools>();
 builder.Services.AddScoped<LogGetTools>();
+builder.Services.AddScoped<NotificationEditTools>();
+builder.Services.AddScoped<NotificationGetTools>();
 
 builder.Services.AddScoped<AuthTools>();
 #endregion

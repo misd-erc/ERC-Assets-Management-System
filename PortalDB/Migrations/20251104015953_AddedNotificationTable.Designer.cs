@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251104015953_AddedNotificationTable")]
+    partial class AddedNotificationTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -343,74 +346,6 @@ namespace PortalDB.Migrations
                     b.ToView("vwSystemUsers", "dbo");
                 });
 
-            modelBuilder.Entity("PortalDB.Entities.DBO.Notification.TblSystemNotification", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("SystemNotificationId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SystemNotificationCreatedAt");
-
-                    b.Property<long?>("CreatedBySystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SystemNotificationBySystemUserId");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SystemNotificationDescription");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("SystemNotificationIsDeleted");
-
-                    b.Property<long?>("SystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SystemNotificationForSystemUserId");
-
-                    b.Property<string>("Title")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SystemNotificationTitle");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblSystemNotifications", "dbo");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.DBO.Notification.TblSystemNotificationRead", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("SystemNotificationReadId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SystemNotificationReadCreatedAt");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("SystemNotificationReadIsDeleted");
-
-                    b.Property<long?>("NotificationId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SystemNotificationId");
-
-                    b.Property<long?>("SystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SystemNotificationReadBySystemUserId");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblSystemNotificationReads", "dbo");
-                });
-
             modelBuilder.Entity("PortalDB.Entities.DBO.Office.Division.TblDivision", b =>
                 {
                     b.Property<long>("Id")
@@ -603,6 +538,70 @@ namespace PortalDB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblPositions", "dbo");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.DBO.Office.TblSystemNotification", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemNotificationId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SystemNotificationCreatedAt");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SystemNotificationDescription");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("SystemNotificationIsDeleted");
+
+                    b.Property<long?>("SystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemNotificationForSystemUserId");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SystemNotificationTitle");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblSystemNotifications", "dbo");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.DBO.Office.TblSystemNotificationRead", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemNotificationReadId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SystemNotificationReadCreatedAt");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("SystemNotificationReadIsDeleted");
+
+                    b.Property<long?>("NotificationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemNotificationId");
+
+                    b.Property<long?>("SystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemNotificationReadBySystemUserId");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblSystemNotificationReads", "dbo");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.DBO.Storage.TblFileStorage", b =>

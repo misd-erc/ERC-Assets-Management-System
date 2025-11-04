@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.ComponentModel.DataAnnotations.Schema;
 using PortalDB.Entities.DBO.Storage;
+using PortalDB.Entities.DBO.Notification;
 
 namespace PortalDB.Services
 {
@@ -27,6 +28,8 @@ namespace PortalDB.Services
         public DbSet<TblSessionToken> TblSessionTokens { get; set; }
         public DbSet<TblSystemRole> TblSystemRoles { get; set; }
         public DbSet<TblFileStorage> TblFileStorages { get; set; }
+        public DbSet<TblSystemNotification> TblSystemNotifications { get; set; }
+        public DbSet<TblSystemNotificationRead> TblSystemNotificationReads { get; set; }
         #endregion
 
         #region Office

@@ -22,12 +22,14 @@ using PortalCommon.Models.ViewModels.Email;
 using PortalCommon.Utilities;
 using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
+using PortalDB.Entities.DBO.Notification;
 using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Entities.DBO.Storage;
 using PortalDB.Entities.LOG.AuditTrail;
 using PortalDB.Services;
 using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
+using PortalTools.Services.DBO.Notification;
 using PortalTools.Services.LOG;
 using System;
 using System.Diagnostics;
@@ -48,11 +50,13 @@ namespace API.Controllers
         private readonly AccountGetTools _accountGetTools;
         private readonly AccountEditTools _accountEditTools;
         private readonly LogEditTools _logEditTools;
+        private readonly NotificationGetTools _notificationGetTools;
         private readonly AuthTools _authTools;
 
         public UsersController(AccountGetTools accountGetTools, 
             AccountEditTools accountEditTools,
             LogEditTools logEditTools,
+            NotificationGetTools notificationGetTools,
             DbContextOptions<PortalDbContext> options,
             AuthTools authTools)
         {
@@ -61,6 +65,7 @@ namespace API.Controllers
             _logEditTools = logEditTools;
             _options = options;
             _authTools = authTools;
+            _notificationGetTools = notificationGetTools;
         }
 
         #region GET
@@ -285,6 +290,164 @@ namespace API.Controllers
             }
         }
 
+        // GET api/users/system-notification/all
+        [HttpGet("system-notification/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSystemNotifications([FromQuery] PaginationGenericQueryParams model)
+        {
+            try
+            {
+
+                IEnumerable<TblSystemNotification?> notifications = await _notificationGetTools.GetTblSystemNotifications().ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    notifications = notifications.Where(x =>
+                        x.Title.ToLower().Contains(searchLower) ||
+                        x.Description.ToLower().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    notifications = notifications.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    notifications = notifications.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = notifications.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var notificationsList = notifications
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                List<TblSystemNotification> userBasicResponses = notificationsList.Select(x => new TblSystemNotification
+                {
+                    Id = x.Id,
+                    Title = x.Title,
+                    Description = x.Description,
+                    SystemUserId = x.SystemUserId,
+                    CreatedBySystemUserId = x.CreatedBySystemUserId,
+                    IsDeleted = x.IsDeleted,
+                    CreatedAt = x.CreatedAt
+                }).ToList();
+
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed system notifications", actionBy: await _accountGetTools.GetSystemUserIdBySessionKey(model.SessionKey));
+                return Ok(ApiResponse<TblSystemNotification>.OkPaginated(
+                    userBasicResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "System notifications have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // GET api/users/system-notification/all/{systemUserId}/all
+        [HttpGet("system-notification/all/{systemUserId}/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSystemNotifications([FromQuery] PaginationGenericQueryParams model, [FromRoute] long systemUserId)
+        {
+            try
+            {
+
+                IEnumerable<TblSystemNotification?> notifications = await _notificationGetTools.GetTblSystemNotificationsByCreatedBySystemUserId(systemUserId).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    notifications = notifications.Where(x =>
+                        x.Title.ToLower().Contains(searchLower) ||
+                        x.Description.ToLower().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    notifications = notifications.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    notifications = notifications.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = notifications.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var notificationsList = notifications
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                List<TblSystemNotification> userBasicResponses = notificationsList.Select(x => new TblSystemNotification
+                {
+                    Id = x.Id,
+                    Title = x.Title,
+                    Description = x.Description,
+                    SystemUserId = x.SystemUserId,
+                    CreatedBySystemUserId = x.CreatedBySystemUserId,
+                    IsDeleted = x.IsDeleted,
+                    CreatedAt = x.CreatedAt
+                }).ToList();
+
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system notifications for user {systemUserId}", actionBy: await _accountGetTools.GetSystemUserIdBySessionKey(model.SessionKey));
+                return Ok(ApiResponse<TblSystemNotification>.OkPaginated(
+                    userBasicResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "System notifications have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // GET api/users/system-role/all/{systemUserId}/all/{systemNotificationId}
+        [HttpGet("system-notification/all/{systemUserId}/all/{systemNotificationId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetSystemNotification([FromQuery] SoloQueryParams model, [FromRoute] long systemUserId, [FromRoute] long systemNotificationId)
+        {
+            try
+            {
+
+                TblSystemNotification? notification = await _notificationGetTools.GetTblSystemNotification(systemNotificationId);
+                TblSystemNotification notificationResponse = new TblSystemNotification
+                {
+                    Id = notification.Id,
+                    Title = notification.Title,
+                    Description = notification.Description,
+                    SystemUserId = notification.SystemUserId,
+                    CreatedBySystemUserId = notification.CreatedBySystemUserId,
+                    IsDeleted = notification.IsDeleted,
+                    CreatedAt = notification.CreatedAt
+                };
+
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system notification information for system notification {notification.Id}", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<object>.Ok(notificationResponse, $"System notification have been retrieved"));
+
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         #endregion
 
         #region POST
@@ -314,6 +477,26 @@ namespace API.Controllers
 
                 long systemUserId = await _accountEditTools.EditTblSystemUserForLoginAsync(user, context);
 
+                //TblSystemUser? updatedUserInfo = await _accountGetTools.GetTblSystemUser(systemUserId);
+
+                //if (!updatedUserInfo.IsActive)
+                //{
+
+                //    await AuditTrailTool.LogActivityAsync(_options, $"Login attempt failed due to inactive status", actionBy: systemUserId);
+                //    return StatusCode(401, ApiResponse<object>.Unauthorized("Account is inactive. Please contact the system administrator."));
+                //}
+                    
+                //if (updatedUserInfo.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.INACTIVE])
+                //{
+                //    await AuditTrailTool.LogActivityAsync(_options, $"Login attempt failed due to inactive status", actionBy: systemUserId);
+                //    return StatusCode(401, ApiResponse<object>.Unauthorized("Your account is inactive. Please contact the system administrator."));
+                //}
+                    
+                //if (updatedUserInfo.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.SUSPENDED]) {
+                //    await AuditTrailTool.LogActivityAsync(_options, $"Login attempt failed due to suspended status", actionBy: systemUserId);
+                //    return StatusCode(401, ApiResponse<object>.Unauthorized("Your account has been suspended. Please contact the system administrator."));
+                //}
+
                 if (systemUserId > 0)
                 {
                     #region OTP Generation
@@ -330,27 +513,17 @@ namespace API.Controllers
                     await _accountEditTools.AddTblOneTimePasswordAsync(otpGenerated, context);
                     #endregion
                     #region OTP Email Sender
-                    var renderer = new RazorRendererTools();
-
-                    EmailViewModel otpEmailPreModel = new()
-                    {
-                        Subject = "Your AMS One-Time Password (OTP)",
-                        Name = user.FirstName,
-                        Body = otp.ToString()
-                    };
-
-                    string htmlBody = await renderer.RenderAsync("OTPEmailTemplate.cshtml", otpEmailPreModel);
-
-                    EmailViewModel emailModel = new()
-                    {
-                        Emails = new List<string> { user.Email },
-                        Name = $"{user.FirstName} {user.LastName}",
-                        Subject = "Your AMS One-Time Password (OTP)",
-                        Body = htmlBody,
-                        IsHTML = true
-                    };
-
-                    await AzureTools.SendEmailAsync(emailModel, _options);
+                    await EmailTools.SendSystemEmailAsync(
+                        _options,
+                        subject: "Your AMS One-Time Password (OTP)",
+                        templateNameOrBody: "OTPEmailTemplate.cshtml",
+                        recipient: user.Email,
+                        model: new EmailViewModel
+                        {
+                            Name = user.FirstName,
+                            Body = otp.ToString()
+                        }
+                    );
 
                     #endregion
 
@@ -460,28 +633,17 @@ namespace API.Controllers
                     await _accountEditTools.AddTblOneTimePasswordAsync(otpGenerated, context);
                     #endregion
                     #region OTP Email Sender
-                    var renderer = new RazorRendererTools();
-
-                    EmailViewModel otpEmailPreModel = new()
-                    {
-                        Subject = "Your AMS One-Time Password (OTP)",
-                        Name = user.FirstName,
-                        Body = otp.ToString()
-                    };
-
-                    string htmlBody = await renderer.RenderAsync("OTPEmailTemplate.cshtml", otpEmailPreModel);
-
-                    EmailViewModel emailModel = new()
-                    {
-                        Emails = new List<string> { user.Email },
-                        Name = $"{user.FirstName} {user.LastName}",
-                        Subject = "Your AMS One-Time Password (OTP)",
-                        Body = htmlBody,
-                        IsHTML = true
-                    };
-
-                    await AzureTools.SendEmailAsync(emailModel, _options);
-
+                    await EmailTools.SendSystemEmailAsync(
+                        _options,
+                        subject: "Your AMS One-Time Password (OTP)",
+                        templateNameOrBody: "OTPEmailTemplate.cshtml",
+                        recipient: user.Email,
+                        model: new EmailViewModel
+                        {
+                            Name = user.FirstName,
+                            Body = otp.ToString()
+                        }
+                    );
                     #endregion
                 }
                 else {
@@ -566,47 +728,6 @@ namespace API.Controllers
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
-
-        /*// POST api/users/expiry-token/validation
-        [HttpPost("expiry-token/validation")]
-        public async Task<IActionResult> ValidateSessionToken([FromBody] SessionTokenValidationQueryParams model)
-        {
-            if (model == null || string.IsNullOrWhiteSpace(model.KeyEncrypted) || string.IsNullOrWhiteSpace(model.SystemUserIdEncrypted))
-                return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid request payload."));
-
-            try
-            {
-                TblSessionToken sessionTokenModel = new()
-                {
-                    Key = EncryptionHelper.Decrypt(model!.KeyEncrypted),
-                    SystemUserId = long.Parse(EncryptionHelper.Decrypt(model.SystemUserIdEncrypted)),
-                };
-
-                bool isValid = await _accountGetTools.ValidateTokenSessionAsync(sessionTokenModel);
-
-                if (isValid)
-                {
-
-                    var userInfo = await _accountGetTools.GetTblSystemUser(sessionTokenModel.SystemUserId);
-
-                    UserSimplePublicResponseModel publicRM = new()
-                    {
-                        SystemUserIdEncrypted = EncryptionHelper.Encrypt(model.SystemUserIdEncrypted)
-                    };
-
-                    return Ok(ApiResponse<object>.Ok(publicRM, $"OTP has been verified"));
-
-                }
-                else
-                    return Ok(ApiResponse<object>.ValidationFailed($"Session token expired"));
-
-            }
-            catch (Exception ex)
-            {
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-            }
-        }*/
 
         #endregion
 
