@@ -69,6 +69,7 @@ export interface UserDetails {
   profileImage?: string;
   profilePictureId?: string;
   employeeId?: string;
+  systemRoleId?: string;
 }
 
 export interface LoginCredentials {

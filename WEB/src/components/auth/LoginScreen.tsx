@@ -66,6 +66,7 @@ export function LoginScreen() {
                 },
               });
               employeeId = graphResponse.data.employeeId || '';
+              localStorage.setItem('employeeId', employeeId);
             } catch (graphError) {
               console.warn('Failed to fetch employeeId from Microsoft Graph:', graphError);
             }

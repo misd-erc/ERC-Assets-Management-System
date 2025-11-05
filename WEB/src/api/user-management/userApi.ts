@@ -1,7 +1,7 @@
-import axiosInstance from '../lib/axios';
-import { User, ApiResponse, Office, Division, EmploymentType, Position, SystemRole } from '../types';
+import axiosInstance from '../../lib/axios';
+import { User, ApiResponse, Office, Division, EmploymentType, Position, SystemRole } from '../../types';
 import { UserDetails, getUserDetails } from './authApi';
-import { getAuditTrail } from './auditApi';
+import { getAuditTrail } from '../audit/auditApi';
 
 export interface UserListResponse {
   success: boolean;
@@ -128,9 +128,9 @@ export const editUser = async (payload: {
   actionBySystemUserId: number;
 }): Promise<{ message: string }> => {
   const sessionKey = localStorage.getItem('sessionToken') || '';
-
+  const systemUserId = localStorage.getItem('systemUserId') || '';
   const requestPayload = {
-    model: {
+
       systemUserId: payload.systemUserId,
       systemRoleId: payload.systemRoleId,
       officeId: payload.officeId,
@@ -139,9 +139,8 @@ export const editUser = async (payload: {
       positionId: payload.positionId,
       statusId: payload.statusId,
       isActive: payload.isActive,
-      actionBySystemUserId: payload.actionBySystemUserId,
-    },
-    sessionKey: sessionKey
+      actionBySystemUserId: systemUserId,
+      sessionKey: sessionKey
   };
 
   const response = await axiosInstance.post<ApiResponse<any>>('/Users/edit', requestPayload);
@@ -204,13 +203,6 @@ const sessionKey = localStorage.getItem('sessionToken') || '';
  * @param token - The action by system user ID encrypted (token)
  * @returns Axios promise for user details
  */
-export const getCurrentUserDetails = async (systemUserIdEncrypted: string, token: string) => {
-  // Get session key from localStorage
-  const sessionKey = localStorage.getItem('sessionToken') || '';
-
-  return axiosInstance.get(`/Users/all/${encodeURIComponent(systemUserIdEncrypted)}?ActionBySystemUserId=${encodeURIComponent(token)}&SessionKey=${encodeURIComponent(sessionKey)}`);
-};
-
 /**
  * Retrieve user profile picture
  * @param fileId - The file storage ID (not encrypted)
@@ -226,6 +218,37 @@ export const getUserPhoto = async (fileId: string, userId: string) => {
     { responseType: 'blob' }
   );
   return response;
+};
+
+
+
+export const getUsersDetails = async (userId: string): Promise<UserDetails> => {
+  // Retrieve tokens directly from localStorage to ensure we use the latest synced values
+  const currentSystemId = String(localStorage.getItem('systemUserId'));
+
+
+  if (currentSystemId !== currentSystemId) {
+    console.warn('[AuthAPI] Token mismatch detected! Syncing before API call.');
+    // Auto-correct by syncing them
+    if (userId) {
+      localStorage.setItem('systemUserId', currentSystemId);
+      console.log('[AuthAPI] Synced systemUserId with ActionBySystemUserIdEncrypted');
+    }
+  }
+
+  // Get session key from localStorage
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
+  const response = await axiosInstance.get<ApiResponse<UserDetails>>(
+    `/Users/all/${encodeURIComponent(userId)}?ActionBySystemUserId=${encodeURIComponent(currentSystemId)}&SessionKey=${encodeURIComponent(sessionKey)}`
+  );
+
+  // Check for invalid session
+  if (!response.data.success || response.data.code === 'ERR_SERVER') {
+    throw new Error('Session expired');
+  }
+
+  return response.data.data;
 };
 
 

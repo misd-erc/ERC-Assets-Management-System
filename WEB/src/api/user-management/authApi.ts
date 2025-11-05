@@ -1,8 +1,8 @@
-import axiosInstance from '../lib/axios';
-import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserPublicViewModel, ApiResponse } from '../types';
+import axiosInstance from '../../lib/axios';
+import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserPublicViewModel, ApiResponse } from '../../types';
 
-import { guidToLongId } from '../utils/guidUtils';
-import { sanitizeSystemUserId } from '../utils/sanitizationUtils';
+import { guidToLongId } from '../../utils/guidUtils';
+import { sanitizeSystemUserId } from '../../utils/sanitizationUtils';
 
 
 export interface UserDetails {

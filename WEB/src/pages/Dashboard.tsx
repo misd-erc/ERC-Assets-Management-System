@@ -14,7 +14,6 @@ import { AssetOverviewChart } from '../components/dashboard/AssetOverviewChart';
 import { PendingApprovalsCard } from '../components/dashboard/PendingApprovalsCard';
 import { QuickActionsCard } from '../components/dashboard/QuickActionsCard';
 import { useData } from '../hooks';
-import { getCurrentUserDetails } from '../api/userApi';
 
 interface KPIData {
   title: string;
@@ -71,33 +70,6 @@ const kpiData: KPIData[] = [
 
 export function Dashboard({ onNavigate }: DashboardProps) {
   const [userFirstName, setUserFirstName] = useState<string>('User');
-
-  useEffect(() => {
-    const fetchUserDetails = async () => {
-      try {
-        const systemUserId = localStorage.getItem('systemUserId');
-        const token = localStorage.getItem('sessionKey');
-
-        if (!systemUserId || !token) {
-          console.warn('Missing tokens for user details fetch');
-          return;
-        }
-
-        console.log('[Dashboard] Fetching current user details');
-        const userResponse = await getCurrentUserDetails(systemUserId, token);
-        console.log('[Dashboard] User details response:', userResponse);
-
-        if (userResponse.data.success && userResponse.data.data) {
-          const { firstName } = userResponse.data.data;
-          setUserFirstName(firstName || 'User');
-        }
-      } catch (error) {
-        console.error('Failed to fetch user details for dashboard:', error);
-      }
-    };
-
-    fetchUserDetails();
-  }, []);
 
   return (
     <div className="space-y-8">

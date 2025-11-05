@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { User, AuthStore } from '../../types';
-import { validateUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '../../api/authApi';
+import { validateUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '../../api/user-management/authApi';
 import { generateSessionToken, saveSession, loadSession, clearSession as clearAuthSession } from '../../services/authService';
 import { clearSession, setSessionToken, syncSessionIds, setSessionKey, getSessionToken } from '../../utils/sessionUtils';
 import { encrypt, decrypt } from '../../utils/encryption';
@@ -42,6 +42,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           const userDetails = await getUserDetails();
           const encryptedUserDetails = encrypt(JSON.stringify(userDetails));
           localStorage.setItem('userDetails', encryptedUserDetails);
+
+          // Check user access after fetching details
+          const { checkUserAccess } = await import('../../utils/auth');
+          checkUserAccess();
         }
 
         // Validate session token with backend (optional, can be removed if not needed)
