@@ -7,7 +7,7 @@ import { MainLayout } from './components/layout/MainLayout';
 import { Toaster } from './components/ui/sonner';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { isSessionValid, isSessionExpired, handleSessionExpired } from './utils/sessionUtils';
-import NoRolePage from './pages/no-role';
+import { NoRolePage, UnderConstructionPage } from './pages';
 import { decrypt } from './utils/encryption';
 
 // Protected Route Component
@@ -118,6 +118,16 @@ function AppContent() {
       
       {/* No Role Route */}
       <Route path="/no-role" element={<NoRolePage />} />
+
+      {/* Under Construction Route */}
+      <Route
+        path="/under-construction"
+        element={
+          <ProtectedRoute>
+            <UnderConstructionPage />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />

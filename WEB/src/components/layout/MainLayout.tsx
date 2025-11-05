@@ -5,6 +5,7 @@ import { TopBar } from './TopBar';
 import { Dashboard } from '../dashboard/Dashboard';
 import { MyProfile } from '../profile/MyProfile';
 import UserManagement from '../../pages/UserManagement';
+import UnderConstructionContent from '../under-construction/UnderConstructionContent';
 import { useIsMobile } from '../ui/use-mobile';
 import { Sheet, SheetContent } from '../ui/sheet';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
@@ -67,6 +68,29 @@ export function MainLayout() {
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
               <UserManagement />
+            </Suspense>
+          </ErrorBoundary>
+        );
+      case 'category-management':
+      case 'deliveries-receipts':
+      case 'supplies-inventory':
+      case 'supply-management':
+      case 'transfers-returns':
+      case 'disposals':
+      case 'contracts':
+      case 'ppe-semi-expendables':
+      case 'par-ics':
+      case 'reports':
+      case 'approvals':
+      case 'calendar-notifications':
+      case 'communication-tools':
+      case 'roles-management':
+      case 'settings':
+      case 'audit-logs':
+        return (
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <UnderConstructionContent onNavigate={setActiveModule} />
             </Suspense>
           </ErrorBoundary>
         );

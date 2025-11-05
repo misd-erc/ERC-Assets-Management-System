@@ -1,7 +1,7 @@
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { AlertTriangle, UserX, LogIn } from 'lucide-react';
-import { Button } from '../../components/ui/button';
+import { Button } from '../ui/button';
 
 const RoleRequiredView: React.FC = () => {
   const handleContactAdmin = () => {
@@ -23,7 +23,7 @@ const RoleRequiredView: React.FC = () => {
             Access Restricted
           </CardTitle>
           <CardDescription className="text-gray-600">
-            Your account doesn't have an assigned role or is not active yet.
+            Your account is registered but needs to be activated and assigned a role by an administrator.
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">
@@ -33,7 +33,7 @@ const RoleRequiredView: React.FC = () => {
               <span className="text-sm font-medium text-yellow-800">Role Required</span>
             </div>
             <p className="text-sm text-yellow-700">
-              Please contact your system administrator to activate your access.
+              Please contact your system administrator to activate your account and assign a role.
             </p>
           </div>
 
