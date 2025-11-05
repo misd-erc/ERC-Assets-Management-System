@@ -23,14 +23,14 @@ import {
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useAuthStore } from '../../store/auth';
-import { getUserPhoto } from '../../api/userApi';
-import { getActivities, getAuditTrail } from '../../api/auditApi';
+import { getUserPhoto } from '../../api/user-management/userApi';
+import { getActivities, getAuditTrail } from '../../api/audit/auditApi';
 import { ActivityItem, AuditTrailItem } from '../../types/audit';
-import { uploadProfilePicture } from '../../api/uploadApi';
-import { getUserDetails } from '../../api/authApi';
+import { retrieveFile, uploadProfilePicture } from '../../api/storage/uploadApi';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { encrypt, decrypt } from '../../utils/encryption';
+import { getUserDetails } from '../../api/user-management/authApi';
 
 
 export const MyProfile = () => {
@@ -221,18 +221,16 @@ export const MyProfile = () => {
     console.log("[MyProfile] Uploading profile picture...");
     try {
       const token = localStorage.getItem("sessionToken") || localStorage.getItem("sessionKey");
-      const fileStorageId = await uploadProfilePicture(file, id, String(token));
-      const photoResponse = await getUserPhoto(fileStorageId, id);
-      const newUrl = URL.createObjectURL(photoResponse.data);
+      const fileStorageId = await uploadProfilePicture(file);
+      const newUrl = await retrieveFile(fileStorageId);
+      if (newUrl.includes('blob:')) {
 
-      // Update localStorage userDetails by calling getUserDetails
-      const updatedDetails = await getUserDetails();
-      localStorage.setItem('userDetails', JSON.stringify(updatedDetails));
-
-      // Update profilePictureId in localStorage with the new data
-      if (updatedDetails.profilePictureStorageFileId) {
-        localStorage.setItem('profilePictureId', updatedDetails.profilePictureStorageFileId);
+        const res = await getUserDetails();
+        if (res) {
+          localStorage.setItem('userDetails', encrypt(JSON.stringify(res)));
+        }
       }
+
 
       // Update state
       setProfilePictureUrl(newUrl);
@@ -307,7 +305,7 @@ export const MyProfile = () => {
   const fullName = `${userDetails.firstName || ''} ${userDetails.lastName || ''}`.trim() || 'Unknown User';
   const initials = ((userDetails.firstName || '')[0] || '') + ((userDetails.lastName || '')[0] || '') || 'U';
   const statusBadge = userDetails.isActive ? 'Active' : 'Inactive';
-  const roleBadge = 'User'; // Assuming role is not in API, or add if available
+  const roleBadge = userDetails.systemRoleName || 'No Role Assigned'; 
   const dateJoined = formatDate(userDetails.createdAt, 'Month DD, YYYY');
   const lastLogin = formatDate(userDetails.lastLoginAt, 'Month DD, YYYY HH:mm');
 
@@ -471,7 +469,7 @@ export const MyProfile = () => {
                   <Building className="w-4 h-4 text-gray-400" />
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Employee ID</Label>
-                    <p className="text-gray-900">{userDetails.employeeId || 'N/A'}</p>
+                    <p className="text-gray-900">{localStorage.getItem('employeeId') || 'N/A'}</p>
                   </div>
                 </div>
               </CardContent>

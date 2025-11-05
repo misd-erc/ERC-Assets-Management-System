@@ -1,5 +1,5 @@
-import axiosInstance from '../lib/axios';
-import { Asset } from '../types';
+import axiosInstance from '../../lib/axios';
+import { Asset } from '../../types';
 
 export const getAssets = async (): Promise<Asset[]> => {
   // const response = await axiosInstance.get('/assets');

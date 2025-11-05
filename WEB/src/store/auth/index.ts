@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { User, AuthStore } from '../../types';
-import { validateUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '../../api/authApi';
+import { validateUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '../../api/user-management/authApi';
 import { generateSessionToken, saveSession, loadSession, clearSession as clearAuthSession } from '../../services/authService';
 import { clearSession, setSessionToken, syncSessionIds, setSessionKey, getSessionToken } from '../../utils/sessionUtils';
 import { encrypt, decrypt } from '../../utils/encryption';

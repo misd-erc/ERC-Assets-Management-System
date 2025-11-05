@@ -16,7 +16,7 @@ import {
   ChevronRight,
   MoreHorizontal
 } from 'lucide-react';
-import { getUsers, deleteUser, editUser } from '../../api/userApi';
+import { getUsers, deleteUser, editUser } from '../../api/user-management/userApi';
 import { User } from '../../types/user';
 import { toast } from 'sonner';
 import { useAuthStore } from '../../store/auth';

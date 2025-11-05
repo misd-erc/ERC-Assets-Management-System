@@ -7,7 +7,7 @@ import { Label } from '../ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { User } from '../../types/user';
 import { Mail, Building, Briefcase, Calendar, User as UserIcon, MapPin, Users, IdCard } from 'lucide-react';
-import { getUserPhoto } from '../../api/userApi';
+import { getUserPhoto } from '../../api/user-management/userApi';
 
 
 interface UserDetailsDrawerProps {
