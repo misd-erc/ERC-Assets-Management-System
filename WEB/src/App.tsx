@@ -7,6 +7,8 @@ import { MainLayout } from './components/layout/MainLayout';
 import { Toaster } from './components/ui/sonner';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { isSessionValid, isSessionExpired, handleSessionExpired } from './utils/sessionUtils';
+import NoRolePage from './pages/no-role';
+import { decrypt } from './utils/encryption';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -35,8 +37,33 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/mfa" replace />;
   }
 
-  // Session is valid and not expired, allow access
-  // The auth store will handle authentication state internally
+  // Check user role access
+  const encryptedUserDetails = localStorage.getItem('userDetails');
+  if (encryptedUserDetails) {
+    try {
+      const userDetails = JSON.parse(decrypt(encryptedUserDetails));
+      const systemRoleId = userDetails.systemRoleId;
+      const isActive = userDetails.isActive;
+
+      // Redirect to no-role if:
+      // - systemRoleId is null or 0
+      // - isActive is false
+      // - user has role but isActive is false
+      // - user doesn't have role but isActive is true
+      if (!systemRoleId || systemRoleId === 0 || !isActive) {
+        console.log('[ProtectedRoute] User does not have required role or is inactive, redirecting to no-role');
+        return <Navigate to="/no-role" replace />;
+      }
+    } catch (error) {
+      console.error('[ProtectedRoute] Error checking user access:', error);
+      return <Navigate to="/no-role" replace />;
+    }
+  } else {
+    console.log('[ProtectedRoute] No user details found, redirecting to no-role');
+    return <Navigate to="/no-role" replace />;
+  }
+
+  // Session is valid, user has role and is active, allow access
   return <>{children}</>;
 }
 
@@ -89,6 +116,9 @@ function AppContent() {
         } 
       />
       
+      {/* No Role Route */}
+      <Route path="/no-role" element={<NoRolePage />} />
+
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
