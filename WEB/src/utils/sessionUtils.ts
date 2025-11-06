@@ -30,17 +30,11 @@ export const isSessionValid = (): boolean => {
 export const clearSession = (): void => {
   // Clear all possible session-related items
   const sessionKeys = [
-    'userProfile',
-    'token',
-    'systemUserIdEncrypted',
     'systemUserId',
     'userDetails',
-    'authToken',
-    'user',
     'sessionToken',
     'expiresAt',
-    'ActionBySystemUserIdEncrypted',
-    'ActionBySystemUserId'
+    'employeeId'
   ];
 
   sessionKeys.forEach(key => {

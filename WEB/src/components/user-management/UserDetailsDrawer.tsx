@@ -71,7 +71,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="sm:max-w-[500px] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>User Details</SheetTitle>
+          <SheetTitle className='text-3xl font-semibold text-slate-900'>User Details</SheetTitle>
           <SheetDescription>
             View detailed information about this user
           </SheetDescription>
