@@ -43,7 +43,7 @@ namespace PortalTools.Services.DBO.Office
                 }
                 else
                 {
-                    existingOffice = await _officeGetTools.GetTblOfficeAsync(model.Id);
+                    existingOffice = await _officeGetTools.GetTblOfficeAsync(model.Id, context);
 
                     if (existingOffice == null)
                         return 0;
@@ -88,7 +88,7 @@ namespace PortalTools.Services.DBO.Office
                 }
                 else
                 {
-                    existingDivision = await _officeGetTools.GetTblDivisionAsync(model.Id);
+                    existingDivision = await _officeGetTools.GetTblDivisionAsync(model.Id, context);
 
                     if (existingDivision == null)
                         return 0;
@@ -134,7 +134,7 @@ namespace PortalTools.Services.DBO.Office
                 }
                 else
                 {
-                    existingEmploymentType = await _officeGetTools.GetTblEmploymentTypeAsync(model.Id);
+                    existingEmploymentType = await _officeGetTools.GetTblEmploymentTypeAsync(model.Id, context);
 
                     if (existingEmploymentType == null)
                         return 0;
@@ -178,7 +178,7 @@ namespace PortalTools.Services.DBO.Office
                 }
                 else
                 {
-                    existingPosition = await _officeGetTools.GetTblPositionAsync(model.Id);
+                    existingPosition = await _officeGetTools.GetTblPositionAsync(model.Id, context);
 
                     if (existingPosition == null)
                         return 0;

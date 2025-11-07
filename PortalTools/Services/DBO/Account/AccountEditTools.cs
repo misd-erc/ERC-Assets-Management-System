@@ -42,14 +42,14 @@ namespace PortalTools.Services.DBO.Account
 
                 if (isInsert)
                 {
-                    model.SystemRoleId = _accountGetTools.GetSystemRoleByNameAsync(TblSystemRole.EMPLOYEE)?.Id;
+                    model.SystemRoleId = _accountGetTools.GetSystemRoleByNameAsync(TblSystemRole.EMPLOYEE, context)?.Id;
                     model.StatusId = TblSystemUserStatus.Dictionary[TblSystemUserStatus.PENDING];
                     await context.TblSystemUsers.AddAsync(model);
                     await context.SaveChangesAsync();
                 }
                 else
                 {
-                    existingUser = await _accountGetTools.GetTblSystemUserByEntraIdAndEmailAsync(model.EntraId, model.Email);
+                    existingUser = await _accountGetTools.GetTblSystemUserByEntraIdAndEmailAsync(model.EntraId, model.Email, context);
 
                     if (existingUser == null)
                         return 0;
@@ -95,7 +95,7 @@ namespace PortalTools.Services.DBO.Account
             try
             {
 
-                TblSystemUser? userCurrentInfo = await _accountGetTools.GetTblSystemUserAsync(model.Id);
+                TblSystemUser? userCurrentInfo = await _accountGetTools.GetTblSystemUserAsync(model.Id, context);
                 TblSystemUser userUpdatedInfo = new()
                 {
                     Id = model.Id,
@@ -200,7 +200,7 @@ namespace PortalTools.Services.DBO.Account
             try
             {
 
-                TblSystemUser? userCurrentInfo = await _accountGetTools.GetTblSystemUserAsync(model.SystemUserId);
+                TblSystemUser? userCurrentInfo = await _accountGetTools.GetTblSystemUserAsync(model.SystemUserId, context);
                 TblSystemUser userUpdatedInfo = new()
                 {
                     ProfilePictureFileStorageId = model.FileStorageId

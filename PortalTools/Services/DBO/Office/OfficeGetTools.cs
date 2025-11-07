@@ -13,22 +13,16 @@ namespace PortalTools.Services.DBO.Office
 {
     public class OfficeGetTools
     {
-        private readonly PortalDbContext _context;
 
-        public OfficeGetTools(PortalDbContext context)
-        {
-            _context = context;
-        }
-
-        public IQueryable<TblOffice> GetTblOffices() => _context.TblOffices.Where(x => !x.IsDeleted);
-        public async Task<TblOffice?> GetTblOfficeAsync(long? id) => await _context.TblOffices.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
-        public async Task<TblDivision?> GetTblDivisionAsync(long? id) => await _context.TblDivisions.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
-        public IQueryable<VwDivision> GetVwDivisions() => _context.VwDivisions.Where(x => !x.IsDeleted);
-        public async Task<VwDivision?> GetVwDivisionAsync(long id) => await _context.VwDivisions.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
-        public IQueryable<VwDivision?> GetVwDivisionsByOfficeId(long officeId) => _context.VwDivisions.Where(x => !x.IsDeleted && x.OfficeId == officeId);
-        public IQueryable<TblEmploymentType> GetTblEmploymentTypes() => _context.TblEmploymentTypes.Where(x => !x.IsDeleted);
-        public async Task<TblEmploymentType?> GetTblEmploymentTypeAsync(long id) => await _context.TblEmploymentTypes.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
-        public IQueryable<TblPosition> GetTblPositions() => _context.TblPositions.Where(x => !x.IsDeleted);
-        public async Task<TblPosition?> GetTblPositionAsync(long id) => await _context.TblPositions.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<TblOffice> GetTblOffices(PortalDbContext context) => context.TblOffices.Where(x => !x.IsDeleted);
+        public async Task<TblOffice?> GetTblOfficeAsync(long? id, PortalDbContext context) => await context.TblOffices.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblDivision?> GetTblDivisionAsync(long? id, PortalDbContext context) => await context.TblDivisions.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<VwDivision> GetVwDivisions(PortalDbContext context) => context.VwDivisions.Where(x => !x.IsDeleted);
+        public async Task<VwDivision?> GetVwDivisionAsync(long id, PortalDbContext context) => await context.VwDivisions.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<VwDivision?> GetVwDivisionsByOfficeId(long officeId, PortalDbContext context) => context.VwDivisions.Where(x => !x.IsDeleted && x.OfficeId == officeId);
+        public IQueryable<TblEmploymentType> GetTblEmploymentTypes(PortalDbContext context) => context.TblEmploymentTypes.Where(x => !x.IsDeleted);
+        public async Task<TblEmploymentType?> GetTblEmploymentTypeAsync(long id, PortalDbContext context) => await context.TblEmploymentTypes.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<TblPosition> GetTblPositions(PortalDbContext context) => context.TblPositions.Where(x => !x.IsDeleted);
+        public async Task<TblPosition?> GetTblPositionAsync(long id, PortalDbContext context) => await context.TblPositions.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
     }
 }

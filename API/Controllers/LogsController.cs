@@ -49,6 +49,9 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetAllAuditTrails([FromQuery] PaginationGenericQueryParams model)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
@@ -84,7 +87,7 @@ namespace API.Controllers
                     .Distinct()
                     .ToList();
 
-                List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers()
+                List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers(context)
                     .Where(x => systemUserIds.Contains(x.Id))
                     .ToListAsync();
 
@@ -99,6 +102,8 @@ namespace API.Controllers
                     Date = x.ChangedAt
                 }).ToList();
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed audit trails", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<AuditTrailResponseModel>.OkPaginated(
                     auditTrailResponses,
@@ -110,6 +115,7 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(LogsController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -121,10 +127,13 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetAllAuditTrailsBySystemUserId([FromQuery] PaginationGenericQueryParams model, [FromRoute] long systemUserId)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
-                TblSystemUser? user = await _accountGetTools.GetTblSystemUserAsync(systemUserId);
+                TblSystemUser? user = await _accountGetTools.GetTblSystemUserAsync(systemUserId, context);
 
                 IQueryable<TblAuditTrail> auditTrailQuery = _logGetTools.GetTblAuditTrails().Where(x => x.ChangedBy == user.Id);
 
@@ -163,6 +172,8 @@ namespace API.Controllers
                     Date = x.ChangedAt
                 }).ToList();
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed audit trail for user {systemUserId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<AuditTrailResponseModel>.OkPaginated(
                     auditTrailResponses,
@@ -174,6 +185,7 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(LogsController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -185,6 +197,9 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetAllActivities([FromQuery] PaginationGenericQueryParams model)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
@@ -229,7 +244,7 @@ namespace API.Controllers
                     .Where(x => auditTrailIds.Contains(x.Id))
                     .ToListAsync();
 
-                List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers()
+                List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers(context)
                     .Where(x => systemUserIds.Contains(x.Id))
                     .ToListAsync();
 
@@ -270,6 +285,8 @@ namespace API.Controllers
                     })
                 )).ToList();
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed activity logs", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<ActivityResponseModel>.OkPaginated(
                     activityResponses,
@@ -281,6 +298,7 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(LogsController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -292,6 +310,10 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetAllActivitiesBySystemUserId([FromQuery] PaginationGenericQueryParams model, [FromRoute] long systemUserId)
         {
+
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
@@ -333,7 +355,7 @@ namespace API.Controllers
                     .Where(x => auditTrailIds.Contains(x.Id))
                     .ToListAsync();
 
-                TblSystemUser? systemUser = await _accountGetTools.GetTblSystemUserAsync(systemUserId);
+                TblSystemUser? systemUser = await _accountGetTools.GetTblSystemUserAsync(systemUserId, context);
 
                 List<ActivityResponseModel> activityResponses = (await Task.WhenAll(
                     activityLogList.Select(async x =>
@@ -368,6 +390,8 @@ namespace API.Controllers
                     })
                 )).ToList();
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed activity logs for user {systemUserId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<ActivityResponseModel>.OkPaginated(
                     activityResponses,
@@ -379,6 +403,7 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(LogsController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }

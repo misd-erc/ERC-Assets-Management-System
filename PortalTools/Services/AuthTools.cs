@@ -31,7 +31,7 @@ namespace PortalTools.Services
                     Key = sessionKey,
                     SystemUserId = systemUserId
                 };
-                return await _accountGetTools.ValidateTokenSessionAsync(sessionModel);
+                return await _accountGetTools.ValidateTokenSessionAsync(sessionModel, new PortalDbContext(_options));
             }
             catch (Exception ex)
             {

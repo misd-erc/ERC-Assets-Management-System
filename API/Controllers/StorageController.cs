@@ -110,7 +110,7 @@ namespace API.Controllers
             {
 
                 // Retrieve record
-                var fileRecord = await _storageGetTools.GetTblFileStorageAsync(fileStorageId);
+                var fileRecord = await _storageGetTools.GetTblFileStorageAsync(fileStorageId, context);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();

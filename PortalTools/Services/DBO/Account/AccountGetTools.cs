@@ -14,34 +14,27 @@ namespace PortalTools.Services.DBO.Account
     public class AccountGetTools
     {
 
-        private readonly PortalDbContext _context; 
-        
-        public AccountGetTools(PortalDbContext context) 
-        { 
-            _context = context; 
-        }
-
-        public IQueryable<TblSystemUser> GetTblSystemUsers() => _context.TblSystemUsers.Where(x => !x.IsDeleted);
-        public IQueryable<VwSystemUser?> GetVwSystemUsers() => _context.VwSystemUsers.Where(x => !x.IsDeleted);
-        public async Task<VwSystemUser?> GetVwSystemUserAsync(long id) => await _context.VwSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
-        public async Task<TblSystemUser?> GetTblSystemUserAsync(long id) => await _context.TblSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<TblSystemUser> GetTblSystemUsers(PortalDbContext context) => context.TblSystemUsers.Where(x => !x.IsDeleted);
+        public IQueryable<VwSystemUser?> GetVwSystemUsers(PortalDbContext context) => context.VwSystemUsers.Where(x => !x.IsDeleted);
+        public async Task<VwSystemUser?> GetVwSystemUserAsync(long id, PortalDbContext context) => await context.VwSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblSystemUser?> GetTblSystemUserAsync(long id, PortalDbContext context) => await context.TblSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public async Task<TblSystemUser?> GetTblSystemUserWithContextAsync(long id, PortalDbContext context) => await context.TblSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
-        public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAsync(long entraId) => await _context.TblSystemUsers.Where(x => !x.IsDeleted && x.EntraId == entraId).FirstOrDefaultAsync();
-        public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAndEmailAsync(long entraId, string email)
+        public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAsync(long entraId, PortalDbContext context) => await context.TblSystemUsers.Where(x => !x.IsDeleted && x.EntraId == entraId).FirstOrDefaultAsync();
+        public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAndEmailAsync(long entraId, string email, PortalDbContext context)
         {
             TblSystemUser? user = new TblSystemUser();
-            user = await GetTblSystemUserByEntraIdAsync(entraId);
+            user = await GetTblSystemUserByEntraIdAsync(entraId, context);
 
             if (user != null && user.Email != email)
                 throw new UnauthorizedAccessException("Email does not match the provided Entra ID.");
 
             return user;
         }
-        public async Task<bool> ValidateOTPAsync(TblOneTimePassword model)
+        public async Task<bool> ValidateOTPAsync(TblOneTimePassword model, PortalDbContext context)
         {
             TblOneTimePassword? otpInfo = new TblOneTimePassword();
 
-            otpInfo = await _context.TblOneTimePasswords.Where(x => !x.IsDeleted && x.SystemUserId == model.SystemUserId && x.ValidUntil >= DateTime.UtcNow).FirstOrDefaultAsync();
+            otpInfo = await context.TblOneTimePasswords.Where(x => !x.IsDeleted && x.SystemUserId == model.SystemUserId && x.ValidUntil >= DateTime.UtcNow).FirstOrDefaultAsync();
 
             if (otpInfo == null)
                 throw new KeyNotFoundException("OTP connected to SystemUserId not found");
@@ -53,9 +46,9 @@ namespace PortalTools.Services.DBO.Account
 
             return false;
         }
-        public async Task<bool> ValidateTokenSessionAsync(TblSessionToken model)
+        public async Task<bool> ValidateTokenSessionAsync(TblSessionToken model, PortalDbContext context)
         {
-            bool isValid = await _context.TblSessionTokens
+            bool isValid = await context.TblSessionTokens
                 .AnyAsync(x => !x.IsDeleted && x.SystemUserId == model.SystemUserId
                     && x.Key == model.Key
                     && x.ValidUntil >= DateTime.UtcNow);
@@ -64,10 +57,10 @@ namespace PortalTools.Services.DBO.Account
                 return true;
             return false;
         }
-        public async Task<TblSessionToken?> GetTblSessionTokenAsync(string sessionKey) => await _context.TblSessionTokens.Where(x => !x.IsDeleted && x.Key == sessionKey).FirstOrDefaultAsync();
-        public async Task<bool> ValidateTokenSessionBySystemUserIdAsync(long systemUserId)
+        public async Task<TblSessionToken?> GetTblSessionTokenAsync(string sessionKey, PortalDbContext context) => await context.TblSessionTokens.Where(x => !x.IsDeleted && x.Key == sessionKey).FirstOrDefaultAsync();
+        public async Task<bool> ValidateTokenSessionBySystemUserIdAsync(long systemUserId, PortalDbContext context)
         {
-            bool isValid = await _context.TblSessionTokens
+            bool isValid = await context.TblSessionTokens
                 .AnyAsync(x => !x.IsDeleted && x.SystemUserId == systemUserId
                     && x.ValidUntil >= DateTime.UtcNow);
 
@@ -76,22 +69,22 @@ namespace PortalTools.Services.DBO.Account
 
             return false;
         }
-        public async Task<long> GetSystemUserIdBySessionKeyAsync(string sessionKey)
+        public async Task<long> GetSystemUserIdBySessionKeyAsync(string sessionKey, PortalDbContext context)
         {
-            TblSessionToken? sessionToken = await GetTblSessionTokenAsync(sessionKey) ?? throw new UnauthorizedAccessException("Session not found.");
+            TblSessionToken? sessionToken = await GetTblSessionTokenAsync(sessionKey, context) ?? throw new UnauthorizedAccessException("Session not found.");
             if (sessionToken.ValidUntil < DateTime.UtcNow)
                 throw new UnauthorizedAccessException("Session expired.");
 
             return sessionToken.SystemUserId;
         }
-        public IQueryable<TblSystemRole?> GetSystemRoles() => _context.TblSystemRoles.Where(x => !x.IsDeleted);
-        public IQueryable<TblSystemUserStatus?> GetSystemUserStatuses() => _context.TblSystemUserStatuses.Where(x => !x.IsDeleted);
-        public async Task<TblSystemRole?> GetSystemRoleAsync(long? id) => await _context.TblSystemRoles.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
-        public async Task<TblSystemUserStatus?> GetSystemUserStatusAsync(long? id) => await _context.TblSystemUserStatuses.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
-        public async Task<TblSystemRole?> GetSystemRoleByNameAsync(string name) => await _context.TblSystemRoles.Where(x => !x.IsDeleted && x.RoleName == name).FirstOrDefaultAsync();
+        public IQueryable<TblSystemRole?> GetSystemRoles(PortalDbContext context) => context.TblSystemRoles.Where(x => !x.IsDeleted);
+        public IQueryable<TblSystemUserStatus?> GetSystemUserStatuses(PortalDbContext context) => context.TblSystemUserStatuses.Where(x => !x.IsDeleted);
+        public async Task<TblSystemRole?> GetSystemRoleAsync(long? id, PortalDbContext context) => await context.TblSystemRoles.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblSystemUserStatus?> GetSystemUserStatusAsync(long? id, PortalDbContext context) => await context.TblSystemUserStatuses.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblSystemRole?> GetSystemRoleByNameAsync(string name, PortalDbContext context) => await context.TblSystemRoles.Where(x => !x.IsDeleted && x.RoleName == name).FirstOrDefaultAsync();
         public async Task<IQueryable<TblSystemUser?>> GetSystemUsersBySystemRoleWithContextAsync(string systemRole, PortalDbContext context)
         {
-            var role = await GetSystemRoleByNameAsync(systemRole);
+            var role = await GetSystemRoleByNameAsync(systemRole, context);
             long systemRoleId = role!.Id;
             return context.TblSystemUsers.Where(x => !x.IsDeleted && x.SystemRoleId == systemRoleId);
         } 

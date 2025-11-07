@@ -54,10 +54,13 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetAllOffices([FromQuery] PaginationGenericQueryParams model)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
-                IEnumerable<TblOffice?> offices = await _officeGetTools.GetTblOffices().ToListAsync();
+                IEnumerable<TblOffice?> offices = await _officeGetTools.GetTblOffices(context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -92,6 +95,8 @@ namespace API.Controllers
                     CreatedAt = x.CreatedAt
                 }).ToList();
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed offices", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<OfficeResponseModel>.OkPaginated(
                     officesResponses,
@@ -104,6 +109,7 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -121,7 +127,7 @@ namespace API.Controllers
             try
             {
 
-                TblOffice? office = await _officeGetTools.GetTblOfficeAsync(officeId);
+                TblOffice? office = await _officeGetTools.GetTblOfficeAsync(officeId, context);
 
                 DivisionResponseModel newOfficeResponse = new()
                 {
@@ -132,12 +138,15 @@ namespace API.Controllers
                     CreatedAt = office.CreatedAt
                 };
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed office information for office {officeId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<DivisionResponseModel>.Ok(newOfficeResponse, "Office have been retrieved"));
 
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -149,10 +158,13 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetAllDivisions([FromQuery] PaginationGenericQueryParams model)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
-                IEnumerable<VwDivision?> divisions = await _officeGetTools.GetVwDivisions().ToListAsync();
+                IEnumerable<VwDivision?> divisions = await _officeGetTools.GetVwDivisions(context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -189,13 +201,15 @@ namespace API.Controllers
                         Id = x.Id,
                         Name = x.Name,
                         Acronym = x.Acronym,
-                        Office = await _officeGetTools.GetTblOfficeAsync(x.OfficeId),
+                        Office = await _officeGetTools.GetTblOfficeAsync(x.OfficeId, context),
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
                     divisionsResponses.Add(divisionModel);
                 }
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed divisions", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<VwDivisionResponseModel>.OkPaginated(
                     divisionsResponses,
@@ -208,6 +222,7 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -219,27 +234,33 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetDivisionByDivisionId([FromQuery] SoloQueryParams model, [FromRoute] long divisionId)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
-                VwDivision? division = await _officeGetTools.GetVwDivisionAsync(divisionId);
+                VwDivision? division = await _officeGetTools.GetVwDivisionAsync(divisionId, context);
 
                 VwDivisionResponseModel divisionResponse = new ()
                 {
                     Id = division.Id,
                     Name = division.Name,
                     Acronym = division.Acronym,
-                    Office = await _officeGetTools.GetTblOfficeAsync(division.OfficeId),
+                    Office = await _officeGetTools.GetTblOfficeAsync(division.OfficeId, context),
                     IsActive = division.IsActive,
                     CreatedAt = division.CreatedAt
                 };
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed division information for division {divisionId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<VwDivisionResponseModel>.Ok(divisionResponse, "Division have been retrieved"));
 
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -251,10 +272,13 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetAllEmploymentTypes([FromQuery] PaginationGenericQueryParams model)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
-                IEnumerable<TblEmploymentType?> employmentTypes = await _officeGetTools.GetTblEmploymentTypes().ToListAsync();
+                IEnumerable<TblEmploymentType?> employmentTypes = await _officeGetTools.GetTblEmploymentTypes(context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -281,6 +305,8 @@ namespace API.Controllers
 
                 List<TblEmploymentType?> officesResponses = employmentTypesList;
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed employment types", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<TblEmploymentType?>.OkPaginated(
                     officesResponses,
@@ -293,6 +319,7 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -304,16 +331,22 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetAllEmploymentTypeByEmploymentTypeId([FromQuery] SoloQueryParams model, [FromRoute] long employmentTypeId)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
-                TblEmploymentType? employmentType = await _officeGetTools.GetTblEmploymentTypeAsync(employmentTypeId);
+                TblEmploymentType? employmentType = await _officeGetTools.GetTblEmploymentTypeAsync(employmentTypeId, context);
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed employment type information for employment type {employmentTypeId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<TblEmploymentType>.Ok(employmentType, "Employment type have been retrieved"));
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -325,10 +358,13 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetAllPositions([FromQuery] PaginationGenericQueryParams model)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
-                IEnumerable<TblPosition?> positions = await _officeGetTools.GetTblPositions().ToListAsync();
+                IEnumerable<TblPosition?> positions = await _officeGetTools.GetTblPositions(context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -357,6 +393,8 @@ namespace API.Controllers
 
                 List<TblPosition?> positionsResponses = positionsList;
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed positions", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<TblPosition?>.OkPaginated(
                     positionsList,
@@ -369,6 +407,7 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -380,17 +419,23 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetPositionByPositionId([FromQuery] SoloQueryParams model, [FromRoute] long positionId)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
-                TblPosition? position = await _officeGetTools.GetTblPositionAsync(positionId);
+                TblPosition? position = await _officeGetTools.GetTblPositionAsync(positionId, context);
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed position information for position {positionId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<TblPosition>.Ok(position, "Position have been retrieved"));
 
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -406,12 +451,11 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> EditOffice([FromQuery] EditOfficeQueryParams model)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
-                #region Transaction
-                await using var context = new PortalDbContext(_options);
-                await using var transaction = await context.Database.BeginTransactionAsync();
 
                 TblOffice office = new()
                 {
@@ -423,21 +467,20 @@ namespace API.Controllers
 
                 long officeId = await _officeEditTools.EditTblOfficeAsync(office, context);
 
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                #endregion
-
                 UserSimplePublicResponseModel publicRM = new()
                 {
                     SystemUserId = model.ActionBySystemUserId,
                     SessionKey = model.SessionKey
                 };
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok(publicRM, $"Office has been {(model.OfficeId == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -449,12 +492,11 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> EditDivision([FromQuery] EditDivisionQueryParams model)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
-                #region Transaction
-                await using var context = new PortalDbContext(_options);
-                await using var transaction = await context.Database.BeginTransactionAsync();
 
                 TblDivision division = new()
                 {
@@ -467,9 +509,6 @@ namespace API.Controllers
 
                 long divisionId = await _officeEditTools.EditTblDivisionAsync(division, context);
 
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                #endregion
 
                 UserSimplePublicResponseModel publicRM = new()
                 {
@@ -477,11 +516,14 @@ namespace API.Controllers
                     SessionKey = model.SessionKey
                 };
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok(publicRM, $"Division has been {(model.DivisionId == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -493,12 +535,12 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> EditEmploymentType([FromQuery] EditEmploymentTypeQueryParams model)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
-                #region Transaction
-                await using var context = new PortalDbContext(_options);
-                await using var transaction = await context.Database.BeginTransactionAsync();
+
 
                 TblEmploymentType employmentType = new()
                 {
@@ -509,21 +551,20 @@ namespace API.Controllers
 
                 long employmentTypeId = await _officeEditTools.EditTblEmploymentTypeAsync(employmentType, context);
 
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                #endregion
-
                 UserSimplePublicResponseModel publicRM = new()
                 {
                     SystemUserId = model.ActionBySystemUserId,
                     SessionKey = model.SessionKey
                 };
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok(publicRM, $"Employment type has been {(model.EmploymentTypeId == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -536,11 +577,11 @@ namespace API.Controllers
         public async Task<IActionResult> EditPosition([FromQuery] EditPositionQueryParams model)
         {
 
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
-                #region Transaction
-                await using var context = new PortalDbContext(_options);
-                await using var transaction = await context.Database.BeginTransactionAsync();
 
                 TblPosition position = new()
                 {
@@ -553,21 +594,20 @@ namespace API.Controllers
 
                 long positionId = await _officeEditTools.EditTblPositionAsync(position, context);
 
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                #endregion
-
                 UserSimplePublicResponseModel publicRM = new()
                 {
                     SystemUserId = model.ActionBySystemUserId,
                     SessionKey = model.SessionKey
                 };
 
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok(publicRM, $"Position has been {(model.PositionId == 0? "added" : "updated")}"));
 
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
