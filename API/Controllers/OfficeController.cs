@@ -118,7 +118,7 @@ namespace API.Controllers
             try
             {
 
-                TblOffice? office = await _officeGetTools.GetTblOffice(officeId);
+                TblOffice? office = await _officeGetTools.GetTblOfficeAsync(officeId);
 
                 DivisionResponseModel newOfficeResponse = new()
                 {
@@ -215,7 +215,7 @@ namespace API.Controllers
             try
             {
 
-                VwDivision? division = await _officeGetTools.GetVwDivision(divisionId);
+                VwDivision? division = await _officeGetTools.GetVwDivisionAsync(divisionId);
 
                 VwDivisionResponseModel divisionResponse = new ()
                 {
@@ -302,7 +302,7 @@ namespace API.Controllers
             try
             {
 
-                TblEmploymentType? employmentType = await _officeGetTools.GetTblEmploymentType(employmentTypeId);
+                TblEmploymentType? employmentType = await _officeGetTools.GetTblEmploymentTypeAsync(employmentTypeId);
 
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed employment type information for employment type {employmentTypeId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<TblEmploymentType>.Ok(employmentType, "Employment type have been retrieved"));
@@ -378,7 +378,7 @@ namespace API.Controllers
             try
             {
 
-                TblPosition? position = await _officeGetTools.GetTblPosition(positionId);
+                TblPosition? position = await _officeGetTools.GetTblPositionAsync(positionId);
 
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed position information for position {positionId}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<TblPosition>.Ok(position, "Position have been retrieved"));

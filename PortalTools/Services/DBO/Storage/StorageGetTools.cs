@@ -19,6 +19,6 @@ namespace PortalTools.Services.DBO.Storage
             _context = context;
         }
         public IQueryable<TblFileStorage> GetTblFileStorages() => _context.TblFileStorages.Where(x => !x.IsDeleted);
-        public async Task<TblFileStorage?> GetTblFileStorage(long id) => await _context.TblFileStorages.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblFileStorage?> GetTblFileStorageAsync(long id) => await _context.TblFileStorages.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
     }
 }

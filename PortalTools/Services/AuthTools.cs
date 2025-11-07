@@ -63,7 +63,7 @@ namespace PortalTools.Services
         ///   - bool   : true = user is allowed to continue, false = blocked
         ///   - string : error message when blocked, otherwise null
         /// </summary>
-        public async Task<(bool IsAllowed, string? ErrorMessage)> ValidateUserStatusAsync(
+        public async Task<(bool IsAllowed, string? ErrorMessage, string? SpecificError)> ValidateUserStatusAsync(
             long systemUserId,
             PortalDbContext context,
             DbContextOptions<PortalDbContext> auditOptions)
@@ -77,7 +77,7 @@ namespace PortalTools.Services
                     $"Login attempt failed – user not found after edit (Id: {systemUserId})",
                     actionBy: systemUserId);
 
-                return (false, "User record not found.");
+                return (false, "User record not found.", "User not found");
             }
 
             // 1. IsActive flag
@@ -88,7 +88,7 @@ namespace PortalTools.Services
                     "Login attempt failed due to inactive status",
                     actionBy: systemUserId);
 
-                return (false, "Account is inactive. Please contact the system administrator.");
+                return (false, "Account is inactive. Please contact the system administrator.", "Inactive account");
             }
 
             // 2. StatusId checks (dictionary is static – no DB hit)
@@ -101,7 +101,7 @@ namespace PortalTools.Services
                     "Login attempt failed due to pending status",
                     actionBy: systemUserId);
 
-                return (false, "Your account is still pending. Please wait for the system administrator to approve your account.");
+                return (false, "Your account is still pending. Please wait for the system administrator to approve your account.", "Pending status");
             }
 
             if (status == TblSystemUserStatus.Dictionary[TblSystemUserStatus.INACTIVE])
@@ -111,7 +111,7 @@ namespace PortalTools.Services
                     "Login attempt failed due to inactive status",
                     actionBy: systemUserId);
 
-                return (false, "Your account is inactive. Please contact the system administrator.");
+                return (false, "Your account is inactive. Please contact the system administrator.", "Inactive status");
             }
 
             if (status == TblSystemUserStatus.Dictionary[TblSystemUserStatus.SUSPENDED])
@@ -121,11 +121,11 @@ namespace PortalTools.Services
                     "Login attempt failed due to suspended status",
                     actionBy: systemUserId);
 
-                return (false, "Your account has been suspended. Please contact the system administrator.");
+                return (false, "Your account has been suspended. Please contact the system administrator.", "Suspended status");
             }
 
             // All good
-            return (true, null);
+            return (true, null, null);
         }
         #endregion
     }

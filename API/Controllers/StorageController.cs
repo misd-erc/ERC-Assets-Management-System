@@ -107,7 +107,7 @@ namespace API.Controllers
             {
 
                 // Retrieve record
-                var fileRecord = await _storageGetTools.GetTblFileStorage(fileStorageId);
+                var fileRecord = await _storageGetTools.GetTblFileStorageAsync(fileStorageId);
 
                 if (fileRecord == null)
                     return NotFound(ApiResponse<object>.Fail(ErrorCodes.NOT_FOUND, "File not found."));

@@ -20,7 +20,7 @@ namespace PortalTools.Services.DBO.Notification
         }
 
         public IQueryable<TblSystemNotification> GetTblSystemNotifications() => _context.TblSystemNotifications.Where(x => !x.IsDeleted);
-        public async Task<TblSystemNotification?> GetTblSystemNotification(long id) => await _context.TblSystemNotifications.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblSystemNotification?> GetTblSystemNotificationAsync(long id) => await _context.TblSystemNotifications.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public IQueryable<TblSystemNotification> GetTblSystemNotificationsBySystemUserId(long systemUserId) => _context.TblSystemNotifications.Where(x => !x.IsDeleted && x.SystemUserId == systemUserId);
         public IQueryable<TblSystemNotification> GetTblSystemNotificationsByCreatedBySystemUserId(long createdBySystemUserId) => _context.TblSystemNotifications.Where(x => !x.IsDeleted && x.CreatedBySystemUserId == createdBySystemUserId);
     }

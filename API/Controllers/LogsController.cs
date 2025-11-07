@@ -124,7 +124,7 @@ namespace API.Controllers
             try
             {
 
-                TblSystemUser? user = await _accountGetTools.GetTblSystemUser(systemUserId);
+                TblSystemUser? user = await _accountGetTools.GetTblSystemUserAsync(systemUserId);
 
                 IQueryable<TblAuditTrail> auditTrailQuery = _logGetTools.GetTblAuditTrails().Where(x => x.ChangedBy == user.Id);
 
@@ -333,7 +333,7 @@ namespace API.Controllers
                     .Where(x => auditTrailIds.Contains(x.Id))
                     .ToListAsync();
 
-                TblSystemUser? systemUser = await _accountGetTools.GetTblSystemUser(systemUserId);
+                TblSystemUser? systemUser = await _accountGetTools.GetTblSystemUserAsync(systemUserId);
 
                 List<ActivityResponseModel> activityResponses = (await Task.WhenAll(
                     activityLogList.Select(async x =>

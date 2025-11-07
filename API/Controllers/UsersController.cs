@@ -80,7 +80,7 @@ namespace API.Controllers
             {
 
                 IEnumerable<VwSystemUser?> users = await _accountGetTools.GetVwSystemUsers().ToListAsync();
-                long systemUserId = await _accountGetTools.GetSystemUserIdBySessionKey(model.SessionKey);
+                long systemUserId = await _accountGetTools.GetSystemUserIdBySessionKeyAsync(model.SessionKey);
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -157,12 +157,12 @@ namespace API.Controllers
         [HttpGet("all/{systemUserId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task   <IActionResult> GetSystemUserBySystemUserId([FromQuery] SoloQueryParams model, [FromRoute] long systemUserId)
+        public async Task<IActionResult> GetSystemUserBySystemUserId([FromQuery] SoloQueryParams model, [FromRoute] long systemUserId)
         {
             try
             {
 
-                VwSystemUser? user = await _accountGetTools.GetVwSystemUser(systemUserId);
+                VwSystemUser? user = await _accountGetTools.GetVwSystemUserAsync(systemUserId);
 
                 UserBasicResponseModel userBasicResponse = new UserBasicResponseModel
                 {
@@ -268,7 +268,7 @@ namespace API.Controllers
             try
             {
 
-                TblSystemRole? role = await _accountGetTools.GetSystemRole(systemRoleId);
+                TblSystemRole? role = await _accountGetTools.GetSystemRoleAsync(systemRoleId);
 
                 TblSystemRole roleResponse = new TblSystemRole
                 {
@@ -336,7 +336,7 @@ namespace API.Controllers
                     CreatedAt = x.CreatedAt
                 }).ToList();
 
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed system notifications", actionBy: await _accountGetTools.GetSystemUserIdBySessionKey(model.SessionKey));
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed system notifications", actionBy: await _accountGetTools.GetSystemUserIdBySessionKeyAsync(model.SessionKey));
                 return Ok(ApiResponse<TblSystemNotification>.OkPaginated(
                     userBasicResponses,
                     model.PageNumber,
@@ -399,7 +399,7 @@ namespace API.Controllers
                     CreatedAt = x.CreatedAt
                 }).ToList();
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system notifications for user {systemUserId}", actionBy: await _accountGetTools.GetSystemUserIdBySessionKey(model.SessionKey));
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system notifications for user {systemUserId}", actionBy: await _accountGetTools.GetSystemUserIdBySessionKeyAsync(model.SessionKey));
                 return Ok(ApiResponse<TblSystemNotification>.OkPaginated(
                     userBasicResponses,
                     model.PageNumber,
@@ -425,7 +425,7 @@ namespace API.Controllers
             try
             {
 
-                TblSystemNotification? notification = await _notificationGetTools.GetTblSystemNotification(systemNotificationId);
+                TblSystemNotification? notification = await _notificationGetTools.GetTblSystemNotificationAsync(systemNotificationId);
                 TblSystemNotification notificationResponse = new TblSystemNotification
                 {
                     Id = notification.Id,
@@ -473,17 +473,30 @@ namespace API.Controllers
                     EmployeeId = model.EmployeeId ?? null
                 };
 
-                user.Id = (await _accountGetTools.GetTblSystemUserByEntraIdAndEmail(user.EntraId, user.Email))?.Id ?? 0;
+                user.Id = (await _accountGetTools.GetTblSystemUserByEntraIdAndEmailAsync(user.EntraId, user.Email))?.Id ?? 0;
 
                 long systemUserId = await _accountEditTools.EditTblSystemUserForLoginAsync(user, context);
 
-                var (isAllowed, errorMsg) = await _authTools.ValidateUserStatusAsync(
+                var (isAllowed, errorMsg, specificError) = await _authTools.ValidateUserStatusAsync(
                     systemUserId,
                     context,
                     _options);
 
-                if (!isAllowed)
+                var adminQueryable = await _accountGetTools
+                .GetSystemUsersBySystemRoleWithContextAsync(TblSystemRole.ADMINISTRATOR.ToString(), context);
+
+                var adminIds = await adminQueryable
+                    .Select(u => u.Id)
+                    .ToListAsync();
+
+                if (!isAllowed) {
+                    await NotificationTools.CreateBatchNotificationsAsync(context, 
+                        NotificationConstants.LOGIN_ATTEMPT_FAILED, 
+                        $"Login attempt failed for {user.FirstName} {user.LastName} due to {specificError}",
+                        adminIds, 
+                        systemUserId);
                     return StatusCode(401, ApiResponse<object>.Unauthorized(errorMsg!));
+                }
 
                 if (systemUserId > 0)
                 {
@@ -603,7 +616,7 @@ namespace API.Controllers
                 await using var context = new PortalDbContext(_options);
                 await using var transaction = await context.Database.BeginTransactionAsync();
 
-                TblSystemUser? user = await _accountGetTools.GetTblSystemUser(model.SystemUserId);
+                TblSystemUser? user = await _accountGetTools.GetTblSystemUserAsync(model.SystemUserId);
 
                 if (user != null)
                 {
@@ -679,7 +692,7 @@ namespace API.Controllers
                     await using var context = new PortalDbContext(_options);
                     await using var transaction = await context.Database.BeginTransactionAsync();
 
-                    var userInfo = await _accountGetTools.GetTblSystemUser(otpModel.SystemUserId);
+                    var userInfo = await _accountGetTools.GetTblSystemUserAsync(otpModel.SystemUserId);
 
                     TblSessionToken sessionToken = new()
                     {

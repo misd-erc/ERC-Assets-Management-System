@@ -2,6 +2,8 @@
 using PortalDB.Entities.DBO.Notification;
 using PortalDB.Services;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace PortalTools.Services
@@ -9,17 +11,17 @@ namespace PortalTools.Services
     public static class NotificationTools
     {
         /// <summary>
-        /// Creates and saves a new system notification for a single user.
-        /// Automatically logs an audit trail.
+        /// Creates a single system notification using the provided DbContext.
+        /// Logs audit trail and returns the new notification ID.
         /// </summary>
         public static async Task<long> CreateNotificationAsync(
-            DbContextOptions<PortalDbContext> options,
+            PortalDbContext context,
             string title,
             string description,
             long recipientSystemUserId,
             long actionBySystemUserId)
         {
-            await using var context = new PortalDbContext(options);
+            if (context == null) throw new ArgumentNullException(nameof(context));
 
             var notification = new TblSystemNotification
             {
@@ -32,9 +34,9 @@ namespace PortalTools.Services
             };
 
             await context.TblSystemNotifications.AddAsync(notification);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(); // Save notification first
 
-            // Log AuditTrail
+            // Log audit (after SaveChanges so Id is populated)
             AuditTrailTool.TrackChanges(
                 context,
                 null!,
@@ -44,44 +46,41 @@ namespace PortalTools.Services
                 "Insert"
             );
 
-            // Save audit entry
-            await context.SaveChangesAsync();
-
+            await context.SaveChangesAsync(); // Save audit
             return notification.Id;
         }
 
         /// <summary>
-        /// Sends the same notification to multiple users at once.
-        /// Returns the number of created notifications.
+        /// Creates multiple notifications in a single batch using the same DbContext.
+        /// Returns the number of notifications created.
         /// </summary>
         public static async Task<int> CreateBatchNotificationsAsync(
-            DbContextOptions<PortalDbContext> options,
+            PortalDbContext context,
             string title,
             string description,
             IEnumerable<long> recipientSystemUserIds,
             long actionBySystemUserId)
         {
-            await using var context = new PortalDbContext(options);
+            if (context == null) throw new ArgumentNullException(nameof(context));
+            if (recipientSystemUserIds == null) throw new ArgumentNullException(nameof(recipientSystemUserIds));
 
-            var notifications = new List<TblSystemNotification>();
+            var userIds = recipientSystemUserIds.Distinct().ToList();
+            if (!userIds.Any()) return 0;
 
-            foreach (var userId in recipientSystemUserIds)
+            var notifications = userIds.Select(userId => new TblSystemNotification
             {
-                var notification = new TblSystemNotification
-                {
-                    Title = title,
-                    Description = description,
-                    SystemUserId = userId,
-                    CreatedBySystemUserId = actionBySystemUserId,
-                    CreatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                };
-                notifications.Add(notification);
-            }
+                Title = title,
+                Description = description,
+                SystemUserId = userId,
+                CreatedBySystemUserId = actionBySystemUserId,
+                CreatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            }).ToList();
 
             await context.TblSystemNotifications.AddRangeAsync(notifications);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(); // One DB round-trip for all inserts
 
+            // Batch audit logging
             foreach (var notif in notifications)
             {
                 AuditTrailTool.TrackChanges(
@@ -94,8 +93,7 @@ namespace PortalTools.Services
                 );
             }
 
-            await context.SaveChangesAsync();
-
+            await context.SaveChangesAsync(); // One round-trip for all audit entries
             return notifications.Count;
         }
     }
