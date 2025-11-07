@@ -90,7 +90,13 @@ export function LoginScreen() {
             }
           }).catch((error) => {
             console.error('Login failed:', error);
-            toast.error('Something went wrong during login.');
+            // Check if the error is due to pending account approval
+            if (error?.response?.data?.code === 'ERR_UNAUTHORIZED' &&
+                error?.response?.data?.message?.includes('pending')) {
+              navigate('/no-role');
+            } else {
+              toast.error('Something went wrong during login.');
+            }
           });
         }
       }).catch((error) => {

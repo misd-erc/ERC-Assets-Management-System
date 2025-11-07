@@ -15,8 +15,9 @@ const axiosInstance: AxiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Add systemUserIdEncrypted token if exists (this is our session token)
+    // Skip for /Users/validation endpoint as it may not require auth
     const token = getSessionToken();
-    if (token) {
+    if (token && !config.url?.includes('/Users/validation')) {
       config.headers.Authorization = `Bearer ${token}`;
       // Also add as custom header for backend compatibility
       config.headers['X-System-User-Id'] = token;
@@ -61,10 +62,11 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       console.error('[Axios] Unauthorized access - token may be expired');
 
-      // Skip redirect for user list API to prevent logout on user management page
+      
       const isUserListApi = originalRequest.url?.includes('/Users/all');
+      const isUserValidationApi = originalRequest.url?.includes('/Users/validation');
 
-      if (!isUserListApi) {
+      if (!isUserListApi && !isUserValidationApi) {
         // Clear session and redirect to login for other APIs
         handleSessionExpired('Your session has expired. Please log in again.');
       }
