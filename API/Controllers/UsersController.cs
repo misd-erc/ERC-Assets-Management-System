@@ -477,26 +477,26 @@ namespace API.Controllers
 
                 long systemUserId = await _accountEditTools.EditTblSystemUserForLoginAsync(user, context);
 
-                var (isAllowed, errorMsg, specificError) = await _authTools.ValidateUserStatusAsync(
-                    systemUserId,
-                    context,
-                    _options);
+                //var (isAllowed, errorMsg, specificError) = await _authTools.ValidateUserStatusAsync(
+                //    systemUserId,
+                //    context,
+                //    _options);
 
-                var adminQueryable = await _accountGetTools
-                .GetSystemUsersBySystemRoleWithContextAsync(TblSystemRole.ADMINISTRATOR.ToString(), context);
+                //var adminQueryable = await _accountGetTools
+                //.GetSystemUsersBySystemRoleWithContextAsync(TblSystemRole.ADMINISTRATOR.ToString(), context);
 
-                var adminIds = await adminQueryable
-                    .Select(u => u.Id)
-                    .ToListAsync();
+                //var adminIds = await adminQueryable
+                //    .Select(u => u.Id)
+                //    .ToListAsync();
 
-                if (!isAllowed) {
-                    await NotificationTools.CreateBatchNotificationsAsync(context, 
-                        NotificationConstants.LOGIN_ATTEMPT_FAILED, 
-                        $"Login attempt failed for {user.FirstName} {user.LastName} due to {specificError}",
-                        adminIds, 
-                        systemUserId);
-                    return StatusCode(401, ApiResponse<object>.Unauthorized(errorMsg!));
-                }
+                //if (!isAllowed) {
+                //    await NotificationTools.CreateBatchNotificationsAsync(context, 
+                //        NotificationConstants.LOGIN_ATTEMPT_FAILED, 
+                //        $"Login attempt failed for {user.FirstName} {user.LastName} due to {specificError}",
+                //        adminIds, 
+                //        systemUserId);
+                //    return StatusCode(401, ApiResponse<object>.Unauthorized(errorMsg!));
+                //}
 
                 if (systemUserId > 0)
                 {
