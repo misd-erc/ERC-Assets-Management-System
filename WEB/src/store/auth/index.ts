@@ -227,8 +227,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   logout: () => {
     console.log('[AuthStore] Logging out...');
-    
-    // Clear all session data using centralized utilities
     clearSession();
     clearAuthSession();
     

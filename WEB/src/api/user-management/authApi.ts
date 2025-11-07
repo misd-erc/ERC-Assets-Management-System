@@ -1,3 +1,4 @@
+import axios, { type AxiosResponse } from 'axios';
 import axiosInstance from '../../lib/axios';
 import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserPublicViewModel, ApiResponse } from '../../types';
 
@@ -101,7 +102,8 @@ export const validateUser = async (userInfo: { entraId: string; firstName: strin
 
   console.log('[AuthAPI] validateUser - payload:', payload);
 
-  const response = await axiosInstance.post<ApiResponse<UserPublicViewModel>>('/Users/validation', payload);
+  const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  const response = await axios.post<ApiResponse<UserPublicViewModel>>(`${baseURL}/users/validation`, payload);
   console.log('[AuthAPI] validateUser - response:', response);
   console.log('[AuthAPI] validateUser - response.data:', response.data);
 
