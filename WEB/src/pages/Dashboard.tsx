@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import {
@@ -69,6 +69,8 @@ const kpiData: KPIData[] = [
 ];
 
 export function Dashboard({ onNavigate }: DashboardProps) {
+  const [userFirstName, setUserFirstName] = useState<string>('User');
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -76,7 +78,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
         <div>
           <h1 className="text-3xl font-semibold text-slate-900">Dashboard Overview</h1>
           <p className="text-slate-600 mt-1">
-            Welcome back, System Administrator. Monitor your asset management operations at a glance.
+            Welcome back, {userFirstName}. Monitor your asset management operations at a glance.
           </p>
         </div>
         <div className="text-sm text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border">

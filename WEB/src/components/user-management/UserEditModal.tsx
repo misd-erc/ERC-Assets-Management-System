@@ -19,15 +19,18 @@ import {
 import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
 import { User, Office, Division, EmploymentType, Position, SystemRole } from '../../types/user';
+import { useAuthStore } from '../../store/auth';
 import {
   getOffices,
   getDivisions,
   getEmploymentTypes,
   getPositions,
   getSystemRoles,
-  editUser
-} from '../../api/userApi';
-import { encrypt } from '../../utils/encryption';
+  editUser,
+  getUsersDetails
+} from '../../api/user-management/userApi';
+import { UserDetails } from '../../types/user';
+
 
 
 interface UserEditModalProps {
@@ -50,6 +53,8 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const [roles, setRoles] = useState<SystemRole[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadingUserDetails, setLoadingUserDetails] = useState(false);
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [formData, setFormData] = useState({
     officeId: '',
     divisionId: '',
@@ -68,10 +73,36 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
   // Prefill form when selectedUser changes
   useEffect(() => {
-    if (selectedUser) {
-      // Find roleId by matching role name
+    if (selectedUser && roles.length > 0) {
+      fetchUserDetails();
+    }
+  }, [selectedUser, roles]);
+
+  const fetchUserDetails = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setLoadingUserDetails(true);
+      const details = await getUsersDetails(selectedUser.id);
+      setUserDetails(details);
+
+      // Find roleId by matching role name from details or selectedUser
+      const roleName = (details as any).systemRoleName || selectedUser.role;
+      const role = roles.find(r => r.roleName === roleName);
+
+      setFormData({
+        officeId: (details as any).officeId?.toString() || '',
+        divisionId: (details as any).divisionId?.toString() || '',
+        employmentTypeId: (details as any).employmentTypeId?.toString() || '0',
+        positionId: (details as any).positionId?.toString() || '0',
+        roleId: role ? role.id.toString() : '',
+        isActive: details.isActive ?? (selectedUser.status === 'Active'),
+      });
+    } catch (error) {
+      console.error('Failed to fetch user details:', error);
+      toast.error('Failed to load user details');
+      // Fallback to selectedUser data
       const role = roles.find(r => r.roleName === selectedUser.role);
-      const statusId = selectedUser.status === 'Active' ? '0' : selectedUser.status === 'Inactive' ? '1' : '2';
       setFormData({
         officeId: selectedUser.officeId || '',
         divisionId: selectedUser.divisionId || '',
@@ -80,20 +111,21 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         roleId: role ? role.id.toString() : '',
         isActive: selectedUser.status === 'Active',
       });
+    } finally {
+      setLoadingUserDetails(false);
     }
-  }, [selectedUser, roles]);
+  };
 
   const fetchDropdownData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('ActionBySystemUserIdEncrypted') || '';
 
       const [officesData, divisionsData, employmentTypesData, positionsData, rolesData] = await Promise.all([
-        getOffices(token),
-        getDivisions(token),
-        getEmploymentTypes(token),
-        getPositions(token),
-        getSystemRoles(token),
+        getOffices(),
+        getDivisions(),
+        getEmploymentTypes(),
+        getPositions(),
+        getSystemRoles(),
       ]);
 
       setOffices(officesData);
@@ -114,20 +146,19 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
     try {
       setSaving(true);
-      const token = localStorage.getItem('ActionBySystemUserIdEncrypted') || '';
+      const token = localStorage.getItem('systemUserId') || '';
 
       const statusId = formData.isActive ? '0' : '1'; // 0 for Active, 1 for Inactive
 
       const payload = {
-        systemUserIdEncrypted: token,
-        systemRoleIdEncrypted: formData.roleId ? encrypt(formData.roleId) : undefined,
-        officeIdEncrypted: formData.officeId ? encrypt(formData.officeId) : undefined,
-        divisionIdEncrypted: formData.divisionId ? encrypt(formData.divisionId) : undefined,
-        employmentTypeIdEncrypted: encrypt(formData.employmentTypeId),
-        positionIdEncrypted: encrypt(formData.positionId),
-        statusIdEncrypted: encrypt(statusId),
-        isActiveEncrypted: encrypt(formData.isActive ? "1" : "0"),
-        actionBySystemUserIdEncrypted: token,
+        systemUserId: parseInt(selectedUser.id, 10),
+        systemRoleId: formData.roleId ? parseInt(formData.roleId, 10) : undefined,
+        officeId: formData.officeId ? parseInt(formData.officeId, 10) : undefined,
+        divisionId: formData.divisionId ? parseInt(formData.divisionId, 10) : undefined,
+        employmentTypeId: parseInt(formData.employmentTypeId, 10),
+        positionId: parseInt(formData.positionId, 10),
+        isActive: formData.isActive,
+        actionBySystemUserId: parseInt(token, 10),
       };
 
       await editUser(payload);
@@ -158,9 +189,9 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        {loading ? (
+        {loading || loadingUserDetails ? (
           <div className="py-8 text-center">
-            <p className="text-gray-500">Loading form data...</p>
+            <p className="text-gray-500">{loading ? 'Loading form data...' : 'Loading user details...'}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
@@ -274,7 +305,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
           <Button variant="outline" onClick={handleClose} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving || loading}>
+          <Button onClick={handleSave} disabled={saving || loading || loadingUserDetails}>
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>
         </DialogFooter>

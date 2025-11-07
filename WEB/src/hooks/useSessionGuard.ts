@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isSessionValid, handleSessionExpired, getSessionToken } from '../utils/sessionUtils';
-import { getUserDetails } from '../api/authApi';
+import { getUserDetails } from '../api/user-management/authApi';
 
 /**
  * Session Guard Hook
@@ -38,7 +38,7 @@ export const useSessionGuard = (validateWithBackend: boolean = false) => {
           console.log('[SessionGuard] Validating token with backend...');
           
           // Call the Users/all API to validate the token
-          await getUserDetails(token, token);
+          await getUserDetails();
           
           console.log('[SessionGuard] Token validated successfully');
           setIsValid(true);

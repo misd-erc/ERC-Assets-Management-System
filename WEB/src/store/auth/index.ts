@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { User, AuthStore } from '../../types';
-import { validateUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '../../api/authApi';
+import { validateUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '../../api/user-management/authApi';
 import { generateSessionToken, saveSession, loadSession, clearSession as clearAuthSession } from '../../services/authService';
-import { clearSession, setSessionToken, getSessionToken, syncSessionIds } from '../../utils/sessionUtils';
+import { clearSession, setSessionToken, syncSessionIds, setSessionKey, getSessionToken } from '../../utils/sessionUtils';
+import { encrypt, decrypt } from '../../utils/encryption';
 import { toast } from 'sonner';
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -13,7 +14,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   requireMFA: false,
   loading: false,
   error: '',
-  systemUserIdEncrypted: undefined,
+  systemUserId: undefined,
+  plainSystemUserId: undefined,
 
   // Initialize auth state on app start
   initialize: async () => {
@@ -34,11 +36,16 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
         // Check if userDetails exist in localStorage
         const storedUserDetails = localStorage.getItem('userDetails');
-        if (!storedUserDetails && session.systemUserIdEncrypted) {
+        if (!storedUserDetails && session.systemUserId) {
           console.log('[AuthStore] Fetching user details...');
           // Fetch user details if not present
-          const userDetails = await getUserDetails(session.systemUserIdEncrypted, session.systemUserIdEncrypted);
-          localStorage.setItem('userDetails', JSON.stringify(userDetails));
+          const userDetails = await getUserDetails();
+          const encryptedUserDetails = encrypt(JSON.stringify(userDetails));
+          localStorage.setItem('userDetails', encryptedUserDetails);
+
+          // Check user access after fetching details
+          const { checkUserAccess } = await import('../../utils/auth');
+          checkUserAccess();
         }
 
         // Validate session token with backend (optional, can be removed if not needed)
@@ -51,7 +58,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           token: session.sessionToken,
           requireMFA: false,
           loading: false,
-          systemUserIdEncrypted: session.systemUserIdEncrypted
+          systemUserId: session.systemUserId
         });
 
         console.log('[AuthStore] Auth state initialized successfully');
@@ -78,45 +85,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
-  login: async (userInfo: { entraId: string; firstName: string; lastName: string; email: string }) => {
+  login: async (userInfo: { entraId: string; firstName: string; lastName: string; email: string; employeeId?: string }) => {
     set({ loading: true, error: '' });
 
     try {
       console.log('[AuthStore] Validating user...');
       const result = await validateUser(userInfo);
 
-      // Store user data in localStorage first
-      const tempUser = {
-        id: result.systemUserIdEncrypted, // Temporary ID, will be updated after MFA
-        name: `${userInfo.firstName} ${userInfo.lastName}`,
-        email: userInfo.email,
-        username: userInfo.email,
-        role: 'user',
-        systemRoleName: 'user',
-        entraId: userInfo.entraId,
-        firstName: userInfo.firstName,
-        lastName: userInfo.lastName
-      };
-      localStorage.setItem('user', JSON.stringify(tempUser));
+      localStorage.setItem('systemUserId', JSON.stringify(result.systemUserId));
 
-      // Store encrypted system user ID using centralized utility (will use user.id from localStorage)
       setSessionToken();
 
       set({
         requireMFA: true,
         loading: false,
-        systemUserIdEncrypted: result.systemUserIdEncrypted,
-        user: {
-          id: '', // Will be set after OTP validation
-          name: `${userInfo.firstName} ${userInfo.lastName}`,
-          email: userInfo.email,
-          username: userInfo.email,
-          role: 'user',
-          systemRoleName: 'user',
-          entraId: userInfo.entraId,
-          firstName: userInfo.firstName,
-          lastName: userInfo.lastName
-        }
+        systemUserId: result.systemUserId,
       });
 
       console.log('[AuthStore] User validated, MFA required');
@@ -134,43 +117,58 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   verifyMFA: async (code: string) => {
     set({ loading: true, error: '' });
 
-    const { systemUserIdEncrypted } = get();
-    if (!systemUserIdEncrypted) {
+    const { systemUserId } = get();
+    if (!systemUserId) {
       set({ error: 'No system user ID available', loading: false });
       return false;
     }
 
     try {
-      const result = await validateOTP(systemUserIdEncrypted, code);
-
-      // Update user with decrypted data
-      const updatedUser: User = {
-        ...result.user,
-        entraId: get().user?.entraId || '' // Preserve Entra ID from MSAL
-      };
+      const result = await validateOTP(systemUserId, code);
 
       // Fetch and store user details
-      const userDetails = await getUserDetails(systemUserIdEncrypted, systemUserIdEncrypted);
-      localStorage.setItem('userDetails', JSON.stringify(userDetails));
+      const userDetails = await getUserDetails();
+      const encryptedUserDetails = encrypt(JSON.stringify(userDetails));
+      localStorage.setItem('userDetails', encryptedUserDetails);
 
-      // Generate session token and set expiration (1 day from now)
-      const sessionToken = generateSessionToken();
+      // Use the sessionKey from the API response instead of generating a random one
+      const sessionToken = result.sessionKey;
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 1 day
+
+      // Create user object from userDetails
+      const updatedUser: User = {
+        id: userDetails.id.toString(),
+        name: `${userDetails.firstName} ${userDetails.lastName}`,
+        email: userDetails.email,
+        username: userDetails.email,
+        role: 'user',
+        systemRoleName: 'user',
+        entraId: get().user?.entraId || '', // Preserve Entra ID from MSAL
+        firstName: userDetails.firstName,
+        lastName: userDetails.lastName
+      };
 
       // Save session to localStorage
       saveSession({
         sessionToken,
-        systemUserIdEncrypted: result.systemUserIdEncrypted,
+        systemUserId: result.systemUserId,
         expiresAt,
         user: updatedUser
       });
+
+      // Store the session key using the utility function
+      setSessionKey(sessionToken);
+
+      // Remove user from localStorage as requested
+      localStorage.removeItem('user');
 
       set({
         isAuthenticated: true,
         user: updatedUser,
         token: sessionToken, // Store session token in state
         requireMFA: false,
-        loading: false
+        loading: false,
+        plainSystemUserId: result.systemUserId
       });
 
       return true;
@@ -184,14 +182,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   validateSession: async () => {
-    const { token, systemUserIdEncrypted } = get();
-    if (!token || !systemUserIdEncrypted) {
+    const { token, systemUserId } = get();
+    if (!token || !systemUserId) {
       return false;
     }
 
     try {
       set({ loading: true, error: '' });
-      const result = await validateSessionToken(token, systemUserIdEncrypted);
+      const result = await validateSessionToken(token, systemUserId);
 
       const updatedUser: User = {
         ...get().user!,
@@ -241,7 +239,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       requireMFA: false,
       loading: false,
       error: '',
-      systemUserIdEncrypted: undefined
+      systemUserId: undefined
     });
     
     console.log('[AuthStore] Logout complete');

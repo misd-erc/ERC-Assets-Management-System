@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import {
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { RecentActivitiesCard } from './RecentActivitiesCard';
 import { AssetOverviewChart } from './AssetOverviewChart';
+import { decrypt } from '../../utils/encryption';
 
 interface KPIData {
   title: string;
@@ -66,6 +67,26 @@ const kpiData: KPIData[] = [
 ];
 
 export function Dashboard({ onNavigate }: DashboardProps) {
+  const [userFirstName, setUserFirstName] = useState<string>('User');
+
+  useEffect(() => {
+    const loadUserDetails = () => {
+      const stored = localStorage.getItem('userDetails');
+      if (stored) {
+        try {
+          const decrypted = decrypt(stored);
+          const parsed = JSON.parse(decrypted);
+          setUserFirstName(parsed?.firstName || 'User');
+        } catch (error) {
+          console.error('Failed to decrypt userDetails from localStorage:', error);
+          setUserFirstName('User');
+        }
+      }
+    };
+
+    loadUserDetails();
+  }, []);
+
   return (
     <div className="pl-64 pt-16 space-y-8">
       {/* Header */}
@@ -73,7 +94,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
         <div>
           <h1 className="text-3xl font-semibold text-slate-900">Dashboard Overview</h1>
           <p className="text-slate-600 mt-1">
-            Welcome back, System Administrator. Monitor your asset management operations at a glance.
+            Welcome back, {userFirstName}. Monitor your asset management operations at a glance.
           </p>
         </div>
         <div className="text-sm text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border">

@@ -6,14 +6,24 @@ import { MFAVerification } from './components/auth/MFAVerification';
 import { MainLayout } from './components/layout/MainLayout';
 import { Toaster } from './components/ui/sonner';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
-import { isSessionValid } from './utils/sessionUtils';
+import { isSessionValid, isSessionExpired, handleSessionExpired } from './utils/sessionUtils';
+import { NoRolePage, UnderConstructionPage } from './pages';
+import { decrypt } from './utils/encryption';
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, requireMFA } = useAuthStore();
+  const { requireMFA } = useAuthStore();
   const hasValidSession = isSessionValid();
+  const isExpired = isSessionExpired();
 
-  console.log('[ProtectedRoute] Auth check:', { isAuthenticated, requireMFA, hasValidSession });
+  console.log('[ProtectedRoute] Auth check:', { requireMFA, hasValidSession, isExpired });
+
+  // If session is expired, handle expiration and redirect
+  if (isExpired) {
+    console.log('[ProtectedRoute] Session expired, handling expiration');
+    handleSessionExpired('Your session has expired. Please log in again.');
+    return <Navigate to="/" replace />;
+  }
 
   // If no valid session token, redirect to login
   if (!hasValidSession) {
@@ -27,13 +37,33 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/mfa" replace />;
   }
 
-  // If not authenticated, redirect to login
-  if (!isAuthenticated) {
-    console.log('[ProtectedRoute] Not authenticated, redirecting to login');
-    return <Navigate to="/" replace />;
+  // Check user role access
+  const encryptedUserDetails = localStorage.getItem('userDetails');
+  if (encryptedUserDetails) {
+    try {
+      const userDetails = JSON.parse(decrypt(encryptedUserDetails));
+      const systemRoleId = userDetails.systemRoleId;
+      const isActive = userDetails.isActive;
+
+      // Redirect to no-role if:
+      // - systemRoleId is null or 0
+      // - isActive is false
+      // - user has role but isActive is false
+      // - user doesn't have role but isActive is true
+      if (!systemRoleId || systemRoleId === 0 || !isActive) {
+        console.log('[ProtectedRoute] User does not have required role or is inactive, redirecting to no-role');
+        return <Navigate to="/no-role" replace />;
+      }
+    } catch (error) {
+      console.error('[ProtectedRoute] Error checking user access:', error);
+      return <Navigate to="/no-role" replace />;
+    }
+  } else {
+    console.log('[ProtectedRoute] No user details found, redirecting to no-role');
+    return <Navigate to="/no-role" replace />;
   }
 
-  // All checks passed, render the protected content
+  // Session is valid, user has role and is active, allow access
   return <>{children}</>;
 }
 
@@ -86,6 +116,19 @@ function AppContent() {
         } 
       />
       
+      {/* No Role Route */}
+      <Route path="/no-role" element={<NoRolePage />} />
+
+      {/* Under Construction Route */}
+      <Route
+        path="/under-construction"
+        element={
+          <ProtectedRoute>
+            <UnderConstructionPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -7,8 +7,8 @@ import { Label } from '../ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { User } from '../../types/user';
 import { Mail, Building, Briefcase, Calendar, User as UserIcon, MapPin, Users, IdCard } from 'lucide-react';
-import { getUserPhoto } from '../../api/userApi';
-import { encrypt } from '../../utils/encryption';
+import { getUserPhoto } from '../../api/user-management/userApi';
+
 
 interface UserDetailsDrawerProps {
   isOpen: boolean;
@@ -28,11 +28,10 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
       if (!user?.profilePictureStorageFileId) return;
 
       try {
-        const token = localStorage.getItem('ActionBySystemUserIdEncrypted');
-        if (!token) return;
+        const systemUserId = localStorage.getItem('systemUserId') || '';
 
-        const fileIdEncrypted = encrypt(String(user.profilePictureStorageFileId));
-        const photoResponse = await getUserPhoto(fileIdEncrypted, token);
+        const fileId = String(user.profilePictureStorageFileId);
+        const photoResponse = await getUserPhoto(fileId, systemUserId);
         const imageUrl = URL.createObjectURL(photoResponse.data);
         setProfileImageUrl(imageUrl);
       } catch (error) {
@@ -72,7 +71,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="sm:max-w-[500px] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>User Details</SheetTitle>
+          <SheetTitle className='text-3xl font-semibold text-slate-900'>User Details</SheetTitle>
           <SheetDescription>
             View detailed information about this user
           </SheetDescription>
