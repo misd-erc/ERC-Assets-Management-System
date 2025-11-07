@@ -3,12 +3,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
 using PortalCommon.Enums;
-using PortalCommon.Models.QueryParams.Office;
-using PortalCommon.Models.QueryParams.Pagination;
-using PortalCommon.Models.QueryParams.Universal;
-using PortalCommon.Models.ResponseModels.Account;
-using PortalCommon.Models.ResponseModels.Office;
-using PortalCommon.Models.Responses;
+using PortalDB.Models.QueryParams.Office;
+using PortalDB.Models.QueryParams.Pagination;
+using PortalDB.Models.QueryParams.Universal;
+using PortalDB.Models.ResponseModels.Account;
+using PortalDB.Models.ResponseModels.Office;
+using PortalDB.Models.Responses;
 using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office;
@@ -115,6 +115,9 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetOfficeByOfficeId([FromQuery] SoloQueryParams model, [FromRoute] long officeId)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
@@ -177,17 +180,21 @@ namespace API.Controllers
                     .Take(model.PageSize)
                     .ToList();
 
-                List<VwDivisionResponseModel> divisionsResponses = divisionsList.Select(x => new VwDivisionResponseModel
+                var divisionsResponses = new List<VwDivisionResponseModel>();
+
+                foreach (var x in divisionsList)
                 {
-                    Id = x.Id,
-                    OfficeId = x.OfficeId,
-                    Name = x.Name,
-                    Acronym = x.Acronym,
-                    OfficeName = x.OfficeName,
-                    OfficeAcronym = x.OfficeAcronym,
-                    IsActive = x.IsActive,
-                    CreatedAt = x.CreatedAt
-                }).ToList();
+                    var divisionModel = new VwDivisionResponseModel
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        Acronym = x.Acronym,
+                        Office = await _officeGetTools.GetTblOfficeAsync(x.OfficeId),
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    divisionsResponses.Add(divisionModel);
+                }
 
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed divisions", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<VwDivisionResponseModel>.OkPaginated(
@@ -220,11 +227,9 @@ namespace API.Controllers
                 VwDivisionResponseModel divisionResponse = new ()
                 {
                     Id = division.Id,
-                    OfficeId = division.OfficeId,
                     Name = division.Name,
                     Acronym = division.Acronym,
-                    OfficeName = division.OfficeName,
-                    OfficeAcronym = division.OfficeAcronym,
+                    Office = await _officeGetTools.GetTblOfficeAsync(division.OfficeId),
                     IsActive = division.IsActive,
                     CreatedAt = division.CreatedAt
                 };

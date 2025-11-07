@@ -9,7 +9,7 @@ using Microsoft.Graph.Users.Item.SendMail;
 using Microsoft.Identity.Client;
 using Microsoft.Kiota.Abstractions;
 using PortalCommon.Constants;
-using PortalCommon.Models.ViewModels.Email;
+using PortalDB.Models.ViewModels.Email;
 using PortalCommon.Utilities;
 using PortalDB;
 using PortalDB.Entities.DBO.Storage;

@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph.Models;
 using PortalCommon.Constants;
-using PortalCommon.Models.ResponseModels.Log;
-using PortalCommon.Models.ResponseModels.Log.AuditTrail;
+using PortalDB.Models.ResponseModels.Log;
+using PortalDB.Models.ResponseModels.Log.AuditTrail;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.LOG;
 using PortalDB.Entities.LOG.AuditTrail;

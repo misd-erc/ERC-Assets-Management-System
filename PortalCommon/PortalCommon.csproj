@@ -16,12 +16,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Models\QueryParams\AuditTrail\" />
+		<Compile Remove="Models\**" />
+		<Compile Remove="Partials\**\*.cshtml" />
+		<None Include="Partials\**\*.cshtml" CopyToOutputDirectory="Always" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<Compile Remove="Partials\**\*.cshtml" />
-		<None Include="Partials\**\*.cshtml" CopyToOutputDirectory="Always" />
+	  <EmbeddedResource Remove="Models\**" />
+	  <None Remove="Models\**" />
 	</ItemGroup>
 
 </Project>

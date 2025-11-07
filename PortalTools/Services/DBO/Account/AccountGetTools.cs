@@ -85,7 +85,9 @@ namespace PortalTools.Services.DBO.Account
             return sessionToken.SystemUserId;
         }
         public IQueryable<TblSystemRole?> GetSystemRoles() => _context.TblSystemRoles.Where(x => !x.IsDeleted);
-        public async Task<TblSystemRole?> GetSystemRoleAsync(long id) => await _context.TblSystemRoles.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<TblSystemUserStatus?> GetSystemUserStatuses() => _context.TblSystemUserStatuses.Where(x => !x.IsDeleted);
+        public async Task<TblSystemRole?> GetSystemRoleAsync(long? id) => await _context.TblSystemRoles.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblSystemUserStatus?> GetSystemUserStatusAsync(long? id) => await _context.TblSystemUserStatuses.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public async Task<TblSystemRole?> GetSystemRoleByNameAsync(string name) => await _context.TblSystemRoles.Where(x => !x.IsDeleted && x.RoleName == name).FirstOrDefaultAsync();
         public async Task<IQueryable<TblSystemUser?>> GetSystemUsersBySystemRoleWithContextAsync(string systemRole, PortalDbContext context)
         {

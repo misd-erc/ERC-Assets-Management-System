@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
 using PortalCommon.Enums;
-using PortalCommon.Models.QueryParams.Universal;
-using PortalCommon.Models.QueryParams.Uploader;
-using PortalCommon.Models.ResponseModels.Uploader;
-using PortalCommon.Models.Responses;
-using PortalCommon.Models.ViewModels.Account;
+using PortalDB.Models.QueryParams.Universal;
+using PortalDB.Models.QueryParams.Uploader;
+using PortalDB.Models.ResponseModels.Uploader;
+using PortalDB.Models.Responses;
+using PortalDB.Models.ViewModels.Account;
 using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Storage;
 using PortalDB.Services;
@@ -103,11 +103,17 @@ namespace API.Controllers
         [DecodeRouteParameter(nameof(fileStorageId))]
         public async Task<IActionResult> GetFileById([FromQuery] SoloQueryParams model, [FromRoute] long fileStorageId)
         {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
             try
             {
 
                 // Retrieve record
                 var fileRecord = await _storageGetTools.GetTblFileStorageAsync(fileStorageId);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 if (fileRecord == null)
                     return NotFound(ApiResponse<object>.Fail(ErrorCodes.NOT_FOUND, "File not found."));
@@ -123,6 +129,7 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(StorageController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while retrieving the file."));
             }

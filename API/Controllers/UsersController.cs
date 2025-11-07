@@ -7,19 +7,18 @@ using Microsoft.Graph.Models;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
 using PortalCommon.Enums;
-using PortalCommon.Models.QueryParams.Account;
-using PortalCommon.Models.QueryParams.OTP;
-using PortalCommon.Models.QueryParams.Pagination;
-using PortalCommon.Models.QueryParams.Session;
-using PortalCommon.Models.QueryParams.Universal;
-using PortalCommon.Models.QueryParams.Uploader;
-using PortalCommon.Models.ResponseModels.Account;
-using PortalCommon. Models.ResponseModels.Log.AuditTrail;
-using PortalCommon.Models.ResponseModels.Uploader;
-using PortalCommon.Models.Responses;
-using PortalCommon.Models.ViewModels.Account;
-using PortalCommon.Models.ViewModels.Email;
-using PortalCommon.Utilities;
+using PortalDB.Models.QueryParams.Account;
+using PortalDB.Models.QueryParams.OTP;
+using PortalDB.Models.QueryParams.Pagination;
+using PortalDB.Models.QueryParams.Session;
+using PortalDB.Models.QueryParams.Universal;
+using PortalDB.Models.QueryParams.Uploader;
+using PortalDB.Models.ResponseModels.Account;
+using PortalDB.Models.ResponseModels.Log.AuditTrail;
+using PortalDB.Models.ResponseModels.Uploader;
+using PortalDB.Models.Responses;
+using PortalDB.Models.ViewModels.Account;
+using PortalDB.Models.ViewModels.Email;
 using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Notification;
@@ -37,6 +36,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static System.Net.WebRequestMethods;
+using PortalTools.Services.DBO.Office;
+using PortalTools.Services.DBO.Storage;
 
 namespace API.Controllers
 {
@@ -49,16 +50,20 @@ namespace API.Controllers
         private readonly DbContextOptions<PortalDbContext> _options;
         private readonly AccountGetTools _accountGetTools;
         private readonly AccountEditTools _accountEditTools;
-        private readonly LogEditTools _logEditTools;
+		private readonly OfficeGetTools _officeGetTools;
+		private readonly LogEditTools _logEditTools;
         private readonly NotificationGetTools _notificationGetTools;
-        private readonly AuthTools _authTools;
+        private readonly StorageGetTools _storageGetTools;
+		private readonly AuthTools _authTools;
 
         public UsersController(AccountGetTools accountGetTools, 
             AccountEditTools accountEditTools,
             LogEditTools logEditTools,
-            NotificationGetTools notificationGetTools,
+            OfficeGetTools officeGetTools,
+			NotificationGetTools notificationGetTools,
             DbContextOptions<PortalDbContext> options,
-            AuthTools authTools)
+            StorageGetTools storageGetTools,
+			AuthTools authTools)
         {
             _accountGetTools = accountGetTools;
             _accountEditTools = accountEditTools;
@@ -66,7 +71,9 @@ namespace API.Controllers
             _options = options;
             _authTools = authTools;
             _notificationGetTools = notificationGetTools;
-        }
+            _officeGetTools = officeGetTools;
+            _storageGetTools = storageGetTools;
+		}
 
         #region GET
 
@@ -76,10 +83,13 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetAllSystemUsers([FromQuery] PaginationGenericQueryParams model)
         {
-            try
+			await using var context = new PortalDbContext(_options);
+			await using var transaction = await context.Database.BeginTransactionAsync();
+
+			try
             {
 
-                IEnumerable<VwSystemUser?> users = await _accountGetTools.GetVwSystemUsers().ToListAsync();
+				IEnumerable<VwSystemUser?> users = await _accountGetTools.GetVwSystemUsers().ToListAsync();
                 long systemUserId = await _accountGetTools.GetSystemUserIdBySessionKeyAsync(model.SessionKey);
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
@@ -113,30 +123,33 @@ namespace API.Controllers
                     .Take(model.PageSize)
                     .ToList();
 
-                List<UserBasicResponseModel> userBasicResponses = usersList.Select(x => new UserBasicResponseModel
-                {
-                    Id = x.Id,
-                    FirstName = x.FirstName,
-                    LastName = x.LastName,
-                    Email = x.Email,
-                    SystemRoleId = x.SystemRoleId,
-                    SystemRoleName = x.SystemRoleName,
-                    EmployeeId = x.EmployeeId,
-                    StatusId = x.StatusId,
-                    StatusName = x.StatusName,
-                    OfficeId = x.OfficeId,
-                    OfficeName = x.OfficeName,
-                    OfficeAcronym  = x.OfficeAcronym,
-                    DivisionId = x.DivisionId,
-                    DivisionName = x.DivisionName,
-                    DivisionAcronym = x.DivisionAcronym,
-                    IsActive = x.IsActive,
-                    ProfilePictureStorageFileId = x.ProfilePictureFileStorageId,
-                    CreatedAt =  x.CreatedAt,
-                    LastLoginAt = x.LastLoginAt
-                }).ToList();
+                var userBasicResponses = new List<UserBasicResponseModel>();
 
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed system users", actionBy: systemUserId);
+                foreach (var x in usersList)
+                {
+                    var userBasicModel = new UserBasicResponseModel
+                    {
+                        Id = x.Id,
+                        FirstName = x.FirstName,
+                        LastName = x.LastName,
+                        Email = x.Email,
+                        EmployeeId = x.EmployeeId,
+                        IsActive = x.IsActive,
+                        SystemRole = await _accountGetTools.GetSystemRoleAsync(x.SystemRoleId),
+                        SystemUserStatus = await _accountGetTools.GetSystemUserStatusAsync(x.StatusId),
+                        Office = await _officeGetTools.GetTblOfficeAsync(x.OfficeId),
+                        Division = await _officeGetTools.GetTblDivisionAsync(x.DivisionId),
+                        ProfilePictureStorageFile = await _storageGetTools.GetTblFileStorageAsync(x.ProfilePictureFileStorageId),
+                        CreatedAt = x.CreatedAt,
+                        LastLoginAt = x.LastLoginAt
+                    };
+                    userBasicResponses.Add(userBasicModel);
+                }
+
+                await context.SaveChangesAsync();
+				await transaction.CommitAsync();
+
+				await AuditTrailTool.LogActivityAsync(_options, "Viewed system users", actionBy: systemUserId);
                 return Ok(ApiResponse<UserBasicResponseModel>.OkPaginated(
                     userBasicResponses,
                     model.PageNumber,
@@ -148,7 +161,8 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+				await transaction.RollbackAsync();
+				await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
@@ -159,41 +173,37 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetSystemUserBySystemUserId([FromQuery] SoloQueryParams model, [FromRoute] long systemUserId)
         {
-            try
+
+			try
             {
 
                 VwSystemUser? user = await _accountGetTools.GetVwSystemUserAsync(systemUserId);
 
                 UserBasicResponseModel userBasicResponse = new UserBasicResponseModel
                 {
-                    Id = user.Id,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Email = user.Email,
-                    SystemRoleId = user.SystemRoleId,
-                    SystemRoleName = user.SystemRoleName,
-                    EmployeeId = user.EmployeeId,
-                    StatusId = user.StatusId,
-                    StatusName = user.StatusName,
-                    OfficeId = user.OfficeId,
-                    OfficeName = user.OfficeName,
-                    OfficeAcronym = user.OfficeAcronym,
-                    DivisionId = user.DivisionId,
-                    DivisionName = user.DivisionName,
-                    DivisionAcronym = user.DivisionAcronym,
-                    ProfilePictureStorageFileId = user.ProfilePictureFileStorageId,
-                    IsActive = user.IsActive,
-                    CreatedAt = user.CreatedAt,
-                    LastLoginAt = user.LastLoginAt
-                };
+					Id = user.Id,
+					FirstName = user.FirstName,
+					LastName = user.LastName,
+					Email = user.Email,
+					EmployeeId = user.EmployeeId,
+					IsActive = user.IsActive,
+					SystemRole = await _accountGetTools.GetSystemRoleAsync(user.SystemRoleId),
+					SystemUserStatus = await _accountGetTools.GetSystemUserStatusAsync(user.SystemRoleId),
+					Office = await _officeGetTools.GetTblOfficeAsync(user.OfficeId),
+					Division = await _officeGetTools.GetTblDivisionAsync(user.DivisionId),
+					ProfilePictureStorageFile = await _storageGetTools.GetTblFileStorageAsync(user.ProfilePictureFileStorageId),
+					CreatedAt = user.CreatedAt,
+					LastLoginAt = user.LastLoginAt
+				};
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system user information for user {user.Id}", actionBy: model.ActionBySystemUserId);
+
+				await AuditTrailTool.LogActivityAsync(_options, $"Viewed system user information for user {user.Id}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<object>.Ok(userBasicResponse, $"System user have been retrieved"));
 
             }
             catch (Exception ex)
             {
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+				await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
@@ -265,7 +275,10 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetSystemRoleBySystemRoleId([FromQuery] SoloQueryParams model, [FromRoute] long systemRoleId)
         {
-            try
+			await using var context = new PortalDbContext(_options);
+			await using var transaction = await context.Database.BeginTransactionAsync();
+
+			try
             {
 
                 TblSystemRole? role = await _accountGetTools.GetSystemRoleAsync(systemRoleId);
@@ -279,13 +292,17 @@ namespace API.Controllers
                     CreatedAt = role.CreatedAt
                 };
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system role information for system role {role.Id}", actionBy: model.ActionBySystemUserId);
+				await context.SaveChangesAsync();
+				await transaction.CommitAsync();
+
+				await AuditTrailTool.LogActivityAsync(_options, $"Viewed system role information for system role {role.Id}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<object>.Ok(roleResponse, $"System role have been retrieved"));
 
             }
             catch (Exception ex)
             {
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+				await transaction.RollbackAsync();
+				await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
                 return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }

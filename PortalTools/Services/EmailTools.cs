@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PortalCommon.Models.ViewModels.Email;
+using PortalDB.Models.ViewModels.Email;
 using PortalDB.Services;
 using System;
 using System.Collections.Generic;

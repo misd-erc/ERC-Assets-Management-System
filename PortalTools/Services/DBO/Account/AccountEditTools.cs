@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PortalCommon.Constants;
-using PortalCommon.Models.QueryParams.Account;
-using PortalCommon.Models.ViewModels.Account;
+using PortalDB.Models.QueryParams.Account;
+using PortalDB.Models.ViewModels.Account;
 using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.LOG.AuditTrail;
