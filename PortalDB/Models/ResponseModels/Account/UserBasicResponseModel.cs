@@ -19,7 +19,7 @@ namespace PortalDB.Models.ResponseModels.Account
         public string? Email { get; set; }
         public string? EmployeeId { get; set; }
         public bool IsActive { get; set; }
-        public TblSystemRole? SystemRole { get; set; }
+        public List<SystemRoleResponseModel>? SystemRole { get; set; }
         public TblSystemUserStatus? SystemUserStatus { get; set; }
         public TblOffice? Office { get; set; }
         public TblDivision? Division { get; set; }

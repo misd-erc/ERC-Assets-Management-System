@@ -8,6 +8,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PortalDB.Entities.DBO.Module;
+using PortalDB.Models.ResponseModels.Account;
 
 namespace PortalTools.Services.DBO.Account
 {
@@ -78,8 +80,57 @@ namespace PortalTools.Services.DBO.Account
             return sessionToken.SystemUserId;
         }
         public IQueryable<TblSystemRole?> GetSystemRoles(PortalDbContext context) => context.TblSystemRoles.Where(x => !x.IsDeleted);
+        public IQueryable<TblSystemModule?> GetTblSystemModules(PortalDbContext context) => context.TblSystemModules.Where(x => !x.IsDeleted);
         public IQueryable<TblSystemUserStatus?> GetSystemUserStatuses(PortalDbContext context) => context.TblSystemUserStatuses.Where(x => !x.IsDeleted);
         public async Task<TblSystemRole?> GetSystemRoleAsync(long? id, PortalDbContext context) => await context.TblSystemRoles.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<SystemRoleResponseModel?> GetSystemRoleWithScopesAsync(long? id, PortalDbContext context)
+        {
+            TblSystemRole? systemRole = await GetSystemRoleAsync(id, context);
+
+            var scope = await GetTblSystemRoleScopesBySystemRoleIdAsync(systemRole?.Id, context);
+
+            return new SystemRoleResponseModel
+            {
+                Id = systemRole?.Id,
+                RoleName = systemRole?.RoleName,
+                Description = systemRole?.Description,
+                Scope = scope,
+                IsActive = systemRole?.IsActive,
+                IsDeleted = systemRole?.IsDeleted,
+                CreatedAt = systemRole?.CreatedAt
+            };
+        }
+        public async Task<List<SystemRoleResponseModel>> GetSystemRoleWithScopesAsListAsync(long? id, PortalDbContext context)
+        {
+            var result = await GetSystemRoleWithScopesAsync(id, context);
+            return result != null
+                ? new List<SystemRoleResponseModel> { result }
+                : new List<SystemRoleResponseModel>();
+        }
+        public async Task<TblSystemModule?> GetTblSystemModuleAsync(long? id, PortalDbContext context) => await context.TblSystemModules.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<TblSystemRoleScope?> GetTblSystemRoleScopes(PortalDbContext context) => context.TblSystemRoleScopes.Where(x => !x.IsDeleted);
+        public async Task<List<SystemRoleScopeResponseModel>> GetTblSystemRoleScopesBySystemRoleIdAsync(long? systemRoleId, PortalDbContext context)
+        {
+            var entities = await context.TblSystemRoleScopes
+                .Where(x => !x.IsDeleted && x.RoleId == systemRoleId)
+                .ToListAsync();
+
+            var results = new List<SystemRoleScopeResponseModel>();
+            foreach (var x in entities)
+            {
+                results.Add(new SystemRoleScopeResponseModel
+                {
+                    Id = x.Id,
+                    //Role = await GetSystemRoleAsync(x.RoleId, context),
+                    Module = await GetTblSystemModuleAsync(x.ModuleId, context),
+                    IsActive = x.IsActive,
+                    IsDeleted = x.IsDeleted,
+                    CreatedAt = x.CreatedAt
+                });
+            }
+
+            return results;
+        }
         public async Task<TblSystemUserStatus?> GetSystemUserStatusAsync(long? id, PortalDbContext context) => await context.TblSystemUserStatuses.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public async Task<TblSystemRole?> GetSystemRoleByNameAsync(string name, PortalDbContext context) => await context.TblSystemRoles.Where(x => !x.IsDeleted && x.RoleName == name).FirstOrDefaultAsync();
         public async Task<IQueryable<TblSystemUser?>> GetSystemUsersBySystemRoleWithContextAsync(string systemRole, PortalDbContext context)

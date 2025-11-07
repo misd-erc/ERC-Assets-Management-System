@@ -6,6 +6,7 @@ using PortalCommon.Constants;
 using PortalCommon.Enums;
 using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
+using PortalDB.Entities.DBO.Module;
 using PortalDB.Entities.DBO.Notification;
 using PortalDB.Models.QueryParams.Account;
 using PortalDB.Models.QueryParams.OTP;
@@ -119,7 +120,7 @@ namespace API.Controllers
                         Email = x.Email,
                         EmployeeId = x.EmployeeId,
                         IsActive = x.IsActive,
-                        SystemRole = await _accountGetTools.GetSystemRoleAsync(x.SystemRoleId, context),
+                        SystemRole = await _accountGetTools.GetSystemRoleWithScopesAsListAsync(x.SystemRoleId, context),
                         SystemUserStatus = await _accountGetTools.GetSystemUserStatusAsync(x.StatusId, context),
                         Office = await _officeGetTools.GetTblOfficeAsync(x.OfficeId, context),
                         Division = await _officeGetTools.GetTblDivisionAsync(x.DivisionId, context),
@@ -173,8 +174,8 @@ namespace API.Controllers
 					Email = user.Email,
 					EmployeeId = user.EmployeeId,
 					IsActive = user.IsActive,
-					SystemRole = await _accountGetTools.GetSystemRoleAsync(user.SystemRoleId, context),
-					SystemUserStatus = await _accountGetTools.GetSystemUserStatusAsync(user.SystemRoleId, context),
+					SystemRole = await _accountGetTools.GetSystemRoleWithScopesAsListAsync(user.SystemRoleId, context),
+					SystemUserStatus = await _accountGetTools.GetSystemUserStatusAsync(user.StatusId, context),
 					Office = await _officeGetTools.GetTblOfficeAsync(user.OfficeId, context),
 					Division = await _officeGetTools.GetTblDivisionAsync(user.DivisionId, context),
 					ProfilePictureStorageFile = await _storageGetTools.GetTblFileStorageAsync(user.ProfilePictureFileStorageId, context),
@@ -235,19 +236,27 @@ namespace API.Controllers
                     .Take(model.PageSize)
                     .ToList();
 
-                List<TblSystemRole> roleResponses = rolesList.Select(x => new TblSystemRole
+                var roleEntities = rolesList.Select(x => new
                 {
-                    Id = x.Id,
-                    RoleName = x.RoleName,
-                    Description = x.Description,
-                    IsActive = x.IsActive,
-                    CreatedAt = x.CreatedAt
+                    x.Id,
+                    x.RoleName,
+                    x.Description,
+                    x.IsActive,
+                    x.IsDeleted,
+                    x.CreatedAt
                 }).ToList();
+
+                var roleResponses = new List<SystemRoleResponseModel>(roleEntities.Count);
+
+                foreach (var r in roleEntities)
+                {
+                    roleResponses.Add(await _accountGetTools.GetSystemRoleWithScopesAsync(r.Id, context));
+                }
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed system roles", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<TblSystemRole>.OkPaginated(
+                return Ok(ApiResponse<SystemRoleResponseModel>.OkPaginated(
                     roleResponses,
                     model.PageNumber,
                     model.PageSize,
@@ -276,21 +285,12 @@ namespace API.Controllers
 			try
             {
 
-                TblSystemRole? role = await _accountGetTools.GetSystemRoleAsync(systemRoleId, context);
-
-                TblSystemRole roleResponse = new TblSystemRole
-                {
-                    Id = role.Id,
-                    RoleName = role.RoleName,
-                    Description = role.Description,
-                    IsActive = role.IsActive,
-                    CreatedAt = role.CreatedAt
-                };
+                SystemRoleResponseModel? role = await _accountGetTools.GetSystemRoleWithScopesAsync(systemRoleId, context);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed system role information for system role {role.Id}", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<object>.Ok(roleResponse, $"System role have been retrieved"));
+                return Ok(ApiResponse<object>.Ok(role, $"System role have been retrieved"));
 
             }
             catch (Exception ex)
@@ -465,6 +465,74 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed system notification information for system notification {notification.Id}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<object>.Ok(notificationResponse, $"System notification have been retrieved"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // GET api/users/system-modules/all
+        [HttpGet("system-modules/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSystemModules([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblSystemModule?> modules = await _accountGetTools.GetTblSystemModules(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    modules = modules.Where(x =>
+                        x.Name.ToLower().Contains(searchLower) ||
+                        x.Acronym.ToLower().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    modules = modules.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    modules = modules.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = modules.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var modulesList = modules
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                List<TblSystemModule> modulesResponses = modulesList.Select(x => new TblSystemModule
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Acronym = x.Acronym,
+                    IsActive = x.IsActive,
+                    IsDeleted = x.IsDeleted,
+                    CreatedAt = x.CreatedAt
+                }).ToList();
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed system modules", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<TblSystemModule>.OkPaginated(
+                    modulesResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "System modules have been retrieved"
+                ));
 
             }
             catch (Exception ex)

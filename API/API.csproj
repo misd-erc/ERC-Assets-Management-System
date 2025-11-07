@@ -23,7 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PortalCommon\PortalCommon.csproj" />
     <ProjectReference Include="..\PortalTools\PortalTools.csproj" />
   </ItemGroup>
 

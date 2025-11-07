@@ -10,6 +10,7 @@ using System.Reflection;
 using System.ComponentModel.DataAnnotations.Schema;
 using PortalDB.Entities.DBO.Storage;
 using PortalDB.Entities.DBO.Notification;
+using PortalDB.Entities.DBO.Module;
 
 namespace PortalDB.Services
 {
@@ -27,9 +28,11 @@ namespace PortalDB.Services
         public DbSet<TblSystemUserStatus> TblSystemUserStatuses { get; set; }
         public DbSet<TblSessionToken> TblSessionTokens { get; set; }
         public DbSet<TblSystemRole> TblSystemRoles { get; set; }
+        public DbSet<TblSystemRoleScope> TblSystemRoleScopes { get; set; }
         public DbSet<TblFileStorage> TblFileStorages { get; set; }
         public DbSet<TblSystemNotification> TblSystemNotifications { get; set; }
         public DbSet<TblSystemNotificationRead> TblSystemNotificationReads { get; set; }
+        public DbSet<TblSystemModule> TblSystemModules { get; set; }
         #endregion
 
         #region Office
