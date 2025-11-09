@@ -73,7 +73,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       return {
         firstName: parsed?.firstName || 'User',
         lastName: parsed?.lastName || '',
-        systemRoleName: parsed?.systemRole[0].roleName || 'NO ROLE ASSIGNED',
+        systemRoleName: parsed?.systemRole[0].roleName || parsed?.systemRole.roleName || 'NO ROLE ASSIGNED',
         imageUrl: undefined,
       };
     } catch (error) {
