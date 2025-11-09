@@ -5,6 +5,7 @@ import { TopBar } from './TopBar';
 import { Dashboard } from '../dashboard/Dashboard';
 import { MyProfile } from '../profile/MyProfile';
 import UserManagement from '../../pages/UserManagement';
+import { RolesManagement } from '../../pages/RolesManagement';
 import UnderConstructionContent from '../under-construction/UnderConstructionContent';
 import { useIsMobile } from '../ui/use-mobile';
 import { Sheet, SheetContent } from '../ui/sheet';
@@ -84,13 +85,20 @@ export function MainLayout() {
       case 'approvals':
       case 'calendar-notifications':
       case 'communication-tools':
-      case 'roles-management':
       case 'settings':
       case 'audit-logs':
         return (
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
               <UnderConstructionContent onNavigate={setActiveModule} />
+            </Suspense>
+          </ErrorBoundary>
+        );
+      case 'roles-management':
+        return (
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <RolesManagement />
             </Suspense>
           </ErrorBoundary>
         );
