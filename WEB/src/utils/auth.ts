@@ -8,7 +8,8 @@ export const checkUserAccess = () => {
   }
 
   const userDetails = JSON.parse(decrypt(encryptedUserDetails));
-  const systemRoleId = userDetails.systemRoleId;
+  const systemRole = userDetails.systemRole;
+  const systemRoleId = Array.isArray(systemRole) ? systemRole[0]?.id : systemRole?.id;
   const isActive = userDetails.isActive;
 
   if (!systemRoleId || !isActive) {

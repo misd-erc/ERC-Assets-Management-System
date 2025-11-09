@@ -25,12 +25,12 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
 
   useEffect(() => {
     const loadProfilePicture = async () => {
-      if (!user?.profilePictureStorageFileId) return;
+      if (!user?.profilePictureStorageFile?.id) return;
 
       try {
         const systemUserId = localStorage.getItem('systemUserId') || '';
 
-        const fileId = String(user.profilePictureStorageFileId);
+        const fileId = String(user.profilePictureStorageFile.id);
         const photoResponse = await getUserPhoto(fileId, systemUserId);
         const imageUrl = URL.createObjectURL(photoResponse.data);
         setProfileImageUrl(imageUrl);
@@ -92,14 +92,14 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-slate-900">{user.name}</h3>
-                  <p className="text-slate-600 font-medium">@{user.username}</p>
+                  <h3 className="text-2xl font-bold text-slate-900">{`${user.firstName} ${user.lastName}`}</h3>
+                  <p className="text-slate-600 font-medium">@{user.employeeId}</p>
                   <div className="flex flex-wrap items-center gap-2 mt-3">
-                    <Badge className={`rounded-full px-4 py-2 text-sm font-semibold shadow-sm ${getStatusColor(user.status)}`}>
-                      {user.status || 'Active'}
+                    <Badge className={`rounded-full px-4 py-2 text-sm font-semibold shadow-sm ${getStatusColor(user.systemUserStatus.name)}`}>
+                      {user.systemUserStatus.name}
                     </Badge>
                     <Badge className="rounded-full px-4 py-2 text-sm font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                      {user.role}
+                      {user.systemRole[0]?.roleName || 'No Role'}
                     </Badge>
                   </div>
                 </div>
@@ -120,89 +120,49 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                 </div>
               </div>
 
-              {user.position && (
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <Briefcase className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Position</Label>
-                    <p className="text-slate-900 font-medium">{user.position}</p>
-                  </div>
-                </div>
-              )}
-
-              {user.department && (
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                    <Building className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Department</Label>
-                    <p className="text-slate-900 font-medium">{user.department}</p>
-                  </div>
-                </div>
-              )}
-
-              {user.officeName && (
+              {user.office && (
                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
                   <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
                     <MapPin className="w-5 h-5 text-teal-600" />
                   </div>
                   <div className="flex-1">
                     <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Office</Label>
-                    <p className="text-slate-900 font-medium">{user.officeName}</p>
+                    <p className="text-slate-900 font-medium">{user.office.name}</p>
                   </div>
                 </div>
               )}
 
-              {user.divisionName && (
+              {user.division && (
                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
                   <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center">
                     <Users className="w-5 h-5 text-cyan-600" />
                   </div>
                   <div className="flex-1">
                     <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Division</Label>
-                    <p className="text-slate-900 font-medium">{user.divisionName}</p>
+                    <p className="text-slate-900 font-medium">{user.division.name}</p>
                   </div>
                 </div>
               )}
 
-              {user.employmentTypeId && (
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
-                  <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">
-                    <IdCard className="w-5 h-5 text-pink-600" />
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Employment Type</Label>
-                    <p className="text-slate-900 font-medium">{user.employmentTypeId}</p>
-                  </div>
+              <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-orange-600" />
                 </div>
-              )}
+                <div className="flex-1">
+                  <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Date Created</Label>
+                  <p className="text-slate-900 font-medium">{new Date(user.createdAt).toLocaleDateString()}</p>
+                </div>
+              </div>
 
-              {user.dateCreated && (
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
-                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-orange-600" />
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Date Created</Label>
-                    <p className="text-slate-900 font-medium">{new Date(user.dateCreated).toLocaleDateString()}</p>
-                  </div>
+              <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-indigo-600" />
                 </div>
-              )}
-
-              {user.lastLogin && (
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <div className="flex-1">
-                    <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Last Login</Label>
-                    <p className="text-slate-900 font-medium">{new Date(user.lastLogin).toLocaleDateString()}</p>
-                  </div>
+                <div className="flex-1">
+                  <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Last Login</Label>
+                  <p className="text-slate-900 font-medium">{new Date(user.lastLoginAt).toLocaleDateString()}</p>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
 

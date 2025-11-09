@@ -58,8 +58,8 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const [formData, setFormData] = useState({
     officeId: '',
     divisionId: '',
-    employmentTypeId: '0',
-    positionId: '0',
+    employmentTypeId: '',
+    positionId: '',
     roleId: '',
     isActive: true,
   });
@@ -83,33 +83,33 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
     try {
       setLoadingUserDetails(true);
-      const details = await getUsersDetails(selectedUser.id);
+      const details = await getUsersDetails(selectedUser.id.toString());
       setUserDetails(details);
 
       // Find roleId by matching role name from details or selectedUser
-      const roleName = (details as any).systemRoleName || selectedUser.role;
+      const roleName = (details as any).systemRoleName || selectedUser.systemRole[0]?.roleName;
       const role = roles.find(r => r.roleName === roleName);
 
       setFormData({
-        officeId: (details as any).officeId?.toString() || '',
-        divisionId: (details as any).divisionId?.toString() || '',
-        employmentTypeId: (details as any).employmentTypeId?.toString() || '0',
-        positionId: (details as any).positionId?.toString() || '0',
+        officeId: (details as any).officeId?.toString() || selectedUser.office?.id.toString() || '',
+        divisionId: (details as any).divisionId?.toString() || selectedUser.division?.id.toString() || '',
+        employmentTypeId: (details as any).employmentTypeId?.toString() || '',
+        positionId: (details as any).positionId?.toString() || '',
         roleId: role ? role.id.toString() : '',
-        isActive: details.isActive ?? (selectedUser.status === 'Active'),
+        isActive: details.isActive ?? selectedUser.isActive,
       });
     } catch (error) {
       console.error('Failed to fetch user details:', error);
       toast.error('Failed to load user details');
       // Fallback to selectedUser data
-      const role = roles.find(r => r.roleName === selectedUser.role);
+      const role = roles.find(r => r.roleName === selectedUser.systemRole[0]?.roleName);
       setFormData({
-        officeId: selectedUser.officeId || '',
-        divisionId: selectedUser.divisionId || '',
-        employmentTypeId: selectedUser.employmentTypeId || '0',
-        positionId: selectedUser.positionId || '0',
+        officeId: selectedUser.office?.id.toString() || '',
+        divisionId: selectedUser.division?.id.toString() || '',
+        employmentTypeId: '',
+        positionId: '',
         roleId: role ? role.id.toString() : '',
-        isActive: selectedUser.status === 'Active',
+        isActive: selectedUser.isActive,
       });
     } finally {
       setLoadingUserDetails(false);
@@ -151,12 +151,12 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
       const statusId = formData.isActive ? '0' : '1'; // 0 for Active, 1 for Inactive
 
       const payload = {
-        systemUserId: parseInt(selectedUser.id, 10),
+        systemUserId: selectedUser.id,
         systemRoleId: formData.roleId ? parseInt(formData.roleId, 10) : undefined,
         officeId: formData.officeId ? parseInt(formData.officeId, 10) : undefined,
         divisionId: formData.divisionId ? parseInt(formData.divisionId, 10) : undefined,
-        employmentTypeId: parseInt(formData.employmentTypeId, 10),
-        positionId: parseInt(formData.positionId, 10),
+        employmentTypeId: formData.employmentTypeId ? parseInt(formData.employmentTypeId, 10) : undefined,
+        positionId: formData.positionId ? parseInt(formData.positionId, 10) : undefined,
         isActive: formData.isActive,
         actionBySystemUserId: parseInt(token, 10),
       };
@@ -236,7 +236,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
             <div className="space-y-2">
               <Label htmlFor="employmentType">Employment Type</Label>
               <Select
-                value={formData.employmentTypeId}
+                value={formData.employmentTypeId || undefined}
                 onValueChange={(value) => setFormData({ ...formData, employmentTypeId: value })}
               >
                 <SelectTrigger>
@@ -255,7 +255,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
             <div className="space-y-2">
               <Label htmlFor="position">Position</Label>
               <Select
-                value={formData.positionId}
+                value={formData.positionId || undefined}
                 onValueChange={(value) => setFormData({ ...formData, positionId: value })}
               >
                 <SelectTrigger>

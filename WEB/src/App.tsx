@@ -16,24 +16,19 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const hasValidSession = isSessionValid();
   const isExpired = isSessionExpired();
 
-  console.log('[ProtectedRoute] Auth check:', { requireMFA, hasValidSession, isExpired });
-
   // If session is expired, handle expiration and redirect
   if (isExpired) {
-    console.log('[ProtectedRoute] Session expired, handling expiration');
     handleSessionExpired('Your session has expired. Please log in again.');
     return <Navigate to="/" replace />;
   }
 
   // If no valid session token, redirect to login
   if (!hasValidSession) {
-    console.log('[ProtectedRoute] No valid session, redirecting to login');
     return <Navigate to="/" replace />;
   }
 
   // If MFA is required, redirect to MFA page
   if (requireMFA) {
-    console.log('[ProtectedRoute] MFA required, redirecting to MFA');
     return <Navigate to="/mfa" replace />;
   }
 
@@ -42,25 +37,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (encryptedUserDetails) {
     try {
       const userDetails = JSON.parse(decrypt(encryptedUserDetails));
-      const systemRoleId = userDetails.systemRoleId;
-      const isActive = userDetails.isActive;
+      const systemRole = userDetails.systemRole;
+      const systemRoleId = Array.isArray(systemRole) ? systemRole[0]?.id : systemRole?.id;
+      const isActive = userDetails.systemUserStatus?.name;
 
-      // Redirect to no-role if:
-      // - systemRoleId is null or 0
-      // - isActive is false
-      // - user has role but isActive is false
-      // - user doesn't have role but isActive is true
-      if (!systemRoleId || systemRoleId === 0 || !isActive) {
-        console.log('[ProtectedRoute] User does not have required role or is inactive, redirecting to no-role');
+      if (systemRoleId == 0 || systemRoleId == null) {
         return <Navigate to="/no-role" replace />;
       }
     } catch (error) {
-      console.error('[ProtectedRoute] Error checking user access:', error);
       return <Navigate to="/no-role" replace />;
     }
-  } else {
-    console.log('[ProtectedRoute] No user details found, redirecting to no-role');
-    return <Navigate to="/no-role" replace />;
   }
 
   // Session is valid, user has role and is active, allow access
@@ -72,7 +58,6 @@ function AppContent() {
 
   // Initialize auth state on app start
   useEffect(() => {
-    console.log('[App] Initializing application...');
     initialize();
   }, [initialize]);
 

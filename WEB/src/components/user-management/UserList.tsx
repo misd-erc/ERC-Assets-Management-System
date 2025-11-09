@@ -86,11 +86,12 @@ export const UserList: React.FC<UserListProps> = ({
 
   // Filter users based on search and filters
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (user.position && user.position.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = statusFilter === 'All' || user.status === statusFilter;
-    const matchesRole = roleFilter === 'All' || user.systemRoleName === roleFilter;
+                         (user.division?.name && user.division.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = statusFilter === 'All' || user.systemUserStatus.name === statusFilter;
+    const matchesRole = roleFilter === 'All' || user.systemRole[0]?.roleName === roleFilter;
     return matchesSearch && matchesStatus && matchesRole;
   });
 
@@ -101,7 +102,7 @@ export const UserList: React.FC<UserListProps> = ({
   const handleDeleteUser = async (userId: string) => {
     try {
       await deleteUser(userId);
-      setUsers(users.filter(user => user.id !== userId));
+      setUsers(users.filter(user => user.id !== parseInt(userId, 10)));
       setDeleteUserId(null);
       toast.success('User deleted successfully');
     } catch (error) {
@@ -113,7 +114,7 @@ export const UserList: React.FC<UserListProps> = ({
   const handleChangeRole = async (userId: string, newRole: string) => {
     try {
       const token = localStorage.getItem('systemUserId') || '';
-      const user = users.find(u => u.id === userId);
+      const user = users.find(u => u.id === parseInt(userId, 10));
       if (!user) {
         toast.error('User not found');
         return;
@@ -122,11 +123,11 @@ export const UserList: React.FC<UserListProps> = ({
       await editUser({
         systemUserId: parseInt(userId, 10),
         systemRoleId: parseInt(newRole, 10),
-        isActive: user.status === 'Active',
+        isActive: user.systemUserStatus.name === 'Active',
         actionBySystemUserId: parseInt(token, 10)
       });
       setUsers(users.map(user =>
-        user.id === userId ? { ...user, systemRoleName: newRole } : user
+        user.id === parseInt(userId, 10) ? { ...user, systemRole: [{ ...user.systemRole[0], roleName: newRole }] } : user
       ));
       toast.success('User role updated successfully');
     } catch (error) {
@@ -246,22 +247,21 @@ export const UserList: React.FC<UserListProps> = ({
                   <TableRow key={user.id} className="hover:bg-gray-50">
                     <TableCell>
                       <div>
-                        <p className="font-medium">{user.name}</p>
-                        {user.position && <p className="text-sm text-muted-foreground">{user.position}</p>}
-                        {user.department && <p className="text-sm text-muted-foreground">{user.department}</p>}
+                        <p className="font-medium">{`${user.firstName} ${user.lastName}`}</p>
+                        {user.division?.name && <p className="text-sm text-muted-foreground">{user.division.name}</p>}
                       </div>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
-                      <span>{user.systemRoleName}</span>
+                      <span>{user.systemRole[0]?.roleName || 'N/A'}</span>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(user.status)}>
-                        {user.status || 'Active'}
+                      <Badge className={getStatusColor(user.systemUserStatus.name)}>
+                        {user.systemUserStatus.name || 'Active'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                      {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -282,7 +282,7 @@ export const UserList: React.FC<UserListProps> = ({
                             <Edit className="w-4 h-4 mr-2" />
                             Edit User
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setDeleteUserId(user.id)}>
+                          <DropdownMenuItem onClick={() => setDeleteUserId(user.id.toString())}>
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete User
                           </DropdownMenuItem>

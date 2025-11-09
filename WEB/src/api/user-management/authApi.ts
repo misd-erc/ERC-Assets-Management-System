@@ -20,6 +20,7 @@ export interface UserDetails {
   status?: string;
   profileImage?: string;
   profilePictureStorageFileId?: string;
+  employeeId: string;
 }
 
 export interface EditUserPayload {
@@ -165,15 +166,19 @@ export const validateSessionToken = async (token: string, systemUserId: string):
   const newToken = data.expiryToken || '';
 
   const user: User = {
-    id: userId.toString(),
-    name: `${firstName} ${lastName}`,
-    email: email,
-    username: email,
-    role: 'user',
-    systemRoleName: 'user',
-    entraId: '', // Will be set from MSAL
+    id: parseInt(userId, 10),
     firstName: firstName,
-    lastName: lastName
+    lastName: lastName,
+    email: email,
+    employeeId: '',
+    isActive: true,
+    systemRole: [],
+    systemUserStatus: { id: 1, name: 'Active', isActive: true, isDeleted: false, createdAt: '' },
+    office: null,
+    division: null,
+    profilePictureStorageFile: null,
+    createdAt: '',
+    lastLoginAt: ''
   };
 
   return { user, token: newToken };
