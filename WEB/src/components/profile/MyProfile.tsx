@@ -62,8 +62,8 @@ export const MyProfile = () => {
         const parsed = JSON.parse(decrypted);
         setUserDetails(parsed);
 
-        if (parsed?.profilePictureStorageFileId && token) {
-          const fileIdEncrypted = String(parsed.profilePictureStorageFileId);
+        if (parsed?.profilePictureStorageFile.id && token) {
+          const fileIdEncrypted = String(parsed.profilePictureStorageFile.id);
           const userId = parsed?.id || systemUserId;
           console.log('[MyProfile] Loading profile picture from localStorage');
           const photoResponse = await getUserPhoto(fileIdEncrypted, userId);
@@ -305,7 +305,7 @@ export const MyProfile = () => {
   const fullName = `${userDetails.firstName || ''} ${userDetails.lastName || ''}`.trim() || 'Unknown User';
   const initials = ((userDetails.firstName || '')[0] || '') + ((userDetails.lastName || '')[0] || '') || 'U';
   const statusBadge = userDetails.isActive ? 'Active' : 'Inactive';
-  const roleBadge = userDetails.systemRoleName || 'No Role Assigned'; 
+  const roleBadge = userDetails.systemRole[0].roleName || 'No Role Assigned'; 
   const dateJoined = formatDate(userDetails.createdAt, 'Month DD, YYYY');
   const lastLogin = formatDate(userDetails.lastLoginAt, 'Month DD, YYYY HH:mm');
 
@@ -462,7 +462,7 @@ export const MyProfile = () => {
                   <Briefcase className="w-4 h-4 text-gray-400" />
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Role</Label>
-                    <p className="text-gray-900">{userDetails.systemRoleName || 'User'}</p>
+                    <p className="text-gray-900">{userDetails.systemRole[0].roleName || 'User'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">

@@ -1,25 +1,38 @@
-export interface User {
-  id: string;
+export interface ProfilePictureStorageFile {
+  id: number;
+  blobName: string;
+  originalFileName: string;
+  folderName: string;
+  contentType: string;
+  uploadedAt: string;
+  uploadedBy: number;
+  isActive: boolean;
+  isDeleted: boolean;
+}
+
+export interface SystemUserStatus {
+  id: number;
   name: string;
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt: string;
+}
+
+export interface User {
+  id: number;
+  firstName: string;
+  lastName: string;
   email: string;
-  username: string;
-  role: string;
-  systemRoleName: string;
-  position?: string;
-  status?: 'Active' | 'Inactive' | 'Suspended';
-  department?: string;
-  dateCreated?: string;
-  lastLogin?: string;
+  employeeId: string;
+  isActive: boolean;
+  systemRole: SystemRole[];
+  systemUserStatus: SystemUserStatus;
+  office: Office | null;
+  division: Division | null;
+  profilePictureStorageFile: ProfilePictureStorageFile | null;
+  createdAt: string;
+  lastLoginAt: string;
   entraId?: string;
-  firstName?: string;
-  lastName?: string;
-  officeId?: string;
-  divisionId?: string;
-  employmentTypeId?: string;
-  positionId?: string;
-  officeName?: string;
-  divisionName?: string;
-  profilePictureStorageFileId?: number;
 }
 
 export interface Office {
@@ -68,7 +81,7 @@ export interface UserDetails {
   status?: string;
   profileImage?: string;
   profilePictureId?: string;
-  employeeId?: string;
+  employeeId: string;
   systemRoleId?: string;
 }
 

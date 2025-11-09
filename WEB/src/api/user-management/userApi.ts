@@ -25,23 +25,19 @@ export const getUsers = async (page: number = 1, pageSize: number = 10): Promise
 
   // Map API response to User type
   const mappedItems = response.data.data.items.map((item: any) => ({
-    id: item.id.toString(),
-    name: `${item.firstName} ${item.lastName}`,
-    email: item.email,
-    username: item.email.split('@')[0], // Use email prefix as username
-    role: item.role || 'User', // Default if not provided
-    systemRoleName: item.systemRoleName || item.role || 'User',
-    position: item.position || '',
-    status: (item.isActive ? 'Active' : 'Inactive') as 'Active' | 'Inactive' | 'Suspended',
-    department: item.department || '',
-    dateCreated: item.createdAt,
-    lastLogin: item.lastLoginAt,
+    id: item.id,
     firstName: item.firstName,
     lastName: item.lastName,
-    officeName: item.officeName,
-    divisionName: item.divisionName,
-    employmentTypeId: item.employmentTypeId,
-    profilePictureStorageFileId: item.profilePictureStorageFileId
+    email: item.email,
+    employeeId: item.employeeId,
+    isActive: item.isActive,
+    systemRole: item.systemRole || [],
+    systemUserStatus: item.systemUserStatus || { id: 1, name: 'Active', isActive: true, isDeleted: false, createdAt: '' },
+    office: item.office || null,
+    division: item.division || null,
+    profilePictureStorageFile: item.profilePictureStorageFile || null,
+    createdAt: item.createdAt,
+    lastLoginAt: item.lastLoginAt
   }));
 
   return {
@@ -58,7 +54,7 @@ export const createUser = async (user: Omit<User, 'id'>): Promise<User> => {
   // return response.data;
 
   // Mock implementation
-  const newUser: User = { ...user, id: Date.now().toString() };
+  const newUser: User = { ...user, id: Date.now() };
   return newUser;
 };
 
@@ -68,7 +64,7 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
 
   // Mock implementation
   const response = await getUsers();
-  const user = response.data.items.find(u => u.id === id);
+  const user = response.data.items.find(u => u.id === parseInt(id, 10));
   if (!user) throw new Error('User not found');
   return { ...user, ...updates };
 };

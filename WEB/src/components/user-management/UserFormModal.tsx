@@ -17,12 +17,12 @@ interface UserFormModalProps {
   onSuccess: () => void;
 }
 
-export const UserFormModal: React.FC<UserFormModalProps> = ({
+export const UserFormModal = ({
   isOpen,
   onClose,
   user,
   onSuccess
-}) => {
+}: UserFormModalProps) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -42,18 +42,18 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name || '',
+        name: `${user.firstName} ${user.lastName}` || '',
         email: user.email || '',
-        username: user.username || '',
-        role: user.role || '',
-        systemRoleName: user.systemRoleName || '',
-        position: user.position || '',
-        status: user.status || 'Active',
-        department: user.department || '',
-        officeId: user.officeId || '',
-        divisionId: user.divisionId || '',
-        employmentTypeId: user.employmentTypeId || '',
-        positionId: user.positionId || ''
+        username: user.employeeId || '',
+        role: user.systemRole[0]?.roleName || '',
+        systemRoleName: user.systemRole[0]?.roleName || '',
+        position: '',
+        status: (user.systemUserStatus.name as 'Active' | 'Inactive' | 'Suspended') || 'Active',
+        department: user.division?.name || '',
+        officeId: user.office?.id.toString() || '',
+        divisionId: user.division?.id.toString() || '',
+        employmentTypeId: '',
+        positionId: ''
       });
     } else {
       setFormData({
@@ -83,7 +83,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
         const token = localStorage.getItem('ActionBySystemUserId') || '';
         const statusId = formData.status === 'Active' ? '0' : formData.status === 'Inactive' ? '1' : '2';
         await editUser({
-          systemUserId: parseInt(user.id, 10),
+          systemUserId: parseInt(user.id.toString(), 10),
           systemRoleId: formData.role ? parseInt(formData.role, 10) : undefined,
           officeId: formData.officeId ? parseInt(formData.officeId, 10) : undefined,
           divisionId: formData.divisionId ? parseInt(formData.divisionId, 10) : undefined,
@@ -95,7 +95,20 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
         toast.success('User updated successfully');
       } else {
         // Create new user
-        await createUser(formData);
+        await createUser({
+          firstName: formData.name.split(' ')[0] || '',
+          lastName: formData.name.split(' ').slice(1).join(' ') || '',
+          email: formData.email,
+          employeeId: formData.username,
+          isActive: formData.status === 'Active',
+          systemRole: formData.role ? [{ id: parseInt(formData.role, 10), roleName: formData.role, description: '', isActive: true, isDeleted: false, createdAt: '' }] : [],
+          systemUserStatus: { id: 1, name: formData.status, isActive: true, isDeleted: false, createdAt: '' },
+          office: formData.officeId ? { id: parseInt(formData.officeId, 10), name: '', acronym: '', isActive: true } : null,
+          division: formData.divisionId ? { id: parseInt(formData.divisionId, 10), name: '', officeId: parseInt(formData.officeId || '0', 10), acronym: '' } : null,
+          profilePictureStorageFile: null,
+          createdAt: '',
+          lastLoginAt: ''
+        });
         toast.success('User created successfully');
       }
       onSuccess();

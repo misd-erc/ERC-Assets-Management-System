@@ -137,15 +137,20 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
       // Create user object from userDetails
       const updatedUser: User = {
-        id: userDetails.id.toString(),
-        name: `${userDetails.firstName} ${userDetails.lastName}`,
-        email: userDetails.email,
-        username: userDetails.email,
-        role: 'user',
-        systemRoleName: 'user',
-        entraId: get().user?.entraId || '', // Preserve Entra ID from MSAL
+        id: userDetails.id,
         firstName: userDetails.firstName,
-        lastName: userDetails.lastName
+        lastName: userDetails.lastName,
+        email: userDetails.email,
+        employeeId: userDetails.employeeId || '',
+        isActive: userDetails.isActive,
+        systemRole: [{ id: 1, roleName: 'End User', description: '', isActive: true, isDeleted: false, createdAt: '' }],
+        systemUserStatus: { id: 1, name: 'Active', isActive: true, isDeleted: false, createdAt: '' },
+        office: null,
+        division: null,
+        profilePictureStorageFile: null,
+        createdAt: userDetails.createdAt,
+        lastLoginAt: userDetails.lastLoginAt,
+        entraId: get().user?.entraId || '' // Preserve Entra ID from MSAL
       };
 
       // Save session to localStorage

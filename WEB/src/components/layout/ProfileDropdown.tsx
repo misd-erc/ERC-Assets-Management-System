@@ -73,7 +73,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       return {
         firstName: parsed?.firstName || 'User',
         lastName: parsed?.lastName || '',
-        systemRoleName: parsed?.systemRoleName || 'NO ROLE ASSIGNED',
+        systemRoleName: parsed?.systemRole[0].roleName || 'NO ROLE ASSIGNED',
         imageUrl: undefined,
       };
     } catch (error) {
@@ -158,7 +158,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           if (stored) {
             try {
            
-              localProfilePictureStorageFileId = parsed?.profilePictureStorageFileId;
+              localProfilePictureStorageFileId = parsed?.profilePictureStorageFile.id;
             } catch (error) {
               console.warn('Failed to parse localStorage for profilePictureStorageFileId:', error);
             }
@@ -251,14 +251,11 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'admin':
+      case 'administrator':
         return 'bg-red-100 text-red-800 border-red-200';
-      case 'user':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'viewer':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
     }
   };
 
