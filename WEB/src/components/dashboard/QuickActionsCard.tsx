@@ -13,6 +13,9 @@ import {
   ArrowRightLeft,
   QrCode,
   Upload,
+  CheckCircle,
+  Clock,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -88,6 +91,16 @@ export function QuickActionsCard({
     );
   };
 
+  const handleViewPendingApprovals = () => {
+    toast.success("Navigating to pending approvals");
+    onNavigate?.("pending-approvals");
+  };
+
+  const handleViewReports = () => {
+    toast.success("Navigating to reports");
+    onNavigate?.("reports");
+  };
+
   const quickActions = [
     {
       title: "Create RIS",
@@ -95,6 +108,7 @@ export function QuickActionsCard({
       icon: FileText,
       onClick: handleCreateRIS,
       variant: "outline" as const,
+      priority: "high" as const,
     },
     {
       title: "Encode Asset",
@@ -102,6 +116,7 @@ export function QuickActionsCard({
       icon: Plus,
       onClick: handleEncodeAsset,
       variant: "outline" as const,
+      priority: "high" as const,
     },
     {
       title: "Generate PAR",
@@ -109,6 +124,7 @@ export function QuickActionsCard({
       icon: Package,
       onClick: handleGeneratePAR,
       variant: "outline" as const,
+      priority: "high" as const,
     },
     {
       title: "Asset Transfer",
@@ -116,6 +132,7 @@ export function QuickActionsCard({
       icon: ArrowRightLeft,
       onClick: handleAssetTransfer,
       variant: "outline" as const,
+      priority: "medium" as const,
     },
     {
       title: "Print Barcode",
@@ -123,6 +140,7 @@ export function QuickActionsCard({
       icon: QrCode,
       onClick: handlePrintBarcode,
       variant: "outline" as const,
+      priority: "medium" as const,
     },
     {
       title: "Import Data",
@@ -130,8 +148,38 @@ export function QuickActionsCard({
       icon: Upload,
       onClick: handleImportData,
       variant: "outline" as const,
+      priority: "low" as const,
+    },
+    {
+      title: "Pending Approvals",
+      description: "Review and approve requests",
+      icon: Clock,
+      onClick: handleViewPendingApprovals,
+      variant: "default" as const,
+      priority: "high" as const,
+    },
+    {
+      title: "View Reports",
+      description: "Generate asset reports",
+      icon: CheckCircle,
+      onClick: handleViewReports,
+      variant: "outline" as const,
+      priority: "medium" as const,
     },
   ];
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high":
+        return "border-l-4 border-l-red-500 bg-red-50/50";
+      case "medium":
+        return "border-l-4 border-l-amber-500 bg-amber-50/50";
+      case "low":
+        return "border-l-4 border-l-green-500 bg-green-50/50";
+      default:
+        return "";
+    }
+  };
 
   return (
     <Card>
@@ -147,16 +195,21 @@ export function QuickActionsCard({
             <Button
               key={action.title}
               variant={action.variant}
-              className="justify-start h-auto p-4 hover:scale-[1.02] transition-transform"
+              className={`justify-start h-auto p-4 hover:scale-[1.02] transition-transform ${getPriorityColor(action.priority)}`}
               onClick={action.onClick}
             >
               <action.icon className="w-5 h-5 mr-3" />
               <div className="text-left">
-                <p className="text-sm">{action.title}</p>
+                <p className="text-sm font-medium">{action.title}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {action.description}
                 </p>
               </div>
+              {action.priority === "high" && (
+                <div className="ml-auto">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                </div>
+              )}
             </Button>
           ))}
         </div>

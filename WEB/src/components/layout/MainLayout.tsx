@@ -2,10 +2,11 @@ import React, { useState, Suspense, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
-import { Dashboard } from '../dashboard/Dashboard';
+import Dashboard from '../../pages/Dashboard';
 import { MyProfile } from '../profile/MyProfile';
 import UserManagement from '../../pages/UserManagement';
 import { RolesManagement } from '../../pages/RolesManagement';
+import AuditLogs from '../../pages/AuditLogs';
 import UnderConstructionContent from '../under-construction/UnderConstructionContent';
 import { useIsMobile } from '../ui/use-mobile';
 import { Sheet, SheetContent } from '../ui/sheet';
@@ -60,7 +61,7 @@ export function MainLayout() {
         return (
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
-              <Dashboard onNavigate={setActiveModule} />
+              <Dashboard />
             </Suspense>
           </ErrorBoundary>
         );
@@ -90,7 +91,7 @@ export function MainLayout() {
         return (
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
-              <UnderConstructionContent onNavigate={setActiveModule} />
+              <AuditLogs />
             </Suspense>
           </ErrorBoundary>
         );

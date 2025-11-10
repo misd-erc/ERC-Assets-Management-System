@@ -22,6 +22,20 @@ export const getAuditTrail = async (token: string, sessionKey: string, page: num
   }
 };
 
+export const getAllAuditTrail = async (token: string, sessionKey: string, page: number = 1, pageSize: number = 10): Promise<AuditTrailResponse> => {
+  try {
+        const response = await axiosInstance.get(
+      `/Logs/audit-trail/all?ActionBySystemUserId=${encodeURIComponent(token)}&SessionKey=${encodeURIComponent(sessionKey)}&pageNumber=${page}&pageSize=${pageSize}`
+    );
+    return response.data;
+
+  } catch (error) {
+    console.error('[AuditAPI] Failed to fetch audit trail:', error);
+    throw error;
+  }
+};
+
+
 /**
  * Fetch activity logs for the current user
  * @param token - The ActionBySystemUserId token from localStorage
@@ -41,3 +55,5 @@ export const getActivities = async (token: string, sessionKey: string, page: num
     throw error;
   }
 };
+
+
