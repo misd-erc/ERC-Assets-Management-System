@@ -9,6 +9,7 @@ import { RolesManagement } from '../../pages/RolesManagement';
 import AuditLogs from '../../pages/AuditLogs';
 import UnderConstructionPage from '../../pages/UC';
 import UnderConstructionContent from '../under-construction/UnderConstructionContent';
+import SupplyManagement from '../../pages/supplies/SupplyManagement';
 import { useIsMobile } from '../ui/use-mobile';
 import { Sheet, SheetContent } from '../ui/sheet';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
@@ -77,6 +78,13 @@ export function MainLayout() {
       case 'category-management':
       case 'deliveries-receipts':
       case 'supplies-inventory':
+        return (
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <SupplyManagement />
+            </Suspense>
+          </ErrorBoundary>
+        );
       case 'supply-management':
       case 'transfers-returns':
       case 'disposals':
