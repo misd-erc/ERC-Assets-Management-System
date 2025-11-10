@@ -78,7 +78,7 @@ export function AssetOverviewChart() {
           </TabsList>
 
           <TabsContent value="activity" className="space-y-4">
-            <div className="h-80">
+            <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -108,7 +108,7 @@ export function AssetOverviewChart() {
           </TabsContent>
 
           <TabsContent value="categories" className="space-y-4">
-            <div className="h-80 flex">
+            <div className="h-96 flex">
               <div className="flex-1">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -118,7 +118,7 @@ export function AssetOverviewChart() {
                       nameKey="name"
                       cx="50%"
                       cy="50%"
-                      outerRadius={100}
+                      outerRadius={120}
                       label={false}
                     >
                       {categoryData.map((entry, index) => (
@@ -144,7 +144,7 @@ export function AssetOverviewChart() {
           </TabsContent>
 
           <TabsContent value="status" className="space-y-4">
-            <div className="h-80 flex">
+            <div className="h-96 flex">
               <div className="flex-1">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -154,7 +154,7 @@ export function AssetOverviewChart() {
                       nameKey="name"
                       cx="50%"
                       cy="50%"
-                      outerRadius={100}
+                      outerRadius={120}
                       label={false}
                     >
                       {statusData.map((entry, index) => (
