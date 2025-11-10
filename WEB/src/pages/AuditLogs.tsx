@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuditLogsHeader, AuditLogsTable, AuditLogDetailsModal } from '../components/audit-logs';
-import { getAuditTrail } from '../api/audit/auditApi';
+import { getAllAuditTrail } from '../api/audit/auditApi';
 import { AuditTrailItem } from '../types/audit';
 import { toast } from 'sonner';
 import { useAuthStore } from '../store/auth';
@@ -14,11 +14,11 @@ const AuditLogs: React.FC = () => {
   const [selectedLog, setSelectedLog] = useState<AuditTrailItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  // KPI stats (these would come from API in real implementation)
-  const [totalLogs] = useState(15847);
-  const [todayLogs] = useState(234);
-  const [securityEvents] = useState(12);
-  const [failedActions] = useState(8);
+  // KPI stats
+  const [totalLogs, setTotalLogs] = useState(0);
+  const [todayLogs, setTodayLogs] = useState(0);
+  const [securityEvents, setSecurityEvents] = useState(0);
+  const [failedActions, setFailedActions] = useState(0);
 
   const { user } = useAuthStore();
 
@@ -32,14 +32,14 @@ const AuditLogs: React.FC = () => {
       setError(null);
 
       const token = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionKey') || '';
+      const sessionKey = localStorage.getItem('sessionToken') || '';
 
       if (!token || !sessionKey) {
         setError('Authentication required');
         return;
       }
 
-      const response = await getAuditTrail(token, sessionKey, currentPage, 10);
+      const response = await getAllAuditTrail(token, sessionKey, currentPage, 10);
 
       if (response.success) {
         setAuditLogs(response.data.items);
@@ -73,6 +73,8 @@ const AuditLogs: React.FC = () => {
     setSelectedLog(log);
     setModalOpen(true);
   };
+
+
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

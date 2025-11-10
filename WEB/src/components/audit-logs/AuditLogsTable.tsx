@@ -107,7 +107,7 @@ export function AuditLogsTable({
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {log.changes.length} changes
+                        {Object.keys(log.changes).length} changes
                       </Badge>
                     </TableCell>
                     <TableCell>
