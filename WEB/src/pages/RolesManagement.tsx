@@ -8,6 +8,8 @@ import { SearchAndSummary } from '../components/roles-management/SearchAndSummar
 import { RolesTable } from '../components/roles-management/RolesTable';
 import { RoleDialog } from '../components/roles-management/RoleDialog';
 import { DeleteRoleDialog } from '../components/roles-management/DeleteRoleDialog';
+import { getSystemRoleById } from '../api/roles/rolesApi';
+import { toast } from 'sonner';
 
 export function RolesManagement() {
   const { systemUserId } = useAuthStore();
@@ -17,6 +19,7 @@ export function RolesManagement() {
   const [showAddRole, setShowAddRole] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [deleteRoleId, setDeleteRoleId] = useState<string | null>(null);
+  const [editingLoading, setEditingLoading] = useState(false);
 
  
   useEffect(() => {
@@ -44,20 +47,24 @@ export function RolesManagement() {
   }, [systemUserId, fetchRoles]);
 
   // Convert API roles to frontend Role format
-  const frontendRoles: Role[] = Array.isArray(roles) ? roles.map(apiRole => ({
+  const systemRoles: Role[] = Array.isArray(roles) ? roles.map(apiRole => ({
     id: apiRole.id.toString(),
     roleId: `ROLE-${apiRole.id.toString().padStart(3, '0')}`,
     roleName: apiRole.roleName,
     description: apiRole.description,
     assignedPermissions: (apiRole.scope || [])
       .filter((scope: any) => scope.isActive)
-      .map((scope: any) => scope.module?.toLowerCase().replace(/\s+/g, '-') || 'unknown'),
+      .map((scope: any) => {
+        const permissionIndex = scope.id - 15; // scope IDs start from 15
+        const allPermissions = Object.values(PERMISSION_CATEGORIES).flat();
+        return allPermissions[permissionIndex]?.id || 'unknown';
+      }),
     userCount: apiRole.userCount,
     dateCreated: new Date(apiRole.createdAt).toISOString().split('T')[0]
   })) : [];
 
   // Filter roles based on search
-  const filteredRoles = frontendRoles.filter(role =>
+  const filteredRoles = systemRoles.filter(role =>
     role.roleName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     role.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     role.roleId.toLowerCase().includes(searchTerm.toLowerCase())
@@ -155,6 +162,47 @@ export function RolesManagement() {
     setDeleteRoleId(null);
   };
 
+  const handleEditRoleClick = async (role: Role) => {
+    setEditingLoading(true);
+    try {
+      const userId = systemUserId || localStorage.getItem('systemUserId');
+      if (!userId) {
+        toast.error('No user ID available');
+        return;
+      }
+
+      console.log('[RolesManagement] Fetching role details for edit:', role.id);
+
+      const roleDetails = await getSystemRoleById(parseInt(role.id), {
+        actionBySystemUserId: userId,
+      });
+
+      // Convert API response to Role format with accurate permissions from scope
+      const updatedRole: Role = {
+        id: roleDetails.id.toString(),
+        roleId: `ROLE-${roleDetails.id.toString().padStart(3, '0')}`,
+        roleName: roleDetails.roleName,
+        description: roleDetails.description,
+        assignedPermissions: (roleDetails.scope || [])
+          .filter((scope: any) => scope.isActive)
+          .map((scope: any) => {
+            const permissionIndex = scope.id - 15; // scope IDs start from 15
+            const allPermissions = Object.values(PERMISSION_CATEGORIES).flat();
+            return allPermissions[permissionIndex]?.id || 'unknown';
+          }),
+        userCount: role.userCount, // Keep from the list data
+        dateCreated: new Date(roleDetails.createdAt).toISOString().split('T')[0],
+      };
+
+      setEditingRole(updatedRole);
+    } catch (error) {
+      console.error('[RolesManagement] Error fetching role details:', error);
+      toast.error('Failed to load role details for editing');
+    } finally {
+      setEditingLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="pl-64 pt-16 flex items-center justify-center min-h-screen">
@@ -183,7 +231,7 @@ export function RolesManagement() {
 
       <RolesTable
         roles={filteredRoles}
-        onEditRole={setEditingRole}
+        onEditRole={handleEditRoleClick}
         onDeleteRole={setDeleteRoleId}
       />
 
@@ -191,7 +239,7 @@ export function RolesManagement() {
         isOpen={showAddRole}
         onClose={() => setShowAddRole(false)}
         onSave={handleAddRole}
-        rolesCount={frontendRoles.length}
+        rolesCount={systemRoles.length}
       />
 
       <RoleDialog
@@ -199,7 +247,7 @@ export function RolesManagement() {
         onClose={() => setEditingRole(null)}
         onSave={handleEditRole}
         editingRole={editingRole}
-        rolesCount={frontendRoles.length}
+        rolesCount={systemRoles.length}
       />
 
       <DeleteRoleDialog
