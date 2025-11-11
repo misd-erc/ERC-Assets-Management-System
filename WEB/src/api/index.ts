@@ -4,3 +4,4 @@ export * from './user-management/userApi';
 export * from './user-management/departmentApi';
 export * from './storage/uploadApi';
 export * from './audit/auditApi';
+export * from './roles/rolesApi';

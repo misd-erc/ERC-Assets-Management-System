@@ -225,6 +225,123 @@ namespace PortalTools.Services.DBO.Account
             }
         }
 
+        /// <summary>
+        /// Updates an existing TblSystemRole.
+        /// Returns the role id if update succeeds, 0 otherwise.
+        /// </summary>
+        public async Task<long> EditTblSystemRoleAsync(EditSystemRoleViewModel model, PortalDbContext context)
+        {
+            if (model == null)
+                return 0;
+
+            try
+            {
+                bool isInsert = model.Id == 0;
+
+                TblSystemRole? existingRole = null;
+                TblSystemRole roleUpdatedInfo = new()
+                {
+                    Id = model.Id,
+                    RoleName = model.RoleName,
+                    Description = model.Description,
+                    IsActive = model.IsActive
+                };
+
+                if (isInsert)
+                {
+                    roleUpdatedInfo.CreatedAt = DateTime.UtcNow;
+                    await context.TblSystemRoles.AddAsync(roleUpdatedInfo);
+                    await context.SaveChangesAsync();
+                    model.Id = roleUpdatedInfo.Id; // Get the new ID
+                }
+                else
+                {
+                    existingRole = await _accountGetTools.GetSystemRoleAsync(model.Id, context);
+                    if (existingRole == null)
+                        return 0;
+
+                    await context.TblSystemRoles.Where(r => r.Id == model.Id)
+                        .ExecuteUpdateAsync(r => r
+                            .SetProperty(x => x.RoleName, roleUpdatedInfo.RoleName)
+                            .SetProperty(x => x.Description, roleUpdatedInfo.Description)
+                            .SetProperty(x => x.IsActive, roleUpdatedInfo.IsActive));
+                }
+
+                // Handle scopes
+                await EditTblSystemRoleScopesAsync(model.Id, model.Scopes, context);
+
+                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} system role {model.RoleName}", actionBy: model.ActionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingRole!, roleUpdatedInfo, nameof(TblSystemRole), model.ActionBySystemUserId, isInsert ? "Insert" : "Update"));
+
+                return model.Id;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(AccountEditTools));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Updates scopes for a system role.
+        /// </summary>
+        public async Task<bool> EditTblSystemRoleScopesAsync(long roleId, List<EditSystemRoleScopeViewModel>? scopes, PortalDbContext context)
+        {
+            if (scopes == null || !scopes.Any())
+            {
+                // Soft delete all existing scopes if no scopes provided
+                await context.TblSystemRoleScopes.Where(s => s.RoleId == roleId).ExecuteSoftDeleteAsync(context);
+                return true;
+            }
+
+            try
+            {
+                // Get existing scopes
+                var existingScopes = await context.TblSystemRoleScopes.Where(s => s.RoleId == roleId && !s.IsDeleted).ToListAsync();
+
+                // Soft delete scopes not in the new list
+                var moduleIdsToKeep = scopes.Select(s => s.ModuleId).ToList();
+                var scopesToDelete = existingScopes.Where(s => !moduleIdsToKeep.Contains(s.ModuleId ?? 0)).ToList();
+                foreach (var scope in scopesToDelete)
+                {
+                    await context.TblSystemRoleScopes.Where(s => s.Id == scope.Id).ExecuteSoftDeleteAsync(context);
+                }
+
+                // Add or update scopes
+                foreach (var scope in scopes)
+                {
+                    var existingScope = existingScopes.FirstOrDefault(s => s.ModuleId == scope.ModuleId);
+                    if (existingScope != null)
+                    {
+                        // Update existing
+                        await context.TblSystemRoleScopes.Where(s => s.Id == existingScope.Id)
+                            .ExecuteUpdateAsync(s => s
+                                .SetProperty(x => x.IsActive, scope.IsActive));
+                    }
+                    else
+                    {
+                        // Add new
+                        TblSystemRoleScope newScope = new()
+                        {
+                            RoleId = roleId,
+                            ModuleId = scope.ModuleId,
+                            IsActive = scope.IsActive,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        await context.TblSystemRoleScopes.AddAsync(newScope);
+                    }
+                }
+
+                await context.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(AccountEditTools));
+                throw;
+            }
+        }
+
 
 
     }

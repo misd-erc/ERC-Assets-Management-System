@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/auth';
+import { useRolesStore } from '../store/roles';
 import { Role } from '../types/roles';
 import { PERMISSION_CATEGORIES } from '../constants/permissions';
 import { RolesHeader } from '../components/roles-management/RolesHeader';
@@ -11,86 +11,165 @@ import { DeleteRoleDialog } from '../components/roles-management/DeleteRoleDialo
 
 export function RolesManagement() {
   const { systemUserId } = useAuthStore();
-  const [roles, setRoles] = useState<Role[]>([
-    {
-      id: '1',
-      roleId: 'ROLE-001',
-      roleName: 'Administrator',
-      description: 'Full system access with all permissions',
-      assignedPermissions: Object.values(PERMISSION_CATEGORIES).flat().map(p => p.id),
-      userCount: 3,
-      dateCreated: '2024-01-15'
-    },
-    {
-      id: '2',
-      roleId: 'ROLE-002',
-      roleName: 'Property Custodian',
-      description: 'Manages assets, supplies, and property accountability',
-      assignedPermissions: ['categories', 'deliveries', 'supplies', 'ppe', 'par-ics', 'transfers', 'disposals', 'reports'],
-      userCount: 8,
-      dateCreated: '2024-02-01'
-    },
-    {
-      id: '3',
-      roleId: 'ROLE-003',
-      roleName: 'Approver',
-      description: 'Approval workflow access and basic viewing',
-      assignedPermissions: ['approvals', 'reports'],
-      userCount: 5,
-      dateCreated: '2024-02-15'
-    },
-    {
-      id: '4',
-      roleId: 'ROLE-004',
-      roleName: 'End User',
-      description: 'Basic access for asset viewing and requests',
-      assignedPermissions: ['supplies'],
-      userCount: 12,
-      dateCreated: '2024-03-01'
-    }
-  ]);
+  const { roles, loading, error, totalCount, fetchRoles, createOrUpdateRole } = useRolesStore();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddRole, setShowAddRole] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [deleteRoleId, setDeleteRoleId] = useState<string | null>(null);
 
+ 
+  useEffect(() => {
+    if (systemUserId) {
+      console.log('[RolesManagement] Fetching roles with systemUserId:', systemUserId);
+      fetchRoles({
+        pageNumber: 1,
+        pageSize: 10,
+        actionBySystemUserId: systemUserId,
+      });
+    } else {
+      console.log('[RolesManagement] No systemUserId available, checking localStorage...');
+      const storedSystemUserId = localStorage.getItem('systemUserId');
+      if (storedSystemUserId) {
+        console.log('[RolesManagement] Found systemUserId in localStorage:', storedSystemUserId);
+        fetchRoles({
+          pageNumber: 1,
+          pageSize: 10,
+          actionBySystemUserId: storedSystemUserId,
+        });
+      } else {
+        console.log('[RolesManagement] No systemUserId found anywhere');
+      }
+    }
+  }, [systemUserId, fetchRoles]);
+
+  // Convert API roles to frontend Role format
+  const frontendRoles: Role[] = Array.isArray(roles) ? roles.map(apiRole => ({
+    id: apiRole.id.toString(),
+    roleId: `ROLE-${apiRole.id.toString().padStart(3, '0')}`,
+    roleName: apiRole.roleName,
+    description: apiRole.description,
+    assignedPermissions: (apiRole.scope || [])
+      .filter((scope: any) => scope.isActive)
+      .map((scope: any) => scope.module?.toLowerCase().replace(/\s+/g, '-') || 'unknown'),
+    userCount: apiRole.userCount,
+    dateCreated: new Date(apiRole.createdAt).toISOString().split('T')[0]
+  })) : [];
+
   // Filter roles based on search
-  const filteredRoles = roles.filter(role =>
+  const filteredRoles = frontendRoles.filter(role =>
     role.roleName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     role.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     role.roleId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddRole = (roleData: Omit<Role, 'id' | 'roleId' | 'userCount' | 'dateCreated'>) => {
-    const roleId = `ROLE-${String(roles.length + 1).padStart(3, '0')}`;
-    const role: Role = {
-      id: Date.now().toString(),
-      roleId,
-      ...roleData,
-      userCount: 0,
-      dateCreated: new Date().toISOString().split('T')[0]
-    };
+  const handleAddRole = async (roleData: Omit<Role, 'id' | 'roleId' | 'userCount' | 'dateCreated'>) => {
+    const userId = systemUserId || localStorage.getItem('systemUserId');
+    if (!userId) {
+      console.error('[RolesManagement] No systemUserId available for creating role');
+      return;
+    }
 
-    setRoles([...roles, role]);
-    toast.success('Role created successfully');
+    console.log('[RolesManagement] Creating role with userId:', userId);
+
+    // Convert permissions back to scopes format
+    const scopes = roleData.assignedPermissions.map(permission => {
+      // Find the module ID based on permission name
+      // This is a simplified mapping - you might need a proper mapping
+      const moduleId = Object.values(PERMISSION_CATEGORIES)
+        .flat()
+        .find(p => p.id === permission)?.id === permission ? 1 : 2; // Default fallback
+
+      return {
+        systemModuleId: moduleId,
+        systemRoleScopeIsActive: true,
+      };
+    });
+
+    await createOrUpdateRole({
+      systemRoleId: 0, // 0 for new role
+      systemRoleName: roleData.roleName,
+      systemRoleDescription: roleData.description,
+      systemRoleIsActive: true,
+      systemRoleScopes: scopes,
+      actionBySystemUserId: userId,
+    });
+
+    setShowAddRole(false);
   };
 
-  const handleEditRole = (roleData: Omit<Role, 'id' | 'roleId' | 'userCount' | 'dateCreated'>) => {
+  const handleEditRole = async (roleData: Omit<Role, 'id' | 'roleId' | 'userCount' | 'dateCreated'>) => {
     if (!editingRole) return;
 
-    setRoles(roles.map(role =>
-      role.id === editingRole.id ? { ...role, ...roleData } : role
-    ));
+    const userId = systemUserId || localStorage.getItem('systemUserId');
+    if (!userId) {
+      console.error('[RolesManagement] No systemUserId available for editing role');
+      return;
+    }
+
+    console.log('[RolesManagement] Editing role with userId:', userId);
+
+    // Convert permissions back to scopes format
+    const scopes = roleData.assignedPermissions.map(permission => {
+      const moduleId = Object.values(PERMISSION_CATEGORIES)
+        .flat()
+        .find(p => p.id === permission)?.id === permission ? 1 : 2;
+
+      return {
+        systemModuleId: moduleId,
+        systemRoleScopeIsActive: true,
+      };
+    });
+
+    await createOrUpdateRole({
+      systemRoleId: parseInt(editingRole.id),
+      systemRoleName: roleData.roleName,
+      systemRoleDescription: roleData.description,
+      systemRoleIsActive: true,
+      systemRoleScopes: scopes,
+      actionBySystemUserId: userId,
+    });
+
     setEditingRole(null);
-    toast.success('Role updated successfully');
   };
 
-  const handleDeleteRole = (roleId: string) => {
-    setRoles(roles.filter(role => role.id !== roleId));
+  const handleDeleteRole = async (roleId: string) => {
+    const userId = systemUserId || localStorage.getItem('systemUserId');
+    if (!userId) {
+      console.error('[RolesManagement] No systemUserId available for deleting role');
+      return;
+    }
+
+    console.log('[RolesManagement] Deleting role with userId:', userId);
+
+    // For delete, we set isActive to false
+    await createOrUpdateRole({
+      systemRoleId: parseInt(roleId),
+      systemRoleName: '',
+      systemRoleDescription: '',
+      systemRoleIsActive: false,
+      systemRoleScopes: [],
+      actionBySystemUserId: userId,
+    });
+
     setDeleteRoleId(null);
-    toast.success('Role deleted successfully');
   };
+
+  if (loading) {
+    return (
+      <div className="pl-64 pt-16 flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading roles...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="pl-64 pt-16 flex items-center justify-center min-h-screen">
+        <div className="text-red-500">Error: {error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="pl-64 pt-16 space-y-8">
@@ -99,7 +178,7 @@ export function RolesManagement() {
       <SearchAndSummary
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
-        totalRoles={roles.length}
+        totalRoles={totalCount}
       />
 
       <RolesTable
@@ -112,7 +191,7 @@ export function RolesManagement() {
         isOpen={showAddRole}
         onClose={() => setShowAddRole(false)}
         onSave={handleAddRole}
-        rolesCount={roles.length}
+        rolesCount={frontendRoles.length}
       />
 
       <RoleDialog
@@ -120,7 +199,7 @@ export function RolesManagement() {
         onClose={() => setEditingRole(null)}
         onSave={handleEditRole}
         editingRole={editingRole}
-        rolesCount={roles.length}
+        rolesCount={frontendRoles.length}
       />
 
       <DeleteRoleDialog

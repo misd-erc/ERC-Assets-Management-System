@@ -1,7 +1,7 @@
 import axios, { type AxiosInstance, type AxiosResponse, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { getSessionToken, handleSessionExpired, isSessionError } from '../utils/sessionUtils';
 
-const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const baseURL = process.env.REACT_APP_API_URL || 'https://localhost:7702/api';
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL,
@@ -14,19 +14,18 @@ const axiosInstance: AxiosInstance = axios.create({
 // Request interceptor: Add auth token and request ID
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Add systemUserIdEncrypted token if exists (this is our session token)
-    // Skip for /Users/validation endpoint as it may not require auth
-    const token = getSessionToken();
-    if (token && !config.url?.includes('/Users/validation')) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Add session token for authentication
+    const sessionToken = localStorage.getItem('sessionToken');
+    if (sessionToken && !config.url?.includes('/Users/validation')) {
+      config.headers.Authorization = `Bearer ${sessionToken}`;
       // Also add as custom header for backend compatibility
-      config.headers['X-System-User-Id'] = token;
+      config.headers['X-System-User-Id'] = sessionToken;
     }
 
     // Add request ID for tracking
     config.headers['X-Request-ID'] = Date.now().toString();
 
-    console.log('[Axios] Request:', config.method?.toUpperCase(), config.url);
+    console.log('[Axios] Request:', config.method?.toUpperCase(), config.url, 'SessionToken:', sessionToken ? 'Present' : 'Missing');
 
     return config;
   },
