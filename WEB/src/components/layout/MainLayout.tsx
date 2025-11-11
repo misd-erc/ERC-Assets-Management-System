@@ -10,6 +10,7 @@ import UnderConstructionContent from '../under-construction/UnderConstructionCon
 import { useIsMobile } from '../ui/use-mobile';
 import { Sheet, SheetContent } from '../ui/sheet';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
+import OfficeManagement from '../../pages/OfficeManagement';
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-full">
@@ -91,6 +92,14 @@ export function MainLayout() {
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
               <UnderConstructionContent onNavigate={setActiveModule} />
+            </Suspense>
+          </ErrorBoundary>
+        );
+      case 'office-management':
+        return (
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <OfficeManagement />
             </Suspense>
           </ErrorBoundary>
         );

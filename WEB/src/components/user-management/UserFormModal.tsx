@@ -103,8 +103,8 @@ export const UserFormModal = ({
           isActive: formData.status === 'Active',
           systemRole: formData.role ? [{ id: parseInt(formData.role, 10), roleName: formData.role, description: '', isActive: true, isDeleted: false, createdAt: '' }] : [],
           systemUserStatus: { id: 1, name: formData.status, isActive: true, isDeleted: false, createdAt: '' },
-          office: formData.officeId ? { id: parseInt(formData.officeId, 10), name: '', acronym: '', isActive: true } : null,
-          division: formData.divisionId ? { id: parseInt(formData.divisionId, 10), name: '', officeId: parseInt(formData.officeId || '0', 10), acronym: '' } : null,
+          office: formData.officeId ? { id: parseInt(formData.officeId, 10), name: '', acronym: '', isActive: true, isDeleted: false, createdAt: '' } : null,
+          division: formData.divisionId ? { id: parseInt(formData.divisionId, 10), name: '', officeId: parseInt(formData.officeId || '0', 10), acronym: '', isActive: true, isDeleted: false, createdAt: '' } : null,
           profilePictureStorageFile: null,
           createdAt: '',
           lastLoginAt: ''

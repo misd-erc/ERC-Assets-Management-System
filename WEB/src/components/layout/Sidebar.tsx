@@ -17,6 +17,7 @@ import {
   Send,
   Calendar,
   MessageSquare,
+  Building2,
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
@@ -83,6 +84,7 @@ const navigationGroups: NavigationGroup[] = [
     title: 'Administration',
     items: [
       { id: 'users-roles', title: 'User Management', icon: Users, adminOnly: true },
+      { id: 'office-management', title: 'Office Management', icon: Building2, adminOnly: true },
       { id: 'roles-management', title: 'Roles Management', icon: Shield, adminOnly: true },
       { id: 'settings', title: 'System Settings', icon: Settings, adminOnly: true },
       { id: 'audit-logs', title: 'Audit Logs', icon: FileSearch, adminOnly: true },

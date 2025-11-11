@@ -1,3 +1,5 @@
+import { Division, Office } from "../office";
+
 export interface ProfilePictureStorageFile {
   id: number;
   blobName: string;
@@ -33,30 +35,6 @@ export interface User {
   createdAt: string;
   lastLoginAt: string;
   entraId?: string;
-}
-
-export interface Office {
-  id: number;
-  name: string;
-  acronym: string;
-  isActive: boolean;
-}
-
-export interface Division {
-  id: number;
-  name: string;
-  officeId: number;
-  acronym: string;
-}
-
-export interface EmploymentType {
-  id: number;
-  name: string;
-}
-
-export interface Position {
-  id: number;
-  name: string;
 }
 
 export interface SystemRole {

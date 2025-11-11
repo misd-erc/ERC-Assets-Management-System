@@ -18,17 +18,19 @@ import {
 } from '../ui/select';
 import { Switch } from '../ui/switch';
 import { toast } from 'sonner';
-import { User, Office, Division, EmploymentType, Position, SystemRole } from '../../types/user';
+import { User, SystemRole } from '../../types/user';
+import { Office, Division, EmploymentType, Position, VwDivision } from '../../types';
 import { useAuthStore } from '../../store/auth';
 import {
-  getOffices,
-  getDivisions,
-  getEmploymentTypes,
-  getPositions,
   getSystemRoles,
   editUser,
   getUsersDetails
 } from '../../api/user-management/userApi';
+import { getOffices,
+  getDivisions,
+  getEmploymentTypes,
+  getPositions
+ } from '../../api';
 import { UserDetails } from '../../types/user';
 
 
@@ -47,7 +49,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   onSaveSuccess,
 }) => {
   const [offices, setOffices] = useState<Office[]>([]);
-  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [divisions, setDivisions] = useState<VwDivision[]>([]);
   const [employmentTypes, setEmploymentTypes] = useState<EmploymentType[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [roles, setRoles] = useState<SystemRole[]>([]);
@@ -296,7 +298,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                 checked={formData.isActive}
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
-              <Label htmlFor="isActive">Active Status</Label>
+              <Label htmlFor="isActive">{formData.isActive ? 'Active' : 'Inactive'}</Label>
             </div>
           </div>
         )}

@@ -449,7 +449,7 @@ namespace API.Controllers
         [HttpPost("edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> EditOffice([FromQuery] EditOfficeQueryParams model)
+        public async Task<IActionResult> EditOffice([FromBody] EditOfficeQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -490,7 +490,7 @@ namespace API.Controllers
         [HttpPost("division/edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> EditDivision([FromQuery] EditDivisionQueryParams model)
+        public async Task<IActionResult> EditDivision([FromBody] EditDivisionQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -533,7 +533,7 @@ namespace API.Controllers
         [HttpPost("employment-type/edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> EditEmploymentType([FromQuery] EditEmploymentTypeQueryParams model)
+        public async Task<IActionResult> EditEmploymentType([FromBody] EditEmploymentTypeQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -574,7 +574,7 @@ namespace API.Controllers
         [HttpPost("position/edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> EditPosition([FromQuery] EditPositionQueryParams model)
+        public async Task<IActionResult> EditPosition([FromBody] EditPositionQueryParams model)
         {
 
             await using var context = new PortalDbContext(_options);

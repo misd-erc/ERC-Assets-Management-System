@@ -18,3 +18,9 @@ export const checkUserAccess = () => {
     window.location.href = '/dashboard';
   }
 };
+
+export const getAuthParams = () => {
+  const systemUserId = Number(localStorage.getItem('systemUserId') || '0');
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+  return { systemUserId, sessionKey };
+};

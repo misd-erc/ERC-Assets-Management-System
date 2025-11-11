@@ -143,45 +143,45 @@ export const editUser = async (payload: {
   return { message: response.data.message };
 };
 
-export const getOffices = async (): Promise<Office[]> => {
-  // Get system user ID from localStorage
-  const systemUserId = localStorage.getItem('systemUserId') || '';
-const sessionKey = localStorage.getItem('sessionToken') || '';
-  const response = await axiosInstance.get<{ data: { items: Office[] } }>(
-    `/Office/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
-  );
-  return Array.isArray(response.data.data.items) ? response.data.data.items : [];
-};
+// export const getOffices = async (): Promise<Office[]> => {
+//   // Get system user ID from localStorage
+//   const systemUserId = localStorage.getItem('systemUserId') || '';
+// const sessionKey = localStorage.getItem('sessionToken') || '';
+//   const response = await axiosInstance.get<{ data: { items: Office[] } }>(
+//     `/Office/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
+//   );
+//   return Array.isArray(response.data.data.items) ? response.data.data.items : [];
+// };
 
-export const getDivisions = async (): Promise<Division[]> => {
-  // Get system user ID from localStorage
-  const systemUserId = localStorage.getItem('systemUserId') || '';
-const sessionKey = localStorage.getItem('sessionToken') || '';
-  const response = await axiosInstance.get<{ data: { items: Division[] } }>(
-    `/Office/division/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
-  );
-  return Array.isArray(response.data.data.items) ? response.data.data.items : [];
-};
+// export const getDivisions = async (): Promise<Division[]> => {
+//   // Get system user ID from localStorage
+//   const systemUserId = localStorage.getItem('systemUserId') || '';
+// const sessionKey = localStorage.getItem('sessionToken') || '';
+//   const response = await axiosInstance.get<{ data: { items: Division[] } }>(
+//     `/Office/division/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
+//   );
+//   return Array.isArray(response.data.data.items) ? response.data.data.items : [];
+// };
 
-export const getEmploymentTypes = async (): Promise<EmploymentType[]> => {
-  // Get system user ID from localStorage
-  const systemUserId = localStorage.getItem('systemUserId') || '';
-const sessionKey = localStorage.getItem('sessionToken') || '';
-  const response = await axiosInstance.get<{ data: { items: EmploymentType[] } }>(
-    `/Office/employment-type/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
-  );
-  return Array.isArray(response.data.data.items) ? response.data.data.items : [];
-};
+// export const getEmploymentTypes = async (): Promise<EmploymentType[]> => {
+//   // Get system user ID from localStorage
+//   const systemUserId = localStorage.getItem('systemUserId') || '';
+// const sessionKey = localStorage.getItem('sessionToken') || '';
+//   const response = await axiosInstance.get<{ data: { items: EmploymentType[] } }>(
+//     `/Office/employment-type/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
+//   );
+//   return Array.isArray(response.data.data.items) ? response.data.data.items : [];
+// };
 
-export const getPositions = async (): Promise<Position[]> => {
-  // Get system user ID from localStorage
-  const systemUserId = localStorage.getItem('systemUserId') || '';
-const sessionKey = localStorage.getItem('sessionToken') || '';
-  const response = await axiosInstance.get<{ data: { items: Position[] } }>(
-    `/Office/position/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
-  );
-  return Array.isArray(response.data.data.items) ? response.data.data.items : [];
-};
+// export const getPositions = async (): Promise<Position[]> => {
+//   // Get system user ID from localStorage
+//   const systemUserId = localStorage.getItem('systemUserId') || '';
+// const sessionKey = localStorage.getItem('sessionToken') || '';
+//   const response = await axiosInstance.get<{ data: { items: Position[] } }>(
+//     `/Office/position/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
+//   );
+//   return Array.isArray(response.data.data.items) ? response.data.data.items : [];
+// };
 
 export const getSystemRoles = async (): Promise<SystemRole[]> => {
   // Get system user ID from localStorage

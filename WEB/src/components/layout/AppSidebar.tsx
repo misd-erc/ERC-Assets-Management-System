@@ -27,6 +27,7 @@ import {
   FolderOpen,
   CheckCircle,
   Send,
+  Building2,
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
@@ -131,6 +132,11 @@ const navigationGroups: NavigationGroup[] = [
         title: 'User Management',
         icon: Users,
         id: 'users-roles',
+      },
+      {
+        title: 'Office Management',
+        icon: Building2,
+        id: 'office-management',
       },
       {
         title: 'Roles Management',

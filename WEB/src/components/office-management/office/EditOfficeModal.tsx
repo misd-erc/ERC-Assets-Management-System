@@ -1,0 +1,147 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../ui/dialog';
+import { Input } from '../../ui/input';
+import { Label } from '../../ui/label';
+import { Select } from '../../ui/select';
+import { SelectTrigger, SelectValue, SelectContent, SelectItem } from '../../ui/select';
+import { Button } from '../../ui/button';
+import { useState, useEffect } from 'react';
+import { useOffice } from '../../../hooks';
+import { Office } from '../../../types';
+import { toast } from 'sonner';
+import { Toggle } from '../../ui/toggle';
+import { Check, X } from 'lucide-react';
+import { Switch } from '../../ui/switch';
+
+interface Props {
+  open: boolean;
+  mode: 'add' | 'edit';
+  office?: Office | null;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}
+
+export const EditOfficeModal = ({
+  open,
+  mode,
+  office,
+  onOpenChange,
+  onSuccess,
+}: Props) => {
+  const { addOffice, updateOffice } = useOffice();
+
+  // ────── STATE ──────
+  const [form, setForm] = useState<Partial<Office>>({
+    name: '',
+    acronym: '',
+    isActive: true,
+  });
+  const [saving, setSaving] = useState(false);   // request in flight
+  const [loading, setLoading] = useState(false); // optional pre‑fetch
+
+  // ────── EFFECTS ──────
+  useEffect(() => {
+    if (mode === 'edit' && office) {
+      setForm({
+        name: office.name,
+        acronym: office.acronym,
+        isActive: office.isActive,
+      });
+    } else {
+      setForm({ name: '', acronym: '', isActive: true });
+    }
+  }, [mode, office, open]);
+
+  // ────── SUBMIT ──────
+  const submit = async () => {
+    if (!form.name?.trim() || !form.acronym?.trim()) {
+      toast.error('Name and Acronym are required');
+      return;
+    }
+
+    try {
+      setSaving(true);                     // start
+      if (mode === 'add') {
+        await addOffice(form);
+      } else if (office?.id) {
+        await updateOffice(office.id, form);
+      }
+      onSuccess();
+    } catch {
+      toast.error('Failed to save office');
+    } finally {
+      setSaving(false);                    // end
+    }
+  };
+
+  // ────── RENDER ──────
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{mode === 'add' ? 'Add Office' : 'Edit Office'}</DialogTitle>
+        </DialogHeader>
+
+        {/* ── OPTIONAL LOADING PLACEHOLDER ── */}
+        {loading ? (
+          <div className="py-8 text-center">
+            <p className="text-gray-500">Loading form data...</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 py-4">
+            {/* Name */}
+            <div className="grid gap-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={form.name ?? ''}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g. Office of the Director"
+                disabled={saving}
+              />
+            </div>
+
+            {/* Acronym */}
+            <div className="grid gap-2">
+              <Label htmlFor="acronym">Acronym</Label>
+              <Input
+                id="acronym"
+                value={form.acronym ?? ''}
+                onChange={(e) => setForm({ ...form, acronym: e.target.value })}
+                placeholder="e.g. ODIR"
+                disabled={saving}
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="isActive"
+                checked={form.isActive ?? true}
+                onCheckedChange={(c) => setForm({ ...form, isActive: c })}
+                disabled={saving}
+              />
+              <Label htmlFor="isActive" className="cursor-pointer">
+                {form.isActive ? 'Active' : 'Inactive'}
+              </Label>
+            </div>
+          </div>
+        )}
+
+        {/* ── FOOTER ── */}
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={saving}
+          >
+            Cancel
+          </Button>
+
+          {/* Save button – disabled while loading OR saving */}
+          <Button onClick={submit} disabled={saving || loading}>
+            {saving ? 'Saving...' : mode === 'add' ? 'Add' : 'Save Changes'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

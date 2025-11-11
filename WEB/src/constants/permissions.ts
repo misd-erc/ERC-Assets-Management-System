@@ -13,7 +13,8 @@ import {
   ArrowRightLeft,
   FolderOpen,
   CheckCircle,
-  HardHat
+  HardHat,
+  Building2
 } from 'lucide-react';
 
 // TOR-based permissions organized by module/feature
@@ -36,6 +37,7 @@ export const PERMISSION_CATEGORIES = {
   ],
   'Administration': [
     { id: 'users', label: 'User Management', description: 'Manage system users', icon: Users },
+    { id: 'offices', label: 'Office Management', description: 'Manage office related settings', icon: Building2 },
     { id: 'roles', label: 'Role Management', description: 'Manage user roles', icon: Shield },
     { id: 'settings', label: 'System Settings', description: 'Configure system settings', icon: Settings },
     { id: 'audit', label: 'Audit Logs', description: 'View system audit logs', icon: Eye }
