@@ -62,6 +62,19 @@ export function RoleDialog({ isOpen, onClose, onSave, editingRole, rolesCount }:
     setPermissions(prev => prev.length === allPermissions.length ? [] : allPermissions);
   };
 
+  const handleCategoryToggle = (categoryPermissions: any[]) => {
+    const categoryPermissionIds = categoryPermissions.map(p => p.id);
+    const allSelected = categoryPermissionIds.every(id => permissions.includes(id));
+
+    if (allSelected) {
+      // Deselect all in category
+      setPermissions(prev => prev.filter(id => !categoryPermissionIds.includes(id)));
+    } else {
+      // Select all in category
+      setPermissions(prev => [...new Set([...prev, ...categoryPermissionIds])]);
+    }
+  };
+
   const getAllPermissions = () => {
     return Object.entries(PERMISSION_CATEGORIES).flatMap(([category, permissions]) =>
       permissions.map(permission => ({ ...permission, category }))
@@ -70,88 +83,129 @@ export function RoleDialog({ isOpen, onClose, onSave, editingRole, rolesCount }:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{editingRole ? 'Edit Role' : 'Add New Role'}</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 py-4 border-b">
+          <DialogTitle className="text-xl font-semibold">
+            {editingRole ? 'Edit Role' : 'Add New Role'}
+          </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
             {editingRole ? 'Modify role information and permissions' : 'Create a new role and assign permissions'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Role Information */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="roleName">Role Name</Label>
-              <Input
-                id="roleName"
-                value={roleName}
-                onChange={(e) => setRoleName(e.target.value)}
-                placeholder="Enter role name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter role description"
-              />
-            </div>
-          </div>
-
-          {/* Permission Selection */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <Label>Permissions</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleSelectAll}
-              >
-                {permissions.length === getAllPermissions().length ? 'Deselect All' : 'Select All'}
-              </Button>
+        <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="space-y-6">
+            {/* Role Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="roleName" className="text-sm font-medium">Role Name</Label>
+                <Input
+                  id="roleName"
+                  value={roleName}
+                  onChange={(e) => setRoleName(e.target.value)}
+                  placeholder="Enter role name"
+                  className="h-10"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+                <Input
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Enter role description"
+                  className="h-10"
+                />
+              </div>
             </div>
 
-            {Object.entries(PERMISSION_CATEGORIES).map(([category, categoryPermissions]) => (
-              <Card key={category} className="mb-4">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">{category}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    {categoryPermissions.map((permission) => (
-                      <div key={permission.id} className="flex items-center space-x-3">
-                        <Checkbox
-                          id={`${editingRole ? 'edit' : 'new'}-${permission.id}`}
-                          checked={permissions.includes(permission.id)}
-                          onCheckedChange={() => handlePermissionToggle(permission.id)}
-                        />
-                        <div className="flex items-center space-x-2">
-                          <permission.icon className="w-4 h-4 text-muted-foreground" />
-                          <div>
-                            <Label htmlFor={`${editingRole ? 'edit' : 'new'}-${permission.id}`} className="text-sm font-medium">
-                              {permission.label}
-                            </Label>
-                            <p className="text-xs text-muted-foreground">{permission.description}</p>
+            {/* Permission Selection */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">Permissions</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  className="text-sm hover:bg-muted"
+                >
+                  {permissions.length === getAllPermissions().length ? 'Deselect All' : 'Select All'}
+                </Button>
+              </div>
+
+              <div className="space-y-4">
+                {Object.entries(PERMISSION_CATEGORIES).map(([category, categoryPermissions], categoryIndex) => {
+                  const categoryPermissionIds = categoryPermissions.map(p => p.id);
+                  const allSelected = categoryPermissionIds.every(id => permissions.includes(id));
+                  const someSelected = categoryPermissionIds.some(id => permissions.includes(id));
+
+                  return (
+                    <Card key={category} className="rounded-xl shadow-sm border bg-card">
+                      <CardHeader className="pb-4">
+                        <CardTitle
+                          className="text-base font-semibold text-foreground cursor-pointer hover:text-primary transition-colors flex items-center justify-between"
+                          onClick={() => handleCategoryToggle(categoryPermissions)}
+                        >
+                          <span>{category}</span>
+                          <div className="flex items-center">
+                            <Checkbox
+                              checked={allSelected}
+                              className="ml-2 pointer-events-none"
+                            />
                           </div>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {categoryPermissions.map((permission) => (
+                            <div
+                              key={permission.id}
+                              className="flex items-start space-x-3 p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
+                              onClick={() => handlePermissionToggle(permission.id)}
+                            >
+                              <Checkbox
+                                id={`${editingRole ? 'edit' : 'new'}-${permission.id}`}
+                                checked={permissions.includes(permission.id)}
+                                onChange={() => handlePermissionToggle(permission.id)}
+                                className="mt-0.5"
+                              />
+                              <div className="flex items-start space-x-3 flex-1 min-w-0">
+                                <permission.icon className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <Label
+                                    htmlFor={`${editingRole ? 'edit' : 'new'}-${permission.id}`}
+                                    className="text-sm font-medium text-foreground cursor-pointer group-hover:text-primary transition-colors"
+                                  >
+                                    {permission.label}
+                                  </Label>
+                                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                    {permission.description}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      </CardContent>
+                      {categoryIndex < Object.keys(PERMISSION_CATEGORIES).length - 1 && (
+                        <div className="px-6 pb-4">
+                          <div className="h-px bg-border" />
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="px-6 py-4 border-t bg-muted/20">
+          <Button variant="outline" onClick={onClose} className="px-6">
             Cancel
           </Button>
-          <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={handleSave} className="px-6 bg-primary hover:bg-primary/90">
             {editingRole ? 'Save Changes' : 'Create Role'}
           </Button>
         </DialogFooter>
