@@ -5,11 +5,7 @@ export interface AuditTrailItem {
   action: 'Insert' | 'Update' | 'Delete';
   actionBy: string;
   date: string; // ISO date string
-  changes: Array<{
-    field: string;
-    oldValue: string;
-    newValue: string;
-  }>;
+  changes: Record<string, any>; // Object containing field-value pairs
 }
 
 export interface AuditTrailResponse {
@@ -46,3 +42,6 @@ export interface ActivityResponse {
     totalPages: number;
   };
 }
+
+// Audit Stats interfaces
+

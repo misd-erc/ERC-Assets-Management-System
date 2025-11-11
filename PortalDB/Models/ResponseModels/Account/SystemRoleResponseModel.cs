@@ -16,6 +16,7 @@ namespace PortalDB.Models.ResponseModels.Account
         public bool? IsActive { get; set; }
         public bool? IsDeleted { get; set; }
         public DateTime? CreatedAt { get; set; }
+        public int? UserCount { get; set; }
 
     }
 }

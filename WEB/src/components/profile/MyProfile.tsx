@@ -5,7 +5,7 @@ import { Label } from '../ui/label';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import {
   Mail,
   Phone,
@@ -19,7 +19,11 @@ import {
   X,
   Camera,
   Loader2,
-  Eye
+  Eye,
+  FileText,
+  Database,
+  Hash,
+  Activity
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useAuthStore } from '../../store/auth';
@@ -670,39 +674,55 @@ export const MyProfile = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {auditTrailLogs.map((log, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{log.table}</TableCell>
-                          <TableCell>{log.action}</TableCell>
-                          <TableCell>{log.actionBy}</TableCell>
-                          <TableCell>{formatDate(log.date, 'Month DD, YYYY HH:mm')}</TableCell>
-                          <TableCell>
-                            {log.changes.length > 0 ? (
-                              <ul className="list-disc list-inside text-sm">
-                                {log.changes.map((change, idx) => (
-                                  <li key={idx}>
-                                    {change.field}: {change.oldValue} → {change.newValue}
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : (
-                              <span className="text-gray-500">No changes</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => openAuditTrailModal(log)}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            >
-                              <Eye className="w-4 h-4 mr-1" />
-                              View Details
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
+  {auditTrailLogs.map((log, index) => (
+    <TableRow key={index}>
+      {/* Table Name */}
+      <TableCell>{log.table}</TableCell>
+
+      {/* Action */}
+      <TableCell>{log.action}</TableCell>
+
+      {/* Action By */}
+      <TableCell>{log.actionBy}</TableCell>
+
+      {/* Date */}
+      <TableCell>
+        {formatDate(log.date, 'MMMM DD, YYYY hh:mm A')}
+      </TableCell>
+
+      {/* Changes Summary */}
+      <TableCell>
+        {log.changes && Object.keys(log.changes).length > 0 ? (
+          <div className="flex items-center justify-between w-full">
+            <span className="text-sm font-medium text-gray-800">
+              {Object.keys(log.changes).length} field
+              {Object.keys(log.changes).length > 1 ? 's' : ''} changed
+            </span>
+           
+          </div>
+        ) : (
+          <span className="text-gray-500 text-sm">No changes</span>
+        )}
+      </TableCell>
+
+      {/* Optional separate column for View button (if needed) */}
+      
+      <TableCell>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => openAuditTrailModal(log)}
+          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+        >
+          <Eye className="w-4 h-4 mr-1" />
+          View Details
+        </Button>
+      </TableCell>
+     
+    </TableRow>
+  ))}
+</TableBody>
+
                   </Table>
                   <div className="flex justify-between items-center pt-4">
                     <Button
@@ -740,90 +760,238 @@ export const MyProfile = () => {
 
       {/* Details Modal */}
       <Dialog open={isModalOpen} onOpenChange={closeModal}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{selectedActivity ? 'Activity Details' : 'Audit Trail Details'}</DialogTitle>
-          </DialogHeader>
-          {selectedActivity && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Activity ID</Label>
-                  <p className="text-gray-900">{selectedActivity.activityId}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Action</Label>
-                  <p className="text-gray-900">{selectedActivity.action}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Action By</Label>
-                  <p className="text-gray-900">{selectedActivity.actionBy}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Created At</Label>
-                  <p className="text-gray-900">{formatDate(selectedActivity.createdAt, 'Month DD, YYYY HH:mm')}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Audit Trail ID</Label>
-                  <p className="text-gray-900">{selectedActivity.auditTrailId || 'N/A'}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Action By System User ID</Label>
-                  <p className="text-gray-900">{selectedActivity.actionBySystemUserId}</p>
-                </div>
-              </div>
-              {selectedActivity.auditTrail && (
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Audit Trail Details</Label>
-                  <pre className="text-sm text-gray-600 bg-gray-50 p-2 rounded mt-1 overflow-auto">
-                    {JSON.stringify(selectedActivity.auditTrail, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          )}
-          {selectedAuditTrail && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Table</Label>
-                  <p className="text-gray-900">{selectedAuditTrail.table}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Record ID</Label>
-                  <p className="text-gray-900">{selectedAuditTrail.recordId}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Action</Label>
-                  <p className="text-gray-900">{selectedAuditTrail.action}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-700">Action By</Label>
-                  <p className="text-gray-900">{selectedAuditTrail.actionBy}</p>
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-sm font-medium text-gray-700">Date</Label>
-                  <p className="text-gray-900">{formatDate(selectedAuditTrail.date, 'Month DD, YYYY HH:mm')}</p>
-                </div>
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">Changes</Label>
-                {selectedAuditTrail.changes.length > 0 ? (
-                  <div className="mt-2 space-y-2">
-                    {selectedAuditTrail.changes.map((change, idx) => (
-                      <div key={idx} className="bg-gray-50 p-3 rounded border">
-                        <div className="font-medium text-gray-900">{change.field}</div>
-                        <div className="text-sm text-red-600">Old: {change.oldValue}</div>
-                        <div className="text-sm text-green-600">New: {change.newValue}</div>
-                      </div>
-                    ))}
-                  </div>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                {selectedActivity ? (
+                  <Activity className="w-6 h-6 text-blue-600" />
                 ) : (
-                  <p className="text-gray-500 mt-1">No changes recorded</p>
+                  <FileText className="w-6 h-6 text-blue-600" />
                 )}
               </div>
+              <div>
+                <DialogTitle className="text-xl font-semibold text-gray-900">
+                  {selectedActivity ? 'Activity Details' : 'Audit Trail Details'}
+                </DialogTitle>
+                <DialogDescription className="text-gray-600 mt-1">
+                  {selectedActivity ? 'Detailed information about this activity entry' : 'Detailed information about this audit trail entry'}
+                </DialogDescription>
+              </div>
             </div>
-          )}
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {selectedActivity && (
+              <>
+                {/* Activity Basic Information Card */}
+                <Card className="border-0 shadow-sm bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-blue-600" />
+                      Activity Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                        <Hash className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Activity ID</label>
+                          <p className="text-sm font-medium text-gray-900 font-mono">{selectedActivity.activityId}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                        <div className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center">
+                          <span className="text-xs font-bold text-gray-600">A</span>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Action</label>
+                          <p className="text-sm font-medium text-gray-900">{selectedActivity.action}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                        <User className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Action By</label>
+                          <p className="text-sm font-medium text-gray-900">{selectedActivity.actionBy}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                        <Calendar className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Created At</label>
+                          <p className="text-sm font-medium text-gray-900">
+                            {new Date(selectedActivity.createdAt).toLocaleString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                        <Hash className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Audit Trail ID</label>
+                          <p className="text-sm font-medium text-gray-900 font-mono">{selectedActivity.auditTrailId || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                        <User className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">System User ID</label>
+                          <p className="text-sm font-medium text-gray-900 font-mono">{selectedActivity.actionBySystemUserId}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Audit Trail Details Card */}
+                {selectedActivity.auditTrail && (
+                  <Card className="border-0 shadow-sm">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-green-600" />
+                        Audit Trail Details
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 block">
+                          Raw JSON Data
+                        </label>
+                        <pre className="text-sm text-gray-900 bg-white p-3 rounded border overflow-auto max-h-64">
+                          {JSON.stringify(selectedActivity.auditTrail, null, 2)}
+                        </pre>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+
+            {selectedAuditTrail && (
+              <>
+                {/* Audit Trail Basic Information Card */}
+                <Card className="border-0 shadow-sm bg-gradient-to-r from-blue-50 to-indigo-50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Database className="w-5 h-5 text-blue-600" />
+                      Basic Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                        <Database className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Table</label>
+                          <p className="text-sm font-medium text-gray-900 font-mono">{selectedAuditTrail.table}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                        <Hash className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Record ID</label>
+                          <p className="text-sm font-medium text-gray-900 font-mono">{selectedAuditTrail.recordId}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                        <div className="w-4 h-4 rounded-full bg-gray-100 flex items-center justify-center">
+                          <span className="text-xs font-bold text-gray-600">A</span>
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Action</label>
+                          <div className="mt-1">
+                            <Badge className={`font-medium px-3 py-1 ${
+                              selectedAuditTrail.action.toLowerCase() === 'insert' ? 'bg-green-100 text-green-800' :
+                              selectedAuditTrail.action.toLowerCase() === 'update' ? 'bg-blue-100 text-blue-800' :
+                              selectedAuditTrail.action.toLowerCase() === 'delete' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {selectedAuditTrail.action}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                        <User className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Action By</label>
+                          <p className="text-sm font-medium text-gray-900">{selectedAuditTrail.actionBy}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 md:col-span-2">
+                        <Calendar className="w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Date & Time</label>
+                          <p className="text-sm font-medium text-gray-900">
+                            {new Date(selectedAuditTrail.date).toLocaleString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Changes Card */}
+                <Card className="border-0 shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-green-600" />
+                      Changes
+                      <Badge variant="secondary" className="ml-2">
+                        {Object.keys(selectedAuditTrail.changes).length} field{Object.keys(selectedAuditTrail.changes).length !== 1 ? 's' : ''}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {Object.keys(selectedAuditTrail.changes).length === 0 ? (
+                      <div className="text-center py-8">
+                        <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-sm text-gray-500">No changes recorded for this entry</p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-4">
+                        {Object.entries(selectedAuditTrail.changes).map(([field, value], index) => (
+                          <div key={index} className="group relative bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 hover:border-gray-300 transition-all duration-200 hover:shadow-md">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                <span className="text-sm font-semibold text-gray-900 capitalize">
+                                  {field.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="bg-white rounded-lg p-3 border border-gray-200">
+                              <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 block">
+                                Current Value
+                              </label>
+                              <div className="text-sm text-gray-900 font-mono bg-gray-50 p-2 rounded border break-all">
+                                {value !== null && value !== undefined ? String(value) : <span className="text-gray-400 italic">(empty)</span>}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -2,11 +2,14 @@ import React, { useState, Suspense, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
-import { Dashboard } from '../dashboard/Dashboard';
+import Dashboard from '../../pages/Dashboard';
 import { MyProfile } from '../profile/MyProfile';
 import UserManagement from '../../pages/UserManagement';
 import { RolesManagement } from '../../pages/RolesManagement';
+import AuditLogs from '../../pages/AuditLogs';
+import UnderConstructionPage from '../../pages/UC';
 import UnderConstructionContent from '../under-construction/UnderConstructionContent';
+import SupplyManagement from '../../pages/supplies/SupplyManagement';
 import { useIsMobile } from '../ui/use-mobile';
 import { Sheet, SheetContent } from '../ui/sheet';
 import { ErrorBoundary } from '../ui/ErrorBoundary';
@@ -61,7 +64,7 @@ export function MainLayout() {
         return (
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
-              <Dashboard onNavigate={setActiveModule} />
+              <Dashboard />
             </Suspense>
           </ErrorBoundary>
         );
@@ -76,6 +79,13 @@ export function MainLayout() {
       case 'category-management':
       case 'deliveries-receipts':
       case 'supplies-inventory':
+        return (
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <SupplyManagement />
+            </Suspense>
+          </ErrorBoundary>
+        );
       case 'supply-management':
       case 'transfers-returns':
       case 'disposals':
@@ -87,11 +97,18 @@ export function MainLayout() {
       case 'calendar-notifications':
       case 'communication-tools':
       case 'settings':
+        return (
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <UnderConstructionPage />
+            </Suspense>
+          </ErrorBoundary>
+        );
       case 'audit-logs':
         return (
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
-              <UnderConstructionContent onNavigate={setActiveModule} />
+              <AuditLogs />
             </Suspense>
           </ErrorBoundary>
         );

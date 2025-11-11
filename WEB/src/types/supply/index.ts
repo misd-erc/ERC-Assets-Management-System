@@ -4,4 +4,11 @@ export interface SupplyItem {
   quantity: number;
   unit: string;
   minThreshold?: number;
+  unitCost?: number;
+  totalValue?: number;
+  location?: string;
+  supplier?: string;
+  lastRestocked?: string;
+  category?: string;
+  description?: string;
 }

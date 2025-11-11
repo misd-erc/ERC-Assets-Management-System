@@ -4,7 +4,10 @@ export * from './user-management/userApi';
 export * from './user-management/departmentApi';
 export * from './storage/uploadApi';
 export * from './audit/auditApi';
+
 export * from './office-management/officeApi';
 export * from './office-management/divisionApi';
 export * from './office-management/employmentTypeApi';
 export * from './office-management/positionApi';
+
+export * from './roles/rolesApi';

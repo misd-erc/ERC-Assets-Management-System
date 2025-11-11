@@ -282,10 +282,6 @@ export const UserList: React.FC<UserListProps> = ({
                             <Edit className="w-4 h-4 mr-2" />
                             Edit User
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setDeleteUserId(user.id.toString())}>
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete User
-                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -328,28 +324,6 @@ export const UserList: React.FC<UserListProps> = ({
           )}
         </CardContent>
       </Card>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteUserId !== null} onOpenChange={() => setDeleteUserId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete User</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this user? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteUserId && handleDeleteUser(deleteUserId)}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Edit User Modal */}
       <UserEditModal
         open={editModalOpen}

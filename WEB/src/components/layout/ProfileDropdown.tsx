@@ -68,7 +68,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     try {
       const decrypted = decrypt(stored);
       const parsed = JSON.parse(decrypted);
-      // Note: Profile picture will be loaded asynchronously in useEffect
 
       return {
         firstName: parsed?.firstName || 'User',
@@ -185,7 +184,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           const updatedUser = {
             firstName,
             lastName,
-            systemRoleName: userDetails.systemRoleName || 'NO ROLE ASSIGNED',
+            systemRoleName: userDetails.systemRole[0].roleName|| userDetails.systemRole.roleName || 'NO ROLE ASSIGNED',
             imageUrl: imageUrl || user.imageUrl,
           };
 
