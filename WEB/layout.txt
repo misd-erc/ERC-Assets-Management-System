@@ -1,150 +1,30 @@
 ERC-Assets-Management-System/WEB/
-├── .gitignore
-├── fix_imports.bat
-├── package-lock.json
-├── package.json
-├── postcss.config.js
-├── README.md
-├── REFACTOR_TODO.md
-├── tailwind.config.js
-├── TODO.md
-├── tsconfig.json
-├── public/
-│   ├── favicon.ico
-│   ├── index.html
-│   ├── logo192.png
-│   ├── logo512.png
-│   ├── manifest.json
-│   ├── robots.txt
-│   └── images/
-│       ├── erc-logo.png
-│       └── microsoft-logo.svg
-└── src/
-    ├── App.css
-    ├── App.tsx
-    ├── index.css
-    ├── index.tsx
-    ├── logo.svg
-    ├── api/
-    │   ├── assetApi.ts
-    │   ├── auditApi.ts
-    │   ├── authApi.ts
-    │   ├── departmentApi.ts
-    │   ├── index.ts
-    │   ├── storageApi.ts
-    │   └── userApi.ts
-    ├── components/
-    │   ├── auth/
-    │   │   ├── LoginScreen.tsx
-    │   │   └── MFAVerification.tsx
-    │   ├── dashboard/
-    │   │   ├── AssetOverviewChart.tsx
-    │   │   ├── Dashboard.tsx
-    │   │   ├── PendingApprovalsCard.tsx
-    │   │   ├── QuickActionsCard.tsx
-    │   │   └── RecentActivitiesCard.tsx
-    │   ├── layout/
-    │   │   ├── AppSidebar.tsx
-    │   │   ├── GlobalSearch.tsx
-    │   │   ├── MainLayout.tsx
-    │   │   ├── NotificationCenter.tsx
-    │   │   ├── ProfileDropdown.tsx
-    │   │   ├── Sidebar.tsx
-    │   │   └── TopBar.tsx
-    │   ├── profile/
-    │   │   ├── AccountSettings.tsx
-    │   │   ├── MyProfile.tsx
-    │   │   └── SecurityPrivacy.tsx
-    │   └── ui/
-    │       ├── accordion.tsx
-    │       ├── alert-dialog.tsx
-    │       ├── alert.tsx
-    │       ├── aspect-ratio.tsx
-    │       ├── avatar.tsx
-    │       ├── badge.tsx
-    │       ├── breadcrumb.tsx
-    │       ├── button.tsx
-    │       ├── calendar.tsx
-    │       ├── card.tsx
-    │       ├── carousel.tsx
-    │       ├── chart.tsx
-    │       ├── checkbox.tsx
-    │       ├── collapsible.tsx
-    │       ├── command.tsx
-    │       ├── context-menu.tsx
-    │       ├── dialog.tsx
-    │       ├── drawer.tsx
-    │       ├── dropdown-menu.tsx
-    │       ├── ErrorBoundary.tsx
-    │       ├── form.tsx
-    │       ├── hover-card.tsx
-    │       ├── input-otp.tsx
-    │       ├── input.tsx
-    │       ├── label.tsx
-    │       ├── menubar.tsx
-    │       ├── navigation-menu.tsx
-    │       ├── pagination.tsx
-    │       ├── popover.tsx
-    │       ├── progress.tsx
-    │       ├── radio-group.tsx
-    │       ├── resizable.tsx
-    │       ├── scroll-area.tsx
-    │       ├── select.tsx
-    │       ├── separator.tsx
-    │       ├── sheet.tsx
-    │       ├── sidebar.tsx
-    │       ├── skeleton.tsx
-    │       ├── slider.tsx
-    │       ├── sonner.tsx
-    │       ├── switch.tsx
-    │       ├── table.tsx
-    │       ├── tabs.tsx
-    │       ├── textarea.tsx
-    │       ├── toggle-group.tsx
-    │       ├── toggle.tsx
-    │       ├── tooltip.tsx
-    │       ├── use-mobile.ts
-    │       └── utils.ts
-    ├── hooks/
-    │   ├── index.ts
-    │   ├── useSessionGuard.ts
-    │   ├── useUserProfile.ts
-    │   ├── auth/
-    │   │   └── useAuth.ts
-    │   └── data/
-    │       └── useData.ts
-    ├── lib/
-    │   └── axios.ts
-    ├── pages/
-    │   └── Dashboard.tsx
-    ├── services/
-    │   └── authService.ts
-    ├── store/
-    │   ├── auth/
-    │   │   └── index.ts
-    │   └── data/
-    │       └── index.ts
-    ├── types/
-    │   ├── index.ts
-    │   ├── asset/
-    │   │   └── index.ts
-    │   ├── audit/
-    │   │   └── index.ts
-    │   ├── auth/
-    │   │   └── index.ts
-    │   ├── contract/
-    │   │   └── index.ts
-    │   ├── data/
-    │   │   └── index.ts
-    │   ├── ris/
-    │   │   └── index.ts
-    │   ├── supply/
-    │   │   └── index.ts
-    │   └── user/
-    │       └── index.ts
-    └── utils/
-        ├── dateUtils.ts
-        ├── encryption.ts
-        ├── guidUtils.ts
-        ├── sanitizationUtils.ts
-        └── sessionUtils.ts
+├── public/                          # Static assets served directly (HTML, icons, logos, manifest)
+│   └── images/                      # Stores app logos, icons, and other image files
+└── src/                             # Main source code folder (everything compiled by React + TypeScript)
+    ├── api/                         # Handles API requests (Axios wrappers per module)
+    ├── components/                  # Reusable UI components and feature-specific modules
+    │   ├── auth/                    # Login, MFA, and authentication-related components
+    │   ├── dashboard/               # Dashboard widgets (charts, quick actions, summaries)
+    │   ├── layout/                  # Main app layout: sidebar, topbar, notifications, etc.
+    │   ├── profile/                 # User profile, account settings, and privacy pages
+    │   └── ui/                      # Common UI components (buttons, modals, forms, shadcn/ui)
+    ├── hooks/                       # Custom React hooks for reusable logic
+    │   ├── auth/                    # Hooks for login, logout, session handling
+    │   └── data/                    # Hooks for fetching/managing data from APIs
+    ├── lib/                         # Library configurations (e.g. Axios instance, interceptors)
+    ├── pages/                       # Main pages/screens rendered by the router
+    ├── services/                    # Business logic layer; combines API calls + rules
+    ├── store/                       # Global state management (Zustand/Redux)
+    │   ├── auth/                    # Auth state (tokens, user data)
+    │   └── data/                    # App data state (assets, departments, etc.)
+    ├── types/                       # TypeScript type definitions and interfaces
+    │   ├── asset/                   # Types for asset management
+    │   ├── audit/                   # Types for audit records
+    │   ├── auth/                    # Types for authentication models
+    │   ├── contract/                # Types for contract-related data
+    │   ├── data/                    # Shared data types
+    │   ├── ris/                     # Types for Request and Issuance Slip (RIS)
+    │   ├── supply/                  # Types for supply management and stock cards
+    │   └── user/                    # Types for user profiles and permissions
+    └── utils/                       # Helper functions (dates, encryption, sanitization, etc.)

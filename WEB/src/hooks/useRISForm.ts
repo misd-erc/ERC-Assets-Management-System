@@ -21,7 +21,7 @@ export const useRISForm = () => {
     requester: '',
     department: '',
     items: [{ supplyId: '', quantityRequested: 0, purpose: '' }],
-    remarks: ''
+    remarks: '',
   });
 
   const resetForm = () => {
@@ -29,30 +29,30 @@ export const useRISForm = () => {
       requester: '',
       department: '',
       items: [{ supplyId: '', quantityRequested: 0, purpose: '' }],
-      remarks: ''
+      remarks: '',
     });
   };
 
   const addItem = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      items: [...prev.items, { supplyId: '', quantityRequested: 0, purpose: '' }]
+      items: [...prev.items, { supplyId: '', quantityRequested: 0, purpose: '' }],
     }));
   };
 
   const removeItem = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      items: prev.items.filter((_, i) => i !== index)
+      items: prev.items.filter((_, i) => i !== index),
     }));
   };
 
   const updateItem = (index: number, field: string, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       items: prev.items.map((item, i) =>
         i === index ? { ...item, [field]: value } : item
-      )
+      ),
     }));
   };
 
@@ -62,13 +62,16 @@ export const useRISForm = () => {
       return false;
     }
 
-    if (formData.items.length === 0 || formData.items.some(item => !item.supplyId || item.quantityRequested <= 0)) {
+    if (
+      formData.items.length === 0 ||
+      formData.items.some((item) => !item.supplyId || item.quantityRequested <= 0)
+    ) {
       toast.error('At least one valid item is required');
       return false;
     }
 
     const totalValue = formData.items.reduce((sum, item) => {
-      const supply = supplies.find(s => s.id === item.supplyId);
+      const supply = supplies.find((s) => s.id === item.supplyId);
       return sum + (supply ? (supply.unitCost ?? 0) * item.quantityRequested : 0);
     }, 0);
 
@@ -76,18 +79,22 @@ export const useRISForm = () => {
       risNumber: generateRISNumber(),
       requester: formData.requester,
       department: formData.department,
-      dateRequested: new Date(),
-      items: formData.items.map(item => {
-        const supply = supplies.find(s => s.id === item.supplyId);
+      dateRequested: new Date().toISOString(), // ✅ must be a string
+      items: formData.items.map((item) => {
+        const supply = supplies.find((s) => s.id === item.supplyId);
         return {
           id: Date.now().toString() + Math.random(),
-          name: supply?.name || '',
-          quantity: item.quantityRequested
+          supplyId: item.supplyId,
+          description: supply?.description || '', // ✅ use description, not name
+          unit: supply?.unit || '',
+          quantityRequested: item.quantityRequested,
+          purpose: item.purpose,
+          unitCost: supply?.unitCost || 0,
         };
       }),
       status: 'pending' as const,
       totalEstimatedValue: totalValue,
-      remarks: formData.remarks
+      remarks: formData.remarks,
     };
 
     try {
@@ -108,6 +115,6 @@ export const useRISForm = () => {
     addItem,
     removeItem,
     updateItem,
-    handleSubmit
+    handleSubmit,
   };
 };

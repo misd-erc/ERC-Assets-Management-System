@@ -7,13 +7,12 @@ import {
   Package,
   ArrowRightLeft,
   FileText,
-  UserCheck,
   AlertTriangle,
   Clock,
   User
 } from 'lucide-react';
 import { useData } from '../../hooks';
-import { getActivityColor, getStatusColor } from '../../utils/colorUtils';
+import { RISRequest } from '../../types/supply/ris';
 
 interface Activity {
   id: string;
@@ -29,14 +28,23 @@ export function RecentActivitiesCard() {
   const { risRequests } = useData();
 
   const activities: Activity[] = useMemo(() => {
-    return risRequests.map((request) => ({
+    return risRequests.map((request: RISRequest) => ({
       id: request.id,
       type: 'issued' as const,
-      title: `RIS Request ${request.id}`,
-      description: `Items: ${request.items.map(item => `${item.quantity} ${item.name}`).join(', ')}`,
+      title: `RIS Request ${request.risNumber || request.id}`,
+      description: `Items: ${request.items
+        .map(
+          (item) => `${item.quantityRequested} ${item.description}`
+        )
+        .join(', ')}`,
       user: request.requester,
-      timestamp: request.dateRequested,
-      status: request.status as 'completed' | 'pending' | 'failed',
+      timestamp: new Date(request.dateRequested), // ✅ convert string → Date
+      status:
+        request.status === 'approved'
+          ? 'completed'
+          : request.status === 'pending'
+          ? 'pending'
+          : 'failed',
     }));
   }, [risRequests]);
 
@@ -64,13 +72,9 @@ export function RecentActivitiesCard() {
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (minutes < 60) {
-      return `${minutes}m ago`;
-    } else if (hours < 24) {
-      return `${hours}h ago`;
-    } else {
-      return `${days}d ago`;
-    }
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
   };
 
   return (
@@ -87,14 +91,23 @@ export function RecentActivitiesCard() {
             {activities.map((activity) => {
               const Icon = getActivityIcon(activity.type);
               return (
-                <div key={activity.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-                  <div className={`p-2 rounded-lg ${getActivityColor(activity.type)}`}>
+                <div
+                  key={activity.id}
+                  className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  <div
+                    className={`p-2 rounded-lg ${getActivityColor(
+                      activity.type
+                    )}`}
+                  >
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-sm">{activity.title}</p>
-                      <Badge className={`text-xs ${getStatusColor(activity.status)}`}>
+                      <Badge
+                        className={`text-xs ${getStatusColor(activity.status)}`}
+                      >
                         {activity.status}
                       </Badge>
                     </div>

@@ -1,16 +1,16 @@
+import React from 'react';
 import { Card, CardContent } from '../ui/card';
-import { Badge } from '../ui/badge';
 import { Package, TrendingDown, FileText, BarChart3 } from 'lucide-react';
-import { useData } from '../../hooks/data/useData';
+import { useSupplyStore } from '../../store/supply/useSupplyStore';
 import { formatCurrency, getStockStatus } from '../../utils/formatters';
 
-export const SummaryCards = () => {
-  const { supplies, risRequests } = useData();
+export const SummaryCards: React.FC = () => {
+  const { supplies, risRequests } = useSupplyStore();
 
   const totalItems = supplies.length;
-  const lowStockItems = supplies.filter(s => getStockStatus(s) === 'Low Stock').length;
+  const lowStockItems = supplies.filter(s => s.currentStock <= s.reorderPoint).length;
   const pendingRIS = risRequests.filter(r => r.status === 'pending').length;
-  const totalInventoryValue = supplies.reduce((sum, s) => sum + (s.quantity * (s.unitCost || 0)), 0);
+  const totalInventoryValue = supplies.reduce((sum, s) => sum + (s.totalValue || 0), 0);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -33,11 +33,7 @@ export const SummaryCards = () => {
               <p className="text-sm text-slate-600">Low Stock Items</p>
               <p className="text-2xl font-semibold text-slate-900 mt-1">{lowStockItems}</p>
             </div>
-            {lowStockItems > 0 ? (
-              <TrendingDown className="w-8 h-8 text-red-600" />
-            ) : (
-              <Badge className="bg-green-100 text-green-800">Good</Badge>
-            )}
+            <TrendingDown className="w-8 h-8 text-red-600" />
           </div>
         </CardContent>
       </Card>
