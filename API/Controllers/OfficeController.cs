@@ -588,7 +588,7 @@ namespace API.Controllers
                     Id = model.PositionId,
                     Name = model.Name,
                     Acronym = model.Acronym,
-                    SalaryGrade = model.SalaraGrade,
+                    SalaryGrade = model.SalaryGrade,
                     IsActive = model.IsActive
                 };
 

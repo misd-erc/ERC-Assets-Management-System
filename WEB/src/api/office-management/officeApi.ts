@@ -87,7 +87,5 @@ export const editOffice = async (payload: EditOfficePayload): Promise<{ message:
   const response = await axiosInstance.post<ApiResponse<any>>('/Office/edit', requestPayload);
 
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save office');
-
-  toast.success(payload.officeId ? 'Office updated' : 'Office created');
   return { message: response.data.message ?? 'Success' };
 };

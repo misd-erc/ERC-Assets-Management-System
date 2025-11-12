@@ -1,4 +1,4 @@
-// src/components/office/OfficeTable.tsx
+// src/components/position/PositionTable.tsx
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import {
@@ -15,7 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { Office } from '../../../types';
+import { Position } from '../../../types';
 import {
   Card,
   CardContent,
@@ -31,37 +31,28 @@ import {
   TableHeader,
   TableRow,
 } from '../../ui/table';
-import { OfficeSearchBar } from './OfficeSearchBar';
-import { OfficeTabsList } from '../OfficeTabsList';
+import { PositionSearchBar } from './PositionSearchBar';
 import { useState, useEffect } from 'react';
-import { useOffice } from '../../../hooks';   // <-- NEW (only import)
+import { usePosition } from '../../../hooks';
 import { getStatusColor } from '../../../utils/colorUtils';
 
 interface Props {
-  data: Office[];
+  data: Position[];
   onAdd: () => void;
-  onEdit: (office: Office) => void;
+  onEdit: (position: Position) => void;
   onDelete: (id: number, name: string) => void;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Constants & helpers                                               */
-/* ------------------------------------------------------------------ */
 const PAGE_SIZE = 10;
 
-/* ------------------------------------------------------------------ */
-/*  Component                                                         */
-/* ------------------------------------------------------------------ */
-export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
-  const { searchQuery } = useOffice();          // <-- read current query
+export const PositionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
+  const { searchQuery } = usePosition();
   const [page, setPage] = useState(1);
 
-  /* Reset page when search term changes */
   useEffect(() => {
     setPage(1);
   }, [searchQuery]);
 
-  /* Pagination math */
   const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
   const paginated = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -73,28 +64,26 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Offices ({data.length})</CardTitle>
-            <CardDescription>
-              Manage office records and their status
-            </CardDescription>
+            <CardTitle>Positions ({data.length})</CardTitle>
+            <CardDescription>Manage position records</CardDescription>
           </div>
           <Button onClick={onAdd}>
             <Plus className="w-4 h-4 mr-2" />
-            Add Office
+            Add Position
           </Button>
         </div>
       </CardHeader>
 
-      {/* Search bar – still uses the hook internally */}
-      <OfficeSearchBar />
+      <PositionSearchBar />
 
       <CardContent>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Code</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Code</TableHead>
+                <TableHead>Salary Grade</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead>Actions</TableHead>
@@ -102,24 +91,17 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
             </TableHeader>
 
             <TableBody>
-              {paginated.map(office => (
-                <TableRow key={office.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">
-                    {office.acronym}
-                  </TableCell>
-                  <TableCell>{office.name}</TableCell>
+              {paginated.map(pos => (
+                <TableRow key={pos.id} className="hover:bg-muted/50">
+                  <TableCell>{pos.name}</TableCell>
+                  <TableCell className="font-medium">{pos.acronym}</TableCell>
+                  <TableCell>{pos.salaryGrade}</TableCell>
                   <TableCell>
-                    <Badge
-                      className={getStatusColor(
-                        office.isActive ? 'Active' : 'Inactive'
-                      )}
-                    >
-                      {office.isActive ? 'Active' : 'Inactive'}
+                    <Badge className={getStatusColor(pos.isActive ? 'Active' : 'Inactive')}>
+                      {pos.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    {new Date(office.createdAt!).toLocaleDateString()}
-                  </TableCell>
+                  <TableCell>{new Date(pos.createdAt!).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -128,11 +110,11 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(office)}>
+                        <DropdownMenuItem onClick={() => onEdit(pos)}>
                           <Edit className="w-4 h-4 mr-2" /> Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => onDelete(office.id, office.name)}
+                          onClick={() => onDelete(pos.id, pos.name)}
                           className="text-red-600"
                         >
                           <Trash2 className="w-4 h-4 mr-2" /> Delete
@@ -147,41 +129,23 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
 
           {data.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No offices found
+              No positions found
             </div>
           )}
         </div>
 
-        {/* ---------- Pagination UI ---------- */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-6">
             <p className="text-sm text-muted-foreground">
-              Showing{' '}
-              {(page - 1) * PAGE_SIZE + 1} to{' '}
-              {Math.min(page * PAGE_SIZE, data.length)} of {data.length}{' '}
-              entries
+              Showing {(page - 1) * PAGE_SIZE + 1} to{' '}
+              {Math.min(page * PAGE_SIZE, data.length)} of {data.length} entries
             </p>
-
             <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goPrev}
-                disabled={page === 1}
-              >
+              <Button variant="outline" size="sm" onClick={goPrev} disabled={page === 1}>
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-
-              <span className="px-3 text-sm">
-                Page {page} of {totalPages}
-              </span>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goNext}
-                disabled={page === totalPages}
-              >
+              <span className="px-3 text-sm">Page {page} of {totalPages}</span>
+              <Button variant="outline" size="sm" onClick={goNext} disabled={page === totalPages}>
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>

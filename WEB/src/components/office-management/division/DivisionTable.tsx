@@ -1,4 +1,4 @@
-// src/components/office/OfficeTable.tsx
+// src/components/office/DivisionTable.tsx
 import { Badge } from '../../ui/badge';
 import { Button } from '../../ui/button';
 import {
@@ -15,7 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { Office } from '../../../types';
+import { Division, Office, VwDivision } from '../../../types';
 import {
   Card,
   CardContent,
@@ -31,16 +31,15 @@ import {
   TableHeader,
   TableRow,
 } from '../../ui/table';
-import { OfficeSearchBar } from './OfficeSearchBar';
+import { DivisionSearchBar } from './DivisionSearchBar';
 import { OfficeTabsList } from '../OfficeTabsList';
 import { useState, useEffect } from 'react';
-import { useOffice } from '../../../hooks';   // <-- NEW (only import)
-import { getStatusColor } from '../../../utils/colorUtils';
+import { useDivision } from '../../../hooks';   // <-- NEW (same path as Office)
 
 interface Props {
-  data: Office[];
+  data: VwDivision[];
   onAdd: () => void;
-  onEdit: (office: Office) => void;
+  onEdit: (vwDivision: VwDivision) => void;
   onDelete: (id: number, name: string) => void;
 }
 
@@ -49,19 +48,32 @@ interface Props {
 /* ------------------------------------------------------------------ */
 const PAGE_SIZE = 10;
 
+const getStatusColor = (status?: string) => {
+  switch (status) {
+    case 'Active':
+      return 'bg-green-100 text-green-800';
+    case 'Inactive':
+      return 'bg-gray-100 text-gray-800';
+    case 'Suspended':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                         */
 /* ------------------------------------------------------------------ */
-export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
-  const { searchQuery } = useOffice();          // <-- read current query
+export const DivisionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
+  const { searchQuery } = useDivision();       // <-- read current search
   const [page, setPage] = useState(1);
 
-  /* Reset page when search term changes */
+  /* Reset to page 1 whenever the search term changes */
   useEffect(() => {
     setPage(1);
   }, [searchQuery]);
 
-  /* Pagination math */
+  /* Pagination logic */
   const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
   const paginated = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -73,20 +85,20 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Offices ({data.length})</CardTitle>
+            <CardTitle>Divisions ({data.length})</CardTitle>
             <CardDescription>
-              Manage office records and their status
+              Manage division records and their status
             </CardDescription>
           </div>
           <Button onClick={onAdd}>
             <Plus className="w-4 h-4 mr-2" />
-            Add Office
+            Add Division
           </Button>
         </div>
       </CardHeader>
 
-      {/* Search bar – still uses the hook internally */}
-      <OfficeSearchBar />
+      {/* Search bar – uses useDivision() internally */}
+      <DivisionSearchBar />
 
       <CardContent>
         <div className="overflow-x-auto">
@@ -95,6 +107,7 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
               <TableRow>
                 <TableHead>Code</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Office</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead>Actions</TableHead>
@@ -102,23 +115,24 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
             </TableHeader>
 
             <TableBody>
-              {paginated.map(office => (
-                <TableRow key={office.id} className="hover:bg-muted/50">
+              {paginated.map(division => (
+                <TableRow key={division.id} className="hover:bg-muted/50">
                   <TableCell className="font-medium">
-                    {office.acronym}
+                    {division.acronym}
                   </TableCell>
-                  <TableCell>{office.name}</TableCell>
+                  <TableCell>{division.name}</TableCell>
+                  <TableCell>{division.office?.name}</TableCell>
                   <TableCell>
                     <Badge
                       className={getStatusColor(
-                        office.isActive ? 'Active' : 'Inactive'
+                        division.isActive ? 'Active' : 'Inactive'
                       )}
                     >
-                      {office.isActive ? 'Active' : 'Inactive'}
+                      {division.isActive ? 'Active' : 'Inactive'}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {new Date(office.createdAt!).toLocaleDateString()}
+                    {new Date(division.createdAt!).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -128,11 +142,11 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(office)}>
+                        <DropdownMenuItem onClick={() => onEdit(division)}>
                           <Edit className="w-4 h-4 mr-2" /> Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => onDelete(office.id, office.name)}
+                          onClick={() => onDelete(division.id, division.name)}
                           className="text-red-600"
                         >
                           <Trash2 className="w-4 h-4 mr-2" /> Delete
@@ -147,7 +161,7 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
 
           {data.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              No offices found
+              No divisions found
             </div>
           )}
         </div>

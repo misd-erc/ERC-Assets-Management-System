@@ -73,7 +73,7 @@ export const editEmploymentType = async (payload: {
   const { systemUserId, sessionKey } = getAuthParams();
 
   const requestPayload = {
-    EmploymentTypeId: payload.employmentTypeId ?? 0,
+    EmploymentTypeId: payload.employmentTypeId,
     Name: payload.name,
     IsActive: payload.isActive,
     ActionBySystemUserId: systemUserId,
@@ -83,7 +83,5 @@ export const editEmploymentType = async (payload: {
   const response = await axiosInstance.post<ApiResponse<any>>('/Office/employment-type/edit', requestPayload);
 
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save employment type');
-
-  toast.success(payload.employmentTypeId ? 'Employment type updated' : 'Employment type created');
   return { message: response.data.message ?? 'Success' };
 };

@@ -20,7 +20,7 @@ interface Props {
   onSuccess: () => void;
 }
 
-export const EditOfficeModal = ({
+export const OfficeEditModal = ({
   open,
   mode,
   office,

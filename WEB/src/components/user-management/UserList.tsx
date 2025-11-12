@@ -37,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { UserEditModal } from './UserEditModal';
+import { getStatusColor } from '../../utils/colorUtils';
 
 interface UserListProps {
   onAddUser?: () => void;
@@ -136,18 +137,6 @@ export const UserList: React.FC<UserListProps> = ({
     }
   };
 
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'Active':
-        return 'bg-green-100 text-green-800';
-      case 'Inactive':
-        return 'bg-gray-100 text-gray-800';
-      case 'Suspended':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   if (loading) {
     return (

@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { User } from '../../types/user';
 import { Mail, Building, Briefcase, Calendar, User as UserIcon, MapPin, Users, IdCard } from 'lucide-react';
 import { getUserPhoto } from '../../api/user-management/userApi';
+import { getStatusColor } from '../../utils/colorUtils';
 
 
 interface UserDetailsDrawerProps {
@@ -45,19 +46,6 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
   }, [user]);
 
   if (!user) return null;
-
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'Active':
-        return 'bg-green-100 text-green-800';
-      case 'Inactive':
-        return 'bg-gray-100 text-gray-800';
-      case 'Suspended':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const getInitials = (name: string) => {
     return name

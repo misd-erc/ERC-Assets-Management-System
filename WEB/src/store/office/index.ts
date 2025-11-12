@@ -1,6 +1,6 @@
 // src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
-import { Office, VwDivision, EmploymentType, Position } from '../../types';
+import { Office, VwDivision, EmploymentType, Position, Division } from '../../types';
 import { 
   getOffices, editOffice,
   getEmploymentTypes, editEmploymentType,
@@ -53,6 +53,7 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
 
   addOffice: async (office) => {
     try {
+        const { systemUserId, sessionKey } = getAuthParams();
       await editOffice({
         officeId: 0,
         name: office.name || '',
@@ -100,11 +101,12 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
    DIVISION STORE
 ======================================== */
 interface DivisionState {
-  divisions: VwDivision[];
+  divisions: Division[];
+  vwDivisions: VwDivision[];
   loading: boolean;
   searchQuery: string;
 
-  setDivisions: (divisions: VwDivision[]) => void;
+  setDivisions: (divisions: Division[]) => void;
   setLoading: (loading: boolean) => void;
   setSearchQuery: (query: string) => void;
 
@@ -116,6 +118,7 @@ interface DivisionState {
 
 export const useDivisionStore = create<DivisionState>((set, get) => ({
   divisions: [],
+  vwDivisions: [],
   loading: false,
   searchQuery: '',
 
@@ -126,8 +129,8 @@ export const useDivisionStore = create<DivisionState>((set, get) => ({
   fetchDivisions: async () => {
     set({ loading: true });
     try {
-      const divisions = await getDivisions();
-      set({ divisions });
+      const vwDivisions = await getDivisions();
+      set({ vwDivisions });
     } catch {
       toast.error('Failed to load divisions');
     } finally {
@@ -195,9 +198,9 @@ interface EmploymentTypeState {
   setSearchQuery: (query: string) => void;
 
   fetchEmploymentTypes: () => Promise<void>;
-  addEmploymentType: (type: { name: string; isActive: boolean }) => Promise<void>;
-  updateEmploymentType: (id: string, updates: { name: string; isActive: boolean }) => Promise<void>;
-  deleteEmploymentType: (id: string) => Promise<void>;
+  addEmploymentType: (office: Partial<EmploymentType>) => Promise<void>;
+  updateEmploymentType: (id: number, updates: Partial<EmploymentType>) => Promise<void>;
+  deleteEmploymentType: (id: number) => Promise<void>;
 }
 
 export const useEmploymentTypeStore = create<EmploymentTypeState>((set, get) => ({
@@ -224,8 +227,8 @@ export const useEmploymentTypeStore = create<EmploymentTypeState>((set, get) => 
   addEmploymentType: async (type) => {
     try {
       await editEmploymentType({
-        name: type.name,
-        isActive: type.isActive,
+        name: type.name ?? '',
+        isActive: type.isActive ?? true,
       });
       await get().fetchEmploymentTypes();
       toast.success('Employment type added');
@@ -237,9 +240,9 @@ export const useEmploymentTypeStore = create<EmploymentTypeState>((set, get) => 
   updateEmploymentType: async (id, updates) => {
     try {
       await editEmploymentType({
-        employmentTypeId: Number(id),
-        name: updates.name,
-        isActive: updates.isActive,
+        employmentTypeId: id,
+        name: updates.name ?? '',
+        isActive: updates.isActive ?? true,
       });
       await get().fetchEmploymentTypes();
       toast.success('Employment type updated');
@@ -276,9 +279,9 @@ interface PositionState {
   setSearchQuery: (query: string) => void;
 
   fetchPositions: () => Promise<void>;
-  addPosition: (position: { name: string; acronym: string; salaryGrade: string; isActive: boolean }) => Promise<void>;
-  updatePosition: (id: string, updates: { name: string; acronym: string; salaryGrade: string; isActive: boolean }) => Promise<void>;
-  deletePosition: (id: string) => Promise<void>;
+  addPosition: (position: Partial<Position>) => Promise<void>;
+  updatePosition: (id: number, updates: Partial<Position>) => Promise<void>;
+  deletePosition: (id: number) => Promise<void>;
 }
 
 export const usePositionStore = create<PositionState>((set, get) => ({
@@ -305,10 +308,10 @@ export const usePositionStore = create<PositionState>((set, get) => ({
   addPosition: async (position) => {
     try {
       await editPosition({
-        name: position.name,
-        acronym: position.acronym,
-        salaryGrade: position.salaryGrade,
-        isActive: position.isActive,
+        name: position.name ?? '',
+        acronym: position.acronym ?? '',
+        salaryGrade: position.salaryGrade ?? '',
+        isActive: position.isActive ?? true,
       });
       await get().fetchPositions();
       toast.success('Position added');
@@ -320,11 +323,11 @@ export const usePositionStore = create<PositionState>((set, get) => ({
   updatePosition: async (id, updates) => {
     try {
       await editPosition({
-        positionId: Number(id),
-        name: updates.name,
-        acronym: updates.acronym,
-        salaryGrade: updates.salaryGrade,
-        isActive: updates.isActive,
+        positionId: id,
+        name: updates.name ?? '',
+        acronym: updates.acronym ?? '',
+        salaryGrade: updates.salaryGrade ?? '',
+        isActive: updates.isActive ?? true,
       });
       await get().fetchPositions();
       toast.success('Position updated');

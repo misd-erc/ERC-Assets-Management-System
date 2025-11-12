@@ -1,4 +1,3 @@
-// src/components/office/DeleteConfirmDialog.tsx
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,27 +8,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../ui/alert-dialog';
-import { useOffice } from '../../../hooks';
+import { useDivision } from '../../../hooks';
 import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  officeId?: number;
-  officeName?: string;
+  divisionId?: number;
+  divisionName?: string;
 }
 
-export const DeleteOfficeModal = ({ open, onOpenChange, officeId, officeName }: Props) => {
-  const { deleteOffice } = useOffice();
+export const DivisionDeleteModal = ({ open, onOpenChange, divisionId, divisionName }: Props) => {
+  const { deleteDivision } = useDivision();
 
   const handleDelete = async () => {
-    if (!officeId) return;
+    if (!divisionId) return;
     try {
-      await deleteOffice(officeId);
-      toast.success('Office deleted');
+      await deleteDivision(divisionId);
+      toast.success('Division deleted');
       onOpenChange(false);
     } catch {
-      toast.error('Failed to delete office');
+      toast.error('Failed to delete division');
     }
   };
 
@@ -37,9 +36,9 @@ export const DeleteOfficeModal = ({ open, onOpenChange, officeId, officeName }: 
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Office?</AlertDialogTitle>
+          <AlertDialogTitle>Delete Division?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete <strong>{officeName}</strong>. This action cannot be undone.
+            This will permanently delete <strong>{divisionName}</strong>. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

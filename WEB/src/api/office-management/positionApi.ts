@@ -89,7 +89,5 @@ export const editPosition = async (payload: {
   const response = await axiosInstance.post<ApiResponse<any>>('/Office/position/edit', requestPayload);
 
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save position');
-
-  toast.success(payload.positionId ? 'Position updated' : 'Position created');
   return { message: response.data.message ?? 'Success' };
 };
