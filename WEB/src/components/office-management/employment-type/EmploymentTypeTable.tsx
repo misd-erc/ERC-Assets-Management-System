@@ -120,6 +120,7 @@ export const EmploymentTypeTable = ({ data, onAdd, onEdit, onDelete }: Props) =>
                         <DropdownMenuItem
                           onClick={() => onDelete(type.id, type.name)}
                           className="text-red-600"
+                          disabled={type.users.length > 0}
                         >
                           <Trash2 className="w-4 h-4 mr-2" /> Delete
                         </DropdownMenuItem>

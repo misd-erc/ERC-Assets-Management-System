@@ -3,6 +3,6 @@ import { usePositionStore } from "../../store/office";
 
 export const usePosition = () => {
   const store = usePositionStore();
-  const totalPositions = store.positions.length;
+  const totalPositions = store.vwPositions.length;
   return { ...store, totalPositions };
 };

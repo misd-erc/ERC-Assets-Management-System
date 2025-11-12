@@ -124,6 +124,7 @@ export const PositionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                         <DropdownMenuItem
                           onClick={() => onDelete(pos.id, pos.name)}
                           className="text-red-600"
+                          disabled={pos.users.length > 0}
                         >
                           <Trash2 className="w-4 h-4 mr-2" /> Delete
                         </DropdownMenuItem>

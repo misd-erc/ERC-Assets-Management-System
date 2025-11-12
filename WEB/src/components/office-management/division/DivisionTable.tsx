@@ -156,6 +156,7 @@ export const DivisionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                         <DropdownMenuItem
                           onClick={() => onDelete(division.id, division.name)}
                           className="text-red-600"
+                          disabled={division.users.length > 0}
                         >
                           <Trash2 className="w-4 h-4 mr-2" /> Delete
                         </DropdownMenuItem>

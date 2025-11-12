@@ -142,6 +142,7 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                         <DropdownMenuItem
                           onClick={() => onDelete(office.id, office.name)}
                           className="text-red-600"
+                          disabled={office.users.length > 0}
                         >
                           <Trash2 className="w-4 h-4 mr-2" /> Delete
                         </DropdownMenuItem>
