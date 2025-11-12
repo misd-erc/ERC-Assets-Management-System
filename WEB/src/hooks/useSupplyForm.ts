@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SupplyItem } from '../types/supply';
+import { SupplyItem } from '../types/supply/supply';
 import { useData } from '../hooks/data/useData';
 import { generateItemCode } from '../utils/generators';
 import { toast } from 'sonner';
@@ -28,7 +28,7 @@ export const useSupplyForm = () => {
     reorderPoint: 0,
     unitCost: 0,
     location: '',
-    supplier: ''
+    supplier: '',
   });
 
   const resetForm = () => {
@@ -41,21 +41,21 @@ export const useSupplyForm = () => {
       reorderPoint: 0,
       unitCost: 0,
       location: '',
-      supplier: ''
+      supplier: '',
     });
   };
 
   const loadSupply = (supply: SupplyItem) => {
     setFormData({
-      itemCode: supply.name, // Assuming name is the item code
-      description: supply.name,
-      category: '',
+      itemCode: supply.itemCode,
+      description: supply.description,
+      category: supply.category || '',
       unit: supply.unit,
-      currentStock: supply.quantity,
-      reorderPoint: supply.minThreshold || 0,
-      unitCost: 0,
-      location: '',
-      supplier: ''
+      currentStock: supply.currentStock,
+      reorderPoint: supply.reorderPoint || 0,
+      unitCost: supply.unitCost || 0,
+      location: supply.location || '',
+      supplier: supply.supplier || '',
     });
   };
 
@@ -65,18 +65,19 @@ export const useSupplyForm = () => {
       return false;
     }
 
-    const supplyData = {
-      name: formData.itemCode,
+    const supplyData: Omit<SupplyItem, 'id'> = {
+      stockNumber: 'STK-' + formData.itemCode,
+      itemCode: formData.itemCode,
       description: formData.description,
       category: formData.category,
       unit: formData.unit,
-      quantity: formData.currentStock,
-      minThreshold: formData.reorderPoint,
+      currentStock: formData.currentStock,
+      reorderPoint: formData.reorderPoint,
       unitCost: formData.unitCost,
       location: formData.location,
       supplier: formData.supplier,
       totalValue: formData.currentStock * formData.unitCost,
-      lastRestocked: new Date().toISOString().split('T')[0]
+      lastRestocked: new Date().toISOString().split('T')[0],
     };
 
     try {
@@ -100,6 +101,6 @@ export const useSupplyForm = () => {
     setFormData,
     resetForm,
     loadSupply,
-    handleSubmit
+    handleSubmit,
   };
 };
