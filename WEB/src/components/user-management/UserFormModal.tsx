@@ -246,7 +246,7 @@ export const UserFormModal = ({
               <Label htmlFor="status">Status</Label>
               <Select value={formData.status} onValueChange={(value: 'Active' | 'Inactive' | 'Suspended') => handleInputChange('status', value)}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Active">Active</SelectItem>

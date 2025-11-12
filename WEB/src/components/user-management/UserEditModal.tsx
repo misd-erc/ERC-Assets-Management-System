@@ -62,6 +62,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     divisionId: '',
     employmentTypeId: '',
     positionId: '',
+    statusId: '',
     roleId: '',
     isActive: true,
   });
@@ -97,6 +98,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         divisionId: (details as any).divisionId?.toString() || selectedUser.division?.id.toString() || '',
         employmentTypeId: (details as any).employmentTypeId?.toString() || '',
         positionId: (details as any).positionId?.toString() || '',
+        statusId: (details as any).positionId?.toString() || '',
         roleId: role ? role.id.toString() : '',
         isActive: details.isActive ?? selectedUser.isActive,
       });
@@ -109,6 +111,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         officeId: selectedUser.office?.id.toString() || '',
         divisionId: selectedUser.division?.id.toString() || '',
         employmentTypeId: '',
+        statusId: selectedUser.systemUserStatus?.id.toString() || '',
         positionId: '',
         roleId: role ? role.id.toString() : '',
         isActive: selectedUser.isActive,
@@ -159,6 +162,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
         divisionId: formData.divisionId ? parseInt(formData.divisionId, 10) : undefined,
         employmentTypeId: formData.employmentTypeId ? parseInt(formData.employmentTypeId, 10) : undefined,
         positionId: formData.positionId ? parseInt(formData.positionId, 10) : undefined,
+        statusId: formData.statusId ? parseInt(formData.statusId, 10) : undefined,
         isActive: formData.isActive,
         actionBySystemUserId: parseInt(token, 10),
       };
@@ -292,14 +296,31 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
               </Select>
             </div>
 
-            <div className="flex items-center space-x-2 md:col-span-2">
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={formData.statusId || undefined}
+                onValueChange={(value) => setFormData({ ...formData, statusId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select position" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Active</SelectItem>
+                  <SelectItem value="2">Inactive</SelectItem>
+                  <SelectItem value="3">Suspended</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* <div className="flex items-center space-x-2 md:col-span-2">
               <Switch
                 id="isActive"
                 checked={formData.isActive}
                 onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
               />
               <Label htmlFor="isActive">{formData.isActive ? 'Active' : 'Inactive'}</Label>
-            </div>
+            </div> */}
           </div>
         )}
 

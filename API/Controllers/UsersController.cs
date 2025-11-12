@@ -23,6 +23,7 @@ using PortalTools.Services.DBO.Notification;
 using PortalTools.Services.DBO.Office;
 using PortalTools.Services.DBO.Storage;
 using PortalTools.Services.LOG;
+using static System.Net.WebRequestMethods;
 
 namespace API.Controllers
 {
@@ -668,10 +669,11 @@ namespace API.Controllers
                     EmploymentTypeId = model.EmploymentTypeId,
                     PositionId = model.PositionId,
                     StatusId = model.StatusId,
-                    IsActive = model.IsActive,
+                    IsActive = model.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.ACTIVE] ? true : false,
                     ActionBySystemUserId = model.ActionBySystemUserId
                 };
 
+                TblSystemUser? oldUserInfo = await _accountGetTools.GetTblSystemUserAsync(user.Id, context);
                 long systemUserId = await _accountEditTools.EditTblSystemUserAsync(user, context);
 
                 UserSimplePublicResponseModel publicRM = new()
@@ -679,6 +681,70 @@ namespace API.Controllers
                     SystemUserId = systemUserId,
                     SessionKey = model.SessionKey
                 };
+
+                if(oldUserInfo != null && oldUserInfo.StatusId != TblSystemUserStatus.Dictionary[TblSystemUserStatus.INACTIVE] && model.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.INACTIVE])
+                {
+                    //email and notify user that the account is set to inactive
+                    await NotificationTools.CreateNotificationAsync(context,
+                        NotificationConstants.INACTIVE_ACCOUNT,
+                        $"User account has been deactivated",
+                        systemUserId,
+                        model.ActionBySystemUserId);
+
+                    await EmailTools.SendSystemEmailAsync(
+                        _options,
+                        subject: EmailConstants.SUBJECT_ACCOUNT_STATUS_UPDATE,
+                        templateNameOrBody: EmailConstants.TEMPLATE_GENERAL_EMAIL,
+                        recipient: oldUserInfo.Email,
+                        model: new EmailViewModel
+                        {
+                            Name = oldUserInfo.FirstName,
+                            Body = EmailConstants.BODY_INACTIVE_ACCOUNT
+                        }
+                    );
+                }
+                else if (oldUserInfo != null && oldUserInfo.StatusId != TblSystemUserStatus.Dictionary[TblSystemUserStatus.SUSPENDED] && model.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.SUSPENDED])
+                {
+                    //email and notify user that the account is set to suspended
+                    await NotificationTools.CreateNotificationAsync(context,
+                        NotificationConstants.SUSPENDED_ACCOUNT,
+                        $"User account has been suspended",
+                        systemUserId,
+                        model.ActionBySystemUserId);
+
+                    await EmailTools.SendSystemEmailAsync(
+                        _options,
+                        subject: EmailConstants.SUBJECT_ACCOUNT_STATUS_UPDATE,
+                        templateNameOrBody: EmailConstants.TEMPLATE_GENERAL_EMAIL,
+                        recipient: oldUserInfo.Email,
+                        model: new EmailViewModel
+                        {
+                            Name = oldUserInfo.FirstName,
+                            Body = EmailConstants.BODY_SUSPENDED_ACCOUNT
+                        }
+                    );
+                }
+                else if (oldUserInfo != null && oldUserInfo.StatusId != TblSystemUserStatus.Dictionary[TblSystemUserStatus.ACTIVE] && model.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.ACTIVE])
+                {
+                    //email and notify user that the account is set to active
+                    await NotificationTools.CreateNotificationAsync(context,
+                        NotificationConstants.ACTIVE_ACCOUNT,
+                        $"User account has been activated",
+                        systemUserId,
+                        model.ActionBySystemUserId);
+
+                    await EmailTools.SendSystemEmailAsync(
+                        _options,
+                        subject: EmailConstants.SUBJECT_ACCOUNT_STATUS_UPDATE,
+                        templateNameOrBody: EmailConstants.TEMPLATE_GENERAL_EMAIL,
+                        recipient: oldUserInfo.Email,
+                        model: new EmailViewModel
+                        {
+                            Name = oldUserInfo.FirstName,
+                            Body = EmailConstants.BODY_ACTIVE_ACCOUNT
+                        }
+                    );
+                }
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
