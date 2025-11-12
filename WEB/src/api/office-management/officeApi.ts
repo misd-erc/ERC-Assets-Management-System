@@ -1,5 +1,5 @@
 import axiosInstance from '../../lib/axios';
-import { ApiResponse, Office } from '../../types';
+import { ApiResponse, Office, VwOffice } from '../../types';
 import { toast } from 'sonner';
 import { getAuthParams } from '../../utils/auth';
 
@@ -15,10 +15,10 @@ interface ListResponse<T> {
 
 /* ------------------------------- GET ------------------------------- */
 
-export const getOffices = async (): Promise<Office[]> => {
+export const getOffices = async (): Promise<VwOffice[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
-  const response = await axiosInstance.get<OfficeResponse<ListResponse<Office>>>('/Office/all', {
+  const response = await axiosInstance.get<OfficeResponse<ListResponse<VwOffice>>>('/Office/all', {
     params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
   });
 
@@ -32,6 +32,7 @@ export const getOffices = async (): Promise<Office[]> => {
         id: o.id,
         name: o.name,
         acronym: o.acronym,
+        users: o.users,
         isActive: o.isActive ?? true,
         isDeleted: o.isDeleted ?? false,
         createdAt: o.createdAt,
@@ -39,10 +40,10 @@ export const getOffices = async (): Promise<Office[]> => {
     : [];
 };
 
-export const getOfficeById = async (officeId: string): Promise<Office | null> => {
+export const getOfficeById = async (officeId: string): Promise<VwOffice | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
-  const response = await axiosInstance.get<OfficeResponse<Office>>(
+  const response = await axiosInstance.get<OfficeResponse<VwOffice>>(
     `/Office/all/${encodeURIComponent(officeId)}`,
     { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
   );
@@ -57,6 +58,7 @@ export const getOfficeById = async (officeId: string): Promise<Office | null> =>
     id: o.id,
     name: o.name,
     acronym: o.acronym,
+    users: o.users,
     isActive: o.isActive ?? true,
     isDeleted: o.isDeleted ?? false,
     createdAt: o.createdAt,

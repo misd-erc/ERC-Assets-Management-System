@@ -20,6 +20,10 @@ namespace PortalTools.Services.DBO.Account
         public IQueryable<VwSystemUser?> GetVwSystemUsers(PortalDbContext context) => context.VwSystemUsers.Where(x => !x.IsDeleted);
         public async Task<VwSystemUser?> GetVwSystemUserAsync(long id, PortalDbContext context) => await context.VwSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public async Task<TblSystemUser?> GetTblSystemUserAsync(long id, PortalDbContext context) => await context.TblSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<TblSystemUser?> GetTblSystemUsersByOfficeId(long officeId, PortalDbContext context) => context.TblSystemUsers.Where(x => !x.IsDeleted && x.OfficeId == officeId);
+        public IQueryable<TblSystemUser?> GetTblSystemUsersByDivisionId(long divisionId, PortalDbContext context) => context.TblSystemUsers.Where(x => !x.IsDeleted && x.DivisionId == divisionId);
+        public IQueryable<TblSystemUser?> GetTblSystemUsersByEmploymentTypeId(long employmentTypeId, PortalDbContext context) => context.TblSystemUsers.Where(x => !x.IsDeleted && x.EmploymentTypeId == employmentTypeId);
+        public IQueryable<TblSystemUser?> GetTblSystemUsersByPositionId(long positionId, PortalDbContext context) => context.TblSystemUsers.Where(x => !x.IsDeleted && x.PositionId == positionId);
         public async Task<TblSystemUser?> GetTblSystemUserWithContextAsync(long id, PortalDbContext context) => await context.TblSystemUsers.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAsync(long entraId, PortalDbContext context) => await context.TblSystemUsers.Where(x => !x.IsDeleted && x.EntraId == entraId).FirstOrDefaultAsync();
         public async Task<TblSystemUser?> GetTblSystemUserByEntraIdAndEmailAsync(long entraId, string email, PortalDbContext context)
@@ -83,7 +87,7 @@ namespace PortalTools.Services.DBO.Account
         public IQueryable<TblSystemModule?> GetTblSystemModules(PortalDbContext context) => context.TblSystemModules.Where(x => !x.IsDeleted);
         public IQueryable<TblSystemUserStatus?> GetSystemUserStatuses(PortalDbContext context) => context.TblSystemUserStatuses.Where(x => !x.IsDeleted);
         public async Task<TblSystemRole?> GetSystemRoleAsync(long? id, PortalDbContext context) => await context.TblSystemRoles.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
-      public async Task<SystemRoleResponseModel?> GetSystemRoleWithScopesAsync(long? id, PortalDbContext context)
+        public async Task<SystemRoleResponseModel?> GetSystemRoleWithScopesAsync(long? id, PortalDbContext context)
 {
     // Get the role record
     TblSystemRole? systemRole = await GetSystemRoleAsync(id, context);
@@ -110,7 +114,6 @@ namespace PortalTools.Services.DBO.Account
         UserCount = userCount // 👈 added field
     };
 }
-
         public async Task<List<SystemRoleResponseModel>> GetSystemRoleWithScopesAsListAsync(long? id, PortalDbContext context)
         {
             var result = await GetSystemRoleWithScopesAsync(id, context);

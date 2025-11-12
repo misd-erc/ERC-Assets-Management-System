@@ -1,6 +1,6 @@
 // src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
-import { Office, VwDivision, EmploymentType, Position, Division } from '../../types';
+import { Office, VwDivision, EmploymentType, Position, Division, VwEmploymentType, VwOffice, VwPosition } from '../../types';
 import { 
   getOffices, editOffice,
   getEmploymentTypes, editEmploymentType,
@@ -17,6 +17,7 @@ import { getAuthParams } from '../../utils/auth';
 ======================================== */
 interface OfficeState {
   offices: Office[];
+  vwOffices: VwOffice[];
   loading: boolean;
   searchQuery: string;
 
@@ -32,6 +33,7 @@ interface OfficeState {
 
 export const useOfficeStore = create<OfficeState>((set, get) => ({
   offices: [],
+  vwOffices: [],
   loading: false,
   searchQuery: '',
 
@@ -42,8 +44,8 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
   fetchOffices: async () => {
     set({ loading: true });
     try {
-      const offices = await getOffices();
-      set({ offices });
+      const vwOffices = await getOffices();
+      set({ vwOffices });
     } catch {
       toast.error('Failed to load offices');
     } finally {
@@ -190,6 +192,7 @@ _double: toast.error('Failed to delete division');
 ======================================== */
 interface EmploymentTypeState {
   employmentTypes: EmploymentType[];
+  vwEmploymentTypes: VwEmploymentType[];
   loading: boolean;
   searchQuery: string;
 
@@ -205,6 +208,7 @@ interface EmploymentTypeState {
 
 export const useEmploymentTypeStore = create<EmploymentTypeState>((set, get) => ({
   employmentTypes: [],
+  vwEmploymentTypes: [],
   loading: false,
   searchQuery: '',
 
@@ -216,7 +220,7 @@ export const useEmploymentTypeStore = create<EmploymentTypeState>((set, get) => 
     set({ loading: true });
     try {
       const types = await getEmploymentTypes();
-      set({ employmentTypes: types });
+      set({ vwEmploymentTypes: types });
     } catch {
       toast.error('Failed to load employment types');
     } finally {
@@ -271,6 +275,7 @@ export const useEmploymentTypeStore = create<EmploymentTypeState>((set, get) => 
 ======================================== */
 interface PositionState {
   positions: Position[];
+  vwPositions: VwPosition[];
   loading: boolean;
   searchQuery: string;
 
@@ -286,6 +291,7 @@ interface PositionState {
 
 export const usePositionStore = create<PositionState>((set, get) => ({
   positions: [],
+  vwPositions: [],
   loading: false,
   searchQuery: '',
 
@@ -296,8 +302,8 @@ export const usePositionStore = create<PositionState>((set, get) => ({
   fetchPositions: async () => {
     set({ loading: true });
     try {
-      const positions = await getPositions();
-      set({ positions });
+      const vwPositions = await getPositions();
+      set({ vwPositions });
     } catch {
       toast.error('Failed to load positions');
     } finally {

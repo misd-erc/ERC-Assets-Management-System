@@ -39,7 +39,7 @@ import {
 const OfficeManagement = () => {
   // ── Hooks ─────────────────────────────────────
   const {
-    offices,
+    vwOffices,
     searchQuery: officeSearch,
     fetchOffices,
     loading: officeLoading,
@@ -52,14 +52,14 @@ const OfficeManagement = () => {
   } = useDivision();
 
   const {
-    employmentTypes,
+    vwEmploymentTypes,
     searchQuery: typeSearch,
     fetchEmploymentTypes,
     loading: typeLoading,
   } = useEmploymentType();
 
   const {
-    positions,
+    vwPositions,
     searchQuery: posSearch,
     fetchPositions,
     loading: posLoading,
@@ -106,17 +106,17 @@ const OfficeManagement = () => {
   }, [fetchOffices, fetchDivisions, fetchEmploymentTypes, fetchPositions]);
 
   // ── Filter data ───────────────────────────────────
-  const filteredOffices = offices.filter(
+  const filteredOffices = vwOffices.filter(
     o =>
       o.name.toLowerCase().includes(officeSearch.toLowerCase()) ||
       o.acronym.toLowerCase().includes(officeSearch.toLowerCase())
   );
 
-  const filteredTypes = employmentTypes.filter(t =>
+  const filteredTypes = vwEmploymentTypes.filter(t =>
     t.name.toLowerCase().includes(typeSearch.toLowerCase())
   );
 
-  const filteredPositions = positions.filter(p =>
+  const filteredPositions = vwPositions.filter(p =>
     p.name.toLowerCase().includes(posSearch.toLowerCase()) ||
     p.acronym.toLowerCase().includes(posSearch.toLowerCase()) ||
     p.salaryGrade.toLowerCase().includes(posSearch.toLowerCase())

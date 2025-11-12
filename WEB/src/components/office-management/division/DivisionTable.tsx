@@ -14,6 +14,7 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  Users,
 } from 'lucide-react';
 import { Division, Office, VwDivision } from '../../../types';
 import {
@@ -109,6 +110,7 @@ export const DivisionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                 <TableHead>Name</TableHead>
                 <TableHead>Office</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Users</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -130,6 +132,12 @@ export const DivisionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                     >
                       {division.isActive ? 'Active' : 'Inactive'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                      <Users className="h-3.5 w-3.5" />
+                      <span>{division.users.length}</span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     {new Date(division.createdAt!).toLocaleDateString()}

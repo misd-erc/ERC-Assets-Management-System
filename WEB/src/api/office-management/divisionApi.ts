@@ -28,6 +28,7 @@ const mapVwDivision = (raw: any): VwDivision => ({
         createdAt: raw.office.createdAt,
       }
     : null,
+  users: raw.users,
   isActive: raw.isActive ?? true,
   isDeleted: raw.isDeleted ?? false,
   createdAt: raw.createdAt,

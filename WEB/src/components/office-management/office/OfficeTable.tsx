@@ -14,8 +14,9 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  Users,
 } from 'lucide-react';
-import { Office } from '../../../types';
+import { Office, VwOffice } from '../../../types';
 import {
   Card,
   CardContent,
@@ -38,7 +39,7 @@ import { useOffice } from '../../../hooks';   // <-- NEW (only import)
 import { getStatusColor } from '../../../utils/colorUtils';
 
 interface Props {
-  data: Office[];
+  data: VwOffice[];
   onAdd: () => void;
   onEdit: (office: Office) => void;
   onDelete: (id: number, name: string) => void;
@@ -96,6 +97,7 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                 <TableHead>Code</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Users</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -116,6 +118,12 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                     >
                       {office.isActive ? 'Active' : 'Inactive'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                      <Users className="h-3.5 w-3.5" />
+                      <span>{office.users.length}</span>
+                    </div>
                   </TableCell>
                   <TableCell>
                     {new Date(office.createdAt!).toLocaleDateString()}

@@ -1,9 +1,9 @@
 // src/components/employment-type/EmploymentTypeTabContent.tsx
 import { EmploymentTypeTable } from './EmploymentTypeTable';
-import { EmploymentType } from '../../../types';
+import { EmploymentType, VwEmploymentType } from '../../../types';
 
 interface Props {
-  data: EmploymentType[];
+  data: VwEmploymentType[];
   loading: boolean;
   onAdd: () => void;
   onEdit: (type: EmploymentType) => void;

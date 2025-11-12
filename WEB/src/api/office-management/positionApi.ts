@@ -1,5 +1,5 @@
 import axiosInstance from '../../lib/axios';
-import { ApiResponse, Position } from '../../types';
+import { ApiResponse, Position, VwPosition } from '../../types';
 import { toast } from 'sonner';
 import { getAuthParams } from '../../utils/auth';
 
@@ -15,10 +15,10 @@ interface ListResponse<T> {
 
 /* ------------------------------- GET ------------------------------- */
 
-export const getPositions = async (): Promise<Position[]> => {
+export const getPositions = async (): Promise<VwPosition[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
-  const response = await axiosInstance.get<PositionResponse<ListResponse<Position>>>('/Office/position/all', {
+  const response = await axiosInstance.get<PositionResponse<ListResponse<VwPosition>>>('/Office/position/all', {
     params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
   });
 
@@ -33,6 +33,7 @@ export const getPositions = async (): Promise<Position[]> => {
         name: p.name,
         acronym: p.acronym,
         salaryGrade: p.salaryGrade,
+        users: p.users,
         isActive: p.isActive ?? true,
         isDeleted: p.isDeleted ?? false,
         createdAt: p.createdAt,
@@ -40,10 +41,10 @@ export const getPositions = async (): Promise<Position[]> => {
     : [];
 };
 
-export const getPositionById = async (positionId: string): Promise<Position | null> => {
+export const getPositionById = async (positionId: string): Promise<VwPosition | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
-  const response = await axiosInstance.get<PositionResponse<Position>>(
+  const response = await axiosInstance.get<PositionResponse<VwPosition>>(
     `/Office/position/all/${encodeURIComponent(positionId)}`,
     { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
   );
@@ -59,6 +60,7 @@ export const getPositionById = async (positionId: string): Promise<Position | nu
     name: p.name,
     acronym: p.acronym,
     salaryGrade: p.salaryGrade,
+    users: p.users,
     isActive: p.isActive ?? true,
     isDeleted: p.isDeleted ?? false,
     createdAt: p.createdAt,

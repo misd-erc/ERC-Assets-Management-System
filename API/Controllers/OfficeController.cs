@@ -86,19 +86,27 @@ namespace API.Controllers
                     .Take(model.PageSize)
                     .ToList();
 
-                List<OfficeResponseModel> officesResponses = officesList.Select(x => new OfficeResponseModel
+                var officesResponses = new List<VwOfficeResponseModel>();
+
+                foreach (var x in officesList)
                 {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Acronym = x.Acronym,
-                    IsActive = x.IsActive,
-                    CreatedAt = x.CreatedAt
-                }).ToList();
+                    var officeModel = new VwOfficeResponseModel
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        Acronym = x.Acronym,
+                        Users = await _accountGetTools.GetTblSystemUsersByOfficeId(x.Id, context).ToListAsync(),
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    officesResponses.Add(officeModel);
+                }
+
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed offices", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<OfficeResponseModel>.OkPaginated(
+                return Ok(ApiResponse<VwOfficeResponseModel>.OkPaginated(
                     officesResponses,
                     model.PageNumber,
                     model.PageSize,
@@ -129,11 +137,12 @@ namespace API.Controllers
 
                 TblOffice? office = await _officeGetTools.GetTblOfficeAsync(officeId, context);
 
-                DivisionResponseModel newOfficeResponse = new()
+                VwOfficeResponseModel newOfficeResponse = new()
                 {
                     Id = office.Id,
                     Name = office.Name,
                     Acronym = office.Acronym,
+                    Users = await _accountGetTools.GetTblSystemUsersByOfficeId(office.Id, context).ToListAsync(),
                     IsActive = office.IsActive,
                     CreatedAt = office.CreatedAt
                 };
@@ -141,7 +150,7 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed office information for office {officeId}", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<DivisionResponseModel>.Ok(newOfficeResponse, "Office have been retrieved"));
+                return Ok(ApiResponse<VwOfficeResponseModel>.Ok(newOfficeResponse, "Office have been retrieved"));
 
             }
             catch (Exception ex)
@@ -202,6 +211,7 @@ namespace API.Controllers
                         Name = x.Name,
                         Acronym = x.Acronym,
                         Office = await _officeGetTools.GetTblOfficeAsync(x.OfficeId, context),
+                        Users = await _accountGetTools.GetTblSystemUsersByDivisionId(x.Id.Value, context).ToListAsync(),
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
@@ -247,6 +257,7 @@ namespace API.Controllers
                     Id = division.Id,
                     Name = division.Name,
                     Acronym = division.Acronym,
+                    Users = await _accountGetTools.GetTblSystemUsersByDivisionId(division.Id.Value, context).ToListAsync(),
                     Office = await _officeGetTools.GetTblOfficeAsync(division.OfficeId, context),
                     IsActive = division.IsActive,
                     CreatedAt = division.CreatedAt
@@ -303,13 +314,26 @@ namespace API.Controllers
                     .Take(model.PageSize)
                     .ToList();
 
-                List<TblEmploymentType?> officesResponses = employmentTypesList;
+                var employmentTypesResponses = new List<VwOfficeResponseModel>();
+
+                foreach (var x in employmentTypesList)
+                {
+                    var employmentTypeModel = new VwOfficeResponseModel
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        Users = await _accountGetTools.GetTblSystemUsersByEmploymentTypeId(x.Id, context).ToListAsync(),
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    employmentTypesResponses.Add(employmentTypeModel);
+                }
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed employment types", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<TblEmploymentType?>.OkPaginated(
-                    officesResponses,
+                return Ok(ApiResponse<VwOfficeResponseModel?>.OkPaginated(
+                    employmentTypesResponses,
                     model.PageNumber,
                     model.PageSize,
                     totalCount,
@@ -339,10 +363,19 @@ namespace API.Controllers
 
                 TblEmploymentType? employmentType = await _officeGetTools.GetTblEmploymentTypeAsync(employmentTypeId, context);
 
+                VwEmploymentTypeResponseModel employmentTypeResponse = new()
+                {
+                    Id = employmentType.Id,
+                    Name = employmentType.Name,
+                    Users = await _accountGetTools.GetTblSystemUsersByEmploymentTypeId(employmentType.Id, context).ToListAsync(),
+                    IsActive = employmentType.IsActive,
+                    CreatedAt = employmentType.CreatedAt
+                };
+
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed employment type information for employment type {employmentTypeId}", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<TblEmploymentType>.Ok(employmentType, "Employment type have been retrieved"));
+                return Ok(ApiResponse<VwEmploymentTypeResponseModel>.Ok(employmentTypeResponse, "Employment type have been retrieved"));
             }
             catch (Exception ex)
             {
@@ -391,13 +424,28 @@ namespace API.Controllers
                     .Take(model.PageSize)
                     .ToList();
 
-                List<TblPosition?> positionsResponses = positionsList;
+                var positionsResponses = new List<VwPositionResponseModel>();
+
+                foreach (var x in positionsList)
+                {
+                    var positionModel = new VwPositionResponseModel
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        Acronym = x.Acronym,
+                        SalaryGrade = x.SalaryGrade,
+                        Users = await _accountGetTools.GetTblSystemUsersByPositionId(x.Id, context).ToListAsync(),
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    positionsResponses.Add(positionModel);
+                }
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed positions", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<TblPosition?>.OkPaginated(
-                    positionsList,
+                return Ok(ApiResponse<VwPositionResponseModel?>.OkPaginated(
+                    positionsResponses,
                     model.PageNumber,
                     model.PageSize,
                     totalCount,
@@ -427,10 +475,21 @@ namespace API.Controllers
 
                 TblPosition? position = await _officeGetTools.GetTblPositionAsync(positionId, context);
 
+                VwPositionResponseModel positionResponse = new()
+                {
+                    Id = position.Id,
+                    Name = position.Name,
+                    Acronym = position.Acronym,
+                    SalaryGrade = position.SalaryGrade,
+                    Users = await _accountGetTools.GetTblSystemUsersByPositionId(position.Id, context).ToListAsync(),
+                    IsActive = position.IsActive,
+                    CreatedAt = position.CreatedAt
+                };
+
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed position information for position {positionId}", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<TblPosition>.Ok(position, "Position have been retrieved"));
+                return Ok(ApiResponse<VwPositionResponseModel>.Ok(positionResponse, "Position have been retrieved"));
 
             }
             catch (Exception ex)

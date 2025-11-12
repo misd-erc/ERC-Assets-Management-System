@@ -1,9 +1,9 @@
 // src/components/office-management/OfficeTabContent.tsx
 import { OfficeTable } from './OfficeTable';
-import { Office } from '../../../types';
+import { Office, VwOffice } from '../../../types';
 
 interface Props {
-  data: Office[];
+  data: VwOffice[];
   loading: boolean;
   onAdd: () => void;
   onEdit: (office: Office) => void;

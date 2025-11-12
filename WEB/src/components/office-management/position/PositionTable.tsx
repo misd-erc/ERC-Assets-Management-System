@@ -14,8 +14,9 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  Users,
 } from 'lucide-react';
-import { Position } from '../../../types';
+import { Position, VwPosition } from '../../../types';
 import {
   Card,
   CardContent,
@@ -37,7 +38,7 @@ import { usePosition } from '../../../hooks';
 import { getStatusColor } from '../../../utils/colorUtils';
 
 interface Props {
-  data: Position[];
+  data: VwPosition[];
   onAdd: () => void;
   onEdit: (position: Position) => void;
   onDelete: (id: number, name: string) => void;
@@ -85,6 +86,7 @@ export const PositionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                 <TableHead>Code</TableHead>
                 <TableHead>Salary Grade</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Users</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -100,6 +102,12 @@ export const PositionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                     <Badge className={getStatusColor(pos.isActive ? 'Active' : 'Inactive')}>
                       {pos.isActive ? 'Active' : 'Inactive'}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                      <Users className="h-3.5 w-3.5" />
+                      <span>{pos.users.length}</span>
+                    </div>
                   </TableCell>
                   <TableCell>{new Date(pos.createdAt!).toLocaleDateString()}</TableCell>
                   <TableCell>

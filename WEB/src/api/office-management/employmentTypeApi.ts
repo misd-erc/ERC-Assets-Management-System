@@ -1,6 +1,6 @@
 // src/api/office/employmentTypeApi.ts
 import axiosInstance from '../../lib/axios';
-import { ApiResponse, EmploymentType } from '../../types';
+import { ApiResponse, EmploymentType, VwEmploymentType } from '../../types';
 import { toast } from 'sonner';
 import { getAuthParams } from '../../utils/auth';
 
@@ -16,10 +16,10 @@ interface ListResponse<T> {
 
 /* ------------------------------- GET ------------------------------- */
 
-export const getEmploymentTypes = async (): Promise<EmploymentType[]> => {
+export const getEmploymentTypes = async (): Promise<VwEmploymentType[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
-  const response = await axiosInstance.get<EmploymentTypeResponse<ListResponse<EmploymentType>>>(
+  const response = await axiosInstance.get<EmploymentTypeResponse<ListResponse<VwEmploymentType>>>(
     '/Office/employment-type/all',
     { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
   );
@@ -33,6 +33,7 @@ export const getEmploymentTypes = async (): Promise<EmploymentType[]> => {
     ? response.data.data.items.map((t: any) => ({
         id: t.id,
         name: t.name,
+        users: t.users,
         isActive: t.isActive ?? true,
         isDeleted: t.isDeleted ?? false,
         createdAt: t.createdAt,
@@ -40,10 +41,10 @@ export const getEmploymentTypes = async (): Promise<EmploymentType[]> => {
     : [];
 };
 
-export const getEmploymentTypeById = async (employmentTypeId: string): Promise<EmploymentType | null> => {
+export const getEmploymentTypeById = async (employmentTypeId: string): Promise<VwEmploymentType | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
-  const response = await axiosInstance.get<EmploymentTypeResponse<EmploymentType>>(
+  const response = await axiosInstance.get<EmploymentTypeResponse<VwEmploymentType>>(
     `/Office/employment-type/all/${encodeURIComponent(employmentTypeId)}`,
     { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
   );
@@ -57,6 +58,7 @@ export const getEmploymentTypeById = async (employmentTypeId: string): Promise<E
   return {
     id: t.id,
     name: t.name,
+    users: t.users,
     isActive: t.isActive ?? true,
     isDeleted: t.isDeleted ?? false,
     createdAt: t.createdAt,

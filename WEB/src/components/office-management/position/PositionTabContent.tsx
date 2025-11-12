@@ -1,9 +1,9 @@
 // src/components/position/PositionTabContent.tsx
 import { PositionTable } from './PositionTable';
-import { Position } from '../../../types';
+import { Position, VwPosition } from '../../../types';
 
 interface Props {
-  data: Position[];
+  data: VwPosition[];
   loading: boolean;
   onAdd: () => void;
   onEdit: (position: Position) => void;
