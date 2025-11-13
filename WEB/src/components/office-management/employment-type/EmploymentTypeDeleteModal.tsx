@@ -8,7 +8,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import { useEmploymentType } from '@/hooks';
 import { toast } from 'sonner';
 
@@ -52,4 +52,8 @@ export const EmploymentTypeDeleteModal = ({ open, onOpenChange, typeId, typeName
     </AlertDialog>
   );
 };
+
+
+
+
 

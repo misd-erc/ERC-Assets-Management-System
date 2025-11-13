@@ -1,8 +1,8 @@
 ﻿import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
-import { Button } from '@/ui/button';
-import { Badge } from '@/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { AuditTrailItem } from '@/types/audit';
 
@@ -162,4 +162,7 @@ export function AuditLogsTable({
     </Card>
   );
 }
+
+
+
 

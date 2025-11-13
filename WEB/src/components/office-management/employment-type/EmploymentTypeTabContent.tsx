@@ -25,3 +25,5 @@ export const EmploymentTypeTabContent = ({ data, loading, onAdd, onEdit, onDelet
   );
 };
 
+
+

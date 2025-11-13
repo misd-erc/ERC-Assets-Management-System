@@ -6,3 +6,5 @@ export const usePosition = () => {
   const totalPositions = store.vwPositions.length;
   return { ...store, totalPositions };
 };
+
+

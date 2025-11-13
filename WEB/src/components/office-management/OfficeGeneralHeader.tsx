@@ -1,7 +1,7 @@
 ﻿// src/components/office/OfficeGeneralHeader.tsx
-import { Button } from '@/ui/button';
+import { Button } from '@/components/ui/button';
 import { Building2, Users, Briefcase, UserCheck, Plus } from 'lucide-react';
-import { Card, CardContent } from '@/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { useOffice, useDivision, useEmploymentType, usePosition } from '@/hooks';
 
 export const OfficeGeneralHeader = () => {
@@ -75,4 +75,8 @@ export const OfficeGeneralHeader = () => {
     </div>
   );
 };
+
+
+
+
 

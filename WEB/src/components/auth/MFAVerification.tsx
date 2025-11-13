@@ -1,8 +1,8 @@
 ﻿import { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
-import { Button } from '@/ui/button';
-import { Input } from '@/ui/input';
-import { Alert, AlertDescription } from '@/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, ArrowLeft, Mail } from 'lucide-react';
 import { useAuth } from '@/hooks';
 
@@ -144,4 +144,8 @@ export function MFAVerification() {
     </div>
   );
 }
+
+
+
+
 

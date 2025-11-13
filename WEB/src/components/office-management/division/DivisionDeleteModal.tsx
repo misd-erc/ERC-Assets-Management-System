@@ -7,7 +7,7 @@
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import { useDivision } from '@/hooks';
 import { toast } from 'sonner';
 
@@ -51,4 +51,8 @@ export const DivisionDeleteModal = ({ open, onOpenChange, divisionId, divisionNa
     </AlertDialog>
   );
 };
+
+
+
+
 

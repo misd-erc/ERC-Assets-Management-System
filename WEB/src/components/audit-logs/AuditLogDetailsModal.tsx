@@ -5,10 +5,10 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/ui/dialog';
-import { Badge } from '@/ui/badge';
-import { Separator } from '@/ui/separator';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Database, User, Calendar, Hash } from 'lucide-react';
 import { AuditTrailItem } from '@/types/audit';
 
@@ -170,4 +170,7 @@ export function AuditLogDetailsModal({
     </Dialog>
   );
 }
+
+
+
 

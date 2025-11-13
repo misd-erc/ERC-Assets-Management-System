@@ -1,6 +1,6 @@
 ﻿import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/ui/card';
-import { Badge } from '@/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useSupplyStore } from '@/store/supply/useSupplyStore';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 import { formatCurrency, getStockStatus } from '@/utils/formatters';
@@ -88,4 +88,8 @@ export const CategoriesView: React.FC = () => {
     </Card>
   );
 };
+
+
+
+
 

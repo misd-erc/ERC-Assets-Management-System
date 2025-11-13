@@ -1,12 +1,12 @@
 ﻿// src/components/office/OfficeTable.tsx
-import { Badge } from '@/ui/badge';
-import { Button } from '@/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import {
   Edit,
   Trash2,
@@ -23,7 +23,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/ui/card';
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -31,9 +31,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/ui/table';
-import { OfficeSearchBar } from './OfficeSearchBar';
-import { OfficeTabsList } from '@/OfficeTabsList';
+} from '@/components/ui/table';
+import { OfficeSearchBar } from '@/components/office-management/office/OfficeSearchBar';
+// import { OfficeTabsList } from '@/components/office-management/office/OfficeTabsList';
 import { useState, useEffect } from 'react';
 import { useOffice } from '@/hooks';   // <-- NEW (only import)
 import { getStatusColor } from '@/utils/colorUtils';
@@ -200,4 +200,9 @@ export const OfficeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
     </Card>
   );
 };
+
+
+
+
+
 

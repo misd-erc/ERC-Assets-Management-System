@@ -87,3 +87,6 @@ export const editEmploymentType = async (payload: {
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save employment type');
   return { message: response.data.message ?? 'Success' };
 };
+
+
+

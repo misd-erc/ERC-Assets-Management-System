@@ -1,11 +1,11 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
-import { Button } from '@/ui/button';
-import { Label } from '@/ui/label';
-import { Badge } from '@/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/ui/dialog';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   Mail,
   Phone,
@@ -25,14 +25,14 @@ import {
   Hash,
   Activity
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthStore } from '@/store/auth';
 import { getUserPhoto } from '@/api/user-management/userApi';
 import { getActivities, getAuditTrail } from '@/api/audit/auditApi';
 import { ActivityItem, AuditTrailItem } from '@/types/audit';
 import { retrieveFile, uploadProfilePicture } from '@/api/storage/uploadApi';
 import { toast } from 'sonner';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { encrypt, decrypt } from '@/utils/encryption';
 import { getUserDetails } from '@/api/user-management/authApi';
 
@@ -997,5 +997,9 @@ export const MyProfile = () => {
     </div>
   );
 };
+
+
+
+
 
 

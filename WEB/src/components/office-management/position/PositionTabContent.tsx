@@ -25,3 +25,5 @@ export const PositionTabContent = ({ data, loading, onAdd, onEdit, onDelete }: P
   );
 };
 
+
+

@@ -7,7 +7,7 @@
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 
 interface DeleteRoleDialogProps {
   isOpen: boolean;
@@ -38,4 +38,7 @@ export function DeleteRoleDialog({ isOpen, onClose, onConfirm }: DeleteRoleDialo
     </AlertDialog>
   );
 }
+
+
+
 

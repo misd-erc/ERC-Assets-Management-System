@@ -1,8 +1,8 @@
 ﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
-import { Button } from '@/ui/button';
-import { Alert, AlertDescription } from '@/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield } from 'lucide-react';
 import { useAuth } from '@/hooks';
 import { PublicClientApplication, AuthenticationResult, AccountInfo, BrowserAuthError } from '@azure/msal-browser';
@@ -196,4 +196,8 @@ export function LoginScreen() {
     </div>
   );
 }
+
+
+
+
 

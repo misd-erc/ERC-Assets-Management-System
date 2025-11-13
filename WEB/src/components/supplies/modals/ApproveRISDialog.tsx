@@ -1,6 +1,6 @@
 ﻿import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/ui/dialog';
-import { Button } from '@/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { RISRequest } from '@/types/supply/ris';
 
 interface Props {
@@ -46,4 +46,7 @@ export const ApproveRISDialog: React.FC<Props> = ({ open, onOpenChange, ris, onA
     </Dialog>
   );
 };
+
+
+
 

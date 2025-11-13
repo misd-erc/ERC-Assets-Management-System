@@ -1,16 +1,16 @@
-﻿import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/ui/dialog';
-import { Input } from '@/ui/input';
-import { Label } from '@/ui/label';
-import { Select } from '@/ui/select';
-import { SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/ui/select';
-import { Button } from '@/ui/button';
+﻿import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
+import { SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useOffice } from '@/hooks';
 import { Office } from '@/types';
 import { toast } from 'sonner';
-import { Toggle } from '@/ui/toggle';
+import { Toggle } from '@/components/ui/toggle';
 import { Check, X } from 'lucide-react';
-import { Switch } from '@/ui/switch';
+import { Switch } from '@/components/ui/switch';
 
 interface Props {
   open: boolean;
@@ -145,4 +145,8 @@ export const OfficeEditModal = ({
     </Dialog>
   );
 };
+
+
+
+
 

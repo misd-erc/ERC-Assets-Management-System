@@ -25,3 +25,5 @@ export const DivisionTabContent = ({ data, loading, onAdd, onEdit, onDelete }: P
   );
 };
 
+
+

@@ -1,12 +1,12 @@
 ﻿// src/components/employment-type/EmploymentTypeTable.tsx
-import { Badge } from '@/ui/badge';
-import { Button } from '@/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import {
   Edit,
   Trash2,
@@ -23,7 +23,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/ui/card';
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -31,7 +31,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/ui/table';
+} from '@/components/ui/table';
 import { EmploymentTypeSearchBar } from './EmploymentTypeSearchBar';
 import { useState, useEffect } from 'react';
 import { useEmploymentType } from '@/hooks';
@@ -160,4 +160,9 @@ export const EmploymentTypeTable = ({ data, onAdd, onEdit, onDelete }: Props) =>
     </Card>
   );
 };
+
+
+
+
+
 

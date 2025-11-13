@@ -16,16 +16,19 @@
     "allowSyntheticDefaultImports": true,
     "noEmit": true,
     "baseUrl": "src",
-    "paths": {
-      "@/*": ["*"],
-      "@/components/*": ["components/*"],
-      "@/ui/*": ["components/ui/*"],
-      "@/hooks/*": ["hooks/*"],
-      "@/lib/*": ["lib/*"],
-      "@/stores/*": ["stores/*"],
-      "@/common/*": ["components/common/*"],
-      "@/types/*": ["types/*"]
-    }
+   "paths": {
+  "@/*": ["*"],
+
+  "@/components/*": ["components/*"],
+  "@/components/ui/*": ["components/ui/*"],
+  "@/components/common/*": ["components/common/*"],
+
+  "@/hooks/*": ["hooks/*"],
+  "@/lib/*": ["lib/*"],
+  "@/stores/*": ["stores/*"],
+  "@/types/*": ["types/*"]
+}
+
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "build"]

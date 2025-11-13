@@ -1,9 +1,9 @@
 ﻿// src/components/employment-type/EmploymentTypeEditModal.tsx
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/ui/dialog';
-import { Input } from '@/ui/input';
-import { Label } from '@/ui/label';
-import { Button } from '@/ui/button';
-import { Switch } from '@/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useState, useEffect } from 'react';
 import { useEmploymentType } from '@/hooks';
 import { EmploymentType } from '@/types';
@@ -109,4 +109,8 @@ export const EmploymentTypeEditModal = ({
     </Dialog>
   );
 };
+
+
+
+
 

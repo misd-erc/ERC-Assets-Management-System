@@ -1,9 +1,9 @@
 ﻿// src/components/position/PositionEditModal.tsx
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/ui/dialog';
-import { Input } from '@/ui/input';
-import { Label } from '@/ui/label';
-import { Button } from '@/ui/button';
-import { Switch } from '@/ui/switch';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useState, useEffect } from 'react';
 import { usePosition } from '@/hooks';
 import { Position } from '@/types';
@@ -135,4 +135,8 @@ export const PositionEditModal = ({
     </Dialog>
   );
 };
+
+
+
+
 

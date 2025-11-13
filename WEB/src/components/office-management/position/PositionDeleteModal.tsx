@@ -8,7 +8,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import { usePosition } from '@/hooks';
 import { toast } from 'sonner';
 
@@ -52,4 +52,8 @@ export const PositionDeleteModal = ({ open, onOpenChange, positionId, positionNa
     </AlertDialog>
   );
 };
+
+
+
+
 

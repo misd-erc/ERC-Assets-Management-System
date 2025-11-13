@@ -1,12 +1,12 @@
 ﻿// src/components/office/DivisionTable.tsx
-import { Badge } from '@/ui/badge';
-import { Button } from '@/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import {
   Edit,
   Trash2,
@@ -23,7 +23,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/ui/card';
+} from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -31,9 +31,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/ui/table';
+} from '@/components/ui/table';
 import { DivisionSearchBar } from './DivisionSearchBar';
-import { OfficeTabsList } from '@/OfficeTabsList';
+// import { DivisionTabsList } from './DivisionTabsList';
 import { useState, useEffect } from 'react';
 import { useDivision } from '@/hooks';   // <-- NEW (same path as Office)
 
@@ -214,4 +214,8 @@ export const DivisionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
     </Card>
   );
 };
+
+
+
+
 

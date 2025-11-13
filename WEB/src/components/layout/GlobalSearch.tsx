@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react';
-import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/ui/command';
+import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Search, Package, FileText, Users, Settings, BarChart3 } from 'lucide-react';
-import { Badge } from '@/ui/badge';
+import { Badge } from '@/components/ui/badge';
 
 interface SearchResult {
   id: string;
@@ -137,4 +137,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
     </CommandDialog>
   );
 }
+
+
+
 

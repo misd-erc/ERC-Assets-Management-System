@@ -6,3 +6,5 @@ export const useDivision = () => {
   const totalDivisions = store.vwDivisions.length;
   return { ...store, totalDivisions };
 };
+
+

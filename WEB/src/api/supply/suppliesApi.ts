@@ -21,3 +21,6 @@ export const removeSupply = async (id: string): Promise<void> => {
   await axiosInstance.delete(`/supplies/${id}`);
 };
 
+
+
+

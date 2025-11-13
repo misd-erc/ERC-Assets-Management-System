@@ -1,4 +1,4 @@
-﻿import { User, LoginCredentials } from '@/user';
+﻿import { User, LoginCredentials } from '@/types/user';
 
 // Backend view model interfaces matching C# models
 export interface UserValidationViewModel {
@@ -55,4 +55,5 @@ export interface AuthActions {
 }
 
 export type AuthStore = AuthState & AuthActions;
+
 

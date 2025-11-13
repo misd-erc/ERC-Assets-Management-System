@@ -6,3 +6,5 @@ export const useEmploymentType = () => {
   const totalEmploymentTypes = store.vwEmploymentTypes.length;
   return { ...store, totalEmploymentTypes };
 };
+
+

@@ -1,8 +1,8 @@
 ﻿import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useRISRequests } from '@/hooks/data/useRISRequests';
-import { DataTable } from '@/common/DataTable';
-import { Badge } from '@/ui/badge';
+import { DataTable } from '@/components/common/DataTable';
+import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/utils/formatters';
 
 export const RISRequestsView: React.FC = () => {
@@ -33,4 +33,8 @@ export const RISRequestsView: React.FC = () => {
     </Card>
   );
 };
+
+
+
+
 

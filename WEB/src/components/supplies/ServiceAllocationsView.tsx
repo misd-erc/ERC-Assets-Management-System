@@ -1,8 +1,8 @@
 ﻿import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useServiceAllocations } from '@/hooks/data/useServiceAllocations';
-import { DataTable } from '@/common/DataTable';
-import { Progress } from '@/ui/progress';
+import { DataTable } from '@/components/common/DataTable';
+import { Progress } from '@/components/ui/progress';
 
 export const ServiceAllocationsView: React.FC = () => {
   const { allocations } = useServiceAllocations();
@@ -39,4 +39,7 @@ export const ServiceAllocationsView: React.FC = () => {
     </Card>
   );
 };
+
+
+
 

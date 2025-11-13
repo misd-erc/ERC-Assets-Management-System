@@ -1,22 +1,22 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, LogOut, ChevronDown } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar';
-import { Button } from '@/ui/button';
-import { Badge } from '@/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/ui/dialog';
+} from '@/components/ui/dialog';
 import { useAuth } from '@/hooks';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getUserDetails } from '@/api/user-management/authApi';
@@ -414,4 +414,9 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     </>
   );
 };
+
+
+
+
+
 

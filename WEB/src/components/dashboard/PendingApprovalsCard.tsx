@@ -1,8 +1,8 @@
 ﻿import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
-import { Badge } from '@/ui/badge';
-import { Button } from '@/ui/button';
-import { ScrollArea } from '@/ui/scroll-area';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   CheckCircle,
   XCircle,
@@ -326,4 +326,7 @@ export function PendingApprovalsCard() {
     </Card>
   );
 }
+
+
+
 

@@ -1,7 +1,7 @@
 ﻿import axiosInstance from '@/lib/axios';
 import { User, ApiResponse, Office, Division, EmploymentType, Position, SystemRole } from '@/types';
 import { UserDetails, getUserDetails } from './authApi';
-import { getAuditTrail } from '@/audit/auditApi';
+import { getAuditTrail } from '@/api/audit/auditApi';
 
 export interface UserListResponse {
   success: boolean;
@@ -246,6 +246,9 @@ export const getUsersDetails = async (userId: string): Promise<UserDetails> => {
 
   return response.data.data;
 };
+
+
+
 
 
 
