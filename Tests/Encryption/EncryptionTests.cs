@@ -10,7 +10,7 @@ namespace Tests.Encryption
         public void Encrypt_And_Decrypt_Should_Return_Original_Text()
         {
             // Arrange
-            var plainText = "I3i6gwaMocz221Nd/UoSI0ffnz2WIpNEa/KqTAzA6Cw=";
+            var plainText = "XiP7wblRWSLas7dRnatQQ9nHsYEEHfNawKd6OQnydxlczs0Urov9VxSvxGeGhohfRC+pRm5N/jT+coS7H35Oph8sZxFXo0p1IKHpbIfgN7+23OBLLBG2DRVdnPg6E0z1";
 
             // Act
             //var encrypted = EncryptionHelper.Encrypt(plainText);
@@ -26,18 +26,10 @@ namespace Tests.Encryption
         public void Encrypt_Should_Not_Return_PlainText()
         {
             // Arrange
-            var plainText = "Server=MARK\\SQLEXPRESS;Database=AMSDev;Integrated Security=True;TrustServerCertificate=True;";
-            var plainText2 = "1yxp+EZX1bHZN1IEG9GiZyY2/OBEXjkls5xkohkdqIKA8LVGUvgoTm31GcqnyNDAqqHynCOHkSrE+ASt8i8ctA==";
-            var plainText3 = "core.windows.net";
-            var plainText4 = "https";
-            var plainText5 = "ams-container";
+            var plainText = "Server=MARK\\SQLEXPRESS;Database=AMSStaging;Integrated Security=True;TrustServerCertificate=True;";
 
             // Act
             var encrypted = EncryptionHelper.Encrypt(plainText);
-            var encrypted2 = EncryptionHelper.Encrypt(plainText2);
-            var encrypted3 = EncryptionHelper.Encrypt(plainText3);
-            var encrypted4 = EncryptionHelper.Encrypt(plainText4);
-            var encrypted5 = EncryptionHelper.Encrypt(plainText5);
 
             // Assert
             Assert.NotEqual(plainText, encrypted);

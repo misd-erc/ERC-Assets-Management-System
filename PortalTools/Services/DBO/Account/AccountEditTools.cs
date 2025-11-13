@@ -42,8 +42,10 @@ namespace PortalTools.Services.DBO.Account
 
                 if (isInsert)
                 {
-                    model.SystemRoleId = _accountGetTools.GetSystemRoleByNameAsync(TblSystemRole.EMPLOYEE, context)?.Id;
+                    var role = await _accountGetTools.GetSystemRoleByNameAsync(TblSystemRole.EMPLOYEE, context);
+                    model.SystemRoleId = role?.Id;
                     model.StatusId = TblSystemUserStatus.Dictionary[TblSystemUserStatus.PENDING];
+                    model.IsActive = false;
                     await context.TblSystemUsers.AddAsync(model);
                     await context.SaveChangesAsync();
                 }
