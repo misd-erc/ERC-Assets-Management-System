@@ -1,9 +1,9 @@
-import axios, { type AxiosResponse } from 'axios';
-import axiosInstance from '../../lib/axios';
-import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserPublicViewModel, ApiResponse } from '../../types';
+﻿import axios, { type AxiosResponse } from 'axios';
+import axiosInstance from '@/lib/axios';
+import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserPublicViewModel, ApiResponse } from '@/types';
 
-import { guidToLongId } from '../../utils/guidUtils';
-import { sanitizeSystemUserId } from '../../utils/sanitizationUtils';
+import { guidToLongId } from '@/utils/guidUtils';
+import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
 
 
 export interface UserDetails {
@@ -192,3 +192,7 @@ export const logout = async (): Promise<void> => {
   localStorage.removeItem('systemUserId');
   return Promise.resolve();
 };
+
+
+
+

@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { SupplyItem } from '../../types/supply/supply';
-import { StockCardEntry } from '../../types/supply/stockCard';
-import { ServiceAllocation } from '../../types/supply/allocation';
-import { RISRequest } from '../../types/supply/ris';
+﻿import { create } from 'zustand';
+import { SupplyItem } from '@/types/supply/supply';
+import { StockCardEntry } from '@/types/supply/stockCard';
+import { ServiceAllocation } from '@/types/supply/allocation';
+import { RISRequest } from '@/types/supply/ris';
 
 type State = {
   supplies: SupplyItem[];
@@ -66,3 +66,6 @@ export const useSupplyStore = create<State>((set) => ({
       ),
     })),
 }));
+
+
+

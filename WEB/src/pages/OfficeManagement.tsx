@@ -1,16 +1,16 @@
-// src/pages/office/OfficeManagement.tsx
+﻿// src/pages/office/OfficeManagement.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Tabs, TabsContent } from '../components/ui/tabs';
-import { OfficeGeneralHeader } from '../components/office-management/OfficeGeneralHeader';
-import { OfficeTabsList } from '../components/office-management/OfficeTabsList';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { OfficeGeneralHeader } from '@/components/office-management/OfficeGeneralHeader';
+import { OfficeTabsList } from '@/components/office-management/OfficeTabsList';
 import {
   OfficeTabContent,
   DivisionTabContent,
   EmploymentTypeTabContent,
   PositionTabContent
-} from '../components/office-management';
+} from '@/components/office-management';
 import {
   OfficeEditModal,
   OfficeDeleteModal,
@@ -20,24 +20,24 @@ import {
   EmploymentTypeDeleteModal,
   PositionEditModal,
   PositionDeleteModal
-} from '../components/office-management';
+} from '@/components/office-management';
 
 import {
   useOffice,
   useDivision,
   useEmploymentType,
   usePosition,
-} from '../hooks';
+} from '@/hooks';
 
 import {
   Office,
   VwDivision,
   EmploymentType,
   Position,
-} from '../types';
+} from '@/types';
 
 const OfficeManagement = () => {
-  // ── Hooks ─────────────────────────────────────
+  // â”€â”€ Hooks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const {
     vwOffices,
     searchQuery: officeSearch,
@@ -65,7 +65,7 @@ const OfficeManagement = () => {
     loading: posLoading,
   } = usePosition();
 
-  // ── Dialog state ─────────────────────────────────
+  // â”€â”€ Dialog state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [officeDialog, setOfficeDialog] = useState<{
     open: boolean;
     mode: 'add' | 'edit';
@@ -97,7 +97,7 @@ const OfficeManagement = () => {
     name?: string;
   }>({ open: false, type: 'office' });
 
-  // ── Load data ─────────────────────────────────────
+  // â”€â”€ Load data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     fetchOffices();
     fetchDivisions();
@@ -105,7 +105,7 @@ const OfficeManagement = () => {
     fetchPositions();
   }, [fetchOffices, fetchDivisions, fetchEmploymentTypes, fetchPositions]);
 
-  // ── Filter data ───────────────────────────────────
+  // â”€â”€ Filter data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const filteredOffices = vwOffices.filter(
     o =>
       o.name.toLowerCase().includes(officeSearch.toLowerCase()) ||
@@ -122,7 +122,7 @@ const OfficeManagement = () => {
     p.salaryGrade.toLowerCase().includes(posSearch.toLowerCase())
   );
 
-  // ── Handlers ─────────────────────────────────────
+  // â”€â”€ Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const openOfficeAdd = () => setOfficeDialog({ open: true, mode: 'add' });
   const openOfficeEdit = (office: Office) => setOfficeDialog({ open: true, mode: 'edit', office });
 
@@ -164,7 +164,7 @@ const OfficeManagement = () => {
       <Tabs defaultValue="office" className="pl-64">
         <OfficeTabsList />
 
-        {/* ── OFFICE TAB ───────────────────────────────────── */}
+        {/* â”€â”€ OFFICE TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <TabsContent value="office" className="space-y-6">
           <OfficeTabContent
             data={filteredOffices}
@@ -175,7 +175,7 @@ const OfficeManagement = () => {
           />
         </TabsContent>
 
-        {/* ── DIVISION TAB ─────────────────────────────────── */}
+        {/* â”€â”€ DIVISION TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <TabsContent value="division" className="space-y-6">
           <DivisionTabContent
             data={vwDivisions}
@@ -186,7 +186,7 @@ const OfficeManagement = () => {
           />
         </TabsContent>
 
-        {/* ── EMPLOYMENT TYPE TAB ─────────────────────────── */}
+        {/* â”€â”€ EMPLOYMENT TYPE TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <TabsContent value="employment-type" className="space-y-6">
           <EmploymentTypeTabContent
             data={filteredTypes}
@@ -197,7 +197,7 @@ const OfficeManagement = () => {
           />
         </TabsContent>
 
-        {/* ── POSITION TAB ─────────────────────────────────── */}
+        {/* â”€â”€ POSITION TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <TabsContent value="position" className="space-y-6">
           <PositionTabContent
             data={filteredPositions}
@@ -209,7 +209,7 @@ const OfficeManagement = () => {
         </TabsContent>
       </Tabs>
 
-      {/* ── MODALS ──────────────────────────────────────── */}
+      {/* â”€â”€ MODALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <OfficeEditModal
         open={officeDialog.open}
         mode={officeDialog.mode}
@@ -242,7 +242,7 @@ const OfficeManagement = () => {
         onSuccess={onSuccess}
       />
 
-      {/* ── DELETE MODAL (Unified) ──────────────────────── */}
+      {/* â”€â”€ DELETE MODAL (Unified) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {deleteDialog.type === 'office' ? (
         <OfficeDeleteModal
           open={deleteDialog.open}
@@ -277,3 +277,7 @@ const OfficeManagement = () => {
 };
 
 export default OfficeManagement;
+
+
+
+

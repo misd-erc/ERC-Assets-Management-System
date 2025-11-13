@@ -1,8 +1,8 @@
-// src/api/office/employmentTypeApi.ts
-import axiosInstance from '../../lib/axios';
-import { ApiResponse, EmploymentType, VwEmploymentType } from '../../types';
+﻿// src/api/office/employmentTypeApi.ts
+import axiosInstance from '@/lib/axios';
+import { ApiResponse, EmploymentType, VwEmploymentType } from '@/types';
 import { toast } from 'sonner';
-import { getAuthParams } from '../../utils/auth';
+import { getAuthParams } from '@/utils/auth';
 
 interface EmploymentTypeResponse<T> {
   success: boolean;
@@ -87,3 +87,6 @@ export const editEmploymentType = async (payload: {
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save employment type');
   return { message: response.data.message ?? 'Success' };
 };
+
+
+

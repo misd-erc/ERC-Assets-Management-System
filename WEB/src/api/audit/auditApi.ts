@@ -1,5 +1,5 @@
-import axiosInstance from '../../lib/axios';
-import { AuditTrailResponse, ActivityResponse } from '../../types/audit';
+﻿import axiosInstance from '@/lib/axios';
+import { AuditTrailResponse, ActivityResponse } from '@/types/audit';
 
 /**
  * Fetch audit trail logs for the current user
@@ -55,5 +55,9 @@ export const getActivities = async (token: string, sessionKey: string, page: num
     throw error;
   }
 };
+
+
+
+
 
 

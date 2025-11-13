@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { AuditLogsHeader, AuditLogsTable, AuditLogDetailsModal } from '../components/audit-logs';
-import { getAllAuditTrail } from '../api/audit/auditApi';
-import { AuditTrailItem } from '../types/audit';
+﻿import React, { useState, useEffect } from 'react';
+import { AuditLogsHeader, AuditLogsTable, AuditLogDetailsModal } from '@/components/audit-logs';
+import { getAllAuditTrail } from '@/api/audit/auditApi';
+import { AuditTrailItem } from '@/types/audit';
 import { toast } from 'sonner';
-import { useAuthStore } from '../store/auth';
+import { useAuthStore } from '@/store/auth';
 
 const AuditLogs: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<AuditTrailItem[]>([]);
@@ -114,3 +114,7 @@ const AuditLogs: React.FC = () => {
 };
 
 export default AuditLogs;
+
+
+
+

@@ -1,4 +1,4 @@
-// src/components/office/DeleteConfirmDialog.tsx
+﻿// src/components/office/DeleteConfirmDialog.tsx
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,8 +8,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../../ui/alert-dialog';
-import { useOffice } from '../../../hooks';
+} from '@/components/ui/alert-dialog';
+import { useOffice } from '@/hooks';
 import { toast } from 'sonner';
 
 interface Props {
@@ -52,3 +52,8 @@ export const OfficeDeleteModal = ({ open, onOpenChange, officeId, officeName }: 
     </AlertDialog>
   );
 };
+
+
+
+
+

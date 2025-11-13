@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { useSupplyStore } from '../../store/supply/useSupplyStore';
-import * as svc from '../../api/supply/stockCardApi';
+﻿import { useEffect } from 'react';
+import { useSupplyStore } from '@/store/supply/useSupplyStore';
+import * as svc from '@/api/supply/stockCardApi';
 
 /**
  * Loads stock card entries from backend into store.
@@ -33,3 +33,7 @@ export const useStockCards = () => {
 
   return { stockCards, createEntry };
 };
+
+
+
+

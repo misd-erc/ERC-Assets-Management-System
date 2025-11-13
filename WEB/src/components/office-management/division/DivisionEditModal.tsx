@@ -1,21 +1,21 @@
-// src/components/office/DivisionEditModal.tsx
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../ui/dialog';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
+﻿// src/components/office/DivisionEditModal.tsx
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from '../../ui/select';
-import { Button } from '../../ui/button';
-import { Switch } from '../../ui/switch';
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useState, useEffect } from 'react';
-import { useDivision } from '../../../hooks';
-import { Division, Office, VwDivision } from '../../../types';
+import { useDivision } from '@/hooks';
+import { Division, Office, VwDivision } from '@/types';
 import { toast } from 'sonner';
-import { getOffices } from '../../../api';   // <-- same folder as other api calls
+import { getOffices } from '@/api';   // <-- same folder as other api calls
 
 interface Props {
   open: boolean;
@@ -26,7 +26,7 @@ interface Props {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Helper – client-side filter (shadcn/ui does not have filterOption) */
+/*  Helper â€“ client-side filter (shadcn/ui does not have filterOption) */
 /* ------------------------------------------------------------------ */
 const useSearchableSelect = (items: Office[], search: string) => {
   return items.filter((office) =>
@@ -242,3 +242,8 @@ export const DivisionEditModal = ({
     </Dialog>
   );
 };
+
+
+
+
+

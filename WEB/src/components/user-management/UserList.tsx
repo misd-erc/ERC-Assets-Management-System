@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Badge } from '../ui/badge';
-import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+﻿import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Plus,
   Search,
@@ -16,10 +16,10 @@ import {
   ChevronRight,
   MoreHorizontal
 } from 'lucide-react';
-import { getUsers, deleteUser, editUser } from '../../api/user-management/userApi';
-import { User } from '../../types/user';
+import { getUsers, deleteUser, editUser } from '@/api/user-management/userApi';
+import { User } from '@/types/user';
 import { toast } from 'sonner';
-import { useAuthStore } from '../../store/auth';
+import { useAuthStore } from '@/store/auth';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,15 +29,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import { UserEditModal } from './UserEditModal';
-import { getStatusColor } from '../../utils/colorUtils';
+import { getStatusColor } from '@/utils/colorUtils';
 
 interface UserListProps {
   onAddUser?: () => void;
@@ -326,3 +326,8 @@ export const UserList: React.FC<UserListProps> = ({
     </div>
   );
 };
+
+
+
+
+

@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useData } from '../hooks/data/useData';
-import { generateRISNumber } from '../utils/generators';
+﻿import { useState } from 'react';
+import { useData } from '@/hooks/data/useData';
+import { generateRISNumber } from '@/utils/generators';
 import { toast } from 'sonner';
 
 export interface RISFormData {
@@ -79,13 +79,13 @@ export const useRISForm = () => {
       risNumber: generateRISNumber(),
       requester: formData.requester,
       department: formData.department,
-      dateRequested: new Date().toISOString(), // ✅ must be a string
+      dateRequested: new Date().toISOString(), // âœ… must be a string
       items: formData.items.map((item) => {
         const supply = supplies.find((s) => s.id === item.supplyId);
         return {
           id: Date.now().toString() + Math.random(),
           supplyId: item.supplyId,
-          description: supply?.description || '', // ✅ use description, not name
+          description: supply?.description || '', // âœ… use description, not name
           unit: supply?.unit || '',
           quantityRequested: item.quantityRequested,
           purpose: item.purpose,
@@ -118,3 +118,7 @@ export const useRISForm = () => {
     handleSubmit,
   };
 };
+
+
+
+

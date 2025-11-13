@@ -1,5 +1,5 @@
-import axiosInstance from '../../lib/axios';
-import { ApiResponse } from '../../types/auth';
+﻿import axiosInstance from '@/lib/axios';
+import { ApiResponse } from '@/types/auth';
 
 export interface UploadProfilePictureResponse {
   fileStorageIdEncrypted: string;
@@ -43,3 +43,7 @@ export const retrieveFile = async (fileId: string): Promise<string> => {
   );
   return URL.createObjectURL(response.data);
 };
+
+
+
+

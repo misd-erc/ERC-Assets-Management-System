@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -19,7 +19,7 @@ import {
   MessageSquare,
   Building2,
 } from 'lucide-react';
-import { Badge } from '../ui/badge';
+import { Badge } from '@/components/ui/badge';
 
 interface NavigationItem {
   id: string;
@@ -165,3 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, 
     </aside>
   );
 };
+
+
+
+

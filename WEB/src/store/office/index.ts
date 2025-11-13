@@ -1,16 +1,16 @@
-// src/store/office/useOfficeStore.ts
+﻿// src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
-import { Office, VwDivision, EmploymentType, Position, Division, VwEmploymentType, VwOffice, VwPosition } from '../../types';
+import { Office, VwDivision, EmploymentType, Position, Division, VwEmploymentType, VwOffice, VwPosition } from '@/types';
 import { 
   getOffices, editOffice,
   getEmploymentTypes, editEmploymentType,
   getPositions, editPosition,
   getDivisions,
   editDivision
-} from '../../api';
+} from '@/api';
 import { toast } from 'sonner';
-import axiosInstance from '../../lib/axios';
-import { getAuthParams } from '../../utils/auth';
+import axiosInstance from '@/lib/axios';
+import { getAuthParams } from '@/utils/auth';
 
 /* ========================================
    OFFICE STORE
@@ -355,3 +355,6 @@ export const usePositionStore = create<PositionState>((set, get) => ({
     }
   },
 }));
+
+
+

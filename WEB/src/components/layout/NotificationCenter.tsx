@@ -1,8 +1,8 @@
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
-import { ScrollArea } from '../ui/scroll-area';
-import { Separator } from '../ui/separator';
+﻿import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { 
   Bell, 
   Package, 
@@ -218,3 +218,7 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
     </Sheet>
   );
 }
+
+
+
+

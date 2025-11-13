@@ -1,11 +1,11 @@
-import React from 'react';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
+﻿import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Eye, Edit, Trash2, Search, Filter, AlertTriangle } from 'lucide-react';
-import { DataTable } from '../common/DataTable';
-import { useSupplyStore } from '../../store/supply/useSupplyStore';
-import { formatCurrency, getStockStatus, getStockStatusColor } from '../../utils/formatters';
-import { SupplyItem } from '../../types/supply/supply';
+import { DataTable } from '@/components/common/DataTable';
+import { useSupplyStore } from '@/store/supply/useSupplyStore';
+import { formatCurrency, getStockStatus, getStockStatusColor } from '@/utils/formatters';
+import { SupplyItem } from '@/types/supply/supply';
 
 interface Props {
   onView?: (s: SupplyItem) => void;
@@ -60,3 +60,8 @@ export const SupplyTable: React.FC<Props> = ({ onView, onEdit, onDelete }) => {
     </div>
   );
 };
+
+
+
+
+

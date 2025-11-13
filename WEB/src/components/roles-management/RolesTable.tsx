@@ -1,14 +1,14 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
+﻿import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, MoreHorizontal } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
-import { Role } from '../../types/roles';
+} from '@/components/ui/dropdown-menu';
+import { Role } from '@/types/roles';
 
 interface RolesTableProps {
   roles: Role[];
@@ -89,3 +89,7 @@ export function RolesTable({ roles, onEditRole, onDeleteRole }: RolesTableProps)
     </Card>
   );
 }
+
+
+
+

@@ -1,8 +1,8 @@
-import React from 'react';
-import { Card, CardContent } from '../ui/card';
+﻿import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Package, TrendingDown, FileText, BarChart3 } from 'lucide-react';
-import { useSupplyStore } from '../../store/supply/useSupplyStore';
-import { formatCurrency, getStockStatus } from '../../utils/formatters';
+import { useSupplyStore } from '@/store/supply/useSupplyStore';
+import { formatCurrency, getStockStatus } from '@/utils/formatters';
 
 export const SummaryCards: React.FC = () => {
   const { supplies, risRequests } = useSupplyStore();
@@ -64,3 +64,8 @@ export const SummaryCards: React.FC = () => {
     </div>
   );
 };
+
+
+
+
+

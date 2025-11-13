@@ -1,5 +1,10 @@
 @echo off
-for /r src %%f in (*.tsx) do (
-    powershell -Command "(Get-Content '%%f') -replace '@[0-9]+\.[0-9]+\.[0-9]+', '' | Set-Content '%%f'"
-)
-echo Done fixing imports
+setlocal
+
+echo Running Import Fixer...
+
+powershell -NoProfile -ExecutionPolicy Bypass -File fix_imports.ps1
+
+echo.
+echo Done!
+pause

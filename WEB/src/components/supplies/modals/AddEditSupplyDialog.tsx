@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../ui/dialog';
-import { Input } from '../../ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
-import { Button } from '../../ui/button';
-import { useSupplies } from '../../../hooks/data/useSupplies';
-import { SupplyItem } from '../../../types/supply/supply';
+﻿import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { useSupplies } from '@/hooks/data/useSupplies';
+import { SupplyItem } from '@/types/supply/supply';
 
 interface Props {
   open: boolean;
@@ -125,3 +125,7 @@ export const AddEditSupplyDialog: React.FC<Props> = ({ open, onOpenChange, editi
     </Dialog>
   );
 };
+
+
+
+

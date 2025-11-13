@@ -1,4 +1,4 @@
-import { User } from "../user";
+﻿import { User } from "@/types/user";
 
 export interface Office {
   id: number;
@@ -78,3 +78,4 @@ export interface VwPosition {
   isDeleted?: boolean;
   createdAt?: string;
 }
+

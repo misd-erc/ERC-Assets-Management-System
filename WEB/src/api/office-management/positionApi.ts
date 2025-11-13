@@ -1,7 +1,7 @@
-import axiosInstance from '../../lib/axios';
-import { ApiResponse, Position, VwPosition } from '../../types';
+﻿import axiosInstance from '@/lib/axios';
+import { ApiResponse, Position, VwPosition } from '@/types';
 import { toast } from 'sonner';
-import { getAuthParams } from '../../utils/auth';
+import { getAuthParams } from '@/utils/auth';
 
 interface PositionResponse<T> {
   success: boolean;
@@ -93,3 +93,6 @@ export const editPosition = async (payload: {
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save position');
   return { message: response.data.message ?? 'Success' };
 };
+
+
+

@@ -1,7 +1,7 @@
-// src/components/office/OfficeSearchBar.tsx
-import { Input } from '../../ui/input';
+﻿// src/components/office/OfficeSearchBar.tsx
+import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { useOffice } from '../../../hooks';
+import { useOffice } from '@/hooks';
 
 export const OfficeSearchBar = () => {
   const { searchQuery, setSearchQuery } = useOffice();
@@ -20,3 +20,8 @@ export const OfficeSearchBar = () => {
       </div>
   );
 };
+
+
+
+
+

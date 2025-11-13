@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
-import { useAuthStore } from '../store/auth';
-import { useRolesStore } from '../store/roles';
-import { Role } from '../types/roles';
-import { PERMISSION_CATEGORIES } from '../constants/permissions';
-import { RolesHeader } from '../components/roles-management/RolesHeader';
-import { SearchAndSummary } from '../components/roles-management/SearchAndSummary';
-import { RolesTable } from '../components/roles-management/RolesTable';
-import { RoleDialog } from '../components/roles-management/RoleDialog';
-import { DeleteRoleDialog } from '../components/roles-management/DeleteRoleDialog';
-import { getSystemRoleById } from '../api/roles/rolesApi';
+﻿import { useState, useEffect } from 'react';
+import { useAuthStore } from '@/store/auth';
+import { useRolesStore } from '@/store/roles';
+import { Role } from '@/types/roles';
+import { PERMISSION_CATEGORIES } from '@/constants/permissions';
+import { RolesHeader } from '@/components/roles-management/RolesHeader';
+import { SearchAndSummary } from '@/components/roles-management/SearchAndSummary';
+import { RolesTable } from '@/components/roles-management/RolesTable';
+import { RoleDialog } from '@/components/roles-management/RoleDialog';
+import { DeleteRoleDialog } from '@/components/roles-management/DeleteRoleDialog';
+import { getSystemRoleById } from '@/api/roles/rolesApi';
 import { toast } from 'sonner';
 
 export function RolesManagement() {
@@ -258,3 +258,7 @@ export function RolesManagement() {
     </div>
   );
 }
+
+
+
+

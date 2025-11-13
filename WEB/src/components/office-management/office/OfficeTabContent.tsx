@@ -1,6 +1,6 @@
-// src/components/office-management/OfficeTabContent.tsx
-import { OfficeTable } from './OfficeTable';
-import { Office, VwOffice } from '../../../types';
+﻿// src/components/office-management/OfficeTabContent.tsx
+import { OfficeTable } from '@/components/office-management/office/OfficeTable';
+import { Office, VwOffice } from '@/types';
 
 interface Props {
   data: VwOffice[];
@@ -24,3 +24,6 @@ export const OfficeTabContent = ({ data, loading, onAdd, onEdit, onDelete }: Pro
     />
   );
 };
+
+
+

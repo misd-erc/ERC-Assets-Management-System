@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
-import { SummaryCards } from '../components/supplies/SummaryCards';
-import { SupplyTable } from '../components/supplies/SupplyTable';
-import { CategoriesView } from '../components/supplies/CategoriesView';
-import { StockCardsView } from '../components/supplies/StockCardsView';
-import { ServiceAllocationsView } from '../components/supplies/ServiceAllocationsView';
-import { RISRequestsView } from '../components/supplies/RISRequestsView';
-import { Card, CardHeader, CardTitle } from '../components/ui/card';
+﻿import React, { useState } from 'react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { SummaryCards } from '@/components/supplies/SummaryCards';
+import { SupplyTable } from '@/components/supplies/SupplyTable';
+import { CategoriesView } from '@/components/supplies/CategoriesView';
+import { StockCardsView } from '@/components/supplies/StockCardsView';
+import { ServiceAllocationsView } from '@/components/supplies/ServiceAllocationsView';
+import { RISRequestsView } from '@/components/supplies/RISRequestsView';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, FileText, BarChart3, ClipboardList, Users } from 'lucide-react';
 
 export const SupplyManagement: React.FC = () => {
@@ -70,3 +70,6 @@ export const SupplyManagement: React.FC = () => {
 };
 
 export default SupplyManagement;
+
+
+

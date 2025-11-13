@@ -1,6 +1,6 @@
-// src/hooks/office/useOffice.ts
-import { useOfficeStore } from '../../store/office';
-import { Office } from '../../types';
+﻿// src/hooks/office/useOffice.ts
+import { useOfficeStore } from '@/store/office';
+import { Office } from '@/types';
 
 export const useOffice = () => {
   const store = useOfficeStore();
@@ -17,3 +17,6 @@ export const useOffice = () => {
     inactiveOffices,
   };
 };
+
+
+

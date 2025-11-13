@@ -1,7 +1,7 @@
-// src/components/position/PositionSearchBar.tsx
-import { Input } from '../../ui/input';
+﻿// src/components/position/PositionSearchBar.tsx
+import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { usePosition } from '../../../hooks';
+import { usePosition } from '@/hooks';
 
 export const PositionSearchBar = () => {
   const { searchQuery, setSearchQuery } = usePosition();
@@ -20,3 +20,8 @@ export const PositionSearchBar = () => {
     </div>
   );
 };
+
+
+
+
+

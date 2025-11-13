@@ -1,7 +1,7 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+﻿import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Construction, Home } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 
 interface UnderConstructionContentProps {
   onNavigate: (module: string) => void;
@@ -58,3 +58,7 @@ const UnderConstructionContent: React.FC<UnderConstructionContentProps> = ({ onN
 };
 
 export default UnderConstructionContent;
+
+
+
+

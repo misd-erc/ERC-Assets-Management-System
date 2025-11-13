@@ -1,29 +1,29 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, LogOut, ChevronDown } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '../ui/dialog';
-import { useAuth } from '../../hooks';
+} from '@/components/ui/dialog';
+import { useAuth } from '@/hooks';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getUserDetails } from '../../api/user-management/authApi';
-import { getUserPhoto } from '../../api/user-management/userApi';
-import { decrypt, encrypt } from '../../utils/encryption';
+import { getUserDetails } from '@/api/user-management/authApi';
+import { getUserPhoto } from '@/api/user-management/userApi';
+import { decrypt, encrypt } from '@/utils/encryption';
 
-import { useAuthStore } from '../../store/auth';
+import { useAuthStore } from '@/store/auth';
 
 interface ProfileDropdownProps {
   onNavigate?: (module: string) => void;
@@ -218,9 +218,9 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       }
     };
 
-    // ✅ Trigger API calls only when landing on the dashboard
+    // âœ… Trigger API calls only when landing on the dashboard
     if (location.pathname.startsWith('/dashboard')) {
-      console.log('[ProfileDropdown] User landed on dashboard — triggering API calls');
+      console.log('[ProfileDropdown] User landed on dashboard â€” triggering API calls');
       fetchUserData();
     }
   }, [propUser, location.pathname, user.imageUrl, photoFetched, systemUserId]);
@@ -414,3 +414,9 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     </>
   );
 };
+
+
+
+
+
+

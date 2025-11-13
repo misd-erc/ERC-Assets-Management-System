@@ -1,4 +1,4 @@
-import { Division, Office } from "../office";
+﻿import { Division, Office } from "@/types/office";
 
 export interface ProfilePictureStorageFile {
   id: number;
@@ -78,3 +78,5 @@ export interface MSALAccountInfo {
   name?: string;
   entraId?: string;
 }
+
+

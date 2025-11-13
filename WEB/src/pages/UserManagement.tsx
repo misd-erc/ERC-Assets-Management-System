@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { UserList, UserFormModal, UserDetailsDrawer } from '../components/user-management';
-import { User } from '../types/user';
+﻿import React, { useState } from 'react';
+import { UserList, UserFormModal, UserDetailsDrawer } from '@/components/user-management';
+import { User } from '@/types/user';
 
 const UserManagement: React.FC = () => {
   const [showAddUser, setShowAddUser] = useState(false);
@@ -57,3 +57,6 @@ const UserManagement: React.FC = () => {
 export default UserManagement;
 
 export {};
+
+
+

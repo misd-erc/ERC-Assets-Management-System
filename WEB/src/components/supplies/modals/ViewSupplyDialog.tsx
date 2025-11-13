@@ -1,9 +1,9 @@
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../../ui/dialog';
-import { Button } from '../../ui/button';
-import { SupplyItem } from '../../../types/supply/supply';
-import { formatCurrency, getStockStatus, getStockStatusColor } from '../../../utils/formatters';
-import { Badge } from '../../ui/badge';
+﻿import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { SupplyItem } from '@/types/supply/supply';
+import { formatCurrency, getStockStatus, getStockStatusColor } from '@/utils/formatters';
+import { Badge } from '@/components/ui/badge';
 
 interface Props {
   open: boolean;
@@ -62,3 +62,8 @@ export const ViewSupplyDialog: React.FC<Props> = ({ open, onOpenChange, supply }
     </Dialog>
   );
 };
+
+
+
+
+

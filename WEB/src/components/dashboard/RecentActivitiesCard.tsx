@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
-import { ScrollArea } from '../ui/scroll-area';
+﻿import React, { useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Package,
   ArrowRightLeft,
@@ -11,8 +11,8 @@ import {
   Clock,
   User
 } from 'lucide-react';
-import { useData } from '../../hooks';
-import { RISRequest } from '../../types/supply/ris';
+import { useData } from '@/hooks';
+import { RISRequest } from '@/types/supply/ris';
 
 interface Activity {
   id: string;
@@ -38,7 +38,7 @@ export function RecentActivitiesCard() {
         )
         .join(', ')}`,
       user: request.requester,
-      timestamp: new Date(request.dateRequested), // ✅ convert string → Date
+      timestamp: new Date(request.dateRequested), // âœ… convert string â†’ Date
       status:
         request.status === 'approved'
           ? 'completed'
@@ -167,3 +167,8 @@ export function RecentActivitiesCard() {
     </Card>
   );
 }
+
+
+
+
+

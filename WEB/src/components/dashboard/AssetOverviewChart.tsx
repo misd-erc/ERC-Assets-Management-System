@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+﻿import React, { useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { useData } from '../../hooks';
+import { useData } from '@/hooks';
 
 export function AssetOverviewChart() {
   const monthlyData = [
@@ -183,3 +183,8 @@ export function AssetOverviewChart() {
     </Card>
   );
 }
+
+
+
+
+

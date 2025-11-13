@@ -1,7 +1,7 @@
-import { Asset } from '../asset';
-import { SupplyItem } from '../supply/supply';
-import { RISRequest } from '../supply/ris';
-import { Contract } from '../contract';
+﻿import { Asset } from '@/types/asset';
+import { SupplyItem } from '@/types/supply/supply';
+import { RISRequest } from '@/types/supply/ris';
+import { Contract } from '@/types/contract';
 
 export interface DataStore {
   assets: Asset[];
@@ -21,3 +21,6 @@ export interface DataStore {
   updateRISRequest: (id: string, updates: Partial<RISRequest>) => void;
   removeRISRequest: (id: string) => void;
 }
+
+
+

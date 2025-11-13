@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuthStore } from '../store/auth';
-import { getUserDetails } from '../api/user-management/authApi';
-import { UserDetails } from '../types/user';
-import { handleSessionExpired, getSessionToken } from '../utils/sessionUtils';
+﻿import { useState, useEffect, useCallback } from 'react';
+import { useAuthStore } from '@/store/auth';
+import { getUserDetails } from '@/api/user-management/authApi';
+import { UserDetails } from '@/types/user';
+import { handleSessionExpired, getSessionToken } from '@/utils/sessionUtils';
 
 export const useUserProfile = () => {
   const { systemUserId } = useAuthStore();
@@ -108,3 +108,7 @@ export const useUserProfile = () => {
 
   return { userProfile, loading, refreshProfile };
 };
+
+
+
+

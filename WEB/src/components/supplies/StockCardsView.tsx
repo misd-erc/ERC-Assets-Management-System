@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { Input } from '../ui/input';
+﻿import React, { useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { useStockCards } from '../../hooks/data/useStockCards';
-import { DataTable } from '../common/DataTable';
-import { Badge } from '../ui/badge';
-import { StockCardEntry } from '../../types/supply/stockCard';
+import { useStockCards } from '@/hooks/data/useStockCards';
+import { DataTable } from '@/components/common/DataTable';
+import { Badge } from '@/components/ui/badge';
+import { StockCardEntry } from '@/types/supply/stockCard';
 
 export const StockCardsView: React.FC = () => {
   const { stockCards } = useStockCards();
@@ -43,3 +43,7 @@ export const StockCardsView: React.FC = () => {
     </Card>
   );
 };
+
+
+
+

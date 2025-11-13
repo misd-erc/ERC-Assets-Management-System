@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../ui/dialog';
-import { Input } from '../../ui/input';
-import { Button } from '../../ui/button';
-import { useRISRequests } from '../../../hooks/data/useRISRequests';
-import { useSupplyStore } from '../../../store/supply/useSupplyStore';
+﻿import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { useRISRequests } from '@/hooks/data/useRISRequests';
+import { useSupplyStore } from '@/store/supply/useSupplyStore';
 import { v4 as uuidv4 } from 'uuid';
 
 export const CreateRISDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean) => void }> = ({ open, onOpenChange }) => {
@@ -86,3 +86,8 @@ export const CreateRISDialog: React.FC<{ open: boolean; onOpenChange: (v: boolea
     </Dialog>
   );
 };
+
+
+
+
+

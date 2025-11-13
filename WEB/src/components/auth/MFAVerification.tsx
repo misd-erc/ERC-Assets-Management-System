@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Alert, AlertDescription } from '../ui/alert';
+﻿import { useState, useRef, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, ArrowLeft, Mail } from 'lucide-react';
-import { useAuth } from '../../hooks';
+import { useAuth } from '@/hooks';
 
 export function MFAVerification() {
   const [codes, setCodes] = useState(['', '', '', '', '', '']);
@@ -132,10 +132,10 @@ export function MFAVerification() {
             <div className="text-sm text-blue-800">
               <p className="mb-2">Having trouble?</p>
               <ul className="space-y-1 text-xs">
-                <li>• Check your email inbox and spam folder</li>
-                <li>• The code is valid for 3 minutes</li>
-                <li>• Contact IT support if you've lost access to your email</li>
-                <li>• Emergency access: Contact your system administrator</li>
+                <li>â€¢ Check your email inbox and spam folder</li>
+                <li>â€¢ The code is valid for 3 minutes</li>
+                <li>â€¢ Contact IT support if you've lost access to your email</li>
+                <li>â€¢ Emergency access: Contact your system administrator</li>
               </ul>
             </div>
           </CardContent>
@@ -144,3 +144,8 @@ export function MFAVerification() {
     </div>
   );
 }
+
+
+
+
+

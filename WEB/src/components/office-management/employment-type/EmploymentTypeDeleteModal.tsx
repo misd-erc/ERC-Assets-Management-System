@@ -1,4 +1,4 @@
-// src/components/employment-type/EmploymentTypeDeleteModal.tsx
+﻿// src/components/employment-type/EmploymentTypeDeleteModal.tsx
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,8 +8,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../../ui/alert-dialog';
-import { useEmploymentType } from '../../../hooks';
+} from '@/components/ui/alert-dialog';
+import { useEmploymentType } from '@/hooks';
 import { toast } from 'sonner';
 
 interface Props {
@@ -52,3 +52,8 @@ export const EmploymentTypeDeleteModal = ({ open, onOpenChange, typeId, typeName
     </AlertDialog>
   );
 };
+
+
+
+
+

@@ -1,4 +1,4 @@
-import { TabsList, TabsTrigger } from '../ui/tabs';
+﻿import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, Users, Briefcase, UserCheck } from 'lucide-react';
 
 export const OfficeTabsList = () => {
@@ -23,3 +23,7 @@ export const OfficeTabsList = () => {
     </TabsList>
   );
 };
+
+
+
+

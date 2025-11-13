@@ -1,5 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
+﻿import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   Package,
   CheckCircle,
@@ -9,11 +9,11 @@ import {
   AlertTriangle,
   TrendingUp
 } from 'lucide-react';
-import { useAuth } from '../hooks/auth/useAuth';
-import { useData } from '../hooks/data/useData';
-import { AssetOverviewChart } from '../components/dashboard/AssetOverviewChart';
-import { RecentActivitiesCard } from '../components/dashboard/RecentActivitiesCard';
-import { PendingApprovalsCard } from '../components/dashboard/PendingApprovalsCard';
+import { useAuth } from '@/hooks/auth/useAuth';
+import { useData } from '@/hooks/data/useData';
+import { AssetOverviewChart } from '@/components/dashboard/AssetOverviewChart';
+import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
+import { PendingApprovalsCard } from '@/components/dashboard/PendingApprovalsCard';
 
 interface DashboardProps {
 }
@@ -41,11 +41,11 @@ function Dashboard() {
   const totalSE = 956; // Semi-Expendables
   const totalSupplies = 783; // Supplies Inventory
 
-  // Asset values in Philippine Pesos (₱)
-  const ppeAmount = 87456230.00; // ₱87.46M total PPE value
-  const seAmount = 12837450.00; // ₱12.84M total SE value
-  const suppliesAmount = 3245870.00; // ₱3.25M total Supplies value
-  const totalAmount = ppeAmount + seAmount + suppliesAmount; // ₱103.54M
+  // Asset values in Philippine Pesos (â‚±)
+  const ppeAmount = 87456230.00; // â‚±87.46M total PPE value
+  const seAmount = 12837450.00; // â‚±12.84M total SE value
+  const suppliesAmount = 3245870.00; // â‚±3.25M total Supplies value
+  const totalAmount = ppeAmount + seAmount + suppliesAmount; // â‚±103.54M
 
   const pendingRequests = 47; // Awaiting approval
   const approvedRequests = 156; // Ready for processing
@@ -54,11 +54,11 @@ function Dashboard() {
   // Format currency in Philippine Peso
   const formatCurrency = (amount: number) => {
     if (amount >= 1000000) {
-      return `₱${(amount / 1000000).toFixed(2)}M`;
+      return `â‚±${(amount / 1000000).toFixed(2)}M`;
     } else if (amount >= 1000) {
-      return `₱${(amount / 1000).toFixed(2)}K`;
+      return `â‚±${(amount / 1000).toFixed(2)}K`;
     }
-    return `₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `â‚±${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   // TOR-required dashboard metrics with realistic values
@@ -69,7 +69,7 @@ function Dashboard() {
       count: `${totalPPE.toLocaleString()} items`,
       description: 'Property, Plant & Equipment',
       changeType: 'positive' as const,
-      change: '+₱2.4M vs last quarter',
+      change: '+â‚±2.4M vs last quarter',
       icon: Package,
       color: 'bg-blue-50 text-blue-600 border-blue-200'
     },
@@ -79,7 +79,7 @@ function Dashboard() {
       count: `${totalSE.toLocaleString()} items`,
       description: 'Semi-Expendable Items',
       changeType: 'positive' as const,
-      change: '+₱850K vs last quarter',
+      change: '+â‚±850K vs last quarter',
       icon: Package,
       color: 'bg-green-50 text-green-600 border-green-200'
     },
@@ -89,7 +89,7 @@ function Dashboard() {
       count: `${totalSupplies.toLocaleString()} items`,
       description: 'Supplies Inventory',
       changeType: 'neutral' as const,
-      change: '+₱125K vs last quarter',
+      change: '+â‚±125K vs last quarter',
       icon: Package,
       color: 'bg-purple-50 text-purple-600 border-purple-200'
     },
@@ -99,7 +99,7 @@ function Dashboard() {
       count: `${totalAssets.toLocaleString()} items`,
       description: 'Combined Assets Worth',
       changeType: 'positive' as const,
-      change: '+₱3.4M vs last quarter',
+      change: '+â‚±3.4M vs last quarter',
       icon: TrendingUp,
       color: 'bg-indigo-50 text-indigo-600 border-indigo-200'
     }
@@ -122,7 +122,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Cards - Enhanced 2x4 Grid with Amounts in ₱ */}
+      {/* KPI Cards - Enhanced 2x4 Grid with Amounts in â‚± */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpiData.map((kpi) => (
           <Card key={kpi.title} className={`hover:shadow-lg transition-all duration-200 border-2 ${kpi.color.includes('border') ? kpi.color.split(' ').pop() : 'border-slate-200'}`}>
@@ -165,7 +165,7 @@ function Dashboard() {
         <CardHeader>
           <CardTitle>Asset Portfolio Summary</CardTitle>
           <CardDescription>
-            Breakdown of total asset value of ₱{(totalAmount / 1000000).toFixed(2)}M across all categories
+            Breakdown of total asset value of â‚±{(totalAmount / 1000000).toFixed(2)}M across all categories
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -278,3 +278,6 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
+
+
