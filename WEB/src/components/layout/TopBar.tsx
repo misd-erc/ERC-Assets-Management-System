@@ -13,7 +13,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks';
-import { ProfileDropdown } from './ProfileDropdown';
+import { ProfileDropdown } from '@/components/layout/ProfileDropdown';
 
 interface TopbarProps {
   onMenuClick?: () => void;
@@ -119,6 +119,7 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigat
     </>
   );
 };
+
 
 
 

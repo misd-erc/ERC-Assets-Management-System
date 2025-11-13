@@ -32,8 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { DivisionSearchBar } from './DivisionSearchBar';
-// import { DivisionTabsList } from './DivisionTabsList';
+import { DivisionSearchBar } from '@/components/office-management/division/DivisionSearchBar';
+// import { DivisionTabsList } from '@/components/office-management/division/DivisionTabsList';
 import { useState, useEffect } from 'react';
 import { useDivision } from '@/hooks';   // <-- NEW (same path as Office)
 
@@ -214,6 +214,7 @@ export const DivisionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
     </Card>
   );
 };
+
 
 
 

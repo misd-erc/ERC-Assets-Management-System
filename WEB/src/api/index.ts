@@ -1,13 +1,13 @@
-export * from './user-management/authApi';
-export * from './assets/assetApi';
-export * from './user-management/userApi';
-export * from './user-management/departmentApi';
-export * from './storage/uploadApi';
-export * from './audit/auditApi';
+﻿export * from '@/api/user-management/authApi';
+export * from '@/api/assets/assetApi';
+export * from '@/api/user-management/userApi';
+export * from '@/api/user-management/departmentApi';
+export * from '@/api/storage/uploadApi';
+export * from '@/api/audit/auditApi';
 
-export * from './office-management/officeApi';
-export * from './office-management/divisionApi';
-export * from './office-management/employmentTypeApi';
-export * from './office-management/positionApi';
+export * from '@/api/office-management/officeApi';
+export * from '@/api/office-management/divisionApi';
+export * from '@/api/office-management/employmentTypeApi';
+export * from '@/api/office-management/positionApi';
 
-export * from './roles/rolesApi';
+export * from '@/api/roles/rolesApi';
