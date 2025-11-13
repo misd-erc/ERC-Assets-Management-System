@@ -8,7 +8,6 @@ import UserManagement from '@/pages/UserManagement';
 import { RolesManagement } from '@/pages/RolesManagement';
 import AuditLogs from '@/pages/AuditLogs';
 import UnderConstructionPage from '@/pages/UC';
-import UnderConstructionContent from '@/pages/UC';
 import SupplyManagement from '@/pages/SupplyManagement';
 import { useIsMobile } from '@/components/ui/use-mobile';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -76,8 +75,6 @@ export function MainLayout() {
             </Suspense>
           </ErrorBoundary>
         );
-      case 'category-management':
-      case 'deliveries-receipts':
       case 'supplies-inventory':
         return (
           <ErrorBoundary>
@@ -86,6 +83,8 @@ export function MainLayout() {
             </Suspense>
           </ErrorBoundary>
         );
+      case 'category-management':
+      case 'deliveries-receipts':
       case 'supply-management':
       case 'transfers-returns':
       case 'disposals':

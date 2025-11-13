@@ -1,4 +1,4 @@
-﻿import React from 'react';
+﻿﻿﻿﻿import React, { useMemo } from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -20,6 +20,8 @@ import {
   Building2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { decrypt } from '@/utils/encryption';
 
 interface NavigationItem {
   id: string;
@@ -93,6 +95,79 @@ const navigationGroups: NavigationGroup[] = [
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, isMobile }) => {
+  const { userProfile } = useUserProfile();
+
+  // Get user scopes and admin status from decrypted userDetails
+  const { userScopes, isAdmin } = useMemo(() => {
+    if (!userProfile) return { userScopes: [], isAdmin: false };
+
+    try {
+      const encryptedUserDetails = localStorage.getItem('userDetails');
+      if (!encryptedUserDetails) return { userScopes: [], isAdmin: false };
+
+      const decryptedUserDetails = JSON.parse(decrypt(encryptedUserDetails));
+      const scopes: string[] = [];
+      let admin = false;
+
+      decryptedUserDetails.systemRole?.forEach((role: any) => {
+        if (role.roleName === 'Administrator') {
+          admin = true;
+        }
+        role.scope?.forEach((scope: any) => {
+          if (scope.module && scope.isActive && !scope.isDeleted) {
+            scopes.push(scope.module.name);
+          }
+        });
+      });
+
+      return { userScopes: scopes, isAdmin: admin };
+    } catch (error) {
+      console.error('Error decrypting user details:', error);
+      return { userScopes: [], isAdmin: false };
+    }
+  }, [userProfile]);
+
+  // Filter navigation groups based on user scopes
+  const filteredNavigationGroups = useMemo(() => {
+    return navigationGroups.map(group => ({
+      ...group,
+      items: group.items.filter(item => {
+        // Always show dashboard
+        if (item.id === 'dashboard') return true;
+
+        // Show admin items only if user is admin
+        if (item.adminOnly) {
+          return isAdmin;
+        }
+
+        // Map item IDs to scope modules
+        const moduleMapping: Record<string, string> = {
+          'category-management': 'Category Management',
+          'deliveries-receipts': 'Delivery & Receipt of Items',
+          'supplies-inventory': 'Supplies Inventory',
+          'supply-management': 'Supply Management',
+          'transfers-returns': 'Transfers & Returns',
+          'disposals': 'Disposal of Properties',
+          'contracts': 'Contract Management',
+          'ppe-semi-expendables': 'PPE & Semi-Expendables',
+          'par-ics': 'PAR / ICS',
+          'reports': 'Reports Center',
+          'approvals': 'Approvals',
+          'calendar-notifications': 'Calendar & Notifications',
+          'communication-tools': 'Communication Tools',
+          'users-roles': 'User Management',
+          'office-management': 'Office Management',
+          'roles-management': 'Roles Management',
+          'settings': 'System Settings',
+          'audit-logs': 'Audit Logs'
+        };
+
+        const requiredModule = moduleMapping[item.id];
+        return requiredModule ? userScopes.includes(requiredModule) : true;
+      })
+    })).filter(group => group.items.length > 0);
+  }, [userScopes, isAdmin]);
+
   return (
     <aside
       className={`${isMobile ? 'w-full h-full' : 'fixed top-0 left-0 w-64 h-full z-40'} bg-white border-r border-gray-200 shadow-sm flex flex-col`}
@@ -113,7 +188,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, 
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2 py-4" aria-label="Sidebar navigation">
-        {navigationGroups.map((group) => (
+        {filteredNavigationGroups.map((group) => (
           <div key={group.title} className="mb-6">
             <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               {group.title}
