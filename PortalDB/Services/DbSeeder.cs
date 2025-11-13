@@ -24,6 +24,7 @@ namespace PortalDB.Services
                 #region Account
                 TblSystemUserStatusSeeder.Seed(context);
                 TblSystemRoleSeeder.Seed(context);
+                TblSystemRoleScopeSeeder.Seed(context);
                 TblSystemModuleSeeder.Seed(context);
                 #endregion
 

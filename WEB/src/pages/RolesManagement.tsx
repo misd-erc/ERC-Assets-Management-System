@@ -54,11 +54,7 @@ export function RolesManagement() {
     description: apiRole.description,
     assignedPermissions: (apiRole.scope || [])
       .filter((scope: any) => scope.isActive)
-      .map((scope: any) => {
-        const permissionIndex = scope.id - 15; // scope IDs start from 15
-        const allPermissions = Object.values(PERMISSION_CATEGORIES).flat();
-        return allPermissions[permissionIndex]?.id || 'unknown';
-      }),
+      .map((scope: any) => scope.id.toString()), // Use scope.id directly as permission ID
     userCount: apiRole.userCount,
     dateCreated: new Date(apiRole.createdAt).toISOString().split('T')[0]
   })) : [];
@@ -80,18 +76,10 @@ export function RolesManagement() {
     console.log('[RolesManagement] Creating role with userId:', userId);
 
     // Convert permissions back to scopes format
-    const scopes = roleData.assignedPermissions.map(permission => {
-      // Find the module ID based on permission name
-      // This is a simplified mapping - you might need a proper mapping
-      const moduleId = Object.values(PERMISSION_CATEGORIES)
-        .flat()
-        .find(p => p.id === permission)?.id === permission ? 1 : 2; // Default fallback
-
-      return {
-        systemModuleId: moduleId,
-        systemRoleScopeIsActive: true,
-      };
-    });
+    const scopes = roleData.assignedPermissions.map(permission => ({
+      systemModuleId: parseInt(permission), // permission is now the module ID as string
+      systemRoleScopeIsActive: true,
+    }));
 
     await createOrUpdateRole({
       systemRoleId: 0, // 0 for new role
@@ -117,16 +105,10 @@ export function RolesManagement() {
     console.log('[RolesManagement] Editing role with userId:', userId);
 
     // Convert permissions back to scopes format
-    const scopes = roleData.assignedPermissions.map(permission => {
-      const moduleId = Object.values(PERMISSION_CATEGORIES)
-        .flat()
-        .find(p => p.id === permission)?.id === permission ? 1 : 2;
-
-      return {
-        systemModuleId: moduleId,
-        systemRoleScopeIsActive: true,
-      };
-    });
+    const scopes = roleData.assignedPermissions.map(permission => ({
+      systemModuleId: parseInt(permission), // permission is now the module ID as string
+      systemRoleScopeIsActive: true,
+    }));
 
     await createOrUpdateRole({
       systemRoleId: parseInt(editingRole.id),
@@ -185,11 +167,7 @@ export function RolesManagement() {
         description: roleDetails.description,
         assignedPermissions: (roleDetails.scope || [])
           .filter((scope: any) => scope.isActive)
-          .map((scope: any) => {
-            const permissionIndex = scope.id - 15; // scope IDs start from 15
-            const allPermissions = Object.values(PERMISSION_CATEGORIES).flat();
-            return allPermissions[permissionIndex]?.id || 'unknown';
-          }),
+          .map((scope: any) => scope.id.toString()), // Use scope.id directly as permission ID
         userCount: role.userCount, // Keep from the list data
         dateCreated: new Date(roleDetails.createdAt).toISOString().split('T')[0],
       };

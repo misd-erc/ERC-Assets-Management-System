@@ -41,7 +41,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       const systemRoleId = Array.isArray(systemRole) ? systemRole[0]?.id : systemRole?.id;
       const isActive = userDetails.systemUserStatus?.name;
 
-      if (systemRoleId == 0 || systemRoleId == null) {
+      if (systemRoleId == 0 || systemRoleId == null || isActive !== "Active") {
         return <Navigate to="/no-role" replace />;
       }
     } catch (error) {
