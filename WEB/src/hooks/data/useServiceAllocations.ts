@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { useSupplyStore } from '../../store/supply/useSupplyStore';
-import * as svc from '../../api/supply/allocationApi';
+﻿import { useEffect } from 'react';
+import { useSupplyStore } from '@/store/supply/useSupplyStore';
+import * as svc from '@/api/supply/allocationApi';
 
 /**
  * Loads allocations from backend
@@ -44,3 +44,4 @@ export const useServiceAllocations = () => {
 
   return { allocations, create, update };
 };
+

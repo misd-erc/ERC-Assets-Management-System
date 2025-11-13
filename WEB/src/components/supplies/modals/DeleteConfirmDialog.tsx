@@ -1,5 +1,5 @@
-import React from 'react';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '../../ui/alert-dialog';
+﻿import React from 'react';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/ui/alert-dialog';
 
 export const DeleteConfirmDialog: React.FC<{ open: boolean; onOpenChange: (v: boolean) => void; onConfirm: () => void; itemDesc?: string; }> = ({ open, onOpenChange, onConfirm, itemDesc }) => {
   return (
@@ -17,3 +17,4 @@ export const DeleteConfirmDialog: React.FC<{ open: boolean; onOpenChange: (v: bo
     </AlertDialog>
   );
 };
+

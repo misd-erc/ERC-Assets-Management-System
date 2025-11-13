@@ -1,12 +1,12 @@
-// src/components/position/PositionTable.tsx
-import { Badge } from '../../ui/badge';
-import { Button } from '../../ui/button';
+﻿// src/components/position/PositionTable.tsx
+import { Badge } from '@/ui/badge';
+import { Button } from '@/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '../../ui/dropdown-menu';
+} from '@/ui/dropdown-menu';
 import {
   Edit,
   Trash2,
@@ -16,14 +16,14 @@ import {
   ChevronRight,
   Users,
 } from 'lucide-react';
-import { Position, VwPosition } from '../../../types';
+import { Position, VwPosition } from '@/types';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '../../ui/card';
+} from '@/ui/card';
 import {
   Table,
   TableBody,
@@ -31,11 +31,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../ui/table';
+} from '@/ui/table';
 import { PositionSearchBar } from './PositionSearchBar';
 import { useState, useEffect } from 'react';
-import { usePosition } from '../../../hooks';
-import { getStatusColor } from '../../../utils/colorUtils';
+import { usePosition } from '@/hooks';
+import { getStatusColor } from '@/utils/colorUtils';
 
 interface Props {
   data: VwPosition[];
@@ -164,3 +164,4 @@ export const PositionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
     </Card>
   );
 };
+

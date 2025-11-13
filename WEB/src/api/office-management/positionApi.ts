@@ -1,7 +1,7 @@
-import axiosInstance from '../../lib/axios';
-import { ApiResponse, Position, VwPosition } from '../../types';
+﻿import axiosInstance from '@/lib/axios';
+import { ApiResponse, Position, VwPosition } from '@/types';
 import { toast } from 'sonner';
-import { getAuthParams } from '../../utils/auth';
+import { getAuthParams } from '@/utils/auth';
 
 interface PositionResponse<T> {
   success: boolean;

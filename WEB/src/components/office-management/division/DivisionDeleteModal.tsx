@@ -1,4 +1,4 @@
-import {
+﻿import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -7,8 +7,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../../ui/alert-dialog';
-import { useDivision } from '../../../hooks';
+} from '@/ui/alert-dialog';
+import { useDivision } from '@/hooks';
 import { toast } from 'sonner';
 
 interface Props {
@@ -51,3 +51,4 @@ export const DivisionDeleteModal = ({ open, onOpenChange, divisionId, divisionNa
     </AlertDialog>
   );
 };
+

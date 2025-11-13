@@ -1,4 +1,4 @@
-import {
+﻿import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -7,7 +7,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../ui/alert-dialog';
+} from '@/ui/alert-dialog';
 
 interface DeleteRoleDialogProps {
   isOpen: boolean;
@@ -38,3 +38,4 @@ export function DeleteRoleDialog({ isOpen, onClose, onConfirm }: DeleteRoleDialo
     </AlertDialog>
   );
 }
+

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { isSessionValid, handleSessionExpired, getSessionToken } from '../utils/sessionUtils';
-import { getUserDetails } from '../api/user-management/authApi';
+import { isSessionValid, handleSessionExpired, getSessionToken } from '@/utils/sessionUtils';
+import { getUserDetails } from '@/api/user-management/authApi';
 
 /**
  * Session Guard Hook
@@ -83,3 +83,4 @@ export const useIsAuthenticated = (): boolean => {
 export const useSessionToken = (): string | null => {
   return getSessionToken();
 };
+

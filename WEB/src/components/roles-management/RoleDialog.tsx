@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Checkbox } from '../ui/checkbox';
+﻿import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/ui/dialog';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
+import { Label } from '@/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
+import { Checkbox } from '@/ui/checkbox';
 import { toast } from 'sonner';
-import { Role } from '../../types/roles';
-import { PERMISSION_CATEGORIES } from '../../constants/permissions';
+import { Role } from '@/types/roles';
+import { PERMISSION_CATEGORIES } from '@/constants/permissions';
 
 interface RoleDialogProps {
   isOpen: boolean;
@@ -213,3 +213,4 @@ export function RoleDialog({ isOpen, onClose, onSave, editingRole, rolesCount }:
     </Dialog>
   );
 }
+

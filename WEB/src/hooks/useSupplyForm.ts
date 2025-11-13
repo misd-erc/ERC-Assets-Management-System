@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { SupplyItem } from '../types/supply/supply';
-import { useData } from '../hooks/data/useData';
-import { generateItemCode } from '../utils/generators';
+﻿import { useState } from 'react';
+import { SupplyItem } from '@/types/supply/supply';
+import { useData } from '@/hooks/data/useData';
+import { generateItemCode } from '@/utils/generators';
 import { toast } from 'sonner';
 
 export interface SupplyFormData {
@@ -104,3 +104,4 @@ export const useSupplyForm = () => {
     handleSubmit,
   };
 };
+

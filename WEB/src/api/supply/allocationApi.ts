@@ -1,5 +1,5 @@
-import axiosInstance from '../../lib/axios';
-import { ServiceAllocation } from '../../types/supply/allocation';
+﻿import axiosInstance from '@/lib/axios';
+import { ServiceAllocation } from '@/types/supply/allocation';
 
 export const getAllocations = async (): Promise<ServiceAllocation[]> => {
   const { data } = await axiosInstance.get('/allocations');
@@ -15,3 +15,4 @@ export const patchAllocation = async (id: string, payload: Partial<ServiceAlloca
   const { data } = await axiosInstance.patch(`/allocations/${id}`, payload);
   return data;
 };
+

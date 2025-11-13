@@ -1,6 +1,6 @@
-import { Input } from '../../ui/input';
+﻿import { Input } from '@/ui/input';
 import { Search } from 'lucide-react';
-import { useDivision } from '../../../hooks';
+import { useDivision } from '@/hooks';
 
 export const DivisionSearchBar = () => {
   const { searchQuery, setSearchQuery } = useDivision();
@@ -19,3 +19,4 @@ export const DivisionSearchBar = () => {
       </div>
   );
 };
+

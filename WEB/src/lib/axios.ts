@@ -1,5 +1,5 @@
-import axios, { type AxiosInstance, type AxiosResponse, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import { getSessionToken, handleSessionExpired, isSessionError } from '../utils/sessionUtils';
+﻿import axios, { type AxiosInstance, type AxiosResponse, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { getSessionToken, handleSessionExpired, isSessionError } from '@/utils/sessionUtils';
 
 const baseURL = process.env.REACT_APP_API_URL || 'https://localhost:7702/api';
 
@@ -114,3 +114,4 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
+

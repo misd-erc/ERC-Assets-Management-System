@@ -1,8 +1,8 @@
-// src/api/office/employmentTypeApi.ts
-import axiosInstance from '../../lib/axios';
-import { ApiResponse, EmploymentType, VwEmploymentType } from '../../types';
+﻿// src/api/office/employmentTypeApi.ts
+import axiosInstance from '@/lib/axios';
+import { ApiResponse, EmploymentType, VwEmploymentType } from '@/types';
 import { toast } from 'sonner';
-import { getAuthParams } from '../../utils/auth';
+import { getAuthParams } from '@/utils/auth';
 
 interface EmploymentTypeResponse<T> {
   success: boolean;

@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { SystemRoleResponseModel, getAllSystemRoles, getSystemRoleById, editSystemRole, PaginationGenericQueryParams, SoloQueryParams, EditSystemRoleQueryParams } from '../../api';
+﻿import { create } from 'zustand';
+import { SystemRoleResponseModel, getAllSystemRoles, getSystemRoleById, editSystemRole, PaginationGenericQueryParams, SoloQueryParams, EditSystemRoleQueryParams } from '@/api';
 import { toast } from 'sonner';
 
 export interface RolesState {
@@ -89,3 +89,4 @@ export const useRolesStore = create<RolesStore>((set, get) => ({
   setError: (error: string | null) => set({ error }),
   clearError: () => set({ error: null }),
 }));
+

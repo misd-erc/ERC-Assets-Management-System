@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
-import { Card, CardContent } from '../ui/card';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
-import { Label } from '../ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { User } from '../../types/user';
+﻿import React, { useState, useEffect } from 'react';
+import { Button } from '@/ui/button';
+import { Badge } from '@/ui/badge';
+import { Card, CardContent } from '@/ui/card';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/ui/sheet';
+import { Label } from '@/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/ui/avatar';
+import { User } from '@/types/user';
 import { Mail, Building, Briefcase, Calendar, User as UserIcon, MapPin, Users, IdCard } from 'lucide-react';
-import { getUserPhoto } from '../../api/user-management/userApi';
-import { getStatusColor } from '../../utils/colorUtils';
+import { getUserPhoto } from '@/api/user-management/userApi';
+import { getStatusColor } from '@/utils/colorUtils';
 
 
 interface UserDetailsDrawerProps {
@@ -169,3 +169,4 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
     </Sheet>
   );
 };
+

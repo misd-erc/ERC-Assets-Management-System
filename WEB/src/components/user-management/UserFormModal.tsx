@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
-import { createUser, updateUser, editUser } from '../../api/user-management/userApi';
-import { User } from '../../types/user';
+﻿import React, { useState, useEffect } from 'react';
+import { Button } from '@/ui/button';
+import { Input } from '@/ui/input';
+import { Label } from '@/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/ui/dialog';
+import { createUser, updateUser, editUser } from '@/api/user-management/userApi';
+import { User } from '@/types/user';
 import { toast } from 'sonner';
-import { useAuthStore } from '../../store/auth';
+import { useAuthStore } from '@/store/auth';
 
 
 interface UserFormModalProps {
@@ -280,3 +280,4 @@ export const UserFormModal = ({
     </Dialog>
   );
 };
+

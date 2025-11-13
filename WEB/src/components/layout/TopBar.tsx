@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Bell, Search, Menu, Clock, Command } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
+import { Button } from '@/ui/button';
+import { Badge } from '@/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,8 +11,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../ui/alert-dialog';
-import { useAuth } from '../../hooks';
+} from '@/ui/alert-dialog';
+import { useAuth } from '@/hooks';
 import { ProfileDropdown } from './ProfileDropdown';
 
 interface TopbarProps {
@@ -119,3 +119,4 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigat
     </>
   );
 };
+

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
-import { ScrollArea } from '../ui/scroll-area';
+﻿import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
+import { Badge } from '@/ui/badge';
+import { Button } from '@/ui/button';
+import { ScrollArea } from '@/ui/scroll-area';
 import {
   CheckCircle,
   XCircle,
@@ -162,11 +162,11 @@ export function PendingApprovalsCard() {
 
   const formatCurrency = (amount: number) => {
     if (amount >= 1000000) {
-      return `₱${(amount / 1000000).toFixed(2)}M`;
+      return `â‚±${(amount / 1000000).toFixed(2)}M`;
     } else if (amount >= 1000) {
-      return `₱${(amount / 1000).toFixed(2)}K`;
+      return `â‚±${(amount / 1000).toFixed(2)}K`;
     }
-    return `₱${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `â‚±${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const formatDate = (date: Date) => {
@@ -232,7 +232,7 @@ export function PendingApprovalsCard() {
                         <div className="flex-1">
                           <p className="font-medium text-sm">{request.title}</p>
                           <p className="text-xs text-muted-foreground">
-                            {request.id} • {request.requester}
+                            {request.id} â€¢ {request.requester}
                           </p>
                         </div>
                       </div>
@@ -326,3 +326,4 @@ export function PendingApprovalsCard() {
     </Card>
   );
 }
+

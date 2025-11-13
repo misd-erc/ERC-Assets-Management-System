@@ -1,16 +1,16 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../ui/dialog';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Select } from '../../ui/select';
-import { SelectTrigger, SelectValue, SelectContent, SelectItem } from '../../ui/select';
-import { Button } from '../../ui/button';
+﻿import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/ui/dialog';
+import { Input } from '@/ui/input';
+import { Label } from '@/ui/label';
+import { Select } from '@/ui/select';
+import { SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/ui/select';
+import { Button } from '@/ui/button';
 import { useState, useEffect } from 'react';
-import { useOffice } from '../../../hooks';
-import { Office } from '../../../types';
+import { useOffice } from '@/hooks';
+import { Office } from '@/types';
 import { toast } from 'sonner';
-import { Toggle } from '../../ui/toggle';
+import { Toggle } from '@/ui/toggle';
 import { Check, X } from 'lucide-react';
-import { Switch } from '../../ui/switch';
+import { Switch } from '@/ui/switch';
 
 interface Props {
   open: boolean;
@@ -29,16 +29,16 @@ export const OfficeEditModal = ({
 }: Props) => {
   const { addOffice, updateOffice } = useOffice();
 
-  // ────── STATE ──────
+  // â”€â”€â”€â”€â”€â”€ STATE â”€â”€â”€â”€â”€â”€
   const [form, setForm] = useState<Partial<Office>>({
     name: '',
     acronym: '',
     isActive: true,
   });
   const [saving, setSaving] = useState(false);   // request in flight
-  const [loading, setLoading] = useState(false); // optional pre‑fetch
+  const [loading, setLoading] = useState(false); // optional preâ€‘fetch
 
-  // ────── EFFECTS ──────
+  // â”€â”€â”€â”€â”€â”€ EFFECTS â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (mode === 'edit' && office) {
       setForm({
@@ -51,7 +51,7 @@ export const OfficeEditModal = ({
     }
   }, [mode, office, open]);
 
-  // ────── SUBMIT ──────
+  // â”€â”€â”€â”€â”€â”€ SUBMIT â”€â”€â”€â”€â”€â”€
   const submit = async () => {
     if (!form.name?.trim() || !form.acronym?.trim()) {
       toast.error('Name and Acronym are required');
@@ -73,7 +73,7 @@ export const OfficeEditModal = ({
     }
   };
 
-  // ────── RENDER ──────
+  // â”€â”€â”€â”€â”€â”€ RENDER â”€â”€â”€â”€â”€â”€
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -81,7 +81,7 @@ export const OfficeEditModal = ({
           <DialogTitle>{mode === 'add' ? 'Add Office' : 'Edit Office'}</DialogTitle>
         </DialogHeader>
 
-        {/* ── OPTIONAL LOADING PLACEHOLDER ── */}
+        {/* â”€â”€ OPTIONAL LOADING PLACEHOLDER â”€â”€ */}
         {loading ? (
           <div className="py-8 text-center">
             <p className="text-gray-500">Loading form data...</p>
@@ -126,7 +126,7 @@ export const OfficeEditModal = ({
           </div>
         )}
 
-        {/* ── FOOTER ── */}
+        {/* â”€â”€ FOOTER â”€â”€ */}
         <DialogFooter>
           <Button
             variant="outline"
@@ -136,7 +136,7 @@ export const OfficeEditModal = ({
             Cancel
           </Button>
 
-          {/* Save button – disabled while loading OR saving */}
+          {/* Save button â€“ disabled while loading OR saving */}
           <Button onClick={submit} disabled={saving || loading}>
             {saving ? 'Saving...' : mode === 'add' ? 'Add' : 'Save Changes'}
           </Button>
@@ -145,3 +145,4 @@ export const OfficeEditModal = ({
     </Dialog>
   );
 };
+

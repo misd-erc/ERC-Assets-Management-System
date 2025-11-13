@@ -1,4 +1,4 @@
-import { Button } from '../ui/button';
+﻿import { Button } from '@/ui/button';
 import { Plus } from 'lucide-react';
 
 interface RolesHeaderProps {
@@ -21,3 +21,4 @@ export function RolesHeader({ onAddRole }: RolesHeaderProps) {
     </div>
   );
 }
+

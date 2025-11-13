@@ -1,6 +1,6 @@
-import { Card, CardContent } from '../ui/card';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
+﻿import { Card, CardContent } from '@/ui/card';
+import { Input } from '@/ui/input';
+import { Label } from '@/ui/label';
 import { Search } from 'lucide-react';
 
 interface SearchAndSummaryProps {
@@ -38,3 +38,4 @@ export function SearchAndSummary({ searchTerm, onSearchChange, totalRoles }: Sea
     </div>
   );
 }
+

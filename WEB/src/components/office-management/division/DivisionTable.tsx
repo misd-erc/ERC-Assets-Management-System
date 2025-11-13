@@ -1,12 +1,12 @@
-// src/components/office/DivisionTable.tsx
-import { Badge } from '../../ui/badge';
-import { Button } from '../../ui/button';
+﻿// src/components/office/DivisionTable.tsx
+import { Badge } from '@/ui/badge';
+import { Button } from '@/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '../../ui/dropdown-menu';
+} from '@/ui/dropdown-menu';
 import {
   Edit,
   Trash2,
@@ -16,14 +16,14 @@ import {
   ChevronRight,
   Users,
 } from 'lucide-react';
-import { Division, Office, VwDivision } from '../../../types';
+import { Division, Office, VwDivision } from '@/types';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '../../ui/card';
+} from '@/ui/card';
 import {
   Table,
   TableBody,
@@ -31,11 +31,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../ui/table';
+} from '@/ui/table';
 import { DivisionSearchBar } from './DivisionSearchBar';
-import { OfficeTabsList } from '../OfficeTabsList';
+import { OfficeTabsList } from '@/OfficeTabsList';
 import { useState, useEffect } from 'react';
-import { useDivision } from '../../../hooks';   // <-- NEW (same path as Office)
+import { useDivision } from '@/hooks';   // <-- NEW (same path as Office)
 
 interface Props {
   data: VwDivision[];
@@ -98,7 +98,7 @@ export const DivisionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
         </div>
       </CardHeader>
 
-      {/* Search bar – uses useDivision() internally */}
+      {/* Search bar â€“ uses useDivision() internally */}
       <DivisionSearchBar />
 
       <CardContent>
@@ -214,3 +214,4 @@ export const DivisionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
     </Card>
   );
 };
+

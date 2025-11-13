@@ -1,4 +1,4 @@
-import axiosInstance from '../../lib/axios';
+﻿import axiosInstance from '@/lib/axios';
 
 interface Department {
   id: string;
@@ -43,3 +43,4 @@ export const deleteDepartment = async (id: string): Promise<void> => {
   // Mock implementation
   return Promise.resolve();
 };
+

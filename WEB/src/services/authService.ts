@@ -1,5 +1,5 @@
-import { User } from '../types';
-import { sanitizeSystemUserId } from '../utils/sanitizationUtils';
+﻿import { User } from '@/types';
+import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
 
 export interface SessionData {
   sessionToken: string;
@@ -91,3 +91,4 @@ export const clearSession = (): void => {
   localStorage.removeItem('expiresAt');
   localStorage.removeItem('user');
 };
+

@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+﻿import React, { useCallback } from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -10,7 +10,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
-} from '../ui/sidebar';
+} from '@/ui/sidebar';
 import {
   LayoutDashboard,
   Package,
@@ -29,7 +29,7 @@ import {
   Send,
   Building2,
 } from 'lucide-react';
-import { Badge } from '../ui/badge';
+import { Badge } from '@/ui/badge';
 
 interface NavigationItem {
   title: string;
@@ -233,3 +233,4 @@ export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
     </Sidebar>
   );
 }
+

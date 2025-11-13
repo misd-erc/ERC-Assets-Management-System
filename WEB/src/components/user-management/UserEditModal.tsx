@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -6,32 +6,32 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Label } from '../ui/label';
+} from '@/ui/dialog';
+import { Button } from '@/ui/button';
+import { Label } from '@/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../ui/select';
-import { Switch } from '../ui/switch';
+} from '@/ui/select';
+import { Switch } from '@/ui/switch';
 import { toast } from 'sonner';
-import { User, SystemRole } from '../../types/user';
-import { Office, Division, EmploymentType, Position, VwDivision } from '../../types';
-import { useAuthStore } from '../../store/auth';
+import { User, SystemRole } from '@/types/user';
+import { Office, Division, EmploymentType, Position, VwDivision } from '@/types';
+import { useAuthStore } from '@/store/auth';
 import {
   getSystemRoles,
   editUser,
   getUsersDetails
-} from '../../api/user-management/userApi';
+} from '@/api/user-management/userApi';
 import { getOffices,
   getDivisions,
   getEmploymentTypes,
   getPositions
- } from '../../api';
-import { UserDetails } from '../../types/user';
+ } from '@/api';
+import { UserDetails } from '@/types/user';
 
 
 
@@ -336,3 +336,4 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     </Dialog>
   );
 };
+

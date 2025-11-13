@@ -1,5 +1,5 @@
-import axiosInstance from '../../lib/axios';
-import { ApiResponse } from '../../types';
+﻿import axiosInstance from '@/lib/axios';
+import { ApiResponse } from '@/types';
 
 export interface SystemRoleResponseModel {
   [x: string]: any;
@@ -142,3 +142,4 @@ export const editSystemRole = async (params: EditSystemRoleQueryParams): Promise
 
   return { systemRoleId: response.data.data.SystemRoleId };
 };
+

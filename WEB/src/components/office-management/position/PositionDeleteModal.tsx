@@ -1,4 +1,4 @@
-// src/components/position/PositionDeleteModal.tsx
+﻿// src/components/position/PositionDeleteModal.tsx
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,8 +8,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '../../ui/alert-dialog';
-import { usePosition } from '../../../hooks';
+} from '@/ui/alert-dialog';
+import { usePosition } from '@/hooks';
 import { toast } from 'sonner';
 
 interface Props {
@@ -52,3 +52,4 @@ export const PositionDeleteModal = ({ open, onOpenChange, positionId, positionNa
     </AlertDialog>
   );
 };
+

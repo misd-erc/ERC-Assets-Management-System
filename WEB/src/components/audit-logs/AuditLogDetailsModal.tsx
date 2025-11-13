@@ -1,16 +1,16 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '../ui/dialog';
-import { Badge } from '../ui/badge';
-import { Separator } from '../ui/separator';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+} from '@/ui/dialog';
+import { Badge } from '@/ui/badge';
+import { Separator } from '@/ui/separator';
+import { Card, CardContent, CardHeader, CardTitle } from '@/ui/card';
 import { FileText, Database, User, Calendar, Hash } from 'lucide-react';
-import { AuditTrailItem } from '../../types/audit';
+import { AuditTrailItem } from '@/types/audit';
 
 interface AuditLogDetailsModalProps {
   open: boolean;
@@ -170,3 +170,4 @@ export function AuditLogDetailsModal({
     </Dialog>
   );
 }
+

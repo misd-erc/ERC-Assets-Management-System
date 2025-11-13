@@ -1,19 +1,19 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { useSupplyStore } from '../../store/supply/useSupplyStore';
+﻿import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/ui/card';
+import { Badge } from '@/ui/badge';
+import { useSupplyStore } from '@/store/supply/useSupplyStore';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
-import { formatCurrency, getStockStatus } from '../../utils/formatters';
+import { formatCurrency, getStockStatus } from '@/utils/formatters';
 
 export const CategoriesView: React.FC = () => {
   const { supplies } = useSupplyStore();
 
   const categories = [
-    { name: 'Janitorial', icon: '🧹', color: 'bg-blue-50 border-blue-200' },
-    { name: 'Accountable Forms', icon: '📋', color: 'bg-green-50 border-green-200' },
-    { name: 'Electrical', icon: '⚡', color: 'bg-yellow-50 border-yellow-200' },
-    { name: 'Office Supply', icon: '📎', color: 'bg-purple-50 border-purple-200' },
-    { name: 'Other Office Supplies', icon: '📦', color: 'bg-gray-50 border-gray-200' }
+    { name: 'Janitorial', icon: 'ðŸ§¹', color: 'bg-blue-50 border-blue-200' },
+    { name: 'Accountable Forms', icon: 'ðŸ“‹', color: 'bg-green-50 border-green-200' },
+    { name: 'Electrical', icon: 'âš¡', color: 'bg-yellow-50 border-yellow-200' },
+    { name: 'Office Supply', icon: 'ðŸ“Ž', color: 'bg-purple-50 border-purple-200' },
+    { name: 'Other Office Supplies', icon: 'ðŸ“¦', color: 'bg-gray-50 border-gray-200' }
   ];
 
   return (
@@ -37,7 +37,7 @@ export const CategoriesView: React.FC = () => {
                       <div className="text-2xl">{cat.icon}</div>
                       <div>
                         <h3 className="font-medium">{cat.name}</h3>
-                        <p className="text-sm text-slate-600">{items.length} items • {formatCurrency(value)}</p>
+                        <p className="text-sm text-slate-600">{items.length} items â€¢ {formatCurrency(value)}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -88,3 +88,4 @@ export const CategoriesView: React.FC = () => {
     </Card>
   );
 };
+

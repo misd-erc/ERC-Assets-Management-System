@@ -1,8 +1,8 @@
-// src/components/office/OfficeGeneralHeader.tsx
-import { Button } from '../ui/button';
+﻿// src/components/office/OfficeGeneralHeader.tsx
+import { Button } from '@/ui/button';
 import { Building2, Users, Briefcase, UserCheck, Plus } from 'lucide-react';
-import { Card, CardContent } from '../ui/card';
-import { useOffice, useDivision, useEmploymentType, usePosition } from '../../hooks';
+import { Card, CardContent } from '@/ui/card';
+import { useOffice, useDivision, useEmploymentType, usePosition } from '@/hooks';
 
 export const OfficeGeneralHeader = () => {
   const { totalOffices } = useOffice();
@@ -75,3 +75,4 @@ export const OfficeGeneralHeader = () => {
     </div>
   );
 };
+

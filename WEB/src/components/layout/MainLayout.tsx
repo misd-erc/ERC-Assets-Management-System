@@ -1,19 +1,19 @@
-import React, { useState, Suspense, useEffect } from 'react';
+﻿import React, { useState, Suspense, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
-import Dashboard from '../../pages/Dashboard';
-import { MyProfile } from '../profile/MyProfile';
-import UserManagement from '../../pages/UserManagement';
-import { RolesManagement } from '../../pages/RolesManagement';
-import AuditLogs from '../../pages/AuditLogs';
-import UnderConstructionPage from '../../pages/UC';
-import UnderConstructionContent from '../under-construction/UnderConstructionContent';
-import SupplyManagement from '../../pages/SupplyManagement';
-import { useIsMobile } from '../ui/use-mobile';
-import { Sheet, SheetContent } from '../ui/sheet';
-import { ErrorBoundary } from '../ui/ErrorBoundary';
-import OfficeManagement from '../../pages/OfficeManagement';
+import Dashboard from '@/pages/Dashboard';
+import { MyProfile } from '@/profile/MyProfile';
+import UserManagement from '@/pages/UserManagement';
+import { RolesManagement } from '@/pages/RolesManagement';
+import AuditLogs from '@/pages/AuditLogs';
+import UnderConstructionPage from '@/pages/UC';
+import UnderConstructionContent from '@/under-construction/UnderConstructionContent';
+import SupplyManagement from '@/pages/SupplyManagement';
+import { useIsMobile } from '@/ui/use-mobile';
+import { Sheet, SheetContent } from '@/ui/sheet';
+import { ErrorBoundary } from '@/ui/ErrorBoundary';
+import OfficeManagement from '@/pages/OfficeManagement';
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-full">
@@ -159,3 +159,4 @@ export function MainLayout() {
     </div>
   );
 }
+

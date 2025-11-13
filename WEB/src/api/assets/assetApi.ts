@@ -1,5 +1,5 @@
-import axiosInstance from '../../lib/axios';
-import { Asset } from '../../types';
+﻿import axiosInstance from '@/lib/axios';
+import { Asset } from '@/types';
 
 export const getAssets = async (): Promise<Asset[]> => {
   // const response = await axiosInstance.get('/assets');
@@ -37,3 +37,4 @@ export const deleteAsset = async (id: string): Promise<void> => {
   // Mock implementation
   return Promise.resolve();
 };
+

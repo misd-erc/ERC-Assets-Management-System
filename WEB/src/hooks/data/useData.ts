@@ -1,4 +1,4 @@
-import { useDataStore } from '../../store/data/';
+﻿import { useDataStore } from '@/store/data/';
 
 export const useData = () => {
   const data = useDataStore();
@@ -10,3 +10,4 @@ export const useData = () => {
     pendingRequests: data.risRequests.filter(r => r.status === 'pending').length,
   };
 };
+

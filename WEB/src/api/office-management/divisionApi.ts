@@ -1,8 +1,8 @@
-// src/api/office/divisionApi.ts
-import axiosInstance from '../../lib/axios';
-import { ApiResponse, Office, VwDivision, Division } from '../../types';
+﻿// src/api/office/divisionApi.ts
+import axiosInstance from '@/lib/axios';
+import { ApiResponse, Office, VwDivision, Division } from '@/types';
 import { toast } from 'sonner';
-import { getAuthParams } from '../../utils/auth';
+import { getAuthParams } from '@/utils/auth';
 
 interface DivisionResponse<T> {
   success: boolean;

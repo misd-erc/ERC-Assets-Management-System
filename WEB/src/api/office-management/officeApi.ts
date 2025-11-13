@@ -1,7 +1,7 @@
-import axiosInstance from '../../lib/axios';
-import { ApiResponse, Office, VwOffice } from '../../types';
+﻿import axiosInstance from '@/lib/axios';
+import { ApiResponse, Office, VwOffice } from '@/types';
 import { toast } from 'sonner';
-import { getAuthParams } from '../../utils/auth';
+import { getAuthParams } from '@/utils/auth';
 
 interface OfficeResponse<T> {
   success: boolean;

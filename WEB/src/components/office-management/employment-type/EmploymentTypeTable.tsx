@@ -1,12 +1,12 @@
-// src/components/employment-type/EmploymentTypeTable.tsx
-import { Badge } from '../../ui/badge';
-import { Button } from '../../ui/button';
+﻿// src/components/employment-type/EmploymentTypeTable.tsx
+import { Badge } from '@/ui/badge';
+import { Button } from '@/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '../../ui/dropdown-menu';
+} from '@/ui/dropdown-menu';
 import {
   Edit,
   Trash2,
@@ -16,14 +16,14 @@ import {
   ChevronRight,
   Users,
 } from 'lucide-react';
-import { EmploymentType, VwEmploymentType } from '../../../types';
+import { EmploymentType, VwEmploymentType } from '@/types';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '../../ui/card';
+} from '@/ui/card';
 import {
   Table,
   TableBody,
@@ -31,11 +31,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../../ui/table';
+} from '@/ui/table';
 import { EmploymentTypeSearchBar } from './EmploymentTypeSearchBar';
 import { useState, useEffect } from 'react';
-import { useEmploymentType } from '../../../hooks';
-import { getStatusColor } from '../../../utils/colorUtils';
+import { useEmploymentType } from '@/hooks';
+import { getStatusColor } from '@/utils/colorUtils';
 
 interface Props {
   data: VwEmploymentType[];
@@ -160,3 +160,4 @@ export const EmploymentTypeTable = ({ data, onAdd, onEdit, onDelete }: Props) =>
     </Card>
   );
 };
+

@@ -1,5 +1,5 @@
-import  axiosInstance  from '../../lib/axios';
-import { RISRequest } from '../../types/supply/ris';
+﻿import  axiosInstance  from '@/lib/axios';
+import { RISRequest } from '@/types/supply/ris';
 
 export const getRISRequests = async (): Promise<RISRequest[]> => {
   const { data } = await axiosInstance.get('/ris');
@@ -15,3 +15,4 @@ export const patchRISRequest = async (id: string, payload: Partial<RISRequest>):
   const { data } = await axiosInstance.patch(`/ris/${id}`, payload);
   return data;
 };
+

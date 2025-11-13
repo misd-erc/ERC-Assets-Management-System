@@ -1,6 +1,6 @@
-// src/components/office-management/DivisionTabContent.tsx
+﻿// src/components/office-management/DivisionTabContent.tsx
 import { DivisionTable } from './DivisionTable';
-import { VwDivision } from '../../../types';
+import { VwDivision } from '@/types';
 
 interface Props {
   data: VwDivision[];
@@ -24,3 +24,4 @@ export const DivisionTabContent = ({ data, loading, onAdd, onEdit, onDelete }: P
     />
   );
 };
+

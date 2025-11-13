@@ -1,7 +1,7 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
+﻿import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/card';
 import { AlertTriangle, UserX, LogIn } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Button } from '@/ui/button';
 
 const RoleRequiredView: React.FC = () => {
   const handleContactAdmin = () => {
@@ -66,3 +66,4 @@ const RoleRequiredView: React.FC = () => {
 };
 
 export default RoleRequiredView;
+

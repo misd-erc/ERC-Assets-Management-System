@@ -1,9 +1,9 @@
-import { create } from 'zustand';
-import { User, AuthStore } from '../../types';
-import { validateUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '../../api/user-management/authApi';
-import { generateSessionToken, saveSession, loadSession, clearSession as clearAuthSession } from '../../services/authService';
-import { clearSession, setSessionToken, syncSessionIds, setSessionKey, getSessionToken } from '../../utils/sessionUtils';
-import { encrypt, decrypt } from '../../utils/encryption';
+﻿import { create } from 'zustand';
+import { User, AuthStore } from '@/types';
+import { validateUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '@/api/user-management/authApi';
+import { generateSessionToken, saveSession, loadSession, clearSession as clearAuthSession } from '@/services/authService';
+import { clearSession, setSessionToken, syncSessionIds, setSessionKey, getSessionToken } from '@/utils/sessionUtils';
+import { encrypt, decrypt } from '@/utils/encryption';
 import { toast } from 'sonner';
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -248,3 +248,4 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     console.log('[AuthStore] Logout complete');
   },
 }));
+

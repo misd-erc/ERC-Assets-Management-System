@@ -1,6 +1,6 @@
-// src/components/position/PositionTabContent.tsx
+﻿// src/components/position/PositionTabContent.tsx
 import { PositionTable } from './PositionTable';
-import { Position, VwPosition } from '../../../types';
+import { Position, VwPosition } from '@/types';
 
 interface Props {
   data: VwPosition[];
@@ -24,3 +24,4 @@ export const PositionTabContent = ({ data, loading, onAdd, onEdit, onDelete }: P
     />
   );
 };
+

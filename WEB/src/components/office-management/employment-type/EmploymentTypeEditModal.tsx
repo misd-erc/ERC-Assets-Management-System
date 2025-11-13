@@ -1,12 +1,12 @@
-// src/components/employment-type/EmploymentTypeEditModal.tsx
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../ui/dialog';
-import { Input } from '../../ui/input';
-import { Label } from '../../ui/label';
-import { Button } from '../../ui/button';
-import { Switch } from '../../ui/switch';
+﻿// src/components/employment-type/EmploymentTypeEditModal.tsx
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/ui/dialog';
+import { Input } from '@/ui/input';
+import { Label } from '@/ui/label';
+import { Button } from '@/ui/button';
+import { Switch } from '@/ui/switch';
 import { useState, useEffect } from 'react';
-import { useEmploymentType } from '../../../hooks';
-import { EmploymentType } from '../../../types';
+import { useEmploymentType } from '@/hooks';
+import { EmploymentType } from '@/types';
 import { toast } from 'sonner';
 
 interface Props {
@@ -109,3 +109,4 @@ export const EmploymentTypeEditModal = ({
     </Dialog>
   );
 };
+

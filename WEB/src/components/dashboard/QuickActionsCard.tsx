@@ -1,11 +1,11 @@
-import {
+﻿import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui/card";
-import { Button } from "../ui/button";
+} from "@/ui/card";
+import { Button } from "@/ui/button";
 import {
   Plus,
   Package,
@@ -217,3 +217,4 @@ export function QuickActionsCard({
     </Card>
   );
 }
+

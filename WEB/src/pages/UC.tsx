@@ -1,5 +1,5 @@
-import React from 'react';
-import UnderConstructionContent from '../components/under-construction/UnderConstructionContent';
+﻿import React from 'react';
+import UnderConstructionContent from '@/components/under-construction/UnderConstructionContent';
 
 const UnderConstructionPage: React.FC = () => {
   const handleNavigate = (module: string) => {
@@ -14,3 +14,4 @@ const UnderConstructionPage: React.FC = () => {
 };
 
 export default UnderConstructionPage;
+

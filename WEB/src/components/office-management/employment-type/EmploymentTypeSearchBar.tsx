@@ -1,7 +1,7 @@
-// src/components/employment-type/EmploymentTypeSearchBar.tsx
-import { Input } from '../../ui/input';
+﻿// src/components/employment-type/EmploymentTypeSearchBar.tsx
+import { Input } from '@/ui/input';
 import { Search } from 'lucide-react';
-import { useEmploymentType } from '../../../hooks';
+import { useEmploymentType } from '@/hooks';
 
 export const EmploymentTypeSearchBar = () => {
   const { searchQuery, setSearchQuery } = useEmploymentType();
@@ -20,3 +20,4 @@ export const EmploymentTypeSearchBar = () => {
     </div>
   );
 };
+

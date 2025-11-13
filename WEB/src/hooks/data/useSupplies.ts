@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
-import { useSupplyStore } from '../../store/supply/useSupplyStore';
-import * as svc from '../../api/supply/suppliesApi';
-import { SupplyItem } from '../../types/supply/supply';
+﻿import { useEffect } from 'react';
+import { useSupplyStore } from '@/store/supply/useSupplyStore';
+import * as svc from '@/api/supply/suppliesApi';
+import { SupplyItem } from '@/types/supply/supply';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -72,3 +72,4 @@ export const useSupplies = () => {
 
   return { supplies, create, update, remove };
 };
+

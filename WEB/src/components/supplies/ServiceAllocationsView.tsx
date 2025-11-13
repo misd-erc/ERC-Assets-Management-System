@@ -1,17 +1,17 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { useServiceAllocations } from '../../hooks/data/useServiceAllocations';
-import { DataTable } from '../common/DataTable';
-import { Progress } from '../ui/progress';
+﻿import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/ui/card';
+import { useServiceAllocations } from '@/hooks/data/useServiceAllocations';
+import { DataTable } from '@/common/DataTable';
+import { Progress } from '@/ui/progress';
 
 export const ServiceAllocationsView: React.FC = () => {
   const { allocations } = useServiceAllocations();
 
   const columns = [
     { key: 'department', label: 'Department/Service' },
-    { key: 'totalAllocation', label: 'Total Allocation', render: (v: number) => `₱${v.toLocaleString()}` },
-    { key: 'totalIssued', label: 'Items Issued', render: (v: number) => `₱${v.toLocaleString()}` },
-    { key: 'balance', label: 'Balance', render: (_: any, row: any) => `₱${(row.totalAllocation - row.totalIssued).toLocaleString()}` },
+    { key: 'totalAllocation', label: 'Total Allocation', render: (v: number) => `â‚±${v.toLocaleString()}` },
+    { key: 'totalIssued', label: 'Items Issued', render: (v: number) => `â‚±${v.toLocaleString()}` },
+    { key: 'balance', label: 'Balance', render: (_: any, row: any) => `â‚±${(row.totalAllocation - row.totalIssued).toLocaleString()}` },
     { key: 'util', label: 'Utilization', render: (_: any, row: any) => {
       const rate = row.totalAllocation > 0 ? (row.totalIssued / row.totalAllocation) * 100 : 0;
       return (
@@ -39,3 +39,4 @@ export const ServiceAllocationsView: React.FC = () => {
     </Card>
   );
 };
+
