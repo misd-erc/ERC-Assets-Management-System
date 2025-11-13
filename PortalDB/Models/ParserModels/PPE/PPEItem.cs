@@ -1,0 +1,23 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace PortalDB.Models.ParserModels.PPE
+{
+    public class PPEItem
+    {
+        public string PropertyNumber { get; set; } = string.Empty;
+        public string Legend { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Brand { get; set; } = string.Empty;
+        public string Model { get; set; } = string.Empty;
+        public string SerialNumber { get; set; } = string.Empty;
+        public List<Part> Parts { get; set; } = new();
+        public string UnitOfMeasurement { get; set; } = string.Empty;
+        public int UnitValue { get; set; }
+        public string DateAcquired { get; set; } = string.Empty;
+        public List<AnnualCount> AnnualCount { get; set; } = new();
+    }
+}
