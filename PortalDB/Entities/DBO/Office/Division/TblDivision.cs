@@ -46,8 +46,6 @@ namespace PortalDB.Entities.DBO.Office.Division
     {
         [Column("OfficeId")]
         public long OfficeId { get; set; }
-        [ForeignKey(nameof(OfficeId))]
-        public virtual TblOffice Office { get; set; } = null!;
 
         [MaxLength(50)]
         [Column("DivisionName")]

@@ -847,7 +847,6 @@ namespace API.Controllers
                 if (isValid)
                 {
 
-
                     var userInfo = await _accountGetTools.GetTblSystemUserAsync(otpModel.SystemUserId, context);
 
                     TblSessionToken sessionToken = new()
