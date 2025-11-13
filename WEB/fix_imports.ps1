@@ -2,7 +2,6 @@ param($root = "src")
 
 Write-Host "Normalizing import paths..."
 
-# 🔥 Major folders (top-level only)
 $majorFolders = @(
     "api",
     "components",
@@ -15,11 +14,31 @@ $majorFolders = @(
     "utils"
 )
 
+function Convert-ToRelativePath($filePath) {
+    $projectRoot = (Resolve-Path ".").Path
+    $relative = $filePath.Replace($projectRoot, "").TrimStart("\","/")
+    return $relative
+}
+
 Get-ChildItem -Recurse -Include *.ts, *.tsx -Path $root | ForEach-Object {
 
     $file = $_.FullName
+    $relativeFilePath = Convert-ToRelativePath $file
+    $currentDir = Split-Path $relativeFilePath
+    $currentDir = $currentDir -replace "^src[\/\\]", ""
     $content = Get-Content $file -Raw
     $fixed = $content
+
+    # ================================================================
+    # PART 0 — Fix SAME-FOLDER IMPORTS (“./file” → alias)
+    # ================================================================
+    $pattern = "(?<=from\s+['""])\.\/([^'""]+)"
+    $fixed = [regex]::Replace($fixed, $pattern, {
+        param($m)
+        $fileName = $m.Groups[1].Value
+        $fullPath = "@/" + ($currentDir + "/" + $fileName).Replace("\","/")
+        return $fullPath
+    })
 
     # ================================================================
     # PART 1 — RELATIVE imports → @/folder/...
@@ -30,21 +49,15 @@ Get-ChildItem -Recurse -Include *.ts, *.tsx -Path $root | ForEach-Object {
     }
 
     # ================================================================
-    # PART 2 — ALIAS FIX (NO slash) → add slash
-    #   @types      → @/types
-    #   @audit      → @/audit
-    #   @hooks      → @/hooks
+    # PART 2 — ALIAS FIX (NO slash)
     # ================================================================
     foreach ($folder in $majorFolders) {
-        # no-slash alias, like @types, @hooks
         $regexAliasNoSlash = "@" + $folder + "(?!/)"
         $fixed = [regex]::Replace($fixed, $regexAliasNoSlash, "@/$folder")
     }
 
     # ================================================================
-    # PART 3 — WRONG alias prefix → correct (@folder/ → @/folder/)
-    #   @types/...  → @/types/...
-    #   @hooks/...  → @/hooks/...
+    # PART 3 — FIX alias prefix (@folder/ → @/folder/)
     # ================================================================
     foreach ($folder in $majorFolders) {
         $badAlias = "@$folder/"
@@ -53,7 +66,7 @@ Get-ChildItem -Recurse -Include *.ts, *.tsx -Path $root | ForEach-Object {
     }
 
     # ================================================================
-    # PART 4 — generic ../../something  → @/something
+    # PART 4 — fallback ../../something → @/something
     # ================================================================
     $generic = "(?<=from\s+['""])(\.\./)+(?=[A-Za-z])"
     $fixed = [regex]::Replace($fixed, $generic, "@/")

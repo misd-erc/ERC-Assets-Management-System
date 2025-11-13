@@ -36,7 +36,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { UserEditModal } from './UserEditModal';
+import { UserEditModal } from '@/components/user-management/UserEditModal';
 import { getStatusColor } from '@/utils/colorUtils';
 
 interface UserListProps {
@@ -326,6 +326,7 @@ export const UserList: React.FC<UserListProps> = ({
     </div>
   );
 };
+
 
 
 

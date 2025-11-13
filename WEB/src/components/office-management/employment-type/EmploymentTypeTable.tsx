@@ -32,7 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { EmploymentTypeSearchBar } from './EmploymentTypeSearchBar';
+import { EmploymentTypeSearchBar } from '@/components/office-management/employment-type/EmploymentTypeSearchBar';
 import { useState, useEffect } from 'react';
 import { useEmploymentType } from '@/hooks';
 import { getStatusColor } from '@/utils/colorUtils';
@@ -160,6 +160,7 @@ export const EmploymentTypeTable = ({ data, onAdd, onEdit, onDelete }: Props) =>
     </Card>
   );
 };
+
 
 
 

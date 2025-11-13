@@ -1,4 +1,4 @@
-import { decrypt } from './encryption';
+﻿import { decrypt } from '@/utils/encryption';
 
 export const checkUserAccess = () => {
   const encryptedUserDetails = localStorage.getItem('userDetails');
@@ -24,3 +24,4 @@ export const getAuthParams = () => {
   const sessionKey = localStorage.getItem('sessionToken') || '';
   return { systemUserId, sessionKey };
 };
+

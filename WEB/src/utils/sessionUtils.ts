@@ -1,5 +1,5 @@
-import { toast } from 'sonner';
-import { sanitizeSystemUserId } from './sanitizationUtils';
+﻿import { toast } from 'sonner';
+import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
 
 /**
  * Session Management Utilities
@@ -174,3 +174,4 @@ export const getSessionDebugInfo = (): Record<string, string | null> => {
     expiresAt: localStorage.getItem('expiresAt'),
   };
 };
+

@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 
-import { cn } from "./utils";
+import { cn } from "@/components/ui/utils";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
@@ -114,3 +114,4 @@ export {
   TableCell,
   TableCaption,
 };
+

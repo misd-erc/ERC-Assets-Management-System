@@ -1,5 +1,5 @@
 ﻿// src/components/position/PositionTabContent.tsx
-import { PositionTable } from './PositionTable';
+import { PositionTable } from '@/components/office-management/position/PositionTable';
 import { Position, VwPosition } from '@/types';
 
 interface Props {
@@ -24,6 +24,7 @@ export const PositionTabContent = ({ data, loading, onAdd, onEdit, onDelete }: P
     />
   );
 };
+
 
 
 

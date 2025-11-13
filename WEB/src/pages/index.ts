@@ -1,4 +1,5 @@
-export { default as NoRolePage } from './NoAccess';
-export { default as UnderConstructionPage } from './UC';
-export { default as Dashboard } from './Dashboard';
-export { default as UserManagement } from './UserManagement';
+﻿export { default as NoRolePage } from '@/pages/NoAccess';
+export { default as UnderConstructionPage } from '@/pages/UC';
+export { default as Dashboard } from '@/pages/Dashboard';
+export { default as UserManagement } from '@/pages/UserManagement';
+

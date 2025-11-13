@@ -32,7 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { PositionSearchBar } from './PositionSearchBar';
+import { PositionSearchBar } from '@/components/office-management/position/PositionSearchBar';
 import { useState, useEffect } from 'react';
 import { usePosition } from '@/hooks';
 import { getStatusColor } from '@/utils/colorUtils';
@@ -164,6 +164,7 @@ export const PositionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
     </Card>
   );
 };
+
 
 
 
