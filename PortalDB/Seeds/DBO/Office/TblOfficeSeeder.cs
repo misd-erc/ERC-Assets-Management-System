@@ -26,7 +26,6 @@ namespace PortalDB.Seeds.DBO.Office
                 Office("Legal Service", "LS"),
                 Office("Regulatory Operations Service", "ROS"),
                 Office("Market Operations Service", "MOS"),
-                Office("Central Records Division", "CRD"),
                 Office("Commission on Audit", "COA"),
                 Office("Consumer Affairs Service", "CAS"),
                 Office("Financial Administrative Service", "FAS"),
