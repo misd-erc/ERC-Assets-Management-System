@@ -1,11 +1,14 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PortalCommon.Constants;
-using PortalDB.Models.QueryParams.Account;
-using PortalDB.Models.ViewModels.Account;
 using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
+using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.LOG.AuditTrail;
+using PortalDB.Models.QueryParams.Account;
+using PortalDB.Models.ResponseModels.Account;
+using PortalDB.Models.ViewModels.Account;
 using PortalDB.Services;
+using PortalTools.Services.DBO.Office;
 using System;
 using System.Linq;
 using System.Text.Json;
@@ -73,8 +76,8 @@ namespace PortalTools.Services.DBO.Account
 
                 }
 
-                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} system user information for user {model.Id} base on Microsoft Entra authenticated information", actionBy: UniversalConstants.SYSTEM_ID,
-                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingUser!, model, nameof(TblSystemUser), UniversalConstants.SYSTEM_ID, isInsert ? "Insert" : "Update"));
+                //await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} system user information for user {model.Id} base on Microsoft Entra authenticated information", actionBy: UniversalConstants.SYSTEM_ID,
+                //    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingUser!, model, nameof(TblSystemUser), UniversalConstants.SYSTEM_ID, isInsert ? "Insert" : "Update"));
 
                 return isInsert? model.Id: existingUser.Id;
             }
@@ -146,12 +149,13 @@ namespace PortalTools.Services.DBO.Account
 
             try
             {
-
-                await context.TblOneTimePasswords.Where(x => x.SystemUserId == model.SystemUserId).ExecuteSoftDeleteAsync(context);
+                ////remove since it's not needed
+                //await context.TblOneTimePasswords.Where(x => x.SystemUserId == model.SystemUserId).ExecuteSoftDeleteAsync(context);
+                await context.TblOneTimePasswords.Where(x => x.SystemUserId == model.SystemUserId).ExecuteDeleteAsync();
                 await context.TblOneTimePasswords.AddAsync(model);
                 await context.SaveChangesAsync();
 
-                AuditTrailTool.TrackChanges(context, null!, model, nameof(TblOneTimePassword), UniversalConstants.SYSTEM_ID, "Insert");
+                //AuditTrailTool.TrackChanges(context, null!, model, nameof(TblOneTimePassword), UniversalConstants.SYSTEM_ID, "Insert");
 
                 return true;
 
@@ -175,10 +179,12 @@ namespace PortalTools.Services.DBO.Account
             try
             {
 
-                await context.TblSessionTokens.Where(x => x.SystemUserId == model.SystemUserId).ExecuteSoftDeleteAsync(context);
+                //remove since it's not needed
+                //await context.TblSessionTokens.Where(x => x.SystemUserId == model.SystemUserId).ExecuteSoftDeleteAsync(context);
+                await context.TblSessionTokens.Where(x => x.SystemUserId == model.SystemUserId).ExecuteDeleteAsync();
                 await context.TblSessionTokens.AddAsync(model);
                 await context.SaveChangesAsync();
-                AuditTrailTool.TrackChanges(context, null!, model, nameof(TblOneTimePassword), UniversalConstants.SYSTEM_ID, "Insert");
+                //AuditTrailTool.TrackChanges(context, null!, model, nameof(TblOneTimePassword), UniversalConstants.SYSTEM_ID, "Insert");
 
                 return true;
 
@@ -258,7 +264,7 @@ namespace PortalTools.Services.DBO.Account
                 }
                 else
                 {
-                    existingRole = await _accountGetTools.GetSystemRoleAsync(model.Id, context);
+                    existingRole = await _accountGetTools.GetTblSystemRoleAsync(model.Id, context);
                     if (existingRole == null)
                         return 0;
 
@@ -280,6 +286,33 @@ namespace PortalTools.Services.DBO.Account
             catch (DbUpdateException ex)
             {
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(AccountEditTools));
+                throw;
+            }
+        }
+
+        public async Task<bool> DeleteTblSystemRoleAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (id == 0)
+                return false;
+
+            try
+            {
+                SystemRoleResponseModel? systemRoleModel = await _accountGetTools.GetSystemRoleWithScopesAsync(id, context);
+                await context.TblSystemRoles.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context, actionBySystemUserId);
+
+                foreach (var scopeItem in systemRoleModel.Scope ?? Enumerable.Empty<SystemRoleScopeResponseModel>())
+                {
+                    await context.TblSystemRoleScopes.Where(x => x.Id == scopeItem.Id).ExecuteSoftDeleteAsync(context, actionBySystemUserId);
+                }
+
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a system role", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, systemRoleModel, null, nameof(TblSystemRole), actionBySystemUserId, "Delete"));
+
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeEditTools));
                 throw;
             }
         }

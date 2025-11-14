@@ -86,11 +86,11 @@ namespace PortalTools.Services.DBO.Account
         public IQueryable<TblSystemRole?> GetSystemRoles(PortalDbContext context) => context.TblSystemRoles.Where(x => !x.IsDeleted);
         public IQueryable<TblSystemModule?> GetTblSystemModules(PortalDbContext context) => context.TblSystemModules.Where(x => !x.IsDeleted);
         public IQueryable<TblSystemUserStatus?> GetSystemUserStatuses(PortalDbContext context) => context.TblSystemUserStatuses.Where(x => !x.IsDeleted);
-        public async Task<TblSystemRole?> GetSystemRoleAsync(long? id, PortalDbContext context) => await context.TblSystemRoles.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblSystemRole?> GetTblSystemRoleAsync(long? id, PortalDbContext context) => await context.TblSystemRoles.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public async Task<SystemRoleResponseModel?> GetSystemRoleWithScopesAsync(long? id, PortalDbContext context)
 {
     // Get the role record
-    TblSystemRole? systemRole = await GetSystemRoleAsync(id, context);
+    TblSystemRole? systemRole = await GetTblSystemRoleAsync(id, context);
     if (systemRole == null)
         return null;
 

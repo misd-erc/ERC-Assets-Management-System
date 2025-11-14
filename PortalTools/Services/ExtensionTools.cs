@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PortalDB.Entities.DBO.Office;
 using PortalDB.Services;
 using PortalTools.Services.DBO.Account;
 using System;
@@ -42,7 +43,8 @@ namespace PortalTools.Services
                 if (deletedAtProp != null)
                     deletedAtProp.SetValue(item, DateTime.UtcNow);
 
-                AuditTrailTool.TrackChanges(context, original, item, type.Name, changedBy, "Delete");
+                //Hidden due to redundancy
+                //AuditTrailTool.TrackChanges(context, original, item, type.Name, changedBy, "Delete");
                 
             }
 

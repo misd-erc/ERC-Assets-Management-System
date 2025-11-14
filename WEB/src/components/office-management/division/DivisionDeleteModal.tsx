@@ -25,10 +25,10 @@ export const DivisionDeleteModal = ({ open, onOpenChange, divisionId, divisionNa
     if (!divisionId) return;
     try {
       await deleteDivision(divisionId);
-      toast.success('Division deleted');
       onOpenChange(false);
     } catch {
-      toast.error('Failed to delete division');
+      //already indicated in store
+      //toast.error('Failed to delete division');
     }
   };
 

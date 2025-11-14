@@ -26,10 +26,10 @@ export const EmploymentTypeDeleteModal = ({ open, onOpenChange, typeId, typeName
     if (!typeId) return;
     try {
       await deleteEmploymentType(typeId);
-      toast.success('Employment type deleted');
       onOpenChange(false);
     } catch {
-      toast.error('Failed to delete employment type');
+      //already indicated in store
+      //toast.error('Failed to delete employment type');
     }
   };
 

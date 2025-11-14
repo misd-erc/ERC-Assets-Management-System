@@ -26,10 +26,10 @@ export const OfficeDeleteModal = ({ open, onOpenChange, officeId, officeName }: 
     if (!officeId) return;
     try {
       await deleteOffice(officeId);
-      toast.success('Office deleted');
       onOpenChange(false);
     } catch {
-      toast.error('Failed to delete office');
+      //already indicated in store
+      //toast.error('Failed to delete office');
     }
   };
 

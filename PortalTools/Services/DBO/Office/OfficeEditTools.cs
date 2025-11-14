@@ -25,7 +25,7 @@ namespace PortalTools.Services.DBO.Office
             _officeGetTools = officeGetTools;
         }
 
-        public async Task<long> EditTblOfficeAsync(TblOffice model, PortalDbContext context)
+        public async Task<long> EditTblOfficeAsync(TblOffice model, long actionBySystemUserId, PortalDbContext context)
         {
             if (model == null)
                 return 0;
@@ -58,8 +58,8 @@ namespace PortalTools.Services.DBO.Office
 
                 }
 
-                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} an office", actionBy: model.Id,
-                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingOffice!, model, nameof(TblOffice), model.Id, isInsert ? "Insert" : "Update"));
+                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} an office", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingOffice!, model, nameof(TblOffice), actionBySystemUserId, isInsert ? "Insert" : "Update"));
                 
 
                 return isInsert ? model.Id : existingOffice.Id;
@@ -70,7 +70,27 @@ namespace PortalTools.Services.DBO.Office
                 throw;
             }
         }
-        public async Task<long> EditTblDivisionAsync(TblDivision model, PortalDbContext context)
+        public async Task<bool> DeleteTblOfficeAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (id == 0)
+                return false;
+
+            try
+            {
+                TblOffice? officeModel = await _officeGetTools.GetTblOfficeAsync(id, context);
+                await context.TblOffices.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context, actionBySystemUserId);
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted an office", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, officeModel, null, nameof(TblOffice), actionBySystemUserId, "Delete"));
+
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeEditTools));
+                throw;
+            }
+        }
+        public async Task<long> EditTblDivisionAsync(TblDivision model, long actionBySystemUserId, PortalDbContext context)
         {
             if (model == null)
                 return 0;
@@ -104,8 +124,8 @@ namespace PortalTools.Services.DBO.Office
 
                 }
 
-                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a division", actionBy: model.Id,
-                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingDivision!, model, nameof(TblDivision), model.Id, isInsert ? "Insert" : "Update"));
+                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a division", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingDivision!, model, nameof(TblDivision), actionBySystemUserId, isInsert ? "Insert" : "Update"));
 
 
                 return isInsert ? model.Id : existingDivision.Id;
@@ -116,7 +136,27 @@ namespace PortalTools.Services.DBO.Office
                 throw;
             }
         }
-        public async Task<long> EditTblEmploymentTypeAsync(TblEmploymentType model, PortalDbContext context)
+        public async Task<bool> DeleteTblDivisionAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (id == 0)
+                return false;
+
+            try
+            {
+                TblDivision? divisionModel = await _officeGetTools.GetTblDivisionAsync(id, context);
+                await context.TblDivisions.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a division", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, divisionModel, null, nameof(TblDivision), actionBySystemUserId, "Delete"));
+
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeEditTools));
+                throw;
+            }
+        }
+        public async Task<long> EditTblEmploymentTypeAsync(TblEmploymentType model, long actionBySystemUserId, PortalDbContext context)
         {
             if (model == null)
                 return 0;
@@ -148,8 +188,8 @@ namespace PortalTools.Services.DBO.Office
 
                 }
 
-                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} an employment type", actionBy: model.Id,
-                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingEmploymentType!, model, nameof(TblEmploymentType), model.Id, isInsert ? "Insert" : "Update"));
+                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} an employment type", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingEmploymentType!, model, nameof(TblEmploymentType), actionBySystemUserId, isInsert ? "Insert" : "Update"));
 
 
                 return isInsert ? model.Id : existingEmploymentType.Id;
@@ -160,7 +200,27 @@ namespace PortalTools.Services.DBO.Office
                 throw;
             }
         }
-        public async Task<long> EditTblPositionAsync(TblPosition model, PortalDbContext context)
+        public async Task<bool> DeleteTblEmploymentTypeAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (id == 0)
+                return false;
+
+            try
+            {
+                TblEmploymentType? employmentTypeModel = await _officeGetTools.GetTblEmploymentTypeAsync(id, context);
+                await context.TblEmploymentTypes.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted an employment type", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, employmentTypeModel, null, nameof(TblEmploymentType), actionBySystemUserId, "Delete"));
+
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeEditTools));
+                throw;
+            }
+        }
+        public async Task<long> EditTblPositionAsync(TblPosition model, long actionBySystemUserId, PortalDbContext context)
         {
             if (model == null)
                 return 0;
@@ -193,11 +253,31 @@ namespace PortalTools.Services.DBO.Office
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 
-                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a position", actionBy: model.Id,
-                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingPosition!, model, nameof(TblPosition), model.Id, isInsert ? "Insert" : "Update"));
+                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a position", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingPosition!, model, nameof(TblPosition), actionBySystemUserId, isInsert ? "Insert" : "Update"));
 
 
                 return isInsert ? model.Id : existingPosition.Id;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeEditTools));
+                throw;
+            }
+        }
+        public async Task<bool> DeleteTblPositionAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (id == 0)
+                return false;
+
+            try
+            {
+                TblPosition? positionModel = await _officeGetTools.GetTblPositionAsync(id, context);
+                await context.TblPositions.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a position", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, positionModel, null, nameof(TblPosition), actionBySystemUserId, "Delete"));
+
+                return true;
             }
             catch (DbUpdateException ex)
             {

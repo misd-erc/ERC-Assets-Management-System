@@ -26,10 +26,10 @@ export const PositionDeleteModal = ({ open, onOpenChange, positionId, positionNa
     if (!positionId) return;
     try {
       await deletePosition(positionId);
-      toast.success('Position deleted');
       onOpenChange(false);
     } catch {
-      toast.error('Failed to delete position');
+      //already indicated in store
+      //toast.error('Failed to delete position');
     }
   };
 

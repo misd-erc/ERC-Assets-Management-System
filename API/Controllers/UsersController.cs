@@ -199,108 +199,108 @@ namespace API.Controllers
             }
         }
 
-        // GET api/users/system-role/all
-        [HttpGet("system-role/all")]
-        [ValidateSessionToken]
-        [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllSystemRoles([FromQuery] PaginationGenericQueryParams model)
-        {
-            await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
+   //     // GET api/users/system-role/all
+   //     [HttpGet("system-role/all")]
+   //     [ValidateSessionToken]
+   //     [ValidateModelRequiredFields]
+   //     public async Task<IActionResult> GetAllSystemRoles([FromQuery] PaginationGenericQueryParams model)
+   //     {
+   //         await using var context = new PortalDbContext(_options);
+   //         await using var transaction = await context.Database.BeginTransactionAsync();
 
-            try
-            {
+   //         try
+   //         {
 
-                IEnumerable<TblSystemRole?> roles = await _accountGetTools.GetSystemRoles(context).ToListAsync();
+   //             IEnumerable<TblSystemRole?> roles = await _accountGetTools.GetSystemRoles(context).ToListAsync();
 
-                if (!string.IsNullOrWhiteSpace(model.SearchString))
-                {
-                    string searchLower = model.SearchString.ToLower();
-                    roles = roles.Where(x =>
-                        x.RoleName.ToLower().Contains(searchLower) ||
-                        x.Description.ToLower().Contains(searchLower));
-                }
+   //             if (!string.IsNullOrWhiteSpace(model.SearchString))
+   //             {
+   //                 string searchLower = model.SearchString.ToLower();
+   //                 roles = roles.Where(x =>
+   //                     x.RoleName.ToLower().Contains(searchLower) ||
+   //                     x.Description.ToLower().Contains(searchLower));
+   //             }
 
-                if (model.StartDate.HasValue)
-                    roles = roles.Where(x => x.CreatedAt >= model.StartDate.Value);
+   //             if (model.StartDate.HasValue)
+   //                 roles = roles.Where(x => x.CreatedAt >= model.StartDate.Value);
 
-                if (model.EndDate.HasValue)
-                    roles = roles.Where(x => x.CreatedAt <= model.EndDate.Value);
+   //             if (model.EndDate.HasValue)
+   //                 roles = roles.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                int totalCount = roles.Count();
+   //             int totalCount = roles.Count();
 
-                int skip = (model.PageNumber - 1) * model.PageSize;
+   //             int skip = (model.PageNumber - 1) * model.PageSize;
 
-                var rolesList = roles
-                    .OrderByDescending(x => x.CreatedAt)
-                    .Skip(skip)
-                    .Take(model.PageSize)
-                    .ToList();
+   //             var rolesList = roles
+   //                 .OrderByDescending(x => x.CreatedAt)
+   //                 .Skip(skip)
+   //                 .Take(model.PageSize)
+   //                 .ToList();
 
-                var roleEntities = rolesList.Select(x => new
-                {
-                    x.Id,
-                    x.RoleName,
-                    x.Description,
-                    x.IsActive,
-                    x.IsDeleted,
-                    x.CreatedAt
-                }).ToList();
+   //             var roleEntities = rolesList.Select(x => new
+   //             {
+   //                 x.Id,
+   //                 x.RoleName,
+   //                 x.Description,
+   //                 x.IsActive,
+   //                 x.IsDeleted,
+   //                 x.CreatedAt
+   //             }).ToList();
 
-                var roleResponses = new List<SystemRoleResponseModel>(roleEntities.Count);
+   //             var roleResponses = new List<SystemRoleResponseModel>(roleEntities.Count);
 
-                foreach (var r in roleEntities)
-                {
-                    roleResponses.Add(await _accountGetTools.GetSystemRoleWithScopesAsync(r.Id, context));
-                }
+   //             foreach (var r in roleEntities)
+   //             {
+   //                 roleResponses.Add(await _accountGetTools.GetSystemRoleWithScopesAsync(r.Id, context));
+   //             }
 
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed system roles", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<SystemRoleResponseModel>.OkPaginated(
-                    roleResponses,
-                    model.PageNumber,
-                    model.PageSize,
-                    totalCount,
-                    "System roles have been retrieved"
-                ));
+   //             await context.SaveChangesAsync();
+   //             await transaction.CommitAsync();
+   //             await AuditTrailTool.LogActivityAsync(_options, "Viewed system roles", actionBy: model.ActionBySystemUserId);
+   //             return Ok(ApiResponse<SystemRoleResponseModel>.OkPaginated(
+   //                 roleResponses,
+   //                 model.PageNumber,
+   //                 model.PageSize,
+   //                 totalCount,
+   //                 "System roles have been retrieved"
+   //             ));
 
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-            }
-        }
+   //         }
+   //         catch (Exception ex)
+   //         {
+   //             await transaction.RollbackAsync();
+   //             await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+   //             return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+   //         }
+   //     }
 
-        // GET api/users/system-role/all
-        [HttpGet("system-role/all/{systemRoleId}")]
-        [ValidateSessionToken]
-        [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetSystemRoleBySystemRoleId([FromQuery] SoloQueryParams model, [FromRoute] long systemRoleId)
-        {
-			await using var context = new PortalDbContext(_options);
-			await using var transaction = await context.Database.BeginTransactionAsync();
+   //     // GET api/users/system-role/all
+   //     [HttpGet("system-role/all/{systemRoleId}")]
+   //     [ValidateSessionToken]
+   //     [ValidateModelRequiredFields]
+   //     public async Task<IActionResult> GetSystemRoleBySystemRoleId([FromQuery] SoloQueryParams model, [FromRoute] long systemRoleId)
+   //     {
+			//await using var context = new PortalDbContext(_options);
+			//await using var transaction = await context.Database.BeginTransactionAsync();
 
-			try
-            {
+			//try
+   //         {
 
-                SystemRoleResponseModel? role = await _accountGetTools.GetSystemRoleWithScopesAsync(systemRoleId, context);
+   //             SystemRoleResponseModel? role = await _accountGetTools.GetSystemRoleWithScopesAsync(systemRoleId, context);
 
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system role information for system role {role.Id}", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<object>.Ok(role, $"System role have been retrieved"));
+   //             await context.SaveChangesAsync();
+   //             await transaction.CommitAsync();
+   //             await AuditTrailTool.LogActivityAsync(_options, $"Viewed system role information for system role {role.Id}", actionBy: model.ActionBySystemUserId);
+   //             return Ok(ApiResponse<object>.Ok(role, $"System role have been retrieved"));
 
-            }
-            catch (Exception ex)
-            {
-				await transaction.RollbackAsync();
-				await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-            }
-        }
+   //         }
+   //         catch (Exception ex)
+   //         {
+			//	await transaction.RollbackAsync();
+			//	await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+   //             return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+   //         }
+   //     }
 
         // GET api/users/system-notification/all
         [HttpGet("system-notification/all")]
@@ -634,7 +634,7 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, $"Microsoft Entra information validated", actionBy: user.Id);
+                //await AuditTrailTool.LogActivityAsync(_options, $"Microsoft Entra information validated", actionBy: user.Id);
                 return Ok(ApiResponse<object>.Ok(publicRM, $"OTP has been sent to email address"));
 
             }
@@ -814,7 +814,7 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, $"Re-sent email otp", actionBy: user.Id);
+                //await AuditTrailTool.LogActivityAsync(_options, $"Re-sent email otp", actionBy: user.Id);
                 return Ok(ApiResponse<object>.Ok(publicRM, $"OTP has been sent to email address"));
             }
             catch (Exception ex)
@@ -867,7 +867,7 @@ namespace API.Controllers
 
                     await context.SaveChangesAsync();
                     await transaction.CommitAsync();
-                    await AuditTrailTool.LogActivityAsync(_options, $"OTP has been verified", actionBy: sessionToken.SystemUserId);
+                    //await AuditTrailTool.LogActivityAsync(_options, $"OTP has been verified", actionBy: sessionToken.SystemUserId);
                     await AuditTrailTool.LogActivityAsync(_options, $"Successfully logged in", actionBy: sessionToken.SystemUserId);
                     return Ok(ApiResponse<object>.Ok(publicRM, $"OTP has been verified"));
 
@@ -886,6 +886,7 @@ namespace API.Controllers
         }
 
         #endregion
+
 
     }
 }

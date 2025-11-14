@@ -524,7 +524,7 @@ namespace API.Controllers
                     IsActive = model.IsActive
                 };
 
-                long officeId = await _officeEditTools.EditTblOfficeAsync(office, context);
+                long officeId = await _officeEditTools.EditTblOfficeAsync(office, model.ActionBySystemUserId, context);
 
                 UserSimplePublicResponseModel publicRM = new()
                 {
@@ -566,7 +566,7 @@ namespace API.Controllers
                     IsActive = model.IsActive
                 };
 
-                long divisionId = await _officeEditTools.EditTblDivisionAsync(division, context);
+                long divisionId = await _officeEditTools.EditTblDivisionAsync(division, model.ActionBySystemUserId, context);
 
 
                 UserSimplePublicResponseModel publicRM = new()
@@ -608,7 +608,7 @@ namespace API.Controllers
                     IsActive = model.IsActive
                 };
 
-                long employmentTypeId = await _officeEditTools.EditTblEmploymentTypeAsync(employmentType, context);
+                long employmentTypeId = await _officeEditTools.EditTblEmploymentTypeAsync(employmentType, model.ActionBySystemUserId, context);
 
                 UserSimplePublicResponseModel publicRM = new()
                 {
@@ -651,7 +651,7 @@ namespace API.Controllers
                     IsActive = model.IsActive
                 };
 
-                long positionId = await _officeEditTools.EditTblPositionAsync(position, context);
+                long positionId = await _officeEditTools.EditTblPositionAsync(position, model.ActionBySystemUserId, context);
 
                 UserSimplePublicResponseModel publicRM = new()
                 {
@@ -662,6 +662,131 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok(publicRM, $"Position has been {(model.PositionId == 0? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        #endregion
+
+
+        #region DELETE
+
+        // DELETE api/office/delete
+        [HttpDelete("delete/{officeId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteOffice([FromQuery] SoloQueryParams model, [FromRoute] long officeId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _officeEditTools.DeleteTblOfficeAsync(officeId, model.ActionBySystemUserId, context);
+
+                if(!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this office, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Office has been deleted"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // DELETE api/office/division/delete
+        [HttpDelete("division/delete/{divisionId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteDivision([FromQuery] SoloQueryParams model, [FromRoute] long divisionId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _officeEditTools.DeleteTblDivisionAsync(divisionId, model.ActionBySystemUserId, context);
+
+                if (!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this division, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Division has been deleted"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // DELETE api/office/employment-type/delete
+        [HttpDelete("employment-type/delete/{employmentTypeId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteEmploymentType([FromQuery] SoloQueryParams model, [FromRoute] long employmentTypeId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _officeEditTools.DeleteTblEmploymentTypeAsync(employmentTypeId, model.ActionBySystemUserId, context);
+
+                if (!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this employment type, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Employment type has been deleted"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // DELETE api/office/position/delete
+        [HttpDelete("position/delete/{positionId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeletePosition([FromQuery] SoloQueryParams model, [FromRoute] long positionId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _officeEditTools.DeleteTblPositionAsync(positionId, model.ActionBySystemUserId, context);
+
+                if (!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this position, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Position has been deleted"));
 
             }
             catch (Exception ex)
