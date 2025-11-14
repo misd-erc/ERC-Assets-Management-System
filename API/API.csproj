@@ -26,4 +26,58 @@
     <ProjectReference Include="..\PortalTools\PortalTools.csproj" />
   </ItemGroup>
 
+
+  <ItemGroup>
+  <Content Include="../WEB/build/**">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    <Link>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</Link>
+  </Content>
+</ItemGroup>
+
+<Target Name="GenerateWebConfig" AfterTargets="Publish">
+  <ItemGroup>
+    <SpaWebConfig Include="web.config">
+      <Content><![CDATA[
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <location path="." inheritInChildApplications="false">
+    <system.webServer>
+
+      <handlers>
+        <add name="aspNetCore" path="*" verb="*" modules="AspNetCoreModuleV2" resourceType="Unspecified" />
+      </handlers>
+
+      <aspNetCore processPath="dotnet"
+                  arguments=".\API.dll"
+                  stdoutLogEnabled="false"
+                  stdoutLogFile=".\logs\stdout"
+                  hostingModel="inprocess" />
+
+      <rewrite>
+        <rules>
+          <rule name="ReactRoutes" stopProcessing="true">
+            <match url=".*" />
+            <conditions logicalGrouping="MatchAll">
+              <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
+              <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
+            </conditions>
+            <action type="Rewrite" url="/index.html" />
+          </rule>
+        </rules>
+      </rewrite>
+
+    </system.webServer>
+  </location>
+</configuration>
+      ]]></Content>
+    </SpaWebConfig>
+  </ItemGroup>
+
+  <WriteLinesToFile
+    File="$(PublishDir)web.config"
+    Lines="@(SpaWebConfig->'%(Content)')"
+    Overwrite="true" />
+</Target>
+
 </Project>
