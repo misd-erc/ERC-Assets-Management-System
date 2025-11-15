@@ -15,9 +15,9 @@ const microsoftLogo = '/images/microsoft-logo.svg';
 // MSAL configuration
 const msalConfig = {
   auth: {
-    clientId: process.env.REACT_APP_MSAL_CLIENT_ID || 'your-client-id',
+    clientId: process.env.REACT_APP_MSAL_CLIENT_ID || '',
     authority: `https://login.microsoftonline.com/${process.env.REACT_APP_MSAL_TENANT_ID || 'common'}`,
-    redirectUri: process.env.REACT_APP_MSAL_REDIRECT_URI || 'http://localhost:3000',
+    redirectUri: process.env.REACT_APP_MSAL_REDIRECT_URI || '',
   },
   cache: {
     cacheLocation: 'sessionStorage',
@@ -41,6 +41,8 @@ export function LoginScreen() {
   }, []);
 
   useEffect(() => {
+	console.log(process.env.REACT_APP_API_URL);
+
     if (msalInstance) {
       msalInstance.handleRedirectPromise().then(async (response: AuthenticationResult | null) => {
         if (response) {
