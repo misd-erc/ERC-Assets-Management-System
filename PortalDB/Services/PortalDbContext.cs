@@ -53,7 +53,7 @@ namespace PortalDB.Services
         #endregion
         #region ASSET
         #region PPE
-        public DbSet<TblPPECategory> TblPPECategories { get; set; }
+        //public DbSet<TblPPECategory> TblPPECategories { get; set; }
         #endregion
         #endregion
 
