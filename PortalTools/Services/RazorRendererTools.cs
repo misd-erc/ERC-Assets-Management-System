@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using PortalCommon.Constants;
 using RazorLight;
 
 namespace PortalTools.Services
@@ -13,8 +14,8 @@ namespace PortalTools.Services
         public RazorRendererTools()
         {
             var baseDir = AppContext.BaseDirectory;
-            var binPath = Path.Combine(baseDir, "PortalCommon", "Partials");
-            var devPath = Path.GetFullPath(Path.Combine(baseDir, "../../../../PortalCommon/Partials"));
+            var binPath = Path.Combine(baseDir, "Partials");
+            var devPath = Path.GetFullPath(binPath);
 
             _viewsRoot = Directory.Exists(binPath) ? binPath :
                          Directory.Exists(devPath) ? devPath :
