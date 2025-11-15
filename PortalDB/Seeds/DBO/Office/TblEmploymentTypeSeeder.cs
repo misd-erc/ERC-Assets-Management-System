@@ -20,6 +20,8 @@ namespace PortalDB.Seeds.DBO.Office
             {
                 EmploymentType("Plantilla"),
                 EmploymentType("Contract of Service"),
+                EmploymentType("Co-Terminous"),
+                EmploymentType("Contractual"),
                 EmploymentType("Job Order")
             };
 
@@ -28,3 +30,4 @@ namespace PortalDB.Seeds.DBO.Office
         }
     }
 }
+
