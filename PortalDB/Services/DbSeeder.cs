@@ -25,12 +25,12 @@ namespace PortalDB.Services
                 TblSystemUserStatusSeeder.Seed(context);
                 TblSystemRoleSeeder.Seed(context);
                 TblSystemRoleScopeSeeder.Seed(context);
-                TblSystemModuleSeeder.Seed(context);
+                TblPPECategorySeeder.Seed(context);
                 #endregion
 
                 #region Office
                 TblOfficeSeeder.Seed(context);
-                TblSystemModuleSeeder.Seed(context);
+                TblPPECategorySeeder.Seed(context);
                 #region Division
                 TblDivisionSeeder.Seed(context);
                 #endregion

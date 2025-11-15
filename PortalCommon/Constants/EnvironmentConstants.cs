@@ -37,5 +37,11 @@ namespace PortalCommon.Constants
         public static readonly string ERC_AMS_EMAIL_NO_REPLY = Environment.GetEnvironmentVariable(nameof(ERC_AMS_EMAIL_NO_REPLY))!;
         #endregion
 
+        #region Environment
+        public static readonly string ASPNETCORE_ENVIRONMENT = Environment.GetEnvironmentVariable(nameof(ASPNETCORE_ENVIRONMENT))!;
+        public static readonly string PRODUCTION = "Production";
+        public static readonly string STAGING = "Staging";
+        public static readonly string DEVELOPMENT = "Development";
+        #endregion
     }
 }

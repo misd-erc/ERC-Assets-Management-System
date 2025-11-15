@@ -26,7 +26,7 @@ namespace Tests.Encryption
         public void Encrypt_Should_Not_Return_PlainText()
         {
             // Arrange
-            var plainText = "Server=JEYMS\\\\SQLEXPRESS;Database=ams;Integrated Security=True;TrustServerCertificate=True;";
+            var plainText = "Data Source=10.8.0.12\\mssqldb3;Initial Catalog=AMSStaging;User ID=adm1n20255q;Password=oHUuib1%dhA(G&D71g8bikMSKDNA;TrustServerCertificate=True;";
 
             // Act
             var encrypted = EncryptionHelper.Encrypt(plainText);

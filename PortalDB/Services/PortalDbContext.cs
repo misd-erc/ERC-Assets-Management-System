@@ -11,6 +11,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using PortalDB.Entities.DBO.Storage;
 using PortalDB.Entities.DBO.Notification;
 using PortalDB.Entities.DBO.Module;
+using PortalDB.Entities.ASSET.PPE;
 
 namespace PortalDB.Services
 {
@@ -21,6 +22,7 @@ namespace PortalDB.Services
         {
         }
 
+        #region DBO
         #region Account
         public DbSet<TblSystemUser> TblSystemUsers { get; set; }
         public DbSet<VwSystemUser> VwSystemUsers { get; set; }
@@ -47,6 +49,12 @@ namespace PortalDB.Services
         public DbSet<TblAuditTrail> TblAuditTrails { get; set; }
         public DbSet<TblErrorLog> TblErrorLogs { get; set; }
         public DbSet<TblActivityLog> TblActivityLogs { get; set; }
+        #endregion
+        #endregion
+        #region ASSET
+        #region PPE
+        public DbSet<TblPPECategory> TblPPECategories { get; set; }
+        #endregion
         #endregion
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
