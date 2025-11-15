@@ -1,4 +1,5 @@
 ﻿using API.Attributes;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
@@ -29,7 +30,6 @@ namespace API.Controllers
 {
 
     [Route("api/[controller]")]
-    /*[Authorize]*/
     [ApiController]
     public class UsersController : ControllerBase
     {
