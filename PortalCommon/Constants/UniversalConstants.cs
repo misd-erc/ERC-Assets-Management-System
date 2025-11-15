@@ -11,5 +11,6 @@ namespace PortalCommon.Constants
         public static readonly long SYSTEM_ID = 0;
         public static readonly string SYSTEM_NAME = "ERC-AMS";
         public static readonly string ERC_LOGO = "";
+        public static readonly string ANONYMOUS_KEY = "aB9xK7mPqRtUvWyZ1234nLcDeFgHiJkLmNoPqRsTuv0=";
     }
 }
