@@ -4,7 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-	<PreserveCompilationContext>true</PreserveCompilationContext>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <CopyRefAssembliesToPublishDirectory>true</CopyRefAssembliesToPublishDirectory>
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +28,12 @@
     <ProjectReference Include="..\PortalTools\PortalTools.csproj" />
   </ItemGroup>
 
+<ItemGroup>
+  <None Update="$(TargetName).deps.json">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+  </None>
+</ItemGroup>
 
   <ItemGroup>
   <Content Include="../WEB/build/**">
@@ -81,5 +89,4 @@
 </Target>
 
 </Project>
-    
     
