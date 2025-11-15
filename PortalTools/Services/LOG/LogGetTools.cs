@@ -27,6 +27,7 @@ namespace PortalTools.Services.LOG
         }
 
         public IQueryable<TblAuditTrail> GetTblAuditTrails() => _context.TblAuditTrails;
+        public IQueryable<TblErrorLog> GetTblErrorLogs() => _context.TblErrorLogs;
         public Task<TblAuditTrail?> GetTblAuditTrail(long id) => _context.TblAuditTrails.Where(x => x.Id == id).FirstOrDefaultAsync();
         public IQueryable<TblActivityLog> GetTblActivityLogs() => _context.TblActivityLogs;
         public async Task<TblActivityLog?> GetTblActivityLog(long id) => await _context.TblActivityLogs.Where(x => x.Id == id).FirstOrDefaultAsync();

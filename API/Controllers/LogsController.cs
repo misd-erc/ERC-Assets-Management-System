@@ -17,6 +17,7 @@ using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
 using PortalTools.Services.LOG;
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 
 namespace API.Controllers
 {
@@ -409,6 +410,65 @@ namespace API.Controllers
             }
         }
 
+        // GET api/logs/error-logs/all
+        [HttpGet("error-logs/all/{anonymousKey}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAllErrorLogs([FromQuery] AnonymousPaginationGenericQueryParams model, string anonymousKey)
+        {
+
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                if (anonymousKey != UniversalConstants.ANONYMOUS_KEY)
+                    return StatusCode(401, ApiResponse<object>.Fail(ErrorCodes.UNAUTHORIZED, "Unauthorized access."));
+
+                IQueryable<TblErrorLog> errorLogQuery = _logGetTools.GetTblErrorLogs();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    errorLogQuery = errorLogQuery.Where(x =>
+                        x.Description.ToLower().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    errorLogQuery = errorLogQuery.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    errorLogQuery = errorLogQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = errorLogQuery.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var errorLogList = errorLogQuery
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                List<TblErrorLog> errorLogResponses = errorLogList;
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<TblErrorLog>.OkPaginated(
+                    errorLogResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Error logs have been retrieved"
+                ));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(LogsController));
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         #endregion
 
     }
