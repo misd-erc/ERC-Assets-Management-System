@@ -57,7 +57,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontendClient",
         policy =>
         {
-            policy.WithOrigins("https://ams-uat.erc.ph")
+            policy.WithOrigins(
+                "http://localhost:3000", //Local http
+                "https://localhost:3000", //Local https
+                "https://ams-uat.erc.ph", //Staging
+                "https://ams.erc.ph" //Production
+            )
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -92,12 +97,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
 app.UseCors("AllowFrontendClient");
+
+app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.MapFallbackToFile("index.html");
 
 app.Run();
