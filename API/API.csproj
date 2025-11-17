@@ -96,9 +96,9 @@
     </system.webServer>
   </location>
 </configuration>
-        ]]></Content>
-      </SpaWebConfig>
-    </ItemGroup>
+      ]]></Content>
+    </SpaWebConfig>
+  </ItemGroup>
 
     <WriteLinesToFile
       File="$(PublishDir)web.config"
@@ -129,5 +129,3 @@
   </Target>
 
 </Project>
-    
-    
