@@ -82,6 +82,13 @@
     </SpaWebConfig>
   </ItemGroup>
 
+<ItemGroup>
+  <Content Remove="..\WEB\build\asset-manifest.json" />
+  <None Remove="..\WEB\build\asset-manifest.json" />
+</ItemGroup>
+
+
+
   <WriteLinesToFile
     File="$(PublishDir)web.config"
     Lines="@(SpaWebConfig->'%(Content)')"
