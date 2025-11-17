@@ -26,9 +26,7 @@ using PortalTools.Services.LOG;
 
 namespace API.Controllers
 {
-
     [Route("api/[controller]")]
-    /*[Authorize]*/
     [ApiController]
     public class RolesController : ControllerBase
     {
@@ -36,7 +34,8 @@ namespace API.Controllers
         private readonly AccountGetTools _accountGetTools;
         private readonly AccountEditTools _accountEditTools;
 
-        public RolesController(AccountGetTools accountGetTools,
+        public RolesController(
+            AccountGetTools accountGetTools,
             AccountEditTools accountEditTools,
             DbContextOptions<PortalDbContext> options)
         {
@@ -58,8 +57,9 @@ namespace API.Controllers
 
             try
             {
-
-                IEnumerable<TblSystemRole?> roles = await _accountGetTools.GetSystemRoles(context).ToListAsync();
+                IEnumerable<TblSystemRole?> roles = await _accountGetTools
+                    .GetSystemRoles(context)
+                    .ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -75,50 +75,42 @@ namespace API.Controllers
                 if (model.EndDate.HasValue)
                     roles = roles.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                int totalCount = roles.Count();
-
-                int skip = (model.PageNumber - 1) * model.PageSize;
-
                 var rolesList = roles
                     .OrderByDescending(x => x.CreatedAt)
-                    .Skip(skip)
-                    .Take(model.PageSize)
                     .ToList();
 
-                var roleEntities = rolesList.Select(x => new
-                {
-                    x.Id,
-                    x.RoleName,
-                    x.Description,
-                    x.IsActive,
-                    x.IsDeleted,
-                    x.CreatedAt
-                }).ToList();
+                var roleResponses = new List<SystemRoleResponseModel>(rolesList.Count);
 
-                var roleResponses = new List<SystemRoleResponseModel>(roleEntities.Count);
-
-                foreach (var r in roleEntities)
+                foreach (var r in rolesList)
                 {
                     roleResponses.Add(await _accountGetTools.GetSystemRoleWithScopesAsync(r.Id, context));
                 }
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed system roles", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<SystemRoleResponseModel>.OkPaginated(
+                await AuditTrailTool.LogActivityAsync(
+                    _options,
+                    "Viewed system roles",
+                    actionBy: model.ActionBySystemUserId
+                );
+
+                // RETURN CLEAN DATA WITHOUT "items"
+                return Ok(ApiResponse<List<SystemRoleResponseModel>>.Ok(
                     roleResponses,
-                    model.PageNumber,
-                    model.PageSize,
-                    totalCount,
                     "System roles have been retrieved"
                 ));
-
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(RolesController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+                return StatusCode(
+                    500,
+                    ApiResponse<object>.Fail(
+                        ErrorCodes.SERVER_ERROR,
+                        "An error occurred while processing your request."
+                    )
+                );
             }
         }
 
@@ -126,46 +118,61 @@ namespace API.Controllers
         [HttpGet("all/{systemRoleId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetSystemRoleBySystemRoleId([FromQuery] SoloQueryParams model, [FromRoute] long systemRoleId)
+        public async Task<IActionResult> GetSystemRoleBySystemRoleId(
+            [FromQuery] SoloQueryParams model,
+            [FromRoute] long systemRoleId)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
-
-                SystemRoleResponseModel? role = await _accountGetTools.GetSystemRoleWithScopesAsync(systemRoleId, context);
+                SystemRoleResponseModel? role =
+                    await _accountGetTools.GetSystemRoleWithScopesAsync(systemRoleId, context);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system role information for system role {role.Id}", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<object>.Ok(role, $"System role have been retrieved"));
 
+                await AuditTrailTool.LogActivityAsync(
+                    _options,
+                    $"Viewed system role information for system role {role.Id}",
+                    actionBy: model.ActionBySystemUserId
+                );
+
+                return Ok(ApiResponse<object>.Ok(
+                    role,
+                    $"System role have been retrieved"
+                ));
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(RolesController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+                return StatusCode(
+                    500,
+                    ApiResponse<object>.Fail(
+                        ErrorCodes.SERVER_ERROR,
+                        "An error occurred while processing your request."
+                    )
+                );
             }
         }
 
         #endregion
 
         #region POST
+
         // POST api/roles/edit
         [HttpPost("edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
         public async Task<IActionResult> EditSystemRole([FromBody] EditSystemRoleQueryParams model)
         {
-
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
-
                 EditSystemRoleViewModel role = new()
                 {
                     Id = model.SystemRoleId,
@@ -184,51 +191,72 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(new { SystemRoleId = systemRoleId }, $"System role has been {(model.SystemRoleId == 0 ? "added" : "updated")}"));
 
+                return Ok(ApiResponse<object>.Ok(
+                    new { SystemRoleId = systemRoleId },
+                    $"System role has been {(model.SystemRoleId == 0 ? "added" : "updated")}"
+                ));
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(RolesController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+                return StatusCode(
+                    500,
+                    ApiResponse<object>.Fail(
+                        ErrorCodes.SERVER_ERROR,
+                        "An error occurred while processing your request."
+                    )
+                );
             }
-
         }
 
         #endregion
 
         #region DELETE
-        // DELETE api/roles/delete
+
+        // DELETE api/roles/delete/{roleId}
         [HttpDelete("delete/{roleId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> DeleteRole([FromQuery] SoloQueryParams model, [FromRoute] long roleId)
+        public async Task<IActionResult> DeleteRole(
+            [FromQuery] SoloQueryParams model,
+            [FromRoute] long roleId)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
-
-                bool isDeleted = await _accountEditTools.DeleteTblSystemRoleAsync(roleId, model.ActionBySystemUserId, context);
+                bool isDeleted =
+                    await _accountEditTools.DeleteTblSystemRoleAsync(
+                        roleId,
+                        model.ActionBySystemUserId,
+                        context
+                    );
 
                 if (!isDeleted)
                     return Ok(ApiResponse<object>.Ok($"Unable to delete this role, try again later"));
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok($"Role has been deleted"));
 
+                return Ok(ApiResponse<object>.Ok($"Role has been deleted"));
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+                return StatusCode(
+                    500,
+                    ApiResponse<object>.Fail(
+                        ErrorCodes.SERVER_ERROR,
+                        "An error occurred while processing your request."
+                    )
+                );
             }
         }
-        #endregion
 
+        #endregion
     }
 }

@@ -96,6 +96,15 @@ export const getAllSystemRoles = async (params: PaginationGenericQueryParams): P
   };
 };
 
+export const getSystemRoles = async (): Promise<SystemRoleResponseModel[]> => {
+      const systemUserId = localStorage.getItem('systemUserId') || '';
+const sessionKey = localStorage.getItem('sessionToken') || '';
+  const response = await axiosInstance.get<ApiResponse<SystemRoleResponseModel[]>>(
+    `/Roles/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
+  );
+  return Array.isArray(response.data.data) ? response.data.data : [];
+};
+
 export const getSystemRoleById = async (
   systemRoleId: number,
   params: SoloQueryParams

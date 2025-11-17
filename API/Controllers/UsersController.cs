@@ -125,6 +125,8 @@ namespace API.Controllers
                         SystemUserStatus = await _accountGetTools.GetSystemUserStatusAsync(x.StatusId, context),
                         Office = await _officeGetTools.GetTblOfficeAsync(x.OfficeId, context),
                         Division = await _officeGetTools.GetTblDivisionAsync(x.DivisionId, context),
+                        EmploymentType = await _officeGetTools.GetTblEmploymentTypeAsync(x.EmploymentTypeId ?? 0, context),
+                        Position = await _officeGetTools.GetTblPositionAsync(x.PositionId ?? 0, context),
                         ProfilePictureStorageFile = await _storageGetTools.GetTblFileStorageAsync(x.ProfilePictureFileStorageId, context),
                         CreatedAt = x.CreatedAt,
                         LastLoginAt = x.LastLoginAt
@@ -179,6 +181,8 @@ namespace API.Controllers
 					SystemUserStatus = await _accountGetTools.GetSystemUserStatusAsync(user.StatusId, context),
 					Office = await _officeGetTools.GetTblOfficeAsync(user.OfficeId, context),
 					Division = await _officeGetTools.GetTblDivisionAsync(user.DivisionId, context),
+					EmploymentType = await _officeGetTools.GetTblEmploymentTypeAsync(user.EmploymentTypeId ?? 0, context),
+					Position = await _officeGetTools.GetTblPositionAsync(user.PositionId ?? 0, context),
 					ProfilePictureStorageFile = await _storageGetTools.GetTblFileStorageAsync(user.ProfilePictureFileStorageId, context),
 					CreatedAt = user.CreatedAt,
 					LastLoginAt = user.LastLoginAt

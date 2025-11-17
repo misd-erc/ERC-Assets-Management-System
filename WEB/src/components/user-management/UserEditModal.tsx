@@ -22,10 +22,10 @@ import { User, SystemRole } from '@/types/user';
 import { Office, Division, EmploymentType, Position, VwDivision } from '@/types';
 import { useAuthStore } from '@/store/auth';
 import {
-  getSystemRoles,
   editUser,
   getUsersDetails
 } from '@/api/user-management/userApi';
+import { getSystemRoles } from '@/api/roles/rolesApi';
 import { getOffices,
   getDivisions,
   getEmploymentTypes,
@@ -56,7 +56,6 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
-  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [formData, setFormData] = useState({
     officeId: '',
     divisionId: '',
@@ -67,6 +66,43 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     isActive: true,
   });
 
+  const prefillForm = async (user: User) => {
+    if (roles.length === 0) return; // Wait for roles to load
+
+    setLoadingUserDetails(true);
+
+    try {
+      const details = await getUsersDetails(user.id.toString());
+      const role = roles.find((r) => r.roleName === user.systemRole?.[0]?.roleName);
+
+      setFormData({
+        officeId: (details as any).officeId?.toString() || user.office?.id?.toString() || '',
+        divisionId: (details as any).divisionId?.toString() || user.division?.id?.toString() || '',
+        employmentTypeId: (details as any).employmentType?.id?.toString() || user.employmentType?.id?.toString() || '',
+        positionId: (details as any).position?.id?.toString() || user.position?.id?.toString() || '',
+        statusId: (details as any).statusId?.toString() || user.systemUserStatus?.id?.toString() || '',
+        roleId: role ? role.id.toString() : '',
+        isActive: details.isActive ?? user.isActive,
+      });
+    } catch (error) {
+      console.error('Failed to fetch user details:', error);
+      toast.error('Failed to load user details');
+      // Fallback to selectedUser data
+      const role = roles.find(r => r.roleName === user.systemRole?.[0]?.roleName);
+      setFormData({
+        officeId: user.office?.id?.toString() || '',
+        divisionId: user.division?.id?.toString() || '',
+        employmentTypeId: user.employmentType?.id?.toString() || '',
+        positionId: user.position?.id?.toString() || '',
+        statusId: user.systemUserStatus?.id?.toString() || '',
+        roleId: role ? role.id.toString() : '',
+        isActive: user.isActive,
+      });
+    } finally {
+      setLoadingUserDetails(false);
+    }
+  };
+
   // Fetch dropdown data when modal opens
   useEffect(() => {
     if (open) {
@@ -74,52 +110,11 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     }
   }, [open]);
 
-  // Prefill form when selectedUser changes
   useEffect(() => {
-    if (selectedUser && roles.length > 0) {
-      fetchUserDetails();
+    if (open && selectedUser) {
+      prefillForm(selectedUser);
     }
-  }, [selectedUser, roles]);
-
-  const fetchUserDetails = async () => {
-    if (!selectedUser) return;
-
-    try {
-      setLoadingUserDetails(true);
-      const details = await getUsersDetails(selectedUser.id.toString());
-      setUserDetails(details);
-
-      // Find roleId by matching role name from details or selectedUser
-      const roleName = (details as any).systemRoleName || selectedUser.systemRole[0]?.roleName;
-      const role = roles.find(r => r.roleName === roleName);
-
-      setFormData({
-        officeId: (details as any).officeId?.toString() || selectedUser.office?.id.toString() || '',
-        divisionId: (details as any).divisionId?.toString() || selectedUser.division?.id.toString() || '',
-        employmentTypeId: (details as any).employmentTypeId?.toString() || '',
-        positionId: (details as any).positionId?.toString() || '',
-        statusId: (details as any).positionId?.toString() || '',
-        roleId: role ? role.id.toString() : '',
-        isActive: details.isActive ?? selectedUser.isActive,
-      });
-    } catch (error) {
-      console.error('Failed to fetch user details:', error);
-      toast.error('Failed to load user details');
-      // Fallback to selectedUser data
-      const role = roles.find(r => r.roleName === selectedUser.systemRole[0]?.roleName);
-      setFormData({
-        officeId: selectedUser.office?.id.toString() || '',
-        divisionId: selectedUser.division?.id.toString() || '',
-        employmentTypeId: '',
-        statusId: selectedUser.systemUserStatus?.id.toString() || '',
-        positionId: '',
-        roleId: role ? role.id.toString() : '',
-        isActive: selectedUser.isActive,
-      });
-    } finally {
-      setLoadingUserDetails(false);
-    }
-  };
+  }, [open, selectedUser, roles]);
 
   const fetchDropdownData = async () => {
     try {
@@ -303,7 +298,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
                 onValueChange={(value) => setFormData({ ...formData, statusId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select position" />
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="1">Active</SelectItem>
