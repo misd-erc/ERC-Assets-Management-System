@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PortalDB.Entities.DBO.Office.Division;
+using PortalDB.Seeds.ASSET.PPE;
 using PortalDB.Seeds.DBO.Account;
 using PortalDB.Seeds.DBO.Module;
 using PortalDB.Seeds.DBO.Office;
@@ -21,6 +22,7 @@ namespace PortalDB.Services
 
             try
             {
+                #region DBO
                 #region Account
                 TblSystemUserStatusSeeder.Seed(context);
                 TblSystemRoleSeeder.Seed(context);
@@ -30,13 +32,16 @@ namespace PortalDB.Services
 
                 #region Office
                 TblOfficeSeeder.Seed(context);
-                TblPPECategorySeeder.Seed(context);
                 #region Division
                 TblDivisionSeeder.Seed(context);
                 #endregion
 
                 TblEmploymentTypeSeeder.Seed(context);
                 TblPositionSeeder.Seed(context);
+                #endregion
+                #endregion
+                #region ASSET
+                TblPPECategorySeeder.Seed(context);
                 #endregion
 
                 Console.WriteLine("Database seeding completed successfully!");

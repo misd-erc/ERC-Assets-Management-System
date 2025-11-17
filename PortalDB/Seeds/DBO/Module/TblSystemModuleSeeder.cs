@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace PortalDB.Seeds.DBO.Module
 {
-    internal static class TblPPECategorySeeder
+    internal static class TblSystemModuleSeeder
     {
         public static void Seed(PortalDbContext context)
         {

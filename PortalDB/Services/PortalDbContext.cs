@@ -12,6 +12,7 @@ using PortalDB.Entities.DBO.Storage;
 using PortalDB.Entities.DBO.Notification;
 using PortalDB.Entities.DBO.Module;
 using PortalDB.Entities.ASSET.PPE;
+using PortalDB.Seeds.DBO.Module;
 
 namespace PortalDB.Services
 {
@@ -35,6 +36,7 @@ namespace PortalDB.Services
         public DbSet<TblSystemNotification> TblSystemNotifications { get; set; }
         public DbSet<TblSystemNotificationRead> TblSystemNotificationReads { get; set; }
         public DbSet<TblSystemModule> TblSystemModules { get; set; }
+        public DbSet<TblEmployee> TblEmployees { get; set; }
         #endregion
 
         #region Office
@@ -53,7 +55,10 @@ namespace PortalDB.Services
         #endregion
         #region ASSET
         #region PPE
+        public DbSet<TblPPE> tblPPEs { get; set; }
         public DbSet<TblPPECategory> TblPPECategories { get; set; }
+        public DbSet<TblPPEMovement> TblPPEMovements { get; set; }
+        public DbSet<TblPPEPart> TblPPEParts { get; set; }
         #endregion
         #endregion
 
