@@ -1,6 +1,12 @@
 @echo off
 
 echo ============================
+echo GIT PULL LATEST CHANGES
+echo ============================
+
+git pull
+
+echo ============================
 echo BUILDING REACT PROJECT
 echo ============================
 
