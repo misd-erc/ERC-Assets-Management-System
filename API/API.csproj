@@ -38,6 +38,13 @@
 </ItemGroup>
 
   <ItemGroup>
+  <Content Include="../WEB/build/**">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+  </None>
+</ItemGroup>
+
+  <ItemGroup>
     <None Update="$(TargetName).deps.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
@@ -122,4 +129,5 @@
   </Target>
 
 </Project>
+    
     
