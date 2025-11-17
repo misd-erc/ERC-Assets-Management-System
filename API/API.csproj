@@ -9,6 +9,7 @@
     <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
   </PropertyGroup>
 
+  <!-- NuGet Packages -->
   <ItemGroup>
     <PackageReference Include="MailKit" Version="4.14.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.10" />
@@ -19,34 +20,38 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-	<PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="9.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="9.0.10" />
     <PackageReference Include="RazorLight" Version="2.3.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
+  <!-- Project Reference -->
   <ItemGroup>
     <ProjectReference Include="..\PortalTools\PortalTools.csproj" />
   </ItemGroup>
 
-<ItemGroup>
-  <None Update="$(TargetName).deps.json">
-    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-  </None>
-</ItemGroup>
-
+  <!-- Keep deps.json -->
   <ItemGroup>
-  <Content Include="../WEB/build/**">
-    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    <Link>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</Link>
-  </Content>
-</ItemGroup>
+    <None Update="$(TargetName).deps.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
 
-<Target Name="GenerateWebConfig" AfterTargets="Publish">
-  <ItemGroup>
-    <SpaWebConfig Include="web.config">
-      <Content><![CDATA[
+
+  <!-- 
+    IMPORTANT NOTE:
+    ❌ NO STATIC WEB ASSETS FROM WEB/build
+    ❌ NO <Content Include="../WEB/build/**">
+    ❌ NO <StaticWebAsset Remove="..\WEB\build\**">
+  -->
+
+
+  <!-- Auto-generate web.config on publish -->
+  <Target Name="GenerateWebConfig" AfterTargets="Publish">
+    <ItemGroup>
+      <SpaWebConfig Include="web.config">
+        <Content><![CDATA[
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <location path="." inheritInChildApplications="false">
@@ -78,22 +83,36 @@
     </system.webServer>
   </location>
 </configuration>
-      ]]></Content>
-    </SpaWebConfig>
-  </ItemGroup>
+        ]]></Content>
+      </SpaWebConfig>
+    </ItemGroup>
 
-<ItemGroup>
-  <StaticWebAsset Remove="..\WEB\build\**" />
-  <Content Remove="..\WEB\build\**" />
-</ItemGroup>
+    <WriteLinesToFile
+      File="$(PublishDir)web.config"
+      Lines="@(SpaWebConfig->'%(Content)')"
+      Overwrite="true" />
+  </Target>
 
 
+  <!-- AUTO COPY REACT BUILD AFTER PUBLISH -->
+  <Target Name="CopyReactBuild" AfterTargets="Publish">
+    <Message Text="Copying React build files to publish/wwwroot..." Importance="high" />
 
-  <WriteLinesToFile
-    File="$(PublishDir)web.config"
-    Lines="@(SpaWebConfig->'%(Content)')"
-    Overwrite="true" />
-</Target>
+    <!-- Clear wwwroot first -->
+    <RemoveDir Directories="$(PublishDir)wwwroot" />
+    <MakeDir Directories="$(PublishDir)wwwroot" />
+
+    <!-- Include React build files -->
+    <ItemGroup>
+      <ReactFiles Include="../WEB/build/**" />
+    </ItemGroup>
+
+    <!-- Copy files recursively -->
+    <Copy
+      SourceFiles="@(ReactFiles)"
+      DestinationFiles="@(ReactFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')"
+    />
+
+  </Target>
 
 </Project>
-    
