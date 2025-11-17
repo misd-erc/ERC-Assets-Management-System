@@ -30,7 +30,13 @@
     <ProjectReference Include="..\PortalTools\PortalTools.csproj" />
   </ItemGroup>
 
-  <!-- Keep deps.json -->
+<ItemGroup>
+  <None Update="$(TargetName).deps.json">
+    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+  </None>
+</ItemGroup>
+
   <ItemGroup>
     <None Update="$(TargetName).deps.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -116,3 +122,4 @@
   </Target>
 
 </Project>
+    
