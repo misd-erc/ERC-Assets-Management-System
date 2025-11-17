@@ -23,6 +23,8 @@ namespace PortalDB.Models.ResponseModels.Account
         public TblSystemUserStatus? SystemUserStatus { get; set; }
         public TblOffice? Office { get; set; }
         public TblDivision? Division { get; set; }
+        public TblEmploymentType? EmploymentType { get; set; }
+        public TblPosition? Position { get; set; }
         public TblFileStorage? ProfilePictureStorageFile { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? LastLoginAt { get; set; }

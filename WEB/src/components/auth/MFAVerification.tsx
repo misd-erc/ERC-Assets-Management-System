@@ -89,7 +89,8 @@ export function MFAVerification() {
                     <Input
                       key={index}
                       ref={(el) => { inputsRef.current[index] = el; }}
-                      type="text"
+                      type="tel"
+                      inputMode="numeric"
                       value={digit}
                       onChange={(e) => handleChange(index, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(index, e)}

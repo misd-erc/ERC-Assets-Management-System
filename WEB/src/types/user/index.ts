@@ -1,4 +1,4 @@
-﻿import { Division, Office } from "@/types/office";
+﻿import { Division, Office, EmploymentType, Position } from "@/types/office";
 
 export interface ProfilePictureStorageFile {
   id: number;
@@ -31,6 +31,8 @@ export interface User {
   systemUserStatus: SystemUserStatus;
   office: Office | null;
   division: Division | null;
+  employmentType?: EmploymentType | null;
+  position?: Position | null;
   profilePictureStorageFile: ProfilePictureStorageFile | null;
   createdAt: string;
   lastLoginAt: string;
