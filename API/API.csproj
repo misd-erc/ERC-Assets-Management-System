@@ -83,8 +83,8 @@
   </ItemGroup>
 
 <ItemGroup>
-  <Content Remove="..\WEB\build\asset-manifest.json" />
-  <None Remove="..\WEB\build\asset-manifest.json" />
+  <StaticWebAsset Remove="..\WEB\build\**" />
+  <Content Remove="..\WEB\build\**" />
 </ItemGroup>
 
 
