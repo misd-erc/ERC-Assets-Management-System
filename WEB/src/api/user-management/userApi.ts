@@ -35,6 +35,8 @@ export const getUsers = async (page: number = 1, pageSize: number = 10): Promise
     systemUserStatus: item.systemUserStatus || { id: 1, name: 'Active', isActive: true, isDeleted: false, createdAt: '' },
     office: item.office || null,
     division: item.division || null,
+    employmentType: item.employmentType || null,
+    position: item.position || null,
     profilePictureStorageFile: item.profilePictureStorageFile || null,
     createdAt: item.createdAt,
     lastLoginAt: item.lastLoginAt
@@ -183,15 +185,7 @@ export const editUser = async (payload: {
 //   return Array.isArray(response.data.data.items) ? response.data.data.items : [];
 // };
 
-export const getSystemRoles = async (): Promise<SystemRole[]> => {
-  // Get system user ID from localStorage
-  const systemUserId = localStorage.getItem('systemUserId') || '';
-const sessionKey = localStorage.getItem('sessionToken') || '';
-  const response = await axiosInstance.get<{ data: { items: SystemRole[] } }>(
-    `/Users/system-role/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
-  );
-  return Array.isArray(response.data.data.items) ? response.data.data.items : [];
-};
+
 
 /**
  * Get user details for the current logged-in user

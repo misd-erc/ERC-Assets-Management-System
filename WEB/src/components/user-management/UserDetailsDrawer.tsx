@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from '@/types/user';
 import { Mail, Building, Briefcase, Calendar, User as UserIcon, MapPin, Users, IdCard } from 'lucide-react';
-import { getUserPhoto } from '@/api/user-management/userApi';
+import { getUserPhoto, getUsersDetails } from '@/api/user-management/userApi';
 import { getStatusColor } from '@/utils/colorUtils';
 
 
@@ -23,6 +23,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
   user
 }) => {
   const [profileImageUrl, setProfileImageUrl] = useState<string | undefined>();
+  const [userDetails, setUserDetails] = useState<User | null>(null);
 
   useEffect(() => {
     const loadProfilePicture = async () => {
@@ -40,10 +41,34 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
       }
     };
 
+    const loadUserDetails = async () => {
+      if (!user?.id) return;
+
+      try {
+        const details = await getUsersDetails(user.id.toString()) as any; // Cast to any since UserDetails doesn't have all User properties
+        setUserDetails({
+          ...user,
+          office: details.office || user.office,
+          division: details.division || user.division,
+          employmentType: details.employmentType || user.employmentType,
+          position: details.position || user.position,
+          systemRole: details.systemRole || user.systemRole,
+          systemUserStatus: details.systemUserStatus || user.systemUserStatus,
+        });
+      } catch (error) {
+        console.warn('Failed to load complete user details:', error);
+        setUserDetails(user); // Fallback to original user data
+      }
+    };
+
     if (user) {
       loadProfilePicture();
+      loadUserDetails();
     }
   }, [user]);
+
+  // Use userDetails if available, otherwise fallback to user
+  const displayUser = userDetails || user;
 
   if (!user) return null;
 
@@ -108,26 +133,50 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                 </div>
               </div>
 
-              {user.office && (
+              {displayUser!.office && (
                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
                   <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
                     <MapPin className="w-5 h-5 text-teal-600" />
                   </div>
                   <div className="flex-1">
                     <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Office</Label>
-                    <p className="text-slate-900 font-medium">{user.office.name}</p>
+                    <p className="text-slate-900 font-medium">{displayUser!.office.name}</p>
                   </div>
                 </div>
               )}
 
-              {user.division && (
+              {displayUser!.division && (
                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
                   <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center">
                     <Users className="w-5 h-5 text-cyan-600" />
                   </div>
                   <div className="flex-1">
                     <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Division</Label>
-                    <p className="text-slate-900 font-medium">{user.division.name}</p>
+                    <p className="text-slate-900 font-medium">{displayUser!.division.name}</p>
+                  </div>
+                </div>
+              )}
+
+              {displayUser!.employmentType && (
+                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <Briefcase className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Employment Type</Label>
+                    <p className="text-slate-900 font-medium">{displayUser!.employmentType.name}</p>
+                  </div>
+                </div>
+              )}
+
+              {displayUser!.position && (
+                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-lg border border-slate-100">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                    <IdCard className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Position</Label>
+                    <p className="text-slate-900 font-medium">{displayUser!.position.name}</p>
                   </div>
                 </div>
               )}
