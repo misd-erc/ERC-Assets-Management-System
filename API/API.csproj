@@ -82,6 +82,13 @@
     </SpaWebConfig>
   </ItemGroup>
 
+<ItemGroup>
+  <StaticWebAsset Remove="..\WEB\build\**" />
+  <Content Remove="..\WEB\build\**" />
+</ItemGroup>
+
+
+
   <WriteLinesToFile
     File="$(PublishDir)web.config"
     Lines="@(SpaWebConfig->'%(Content)')"
