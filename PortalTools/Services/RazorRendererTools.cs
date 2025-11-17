@@ -1,8 +1,9 @@
-﻿using System;
-using System.IO;
-using System.Threading.Tasks;
-using PortalCommon.Constants;
+﻿using PortalCommon.Constants;
 using RazorLight;
+using System;
+using System.IO;
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace PortalTools.Services
 {
@@ -15,16 +16,19 @@ namespace PortalTools.Services
         {
             var baseDir = AppContext.BaseDirectory;
             var binPath = Path.Combine(baseDir, "Partials");
-            var devPath = Path.GetFullPath(binPath);
+            var devPath = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "PortalCommon", "Partials"));
 
             _viewsRoot = Directory.Exists(binPath) ? binPath :
                          Directory.Exists(devPath) ? devPath :
                          throw new DirectoryNotFoundException($"Razor views folder not found at either:\n{binPath}\n{devPath}");
 
+            var entryAssembly = Assembly.GetEntryAssembly()
+                     ?? Assembly.GetCallingAssembly();
+
             _engine = new RazorLightEngineBuilder()
                 .UseFileSystemProject(_viewsRoot)
                 .UseMemoryCachingProvider()
-                .SetOperatingAssembly(typeof(RazorRendererTools).Assembly)
+                .SetOperatingAssembly(entryAssembly)
                 .Build();
         }
 
