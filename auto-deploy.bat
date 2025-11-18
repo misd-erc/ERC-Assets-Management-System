@@ -17,6 +17,15 @@ call npm run build
 cd ..
 
 echo ============================
+echo APPLYING DATABASE MIGRATIONS
+echo ============================
+
+cd API
+powershell -Command "Update-Database -p PortalDB -s API"
+
+cd ..
+
+echo ============================
 echo BUILDING C# API PROJECT
 echo ============================
 
