@@ -4,6 +4,8 @@ echo ============================
 echo GIT PULL LATEST CHANGES
 echo ============================
 
+
+git stash
 git pull
 
 echo ============================
