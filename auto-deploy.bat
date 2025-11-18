@@ -21,7 +21,7 @@ echo APPLYING DATABASE MIGRATIONS
 echo ============================
 
 cd API
-dotnet ef database update -p PortalDB -s API
+dotnet ef database update -p ../PortalDB/PortalDB.csproj -s API.csproj
 
 cd ..
 
