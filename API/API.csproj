@@ -4,7 +4,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-	<PreserveCompilationContext>true</PreserveCompilationContext>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,6 +25,10 @@
     <ProjectReference Include="..\PortalTools\PortalTools.csproj" />
   </ItemGroup>
 
+  <!-- Copy React build -->
+  <Target Name="CopyReactBuild" AfterTargets="Publish">
+    <RemoveDir Directories="$(PublishDir)wwwroot" />
+    <MakeDir Directories="$(PublishDir)wwwroot" />
 
     <ItemGroup>
       <ReactFiles Include="../WEB/build/**" />
@@ -36,3 +39,4 @@
   </Target>
 
 </Project>
+    
