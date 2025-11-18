@@ -1,4 +1,4 @@
-﻿﻿﻿﻿import React, { useMemo } from 'react';
+﻿﻿import React, { useMemo } from 'react';
 import {
   LayoutDashboard,
   Package,
@@ -113,11 +113,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, 
         if (role.roleName === 'Administrator') {
           admin = true;
         }
-        role.scope?.forEach((scope: any) => {
-          if (scope.module && scope.isActive && !scope.isDeleted) {
-            scopes.push(scope.module.name);
-          }
-        });
+        if (role.isActive && !role.isDeleted && Array.isArray(role.scope)) {
+          scopes.push(...role.scope);
+        }
       });
 
       return { userScopes: scopes, isAdmin: admin };
@@ -135,12 +133,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, 
         // Always show dashboard
         if (item.id === 'dashboard') return true;
 
-        // Show admin items only if user is admin
-        if (item.adminOnly) {
-          return isAdmin;
-        }
-
-        // Map item IDs to scope modules
         const moduleMapping: Record<string, string> = {
           'category-management': 'Category Management',
           'deliveries-receipts': 'Delivery & Receipt of Items',
@@ -163,7 +155,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, 
         };
 
         const requiredModule = moduleMapping[item.id];
-        return requiredModule ? userScopes.includes(requiredModule) : true;
+
+        if (isAdmin) {
+          // Administrators see items in their scopes or admin-only items
+          return (requiredModule ? userScopes.includes(requiredModule) : false) || item.adminOnly;
+        } else {
+          // Non-admins see only items in their scopes
+          return requiredModule ? userScopes.includes(requiredModule) : false;
+        }
       })
     })).filter(group => group.items.length > 0);
   }, [userScopes, isAdmin]);

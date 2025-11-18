@@ -18,7 +18,7 @@ export function RolesManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddRole, setShowAddRole] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
-  const [deleteRoleId, setDeleteRoleId] = useState<string | null>(null);
+  const [deleteRoleId, setDeleteRoleId] = useState<number | null>(null);
   const [editingLoading, setEditingLoading] = useState(false);
 
  
@@ -48,25 +48,24 @@ export function RolesManagement() {
 
   // Convert API roles to frontend Role format
   const systemRoles: Role[] = Array.isArray(roles) ? roles.map(apiRole => ({
-    id: apiRole.id.toString(),
-    roleId: `ROLE-${apiRole.id.toString().padStart(3, '0')}`,
+    id: apiRole.id,
     roleName: apiRole.roleName,
     description: apiRole.description,
-    assignedPermissions: (apiRole.scope || [])
-      .filter((scope: any) => scope.isActive)
-      .map((scope: any) => scope.id.toString()), // Use scope.id directly as permission ID
-    userCount: apiRole.userCount,
-    dateCreated: new Date(apiRole.createdAt).toISOString().split('T')[0]
+    scope: apiRole.scope || [],
+    isActive: apiRole.isActive,
+    isDeleted: apiRole.isDeleted,
+    createdAt: apiRole.createdAt,
+    userCount: apiRole.userCount
   })) : [];
 
   // Filter roles based on search
   const filteredRoles = systemRoles.filter(role =>
     role.roleName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     role.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    role.roleId.toLowerCase().includes(searchTerm.toLowerCase())
+    role.id.toString().toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddRole = async (roleData: Omit<Role, 'id' | 'roleId' | 'userCount' | 'dateCreated'>) => {
+  const handleAddRole = async (roleData: Omit<Role, 'id' | 'userCount' | 'createdAt' | 'isActive' | 'isDeleted'>) => {
     const userId = systemUserId || localStorage.getItem('systemUserId');
     if (!userId) {
       console.error('[RolesManagement] No systemUserId available for creating role');
@@ -76,7 +75,7 @@ export function RolesManagement() {
     console.log('[RolesManagement] Creating role with userId:', userId);
 
     // Convert permissions back to scopes format
-    const scopes = roleData.assignedPermissions.map(permission => ({
+    const scopes = roleData.scope.map((permission: string) => ({
       systemModuleId: parseInt(permission), // permission is now the module ID as string
       systemRoleScopeIsActive: true,
     }));
@@ -93,7 +92,7 @@ export function RolesManagement() {
     setShowAddRole(false);
   };
 
-  const handleEditRole = async (roleData: Omit<Role, 'id' | 'roleId' | 'userCount' | 'dateCreated'>) => {
+  const handleEditRole = async (roleData: Omit<Role, 'id' | 'userCount' | 'createdAt' | 'isActive' | 'isDeleted'>) => {
     if (!editingRole) return;
 
     const userId = systemUserId || localStorage.getItem('systemUserId');
@@ -105,13 +104,13 @@ export function RolesManagement() {
     console.log('[RolesManagement] Editing role with userId:', userId);
 
     // Convert permissions back to scopes format
-    const scopes = roleData.assignedPermissions.map(permission => ({
+    const scopes = roleData.scope.map((permission: string) => ({
       systemModuleId: parseInt(permission), // permission is now the module ID as string
       systemRoleScopeIsActive: true,
     }));
 
     await createOrUpdateRole({
-      systemRoleId: parseInt(editingRole.id),
+      systemRoleId: editingRole.id,
       systemRoleName: roleData.roleName,
       systemRoleDescription: roleData.description,
       systemRoleIsActive: true,
@@ -122,7 +121,7 @@ export function RolesManagement() {
     setEditingRole(null);
   };
 
-  const handleDeleteRole = async (roleId: string) => {
+  const handleDeleteRole = async (roleId: number) => {
     const userId = systemUserId || localStorage.getItem('systemUserId');
     if (!userId) {
       console.error('[RolesManagement] No systemUserId available for deleting role');
@@ -133,7 +132,7 @@ export function RolesManagement() {
 
     // For delete, we set isActive to false
     await createOrUpdateRole({
-      systemRoleId: parseInt(roleId),
+      systemRoleId: roleId,
       systemRoleName: '',
       systemRoleDescription: '',
       systemRoleIsActive: false,
@@ -155,21 +154,20 @@ export function RolesManagement() {
 
       console.log('[RolesManagement] Fetching role details for edit:', role.id);
 
-      const roleDetails = await getSystemRoleById(parseInt(role.id), {
+      const roleDetails = await getSystemRoleById(role.id, {
         actionBySystemUserId: userId,
       });
 
       // Convert API response to Role format with accurate permissions from scope
       const updatedRole: Role = {
-        id: roleDetails.id.toString(),
-        roleId: `ROLE-${roleDetails.id.toString().padStart(3, '0')}`,
+        id: roleDetails.id,
         roleName: roleDetails.roleName,
         description: roleDetails.description,
-        assignedPermissions: (roleDetails.scope || [])
-          .filter((scope: any) => scope.isActive)
-          .map((scope: any) => scope.id.toString()), // Use scope.id directly as permission ID
+        scope: roleDetails.scope || [],
+        isActive: roleDetails.isActive,
+        isDeleted: roleDetails.isDeleted,
+        createdAt: roleDetails.createdAt,
         userCount: role.userCount, // Keep from the list data
-        dateCreated: new Date(roleDetails.createdAt).toISOString().split('T')[0],
       };
 
       setEditingRole(updatedRole);

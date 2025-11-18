@@ -13,7 +13,7 @@ import { Role } from '@/types/roles';
 interface RolesTableProps {
   roles: Role[];
   onEditRole: (role: Role) => void;
-  onDeleteRole: (roleId: string) => void;
+  onDeleteRole: (roleId: number) => void;
 }
 
 export function RolesTable({ roles, onEditRole, onDeleteRole }: RolesTableProps) {
@@ -42,12 +42,12 @@ export function RolesTable({ roles, onEditRole, onDeleteRole }: RolesTableProps)
             <tbody>
               {roles.map((role) => (
                 <tr key={role.id} className="border-b hover:bg-gray-50">
-                  <td className="p-3 font-mono text-sm">{role.roleId}</td>
+                  <td className="p-3 font-mono text-sm">{role.id}</td>
                   <td className="p-3 font-medium">{role.roleName}</td>
                   <td className="p-3 text-sm text-muted-foreground">{role.description}</td>
                   <td className="p-3">
                     <Badge variant="secondary">
-                      {role.assignedPermissions.length} permissions
+                      {role.scope.length} permissions
                     </Badge>
                   </td>
                   <td className="p-3">
@@ -56,7 +56,7 @@ export function RolesTable({ roles, onEditRole, onDeleteRole }: RolesTableProps)
                     </Badge>
                   </td>
                   <td className="p-3 text-sm text-muted-foreground">
-                    {new Date(role.dateCreated).toLocaleDateString()}
+                    {new Date(role.createdAt).toLocaleDateString()}
                   </td>
                   <td className="p-3">
                     <DropdownMenu>
