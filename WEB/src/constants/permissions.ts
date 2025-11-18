@@ -38,8 +38,8 @@ export const PERMISSION_CATEGORIES = {
     { id: '9', label: 'Contract Management', description: 'Manage contracts', icon: FileText }
   ],
   'Asset Management': [
-    { id: '10', label: 'PPE & Semi-Expendables', description: 'Manage property and equipment', icon: HardHat },
-    { id: '11', label: 'PAR / ICS', description: 'Handle property accountability', icon: FileText }
+    { id: '10', label: 'PPE & SE', description: 'Manage PPE and semi-expendables encoding', icon: Package },
+    { id: '11', label: 'PPE & Semi-Expendables', description: 'Manage property and equipment', icon: HardHat }
   ],
   'Reports & Approvals': [
     { id: '12', label: 'Reports Center', description: 'Generate and view reports', icon: BarChart3 },

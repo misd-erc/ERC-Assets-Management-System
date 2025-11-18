@@ -9,10 +9,12 @@ import { RolesManagement } from '@/pages/RolesManagement';
 import AuditLogs from '@/pages/AuditLogs';
 import UnderConstructionPage from '@/pages/UC';
 import SupplyManagement from '@/pages/SupplyManagement';
+import { PPESEPage } from '@/pages/PPESEPage';
 import { useIsMobile } from '@/components/ui/use-mobile';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import OfficeManagement from '@/pages/OfficeManagement';
+
 
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-full">
@@ -89,6 +91,14 @@ export function MainLayout() {
       case 'transfers-returns':
       case 'disposals':
       case 'contracts':
+      case 'ppe-se':
+        return (
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <PPESEPage />
+            </Suspense>
+          </ErrorBoundary>
+        );
       case 'ppe-semi-expendables':
       case 'par-ics':
       case 'reports':

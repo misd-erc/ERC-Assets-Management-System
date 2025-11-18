@@ -64,8 +64,8 @@ const navigationGroups: NavigationGroup[] = [
   {
     title: 'Asset Management',
     items: [
+      { id: 'ppe-se', title: 'PPE & SE', icon: Package },
       { id: 'ppe-semi-expendables', title: 'PPE & Semi-Expendables', icon: HardHat },
-      { id: 'par-ics', title: 'PAR / ICS', icon: FileText },
     ],
   },
   {
@@ -114,7 +114,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, 
           admin = true;
         }
         if (role.isActive && !role.isDeleted && Array.isArray(role.scope)) {
-          scopes.push(...role.scope);
+          role.scope.forEach((scopeItem: any) => {
+            if (scopeItem.module && scopeItem.module.name) {
+              scopes.push(scopeItem.module.name);
+            }
+          });
         }
       });
 

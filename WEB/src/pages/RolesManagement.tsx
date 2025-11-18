@@ -74,11 +74,19 @@ export function RolesManagement() {
 
     console.log('[RolesManagement] Creating role with userId:', userId);
 
-    // Convert permissions back to scopes format
-    const scopes = roleData.scope.map((permission: string) => ({
-      systemModuleId: parseInt(permission), // permission is now the module ID as string
-      systemRoleScopeIsActive: true,
-    }));
+    // Convert scope labels to module IDs
+    const scopes = roleData.scope.map((label: string) => {
+      for (const category of Object.values(PERMISSION_CATEGORIES)) {
+        const perm = category.find(p => p.label === label);
+        if (perm) {
+          return {
+            systemModuleId: parseInt(perm.id),
+            systemRoleScopeIsActive: true,
+          };
+        }
+      }
+      return null; // If label not found, skip
+    }).filter(Boolean) as { systemModuleId: number; systemRoleScopeIsActive: boolean }[];
 
     await createOrUpdateRole({
       systemRoleId: 0, // 0 for new role
@@ -103,11 +111,19 @@ export function RolesManagement() {
 
     console.log('[RolesManagement] Editing role with userId:', userId);
 
-    // Convert permissions back to scopes format
-    const scopes = roleData.scope.map((permission: string) => ({
-      systemModuleId: parseInt(permission), // permission is now the module ID as string
-      systemRoleScopeIsActive: true,
-    }));
+    // Convert scope labels to module IDs
+    const scopes = roleData.scope.map((label: string) => {
+      for (const category of Object.values(PERMISSION_CATEGORIES)) {
+        const perm = category.find(p => p.label === label);
+        if (perm) {
+          return {
+            systemModuleId: parseInt(perm.id),
+            systemRoleScopeIsActive: true,
+          };
+        }
+      }
+      return null; // If label not found, skip
+    }).filter(Boolean) as { systemModuleId: number; systemRoleScopeIsActive: boolean }[];
 
     await createOrUpdateRole({
       systemRoleId: editingRole.id,
