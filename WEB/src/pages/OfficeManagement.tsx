@@ -158,10 +158,10 @@ const OfficeManagement = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="p-6 pt-20 space-y-8">
       <OfficeGeneralHeader />
 
-      <Tabs defaultValue="office" className="pl-64">
+      <Tabs defaultValue="office">
         <OfficeTabsList />
 
         {/* â”€â”€ OFFICE TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}

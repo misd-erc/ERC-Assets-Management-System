@@ -11,7 +11,8 @@ $majorFolders = @(
     "services",
     "store",
     "types",
-    "utils"
+    "utils",
+    "ui" # ui folder, but will be rewritten to components/ui
 )
 
 function Convert-ToRelativePath($filePath) {
@@ -30,18 +31,17 @@ Get-ChildItem -Recurse -Include *.ts, *.tsx -Path $root | ForEach-Object {
     $fixed = $content
 
     # ================================================================
-    # PART 0 — Fix SAME-FOLDER IMPORTS (“./file” → alias)
+    # PART 0 — SAME-FOLDER imports (“./file” → alias)
     # ================================================================
     $pattern = "(?<=from\s+['""])\.\/([^'""]+)"
     $fixed = [regex]::Replace($fixed, $pattern, {
         param($m)
         $fileName = $m.Groups[1].Value
-        $fullPath = "@/" + ($currentDir + "/" + $fileName).Replace("\","/")
-        return $fullPath
+        return "@/" + ($currentDir + "/" + $fileName).Replace("\","/")
     })
 
     # ================================================================
-    # PART 1 — RELATIVE imports → @/folder/...
+    # PART 1 — RELATIVE imports → @/folder
     # ================================================================
     foreach ($folder in $majorFolders) {
         $regex = "(?<=from\s+['""])(\.\./)+$folder(/|$)"
@@ -49,27 +49,32 @@ Get-ChildItem -Recurse -Include *.ts, *.tsx -Path $root | ForEach-Object {
     }
 
     # ================================================================
-    # PART 2 — ALIAS FIX (NO slash)
+    # PART 2 — Fix @folder → @/folder
     # ================================================================
     foreach ($folder in $majorFolders) {
-        $regexAliasNoSlash = "@" + $folder + "(?!/)"
-        $fixed = [regex]::Replace($fixed, $regexAliasNoSlash, "@/$folder")
+        $bad = "@$folder/"
+        $good = "@/$folder/"
+        $fixed = $fixed -replace [regex]::Escape($bad), $good
     }
 
     # ================================================================
-    # PART 3 — FIX alias prefix (@folder/ → @/folder/)
-    # ================================================================
-    foreach ($folder in $majorFolders) {
-        $badAlias = "@$folder/"
-        $goodAlias = "@/$folder/"
-        $fixed = $fixed -replace [regex]::Escape($badAlias), $goodAlias
-    }
-
-    # ================================================================
-    # PART 4 — fallback ../../something → @/something
+    # PART 3 — fallback: any ../../something → @/something
     # ================================================================
     $generic = "(?<=from\s+['""])(\.\./)+(?=[A-Za-z])"
     $fixed = [regex]::Replace($fixed, $generic, "@/")
+
+    # ================================================================
+    # PART 4 — SPECIAL UI FIX:
+    # Convert ANY ui import → components/ui
+    # ================================================================
+    # @/ui/button -> @/components/ui/button
+    $fixed = $fixed -replace "@/ui/", "@/components/ui/"
+
+    # ../../ui/button -> @/components/ui/button
+    $fixed = $fixed -replace "(?<=from\s+['""])(\.\./)+ui/", "@/components/ui/"
+
+    # ./ui/button -> @/components/ui/button
+    $fixed = $fixed -replace "(?<=from\s+['""])\.\/ui/", "@/components/ui/"
 
     if ($fixed -ne $content) {
         Set-Content $file $fixed -Encoding UTF8

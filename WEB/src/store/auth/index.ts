@@ -143,7 +143,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         email: userDetails.email,
         employeeId: userDetails.employeeId || '',
         isActive: userDetails.isActive,
-        systemRole: [{ id: 1, roleName: 'End User', description: '', isActive: true, isDeleted: false, createdAt: '' }],
+        systemRole: [{ id: 1, roleName: 'End User', description: '', scope: [], isActive: true, isDeleted: false, createdAt: '', userCount: 0 }],
         systemUserStatus: { id: 1, name: 'Active', isActive: true, isDeleted: false, createdAt: '' },
         office: null,
         division: null,

@@ -1,15 +1,21 @@
 ﻿import axiosInstance from '@/lib/axios';
 import { ApiResponse } from '@/types';
 
+export interface SystemRoleScope {
+  module: {
+    name: string;
+  };
+}
+
 export interface SystemRoleResponseModel {
-  [x: string]: any;
   id: number;
   roleName: string;
   description: string;
-  scope: SystemRoleScopeResponseModel[];
+  scope: SystemRoleScope[];
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
+  userCount: number;
 }
 
 export interface SystemRoleScopeResponseModel {
@@ -80,7 +86,7 @@ export const getAllSystemRoles = async (params: PaginationGenericQueryParams): P
   if (params.startDate) queryParams.append('StartDate', params.startDate);
   if (params.endDate) queryParams.append('EndDate', params.endDate);
 
-  const response = await axiosInstance.get<ApiResponse<PaginatedRolesResponse>>(
+  const response = await axiosInstance.get<ApiResponse<SystemRoleResponseModel[]>>(
     `/Roles/all?${queryParams.toString()}`
   );
 
@@ -89,10 +95,10 @@ export const getAllSystemRoles = async (params: PaginationGenericQueryParams): P
   }
 
   return {
-    data: response.data.data.items,
-    totalCount: response.data.data.totalCount,
-    pageNumber: response.data.data.pageNumber,
-    pageSize: response.data.data.pageSize,
+    data: response.data.data,
+    totalCount: response.data.data.length,
+    pageNumber: params.pageNumber,
+    pageSize: params.pageSize,
   };
 };
 

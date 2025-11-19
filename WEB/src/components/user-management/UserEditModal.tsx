@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { User, SystemRole } from '@/types/user';
+import { User, SystemRole, SystemRoleSimple } from '@/types/user';
 import { Office, Division, EmploymentType, Position, VwDivision } from '@/types';
 import { useAuthStore } from '@/store/auth';
 import {
@@ -52,7 +52,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
   const [employmentTypes, setEmploymentTypes] = useState<EmploymentType[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
-  const [roles, setRoles] = useState<SystemRole[]>([]);
+  const [roles, setRoles] = useState<SystemRoleSimple[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
@@ -132,7 +132,18 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
       setDivisions(divisionsData);
       setEmploymentTypes(employmentTypesData);
       setPositions(positionsData);
-      setRoles(rolesData);
+      // Convert API roles to frontend SystemRoleSimple format
+      const systemRoles: SystemRoleSimple[] = rolesData.map(apiRole => ({
+        id: apiRole.id,
+        roleName: apiRole.roleName,
+        description: apiRole.description,
+        scope: apiRole.scope ? apiRole.scope.map(s => s.module.name) : [],
+        isActive: apiRole.isActive,
+        isDeleted: apiRole.isDeleted,
+        createdAt: apiRole.createdAt,
+        userCount: apiRole.userCount
+      }));
+      setRoles(systemRoles);
     } catch (error) {
       console.error('Failed to fetch dropdown data:', error);
       toast.error('Failed to load form data');

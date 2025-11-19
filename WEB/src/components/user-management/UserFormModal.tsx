@@ -101,7 +101,7 @@ export const UserFormModal = ({
           email: formData.email,
           employeeId: formData.username,
           isActive: formData.status === 'Active',
-          systemRole: formData.role ? [{ id: parseInt(formData.role, 10), roleName: formData.role, description: '', isActive: true, isDeleted: false, createdAt: '' }] : [],
+          systemRole: formData.role ? [{ id: parseInt(formData.role, 10), roleName: formData.role, description: '', scope: [], isActive: true, isDeleted: false, createdAt: '', userCount: 0 }] : [],
           systemUserStatus: { id: 1, name: formData.status, isActive: true, isDeleted: false, createdAt: '' },
           office: formData.officeId ? { id: parseInt(formData.officeId, 10), name: '', acronym: '', isActive: true, isDeleted: false, createdAt: '' } : null,
           division: formData.divisionId ? { id: parseInt(formData.divisionId, 10), name: '', officeId: parseInt(formData.officeId || '0', 10), acronym: '', isActive: true, isDeleted: false, createdAt: '' } : null,
