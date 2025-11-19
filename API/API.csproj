@@ -4,9 +4,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <PreserveCompilationContext>true</PreserveCompilationContext>
-    <CopyRefAssembliesToPublishDirectory>true</CopyRefAssembliesToPublishDirectory>
-    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,7 +16,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-	<PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="9.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="9.0.10" />
     <PackageReference Include="RazorLight" Version="2.3.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
@@ -28,65 +25,18 @@
     <ProjectReference Include="..\PortalTools\PortalTools.csproj" />
   </ItemGroup>
 
-<ItemGroup>
-  <None Update="$(TargetName).deps.json">
-    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-  </None>
-</ItemGroup>
+  <!-- Copy React build -->
+  <Target Name="CopyReactBuild" AfterTargets="Publish">
+    <RemoveDir Directories="$(PublishDir)wwwroot" />
+    <MakeDir Directories="$(PublishDir)wwwroot" />
 
-  <ItemGroup>
-  <Content Include="../WEB/build/**">
-    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    <Link>wwwroot\%(RecursiveDir)%(Filename)%(Extension)</Link>
-  </Content>
-</ItemGroup>
+    <ItemGroup>
+      <ReactFiles Include="../WEB/build/**" />
+    </ItemGroup>
 
-<Target Name="GenerateWebConfig" AfterTargets="Publish">
-  <ItemGroup>
-    <SpaWebConfig Include="web.config">
-      <Content><![CDATA[
-<?xml version="1.0" encoding="utf-8"?>
-<configuration>
-  <location path="." inheritInChildApplications="false">
-    <system.webServer>
-
-      <handlers>
-        <add name="aspNetCore" path="*" verb="*" modules="AspNetCoreModuleV2" resourceType="Unspecified" />
-      </handlers>
-
-      <aspNetCore processPath="dotnet"
-                  arguments=".\API.dll"
-                  stdoutLogEnabled="false"
-                  stdoutLogFile=".\logs\stdout"
-                  hostingModel="inprocess" />
-
-      <rewrite>
-        <rules>
-          <rule name="ReactRoutes" stopProcessing="true">
-            <match url=".*" />
-            <conditions logicalGrouping="MatchAll">
-              <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
-              <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
-            </conditions>
-            <action type="Rewrite" url="/index.html" />
-          </rule>
-        </rules>
-      </rewrite>
-
-    </system.webServer>
-  </location>
-</configuration>
-      ]]></Content>
-    </SpaWebConfig>
-  </ItemGroup>
-
-  <WriteLinesToFile
-    File="$(PublishDir)web.config"
-    Lines="@(SpaWebConfig->'%(Content)')"
-    Overwrite="true" />
-</Target>
+    <Copy SourceFiles="@(ReactFiles)"
+          DestinationFiles="@(ReactFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
 
 </Project>
     

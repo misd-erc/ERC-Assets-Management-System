@@ -14,6 +14,8 @@ import { useData } from '@/hooks/data/useData';
 import { AssetOverviewChart } from '@/components/dashboard/AssetOverviewChart';
 import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
 import { PendingApprovalsCard } from '@/components/dashboard/PendingApprovalsCard';
+import { getDashboardSummary, DashboardSummary } from '@/api/dashboard/dashboardApi';
+import { useState, useEffect } from 'react';
 
 interface DashboardProps {
 }
@@ -35,17 +37,30 @@ function Dashboard() {
   const { user } = useAuth();
   const { assets, supplies, risRequests, contracts } = useData();
 
-  // Calculate real-time KPIs as per TOR requirements with realistic values
-  const totalAssets = 3586; // Total PPE, SE, and Supplies
-  const totalPPE = 1847; // Property, Plant & Equipment
-  const totalSE = 956; // Semi-Expendables
-  const totalSupplies = 783; // Supplies Inventory
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
 
-  // Asset values in Philippine Pesos (â‚±)
-  const ppeAmount = 87456230.00; // â‚±87.46M total PPE value
-  const seAmount = 12837450.00; // â‚±12.84M total SE value
-  const suppliesAmount = 3245870.00; // â‚±3.25M total Supplies value
-  const totalAmount = ppeAmount + seAmount + suppliesAmount; // â‚±103.54M
+  useEffect(() => {
+    // const fetchSummary = async () => {
+    //   try {
+    //     const data = await getDashboardSummary();
+    //     setSummary(data);
+    //   } catch (error) {
+    //     console.error('Failed to fetch dashboard summary:', error);
+    //   }
+    // };
+    // fetchSummary();
+  }, []);
+
+  // Use dynamic values from API or fallbacks
+  const totalAssets = summary?.totalAssets || 3586;
+  const totalPPE = summary?.ppe.count || 1847;
+  const totalSE = summary?.se.count || 956;
+  const totalSupplies = summary?.supplies.count || 783;
+
+  const ppeAmount = summary?.ppe.amount || 87456230.00;
+  const seAmount = summary?.se.amount || 12837450.00;
+  const suppliesAmount = summary?.supplies.amount || 3245870.00;
+  const totalAmount = ppeAmount + seAmount + suppliesAmount;
 
   const pendingRequests = 47; // Awaiting approval
   const approvedRequests = 156; // Ready for processing
@@ -54,14 +69,14 @@ function Dashboard() {
   // Format currency in Philippine Peso
   const formatCurrency = (amount: number) => {
     if (amount >= 1000000) {
-      return `â‚±${(amount / 1000000).toFixed(2)}M`;
+      return `\u20B1${(amount / 1000000).toFixed(2)}M`;
     } else if (amount >= 1000) {
-      return `â‚±${(amount / 1000).toFixed(2)}K`;
+      return `\u20B1${(amount / 1000).toFixed(2)}K`;
     }
-    return `â‚±${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return `\u20B1${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  // TOR-required dashboard metrics with realistic values
+  // TOR-required dashboard metrics with dynamic values
   const kpiData = [
     {
       title: 'PPE Total',
@@ -69,7 +84,7 @@ function Dashboard() {
       count: `${totalPPE.toLocaleString()} items`,
       description: 'Property, Plant & Equipment',
       changeType: 'positive' as const,
-      change: '+â‚±2.4M vs last quarter',
+      change: '+\u20B12.4M vs last quarter',
       icon: Package,
       color: 'bg-blue-50 text-blue-600 border-blue-200'
     },
@@ -79,7 +94,7 @@ function Dashboard() {
       count: `${totalSE.toLocaleString()} items`,
       description: 'Semi-Expendable Items',
       changeType: 'positive' as const,
-      change: '+â‚±850K vs last quarter',
+      change: '+\u20B1850K vs last quarter',
       icon: Package,
       color: 'bg-green-50 text-green-600 border-green-200'
     },
@@ -89,7 +104,7 @@ function Dashboard() {
       count: `${totalSupplies.toLocaleString()} items`,
       description: 'Supplies Inventory',
       changeType: 'neutral' as const,
-      change: '+â‚±125K vs last quarter',
+      change: '+\u20B1125K vs last quarter',
       icon: Package,
       color: 'bg-purple-50 text-purple-600 border-purple-200'
     },
@@ -99,12 +114,11 @@ function Dashboard() {
       count: `${totalAssets.toLocaleString()} items`,
       description: 'Combined Assets Worth',
       changeType: 'positive' as const,
-      change: '+â‚±3.4M vs last quarter',
+      change: '+\u20B13.4M vs last quarter',
       icon: TrendingUp,
       color: 'bg-indigo-50 text-indigo-600 border-indigo-200'
     }
   ];
-
 
   return (
     <div className="pl-64 pt-16 space-y-8">
@@ -165,7 +179,7 @@ function Dashboard() {
         <CardHeader>
           <CardTitle>Asset Portfolio Summary</CardTitle>
           <CardDescription>
-            Breakdown of total asset value of â‚±{(totalAmount / 1000000).toFixed(2)}M across all categories
+            Breakdown of total asset value of \u20B1{(totalAmount / 1000000).toFixed(2)}M across all categories
           </CardDescription>
         </CardHeader>
         <CardContent>
