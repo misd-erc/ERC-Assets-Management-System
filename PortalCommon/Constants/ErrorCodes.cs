@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalCommon.Enums
+namespace PortalCommon.Constants
 {
     public static class ErrorCodes
     {

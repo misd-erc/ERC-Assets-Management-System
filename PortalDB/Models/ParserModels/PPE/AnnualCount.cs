@@ -8,10 +8,11 @@ namespace PortalDB.Models.ParserModels.PPE
 {
     public class AnnualCount
     {
-        public int Year { get; set; }
-        public string Date { get; set; } = string.Empty;
+        public string DateAssigned { get; set; } = string.Empty;
         public string ParItrNumber { get; set; } = string.Empty;
-        public string EmployeeId { get; set; } = string.Empty;
+        public string PlantillaEmployeeId { get; set; } = string.Empty;
+        public string NonPlantillaEmployeeId { get; set; } = string.Empty;
+        public string ActualOfficeAndDivision { get; set; } = string.Empty;
         public string Condition { get; set; } = string.Empty;
     }
 }

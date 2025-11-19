@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
-using PortalCommon.Enums;
 using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Module;
@@ -105,7 +104,7 @@ namespace API.Controllers
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(RolesController));
                 return StatusCode(
-                    500,
+                    ApiStatusCode.InternalServerError,
                     ApiResponse<object>.Fail(
                         ErrorCodes.SERVER_ERROR,
                         "An error occurred while processing your request."
@@ -149,7 +148,7 @@ namespace API.Controllers
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(RolesController));
                 return StatusCode(
-                    500,
+                    ApiStatusCode.InternalServerError,
                     ApiResponse<object>.Fail(
                         ErrorCodes.SERVER_ERROR,
                         "An error occurred while processing your request."
@@ -202,7 +201,7 @@ namespace API.Controllers
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(RolesController));
                 return StatusCode(
-                    500,
+                    ApiStatusCode.InternalServerError,
                     ApiResponse<object>.Fail(
                         ErrorCodes.SERVER_ERROR,
                         "An error occurred while processing your request."
@@ -248,7 +247,7 @@ namespace API.Controllers
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(
-                    500,
+                    ApiStatusCode.InternalServerError,
                     ApiResponse<object>.Fail(
                         ErrorCodes.SERVER_ERROR,
                         "An error occurred while processing your request."

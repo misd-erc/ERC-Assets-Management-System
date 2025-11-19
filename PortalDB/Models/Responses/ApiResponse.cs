@@ -1,5 +1,5 @@
 ﻿using System;
-using PortalCommon.Enums;
+using PortalCommon.Constants;
 using PortalDB.Models.ResponseModels.Pagination;
 
 namespace PortalDB.Models.Responses

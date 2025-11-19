@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using OfficeOpenXml;
 using PortalCommon.Utilities;
 using PortalDB.Services;
 using PortalTools.Services;
@@ -8,8 +9,8 @@ using PortalTools.Services.DBO.Notification;
 using PortalTools.Services.DBO.Office;
 using PortalTools.Services.DBO.Storage;
 using PortalTools.Services.LOG;
-using System.Text;
 using System.IO;
+using System.Text;
 
 Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
 var builder = WebApplication.CreateBuilder(args);
@@ -51,6 +52,7 @@ builder.Services.AddScoped<NotificationEditTools>();
 builder.Services.AddScoped<NotificationGetTools>();
 
 builder.Services.AddScoped<AuthTools>();
+builder.Services.AddScoped<ParserTools>();
 #endregion
 
 #region CORS

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
-using PortalCommon.Enums;
 using PortalDB.Models.QueryParams.Universal;
 using PortalDB.Models.QueryParams.Uploader;
 using PortalDB.Models.ResponseModels.Uploader;
@@ -14,6 +13,7 @@ using PortalDB.Services;
 using PortalTools.Services;
 using PortalTools.Services.DBO.Account;
 using PortalTools.Services.DBO.Storage;
+using PortalCommon.Constants;
 
 namespace API.Controllers
 {
@@ -50,7 +50,7 @@ namespace API.Controllers
         {
 
             if (file == null || file.Length == 0)
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.UPLOAD_FAILED, "Upload failed. Please check your file"));
+               return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.UPLOAD_FAILED, "Upload failed. Please check your file"));
 
             try
             {
@@ -93,7 +93,7 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(StorageController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+               return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
 
@@ -131,7 +131,7 @@ namespace API.Controllers
             {
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(StorageController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while retrieving the file."));
+               return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while retrieving the file."));
             }
         }
 

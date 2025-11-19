@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
-using PortalCommon.Enums;
 using PortalDB.Models.QueryParams.Pagination;
 using PortalDB.Models.ResponseModels.Log;
 using PortalDB.Models.ResponseModels.Log.AuditTrail;
@@ -118,7 +117,7 @@ namespace API.Controllers
             {
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(LogsController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
 
@@ -188,7 +187,7 @@ namespace API.Controllers
             {
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(LogsController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+               return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
 
@@ -301,7 +300,7 @@ namespace API.Controllers
             {
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(LogsController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+               return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
 
@@ -406,7 +405,7 @@ namespace API.Controllers
             {
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(LogsController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+               return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
 
@@ -423,7 +422,7 @@ namespace API.Controllers
             {
 
                 if (anonymousKey != UniversalConstants.ANONYMOUS_KEY)
-                    return StatusCode(401, ApiResponse<object>.Fail(ErrorCodes.UNAUTHORIZED, "Unauthorized access."));
+                    return StatusCode(ApiStatusCode.Unauthorized, ApiResponse<object>.Fail(ErrorCodes.UNAUTHORIZED, "Unauthorized access."));
 
                 IQueryable<TblErrorLog> errorLogQuery = _logGetTools.GetTblErrorLogs();
 
@@ -466,7 +465,7 @@ namespace API.Controllers
             {
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(LogsController));
-                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+               return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
         #endregion

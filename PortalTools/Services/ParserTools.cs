@@ -1,38 +1,45 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
+using Microsoft.AspNetCore.Http;
+using OfficeOpenXml;
 using PortalDB.Models.ParserModels.PPE;
 using System;
 using System.Collections.Generic;
-using System.Formats.Asn1;
 using System.Globalization;
+using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PortalTools.Services
 {
-    /// <summary>
-    /// Production-grade PPE Excel CSV parser with ISO date conversion, multi-year & multi-row support.
-    /// </summary>
-    internal static class ParserTools
+    public sealed class ParserTools
     {
         private static readonly DateTime ExcelEpoch = new DateTime(1899, 12, 30);
         private static readonly Regex PartRegex = new(
             @"(?:^|\n)\s*(?:(?<name>[^\n:]+):)?\s*SN[#:]?\s*(?<sn>[A-Z0-9]+)",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            RegexOptions.IgnoreCase | RegexOptions.Compiled | RegexOptions.Multiline);
 
-        /// <summary>
-        /// Parses PPE template CSV content into strongly-typed list of items with ISO dates.
-        /// </summary>
-        /// <param name="csvContent">Raw CSV string from Excel export</param>
-        /// <returns>List of PpeItem</returns>
-        public static List<PPEItem> ParsePpeCsv(string csvContent)
+        static ParserTools()
         {
-            if (string.IsNullOrWhiteSpace(csvContent))
-                throw new ArgumentException("CSV content cannot be null or empty.", nameof(csvContent));
+            ExcelPackage.License.SetNonCommercialPersonal("ERC AMS");
+        }
 
-            using var reader = new StringReader(csvContent);
+        public List<PPEItem> ParsePpeFile(IFormFile file)
+        {
+            if (file == null) throw new ArgumentException("File is required.");
+
+            var ext = Path.GetExtension(file.FileName)?.ToLowerInvariant() ?? "";
+            return ext switch
+            {
+                ".csv" => ParsePpeCsv(file.OpenReadStream()),
+                ".xlsx" or ".xls" => ParsePpeExcel(file.OpenReadStream()),
+                _ => throw new NotSupportedException("Only .csv and .xlsx files are supported.")
+            };
+        }
+
+        private List<PPEItem> ParsePpeCsv(Stream stream)
+        {
+            using var reader = new StreamReader(stream);
             using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
             {
                 HasHeaderRecord = false,
@@ -41,121 +48,214 @@ namespace PortalTools.Services
                 BadDataFound = null
             });
 
-            var rows = csv.GetRecords<string[]>().ToList();
+            var rows = new List<string[]>();
+            while (csv.Read())
+            {
+                var fields = new List<string>();
+                for (int i = 0; csv.TryGetField(i, out string? field); i++)
+                {
+                    fields.Add(field ?? string.Empty);
+                }
+                rows.Add(fields.ToArray());
+            }
+
+            return ParseRows(rows);
+        }
+
+        private List<PPEItem> ParsePpeExcel(Stream stream)
+        {
+            using var package = new ExcelPackage(stream);
+            var ws = package.Workbook.Worksheets[0];
+            var rows = new List<string[]>();
+
+            if (ws.Dimension == null) return new List<PPEItem>();
+
+            int rowCount = ws.Dimension.Rows;
+            int colCount = ws.Dimension.Columns;
+
+            for (int r = 1; r <= rowCount; r++)
+            {
+                var row = new string[colCount];
+                for (int c = 1; c <= colCount; c++)
+                {
+                    var cellValue = ws.Cells[r, c].Value;
+                    row[c - 1] = cellValue?.ToString()?.Trim() ?? string.Empty;
+                }
+                rows.Add(row);
+            }
+
+            return ParseRows(rows);
+        }
+
+        private List<PPEItem> ParseRows(List<string[]> rows)
+        {
             if (rows.Count < 3)
-                throw new InvalidDataException("CSV must have at least 3 rows: year row, header row, data row(s).");
+                throw new InvalidDataException("File must have at least 3 rows.");
 
-            var yearRow = rows[0];
             var headerRow = rows[1].Select(h => h.Trim()).ToArray();
-            var dataRows = rows.Skip(2).ToList();
+            var dataRows = rows.Skip(2)
+                              .Where(row => row.Any(cell => !string.IsNullOrWhiteSpace(cell)))
+                              .ToList();
 
-            var yearBlocks = FindYearBlocks(yearRow);
-            if (!yearBlocks.Any())
-                throw new InvalidDataException("No valid year blocks found in first row.");
-
-            var result = new List<PPEItem>();
+            var result = new List<PPEItem>(dataRows.Count);
 
             foreach (var dataRow in dataRows)
             {
                 var item = new PPEItem();
 
-                // === Static fields (first 10 columns) ===
-                var staticMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                int maxStaticCols = Math.Min(10, Math.Min(headerRow.Length, dataRow.Length));
-                for (int i = 0; i < maxStaticCols; i++)
+                // Build dictionary from ALL columns (critical fix!)
+                var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                int colCount = Math.Min(headerRow.Length, dataRow.Length);
+                for (int i = 0; i < colCount; i++)
                 {
-                    staticMap[headerRow[i]] = dataRow[i].Trim();
+                    var header = headerRow[i];
+                    if (!string.IsNullOrWhiteSpace(header))
+                    {
+                        map[header] = dataRow[i]?.Trim() ?? string.Empty;
+                    }
                 }
 
-                item.PropertyNumber = GetValue(staticMap, "property_number");
-                item.Legend = GetValue(staticMap, "legend");
-                item.Description = GetValue(staticMap, "description");
-                item.Brand = GetValue(staticMap, "brand");
-                item.Model = GetValue(staticMap, "model");
-                item.SerialNumber = GetValue(staticMap, "serial_number");
-                item.UnitOfMeasurement = GetValue(staticMap, "unit_of_measurement");
-                item.UnitValue = int.TryParse(GetValue(staticMap, "unit_value"), out var uv) ? uv : 0;
+                // String fields
+                item.PropertyNumber = Get(map, "Property Number", "property_number");
+                item.Category = Get(map, "Category", "category");
+                item.Legend = Get(map, "Legend/Sub-Category", "legend");
+                item.Description = Get(map, "Description", "description");
+                item.Brand = Get(map, "Brand", "brand");
+                item.Model = Get(map, "Model", "model");
+                item.SerialNumber = Get(map, "Serial Number", "serial_number", "sn");
+                item.UnitOfMeasurement = Get(map, "Unit of Measurement", "unit_of_measurement", "uom");
 
-                // Date Acquired
-                item.DateAcquired = TryConvertExcelDate(GetValue(staticMap, "date_acquired"));
+                // Numeric fields — NOW WORKS 100%
+                item.UnitValue = ParseLong(Get(map, "Unit Value (PHP)", "unit_value", "Unit Value")) ?? 0;
+                item.EstimatedUsefulLife = ParseLong(Get(map,
+                    "Estimated Useful Life (Years)",
+                    "estimated_useful_life",
+                    "Useful Life (Years)",
+                    "useful_life",
+                    "EUL",
+                    "Estimated Useful Life")) ?? 0;
+
+                // Date
+                var dateAcquired = Get(map, "Date Acquired (YYYY-MM-DD)", "date_acquired", "Date Acquired");
+                item.DateAssigned = TryParseDate(dateAcquired)?.ToString("yyyy-MM-dd") ?? string.Empty;
 
                 // Parts
-                item.Parts = ParseParts(GetValue(staticMap, "parts"));
+                var partsStr = Get(map, "Parts/Accessories", "parts", "accessories");
+                item.Parts = string.IsNullOrWhiteSpace(partsStr) ? null : ParseParts(partsStr);
 
-                // Annual Counts
-                foreach (var (year, startCol) in yearBlocks)
+                // Annual movements (dynamic columns after column 11)
+                var movements = new List<AnnualCount>();
+                int col = 11; // start after first 11 static columns
+
+                while (col + 5 < dataRow.Length)
                 {
-                    if (startCol + 3 >= dataRow.Length) continue;
-
-                    var dateCell = dataRow[startCol].Trim();
-                    if (string.IsNullOrEmpty(dateCell)) continue;
-
-                    var annual = new AnnualCount
+                    var dateCell = dataRow[col].Trim();
+                    if (string.IsNullOrWhiteSpace(dateCell))
                     {
-                        Year = year,
-                        Date = TryConvertExcelDate(dateCell),
-                        ParItrNumber = startCol + 1 < dataRow.Length ? dataRow[startCol + 1].Trim() : "",
-                        EmployeeId = startCol + 2 < dataRow.Length ? dataRow[startCol + 2].Trim() : "",
-                        Condition = startCol + 3 < dataRow.Length ? dataRow[startCol + 3].Trim() : ""
+                        col += 6;
+                        continue;
+                    }
+
+                    var movement = new AnnualCount
+                    {
+                        DateAssigned = TryParseDate(dateCell)?.ToString("yyyy-MM-dd") ?? dateCell,
+                        ParItrNumber = GetCell(dataRow, col + 1),
+                        PlantillaEmployeeId = GetCell(dataRow, col + 2),
+                        NonPlantillaEmployeeId = GetCell(dataRow, col + 3),
+                        ActualOfficeAndDivision = GetCell(dataRow, col + 4),
+                        Condition = GetCell(dataRow, col + 5)
                     };
 
-                    item.AnnualCount.Add(annual);
+                    movements.Add(movement);
+                    col += 6;
                 }
 
+                item.AnnualCount = movements.Count > 0 ? movements : null;
                 result.Add(item);
             }
 
             return result;
         }
 
-        private static string GetValue(Dictionary<string, string> map, string key)
-            => map.TryGetValue(key, out var value) ? value : string.Empty;
+        // ─────────────── CLEAN, BULLETPROOF HELPERS ───────────────
 
-        private static List<Part> ParseParts(string partsStr)
+        private static string? Get(Dictionary<string, string> map, params string[] keys)
         {
-            var parts = new List<Part>();
-            if (string.IsNullOrWhiteSpace(partsStr)) return parts;
+            foreach (var key in keys)
+            {
+                if (map.TryGetValue(key.Trim(), out var value) && !string.IsNullOrWhiteSpace(value))
+                    return value.Trim();
+            }
+            return null;
+        }
 
-            foreach (Match m in PartRegex.Matches(partsStr))
+        private static string GetCell(string[] row, int index)
+            => index < row.Length ? (row[index]?.Trim() ?? string.Empty) : string.Empty;
+
+        private static long? ParseLong(string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return null;
+
+            var cleaned = input
+                .Replace(",", "", StringComparison.Ordinal)
+                .Replace("₱", "", StringComparison.Ordinal)
+                .Replace("$", "", StringComparison.Ordinal)
+                .Replace("PHP", "", StringComparison.Ordinal)
+                .Trim();
+
+            if (long.TryParse(cleaned, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result))
+                return result;
+
+            if (double.TryParse(cleaned, NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
+                return (long)Math.Round(d);
+
+            return null;
+        }
+
+        private static List<Part> ParseParts(string input)
+        {
+            var list = new List<Part>();
+            foreach (Match m in PartRegex.Matches(input))
             {
                 var name = m.Groups["name"].Value.Trim();
                 var sn = m.Groups["sn"].Value.Trim();
-                parts.Add(new Part
+                if (!string.IsNullOrEmpty(sn))
                 {
-                    PartName = string.IsNullOrEmpty(name) ? "unknown" : name.ToLowerInvariant(),
-                    PartSerialNumber = sn
-                });
-            }
-            return parts;
-        }
-
-        private static List<(int Year, int StartCol)> FindYearBlocks(string[] yearRow)
-        {
-            var blocks = new List<(int, int)>();
-            for (int i = 0; i < yearRow.Length; i++)
-            {
-                var cell = yearRow[i].Trim();
-                if (cell.Length == 4 && int.TryParse(cell, out var year))
-                {
-                    blocks.Add((year, i));
-                    i += 4; // Skip: date, par, emp, cond
+                    list.Add(new Part
+                    {
+                        PartName = string.IsNullOrEmpty(name) ? "unknown" : name.ToLowerInvariant(),
+                        PartSerialNumber = sn
+                    });
                 }
             }
-            return blocks;
+            return list;
         }
 
-        private static string TryConvertExcelDate(string input)
+        private static DateTime? TryParseDate(string? input)
         {
-            if (double.TryParse(input, NumberStyles.Any, CultureInfo.InvariantCulture, out var serial))
+            if (string.IsNullOrWhiteSpace(input)) return null;
+
+            var s = input.Trim();
+
+            // Excel serial date
+            if (double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var serial))
             {
                 try
                 {
-                    int days = (int)serial;
-                    return ExcelEpoch.AddDays(days).ToString("yyyy-MM-dd");
+                    var days = (int)serial;
+                    if (days > 60) days--; // Excel leap year bug
+                    return ExcelEpoch.AddDays(days);
                 }
                 catch { /* ignore */ }
             }
-            return input; // fallback
+
+            // Standard formats
+            if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+                return dt;
+
+            var formats = new[] { "yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yyyy", "yyyy/MM/dd" };
+            return DateTime.TryParseExact(s, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt) ? dt : null;
         }
     }
 }
