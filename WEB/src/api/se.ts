@@ -4,13 +4,13 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api
 
 export const seApi = {
   // Get all SE assets
-  getAll: async (): Promise<SEAsset[]> => {
-    const response = await fetch(`${API_BASE_URL}/se`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch SE assets');
-    }
-    return response.json();
-  },
+  // getAll: async (): Promise<SEAsset[]> => {
+  //   const response = await fetch(`${API_BASE_URL}/se`);
+  //   if (!response.ok) {
+  //     throw new Error('Failed to fetch SE assets');
+  //   }
+  //   return response.json();
+  // },
 
   // Get SE asset by ID
   getById: async (id: string): Promise<SEAsset> => {

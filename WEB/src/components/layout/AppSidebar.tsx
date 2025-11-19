@@ -1,4 +1,5 @@
 ﻿import React, { useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -38,6 +39,7 @@ interface NavigationItem {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   id: string;
   badge?: string;
+  isUnderConstruction?: boolean;
 }
 
 interface NavigationGroup {
@@ -52,6 +54,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
   const { userProfile } = useUserProfile();
+  const navigate = useNavigate();
 
   // Get user scopes and admin status from decrypted userDetails
   const { userScopes, isAdmin } = useMemo(() => {
@@ -103,31 +106,37 @@ export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
           title: 'Category Management',
           icon: FolderOpen,
           id: 'category-management',
+          isUnderConstruction: true,
         },
         {
           title: 'Delivery & Receipt of Items',
           icon: Package,
           id: 'deliveries-receipts',
+          isUnderConstruction: true,
         },
         {
           title: 'Supply Management',
           icon: Send,
           id: 'supply-management',
+          isUnderConstruction: true,
         },
         {
           title: 'Transfers & Returns',
           icon: ArrowRightLeft,
           id: 'transfers-returns',
+          isUnderConstruction: true,
         },
         {
           title: 'Disposal of Properties',
           icon: Trash2,
           id: 'disposals',
+          isUnderConstruction: true,
         },
         {
           title: 'Contract Management',
           icon: FileText,
           id: 'contracts',
+          isUnderConstruction: true,
         },
       ],
     },
@@ -143,6 +152,7 @@ export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
           title: 'PPE & Semi-Expendables',
           icon: HardHat,
           id: 'ppe-semi-expendables',
+          isUnderConstruction: true,
         },
       ],
     },
@@ -153,12 +163,14 @@ export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
           title: 'Reports Center',
           icon: BarChart3,
           id: 'reports',
+          isUnderConstruction: true,
         },
         {
           title: 'Approvals',
           icon: CheckCircle,
           id: 'approvals',
           badge: '3',
+          isUnderConstruction: true,
         },
       ],
     },
@@ -184,6 +196,7 @@ export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
           title: 'System Settings',
           icon: Settings,
           id: 'settings',
+          isUnderConstruction: true,
         },
         {
           title: 'Audit Logs',
@@ -201,6 +214,10 @@ export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
       items: group.items.filter(item => {
         // Always show dashboard
         if (item.id === 'dashboard') return true;
+
+        // Active modules that are always shown
+        const activeModules = ['ppe-se', 'users-roles', 'office-management', 'roles-management', 'audit-logs'];
+        if (activeModules.includes(item.id)) return true;
 
         const moduleMapping: Record<string, string> = {
           'category-management': 'Category Management',
@@ -243,7 +260,7 @@ export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
   );
 
   return (
-    <Sidebar>
+    <Sidebar className="w-64 shrink-0 border-r bg-white">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center space-x-3 px-4 py-3">
           <img
@@ -267,33 +284,38 @@ export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent>
-        {navigationGroups.map((group) => (
-          <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map(({ id, title, icon: Icon, badge }) => (
-                  <SidebarMenuItem key={id}>
-                    <SidebarMenuButton
-                      onClick={() => handleModuleChange(id)}
-                      isActive={activeModule === id}
-                      className="w-full justify-start"
-                      aria-current={activeModule === id ? 'page' : undefined}
-                    >
-                      <Icon className="w-4 h-4" aria-hidden="true" />
-                      <span>{title}</span>
-                      {badge && (
-                        <Badge variant="destructive" className="ml-auto text-xs">
-                          {badge}
-                        </Badge>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        <nav className="space-y-1 px-4 py-4">
+          {navigationGroups.map((group) => (
+            <SidebarGroup key={group.title}>
+              <SidebarGroupLabel className="text-xs font-semibold text-slate-500 px-4 mb-1 mt-4">{group.title}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.items.map(({ id, title, icon: Icon, badge, isUnderConstruction }) => {
+                    const isActiveModule = ['dashboard', 'ppe-se', 'users-roles', 'office-management', 'roles-management', 'audit-logs'].includes(id);
+                    return (
+                      <SidebarMenuItem key={id}>
+                        <SidebarMenuButton
+                          onClick={() => isActiveModule ? handleModuleChange(id) : navigate('/under-construction', { state: { moduleName: title } })}
+                          isActive={activeModule === id}
+                          className={`flex items-center gap-3 px-4 py-2 rounded-md text-sm text-slate-700 hover:bg-slate-100 truncate ${activeModule === id ? 'bg-blue-50 text-blue-600 font-semibold' : ''}`}
+                          aria-current={activeModule === id ? 'page' : undefined}
+                        >
+                          <Icon className="size-4 shrink-0" aria-hidden="true" />
+                          <span className="truncate">{title}</span>
+                          {badge && (
+                            <Badge variant="destructive" className="ml-auto text-xs">
+                              {badge}
+                            </Badge>
+                          )}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </nav>
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">

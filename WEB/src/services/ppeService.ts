@@ -10,7 +10,8 @@ export class PPEService {
     search?: string;
   }): Promise<PPEAsset[]> {
     try {
-      let assets = await ppeApi.getAll();
+      // API not ready, return empty array for now
+      let assets: PPEAsset[] = [];
 
       if (filters) {
         assets = assets.filter(asset => {

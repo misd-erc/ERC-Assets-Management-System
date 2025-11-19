@@ -11,7 +11,7 @@ export const OfficeGeneralHeader = () => {
   const { totalPositions } = usePosition();
 
   return (
-    <div className="pl-64 pt-16 space-y-8">
+    <div className="space-y-6">
       {/* Title + Add Button */}
       <div className="flex items-center justify-between">
         <div>

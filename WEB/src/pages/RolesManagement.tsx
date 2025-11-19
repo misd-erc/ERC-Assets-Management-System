@@ -212,7 +212,7 @@ export function RolesManagement() {
   }
 
   return (
-    <div className="pl-64 pt-16 space-y-8">
+    <div className="p-6 pt-20 space-y-6">
       <RolesHeader onAddRole={() => setShowAddRole(true)} />
 
       <SearchAndSummary

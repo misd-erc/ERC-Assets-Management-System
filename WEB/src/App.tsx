@@ -83,23 +83,18 @@ function AppContent() {
       />
       
       {/* Protected Routes */}
-      <Route 
-        path="/dashboard" 
+      <Route
+        path="/"
         element={
           <ProtectedRoute>
             <MainLayout />
           </ProtectedRoute>
-        } 
-      />
-      
-      <Route 
-        path="/profile" 
-        element={
-          <ProtectedRoute>
-            <MainLayout />
-          </ProtectedRoute>
-        } 
-      />
+        }
+      >
+        <Route path="dashboard" element={<div />} />
+        <Route path="profile" element={<div />} />
+        <Route path="under-construction" element={<div />} />
+      </Route>
       
       {/* No Role Route */}
       <Route path="/no-role" element={<NoRolePage />} />
@@ -107,6 +102,16 @@ function AppContent() {
       {/* Under Construction Route */}
       <Route
         path="/under-construction"
+        element={
+          <ProtectedRoute>
+            <UnderConstructionPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* UC Route */}
+      <Route
+        path="/uc"
         element={
           <ProtectedRoute>
             <UnderConstructionPage />

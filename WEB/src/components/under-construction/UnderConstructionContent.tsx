@@ -1,4 +1,5 @@
 ﻿import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Construction, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,12 +9,15 @@ interface UnderConstructionContentProps {
 }
 
 const UnderConstructionContent: React.FC<UnderConstructionContentProps> = ({ onNavigate }) => {
+  const location = useLocation();
+  const moduleName = location.state?.moduleName || 'This feature';
+
   const handleGoToDashboard = () => {
     onNavigate('dashboard');
   };
 
   return (
-    <div className=" pl-64 pt-[140px] space-y-8">
+    <div className="space-y-8">
       <Card>
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
@@ -23,7 +27,7 @@ const UnderConstructionContent: React.FC<UnderConstructionContentProps> = ({ onN
             Under Construction
           </CardTitle>
           <CardDescription className="text-gray-600">
-            This feature is currently being developed and will be available soon.
+            The <strong>{moduleName}</strong> module is currently being developed and will be available soon.
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">

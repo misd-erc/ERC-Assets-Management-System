@@ -31,7 +31,7 @@ const UserManagement: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="p-6 pt-20 space-y-8">
       <UserList
         onAddUser={handleAddUser}
         onEditUser={handleEditUser}

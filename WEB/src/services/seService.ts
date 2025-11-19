@@ -11,7 +11,8 @@ export class SEService {
     search?: string;
   }): Promise<SEAsset[]> {
     try {
-      let assets = await seApi.getAll();
+      // API not ready, return empty array for now
+      let assets: SEAsset[] = [];
 
       if (filters) {
         assets = assets.filter(asset => {

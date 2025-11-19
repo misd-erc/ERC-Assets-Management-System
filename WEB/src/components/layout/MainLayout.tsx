@@ -1,6 +1,6 @@
 ﻿import React, { useState, Suspense, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Sidebar } from '@/components/layout/Sidebar';
+import { AppSidebar as Sidebar } from '@/components/layout/AppSidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import Dashboard from '@/pages/Dashboard';
 import { MyProfile } from '@/components/profile/MyProfile';
@@ -13,6 +13,7 @@ import { PPESEPage } from '@/pages/PPESEPage';
 import { useIsMobile } from '@/components/ui/use-mobile';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import OfficeManagement from '@/pages/OfficeManagement';
 
 
@@ -39,6 +40,8 @@ export function MainLayout() {
       setActiveModule('profile');
     } else if (location.pathname === '/dashboard') {
       setActiveModule('dashboard');
+    } else if (location.pathname === '/under-construction') {
+      setActiveModule('under-construction');
     }
   }, [location.pathname]);
 
@@ -48,6 +51,8 @@ export function MainLayout() {
       navigate('/profile');
     } else if (activeModule === 'dashboard') {
       navigate('/dashboard');
+    } else if (activeModule === 'under-construction') {
+      navigate('/under-construction');
     }
   }, [activeModule, navigate]);
 
@@ -96,6 +101,14 @@ export function MainLayout() {
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
               <PPESEPage />
+            </Suspense>
+          </ErrorBoundary>
+        );
+      case 'under-construction':
+        return (
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <UnderConstructionPage />
             </Suspense>
           </ErrorBoundary>
         );
@@ -149,23 +162,25 @@ export function MainLayout() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {isMobile ? (
-        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="p-0 w-64 z-40">
-            <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} isMobile={isMobile} />
-          </SheetContent>
-        </Sheet>
-      ) : (
-        <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} isMobile={isMobile} />
-      )}
-      <div className="flex flex-col flex-1">
-        <TopBar onMenuClick={() => setSidebarOpen(true)} isMobile={isMobile} onNavigate={setActiveModule} />
-        <main className="flex-1 overflow-auto bg-gray-50 p-4 sm:p-6 md:p-8">
-          {renderContent()}
-        </main>
+    <SidebarProvider>
+      <div className="flex h-screen w-full">
+        {isMobile ? (
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetContent side="left" className="p-0 w-64 z-40">
+              <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
+        )}
+        <div className={`flex-1 overflow-auto bg-slate-50 ${!isMobile ? 'ml-64' : ''}`}>
+          <TopBar onMenuClick={() => setSidebarOpen(true)} isMobile={isMobile} onNavigate={setActiveModule} />
+          <main className="p-6 space-y-6">
+            {renderContent()}
+          </main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
 
