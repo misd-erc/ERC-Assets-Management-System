@@ -9,7 +9,9 @@ using PortalTools.Services.DBO.Office;
 using PortalTools.Services.DBO.Storage;
 using PortalTools.Services.LOG;
 using System.Text;
+using System.IO;
 
+Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.

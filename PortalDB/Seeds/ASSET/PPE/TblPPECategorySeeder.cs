@@ -28,7 +28,7 @@ namespace PortalDB.Seeds.ASSET.PPE
                 PPECategory(4, "Office Equipment"),
                 PPECategory(5, "Technical and Scientific Equipment"),
                 PPECategory(6, "Sports Equipment"),
-                PPECategory(7, "Fixtures and Furnitures Equipment")
+                PPECategory(7, "Furniture and Fixtures")
             };
 
             context.TblPPECategories.AddRange(systemModules);

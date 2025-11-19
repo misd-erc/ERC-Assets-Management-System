@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { UserEditModal } from '@/components/user-management/UserEditModal';
 import { getStatusColor } from '@/utils/colorUtils';
+import { Navigate } from 'react-router-dom';
 
 interface UserListProps {
   onAddUser?: () => void;
@@ -77,6 +78,8 @@ export const UserList: React.FC<UserListProps> = ({
       // Check if it's a 401 error (unauthorized) and show appropriate message
       if (error.response?.status === 401) {
         toast.error('You do not have permission to view users or your session has expired.');
+      }if (error.response?.code == "ERR_TOKEN_EXPIRED") {
+         return <Navigate to="/" replace />;
       } else {
         toast.error('Failed to load users');
       }

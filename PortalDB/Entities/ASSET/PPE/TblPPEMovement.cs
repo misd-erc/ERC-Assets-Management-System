@@ -21,13 +21,13 @@ namespace PortalDB.Entities.ASSET.PPE
         [Column("PPEId")]
         public long? PPEId { get; set; }
 
-        [Column("PPEMovementDateAcquired")]
-        public string? DateAcquiredEncrypted { get; set; }
+        [Column("PPEMovementDateAssigned")]
+        public string? DateAssignedEncrypted { get; set; }
         [NotMapped]
-        public DateTime? DateAcquired
+        public DateTime? DateAssigned
         {
-            get => string.IsNullOrEmpty(DateAcquiredEncrypted) ? null : DateTime.Parse(EncryptionHelper.Decrypt(DateAcquiredEncrypted));
-            set => DateAcquiredEncrypted = string.IsNullOrEmpty(value.ToString()) ? null : EncryptionHelper.Encrypt(value.ToString());
+            get => string.IsNullOrEmpty(DateAssignedEncrypted) ? null : DateTime.Parse(EncryptionHelper.Decrypt(DateAssignedEncrypted));
+            set => DateAssignedEncrypted = string.IsNullOrEmpty(value.ToString()) ? null : EncryptionHelper.Encrypt(value.ToString());
         }
 
         [Column("PPEMovementPARITRNumber")]
@@ -44,6 +44,9 @@ namespace PortalDB.Entities.ASSET.PPE
 
         [Column("NonPlantillaEmployeeId")]
         public long? NonPlantillaEmployeeId { get; set; }
+
+        [Column("PPEMovementActualOfficeId")]
+        public long? ActualOfficeId { get; set; }
 
         [Column("PPEMovementActualDivisionId")]
         public long? ActualDivisionId { get; set; }

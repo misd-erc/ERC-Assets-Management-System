@@ -20,7 +20,7 @@ namespace PortalDB.Entities.ASSET.PPE
         [NotMapped] public const string OFF_EQ = "Office Equipment";
         [NotMapped] public const string TECSCI_EQ = "Technical and Scientific Equipment";
         [NotMapped] public const string SPO_EQ = "Sports Equipment";
-        [NotMapped] public const string FIXFUR_EQ = "Fixtures and Furnitures Equipment";
+        [NotMapped] public const string FIXFUR_EQ = "Furniture and Fixtures";
         #endregion
 
         #region Dictionary

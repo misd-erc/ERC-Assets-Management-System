@@ -102,6 +102,15 @@ namespace PortalDB.Entities.ASSET.PPE
             set => DateAcquiredEncrypted = string.IsNullOrEmpty(value.ToString()) ? null : EncryptionHelper.Encrypt(value.ToString());
         }
 
+        [Column("PPEEstimatedUsefulLife")]
+        public string? EstimatedUsefulLifeEncrypted { get; set; }
+        [NotMapped]
+        public string? EstimatedUsefulLife
+        {
+            get => string.IsNullOrEmpty(EstimatedUsefulLifeEncrypted) ? null : EncryptionHelper.Decrypt(EstimatedUsefulLifeEncrypted);
+            set => EstimatedUsefulLifeEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+        }
+
         [Column("PPEIsActive")]
         public bool IsActive { get; set; } = true;
 
