@@ -1,5 +1,6 @@
-﻿import React, { useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+﻿import React, { useCallback, useMemo, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
 import {
   Sidebar,
   SidebarContent,
@@ -7,39 +8,28 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuButton,
   SidebarHeader,
   SidebarFooter,
-} from '@/components/ui/sidebar';
+} from "@/components/ui/sidebar";
+
+import { Badge } from "@/components/ui/badge";
+import { decrypt } from "@/utils/encryption";
 import {
-  LayoutDashboard,
-  Package,
-  HardHat,
-  FileText,
-  ArrowRightLeft,
-  Trash2,
-  BarChart3,
-  Users,
-  Settings,
-  FileSearch,
-  Shield,
-  Building,
-  FolderOpen,
-  CheckCircle,
-  Send,
-  Building2,
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { useUserProfile } from '@/hooks/useUserProfile';
-import { decrypt } from '@/utils/encryption';
+  moduleConfig,
+  fallbackModule,
+  adminOverrideModules,
+} from "@/utils/moduleConfig";
+
+import { Building } from "lucide-react";
 
 interface NavigationItem {
-  title: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   id: string;
-  badge?: string;
-  isUnderConstruction?: boolean;
+  title: string;
+  icon: any;
+  group: string;
+  implemented: boolean;
 }
 
 interface NavigationGroup {
@@ -47,270 +37,147 @@ interface NavigationGroup {
   items: NavigationItem[];
 }
 
-interface AppSidebarProps {
-  activeModule: string;
-  onModuleChange: (module: string) => void;
-}
-
-export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
-  const { userProfile } = useUserProfile();
+export function AppSidebar({ activeModule, onModuleChange }: any) {
+  const [userDetails, setUserDetails] = useState<any>(null);
   const navigate = useNavigate();
 
-  // Get user scopes and admin status from decrypted userDetails
-  const { userScopes, isAdmin } = useMemo(() => {
-    if (!userProfile) return { userScopes: [], isAdmin: false };
+  // ----------------------
+  // LOAD USER DETAILS
+  // ----------------------
+  useEffect(() => {
+    const encrypted = localStorage.getItem("userDetails");
+    if (!encrypted) return;
 
     try {
-      const encryptedUserDetails = localStorage.getItem('userDetails');
-      if (!encryptedUserDetails) return { userScopes: [], isAdmin: false };
-
-      const decryptedUserDetails = JSON.parse(decrypt(encryptedUserDetails));
-      const scopes: string[] = [];
-      let admin = false;
-
-      decryptedUserDetails.systemRole?.forEach((role: any) => {
-        if (role.roleName === 'Administrator') {
-          admin = true;
-        }
-        if (role.isActive && !role.isDeleted && Array.isArray(role.scope)) {
-          role.scope.forEach((scopeItem: any) => {
-            if (scopeItem.module && scopeItem.module.name) {
-              scopes.push(scopeItem.module.name);
-            }
-          });
-        }
-      });
-
-      return { userScopes: scopes, isAdmin: admin };
-    } catch (error) {
-      console.error('Error decrypting user details:', error);
-      return { userScopes: [], isAdmin: false };
+      const decrypted = decrypt(encrypted);
+      setUserDetails(JSON.parse(decrypted));
+    } catch (err) {
+      console.error("Error decrypting user details:", err);
     }
-  }, [userProfile]);
+  }, []);
 
-  const baseNavigationGroups: NavigationGroup[] = [
-    {
-      title: 'Overview',
-      items: [
-        {
-          title: 'Dashboard',
-          icon: LayoutDashboard,
-          id: 'dashboard',
-        },
-      ],
-    },
-    {
-      title: 'Core Operations',
-      items: [
-        {
-          title: 'Category Management',
-          icon: FolderOpen,
-          id: 'category-management',
-          isUnderConstruction: true,
-        },
-        {
-          title: 'Delivery & Receipt of Items',
-          icon: Package,
-          id: 'deliveries-receipts',
-          isUnderConstruction: true,
-        },
-        {
-          title: 'Supply Management',
-          icon: Send,
-          id: 'supply-management',
-          isUnderConstruction: true,
-        },
-        {
-          title: 'Transfers & Returns',
-          icon: ArrowRightLeft,
-          id: 'transfers-returns',
-          isUnderConstruction: true,
-        },
-        {
-          title: 'Disposal of Properties',
-          icon: Trash2,
-          id: 'disposals',
-          isUnderConstruction: true,
-        },
-        {
-          title: 'Contract Management',
-          icon: FileText,
-          id: 'contracts',
-          isUnderConstruction: true,
-        },
-      ],
-    },
-    {
-      title: 'Asset Management',
-      items: [
-        {
-          title: 'PPE & SE',
-          icon: Package,
-          id: 'ppe-se',
-        },
-        {
-          title: 'PPE & Semi-Expendables',
-          icon: HardHat,
-          id: 'ppe-semi-expendables',
-          isUnderConstruction: true,
-        },
-      ],
-    },
-    {
-      title: 'Reports & Approvals',
-      items: [
-        {
-          title: 'Reports Center',
-          icon: BarChart3,
-          id: 'reports',
-          isUnderConstruction: true,
-        },
-        {
-          title: 'Approvals',
-          icon: CheckCircle,
-          id: 'approvals',
-          badge: '3',
-          isUnderConstruction: true,
-        },
-      ],
-    },
-    ...(isAdmin ? [{
-      title: 'Administration',
-      items: [
-        {
-          title: 'User Management',
-          icon: Users,
-          id: 'users-roles',
-        },
-        {
-          title: 'Office Management',
-          icon: Building2,
-          id: 'office-management',
-        },
-        {
-          title: 'Roles Management',
-          icon: Shield,
-          id: 'roles-management',
-        },
-        {
-          title: 'System Settings',
-          icon: Settings,
-          id: 'settings',
-          isUnderConstruction: true,
-        },
-        {
-          title: 'Audit Logs',
-          icon: FileSearch,
-          id: 'audit-logs',
-        },
-      ],
-    }] : []),
-  ];
+  // ----------------------
+  // EXTRACT SCOPES (ACRONYM-BASED)
+  // ----------------------
+  const { acronyms, isAdmin } = useMemo(() => {
+    if (!userDetails) return { acronyms: [], isAdmin: false };
 
-  // Filter navigation groups based on user scopes
-  const navigationGroups = useMemo(() => {
-    return baseNavigationGroups.map(group => ({
-      ...group,
-      items: group.items.filter(item => {
-        // Always show dashboard
-        if (item.id === 'dashboard') return true;
+    const list: string[] = [];
+    let adminFlag = false;
 
-        // Active modules that are always shown
-        const activeModules = ['ppe-se', 'users-roles', 'office-management', 'roles-management', 'audit-logs'];
-        if (activeModules.includes(item.id)) return true;
+    userDetails.systemRole?.forEach((role: any) => {
+      if (role.roleName === "Administrator") adminFlag = true;
 
-        const moduleMapping: Record<string, string> = {
-          'category-management': 'Category Management',
-          'deliveries-receipts': 'Delivery & Receipt of Items',
-          'supply-management': 'Supply Management',
-          'transfers-returns': 'Transfers & Returns',
-          'disposals': 'Disposal of Properties',
-          'contracts': 'Contract Management',
-          'ppe-se': 'PPE & SE',
-          'ppe-semi-expendables': 'PPE & Semi-Expendables',
-          'reports': 'Reports Center',
-          'approvals': 'Approvals',
-          'users-roles': 'User Management',
-          'office-management': 'Office Management',
-          'roles-management': 'Roles Management',
-          'settings': 'System Settings',
-          'audit-logs': 'Audit Logs'
-        };
+      role.scope?.forEach((s: any) => {
+        if (s.module?.acronym) list.push(s.module.acronym);
+      });
+    });
 
-        const requiredModule = moduleMapping[item.id];
+    // ADMIN OVERRIDE (forced modules)
+    if (adminFlag) {
+      adminOverrideModules.forEach((ac) => {
+        if (!list.includes(ac)) list.push(ac);
+      });
+    }
 
-        if (isAdmin) {
-          // Administrators see all items
-          return true;
-        } else {
-          // Non-admins see only items in their scopes
-          return requiredModule ? userScopes.includes(requiredModule) : false;
-        }
-      })
-    })).filter(group => group.items.length > 0);
-  }, [userScopes, isAdmin]);
+    return { acronyms: list, isAdmin: adminFlag };
+  }, [userDetails]);
 
-  const handleModuleChange = useCallback(
-    (moduleId: string) => {
-      if (moduleId !== activeModule) {
-        onModuleChange(moduleId);
-      }
-    },
-    [activeModule, onModuleChange]
-  );
+  // ----------------------
+  // BUILD NAVIGATION GROUPS
+  // ----------------------
+  const navigationGroups: NavigationGroup[] = useMemo(() => {
+    const grouped: Record<string, NavigationItem[]> = {};
 
+    acronyms.forEach((acronym) => {
+      const config = moduleConfig[acronym] || {
+        ...fallbackModule,
+        id: acronym.toLowerCase(),
+        title: acronym,
+        icon: Building,
+        implemented: false,
+      };
+
+      const item: NavigationItem = {
+        id: config.id,
+        title: config.title,
+        icon: config.icon,
+        group: config.group,
+        implemented: config.implemented,
+      };
+
+      if (!grouped[config.group]) grouped[config.group] = [];
+      grouped[config.group].push(item);
+    });
+
+    return Object.entries(grouped).map(([group, items]) => ({
+      title: group,
+      items,
+    }));
+  }, [acronyms]);
+
+  // ----------------------
+  // CLICK HANDLER
+  // ----------------------
+  const handleClick = (item: NavigationItem) => {
+    if (item.implemented) {
+      onModuleChange(item.id);
+    } else {
+      navigate("/under-construction", { state: { moduleName: item.title } });
+    }
+  };
+
+  // ----------------------
+  // RENDER UI
+  // ----------------------
   return (
     <Sidebar className="w-64 shrink-0 border-r bg-white">
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center space-x-3 px-4 py-3">
-          <img
-            src="/images/erc-logo.png"
-            alt="ERC Logo"
-            className="w-8 h-8 rounded"
-          />
+        <div className="flex items-center gap-3 px-4 py-3">
+          <img src="/images/erc-logo.png" className="w-8 h-8" />
           <div className="flex flex-col min-w-0">
-            <p className="text-sm font-semibold text-slate-900 truncate">
+            <p className="text-sm font-semibold truncate">
               Energy Regulatory Commission
             </p>
-            <a
-              href="#"
-              className="text-xs text-blue-600 hover:underline truncate"
-              title="Asset Management System"
-            >
+            <p className="text-xs text-blue-600 truncate">
               Asset Management System
-            </a>
+            </p>
           </div>
         </div>
       </SidebarHeader>
 
       <SidebarContent>
-        <nav className="space-y-1 px-4 py-4">
+        <nav className="space-y-3 px-4 py-4">
           {navigationGroups.map((group) => (
             <SidebarGroup key={group.title}>
-              <SidebarGroupLabel className="text-xs font-semibold text-slate-500 px-4 mb-1 mt-4">{group.title}</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-xs font-semibold text-slate-500 px-2 mb-1">
+                {group.title}
+              </SidebarGroupLabel>
+
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {group.items.map(({ id, title, icon: Icon, badge, isUnderConstruction }) => {
-                    const isActiveModule = ['dashboard', 'ppe-se', 'users-roles', 'office-management', 'roles-management', 'audit-logs'].includes(id);
-                    return (
-                      <SidebarMenuItem key={id}>
-                        <SidebarMenuButton
-                          onClick={() => isActiveModule ? handleModuleChange(id) : navigate('/under-construction', { state: { moduleName: title } })}
-                          isActive={activeModule === id}
-                          className={`flex items-center gap-3 px-4 py-2 rounded-md text-sm text-slate-700 hover:bg-slate-100 truncate ${activeModule === id ? 'bg-blue-50 text-blue-600 font-semibold' : ''}`}
-                          aria-current={activeModule === id ? 'page' : undefined}
-                        >
-                          <Icon className="size-4 shrink-0" aria-hidden="true" />
-                          <span className="truncate">{title}</span>
-                          {badge && (
-                            <Badge variant="destructive" className="ml-auto text-xs">
-                              {badge}
-                            </Badge>
-                          )}
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
+                  {group.items.map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        onClick={() => handleClick(item)}
+                        isActive={activeModule === item.id}
+                        className={`flex items-center gap-3 px-4 py-2 rounded-md text-sm hover:bg-slate-100 truncate ${
+                          activeModule === item.id
+                            ? "bg-blue-50 text-blue-600 font-semibold"
+                            : "text-slate-700"
+                        }`}
+                      >
+                        <item.icon className="size-4 shrink-0" />
+                        <span className="truncate">{item.title}</span>
+
+                        {!item.implemented && (
+                          <Badge variant="secondary" className="ml-auto text-xs">
+                            Soon
+                          </Badge>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -320,17 +187,17 @@ export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
 
       <SidebarFooter className="border-t border-sidebar-border">
         <div className="flex items-center space-x-2 px-4 py-3">
-          <Building className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+          <Building className="w-4 h-4 text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs truncate">Energy Regulatory Commission</p>
-            <p className="text-xs text-muted-foreground">Republic of the Philippines</p>
+            <p className="text-xs truncate">
+              Energy Regulatory Commission
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Republic of the Philippines
+            </p>
           </div>
         </div>
       </SidebarFooter>
     </Sidebar>
   );
 }
-
-
-
-

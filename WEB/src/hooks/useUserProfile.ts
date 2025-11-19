@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { getUserDetails } from '@/api/user-management/authApi';
-import { UserDetails } from '@/types/user';
+import { UserDetails, SystemRole, SystemRoleScope } from '@/types/user';
 import { handleSessionExpired, getSessionToken } from '@/utils/sessionUtils';
 
 export const useUserProfile = () => {
@@ -12,7 +12,7 @@ export const useUserProfile = () => {
   const loadUserProfile = useCallback(async (isMounted: boolean) => {
     // Use token from store or localStorage
     const token = systemUserId || getSessionToken();
-    
+
     if (!token) {
       console.log('[useUserProfile] No token available');
       if (isMounted) setLoading(false);
@@ -20,28 +20,10 @@ export const useUserProfile = () => {
     }
 
     try {
-      console.log('[useUserProfile] Loading user profile...');
-      
-      // Check localStorage first
-      const stored = localStorage.getItem('userProfile');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // Include profilePictureId from separate localStorage key
-        const profilePictureId = localStorage.getItem('profilePictureId');
-        if (profilePictureId) {
-          parsed.profilePictureId = profilePictureId;
-        }
-        if (isMounted) {
-          setUserProfile(parsed);
-          setLoading(false);
-        }
-        console.log('[useUserProfile] Loaded from localStorage');
-        return;
-      }
+      console.log('[useUserProfile] Fetching user profile from API...');
 
-      // Fetch from API if not in localStorage
-      console.log('[useUserProfile] Fetching from API...');
-      const data = await getUserDetails();
+      // Always fetch from API to ensure latest data
+      const data = await getUserDetails() as UserDetails;
 
       if (isMounted) {
         // Include profilePictureId from separate localStorage key
@@ -50,13 +32,13 @@ export const useUserProfile = () => {
           (data as any).profilePictureId = profilePictureId;
         }
         localStorage.setItem('userProfile', JSON.stringify(data));
-        setUserProfile(data);
+        setUserProfile(data as UserDetails);
         setLoading(false);
         console.log('[useUserProfile] Profile loaded successfully');
       }
     } catch (error) {
       console.error('[useUserProfile] Failed to fetch user profile:', error);
-      
+
       // Check if it's a session error
       if (error instanceof Error && error.message === 'Session expired') {
         handleSessionExpired();
@@ -82,7 +64,7 @@ export const useUserProfile = () => {
       console.log('[useUserProfile] Refreshing profile...');
       const data = await getUserDetails();
       localStorage.setItem('userProfile', JSON.stringify(data));
-      setUserProfile(data);
+     setUserProfile(data as UserDetails);
       console.log('[useUserProfile] Profile refreshed successfully');
     } catch (error) {
       console.error('[useUserProfile] Failed to refresh profile:', error);

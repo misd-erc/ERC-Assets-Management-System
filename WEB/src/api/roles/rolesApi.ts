@@ -1,11 +1,17 @@
 ﻿import axiosInstance from '@/lib/axios';
 import { ApiResponse } from '@/types';
 
+export interface SystemRoleScope {
+  module: {
+    name: string;
+  };
+}
+
 export interface SystemRoleResponseModel {
   id: number;
   roleName: string;
   description: string;
-  scope: string[];
+  scope: SystemRoleScope[];
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
