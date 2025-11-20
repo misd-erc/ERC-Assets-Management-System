@@ -3,23 +3,23 @@ using PortalCommon.Constants;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Notification;
 using PortalDB.Services;
-using PortalTools.Services.DBO.Account;
+using PortalTools.Composition;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalTools.Services.DBO.Notification
+namespace PortalTools.Services.GetEditTools.DBO.Notification
 {
     public class NotificationEditTools
     {
         private readonly DbContextOptions<PortalDbContext> _options;
-        private readonly NotificationGetTools _notificationGetTools;
-        public NotificationEditTools(DbContextOptions<PortalDbContext> options, NotificationGetTools notificationGetTools)
+        private readonly IPortalGetTools _getTools;
+        public NotificationEditTools(DbContextOptions<PortalDbContext> options, IPortalGetTools getTools)
         {
             _options = options;
-            _notificationGetTools = notificationGetTools;
+            _getTools = getTools;
         }
 
         /// <summary>

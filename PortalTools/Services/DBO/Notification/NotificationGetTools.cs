@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalTools.Services.DBO.Notification
+namespace PortalTools.Services.GetEditTools.DBO.Notification
 {
     public class NotificationGetTools
     {

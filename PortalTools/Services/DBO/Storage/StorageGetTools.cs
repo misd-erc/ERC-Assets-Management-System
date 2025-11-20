@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalTools.Services.DBO.Storage
+namespace PortalTools.Services.GetEditTools.DBO.Storage
 {
     public class StorageGetTools
     {

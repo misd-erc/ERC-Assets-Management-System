@@ -14,7 +14,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace PortalTools.Services.LOG
+namespace PortalTools.Services.GetEditTools.LOG
 {
     public class LogGetTools
     {

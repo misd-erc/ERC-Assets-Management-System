@@ -28,16 +28,10 @@ namespace PortalDB.Entities.ASSET.PPE
         }
 
         [Column("PPECategoryId")]
-        public string? CategoryId { get; set; }
+        public long? CategoryId { get; set; }
 
-        [Column("PPELegend")]
-        public string? LegendEncrypted { get; set; }
-        [NotMapped]
-        public string? Legend
-        {
-            get => string.IsNullOrEmpty(LegendEncrypted) ? null : EncryptionHelper.Decrypt(LegendEncrypted);
-            set => LegendEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
-        }
+        [Column("PPELegendId")]
+        public long? LegendId { get; set; }
 
         [Column("PPEDescription")]
         public string? DescriptionEncrypted { get; set; }
@@ -105,10 +99,10 @@ namespace PortalDB.Entities.ASSET.PPE
         [Column("PPEEstimatedUsefulLife")]
         public string? EstimatedUsefulLifeEncrypted { get; set; }
         [NotMapped]
-        public string? EstimatedUsefulLife
+        public long? EstimatedUsefulLife
         {
-            get => string.IsNullOrEmpty(EstimatedUsefulLifeEncrypted) ? null : EncryptionHelper.Decrypt(EstimatedUsefulLifeEncrypted);
-            set => EstimatedUsefulLifeEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+            get => string.IsNullOrEmpty(EstimatedUsefulLifeEncrypted) ? null : long.Parse(EncryptionHelper.Decrypt(EstimatedUsefulLifeEncrypted));
+            set => EstimatedUsefulLifeEncrypted = string.IsNullOrEmpty(value.ToString()) ? null : EncryptionHelper.Encrypt(value.ToString());
         }
 
         [Column("PPEIsActive")]

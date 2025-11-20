@@ -20,7 +20,7 @@ namespace PortalDB.Entities.DBO.Account
         public long Id { get; set; }
 
         [Column("SystemUserId")]
-        public long? SystemUserIdd { get; set; }
+        public long? SystemUserId { get; set; }
 
         [Column("EmployeeFirstName")]
         public string? FirstNameEncrypted { get; set; }

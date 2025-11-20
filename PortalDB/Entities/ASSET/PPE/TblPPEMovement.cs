@@ -42,8 +42,26 @@ namespace PortalDB.Entities.ASSET.PPE
         [Column("PlantillaEmployeeId")]
         public long? PlantillaEmployeeId { get; set; }
 
+        [Column("PlantillaEmployeeIdOriginal")]
+        public string? PlantillaEmployeeIdOriginalEncrypted { get; set; }
+        [NotMapped]
+        public string? PlantillaEmployeeIdOriginal
+        {
+            get => string.IsNullOrEmpty(PlantillaEmployeeIdOriginalEncrypted) ? null : EncryptionHelper.Decrypt(PlantillaEmployeeIdOriginalEncrypted);
+            set => PlantillaEmployeeIdOriginalEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+        }
+
         [Column("NonPlantillaEmployeeId")]
         public long? NonPlantillaEmployeeId { get; set; }
+
+        [Column("NonPlantillaEmployeeIdOriginal")]
+        public string? NonPlantillaEmployeeIdOriginalEncrypted { get; set; }
+        [NotMapped]
+        public string? NonPlantillaEmployeeIdOriginal
+        {
+            get => string.IsNullOrEmpty(NonPlantillaEmployeeIdOriginalEncrypted) ? null : EncryptionHelper.Decrypt(NonPlantillaEmployeeIdOriginalEncrypted);
+            set => NonPlantillaEmployeeIdOriginalEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+        }
 
         [Column("PPEMovementActualOfficeId")]
         public long? ActualOfficeId { get; set; }

@@ -2,18 +2,19 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
+using PortalCommon.Constants;
+using PortalCommon.Utilities;
+using PortalDB.Entities.DBO.Storage;
 using PortalDB.Models.QueryParams.Universal;
 using PortalDB.Models.QueryParams.Uploader;
 using PortalDB.Models.ResponseModels.Uploader;
 using PortalDB.Models.Responses;
 using PortalDB.Models.ViewModels.Account;
-using PortalCommon.Utilities;
-using PortalDB.Entities.DBO.Storage;
 using PortalDB.Services;
+using PortalTools.Composition;
 using PortalTools.Services;
-using PortalTools.Services.DBO.Account;
-using PortalTools.Services.DBO.Storage;
-using PortalCommon.Constants;
+using PortalTools.Services.GetEditTools.DBO.Account;
+using PortalTools.Services.GetEditTools.DBO.Storage;
 
 namespace API.Controllers
 {
@@ -23,22 +24,19 @@ namespace API.Controllers
     public class StorageController : ControllerBase
     {
         private readonly DbContextOptions<PortalDbContext> _options;
-        private readonly AccountGetTools _accountGetTools;
-        private readonly StorageGetTools _storageGetTools;
-        private readonly AccountEditTools _accountEditTools;
+        private readonly IPortalGetTools _getTools;
+        private readonly IPortalEditTools _editTools;
         private readonly AuthTools _authTools;
 
-        public StorageController(AccountGetTools accountGetTools,
-            AccountEditTools accountEditTools,
-            StorageGetTools storageGetTools,
-            DbContextOptions<PortalDbContext> options,
+        public StorageController(DbContextOptions<PortalDbContext> options,
+            IPortalGetTools getTools,
+            IPortalEditTools editTools,
             AuthTools authTools)
         {
-            _accountGetTools = accountGetTools;
-            _accountEditTools = accountEditTools;
             _options = options;
+            _getTools = getTools;
+            _editTools = editTools;
             _authTools = authTools;
-            _storageGetTools = storageGetTools;
         }
 
         [HttpPost("upload/user/profile-picture")]
@@ -77,7 +75,7 @@ namespace API.Controllers
                     FileStorageId = fileId.Value
                 };
 
-                await _accountEditTools.UpdateTblSystemUserProfilePictureAsync(profileVM, context);
+                await _editTools.Account.UpdateTblSystemUserProfilePictureAsync(profileVM, context);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -110,7 +108,7 @@ namespace API.Controllers
             {
 
                 // Retrieve record
-                var fileRecord = await _storageGetTools.GetTblFileStorageAsync(fileStorageId, context);
+                var fileRecord = await _getTools.Storage.GetTblFileStorageAsync(fileStorageId, context);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();

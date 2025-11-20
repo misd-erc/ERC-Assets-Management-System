@@ -18,7 +18,7 @@ namespace PortalDB.Models.ParserModels.PPE
         public List<Part>? Parts { get; set; }
         public string UnitOfMeasurement { get; set; } = string.Empty;
         public long? UnitValue { get; set; }
-        public string DateAssigned { get; set; } = string.Empty;
+        public DateTime? DateAssigned { get; set; }
         public List<AnnualCount>? AnnualCount { get; set; }
         public long? EstimatedUsefulLife { get; set; }
     }

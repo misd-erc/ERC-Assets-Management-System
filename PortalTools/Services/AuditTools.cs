@@ -3,7 +3,7 @@ using PortalCommon.Utilities;
 using PortalDB.Entities.LOG;
 using PortalDB.Entities.LOG.AuditTrail;
 using PortalDB.Services;
-using PortalTools.Services.LOG;
+using PortalTools.Services.GetEditTools.LOG;
 using System;
 using System.Collections.Generic;
 using System.Linq;

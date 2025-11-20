@@ -9,25 +9,25 @@ using PortalCommon.Utilities;
 
 namespace PortalDB.Entities.ASSET.PPE
 {
-    [Table("tblPPECategories", Schema = "asset")]
-    public class TblPPECategory
+    [Table("tblPPELegends", Schema = "asset")]
+    public class TblPPELegend
     {
 
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        [Column("PPECategoryId")]
+        [Column("PPELegendId")]
         public long Id { get; set; }
 
-        [Column("PPECategoryName")]
+        [Column("PPELegendName")]
         public string? Name { get; set; }
 
-        [Column("PPECategoryIsActive")]
+        [Column("PPELegendIsActive")]
         public bool IsActive { get; set; } = true;
 
-        [Column("PPECategoryIsDeleted")]
+        [Column("PPELegendIsDeleted")]
         public bool IsDeleted { get; set; } = false;
 
-        [Column("PPECategoryCreatedAt")]
+        [Column("PPELegendCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
 

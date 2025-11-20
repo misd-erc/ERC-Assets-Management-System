@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Graph.Models.CallRecords;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
 using PortalCommon.Utilities;
@@ -17,13 +18,8 @@ using PortalDB.Models.Responses;
 using PortalDB.Models.ViewModels.Account;
 using PortalDB.Models.ViewModels.Email;
 using PortalDB.Services;
+using PortalTools.Composition;
 using PortalTools.Services;
-using PortalTools.Services.DBO.Account;
-using PortalTools.Services.DBO.Notification;
-using PortalTools.Services.DBO.Office;
-using PortalTools.Services.DBO.Storage;
-using PortalTools.Services.LOG;
-using static System.Net.WebRequestMethods;
 
 namespace API.Controllers
 {
@@ -33,31 +29,19 @@ namespace API.Controllers
     public class UsersController : ControllerBase
     {
         private readonly DbContextOptions<PortalDbContext> _options;
-        private readonly AccountGetTools _accountGetTools;
-        private readonly AccountEditTools _accountEditTools;
-		private readonly OfficeGetTools _officeGetTools;
-		private readonly LogEditTools _logEditTools;
-        private readonly NotificationGetTools _notificationGetTools;
-        private readonly StorageGetTools _storageGetTools;
+        private readonly IPortalGetTools _getTools;
+        private readonly IPortalEditTools _editTools;
 		private readonly AuthTools _authTools;
 
-        public UsersController(AccountGetTools accountGetTools, 
-            AccountEditTools accountEditTools,
-            LogEditTools logEditTools,
-            OfficeGetTools officeGetTools,
-			NotificationGetTools notificationGetTools,
-            DbContextOptions<PortalDbContext> options,
-            StorageGetTools storageGetTools,
-			AuthTools authTools)
+        public UsersController(DbContextOptions<PortalDbContext> options,
+            IPortalGetTools get, 
+            IPortalEditTools edit,
+            AuthTools authTools)
         {
-            _accountGetTools = accountGetTools;
-            _accountEditTools = accountEditTools;
-            _logEditTools = logEditTools;
             _options = options;
+            _getTools = get;
+            _editTools = edit;
             _authTools = authTools;
-            _notificationGetTools = notificationGetTools;
-            _officeGetTools = officeGetTools;
-            _storageGetTools = storageGetTools;
 		}
 
         #region GET
@@ -74,8 +58,8 @@ namespace API.Controllers
 			try
             {
 
-				IEnumerable<VwSystemUser?> users = await _accountGetTools.GetVwSystemUsers(context).ToListAsync();
-                long systemUserId = await _accountGetTools.GetSystemUserIdBySessionKeyAsync(model.SessionKey, context);
+				IEnumerable<VwSystemUser?> users = await _getTools.Account.GetVwSystemUsers(context).ToListAsync();
+                long systemUserId = await _getTools.Account.GetSystemUserIdBySessionKeyAsync(model.SessionKey, context);
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -120,13 +104,13 @@ namespace API.Controllers
                         Email = x.Email,
                         EmployeeId = x.EmployeeId,
                         IsActive = x.IsActive,
-                        SystemRole = await _accountGetTools.GetSystemRoleWithScopesAsListAsync(x.SystemRoleId, context),
-                        SystemUserStatus = await _accountGetTools.GetSystemUserStatusAsync(x.StatusId, context),
-                        Office = await _officeGetTools.GetTblOfficeAsync(x.OfficeId, context),
-                        Division = await _officeGetTools.GetTblDivisionAsync(x.DivisionId, context),
-                        EmploymentType = await _officeGetTools.GetTblEmploymentTypeAsync(x.EmploymentTypeId ?? 0, context),
-                        Position = await _officeGetTools.GetTblPositionAsync(x.PositionId ?? 0, context),
-                        ProfilePictureStorageFile = await _storageGetTools.GetTblFileStorageAsync(x.ProfilePictureFileStorageId, context),
+                        SystemRole = await _getTools.Account.GetSystemRoleWithScopesAsListAsync(x.SystemRoleId, context),
+                        SystemUserStatus = await _getTools.Account.GetSystemUserStatusAsync(x.StatusId, context),
+                        Office = await _getTools.Office.GetTblOfficeAsync(x.OfficeId, context),
+                        Division = await _getTools.Office.GetTblDivisionAsync(x.DivisionId, context),
+                        EmploymentType = await _getTools.Office.GetTblEmploymentTypeAsync(x.EmploymentTypeId ?? 0, context),
+                        Position = await _getTools.Office.GetTblPositionAsync(x.PositionId ?? 0, context),
+                        ProfilePictureStorageFile = await _getTools.Storage.GetTblFileStorageAsync(x.ProfilePictureFileStorageId, context),
                         CreatedAt = x.CreatedAt,
                         LastLoginAt = x.LastLoginAt
                     };
@@ -166,7 +150,7 @@ namespace API.Controllers
             try
             {
 
-                VwSystemUser? user = await _accountGetTools.GetVwSystemUserAsync(systemUserId, context);
+                VwSystemUser? user = await _getTools.Account.GetVwSystemUserAsync(systemUserId, context);
 
                 UserBasicResponseModel userBasicResponse = new UserBasicResponseModel
                 {
@@ -176,13 +160,13 @@ namespace API.Controllers
 					Email = user.Email,
 					EmployeeId = user.EmployeeId,
 					IsActive = user.IsActive,
-					SystemRole = await _accountGetTools.GetSystemRoleWithScopesAsListAsync(user.SystemRoleId, context),
-					SystemUserStatus = await _accountGetTools.GetSystemUserStatusAsync(user.StatusId, context),
-					Office = await _officeGetTools.GetTblOfficeAsync(user.OfficeId, context),
-					Division = await _officeGetTools.GetTblDivisionAsync(user.DivisionId, context),
-					EmploymentType = await _officeGetTools.GetTblEmploymentTypeAsync(user.EmploymentTypeId ?? 0, context),
-					Position = await _officeGetTools.GetTblPositionAsync(user.PositionId ?? 0, context),
-					ProfilePictureStorageFile = await _storageGetTools.GetTblFileStorageAsync(user.ProfilePictureFileStorageId, context),
+					SystemRole = await _getTools.Account.GetSystemRoleWithScopesAsListAsync(user.SystemRoleId, context),
+					SystemUserStatus = await _getTools.Account.GetSystemUserStatusAsync(user.StatusId, context),
+					Office = await _getTools.Office.GetTblOfficeAsync(user.OfficeId, context),
+					Division = await _getTools.Office.GetTblDivisionAsync(user.DivisionId, context),
+					EmploymentType = await _getTools.Office.GetTblEmploymentTypeAsync(user.EmploymentTypeId ?? 0, context),
+					Position = await _getTools.Office.GetTblPositionAsync(user.PositionId ?? 0, context),
+					ProfilePictureStorageFile = await _getTools.Storage.GetTblFileStorageAsync(user.ProfilePictureFileStorageId, context),
 					CreatedAt = user.CreatedAt,
 					LastLoginAt = user.LastLoginAt
 				};
@@ -214,7 +198,7 @@ namespace API.Controllers
    //         try
    //         {
 
-   //             IEnumerable<TblSystemRole?> roles = await _accountGetTools.GetSystemRoles(context).ToListAsync();
+   //             IEnumerable<TblSystemRole?> roles = await _getTools.Account.GetSystemRoles(context).ToListAsync();
 
    //             if (!string.IsNullOrWhiteSpace(model.SearchString))
    //             {
@@ -254,7 +238,7 @@ namespace API.Controllers
 
    //             foreach (var r in roleEntities)
    //             {
-   //                 roleResponses.Add(await _accountGetTools.GetSystemRoleWithScopesAsync(r.Id, context));
+   //                 roleResponses.Add(await _getTools.Account.GetSystemRoleWithScopesAsync(r.Id, context));
    //             }
 
    //             await context.SaveChangesAsync();
@@ -289,7 +273,7 @@ namespace API.Controllers
 			//try
    //         {
 
-   //             SystemRoleResponseModel? role = await _accountGetTools.GetSystemRoleWithScopesAsync(systemRoleId, context);
+   //             SystemRoleResponseModel? role = await _getTools.Account.GetSystemRoleWithScopesAsync(systemRoleId, context);
 
    //             await context.SaveChangesAsync();
    //             await transaction.CommitAsync();
@@ -317,7 +301,7 @@ namespace API.Controllers
             try
             {
 
-                IEnumerable<TblSystemNotification?> notifications = await _notificationGetTools.GetTblSystemNotifications(context).ToListAsync();
+                IEnumerable<TblSystemNotification?> notifications = await _getTools.Notification.GetTblSystemNotifications(context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -356,7 +340,7 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed system notifications", actionBy: await _accountGetTools.GetSystemUserIdBySessionKeyAsync(model.SessionKey, context));
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed system notifications", actionBy: await _getTools.Account.GetSystemUserIdBySessionKeyAsync(model.SessionKey, context));
                 return Ok(ApiResponse<TblSystemNotification>.OkPaginated(
                     userBasicResponses,
                     model.PageNumber,
@@ -385,7 +369,7 @@ namespace API.Controllers
             try
             {
 
-                IEnumerable<TblSystemNotification?> notifications = await _notificationGetTools.GetTblSystemNotificationsByCreatedBySystemUserId(systemUserId, context).ToListAsync();
+                IEnumerable<TblSystemNotification?> notifications = await _getTools.Notification.GetTblSystemNotificationsByCreatedBySystemUserId(systemUserId, context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -424,7 +408,7 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system notifications for user {systemUserId}", actionBy: await _accountGetTools.GetSystemUserIdBySessionKeyAsync(model.SessionKey, context));
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system notifications for user {systemUserId}", actionBy: await _getTools.Account.GetSystemUserIdBySessionKeyAsync(model.SessionKey, context));
                 return Ok(ApiResponse<TblSystemNotification>.OkPaginated(
                     userBasicResponses,
                     model.PageNumber,
@@ -453,7 +437,7 @@ namespace API.Controllers
             try
             {
 
-                TblSystemNotification? notification = await _notificationGetTools.GetTblSystemNotificationAsync(systemNotificationId, context);
+                TblSystemNotification? notification = await _getTools.Notification.GetTblSystemNotificationAsync(systemNotificationId, context);
                 TblSystemNotification notificationResponse = new TblSystemNotification
                 {
                     Id = notification.Id,
@@ -491,7 +475,7 @@ namespace API.Controllers
             try
             {
 
-                IEnumerable<TblSystemModule?> modules = await _accountGetTools.GetTblSystemModules(context).ToListAsync();
+                IEnumerable<TblSystemModule?> modules = await _getTools.Account.GetTblSystemModules(context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -571,16 +555,16 @@ namespace API.Controllers
                     EmployeeId = model.EmployeeId ?? null
                 };
 
-                user.Id = (await _accountGetTools.GetTblSystemUserByEntraIdAndEmailAsync(user.EntraId, user.Email, context))?.Id ?? 0;
+                user.Id = (await _getTools.Account.GetTblSystemUserByEntraIdAndEmailAsync(user.EntraId, user.Email, context))?.Id ?? 0;
 
-                long systemUserId = await _accountEditTools.EditTblSystemUserForLoginAsync(user, context);
+                long systemUserId = await _editTools.Account.EditTblSystemUserForLoginAsync(user, context);
 
                 //var (isAllowed, errorMsg, specificError) = await _authTools.ValidateUserStatusAsync(
                 //    systemUserId,
                 //    context,
                 //    _options);
 
-                //var adminQueryable = await _accountGetTools
+                //var adminQueryable = await _getTools.Account
                 //.GetSystemUsersBySystemRoleWithContextAsync(TblSystemRole.ADMINISTRATOR.ToString(), context);
 
                 //var adminIds = await adminQueryable
@@ -609,7 +593,7 @@ namespace API.Controllers
                     };
                     #endregion
                     #region OTP Insert
-                    await _accountEditTools.AddTblOneTimePasswordAsync(otpGenerated, context);
+                    await _editTools.Account.AddTblOneTimePasswordAsync(otpGenerated, context);
                     #endregion
                     #region OTP Email Sender
                     await EmailTools.SendSystemEmailAsync(
@@ -676,8 +660,8 @@ namespace API.Controllers
                     ActionBySystemUserId = model.ActionBySystemUserId
                 };
 
-                TblSystemUser? oldUserInfo = await _accountGetTools.GetTblSystemUserAsync(user.Id, context);
-                long systemUserId = await _accountEditTools.EditTblSystemUserAsync(user, context);
+                TblSystemUser? oldUserInfo = await _getTools.Account.GetTblSystemUserAsync(user.Id, context);
+                long systemUserId = await _editTools.Account.EditTblSystemUserAsync(user, context);
 
                 UserSimplePublicResponseModel publicRM = new()
                 {
@@ -775,7 +759,7 @@ namespace API.Controllers
             try
             {
 
-                TblSystemUser? user = await _accountGetTools.GetTblSystemUserAsync(model.SystemUserId, context);
+                TblSystemUser? user = await _getTools.Account.GetTblSystemUserAsync(model.SystemUserId, context);
 
                 if (user != null)
                 {
@@ -790,7 +774,7 @@ namespace API.Controllers
                     };
                     #endregion
                     #region OTP Insert
-                    await _accountEditTools.AddTblOneTimePasswordAsync(otpGenerated, context);
+                    await _editTools.Account.AddTblOneTimePasswordAsync(otpGenerated, context);
                     #endregion
                     #region OTP Email Sender
                     await EmailTools.SendSystemEmailAsync(
@@ -845,12 +829,12 @@ namespace API.Controllers
                     OTP = model.OTP
                 };
                 
-                bool isValid = await _accountGetTools.ValidateOTPAsync(otpModel, context);
+                bool isValid = await _getTools.Account.ValidateOTPAsync(otpModel, context);
 
                 if (isValid)
                 {
 
-                    var userInfo = await _accountGetTools.GetTblSystemUserAsync(otpModel.SystemUserId, context);
+                    var userInfo = await _getTools.Account.GetTblSystemUserAsync(otpModel.SystemUserId, context);
 
                     TblSessionToken sessionToken = new()
                     {
@@ -860,7 +844,7 @@ namespace API.Controllers
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    await _accountEditTools.AddTblSessionTokenAsync(sessionToken, context);
+                    await _editTools.Account.AddTblSessionTokenAsync(sessionToken, context);
 
                     UserSimplePublicResponseModel publicRM = new()
                     {

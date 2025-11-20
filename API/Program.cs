@@ -3,12 +3,14 @@ using Microsoft.IdentityModel.Tokens;
 using OfficeOpenXml;
 using PortalCommon.Utilities;
 using PortalDB.Services;
+using PortalTools.Composition;
 using PortalTools.Services;
-using PortalTools.Services.DBO.Account;
-using PortalTools.Services.DBO.Notification;
-using PortalTools.Services.DBO.Office;
-using PortalTools.Services.DBO.Storage;
-using PortalTools.Services.LOG;
+using PortalTools.Services.GetEditTools.ASSET.PPE;
+using PortalTools.Services.GetEditTools.DBO.Account;
+using PortalTools.Services.GetEditTools.DBO.Notification;
+using PortalTools.Services.GetEditTools.DBO.Office;
+using PortalTools.Services.GetEditTools.DBO.Storage;
+using PortalTools.Services.GetEditTools.LOG;
 using System.IO;
 using System.Text;
 
@@ -41,6 +43,9 @@ if (args.Contains("seed", StringComparer.OrdinalIgnoreCase))
 #endregion
 
 #region Services
+builder.Services.AddScoped<IPortalGetTools, PortalGetTools>();
+builder.Services.AddScoped<IPortalEditTools, PortalEditTools>();
+
 builder.Services.AddScoped<AccountGetTools>();
 builder.Services.AddScoped<AccountEditTools>();
 builder.Services.AddScoped<OfficeGetTools>();
@@ -50,6 +55,8 @@ builder.Services.AddScoped<LogEditTools>();
 builder.Services.AddScoped<LogGetTools>();
 builder.Services.AddScoped<NotificationEditTools>();
 builder.Services.AddScoped<NotificationGetTools>();
+builder.Services.AddScoped<PPEEditTools>();
+builder.Services.AddScoped<PPEGetTools>();
 
 builder.Services.AddScoped<AuthTools>();
 builder.Services.AddScoped<ParserTools>();

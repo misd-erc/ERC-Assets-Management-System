@@ -12,8 +12,8 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    [Migration("20251119131709_UpdatedPPETbls")]
-    partial class UpdatedPPETbls
+    [Migration("20251120130756_AddedPPETbls")]
+    partial class AddedPPETbls
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -38,8 +38,8 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("PPEBrand");
 
-                    b.Property<string>("CategoryId")
-                        .HasColumnType("nvarchar(max)")
+                    b.Property<long?>("CategoryId")
+                        .HasColumnType("bigint")
                         .HasColumnName("PPECategoryId");
 
                     b.Property<DateTime>("CreatedAt")
@@ -66,9 +66,9 @@ namespace PortalDB.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("PPEIsDeleted");
 
-                    b.Property<string>("LegendEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PPELegend");
+                    b.Property<long?>("LegendId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("PPELegendId");
 
                     b.Property<string>("ModelEncrypted")
                         .HasColumnType("nvarchar(max)")
@@ -98,8 +98,11 @@ namespace PortalDB.Migrations
             modelBuilder.Entity("PortalDB.Entities.ASSET.PPE.TblPPECategory", b =>
                 {
                     b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("bigint")
                         .HasColumnName("PPECategoryId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
@@ -120,6 +123,36 @@ namespace PortalDB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblPPECategories", "asset");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.ASSET.PPE.TblPPELegend", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("PPELegendId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PPELegendCreatedAt");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("PPELegendIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("PPELegendIsDeleted");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("PPELegendName");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblPPELegends", "asset");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.ASSET.PPE.TblPPEMovement", b =>
@@ -159,6 +192,10 @@ namespace PortalDB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("NonPlantillaEmployeeId");
 
+                    b.Property<string>("NonPlantillaEmployeeIdOriginalEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("NonPlantillaEmployeeIdOriginal");
+
                     b.Property<string>("PARITRNumberEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("PPEMovementPARITRNumber");
@@ -170,6 +207,10 @@ namespace PortalDB.Migrations
                     b.Property<long?>("PlantillaEmployeeId")
                         .HasColumnType("bigint")
                         .HasColumnName("PlantillaEmployeeId");
+
+                    b.Property<string>("PlantillaEmployeeIdOriginalEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("PlantillaEmployeeIdOriginal");
 
                     b.Property<string>("RemarksEncrypted")
                         .HasColumnType("nvarchar(max)")
@@ -183,8 +224,11 @@ namespace PortalDB.Migrations
             modelBuilder.Entity("PortalDB.Entities.ASSET.PPE.TblPPEPart", b =>
                 {
                     b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("bigint")
                         .HasColumnName("PPEPartId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
@@ -264,7 +308,7 @@ namespace PortalDB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("PositionId");
 
-                    b.Property<long?>("SystemUserIdd")
+                    b.Property<long?>("SystemUserId")
                         .HasColumnType("bigint")
                         .HasColumnName("SystemUserId");
 

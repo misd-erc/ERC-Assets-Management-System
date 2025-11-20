@@ -16,12 +16,8 @@ using PortalDB.Models.Responses;
 using PortalDB.Models.ViewModels.Account;
 using PortalDB.Models.ViewModels.Email;
 using PortalDB.Services;
+using PortalTools.Composition;
 using PortalTools.Services;
-using PortalTools.Services.DBO.Account;
-using PortalTools.Services.DBO.Notification;
-using PortalTools.Services.DBO.Office;
-using PortalTools.Services.DBO.Storage;
-using PortalTools.Services.LOG;
 
 namespace API.Controllers
 {
@@ -30,17 +26,17 @@ namespace API.Controllers
     public class RolesController : ControllerBase
     {
         private readonly DbContextOptions<PortalDbContext> _options;
-        private readonly AccountGetTools _accountGetTools;
-        private readonly AccountEditTools _accountEditTools;
+        private readonly IPortalGetTools _getTools;
+        private readonly IPortalEditTools _editTools;
 
         public RolesController(
-            AccountGetTools accountGetTools,
-            AccountEditTools accountEditTools,
-            DbContextOptions<PortalDbContext> options)
+            DbContextOptions<PortalDbContext> options,
+            IPortalEditTools editTools,
+            IPortalGetTools getTools)
         {
-            _accountGetTools = accountGetTools;
-            _accountEditTools = accountEditTools;
             _options = options;
+            _getTools = getTools;
+            _editTools = editTools;
         }
 
         #region GET
@@ -56,7 +52,7 @@ namespace API.Controllers
 
             try
             {
-                IEnumerable<TblSystemRole?> roles = await _accountGetTools
+                IEnumerable<TblSystemRole?> roles = await _getTools.Account
                     .GetSystemRoles(context)
                     .ToListAsync();
 
@@ -82,7 +78,7 @@ namespace API.Controllers
 
                 foreach (var r in rolesList)
                 {
-                    roleResponses.Add(await _accountGetTools.GetSystemRoleWithScopesAsync(r.Id, context));
+                    roleResponses.Add(await _getTools.Account.GetSystemRoleWithScopesAsync(r.Id, context));
                 }
 
                 await context.SaveChangesAsync();
@@ -127,7 +123,7 @@ namespace API.Controllers
             try
             {
                 SystemRoleResponseModel? role =
-                    await _accountGetTools.GetSystemRoleWithScopesAsync(systemRoleId, context);
+                    await _getTools.Account.GetSystemRoleWithScopesAsync(systemRoleId, context);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -186,7 +182,7 @@ namespace API.Controllers
                     ActionBySystemUserId = model.ActionBySystemUserId
                 };
 
-                long systemRoleId = await _accountEditTools.EditTblSystemRoleAsync(role, context);
+                long systemRoleId = await _editTools.Account.EditTblSystemRoleAsync(role, context);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -228,7 +224,7 @@ namespace API.Controllers
             try
             {
                 bool isDeleted =
-                    await _accountEditTools.DeleteTblSystemRoleAsync(
+                    await _editTools.Account.DeleteTblSystemRoleAsync(
                         roleId,
                         model.ActionBySystemUserId,
                         context

@@ -14,7 +14,7 @@ namespace PortalDB.Entities.ASSET.PPE
     {
 
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("PPEPartId")]
         public long Id { get; set; }
 

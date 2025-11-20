@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Services;
-using PortalTools.Services.DBO.Account;
+using PortalTools.Composition;
+using PortalTools.Services.GetEditTools.DBO.Account;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,13 +13,14 @@ namespace PortalTools.Services
 {
     public class AuthTools
     {
-        private readonly AccountGetTools _accountGetTools;
-        private readonly DbContextOptions<PortalDbContext> _options;
 
-        public AuthTools(AccountGetTools accountGetTools, DbContextOptions<PortalDbContext> options)
+        private readonly DbContextOptions<PortalDbContext> _options;
+        private readonly IPortalGetTools _getTools;
+
+        public AuthTools(DbContextOptions<PortalDbContext> options, IPortalGetTools getTools)
         {
-            _accountGetTools = accountGetTools;
             _options = options;
+            _getTools = getTools;
         }
 
         #region Existing method
@@ -31,7 +33,7 @@ namespace PortalTools.Services
                     Key = sessionKey,
                     SystemUserId = systemUserId
                 };
-                return await _accountGetTools.ValidateTokenSessionAsync(sessionModel, new PortalDbContext(_options));
+                return await _getTools.Account.ValidateTokenSessionAsync(sessionModel, new PortalDbContext(_options));
             }
             catch (Exception ex)
             {

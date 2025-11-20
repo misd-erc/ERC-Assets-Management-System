@@ -137,7 +137,7 @@ namespace PortalTools.Services
 
                 // Date
                 var dateAcquired = Get(map, "Date Acquired (YYYY-MM-DD)", "date_acquired", "Date Acquired");
-                item.DateAssigned = TryParseDate(dateAcquired)?.ToString("yyyy-MM-dd") ?? string.Empty;
+                item.DateAssigned = TryParseDate(dateAcquired);
 
                 // Parts
                 var partsStr = Get(map, "Parts/Accessories", "parts", "accessories");
@@ -158,7 +158,7 @@ namespace PortalTools.Services
 
                     var movement = new AnnualCount
                     {
-                        DateAssigned = TryParseDate(dateCell)?.ToString("yyyy-MM-dd") ?? dateCell,
+                        DateAssigned = TryParseDate(dateCell),
                         ParItrNumber = GetCell(dataRow, col + 1),
                         PlantillaEmployeeId = GetCell(dataRow, col + 2),
                         NonPlantillaEmployeeId = GetCell(dataRow, col + 3),

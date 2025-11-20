@@ -1,22 +1,23 @@
 ﻿using API.Attributes;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
-using PortalDB.Models.QueryParams.Pagination;
-using PortalDB.Models.ResponseModels.Log;
-using PortalDB.Models.ResponseModels.Log.AuditTrail;
-using PortalDB.Models.Responses;
 using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.LOG;
 using PortalDB.Entities.LOG.AuditTrail;
+using PortalDB.Models.QueryParams.Pagination;
+using PortalDB.Models.ResponseModels.Log;
+using PortalDB.Models.ResponseModels.Log.AuditTrail;
+using PortalDB.Models.Responses;
 using PortalDB.Services;
+using PortalTools.Composition;
 using PortalTools.Services;
-using PortalTools.Services.DBO.Account;
-using PortalTools.Services.LOG;
+using PortalTools.Services.GetEditTools.DBO.Account;
+using PortalTools.Services.GetEditTools.LOG;
 using System.Text.Json;
-using Microsoft.AspNetCore.Authorization;
 
 namespace API.Controllers
 {
@@ -27,19 +28,19 @@ namespace API.Controllers
     {
 
         private readonly DbContextOptions<PortalDbContext> _options;
-        private readonly LogGetTools _logGetTools;
-        private readonly AccountGetTools _accountGetTools;
-        private readonly AuthTools _authTools;
+		private readonly IPortalGetTools _getTools;
+		private readonly IPortalEditTools _editTools;
+		private readonly AuthTools _authTools;
 
-        public LogsController(LogGetTools logGetTools,
-            AccountGetTools accountGetTools,
-        DbContextOptions<PortalDbContext> options,
-        AuthTools authTools)
+        public LogsController(DbContextOptions<PortalDbContext> options,
+            IPortalGetTools getTools,
+            IPortalEditTools editTools,
+		AuthTools authTools)
         {
-            _logGetTools = logGetTools;
             _options = options;
-            _accountGetTools = accountGetTools;
-            _authTools = authTools;
+            _getTools = getTools;
+            _editTools = editTools;
+			_authTools = authTools;
         }
 
         #region GET
@@ -55,7 +56,7 @@ namespace API.Controllers
             try
             {
 
-                IQueryable<TblAuditTrail> auditTrailQuery = _logGetTools.GetTblAuditTrails();
+                IQueryable<TblAuditTrail> auditTrailQuery = _getTools.Log.GetTblAuditTrails();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -87,7 +88,7 @@ namespace API.Controllers
                     .Distinct()
                     .ToList();
 
-                List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers(context)
+                List<TblSystemUser> users = await _getTools.Account.GetTblSystemUsers(context)
                     .Where(x => systemUserIds.Contains(x.Id))
                     .ToListAsync();
 
@@ -133,9 +134,9 @@ namespace API.Controllers
             try
             {
 
-                TblSystemUser? user = await _accountGetTools.GetTblSystemUserAsync(systemUserId, context);
+                TblSystemUser? user = await _getTools.Account.GetTblSystemUserAsync(systemUserId, context);
 
-                IQueryable<TblAuditTrail> auditTrailQuery = _logGetTools.GetTblAuditTrails().Where(x => x.ChangedBy == user.Id);
+                IQueryable<TblAuditTrail> auditTrailQuery = _getTools.Log.GetTblAuditTrails().Where(x => x.ChangedBy == user.Id);
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -203,7 +204,7 @@ namespace API.Controllers
             try
             {
 
-                IQueryable<TblActivityLog> activityLogQuery = _logGetTools.GetTblActivityLogs();
+                IQueryable<TblActivityLog> activityLogQuery = _getTools.Log.GetTblActivityLogs();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -240,11 +241,11 @@ namespace API.Controllers
                     .Distinct()
                     .ToList();
 
-                List<TblAuditTrail> auditTrails = await _logGetTools.GetTblAuditTrails()
+                List<TblAuditTrail> auditTrails = await _getTools.Log.GetTblAuditTrails()
                     .Where(x => auditTrailIds.Contains(x.Id))
                     .ToListAsync();
 
-                List<TblSystemUser> users = await _accountGetTools.GetTblSystemUsers(context)
+                List<TblSystemUser> users = await _getTools.Account.GetTblSystemUsers(context)
                     .Where(x => systemUserIds.Contains(x.Id))
                     .ToListAsync();
 
@@ -317,7 +318,7 @@ namespace API.Controllers
             try
             {
 
-                IQueryable<TblActivityLog> activityLogQuery = _logGetTools
+                IQueryable<TblActivityLog> activityLogQuery = _getTools.Log
                     .GetTblActivityLogs()
                     .Where(x => x.ActionBy == systemUserId);
 
@@ -351,11 +352,11 @@ namespace API.Controllers
                     .Distinct()
                     .ToList();
 
-                List<TblAuditTrail> auditTrails = await _logGetTools.GetTblAuditTrails()
+                List<TblAuditTrail> auditTrails = await _getTools.Log.GetTblAuditTrails()
                     .Where(x => auditTrailIds.Contains(x.Id))
                     .ToListAsync();
 
-                TblSystemUser? systemUser = await _accountGetTools.GetTblSystemUserAsync(systemUserId, context);
+                TblSystemUser? systemUser = await _getTools.Account.GetTblSystemUserAsync(systemUserId, context);
 
                 List<ActivityResponseModel> activityResponses = (await Task.WhenAll(
                     activityLogList.Select(async x =>
@@ -424,7 +425,7 @@ namespace API.Controllers
                 if (anonymousKey != UniversalConstants.ANONYMOUS_KEY)
                     return StatusCode(ApiStatusCode.Unauthorized, ApiResponse<object>.Fail(ErrorCodes.UNAUTHORIZED, "Unauthorized access."));
 
-                IQueryable<TblErrorLog> errorLogQuery = _logGetTools.GetTblErrorLogs();
+                IQueryable<TblErrorLog> errorLogQuery = _getTools.Log.GetTblErrorLogs();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {

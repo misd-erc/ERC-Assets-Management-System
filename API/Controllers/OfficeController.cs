@@ -2,21 +2,22 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
+using PortalCommon.Constants;
+using PortalCommon.Utilities;
+using PortalDB.Entities.DBO.Account;
+using PortalDB.Entities.DBO.Office;
+using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Models.QueryParams.Office;
 using PortalDB.Models.QueryParams.Pagination;
 using PortalDB.Models.QueryParams.Universal;
 using PortalDB.Models.ResponseModels.Account;
 using PortalDB.Models.ResponseModels.Office;
 using PortalDB.Models.Responses;
-using PortalCommon.Utilities;
-using PortalDB.Entities.DBO.Account;
-using PortalDB.Entities.DBO.Office;
-using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Services;
+using PortalTools.Composition;
 using PortalTools.Services;
-using PortalTools.Services.DBO.Account;
-using PortalTools.Services.DBO.Office;
-using PortalCommon.Constants;
+using PortalTools.Services.GetEditTools.DBO.Account;
+using PortalTools.Services.GetEditTools.DBO.Office;
 
 namespace API.Controllers
 {
@@ -25,26 +26,20 @@ namespace API.Controllers
     public class OfficeController : ControllerBase
     {
         private readonly DbContextOptions<PortalDbContext> _options;
-        private readonly AccountGetTools _accountGetTools;
-        private readonly AccountEditTools _accountEditTools;
-        private readonly OfficeGetTools _officeGetTools;
-        private readonly OfficeEditTools _officeEditTools;
+        private readonly IPortalGetTools _getTools;
+        private readonly IPortalEditTools _editTools;
         private readonly AuthTools _authTools;
 
-        public OfficeController(AccountGetTools accountGetTools,
-        AccountEditTools accountEditTools,
-        DbContextOptions<PortalDbContext> options,
-        OfficeGetTools officeGetTools,
-        OfficeEditTools officeEditTools,
-        AuthTools authTools)
-        {
-            _accountGetTools = accountGetTools;
-            _accountEditTools = accountEditTools;
-            _options = options;
-            _authTools = authTools;
-            _officeGetTools = officeGetTools;
-            _officeEditTools = officeEditTools;
-        }
+        public OfficeController(DbContextOptions<PortalDbContext> options,
+            IPortalGetTools getTools,
+            IPortalEditTools editTools,
+            AuthTools authTools)
+            {
+                _options = options;
+                _getTools = getTools;
+                _editTools = editTools;
+                _authTools = authTools;
+            }
 
         #region GET
 
@@ -60,7 +55,7 @@ namespace API.Controllers
             try
             {
 
-                IEnumerable<TblOffice?> offices = await _officeGetTools.GetTblOffices(context).ToListAsync();
+                IEnumerable<TblOffice?> offices = await _getTools.Office.GetTblOffices(context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -95,7 +90,7 @@ namespace API.Controllers
                         Id = x.Id,
                         Name = x.Name,
                         Acronym = x.Acronym,
-                        Users = await _accountGetTools.GetTblSystemUsersByOfficeId(x.Id, context).ToListAsync(),
+                        Users = await _getTools.Account.GetTblSystemUsersByOfficeId(x.Id, context).ToListAsync(),
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
@@ -135,14 +130,14 @@ namespace API.Controllers
             try
             {
 
-                TblOffice? office = await _officeGetTools.GetTblOfficeAsync(officeId, context);
+                TblOffice? office = await _getTools.Office.GetTblOfficeAsync(officeId, context);
 
                 VwOfficeResponseModel newOfficeResponse = new()
                 {
                     Id = office.Id,
                     Name = office.Name,
                     Acronym = office.Acronym,
-                    Users = await _accountGetTools.GetTblSystemUsersByOfficeId(office.Id, context).ToListAsync(),
+                    Users = await _getTools.Account.GetTblSystemUsersByOfficeId(office.Id, context).ToListAsync(),
                     IsActive = office.IsActive,
                     CreatedAt = office.CreatedAt
                 };
@@ -173,7 +168,7 @@ namespace API.Controllers
             try
             {
 
-                IEnumerable<VwDivision?> divisions = await _officeGetTools.GetVwDivisions(context).ToListAsync();
+                IEnumerable<VwDivision?> divisions = await _getTools.Office.GetVwDivisions(context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -210,8 +205,8 @@ namespace API.Controllers
                         Id = x.Id,
                         Name = x.Name,
                         Acronym = x.Acronym,
-                        Office = await _officeGetTools.GetTblOfficeAsync(x.OfficeId, context),
-                        Users = await _accountGetTools.GetTblSystemUsersByDivisionId(x.Id.Value, context).ToListAsync(),
+                        Office = await _getTools.Office.GetTblOfficeAsync(x.OfficeId, context),
+                        Users = await _getTools.Account.GetTblSystemUsersByDivisionId(x.Id.Value, context).ToListAsync(),
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
@@ -250,15 +245,15 @@ namespace API.Controllers
             try
             {
 
-                VwDivision? division = await _officeGetTools.GetVwDivisionAsync(divisionId, context);
+                VwDivision? division = await _getTools.Office.GetVwDivisionAsync(divisionId, context);
 
                 VwDivisionResponseModel divisionResponse = new ()
                 {
                     Id = division.Id,
                     Name = division.Name,
                     Acronym = division.Acronym,
-                    Users = await _accountGetTools.GetTblSystemUsersByDivisionId(division.Id.Value, context).ToListAsync(),
-                    Office = await _officeGetTools.GetTblOfficeAsync(division.OfficeId, context),
+                    Users = await _getTools.Account.GetTblSystemUsersByDivisionId(division.Id.Value, context).ToListAsync(),
+                    Office = await _getTools.Office.GetTblOfficeAsync(division.OfficeId, context),
                     IsActive = division.IsActive,
                     CreatedAt = division.CreatedAt
                 };
@@ -289,7 +284,7 @@ namespace API.Controllers
             try
             {
 
-                IEnumerable<TblEmploymentType?> employmentTypes = await _officeGetTools.GetTblEmploymentTypes(context).ToListAsync();
+                IEnumerable<TblEmploymentType?> employmentTypes = await _getTools.Office.GetTblEmploymentTypes(context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -322,7 +317,7 @@ namespace API.Controllers
                     {
                         Id = x.Id,
                         Name = x.Name,
-                        Users = await _accountGetTools.GetTblSystemUsersByEmploymentTypeId(x.Id, context).ToListAsync(),
+                        Users = await _getTools.Account.GetTblSystemUsersByEmploymentTypeId(x.Id, context).ToListAsync(),
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
@@ -361,13 +356,13 @@ namespace API.Controllers
             try
             {
 
-                TblEmploymentType? employmentType = await _officeGetTools.GetTblEmploymentTypeAsync(employmentTypeId, context);
+                TblEmploymentType? employmentType = await _getTools.Office.GetTblEmploymentTypeAsync(employmentTypeId, context);
 
                 VwEmploymentTypeResponseModel employmentTypeResponse = new()
                 {
                     Id = employmentType.Id,
                     Name = employmentType.Name,
-                    Users = await _accountGetTools.GetTblSystemUsersByEmploymentTypeId(employmentType.Id, context).ToListAsync(),
+                    Users = await _getTools.Account.GetTblSystemUsersByEmploymentTypeId(employmentType.Id, context).ToListAsync(),
                     IsActive = employmentType.IsActive,
                     CreatedAt = employmentType.CreatedAt
                 };
@@ -397,7 +392,7 @@ namespace API.Controllers
             try
             {
 
-                IEnumerable<TblPosition?> positions = await _officeGetTools.GetTblPositions(context).ToListAsync();
+                IEnumerable<TblPosition?> positions = await _getTools.Office.GetTblPositions(context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
@@ -434,7 +429,7 @@ namespace API.Controllers
                         Name = x.Name,
                         Acronym = x.Acronym,
                         SalaryGrade = x.SalaryGrade,
-                        Users = await _accountGetTools.GetTblSystemUsersByPositionId(x.Id, context).ToListAsync(),
+                        Users = await _getTools.Account.GetTblSystemUsersByPositionId(x.Id, context).ToListAsync(),
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
@@ -473,7 +468,7 @@ namespace API.Controllers
             try
             {
 
-                TblPosition? position = await _officeGetTools.GetTblPositionAsync(positionId, context);
+                TblPosition? position = await _getTools.Office.GetTblPositionAsync(positionId, context);
 
                 VwPositionResponseModel positionResponse = new()
                 {
@@ -481,7 +476,7 @@ namespace API.Controllers
                     Name = position.Name,
                     Acronym = position.Acronym,
                     SalaryGrade = position.SalaryGrade,
-                    Users = await _accountGetTools.GetTblSystemUsersByPositionId(position.Id, context).ToListAsync(),
+                    Users = await _getTools.Account.GetTblSystemUsersByPositionId(position.Id, context).ToListAsync(),
                     IsActive = position.IsActive,
                     CreatedAt = position.CreatedAt
                 };
@@ -524,7 +519,7 @@ namespace API.Controllers
                     IsActive = model.IsActive
                 };
 
-                long officeId = await _officeEditTools.EditTblOfficeAsync(office, model.ActionBySystemUserId, context);
+                long officeId = await _editTools.Office.EditTblOfficeAsync(office, model.ActionBySystemUserId, context);
 
                 UserSimplePublicResponseModel publicRM = new()
                 {
@@ -566,7 +561,7 @@ namespace API.Controllers
                     IsActive = model.IsActive
                 };
 
-                long divisionId = await _officeEditTools.EditTblDivisionAsync(division, model.ActionBySystemUserId, context);
+                long divisionId = await _editTools.Office.EditTblDivisionAsync(division, model.ActionBySystemUserId, context);
 
 
                 UserSimplePublicResponseModel publicRM = new()
@@ -608,7 +603,7 @@ namespace API.Controllers
                     IsActive = model.IsActive
                 };
 
-                long employmentTypeId = await _officeEditTools.EditTblEmploymentTypeAsync(employmentType, model.ActionBySystemUserId, context);
+                long employmentTypeId = await _editTools.Office.EditTblEmploymentTypeAsync(employmentType, model.ActionBySystemUserId, context);
 
                 UserSimplePublicResponseModel publicRM = new()
                 {
@@ -651,7 +646,7 @@ namespace API.Controllers
                     IsActive = model.IsActive
                 };
 
-                long positionId = await _officeEditTools.EditTblPositionAsync(position, model.ActionBySystemUserId, context);
+                long positionId = await _editTools.Office.EditTblPositionAsync(position, model.ActionBySystemUserId, context);
 
                 UserSimplePublicResponseModel publicRM = new()
                 {
@@ -689,7 +684,7 @@ namespace API.Controllers
             try
             {
 
-                bool isDeleted = await _officeEditTools.DeleteTblOfficeAsync(officeId, model.ActionBySystemUserId, context);
+                bool isDeleted = await _editTools.Office.DeleteTblOfficeAsync(officeId, model.ActionBySystemUserId, context);
 
                 if(!isDeleted)
                     return Ok(ApiResponse<object>.Ok($"Unable to delete this office, try again later"));
@@ -719,7 +714,7 @@ namespace API.Controllers
             try
             {
 
-                bool isDeleted = await _officeEditTools.DeleteTblDivisionAsync(divisionId, model.ActionBySystemUserId, context);
+                bool isDeleted = await _editTools.Office.DeleteTblDivisionAsync(divisionId, model.ActionBySystemUserId, context);
 
                 if (!isDeleted)
                     return Ok(ApiResponse<object>.Ok($"Unable to delete this division, try again later"));
@@ -749,7 +744,7 @@ namespace API.Controllers
             try
             {
 
-                bool isDeleted = await _officeEditTools.DeleteTblEmploymentTypeAsync(employmentTypeId, model.ActionBySystemUserId, context);
+                bool isDeleted = await _editTools.Office.DeleteTblEmploymentTypeAsync(employmentTypeId, model.ActionBySystemUserId, context);
 
                 if (!isDeleted)
                     return Ok(ApiResponse<object>.Ok($"Unable to delete this employment type, try again later"));
@@ -779,7 +774,7 @@ namespace API.Controllers
             try
             {
 
-                bool isDeleted = await _officeEditTools.DeleteTblPositionAsync(positionId, model.ActionBySystemUserId, context);
+                bool isDeleted = await _editTools.Office.DeleteTblPositionAsync(positionId, model.ActionBySystemUserId, context);
 
                 if (!isDeleted)
                     return Ok(ApiResponse<object>.Ok($"Unable to delete this position, try again later"));

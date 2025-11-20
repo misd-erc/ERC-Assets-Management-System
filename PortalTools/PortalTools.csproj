@@ -7,6 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\ACCT\**" />
+    <Compile Remove="Services\INV\**" />
+    <EmbeddedResource Remove="Services\ACCT\**" />
+    <EmbeddedResource Remove="Services\INV\**" />
+    <None Remove="Services\ACCT\**" />
+    <None Remove="Services\INV\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Azure.Storage.Blobs" Version="12.26.0" />
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="EPPlus" Version="8.2.1" />
@@ -18,12 +27,6 @@
   <ItemGroup>
     <ProjectReference Include="..\PortalCommon\PortalCommon.csproj" />
     <ProjectReference Include="..\PortalDB\PortalDB.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\ACCT\" />
-    <Folder Include="Services\ASSET\" />
-    <Folder Include="Services\INV\" />
   </ItemGroup>
 
 </Project>

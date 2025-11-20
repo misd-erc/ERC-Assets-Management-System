@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 using PortalDB.Entities.DBO.Module;
 using PortalDB.Models.ResponseModels.Account;
 
-namespace PortalTools.Services.DBO.Account
+namespace PortalTools.Services.GetEditTools.DBO.Account
 {
     public class AccountGetTools
     {
@@ -88,32 +88,32 @@ namespace PortalTools.Services.DBO.Account
         public IQueryable<TblSystemUserStatus?> GetSystemUserStatuses(PortalDbContext context) => context.TblSystemUserStatuses.Where(x => !x.IsDeleted);
         public async Task<TblSystemRole?> GetTblSystemRoleAsync(long? id, PortalDbContext context) => await context.TblSystemRoles.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public async Task<SystemRoleResponseModel?> GetSystemRoleWithScopesAsync(long? id, PortalDbContext context)
-{
-    // Get the role record
-    TblSystemRole? systemRole = await GetTblSystemRoleAsync(id, context);
-    if (systemRole == null)
-        return null;
+        {
+            // Get the role record
+            TblSystemRole? systemRole = await GetTblSystemRoleAsync(id, context);
+            if (systemRole == null)
+                return null;
 
-    // Get all scopes under this role
-    var scope = await GetTblSystemRoleScopesBySystemRoleIdAsync(systemRole.Id, context);
+            // Get all scopes under this role
+            var scope = await GetTblSystemRoleScopesBySystemRoleIdAsync(systemRole.Id, context);
 
-    // 🔹 Count how many users belong to this role
-    int userCount = await context.TblSystemUsers
-        .CountAsync(u => u.SystemRoleId == systemRole.Id && !u.IsDeleted);
+            // 🔹 Count how many users belong to this role
+            int userCount = await context.TblSystemUsers
+                .CountAsync(u => u.SystemRoleId == systemRole.Id && !u.IsDeleted);
 
-    // Return the full response with the user count
-    return new SystemRoleResponseModel
-    {
-        Id = systemRole.Id,
-        RoleName = systemRole.RoleName,
-        Description = systemRole.Description,
-        Scope = scope,
-        IsActive = systemRole.IsActive,
-        IsDeleted = systemRole.IsDeleted,
-        CreatedAt = systemRole.CreatedAt,
-        UserCount = userCount // 👈 added field
-    };
-}
+            // Return the full response with the user count
+            return new SystemRoleResponseModel
+            {
+                Id = systemRole.Id,
+                RoleName = systemRole.RoleName,
+                Description = systemRole.Description,
+                Scope = scope,
+                IsActive = systemRole.IsActive,
+                IsDeleted = systemRole.IsDeleted,
+                CreatedAt = systemRole.CreatedAt,
+                UserCount = userCount // 👈 added field
+            };
+        }
         public async Task<List<SystemRoleResponseModel>> GetSystemRoleWithScopesAsListAsync(long? id, PortalDbContext context)
         {
             var result = await GetSystemRoleWithScopesAsync(id, context);
@@ -152,8 +152,8 @@ namespace PortalTools.Services.DBO.Account
             var role = await GetSystemRoleByNameAsync(systemRole, context);
             long systemRoleId = role!.Id;
             return context.TblSystemUsers.Where(x => !x.IsDeleted && x.SystemRoleId == systemRoleId);
-        } 
-
+        }
+        public async Task<TblEmployee?> GetEmployeeByEmployeeIdAsync(string employeeId, PortalDbContext context) => await context.TblEmployees.Where(x => !x.IsDeleted && x.EmployeeIdOriginal == employeeId).FirstOrDefaultAsync();
 
     }
 }

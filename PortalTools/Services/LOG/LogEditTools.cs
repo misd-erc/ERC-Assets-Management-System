@@ -4,14 +4,14 @@ using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.LOG;
 using PortalDB.Entities.LOG.AuditTrail;
 using PortalDB.Services;
-using PortalTools.Services.DBO.Account;
+using PortalTools.Services.GetEditTools.DBO.Account;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalTools.Services.LOG
+namespace PortalTools.Services.GetEditTools.LOG
 {
     public class LogEditTools
     {

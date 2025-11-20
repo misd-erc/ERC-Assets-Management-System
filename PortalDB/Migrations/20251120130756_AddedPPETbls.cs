@@ -6,11 +6,14 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PortalDB.Migrations
 {
     /// <inheritdoc />
-    public partial class PPETbls : Migration
+    public partial class AddedPPETbls : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "asset");
+
             migrationBuilder.CreateTable(
                 name: "tblEmployees",
                 schema: "dbo",
@@ -36,6 +39,40 @@ namespace PortalDB.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "tblPPECategories",
+                schema: "asset",
+                columns: table => new
+                {
+                    PPECategoryId = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    PPECategoryName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PPECategoryIsActive = table.Column<bool>(type: "bit", nullable: false),
+                    PPECategoryIsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    PPECategoryCreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tblPPECategories", x => x.PPECategoryId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "tblPPELegends",
+                schema: "asset",
+                columns: table => new
+                {
+                    PPELegendId = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    PPELegendName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PPELegendIsActive = table.Column<bool>(type: "bit", nullable: false),
+                    PPELegendIsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    PPELegendCreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_tblPPELegends", x => x.PPELegendId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "tblPPEMovements",
                 schema: "asset",
                 columns: table => new
@@ -43,10 +80,13 @@ namespace PortalDB.Migrations
                     PPEMovementId = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     PPEId = table.Column<long>(type: "bigint", nullable: true),
-                    PPEMovementDateAcquired = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PPEMovementDateAssigned = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PPEMovementPARITRNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PlantillaEmployeeId = table.Column<long>(type: "bigint", nullable: true),
+                    PlantillaEmployeeIdOriginal = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     NonPlantillaEmployeeId = table.Column<long>(type: "bigint", nullable: true),
+                    NonPlantillaEmployeeIdOriginal = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PPEMovementActualOfficeId = table.Column<long>(type: "bigint", nullable: true),
                     PPEMovementActualDivisionId = table.Column<long>(type: "bigint", nullable: true),
                     PPEMovementRemarks = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PPEMovementIsActive = table.Column<bool>(type: "bit", nullable: false),
@@ -63,7 +103,8 @@ namespace PortalDB.Migrations
                 schema: "asset",
                 columns: table => new
                 {
-                    PPEPartId = table.Column<long>(type: "bigint", nullable: false),
+                    PPEPartId = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     PPEId = table.Column<long>(type: "bigint", nullable: false),
                     PPEPartName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PPEPartSerialNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -84,8 +125,8 @@ namespace PortalDB.Migrations
                     PPEId = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     PPEPropertyNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PPECategoryId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PPELegend = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PPECategoryId = table.Column<long>(type: "bigint", nullable: true),
+                    PPELegendId = table.Column<long>(type: "bigint", nullable: true),
                     PPEDescription = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PPEBrand = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PPEModel = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -93,6 +134,7 @@ namespace PortalDB.Migrations
                     PPEUnitOfMeasurement = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PPEUnitValue = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PPEDateAcquired = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PPEEstimatedUsefulLife = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PPEIsActive = table.Column<bool>(type: "bit", nullable: false),
                     PPEIsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     PPECreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
@@ -109,6 +151,14 @@ namespace PortalDB.Migrations
             migrationBuilder.DropTable(
                 name: "tblEmployees",
                 schema: "dbo");
+
+            migrationBuilder.DropTable(
+                name: "tblPPECategories",
+                schema: "asset");
+
+            migrationBuilder.DropTable(
+                name: "tblPPELegends",
+                schema: "asset");
 
             migrationBuilder.DropTable(
                 name: "tblPPEMovements",

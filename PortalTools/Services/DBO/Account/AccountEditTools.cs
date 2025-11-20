@@ -8,22 +8,23 @@ using PortalDB.Models.QueryParams.Account;
 using PortalDB.Models.ResponseModels.Account;
 using PortalDB.Models.ViewModels.Account;
 using PortalDB.Services;
-using PortalTools.Services.DBO.Office;
+using PortalTools.Composition;
+using PortalTools.Services.GetEditTools.DBO.Office;
 using System;
 using System.Linq;
 using System.Text.Json;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
-namespace PortalTools.Services.DBO.Account
+namespace PortalTools.Services.GetEditTools.DBO.Account
 {
     public class AccountEditTools
     {
         private readonly DbContextOptions<PortalDbContext> _options;
-        private readonly AccountGetTools _accountGetTools;
-        public AccountEditTools(DbContextOptions<PortalDbContext> options, AccountGetTools accountGetTools)
+        private readonly IPortalGetTools _getTools;
+        public AccountEditTools(DbContextOptions<PortalDbContext> options, IPortalGetTools getTools)
         {
             _options = options;
-            _accountGetTools = accountGetTools;
+            _getTools = getTools;
         }
 
         /// <summary>
@@ -45,7 +46,7 @@ namespace PortalTools.Services.DBO.Account
 
                 if (isInsert)
                 {
-                    var role = await _accountGetTools.GetSystemRoleByNameAsync(TblSystemRole.EMPLOYEE, context);
+                    var role = await _getTools.Account.GetSystemRoleByNameAsync(TblSystemRole.EMPLOYEE, context);
                     model.SystemRoleId = role?.Id;
                     model.StatusId = TblSystemUserStatus.Dictionary[TblSystemUserStatus.PENDING];
                     model.IsActive = false;
@@ -54,7 +55,7 @@ namespace PortalTools.Services.DBO.Account
                 }
                 else
                 {
-                    existingUser = await _accountGetTools.GetTblSystemUserByEntraIdAndEmailAsync(model.EntraId, model.Email, context);
+                    existingUser = await _getTools.Account.GetTblSystemUserByEntraIdAndEmailAsync(model.EntraId, model.Email, context);
 
                     if (existingUser == null)
                         return 0;
@@ -100,7 +101,7 @@ namespace PortalTools.Services.DBO.Account
             try
             {
 
-                TblSystemUser? userCurrentInfo = await _accountGetTools.GetTblSystemUserAsync(model.Id, context);
+                TblSystemUser? userCurrentInfo = await _getTools.Account.GetTblSystemUserAsync(model.Id, context);
                 TblSystemUser userUpdatedInfo = new()
                 {
                     Id = model.Id,
@@ -208,7 +209,7 @@ namespace PortalTools.Services.DBO.Account
             try
             {
 
-                TblSystemUser? userCurrentInfo = await _accountGetTools.GetTblSystemUserAsync(model.SystemUserId, context);
+                TblSystemUser? userCurrentInfo = await _getTools.Account.GetTblSystemUserAsync(model.SystemUserId, context);
                 TblSystemUser userUpdatedInfo = new()
                 {
                     ProfilePictureFileStorageId = model.FileStorageId
@@ -264,7 +265,7 @@ namespace PortalTools.Services.DBO.Account
                 }
                 else
                 {
-                    existingRole = await _accountGetTools.GetTblSystemRoleAsync(model.Id, context);
+                    existingRole = await _getTools.Account.GetTblSystemRoleAsync(model.Id, context);
                     if (existingRole == null)
                         return 0;
 
@@ -297,7 +298,7 @@ namespace PortalTools.Services.DBO.Account
 
             try
             {
-                SystemRoleResponseModel? systemRoleModel = await _accountGetTools.GetSystemRoleWithScopesAsync(id, context);
+                SystemRoleResponseModel? systemRoleModel = await _getTools.Account.GetSystemRoleWithScopesAsync(id, context);
                 await context.TblSystemRoles.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context, actionBySystemUserId);
 
                 foreach (var scopeItem in systemRoleModel.Scope ?? Enumerable.Empty<SystemRoleScopeResponseModel>())

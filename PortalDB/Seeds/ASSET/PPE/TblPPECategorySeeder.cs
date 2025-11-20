@@ -14,21 +14,20 @@ namespace PortalDB.Seeds.ASSET.PPE
             if (context.TblPPECategories.Any())
                 return;
 
-            TblPPECategory PPECategory(long id, string name) => new()
+            TblPPECategory PPECategory(string name) => new()
             {
-                Id = id,
                 Name = name
             };
 
             var systemModules = new List<TblPPECategory>
             {
-                PPECategory(1, "Information and Communication Technology Equipment"),
-                PPECategory(2, "Communication Equipment"),
-                PPECategory(3, "Motor Vehicle"),
-                PPECategory(4, "Office Equipment"),
-                PPECategory(5, "Technical and Scientific Equipment"),
-                PPECategory(6, "Sports Equipment"),
-                PPECategory(7, "Furniture and Fixtures")
+                PPECategory("Information and Communication Technology Equipment"),
+                PPECategory("Communication Equipment"),
+                PPECategory("Motor Vehicle"),
+                PPECategory("Office Equipment"),
+                PPECategory("Technical and Scientific Equipment"),
+                PPECategory("Sports Equipment"),
+                PPECategory("Furniture and Fixtures")
             };
 
             context.TblPPECategories.AddRange(systemModules);

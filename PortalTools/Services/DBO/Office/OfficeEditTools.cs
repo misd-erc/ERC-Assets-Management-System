@@ -4,25 +4,24 @@ using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Services;
-using PortalTools.Services.DBO.Account;
+using PortalTools.Composition;
+using PortalTools.Services.GetEditTools.DBO.Account;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalTools.Services.DBO.Office
+namespace PortalTools.Services.GetEditTools.DBO.Office
 {
     public class OfficeEditTools
     {
         private readonly DbContextOptions<PortalDbContext> _options;
-        private readonly AccountGetTools _accountGetTools;
-        private readonly OfficeGetTools _officeGetTools;
-        public OfficeEditTools(DbContextOptions<PortalDbContext> options, AccountGetTools accountGetTools, OfficeGetTools officeGetTools)
+        private readonly IPortalGetTools _getTools;
+        public OfficeEditTools(DbContextOptions<PortalDbContext> options, IPortalGetTools getTools)
         {
             _options = options;
-            _accountGetTools = accountGetTools;
-            _officeGetTools = officeGetTools;
+            _getTools = getTools;
         }
 
         public async Task<long> EditTblOfficeAsync(TblOffice model, long actionBySystemUserId, PortalDbContext context)
@@ -43,7 +42,7 @@ namespace PortalTools.Services.DBO.Office
                 }
                 else
                 {
-                    existingOffice = await _officeGetTools.GetTblOfficeAsync(model.Id, context);
+                    existingOffice = await _getTools.Office.GetTblOfficeAsync(model.Id, context);
 
                     if (existingOffice == null)
                         return 0;
@@ -77,7 +76,7 @@ namespace PortalTools.Services.DBO.Office
 
             try
             {
-                TblOffice? officeModel = await _officeGetTools.GetTblOfficeAsync(id, context);
+                TblOffice? officeModel = await _getTools.Office.GetTblOfficeAsync(id, context);
                 await context.TblOffices.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context, actionBySystemUserId);
                 await AuditTrailTool.LogActivityAsync(_options, $"Deleted an office", actionBy: actionBySystemUserId,
                     linkedAuditTrailId: AuditTrailTool.TrackChanges(context, officeModel, null, nameof(TblOffice), actionBySystemUserId, "Delete"));
@@ -108,7 +107,7 @@ namespace PortalTools.Services.DBO.Office
                 }
                 else
                 {
-                    existingDivision = await _officeGetTools.GetTblDivisionAsync(model.Id, context);
+                    existingDivision = await _getTools.Office.GetTblDivisionAsync(model.Id, context);
 
                     if (existingDivision == null)
                         return 0;
@@ -143,7 +142,7 @@ namespace PortalTools.Services.DBO.Office
 
             try
             {
-                TblDivision? divisionModel = await _officeGetTools.GetTblDivisionAsync(id, context);
+                TblDivision? divisionModel = await _getTools.Office.GetTblDivisionAsync(id, context);
                 await context.TblDivisions.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
                 await AuditTrailTool.LogActivityAsync(_options, $"Deleted a division", actionBy: actionBySystemUserId,
                     linkedAuditTrailId: AuditTrailTool.TrackChanges(context, divisionModel, null, nameof(TblDivision), actionBySystemUserId, "Delete"));
@@ -174,7 +173,7 @@ namespace PortalTools.Services.DBO.Office
                 }
                 else
                 {
-                    existingEmploymentType = await _officeGetTools.GetTblEmploymentTypeAsync(model.Id, context);
+                    existingEmploymentType = await _getTools.Office.GetTblEmploymentTypeAsync(model.Id, context);
 
                     if (existingEmploymentType == null)
                         return 0;
@@ -207,7 +206,7 @@ namespace PortalTools.Services.DBO.Office
 
             try
             {
-                TblEmploymentType? employmentTypeModel = await _officeGetTools.GetTblEmploymentTypeAsync(id, context);
+                TblEmploymentType? employmentTypeModel = await _getTools.Office.GetTblEmploymentTypeAsync(id, context);
                 await context.TblEmploymentTypes.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
                 await AuditTrailTool.LogActivityAsync(_options, $"Deleted an employment type", actionBy: actionBySystemUserId,
                     linkedAuditTrailId: AuditTrailTool.TrackChanges(context, employmentTypeModel, null, nameof(TblEmploymentType), actionBySystemUserId, "Delete"));
@@ -238,7 +237,7 @@ namespace PortalTools.Services.DBO.Office
                 }
                 else
                 {
-                    existingPosition = await _officeGetTools.GetTblPositionAsync(model.Id, context);
+                    existingPosition = await _getTools.Office.GetTblPositionAsync(model.Id, context);
 
                     if (existingPosition == null)
                         return 0;
@@ -272,7 +271,7 @@ namespace PortalTools.Services.DBO.Office
 
             try
             {
-                TblPosition? positionModel = await _officeGetTools.GetTblPositionAsync(id, context);
+                TblPosition? positionModel = await _getTools.Office.GetTblPositionAsync(id, context);
                 await context.TblPositions.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
                 await AuditTrailTool.LogActivityAsync(_options, $"Deleted a position", actionBy: actionBySystemUserId,
                     linkedAuditTrailId: AuditTrailTool.TrackChanges(context, positionModel, null, nameof(TblPosition), actionBySystemUserId, "Delete"));
