@@ -4,13 +4,13 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api
 
 export const ppeApi = {
   // Get all PPE assets
-  getAll: async (): Promise<PPEAsset[]> => {
-    const response = await fetch(`${API_BASE_URL}/ppe`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch PPE assets');
-    }
-    return response.json();
-  },
+  // getAll: async (): Promise<PPEAsset[]> => {
+  //   const response = await fetch(`${API_BASE_URL}/ppe`);
+  //   if (!response.ok) {
+  //     throw new Error('Failed to fetch PPE assets');
+  //   }
+  //   return response.json();
+  // },
 
   // Get PPE asset by ID
   getById: async (id: string): Promise<PPEAsset> => {

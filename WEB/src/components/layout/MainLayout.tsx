@@ -1,6 +1,6 @@
 import React, { useState, Suspense, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Sidebar } from '@/components/layout/Sidebar';
+import { AppSidebar as Sidebar } from '@/components/layout/AppSidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import Dashboard from '@/pages/Dashboard';
 import { MyProfile } from '@/components/profile/MyProfile';
@@ -13,13 +13,50 @@ import { PPESEPage } from '@/pages/PPESEPage';
 import { useIsMobile } from '@/components/ui/use-mobile';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import OfficeManagement from '@/pages/OfficeManagement';
 
 
-export default function MainLayout() {
-  const [activeModule, setActiveModule] = useState("dashboard");
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-full">
+    <div className="text-gray-500">Loading...</div>
+  </div>
+);
 
-  const renderPage = () => {
+export function MainLayout() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [activeModule, setActiveModule] = useState(() => {
+    // Initialize activeModule based on current pathname
+    if (location.pathname === '/profile') return 'profile';
+    return 'dashboard';
+  });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  // Sync activeModule with location changes
+  useEffect(() => {
+    if (location.pathname === '/profile') {
+      setActiveModule('profile');
+    } else if (location.pathname === '/dashboard') {
+      setActiveModule('dashboard');
+    } else if (location.pathname === '/under-construction') {
+      setActiveModule('under-construction');
+    }
+  }, [location.pathname]);
+
+  // Sync navigation when activeModule changes
+  useEffect(() => {
+    if (activeModule === 'profile') {
+      navigate('/profile');
+    } else if (activeModule === 'dashboard') {
+      navigate('/dashboard');
+    } else if (activeModule === 'under-construction') {
+      navigate('/under-construction');
+    }
+  }, [activeModule, navigate]);
+
+  const renderContent = () => {
     switch (activeModule) {
       case 'profile':
         return (
@@ -64,6 +101,14 @@ export default function MainLayout() {
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback />}>
               <PPESEPage />
+            </Suspense>
+          </ErrorBoundary>
+        );
+      case 'under-construction':
+        return (
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback />}>
+              <UnderConstructionPage />
             </Suspense>
           </ErrorBoundary>
         );
@@ -112,13 +157,21 @@ export default function MainLayout() {
 
   return (
     <SidebarProvider>
-      <AppSidebar activeModule={activeModule} onModuleChange={setActiveModule} />
-
-      <div className="flex flex-col flex-1 overflow-hidden ml-64">
-        <TopBar onNavigate={setActiveModule} />
-
-        <div className="flex-1 overflow-auto p-6">
-          {renderPage()}
+      <div className="flex h-screen w-full">
+        {isMobile ? (
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+            <SheetContent side="left" className="p-0 w-64 z-40">
+              <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
+            </SheetContent>
+          </Sheet>
+        ) : (
+          <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
+        )}
+        <div className={`flex-1 overflow-auto bg-slate-50 ${!isMobile ? 'ml-64' : ''}`}>
+          <TopBar onMenuClick={() => setSidebarOpen(true)} isMobile={isMobile} onNavigate={setActiveModule} />
+          <main className="p-6 space-y-6">
+            {renderContent()}
+          </main>
         </div>
       </div>
     </SidebarProvider>
