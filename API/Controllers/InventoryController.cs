@@ -22,6 +22,7 @@ using PortalTools.Services;
 using PortalTools.Services.GetEditTools.ASSET.PPE;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Office;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -313,12 +314,10 @@ namespace API.Controllers
         #endregion
 
         #region POST
-        /// <summary>
-        /// Upload PPE batch file (CSV or Excel .xlsx)
-        /// </summary>
         [HttpPost("ppe/batch-upload")]
         [ValidateSessionToken]
-        public async Task<IActionResult> PPEBatchUpload([FromQuery] SoloQueryParams model, IFormFile file)
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> PPEBatchUpload([FromQuery] SoloQueryParams model, [Required] IFormFile file)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -440,26 +439,54 @@ namespace API.Controllers
                         {
                             TblEmployee? plantillaEmployee = await _getTools.Account.GetEmployeeByEmployeeIdAsync(movement.PlantillaEmployeeId, context);
                             plantillaEmployeeId = plantillaEmployee?.Id;
+
+                            //If actual office/division and non plantilla are nulled, get from the plantilla details
+                            if(string.IsNullOrEmpty(movement.NonPlantillaEmployeeId) && string.IsNullOrWhiteSpace(movement.ActualOfficeAndDivision))
+                            {
+                                long? systemUserId = plantillaEmployee.SystemUserId;
+
+                                if (systemUserId != null)
+                                {
+                                    TblSystemUser? systemUserInfo = await _getTools.Account.GetTblSystemUserAsync(systemUserId.Value, context);
+                                    divisionId = systemUserInfo.DivisionId;
+                                    officeId = systemUserInfo.OfficeId;
+                                }
+                            }
                         }
+
                         if (!string.IsNullOrEmpty(movement.NonPlantillaEmployeeId))
                         {
                             TblEmployee? nonPlantillaEmployee = await _getTools.Account.GetEmployeeByEmployeeIdAsync(movement.NonPlantillaEmployeeId, context);
                             nonPlantillaEmployeeId = nonPlantillaEmployee?.Id;
+
+                            //If actual office/division are nulled, get from the non plantilla details
+                            if (string.IsNullOrWhiteSpace(movement.ActualOfficeAndDivision))
+                            {
+                                long? systemUserId = nonPlantillaEmployee.SystemUserId;
+
+                                if(systemUserId != null)
+                                {
+                                    TblSystemUser? systemUserInfo = await _getTools.Account.GetTblSystemUserAsync(systemUserId.Value, context);
+                                    divisionId = systemUserInfo.DivisionId;
+                                    officeId = systemUserInfo.OfficeId;
+                                }
+                                
+                            }
                         }
 
                         TblPPEMovement newMovement = new()
-                            {
-                                PPEId = ppeId,
-                                DateAssigned = movement.DateAssigned,
-                                PARITRNumber = movement.ParItrNumber,
-                                PlantillaEmployeeId = plantillaEmployeeId,
-                                NonPlantillaEmployeeId = nonPlantillaEmployeeId,
-                                PlantillaEmployeeIdOriginal = movement.PlantillaEmployeeId,
-                                NonPlantillaEmployeeIdOriginal = movement.NonPlantillaEmployeeId,
-                                ActualOfficeId = officeId,
-                                ActualDivisionId = divisionId,
-                                Remarks = movement.Condition
-                            };
+                        {
+                            PPEId = ppeId,
+                            DateAssigned = movement.DateAssigned,
+                            PARITRNumber = movement.ParItrNumber,
+                            PlantillaEmployeeId = plantillaEmployeeId,
+                            NonPlantillaEmployeeId = nonPlantillaEmployeeId,
+                            PlantillaEmployeeIdOriginal = movement.PlantillaEmployeeId,
+                            NonPlantillaEmployeeIdOriginal = movement.NonPlantillaEmployeeId,
+                            ActualOfficeId = officeId,
+                            ActualDivisionId = divisionId,
+                            Remarks = movement.Condition
+                        };
 
                         await _editTools.PPE.EditTblPPEMovementAsync(newMovement, model.ActionBySystemUserId, context);
                     }

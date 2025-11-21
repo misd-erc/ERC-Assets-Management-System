@@ -12,7 +12,7 @@ namespace PortalTools.Services.GetEditTools.DBO.Storage
 {
     public class StorageGetTools
     {
-        public IQueryable<TblFileStorage> GetTblFileStorages(PortalDbContext context) => context.TblFileStorages.Where(x => !x.IsDeleted);
-        public async Task<TblFileStorage?> GetTblFileStorageAsync(long? id, PortalDbContext context) => await context.TblFileStorages.Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<TblFileStorage> GetTblFileStorages(PortalDbContext context) => context.TblFileStorages.AsNoTracking().Where(x => !x.IsDeleted);
+        public async Task<TblFileStorage?> GetTblFileStorageAsync(long? id, PortalDbContext context) => await context.TblFileStorages.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
     }
 }
