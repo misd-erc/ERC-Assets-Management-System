@@ -441,13 +441,11 @@ namespace API.Controllers
                             plantillaEmployeeId = plantillaEmployee?.Id;
 
                             //If actual office/division and non plantilla are nulled, get from the plantilla details
-                            if(string.IsNullOrEmpty(movement.NonPlantillaEmployeeId) && string.IsNullOrWhiteSpace(movement.ActualOfficeAndDivision))
+                            if(plantillaEmployee != null && string.IsNullOrEmpty(movement.NonPlantillaEmployeeId) && string.IsNullOrWhiteSpace(movement.ActualOfficeAndDivision))
                             {
-                                long? systemUserId = plantillaEmployee.SystemUserId;
-
-                                if (systemUserId != null)
+                                if(plantillaEmployee.SystemUserId != null)
                                 {
-                                    TblSystemUser? systemUserInfo = await _getTools.Account.GetTblSystemUserAsync(systemUserId.Value, context);
+                                    TblSystemUser? systemUserInfo = await _getTools.Account.GetTblSystemUserAsync(plantillaEmployee.SystemUserId.Value, context);
                                     divisionId = systemUserInfo.DivisionId;
                                     officeId = systemUserInfo.OfficeId;
                                 }
@@ -460,13 +458,11 @@ namespace API.Controllers
                             nonPlantillaEmployeeId = nonPlantillaEmployee?.Id;
 
                             //If actual office/division are nulled, get from the non plantilla details
-                            if (string.IsNullOrWhiteSpace(movement.ActualOfficeAndDivision))
+                            if (nonPlantillaEmployee != null && string.IsNullOrWhiteSpace(movement.ActualOfficeAndDivision))
                             {
-                                long? systemUserId = nonPlantillaEmployee.SystemUserId;
-
-                                if(systemUserId != null)
+                                if (nonPlantillaEmployee.SystemUserId != null)
                                 {
-                                    TblSystemUser? systemUserInfo = await _getTools.Account.GetTblSystemUserAsync(systemUserId.Value, context);
+                                    TblSystemUser? systemUserInfo = await _getTools.Account.GetTblSystemUserAsync(nonPlantillaEmployee.SystemUserId.Value, context);
                                     divisionId = systemUserInfo.DivisionId;
                                     officeId = systemUserInfo.OfficeId;
                                 }
