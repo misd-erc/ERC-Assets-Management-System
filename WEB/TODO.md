@@ -1,10 +1,17 @@
-# TODO: Make Sidebar Dynamic Based on localStorage userDetails
+# PPE & SE Add/Edit Modal Integration
 
 ## Tasks
-- [ ] Modify Sidebar.tsx to read 'userDetails' from localStorage
-- [ ] Decrypt the localStorage value using decrypt function
-- [ ] Parse the decrypted string as JSON
-- [ ] Extract userScopes and isAdmin from the parsed userDetails
-- [ ] Update filtering logic to use extracted scopes
-- [ ] Test the sidebar filtering with provided JSON data
-- [ ] Ensure admin items are shown for administrators
+- [x] Integrate PPEForm and PPEViewCard into PPEList.tsx
+- [x] Integrate SEForm and SEViewCard into SEList.tsx
+- [x] Update modal implementations to use actual components
+- [ ] Test add/edit/view functionality for both PPE and SE
+
+## Files to Modify
+- [x] src/pages/ppe/PPEList.tsx
+- [x] src/pages/se/SEList.tsx
+
+## Components to Use
+- PPEForm (for add/edit PPE)
+- PPEViewCard (for view PPE)
+- SEForm (for add/edit SE)
+- SEViewCard (for view SE)

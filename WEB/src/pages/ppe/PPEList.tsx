@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload } from 'lucide-react';
 import { PPETable } from '@/components/ppe/PPETable';
 import { PPEFilters } from '@/components/ppe/PPEFilters';
+import { PPEForm } from '@/components/ppe/PPEForm';
+import { PPEViewCard } from '@/components/ppe/PPEViewCard';
 import { PPEAsset } from '@/types/asset/ppe';
 import { PPEService } from '@/services/ppeService';
 import { toast } from 'sonner';
@@ -224,51 +226,78 @@ export function PPEList() {
         onPageChange={setCurrentPage}
       />
 
-      {/* Add/Edit/View Dialogs would be implemented here */}
-      {/* For now, showing placeholders */}
+      {/* Add PPE Modal */}
       {showAddDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Add PPE Asset</h3>
-            <p className="text-slate-600 mb-4">PPE Form component would be rendered here</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => setShowAddDialog(false)}>
-                Add Asset
-              </Button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold mb-6">Add PPE Asset</h3>
+              <PPEForm
+                onSubmit={async (data) => {
+                  try {
+                    await PPEService.create(data);
+                    toast.success('PPE asset added successfully');
+                    setShowAddDialog(false);
+                    loadPPEAssets();
+                  } catch (error) {
+                    console.error('Error adding PPE asset:', error);
+                    toast.error('Failed to add PPE asset');
+                  }
+                }}
+                onCancel={() => setShowAddDialog(false)}
+              />
             </div>
           </div>
         </div>
       )}
 
+      {/* Edit PPE Modal */}
       {showEditDialog && selectedPPE && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Edit PPE Asset</h3>
-            <p className="text-slate-600 mb-4">PPE Form component would be rendered here for {selectedPPE.property_number}</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => setShowEditDialog(false)}>
-                Update Asset
-              </Button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold mb-6">Edit PPE Asset</h3>
+              <PPEForm
+                ppeAsset={selectedPPE}
+                onSubmit={async (data) => {
+                  try {
+                    await PPEService.update(selectedPPE.id, data);
+                    toast.success('PPE asset updated successfully');
+                    setShowEditDialog(false);
+                    setSelectedPPE(null);
+                    loadPPEAssets();
+                  } catch (error) {
+                    console.error('Error updating PPE asset:', error);
+                    toast.error('Failed to update PPE asset');
+                  }
+                }}
+                onCancel={() => {
+                  setShowEditDialog(false);
+                  setSelectedPPE(null);
+                }}
+                isEditing={true}
+              />
             </div>
           </div>
         </div>
       )}
 
+      {/* View PPE Modal */}
       {showViewDialog && selectedPPE && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">View PPE Asset</h3>
-            <p className="text-slate-600 mb-4">PPE View Card component would be rendered here for {selectedPPE.property_number}</p>
-            <div className="flex justify-end">
-              <Button onClick={() => setShowViewDialog(false)}>
-                Close
-              </Button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <PPEViewCard
+                ppeAsset={selectedPPE}
+                onEdit={() => {
+                  setShowViewDialog(false);
+                  setShowEditDialog(true);
+                }}
+                onClose={() => {
+                  setShowViewDialog(false);
+                  setSelectedPPE(null);
+                }}
+              />
             </div>
           </div>
         </div>
