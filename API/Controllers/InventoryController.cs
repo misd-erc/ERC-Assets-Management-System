@@ -1,11 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using API.Attributes;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
 using PortalDB.Entities.ASSET.PPE;
 using PortalDB.Entities.DBO.Account;
+using PortalDB.Entities.DBO.Office;
 using PortalDB.Models.ParserModels.PPE;
+using PortalDB.Models.QueryParams.Pagination;
 using PortalDB.Models.QueryParams.Universal;
+using PortalDB.Models.ResponseModels.Office;
+using PortalDB.Models.ResponseModels.PPE;
 using PortalDB.Models.Responses;
 using PortalDB.Models.ViewModels.PPE;
 using PortalDB.Services;
@@ -40,6 +45,103 @@ namespace API.Controllers
 			_parserTools = parserTools;
 		}
 
+        #region GET
+
+        // GET api/inventory/ppe/all
+        [HttpGet("ppe/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllPPEs([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblPPE?> ppes = await _getTools.PPE.GetTblPPEs(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    ppes = ppes.Where(x =>
+                        x.PropertyNumber.ToLower().Contains(searchLower) ||
+                        x.Description.ToLower().Contains(searchLower) ||
+                        x.Brand.ToLower().Contains(searchLower) ||
+                        x.Model.ToLower().Contains(searchLower) ||
+                        x.SerialNumber.ToLower().Contains(searchLower) ||
+                        x.UnitOfMeasurement.ToLower().Contains(searchLower) ||
+                        x.UnitValue.ToString().Contains(searchLower) ||
+                        x.DateAcquired.ToString().Contains(searchLower) ||
+                        x.EstimatedUsefulLife.ToString().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    ppes = ppes.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    ppes = ppes.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = ppes.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var ppesList = ppes
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var ppesResponses = new List<PPEResponseModel>();
+
+                foreach (var x in ppesList)
+                {
+                    var ppeModel = new PPEResponseModel
+                    {
+                        Id = x.Id,
+                        PropertyNumber = x.PropertyNumber,
+                        Category = await _getTools.PPE.GetTblPPECategoryAsync(x.CategoryId, context),
+                        Legend = await _getTools.PPE.GetTblPPELegendAsync(x.CategoryId, context),
+                        Description = x.Description,
+                        Brand = x.Brand,
+                        Model = x.Model,
+                        SerialNumber = x.SerialNumber,
+                        UnitOfMeasurement = x.UnitOfMeasurement,
+                        UnitValue = x.UnitValue,
+                        DateAcquired = x.DateAcquired,
+                        EstimatedUsefulLife = x.EstimatedUsefulLife,
+                        Parts = await _getTools.PPE.GetTblPPEPartsByPPEId(x.Id, context).ToListAsync(),
+                        Movements = await _getTools.PPE.GetTblPPEMovementsByPPEId(x.Id, context).ToListAsync(),
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    ppesResponses.Add(ppeModel);
+                }
+
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed PPEs", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<PPEResponseModel>.OkPaginated(
+                    ppesResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "PPEs have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        #endregion
+
+        #region POST
         /// <summary>
         /// Upload PPE batch file (CSV or Excel .xlsx)
         /// </summary>
@@ -207,5 +309,6 @@ namespace API.Controllers
 
             }
         }
+        #endregion
     }
 }

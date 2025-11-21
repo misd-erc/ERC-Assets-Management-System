@@ -43,6 +43,7 @@ namespace API.Controllers
 			_authTools = authTools;
         }
 
+
         #region GET
         // GET api/logs/audit-trail/all
         [HttpGet("audit-trail/all")]

@@ -669,7 +669,6 @@ namespace API.Controllers
 
         #endregion
 
-
         #region DELETE
 
         // DELETE api/office/delete
