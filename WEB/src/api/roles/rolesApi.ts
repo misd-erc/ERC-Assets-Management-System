@@ -11,7 +11,11 @@ export interface SystemRoleResponseModel {
   id: number;
   roleName: string;
   description: string;
+<<<<<<< HEAD
   scope: SystemRoleScope[];
+=======
+  scope: string[];
+>>>>>>> eb94c43 (fixed issue in Role Management)
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;

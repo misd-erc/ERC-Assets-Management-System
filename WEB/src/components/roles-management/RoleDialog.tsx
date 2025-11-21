@@ -26,18 +26,17 @@ export function RoleDialog({ isOpen, onClose, onSave, editingRole, rolesCount }:
     if (editingRole) {
       setRoleName(editingRole.roleName); 
       setDescription(editingRole.description);
-      // Map scope (module names) to permission IDs
-      const permissionIds: string[] = [];
-      editingRole.scope.forEach(moduleName => {
-        // Find the permission ID for this module name
-        for (const [categoryName, categoryPermissions] of Object.entries(PERMISSION_CATEGORIES)) {
-          const permission = categoryPermissions.find(p => p.label === moduleName);
+      // Map scope strings to permission IDs
+      const permissionIds = editingRole.scope.map(scopeItem => {
+        // Find the permission ID that matches the scope label
+        for (const category of Object.values(PERMISSION_CATEGORIES)) {
+          const permission = category.find(p => p.label === scopeItem);
           if (permission) {
-            permissionIds.push(permission.id);
-            break; // Found the permission, no need to continue searching
+            return permission.id;
           }
         }
-      });
+        return null;
+      }).filter(Boolean) as string[];
       setPermissions(permissionIds);
     } else {
       setRoleName('');
@@ -52,10 +51,10 @@ export function RoleDialog({ isOpen, onClose, onSave, editingRole, rolesCount }:
       return;
     }
 
-    // Convert permission IDs back to module names for saving
+    // Convert permission IDs back to scope labels for saving
     const scopeLabels = permissions.map(permissionId => {
-      for (const [categoryName, categoryPermissions] of Object.entries(PERMISSION_CATEGORIES)) {
-        const permission = categoryPermissions.find(p => p.id === permissionId);
+      for (const category of Object.values(PERMISSION_CATEGORIES)) {
+        const permission = category.find(p => p.id === permissionId);
         if (permission) {
           return permission.label;
         }
