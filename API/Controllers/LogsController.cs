@@ -193,7 +193,86 @@ namespace API.Controllers
             }
         }
 
+        // GET api/logs/audit-trail/systemUserId
+        [HttpGet("audit-trail/all/{tableName}/{recordId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllAuditTrailsByTableNameAndRecordId([FromQuery] PaginationGenericQueryParams model, [FromRoute] string tableName, [FromRoute] long recordId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IQueryable<TblAuditTrail> auditTrailQuery = _getTools.Log.GetTblAuditTrailsByTableNameAndRecordId(TableConstants.Get(tableName), recordId);
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    auditTrailQuery = auditTrailQuery.Where(x =>
+                        x.TableName.ToLower().Contains(searchLower) ||
+                        x.Action.ToLower().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    auditTrailQuery = auditTrailQuery.Where(x => x.ChangedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    auditTrailQuery = auditTrailQuery.Where(x => x.ChangedAt <= model.EndDate.Value);
+
+                int totalCount = auditTrailQuery.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var auditTrailList = auditTrailQuery
+                    .OrderByDescending(x => x.ChangedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var systemUserIds = auditTrailList
+                    .Where(x => x.ChangedBy.HasValue)
+                    .Select(x => x.ChangedBy.Value)
+                    .Distinct()
+                    .ToList();
+
+                List<TblSystemUser> users = await _getTools.Account.GetTblSystemUsers(context)
+                    .Where(x => systemUserIds.Contains(x.Id))
+                    .ToListAsync();
+
+                List<AuditTrailResponseModel> auditTrailResponses = auditTrailList.Select(x => new AuditTrailResponseModel
+                {
+                    Table = x.TableName,
+                    RecordId = x.RecordId,
+                    Action = x.Action,
+                    Changes = JsonSerializer.Deserialize<JsonElement>(x.Changes ?? "{}"),
+                    ActionBySystemUserId = x.ChangedBy,
+                    ActionBy = x.ChangedBy == 0 ? UniversalConstants.SYSTEM_NAME : $"{users.FirstOrDefault(u => u.Id == x.ChangedBy)?.FirstName ?? ""} {users.FirstOrDefault(u => u.Id == x.ChangedBy)?.LastName ?? ""}".Trim(),
+                    Date = x.ChangedAt
+                }).ToList();
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed audit trails", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<AuditTrailResponseModel>.OkPaginated(
+                    auditTrailResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Audit trails have been retrieved"
+                ));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(LogsController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         // GET api/logs/activities/all
+
         [HttpGet("activities/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]

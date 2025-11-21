@@ -27,6 +27,7 @@ namespace PortalTools.Services.GetEditTools.LOG
         }
 
         public IQueryable<TblAuditTrail> GetTblAuditTrails() => _context.TblAuditTrails;
+        public IQueryable<TblAuditTrail> GetTblAuditTrailsByTableNameAndRecordId(string tableName, long recordId) => _context.TblAuditTrails.Where(x => x.TableName == tableName && x.RecordId == recordId);
         public IQueryable<TblErrorLog> GetTblErrorLogs() => _context.TblErrorLogs;
         public Task<TblAuditTrail?> GetTblAuditTrail(long id) => _context.TblAuditTrails.Where(x => x.Id == id).FirstOrDefaultAsync();
         public IQueryable<TblActivityLog> GetTblActivityLogs() => _context.TblActivityLogs;
