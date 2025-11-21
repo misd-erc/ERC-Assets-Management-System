@@ -43,6 +43,17 @@ export interface SystemRole {
   id: number;
   roleName: string;
   description: string;
+  scope: SystemRoleScope[];
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt: string;
+  userCount: number;
+}
+
+export interface SystemRoleSimple {
+  id: number;
+  roleName: string;
+  description: string;
   scope: string[];
   isActive: boolean;
   isDeleted: boolean;

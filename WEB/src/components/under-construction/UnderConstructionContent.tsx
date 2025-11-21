@@ -9,9 +9,9 @@ interface UnderConstructionContentProps {
   moduleName?: string;
 }
 
-const UnderConstructionContent: React.FC<UnderConstructionContentProps> = ({ onNavigate }) => {
+const UnderConstructionContent: React.FC<UnderConstructionContentProps> = ({ onNavigate, moduleName }) => {
   const location = useLocation();
-  const moduleName = location.state?.moduleName || 'This feature';
+  const displayModuleName = moduleName || location.state?.moduleName || 'This feature';
 
   const handleGoToDashboard = () => {
     onNavigate('dashboard');
@@ -28,7 +28,7 @@ const UnderConstructionContent: React.FC<UnderConstructionContentProps> = ({ onN
             Under Construction
           </CardTitle>
           <CardDescription className="text-gray-600">
-            The <strong>{moduleName}</strong> module is currently being developed and will be available soon.
+            The <strong>{displayModuleName}</strong> module is currently being developed and will be available soon.
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center space-y-4">

@@ -51,7 +51,7 @@ export function RolesManagement() {
     id: apiRole.id,
     roleName: apiRole.roleName,
     description: apiRole.description,
-    scope: apiRole.scope || [],
+    scope: apiRole.scope ? apiRole.scope.map(s => s.module.name) : [],
     isActive: apiRole.isActive,
     isDeleted: apiRole.isDeleted,
     createdAt: apiRole.createdAt,
@@ -75,19 +75,32 @@ export function RolesManagement() {
 
     console.log('[RolesManagement] Creating role with userId:', userId);
 
-    // Convert scope labels to module IDs
-    const scopes = roleData.scope.map((label: string) => {
-      for (const category of Object.values(PERMISSION_CATEGORIES)) {
-        const perm = category.find(p => p.label === label);
-        if (perm) {
-          return {
-            systemModuleId: parseInt(perm.id),
-            systemRoleScopeIsActive: true,
-          };
-        }
-      }
-      return null; // If label not found, skip
-    }).filter(Boolean) as { systemModuleId: number; systemRoleScopeIsActive: boolean }[];
+    // Map module names to module IDs
+    const moduleNameToId: Record<string, number> = {
+      'Dashboard': 1,
+      'Calendar & Notifications': 2,
+      'Communication Tools': 3,
+      'Category Management': 4,
+      'Delivery & Receipt of Items': 5,
+      'Supply Management': 6,
+      'Transfers & Returns': 7,
+      'Disposal of Properties': 8,
+      'Contract Management': 9,
+      'PPE & SE': 10,
+      'PPE & Semi-Expendables': 11,
+      'Reports Center': 12,
+      'Approvals': 13,
+      'User Management': 14,
+      'Roles Management': 15,
+      'Office Management': 16,
+      'System Settings': 17,
+      'Audit Logs': 18,
+    };
+
+    const scopes = roleData.scope.map((moduleName: string) => ({
+      systemModuleId: moduleNameToId[moduleName] || 0,
+      systemRoleScopeIsActive: true,
+    })).filter(scope => scope.systemModuleId !== 0);
 
     await createOrUpdateRole({
       systemRoleId: 0, // 0 for new role
@@ -112,19 +125,32 @@ export function RolesManagement() {
 
     console.log('[RolesManagement] Editing role with userId:', userId);
 
-    // Convert scope labels to module IDs
-    const scopes = roleData.scope.map((label: string) => {
-      for (const category of Object.values(PERMISSION_CATEGORIES)) {
-        const perm = category.find(p => p.label === label);
-        if (perm) {
-          return {
-            systemModuleId: parseInt(perm.id),
-            systemRoleScopeIsActive: true,
-          };
-        }
-      }
-      return null; // If label not found, skip
-    }).filter(Boolean) as { systemModuleId: number; systemRoleScopeIsActive: boolean }[];
+    // Map module names to module IDs
+    const moduleNameToId: Record<string, number> = {
+      'Dashboard': 1,
+      'Calendar & Notifications': 2,
+      'Communication Tools': 3,
+      'Category Management': 4,
+      'Delivery & Receipt of Items': 5,
+      'Supply Management': 6,
+      'Transfers & Returns': 7,
+      'Disposal of Properties': 8,
+      'Contract Management': 9,
+      'PPE & SE': 10,
+      'PPE & Semi-Expendables': 11,
+      'Reports Center': 12,
+      'Approvals': 13,
+      'User Management': 14,
+      'Roles Management': 15,
+      'Office Management': 16,
+      'System Settings': 17,
+      'Audit Logs': 18,
+    };
+
+    const scopes = roleData.scope.map((moduleName: string) => ({
+      systemModuleId: moduleNameToId[moduleName] || 0,
+      systemRoleScopeIsActive: true,
+    })).filter(scope => scope.systemModuleId !== 0);
 
     await createOrUpdateRole({
       systemRoleId: editingRole.id,
@@ -181,7 +207,7 @@ export function RolesManagement() {
         id: roleDetails.id,
         roleName: roleDetails.roleName,
         description: roleDetails.description,
-        scope: roleDetails.scope || [],
+        scope: roleDetails.scope ? roleDetails.scope.map(s => s.module.name) : [],
         isActive: roleDetails.isActive,
         isDeleted: roleDetails.isDeleted,
         createdAt: roleDetails.createdAt,
