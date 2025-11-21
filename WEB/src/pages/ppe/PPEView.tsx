@@ -74,7 +74,7 @@ export function PPEView() {
   }
 
   return (
-    <div className="p-6 pt-20 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button

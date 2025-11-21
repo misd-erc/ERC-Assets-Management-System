@@ -7,7 +7,7 @@ export function PPESEPage() {
   const [activeTab, setActiveTab] = useState('ppe');
 
   return (
-    <div className="p-6 pt-20 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">PPE & SE Encoding</h1>
       </div>

@@ -1,6 +1,4 @@
-﻿import React, { useCallback, useMemo, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-
+﻿import React, { useCallback, useMemo } from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -17,12 +15,26 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { decrypt } from "@/utils/encryption";
 import {
-  moduleConfig,
-  fallbackModule,
-  adminOverrideModules,
-} from "@/utils/moduleConfig";
-
-import { Building } from "lucide-react";
+  LayoutDashboard,
+  Package,
+  HardHat,
+  FileText,
+  ArrowRightLeft,
+  Trash2,
+  BarChart3,
+  Users,
+  Settings,
+  FileSearch,
+  Shield,
+  Building,
+  FolderOpen,
+  CheckCircle,
+  Send,
+  Building2,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { decrypt } from '@/utils/encryption';
 
 interface NavigationItem {
   id: string;
@@ -37,99 +49,203 @@ interface NavigationGroup {
   items: NavigationItem[];
 }
 
-export function AppSidebar({ activeModule, onModuleChange }: any) {
-  const [userDetails, setUserDetails] = useState<any>(null);
-  const navigate = useNavigate();
+interface AppSidebarProps {
+  activeModule: string;
+  onModuleChange: (module: string) => void;
+}
 
-  // ----------------------
-  // LOAD USER DETAILS
-  // ----------------------
-  useEffect(() => {
-    const encrypted = localStorage.getItem("userDetails");
-    if (!encrypted) return;
+export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
+  const { userProfile } = useUserProfile();
+
+  // Get user scopes and admin status from decrypted userDetails
+  const { userScopes, isAdmin } = useMemo(() => {
+    if (!userProfile) return { userScopes: [], isAdmin: false };
 
     try {
-      const decrypted = decrypt(encrypted);
-      setUserDetails(JSON.parse(decrypted));
-    } catch (err) {
-      console.error("Error decrypting user details:", err);
-    }
-  }, []);
+      const encryptedUserDetails = localStorage.getItem('userDetails');
+      if (!encryptedUserDetails) return { userScopes: [], isAdmin: false };
 
-  // ----------------------
-  // EXTRACT SCOPES (ACRONYM-BASED)
-  // ----------------------
-  const { acronyms, isAdmin } = useMemo(() => {
-    if (!userDetails) return { acronyms: [], isAdmin: false };
+      const decryptedUserDetails = JSON.parse(decrypt(encryptedUserDetails));
+      const scopes: string[] = [];
+      let admin = false;
 
-    const list: string[] = [];
-    let adminFlag = false;
-
-    userDetails.systemRole?.forEach((role: any) => {
-      if (role.roleName === "Administrator") adminFlag = true;
-
-      role.scope?.forEach((s: any) => {
-        if (s.module?.acronym) list.push(s.module.acronym);
+      decryptedUserDetails.systemRole?.forEach((role: any) => {
+        if (role.roleName === 'Administrator') {
+          admin = true;
+        }
+        if (role.isActive && !role.isDeleted && Array.isArray(role.scope)) {
+          role.scope.forEach((scopeItem: any) => {
+            if (scopeItem.module && scopeItem.module.name) {
+              scopes.push(scopeItem.module.name);
+            }
+          });
+        }
       });
-    });
 
-    // ADMIN OVERRIDE (forced modules)
-    if (adminFlag) {
-      adminOverrideModules.forEach((ac) => {
-        if (!list.includes(ac)) list.push(ac);
-      });
+      return { userScopes: scopes, isAdmin: admin };
+    } catch (error) {
+      console.error('Error decrypting user details:', error);
+      return { userScopes: [], isAdmin: false };
     }
+  }, [userProfile]);
 
-    return { acronyms: list, isAdmin: adminFlag };
-  }, [userDetails]);
+  const baseNavigationGroups: NavigationGroup[] = [
+    {
+      title: 'Overview',
+      items: [
+        {
+          title: 'Dashboard',
+          icon: LayoutDashboard,
+          id: 'dashboard',
+        },
+      ],
+    },
+    {
+      title: 'Core Operations',
+      items: [
+        {
+          title: 'Category Management',
+          icon: FolderOpen,
+          id: 'category-management',
+        },
+        {
+          title: 'Delivery & Receipt of Items',
+          icon: Package,
+          id: 'deliveries-receipts',
+        },
+        {
+          title: 'Supply Management',
+          icon: Send,
+          id: 'supply-management',
+        },
+        {
+          title: 'Transfers & Returns',
+          icon: ArrowRightLeft,
+          id: 'transfers-returns',
+        },
+        {
+          title: 'Disposal of Properties',
+          icon: Trash2,
+          id: 'disposals',
+        },
+        {
+          title: 'Contract Management',
+          icon: FileText,
+          id: 'contracts',
+        },
+      ],
+    },
+    {
+      title: 'Asset Management',
+      items: [
+        {
+          title: 'PPE & SE',
+          icon: Package,
+          id: 'ppe-se',
+        },
+        {
+          title: 'PPE & Semi-Expendables',
+          icon: HardHat,
+          id: 'ppe-semi-expendables',
+        },
+      ],
+    },
+    {
+      title: 'Reports & Approvals',
+      items: [
+        {
+          title: 'Reports Center',
+          icon: BarChart3,
+          id: 'reports',
+        },
+        {
+          title: 'Approvals',
+          icon: CheckCircle,
+          id: 'approvals',
+          badge: '3',
+        },
+      ],
+    },
+    ...(isAdmin ? [{
+      title: 'Administration',
+      items: [
+        {
+          title: 'User Management',
+          icon: Users,
+          id: 'users-roles',
+        },
+        {
+          title: 'Office Management',
+          icon: Building2,
+          id: 'office-management',
+        },
+        {
+          title: 'Roles Management',
+          icon: Shield,
+          id: 'roles-management',
+        },
+        {
+          title: 'System Settings',
+          icon: Settings,
+          id: 'settings',
+        },
+        {
+          title: 'Audit Logs',
+          icon: FileSearch,
+          id: 'audit-logs',
+        },
+      ],
+    }] : []),
+  ];
 
-  // ----------------------
-  // BUILD NAVIGATION GROUPS
-  // ----------------------
-  const navigationGroups: NavigationGroup[] = useMemo(() => {
-    const grouped: Record<string, NavigationItem[]> = {};
+  // Filter navigation groups based on user scopes
+  const navigationGroups = useMemo(() => {
+    return baseNavigationGroups.map(group => ({
+      ...group,
+      items: group.items.filter(item => {
+        // Always show dashboard
+        if (item.id === 'dashboard') return true;
 
-    acronyms.forEach((acronym) => {
-      const config = moduleConfig[acronym] || {
-        ...fallbackModule,
-        id: acronym.toLowerCase(),
-        title: acronym,
-        icon: Building,
-        implemented: false,
-      };
+        const moduleMapping: Record<string, string> = {
+          'category-management': 'Category Management',
+          'deliveries-receipts': 'Delivery & Receipt of Items',
+          'supply-management': 'Supply Management',
+          'transfers-returns': 'Transfers & Returns',
+          'disposals': 'Disposal of Properties',
+          'contracts': 'Contract Management',
+          'ppe-se': 'PPE & SE',
+          'ppe-semi-expendables': 'PPE & Semi-Expendables',
+          'reports': 'Reports Center',
+          'approvals': 'Approvals',
+          'users-roles': 'User Management',
+          'office-management': 'Office Management',
+          'roles-management': 'Roles Management',
+          'settings': 'System Settings',
+          'audit-logs': 'Audit Logs'
+        };
 
-      const item: NavigationItem = {
-        id: config.id,
-        title: config.title,
-        icon: config.icon,
-        group: config.group,
-        implemented: config.implemented,
-      };
+        const requiredModule = moduleMapping[item.id];
 
-      if (!grouped[config.group]) grouped[config.group] = [];
-      grouped[config.group].push(item);
-    });
+        if (isAdmin) {
+          // Administrators see all items
+          return true;
+        } else {
+          // Non-admins see only items in their scopes
+          return requiredModule ? userScopes.includes(requiredModule) : false;
+        }
+      })
+    })).filter(group => group.items.length > 0);
+  }, [userScopes, isAdmin]);
 
-    return Object.entries(grouped).map(([group, items]) => ({
-      title: group,
-      items,
-    }));
-  }, [acronyms]);
+  const handleModuleChange = useCallback(
+    (moduleId: string) => {
+      if (moduleId !== activeModule) {
+        onModuleChange(moduleId);
+      }
+    },
+    [activeModule, onModuleChange]
+  );
 
-  // ----------------------
-  // CLICK HANDLER
-  // ----------------------
-  const handleClick = (item: NavigationItem) => {
-    if (item.implemented) {
-      onModuleChange(item.id);
-    } else {
-      navigate("/under-construction", { state: { moduleName: item.title } });
-    }
-  };
-
-  // ----------------------
-  // RENDER UI
-  // ----------------------
   return (
     <Sidebar className="w-64 shrink-0 border-r bg-white">
       <SidebarHeader className="border-b border-sidebar-border">

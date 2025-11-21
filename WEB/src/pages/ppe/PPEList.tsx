@@ -167,7 +167,7 @@ export function PPEList() {
   }
 
   return (
-    <div className="p-6 pt-20 space-y-6">
+    <div className="space-y-6">
       {/* Action Buttons */}
       <Card>
         <CardContent className="pt-6">
