@@ -1,11 +1,12 @@
 export interface Role {
-  id: string;
-  roleId: string;
+  id: number;
   roleName: string;
   description: string;
-  assignedPermissions: string[];
+  scope: string[];
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt: string;
   userCount: number;
-  dateCreated: string;
 }
 
 export interface Permission {

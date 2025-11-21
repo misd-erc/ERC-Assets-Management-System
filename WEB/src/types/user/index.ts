@@ -43,16 +43,34 @@ export interface SystemRole {
   id: number;
   roleName: string;
   description: string;
-  scope?: SystemRoleScope[];
+  scope: SystemRoleScope[];
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
-  userCount?: number;
+  userCount: number;
+}
+
+export interface SystemRoleSimple {
+  id: number;
+  roleName: string;
+  description: string;
+  scope: string[];
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt: string;
+  userCount: number;
 }
 
 export interface SystemRoleScope {
   id: number;
-  module: string | null;
+  module: {
+    id: number;
+    name: string;
+    acronym: string;
+    isActive: boolean;
+    isDeleted: boolean;
+    createdAt: string;
+  };
   isActive: boolean;
   isDeleted: boolean;
   createdAt: string;
@@ -62,17 +80,18 @@ export interface UserDetails {
   firstName: string;
   lastName: string;
   email: string;
+  employeeId: string;
   isActive: boolean;
+  systemRole: SystemRole[];
+  systemUserStatus: SystemUserStatus;
+  office: Office | null;
+  division: Division | null;
+  employmentType?: EmploymentType | null;
+  position?: Position | null;
+  profilePictureStorageFile: ProfilePictureStorageFile | null;
   createdAt: string;
   lastLoginAt: string;
-  divisionName?: string;
-  officeName?: string;
-  role?: string;
-  status?: string;
-  profileImage?: string;
   profilePictureId?: string;
-  employeeId: string;
-  systemRoleId?: string;
 }
 
 export interface LoginCredentials {

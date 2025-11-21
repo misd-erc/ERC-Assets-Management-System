@@ -1,4 +1,6 @@
-﻿import React, { useCallback } from 'react';
+﻿import React, { useCallback, useMemo, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
 import {
   Sidebar,
   SidebarContent,
@@ -6,36 +8,28 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuButton,
   SidebarHeader,
   SidebarFooter,
-} from '@/components/ui/sidebar';
+} from "@/components/ui/sidebar";
+
+import { Badge } from "@/components/ui/badge";
+import { decrypt } from "@/utils/encryption";
 import {
-  LayoutDashboard,
-  Package,
-  HardHat,
-  FileText,
-  ArrowRightLeft,
-  Trash2,
-  BarChart3,
-  Users,
-  Settings,
-  FileSearch,
-  Shield,
-  Building,
-  FolderOpen,
-  CheckCircle,
-  Send,
-  Building2,
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+  moduleConfig,
+  fallbackModule,
+  adminOverrideModules,
+} from "@/utils/moduleConfig";
+
+import { Building } from "lucide-react";
 
 interface NavigationItem {
-  title: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   id: string;
-  badge?: string;
+  title: string;
+  icon: any;
+  group: string;
+  implemented: boolean;
 }
 
 interface NavigationGroup {
@@ -43,197 +37,167 @@ interface NavigationGroup {
   items: NavigationItem[];
 }
 
-interface AppSidebarProps {
-  activeModule: string;
-  onModuleChange: (module: string) => void;
-}
+export function AppSidebar({ activeModule, onModuleChange }: any) {
+  const [userDetails, setUserDetails] = useState<any>(null);
+  const navigate = useNavigate();
 
-const navigationGroups: NavigationGroup[] = [
-  {
-    title: 'Overview',
-    items: [
-      {
-        title: 'Dashboard',
-        icon: LayoutDashboard,
-        id: 'dashboard',
-      },
-    ],
-  },
-  {
-    title: 'Core Operations',
-    items: [
-      {
-        title: 'Category Management',
-        icon: FolderOpen,
-        id: 'category-management',
-      },
-      {
-        title: 'Delivery & Receipt of Items',
-        icon: Package,
-        id: 'deliveries-receipts',
-      },
-      {
-        title: 'Supply Management',
-        icon: Send,
-        id: 'supply-management',
-      },
-      {
-        title: 'Transfers & Returns',
-        icon: ArrowRightLeft,
-        id: 'transfers-returns',
-      },
-      {
-        title: 'Disposal of Properties',
-        icon: Trash2,
-        id: 'disposals',
-      },
-      {
-        title: 'Contract Management',
-        icon: FileText,
-        id: 'contracts',
-      },
-    ],
-  },
-  {
-    title: 'Asset Management',
-    items: [
-      {
-        title: 'PPE & Semi-Expendables',
-        icon: HardHat,
-        id: 'ppe-semi-expendables',
-      },
-      {
-        title: 'PAR / ICS',
-        icon: FileText,
-        id: 'par-ics',
-      },
-    ],
-  },
-  {
-    title: 'Reports & Approvals',
-    items: [
-      {
-        title: 'Reports Center',
-        icon: BarChart3,
-        id: 'reports',
-      },
-      {
-        title: 'Approvals',
-        icon: CheckCircle,
-        id: 'approvals',
-        badge: '3',
-      },
-    ],
-  },
-  {
-    title: 'Administration',
-    items: [
-      {
-        title: 'User Management',
-        icon: Users,
-        id: 'users-roles',
-      },
-      {
-        title: 'Office Management',
-        icon: Building2,
-        id: 'office-management',
-      },
-      {
-        title: 'Roles Management',
-        icon: Shield,
-        id: 'roles-management',
-      },
-      {
-        title: 'System Settings',
-        icon: Settings,
-        id: 'settings',
-      },
-      {
-        title: 'Audit Logs',
-        icon: FileSearch,
-        id: 'audit-logs',
-      },
-    ],
-  },
-];
+  // ----------------------
+  // LOAD USER DETAILS
+  // ----------------------
+  useEffect(() => {
+    const encrypted = localStorage.getItem("userDetails");
+    if (!encrypted) return;
 
-export function AppSidebar({ activeModule, onModuleChange }: AppSidebarProps) {
-  const handleModuleChange = useCallback(
-    (moduleId: string) => {
-      if (moduleId !== activeModule) {
-        onModuleChange(moduleId);
-      }
-    },
-    [activeModule, onModuleChange]
-  );
+    try {
+      const decrypted = decrypt(encrypted);
+      setUserDetails(JSON.parse(decrypted));
+    } catch (err) {
+      console.error("Error decrypting user details:", err);
+    }
+  }, []);
 
+  // ----------------------
+  // EXTRACT SCOPES (ACRONYM-BASED)
+  // ----------------------
+  const { acronyms, isAdmin } = useMemo(() => {
+    if (!userDetails) return { acronyms: [], isAdmin: false };
+
+    const list: string[] = [];
+    let adminFlag = false;
+
+    userDetails.systemRole?.forEach((role: any) => {
+      if (role.roleName === "Administrator") adminFlag = true;
+
+      role.scope?.forEach((s: any) => {
+        if (s.module?.acronym) list.push(s.module.acronym);
+      });
+    });
+
+    // ADMIN OVERRIDE (forced modules)
+    if (adminFlag) {
+      adminOverrideModules.forEach((ac) => {
+        if (!list.includes(ac)) list.push(ac);
+      });
+    }
+
+    return { acronyms: list, isAdmin: adminFlag };
+  }, [userDetails]);
+
+  // ----------------------
+  // BUILD NAVIGATION GROUPS
+  // ----------------------
+  const navigationGroups: NavigationGroup[] = useMemo(() => {
+    const grouped: Record<string, NavigationItem[]> = {};
+
+    acronyms.forEach((acronym) => {
+      const config = moduleConfig[acronym] || {
+        ...fallbackModule,
+        id: acronym.toLowerCase(),
+        title: acronym,
+        icon: Building,
+        implemented: false,
+      };
+
+      const item: NavigationItem = {
+        id: config.id,
+        title: config.title,
+        icon: config.icon,
+        group: config.group,
+        implemented: config.implemented,
+      };
+
+      if (!grouped[config.group]) grouped[config.group] = [];
+      grouped[config.group].push(item);
+    });
+
+    return Object.entries(grouped).map(([group, items]) => ({
+      title: group,
+      items,
+    }));
+  }, [acronyms]);
+
+  // ----------------------
+  // CLICK HANDLER
+  // ----------------------
+  const handleClick = (item: NavigationItem) => {
+    if (item.implemented) {
+      onModuleChange(item.id);
+    } else {
+      navigate("/under-construction", { state: { moduleName: item.title } });
+    }
+  };
+
+  // ----------------------
+  // RENDER UI
+  // ----------------------
   return (
-    <Sidebar>
+    <Sidebar className="w-64 shrink-0 border-r bg-white">
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center space-x-3 px-4 py-3">
-          <img
-            src="/images/erc-logo.png"
-            alt="ERC Logo"
-            className="w-8 h-8 rounded"
-          />
+        <div className="flex items-center gap-3 px-4 py-3">
+          <img src="/images/erc-logo.png" className="w-8 h-8" />
           <div className="flex flex-col min-w-0">
-            <p className="text-sm font-semibold text-slate-900 truncate">
+            <p className="text-sm font-semibold truncate">
               Energy Regulatory Commission
             </p>
-            <a
-              href="#"
-              className="text-xs text-blue-600 hover:underline truncate"
-              title="Asset Management System"
-            >
+            <p className="text-xs text-blue-600 truncate">
               Asset Management System
-            </a>
+            </p>
           </div>
         </div>
       </SidebarHeader>
 
       <SidebarContent>
-        {navigationGroups.map((group) => (
-          <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map(({ id, title, icon: Icon, badge }) => (
-                  <SidebarMenuItem key={id}>
-                    <SidebarMenuButton
-                      onClick={() => handleModuleChange(id)}
-                      isActive={activeModule === id}
-                      className="w-full justify-start"
-                      aria-current={activeModule === id ? 'page' : undefined}
-                    >
-                      <Icon className="w-4 h-4" aria-hidden="true" />
-                      <span>{title}</span>
-                      {badge && (
-                        <Badge variant="destructive" className="ml-auto text-xs">
-                          {badge}
-                        </Badge>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        <nav className="space-y-3 px-4 py-4">
+          {navigationGroups.map((group) => (
+            <SidebarGroup key={group.title}>
+              <SidebarGroupLabel className="text-xs font-semibold text-slate-500 px-2 mb-1">
+                {group.title}
+              </SidebarGroupLabel>
+
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.items.map((item) => (
+                    <SidebarMenuItem key={item.id}>
+                      <SidebarMenuButton
+                        onClick={() => handleClick(item)}
+                        isActive={activeModule === item.id}
+                        className={`flex items-center gap-3 px-4 py-2 rounded-md text-sm hover:bg-slate-100 truncate ${
+                          activeModule === item.id
+                            ? "bg-blue-50 text-blue-600 font-semibold"
+                            : "text-slate-700"
+                        }`}
+                      >
+                        <item.icon className="size-4 shrink-0" />
+                        <span className="truncate">{item.title}</span>
+
+                        {!item.implemented && (
+                          <Badge variant="secondary" className="ml-auto text-xs">
+                            Soon
+                          </Badge>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
+        </nav>
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
         <div className="flex items-center space-x-2 px-4 py-3">
-          <Building className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+          <Building className="w-4 h-4 text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <p className="text-xs truncate">Energy Regulatory Commission</p>
-            <p className="text-xs text-muted-foreground">Republic of the Philippines</p>
+            <p className="text-xs truncate">
+              Energy Regulatory Commission
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Republic of the Philippines
+            </p>
           </div>
         </div>
       </SidebarFooter>
     </Sidebar>
   );
 }
-
-
-
-

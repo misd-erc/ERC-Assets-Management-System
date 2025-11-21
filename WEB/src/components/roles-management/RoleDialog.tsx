@@ -12,7 +12,7 @@ import { PERMISSION_CATEGORIES } from '@/constants/permissions';
 interface RoleDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (role: Omit<Role, 'id' | 'roleId' | 'userCount' | 'dateCreated'>) => void;
+  onSave: (role: Omit<Role, 'id' | 'userCount' | 'createdAt' | 'isActive' | 'isDeleted'>) => void;
   editingRole?: Role | null;
   rolesCount: number;
 }
@@ -24,9 +24,21 @@ export function RoleDialog({ isOpen, onClose, onSave, editingRole, rolesCount }:
 
   useEffect(() => {
     if (editingRole) {
-      setRoleName(editingRole.roleName);
+      setRoleName(editingRole.roleName); 
       setDescription(editingRole.description);
-      setPermissions(editingRole.assignedPermissions);
+      // Map scope (module names) to permission IDs
+      const permissionIds: string[] = [];
+      editingRole.scope.forEach(moduleName => {
+        // Find the permission ID for this module name
+        for (const [categoryName, categoryPermissions] of Object.entries(PERMISSION_CATEGORIES)) {
+          const permission = categoryPermissions.find(p => p.label === moduleName);
+          if (permission) {
+            permissionIds.push(permission.id);
+            break; // Found the permission, no need to continue searching
+          }
+        }
+      });
+      setPermissions(permissionIds);
     } else {
       setRoleName('');
       setDescription('');
@@ -40,10 +52,21 @@ export function RoleDialog({ isOpen, onClose, onSave, editingRole, rolesCount }:
       return;
     }
 
+    // Convert permission IDs back to module names for saving
+    const scopeLabels = permissions.map(permissionId => {
+      for (const [categoryName, categoryPermissions] of Object.entries(PERMISSION_CATEGORIES)) {
+        const permission = categoryPermissions.find(p => p.id === permissionId);
+        if (permission) {
+          return permission.label;
+        }
+      }
+      return permissionId; // fallback to ID if not found
+    });
+
     onSave({
       roleName,
       description,
-      assignedPermissions: permissions,
+      scope: scopeLabels,
     });
 
     onClose();

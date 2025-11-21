@@ -38,8 +38,8 @@ namespace PortalDB.Seeds.DBO.Module
                 SystemModule(9, "Contract Management", "CM"),
 
                 // Asset Management
-                SystemModule(10, "PPE & Semi-Expendables", "PPESE"),
-                SystemModule(11, "PAR / ICS", "PARICS"),
+                SystemModule(10, "PPE & SE", "PPESE"),
+                SystemModule(11, "PPE & Semi-Expendables", "PPESEx"),
 
                 // Reports & Approvals
                 SystemModule(12, "Reports Center", "RC"),

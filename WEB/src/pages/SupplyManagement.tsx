@@ -13,7 +13,7 @@ export const SupplyManagement: React.FC = () => {
   const [tab, setTab] = useState('overview');
 
   return (
-    <div className="pl-64 pt-16 space-y-8">
+    <div className="p-6 pt-20 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Supply Management</h1>

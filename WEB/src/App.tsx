@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { useAuthStore } from '@/store/auth';
 import { LoginScreen } from '@/components/auth/LoginScreen';
 import { MFAVerification } from '@/components/auth/MFAVerification';
-import { MainLayout } from '@/components/layout/MainLayout';
+import MainLayout from '@/components/layout/MainLayout';
 import { Toaster } from '@/components/ui/sonner';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { isSessionValid, isSessionExpired, handleSessionExpired } from '@/utils/sessionUtils';
@@ -83,23 +83,18 @@ function AppContent() {
       />
       
       {/* Protected Routes */}
-      <Route 
-        path="/dashboard" 
+      <Route
+        path="/"
         element={
           <ProtectedRoute>
             <MainLayout />
           </ProtectedRoute>
-        } 
-      />
-      
-      <Route 
-        path="/profile" 
-        element={
-          <ProtectedRoute>
-            <MainLayout />
-          </ProtectedRoute>
-        } 
-      />
+        }
+      >
+        <Route path="dashboard" element={<div />} />
+        <Route path="profile" element={<div />} />
+        <Route path="under-construction" element={<div />} />
+      </Route>
       
       {/* No Role Route */}
       <Route path="/no-role" element={<NoRolePage />} />
@@ -107,6 +102,16 @@ function AppContent() {
       {/* Under Construction Route */}
       <Route
         path="/under-construction"
+        element={
+          <ProtectedRoute>
+            <UnderConstructionPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* UC Route */}
+      <Route
+        path="/uc"
         element={
           <ProtectedRoute>
             <UnderConstructionPage />
