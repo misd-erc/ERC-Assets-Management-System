@@ -102,6 +102,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PPE
 
                     await context.TblPPEParts.Where(u => u.Id == model.Id)
                         .ExecuteUpdateAsync(u => u
+                            .SetProperty(x => x.PPEId, model.PPEId)
                             .SetProperty(x => x.NameEncrypted, model.NameEncrypted)
                             .SetProperty(x => x.SerialNumberEncrypted, model.SerialNumberEncrypted));
                 }

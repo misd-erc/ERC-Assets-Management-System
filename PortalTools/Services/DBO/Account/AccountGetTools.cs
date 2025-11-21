@@ -153,7 +153,16 @@ namespace PortalTools.Services.GetEditTools.DBO.Account
             long systemRoleId = role!.Id;
             return context.TblSystemUsers.Where(x => !x.IsDeleted && x.SystemRoleId == systemRoleId);
         }
-        public async Task<TblEmployee?> GetEmployeeByEmployeeIdAsync(string employeeId, PortalDbContext context) => await context.TblEmployees.Where(x => !x.IsDeleted && x.EmployeeIdOriginal == employeeId).FirstOrDefaultAsync();
+        public async Task<TblEmployee?> GetEmployeeByEmployeeIdAsync(string employeeId, PortalDbContext context)
+        {
+            if (string.IsNullOrWhiteSpace(employeeId))
+                return null;
 
+            var encryptedEmployeeId = EncryptionHelper.Encrypt(employeeId);
+
+            return await context.TblEmployees
+                .Where(x => !x.IsDeleted && x.EmployeeIdOriginalEncrypted == encryptedEmployeeId)
+                .FirstOrDefaultAsync();
+        }
     }
 }

@@ -123,10 +123,11 @@ namespace API.Controllers
 
                     ppeId = await _editTools.PPE.EditTblPPEAsync(newPPE, model.ActionBySystemUserId, context);
 
-                    foreach(Part part in item.Parts)
+                    foreach (Part part in item?.Parts ?? Enumerable.Empty<Part>())
                     {
                         TblPPEPart newPart = new()
                         {
+                            PPEId = ppeId,
                             Name = part.PartName,
                             SerialNumber = part.PartSerialNumber
                         };
@@ -134,7 +135,7 @@ namespace API.Controllers
                         await _editTools.PPE.EditTblPPEPartAsync(newPart, model.ActionBySystemUserId, context);
                     }
 
-                    foreach (AnnualCount movement in item.AnnualCount)
+                    foreach (AnnualCount movement in item?.AnnualCount ?? Enumerable.Empty<AnnualCount>())
                     {
 
                         long? officeId = null;
@@ -195,7 +196,7 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return Ok(items);
+                return Ok(ApiResponse<object>.Ok($"{items.Count()} PPE items has been successfully migrated to the database"));
             }
             catch (Exception ex)
             {
