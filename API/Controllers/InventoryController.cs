@@ -139,6 +139,174 @@ namespace API.Controllers
             }
         }
 
+        // GET api/inventory/ppe/all
+        [HttpGet("ppe/all/{ppeId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetPPE([FromQuery] SoloQueryParams model, [FromRoute] long ppeId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblPPE? ppe = await _getTools.PPE.GetTblPPEAsync(ppeId, context);
+                var ppeResponses = new List<PPEResponseModel>();
+                var ppeModel = new PPEResponseModel
+                {
+                    Id = ppe.Id,
+                    PropertyNumber = ppe.PropertyNumber,
+                    Category = await _getTools.PPE.GetTblPPECategoryAsync(ppe.CategoryId, context),
+                    Legend = await _getTools.PPE.GetTblPPELegendAsync(ppe.CategoryId, context),
+                    Description = ppe.Description,
+                    Brand = ppe.Brand,
+                    Model = ppe.Model,
+                    SerialNumber = ppe.SerialNumber,
+                    UnitOfMeasurement = ppe.UnitOfMeasurement,
+                    UnitValue = ppe.UnitValue,
+                    DateAcquired = ppe.DateAcquired,
+                    EstimatedUsefulLife = ppe.EstimatedUsefulLife,
+                    Parts = await _getTools.PPE.GetTblPPEPartsByPPEId(ppe.Id, context).ToListAsync(),
+                    Movements = await _getTools.PPE.GetTblPPEMovementsByPPEId(ppe.Id, context).ToListAsync(),
+                    IsActive = ppe.IsActive,
+                    CreatedAt = ppe.CreatedAt
+                };
+                ppeResponses.Add(ppeModel);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed PPE information for PPE {ppe.Id}", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<PPEResponseModel>.Ok(ppeResponses, "PPE have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // GET api/inventory/ppe/categories/all
+        [HttpGet("ppe/category/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllPPECategories([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblPPECategory?> ppeCategories = await _getTools.PPE.GetTblPPECategories(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    ppeCategories = ppeCategories.Where(x =>
+                        x.Name.ToLower().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    ppeCategories = ppeCategories.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    ppeCategories = ppeCategories.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = ppeCategories.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var ppeCategoryList = ppeCategories
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var ppeCategoriesResponses = ppeCategoryList;
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed PPE Categories", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<TblPPECategory>.OkPaginated(
+                    ppeCategoriesResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "PPE Categories have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // GET api/inventory/ppe/categories/all
+        [HttpGet("ppe/legend/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllPPELegends([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblPPELegend?> ppeLegends = await _getTools.PPE.GetTblPPELegends(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    ppeLegends = ppeLegends.Where(x =>
+                        x.Name.ToLower().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    ppeLegends = ppeLegends.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    ppeLegends = ppeLegends.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = ppeLegends.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var ppeLegendList = ppeLegends
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var ppeLegendResponses = ppeLegendList;
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed PPE Legends", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<TblPPELegend>.OkPaginated(
+                    ppeLegendResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "PPE Legends have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         #endregion
 
         #region POST
