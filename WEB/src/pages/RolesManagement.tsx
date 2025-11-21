@@ -95,7 +95,7 @@ export function RolesManagement() {
       'Office Management': 16,
       'System Settings': 17,
       'Audit Logs': 18,
-    };
+          };
 
     const scopes = roleData.scope.map((moduleName: string) => ({
       systemModuleId: moduleNameToId[moduleName] || 0,
@@ -145,7 +145,7 @@ export function RolesManagement() {
       'Office Management': 16,
       'System Settings': 17,
       'Audit Logs': 18,
-    };
+          };
 
     const scopes = roleData.scope.map((moduleName: string) => ({
       systemModuleId: moduleNameToId[moduleName] || 0,
