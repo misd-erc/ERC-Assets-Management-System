@@ -63,7 +63,6 @@ export function RolesManagement() {
     role.roleName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     role.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     role.id.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    role.id.toString().toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleAddRole = async (roleData: Omit<Role, 'id' | 'userCount' | 'createdAt' | 'isActive' | 'isDeleted'>) => {
@@ -203,7 +202,6 @@ export function RolesManagement() {
 
       // Convert API response to Role format with accurate permissions from scope
       const updatedRole: Role = {
-        id: roleDetails.id,
         id: roleDetails.id,
         roleName: roleDetails.roleName,
         description: roleDetails.description,
