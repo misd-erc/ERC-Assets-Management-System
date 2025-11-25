@@ -4,12 +4,75 @@ import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload } from 'lucide-react';
 import { PPETable } from '@/components/ppe/PPETable';
 import { PPEFilters } from '@/components/ppe/PPEFilters';
-import { PPEForm } from '@/components/ppe/PPEForm';
 import { PPEViewCard } from '@/components/ppe/PPEViewCard';
-import { PPEAsset } from '@/types/asset/ppe';
+import { PPEForm } from '@/components/ppe/PPEForm';
+import { PPEAsset } from '@/types/asset/PPEAsset';
 import { PPEService } from '@/services/ppeService';
-import { ppeApi } from '@/api/ppe';
+import { useNavigate } from 'react-router-dom';  // Added useNavigate import
 import { toast } from 'sonner';
+
+const convertSnakeToCamel = (item: any): PPEAsset => {
+  return {
+    id: item.id,
+    propertyNumber: item.property_number,
+    category: item.category ? {
+      id: item.category.id,
+      name: item.category.name,
+      isActive: item.category.isActive,
+      isDeleted: item.category.isDeleted,
+      createdAt: item.category.createdAt
+    } : null,
+    legend: item.legend,
+    description: item.description,
+    brand: item.brand,
+    model: item.model,
+    serialNumber: item.serial_number,
+    parts: Array.isArray(item.parts) ? item.parts : (item.parts ? JSON.parse(item.parts) : []),
+    unitOfMeasurement: item.unit_of_measurement,
+    unitValue: item.unit_value,
+    dateAcquired: item.date_acquired,
+    movements: item.movements ? item.movements.map((movement: any) => ({
+      id: movement.id,
+      ppeId: movement.ppeId,
+      dateAssigned: movement.dateAssigned,
+      parItrNumber: movement.parItrNumber,
+      plantillaEmployeeId: movement.plantillaEmployeeId,
+      nonPlantillaEmployeeId: movement.nonPlantillaEmployeeId,
+      plantillaEmployeeIdOriginal: movement.plantillaEmployeeIdOriginal,
+      nonPlantillaEmployeeIdOriginal: movement.nonPlantillaEmployeeIdOriginal,
+      office: movement.office ? {
+        id: movement.office.id,
+        name: movement.office.name,
+        acronym: movement.office.acronym,
+        isActive: movement.office.isActive,
+        isDeleted: movement.office.isDeleted,
+        createdAt: movement.office.createdAt
+      } : null,
+      division: movement.division ? {
+        id: movement.division.id,
+        officeId: movement.division.officeId,
+        name: movement.division.name,
+        acronym: movement.division.acronym,
+        isActive: movement.division.isActive,
+        isDeleted: movement.division.isDeleted,
+        createdAt: movement.division.createdAt
+      } : null,
+      condition: movement.condition,
+      isActive: movement.isActive,
+      isDeleted: movement.isDeleted,
+      createdAt: movement.createdAt
+    })) : [],
+    estimatedUsefulLife: item.estimated_useful_life,
+    parItrNumber: item.par_itr_number,
+    plantillaEmployeeId: item.plantilla_employee_id,
+    nonPlantillaEmployeeId: item.non_plantilla_employee_id,
+    actualDivision: item.actual_division,
+    condition: item.condition,
+    date: item.date,
+    history: item.history,
+    dateEncoded: item.dateEncoded,
+  };
+};
 
 export function PPEList() {
   const [ppeAssets, setPPEAssets] = useState<PPEAsset[]>([]);
@@ -29,6 +92,8 @@ export function PPEList() {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPPE, setSelectedPPE] = useState<PPEAsset | null>(null);
+
+  const navigate = useNavigate();  // added navigate hook
 
   useEffect(() => {
     loadPPEAssets();
@@ -57,7 +122,10 @@ export function PPEList() {
 
       const response = await PPEService.getAll(filters);
 
-      setPPEAssets(response.items);
+      // Already mapped in PPEService, but if any snake_case slipping in use convertSnakeToCamel
+      const camelItems = response.items.map(item => convertSnakeToCamel(item));
+
+      setPPEAssets(camelItems);
 
       setTotalPages(Math.ceil(response.totalCount / 10));
 
@@ -91,9 +159,24 @@ export function PPEList() {
     }
   };
 
-  const handleEdit = (ppe: PPEAsset) => {
-    setSelectedPPE(ppe);
-    setShowEditDialog(true);
+  const handleEdit = async (ppe: PPEAsset) => {
+    try {
+      setLoading(true);
+      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const sessionKey = localStorage.getItem('sessionToken') || '';
+      if (!actionBySystemUserId || !sessionKey) {
+        toast.error('User session info missing. Please log in again.');
+        return;
+      }
+      const detailedPPE = await PPEService.getById(ppe.id);
+      setSelectedPPE(detailedPPE);
+      setShowEditDialog(true);
+    } catch (error) {
+      console.error('Error fetching PPE details for edit:', error);
+      toast.error('Failed to load PPE details for editing.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -239,31 +322,6 @@ export function PPEList() {
         onPageChange={setCurrentPage}
       />
 
-      {/* Add PPE Modal */}
-      {showAddDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-xl font-semibold mb-6">Add PPE Asset</h3>
-              <PPEForm
-                onSubmit={async (data) => {
-                  try {
-                    await PPEService.create(data);
-                    toast.success('PPE asset added successfully');
-                    setShowAddDialog(false);
-                    loadPPEAssets();
-                  } catch (error) {
-                    console.error('Error adding PPE asset:', error);
-                    toast.error('Failed to add PPE asset');
-                  }
-                }}
-                onCancel={() => setShowAddDialog(false)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Edit PPE Modal */}
       {showEditDialog && selectedPPE && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -272,7 +330,7 @@ export function PPEList() {
               <h3 className="text-xl font-semibold mb-6">Edit PPE Asset</h3>
               <PPEForm
                 ppeAsset={selectedPPE}
-                onSubmit={async (data) => {
+                onSubmit={async (data: any) => {
                   try {
                     await PPEService.update(selectedPPE.id, data);
                     toast.success('PPE asset updated successfully');
@@ -300,28 +358,31 @@ export function PPEList() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <PPEViewCard
-                ppeAsset={selectedPPE}
-                onEdit={() => {
-                  setShowViewDialog(false);
-                  setShowEditDialog(true);
-                }}
-                onClose={() => {
-                  setShowViewDialog(false);
-                  setSelectedPPE(null);
-                }}
-              />
+          <PPEViewCard
+            ppeAsset={selectedPPE}
+            onEdit={() => {
+              setShowViewDialog(false);
+              // Open edit modal instead of navigating
+              setSelectedPPE(selectedPPE);
+              setShowEditDialog(true);
+            }}
+            onClose={() => {
+              setShowViewDialog(false);
+              setSelectedPPE(null);
+            }}
+          />
             </div>
           </div>
         </div>
       )}
 
+      {/* Delete PPE Modal */}
       {showDeleteDialog && selectedPPE && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold mb-4">Delete PPE Asset</h3>
             <p className="text-slate-600 mb-4">
-              Are you sure you want to delete {selectedPPE.property_number}?
+              Are you sure you want to delete {selectedPPE.propertyNumber}?
             </p>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>

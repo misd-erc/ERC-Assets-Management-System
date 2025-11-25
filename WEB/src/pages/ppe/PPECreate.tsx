@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { PPEForm } from '@/components/ppe/PPEForm';
-import { PPEAsset } from '@/types/asset/ppe';
+import { PPEAsset } from '@/types/asset/PPEAsset';
 import { PPEService } from '@/services/ppeService';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';

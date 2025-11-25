@@ -1,9 +1,9 @@
- import React from 'react';
+import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Edit, Trash2, AlertCircle, Package } from 'lucide-react';
-import { PPEAsset } from '@/types/asset/ppe';
+import { PPEAsset } from '@/types/asset/PPEAsset';
 
 interface PPETableProps {
   ppeAssets: PPEAsset[];
@@ -40,7 +40,7 @@ export function PPETable({
   };
 
   const hasWarning = (ppe: PPEAsset) => {
-    return !ppe.serial_number || !ppe.property_number;
+    return !ppe.serialNumber || !ppe.propertyNumber;
   };
 
   const formatCurrency = (amount: number) => {
@@ -57,9 +57,9 @@ export function PPETable({
     return date.toLocaleDateString();
   };
 
-  // Extract division name from PPE asset's actual_division field
+  // Extract division name from PPE asset's actualDivision field
   const getDivisionName = (ppe: PPEAsset) => {
-    return ppe.actual_division || '-';
+    return ppe.actualDivision || '-';
   };
 
   return (
@@ -88,7 +88,7 @@ export function PPETable({
             <tbody className="bg-white divide-y divide-slate-200">
               {ppeAssets.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={14} className="px-4 py-8 text-center text-slate-500">
                     <Package className="size-12 mx-auto mb-2 text-slate-300" />
                     <p>No PPE assets found</p>
                   </td>
@@ -104,7 +104,7 @@ export function PPETable({
                         {hasWarning(ppe) && (
                           <AlertCircle className="size-4 text-yellow-600" />
                         )}
-                        <span className="font-medium text-slate-900">{ppe.property_number || '-'}</span>
+                        <span className="font-medium text-slate-900">{ppe.propertyNumber || '-'}</span>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600">{typeof ppe.category === 'object' && ppe.category !== null ? (ppe.category as any).name : ppe.category || '-'}</td>
@@ -112,11 +112,11 @@ export function PPETable({
                     <td className="px-4 py-3 text-sm text-slate-900 max-w-xs truncate">{ppe.description || '-'}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{ppe.brand || '-'}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{ppe.model || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.serial_number || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.unit_of_measurement || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-slate-900">{formatCurrency(ppe.unit_value)}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{formatDate(ppe.date_acquired)}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.estimated_useful_life || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.serialNumber || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.unitOfMeasurement || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-900">{formatCurrency(ppe.unitValue)}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{formatDate(ppe.dateAcquired)}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.estimatedUsefulLife || '-'}</td>
                     <td className="px-4 py-3">{getConditionBadge(ppe.condition || '')}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{getDivisionName(ppe)}</td>
                     <td className="px-4 py-3">
@@ -195,5 +195,3 @@ export function PPETable({
     </Card>
   );
 }
-
-

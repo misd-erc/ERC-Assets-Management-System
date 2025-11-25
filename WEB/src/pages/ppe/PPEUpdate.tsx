@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { PPEForm } from '@/components/ppe/PPEForm';
-import { PPEAsset } from '@/types/asset/ppe';
+import { PPEAsset } from '@/types/asset/PPEAsset';
 import { PPEService } from '@/services/ppeService';
 import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -103,7 +103,7 @@ export function PPEUpdate() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Edit PPE Asset</h1>
-          <p className="text-slate-600">Update information for {ppeAsset.property_number}</p>
+          <p className="text-slate-600">Update information for {ppeAsset.propertyNumber}</p>
         </div>
       </div>
 

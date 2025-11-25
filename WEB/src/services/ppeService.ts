@@ -1,12 +1,17 @@
 ﻿import { ppeApi } from '@/api/ppe';
-import { PPEAsset } from '@/types/asset/ppe';
+import { PPEAsset, Movement } from '@/types/asset/PPEAsset';
 
 export class PPEService {
   // Mocked data for testing and to prevent errors
   private static mockAssets: PPEAsset[] = [];
 
   private static mapApiPpeToPpeAsset(apiItem: any): PPEAsset {
-    const latestMovement = apiItem.movements && apiItem.movements.length > 0
+    if (!apiItem || !apiItem.id) {
+      console.error('Invalid apiItem passed to mapApiPpeToPpeAsset:', apiItem);
+      throw new Error('apiItem or apiItem.id is undefined');
+    }
+
+    const latestMovement: Movement | null = apiItem.movements && apiItem.movements.length > 0
       ? apiItem.movements.slice().sort((a: any, b: any) => {
         const dateA = new Date(a.dateAssigned || a.createdAt).getTime();
         const dateB = new Date(b.dateAssigned || b.createdAt).getTime();
@@ -16,32 +21,33 @@ export class PPEService {
 
     return {
       id: apiItem.id.toString(),
-      property_number: apiItem.propertyNumber || '',
+      propertyNumber: apiItem.propertyNumber || '',
       category: apiItem.category?.name || apiItem.category || '',
       legend: apiItem.legend || '',
       description: apiItem.description || '',
       brand: apiItem.brand || '',
       model: apiItem.model || '',
-      serial_number: apiItem.serialNumber || '',
-      parts: Array.isArray(apiItem.parts) ? JSON.stringify(apiItem.parts) : '',
-      unit_of_measurement: apiItem.unitOfMeasurement || '',
-      unit_value: apiItem.unitValue || 0,
-      date_acquired: apiItem.dateAcquired || '',
-      estimated_useful_life: apiItem.estimatedUsefulLife || 0,
+      serialNumber: apiItem.serialNumber || '',
+      parts: Array.isArray(apiItem.parts) ? apiItem.parts : [],
+      unitOfMeasurement: apiItem.unitOfMeasurement || '',
+      unitValue: apiItem.unitValue || 0,
+      dateAcquired: apiItem.dateAcquired || '',
+      estimatedUsefulLife: apiItem.estimatedUsefulLife || 0,
       date: '',
-      par_itr_number: latestMovement?.parItrNumber || '',
-      plantilla_employee_id: latestMovement?.plantillaEmployeeIdOriginal || '',
-      non_plantilla_employee_id: latestMovement?.nonPlantillaEmployeeIdOriginal || '',
-      actual_division: latestMovement?.division?.name || '',
+      parItrNumber: latestMovement?.parItrNumber || '',
+      plantillaEmployeeId: latestMovement?.plantillaEmployeeIdOriginal || '',
+      nonPlantillaEmployeeId: latestMovement?.nonPlantillaEmployeeIdOriginal || '',
+      actualDivision: latestMovement?.division?.name || '',
       condition: (latestMovement?.condition as any) || 'Working',
       dateEncoded: apiItem.createdAt || '',
+      movements: Array.isArray(apiItem.movements) ? apiItem.movements : [],
       history: Array.isArray(apiItem.movements) ? apiItem.movements.map((mv: any) => ({
         id: mv.id.toString(),
         date: mv.dateAssigned || mv.createdAt || '',
-        par_itr_number: mv.parItrNumber || '',
-        plantilla_employee_id: mv.plantillaEmployeeIdOriginal || '',
-        non_plantilla_employee_id: mv.nonPlantillaEmployeeIdOriginal || '',
-        actual_division: mv.division?.name || '',
+        parItrNumber: mv.parItrNumber || '',
+        plantillaEmployeeId: mv.plantillaEmployeeIdOriginal || '',
+        nonPlantillaEmployeeId: mv.nonPlantillaEmployeeIdOriginal || '',
+        actualDivision: mv.division?.name || '',
         condition: mv.condition || 'Working',
         remarks: '',
       })) : []
@@ -100,7 +106,18 @@ export class PPEService {
     try {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
-      return await ppeApi.getById(id, actionBySystemUserId, sessionKey);
+      const response: any = await ppeApi.getById(id, actionBySystemUserId, sessionKey);
+      
+      let apiItem = response?.data;
+      if (Array.isArray(apiItem)) {
+        apiItem = apiItem[0];
+      }
+      if (!apiItem || !apiItem.id) {
+        throw new Error('No PPE asset found in response data or invalid data format');
+      }
+      
+      // map to PPEAsset interface to ensure correct typing
+      return this.mapApiPpeToPpeAsset(apiItem);
     } catch (error) {
       console.error('Error fetching PPE asset:', error);
       throw error;
@@ -113,6 +130,7 @@ export class PPEService {
         ...data,
         id: (Math.random() * 1000000).toFixed(0),
         dateEncoded: new Date().toISOString(),
+        movements: data.movements || [],
       };
       this.mockAssets.push(newAsset);
       return newAsset;
@@ -147,11 +165,11 @@ export class PPEService {
     try {
       const lowerQuery = query.toLowerCase();
       return this.mockAssets.filter(asset =>
-        asset.property_number.toLowerCase().includes(lowerQuery) ||
+        asset.propertyNumber.toLowerCase().includes(lowerQuery) ||
         asset.description.toLowerCase().includes(lowerQuery) ||
         (asset.brand && asset.brand.toLowerCase().includes(lowerQuery)) ||
         (asset.model && asset.model.toLowerCase().includes(lowerQuery)) ||
-        (asset.serial_number && asset.serial_number.toLowerCase().includes(lowerQuery))
+        (asset.serialNumber && asset.serialNumber.toLowerCase().includes(lowerQuery))
       );
     } catch (error) {
       console.error('Error searching PPE assets:', error);
