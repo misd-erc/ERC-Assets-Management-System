@@ -44,6 +44,10 @@ export function PPETable({
   };
 
   const formatCurrency = (amount: number) => {
+    // Check if amount is a valid finite number
+    if (typeof amount !== 'number' || !isFinite(amount)) {
+      return '-';  // Return a fallback string instead of NaN
+    }
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
       currency: 'PHP'

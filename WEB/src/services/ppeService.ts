@@ -11,8 +11,11 @@ export class PPEService {
       throw new Error('apiItem or apiItem.id is undefined');
     }
 
-    const latestMovement: Movement | null = apiItem.movements && apiItem.movements.length > 0
-      ? apiItem.movements.slice().sort((a: any, b: any) => {
+    // Filter to only active and not deleted movements
+    const activeMovements = (apiItem.movements || []).filter((mv: any) => mv.isActive && !mv.isDeleted);
+
+    const latestMovement: Movement | null = activeMovements.length > 0
+      ? activeMovements.slice().sort((a: any, b: any) => {
         const dateA = new Date(a.dateAssigned || a.createdAt).getTime();
         const dateB = new Date(b.dateAssigned || b.createdAt).getTime();
         return dateB - dateA;
@@ -22,8 +25,14 @@ export class PPEService {
     return {
       id: apiItem.id.toString(),
       propertyNumber: apiItem.propertyNumber || '',
-      category: apiItem.category?.name || apiItem.category || '',
-      legend: apiItem.legend || '',
+      category: apiItem.category ? {
+        id: apiItem.category.id,
+        name: apiItem.category.name
+      } : null,
+      legend: apiItem.legend ? {
+        id: apiItem.legend.id || '',
+        name: apiItem.legend.name || ''
+      } : null,
       description: apiItem.description || '',
       brand: apiItem.brand || '',
       model: apiItem.model || '',
