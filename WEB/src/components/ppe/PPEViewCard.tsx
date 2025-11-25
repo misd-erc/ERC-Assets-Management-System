@@ -16,7 +16,7 @@ import {
   XCircle,
   Clock
 } from 'lucide-react';
-import { PPEAsset } from '@/types/asset/ppe';
+import { PPEAsset } from '@/types/asset/PPEAsset';
 
 interface PPEViewCardProps {
   ppeAsset: PPEAsset;
@@ -73,7 +73,7 @@ export function PPEViewCard({ ppeAsset, onEdit, onClose }: PPEViewCardProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">{ppeAsset.property_number}</h2>
+          <h2 className="text-2xl font-bold text-slate-900">{ppeAsset.propertyNumber}</h2>
           <p className="text-slate-600">{ppeAsset.description}</p>
         </div>
         <div className="flex gap-2">
@@ -100,22 +100,22 @@ export function PPEViewCard({ ppeAsset, onEdit, onClose }: PPEViewCardProps) {
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium text-slate-600">Property Number</Label>
-                <p className="text-lg font-semibold text-slate-900">{ppeAsset.property_number}</p>
+                <p className="text-lg font-semibold text-slate-900">{ppeAsset.propertyNumber}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Category</Label>
-                <p className="text-slate-900">{ppeAsset.category}</p>
+                <p className="text-slate-900">{typeof ppeAsset.category === 'object' && ppeAsset.category !== null ? (ppeAsset.category as any).name : ppeAsset.category || '-'}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Legend</Label>
-                <p className="text-slate-900">{ppeAsset.legend}</p>
+                <p className="text-slate-900">{typeof ppeAsset.legend === 'object' && ppeAsset.legend !== null ? (ppeAsset.legend as any).name : ppeAsset.legend || '-'}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Serial Number</Label>
-                <p className="text-slate-900">{ppeAsset.serial_number}</p>
+                <p className="text-slate-900">{ppeAsset.serialNumber || '-'}</p>
               </div>
             </div>
 
@@ -132,12 +132,12 @@ export function PPEViewCard({ ppeAsset, onEdit, onClose }: PPEViewCardProps) {
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Parts</Label>
-                <p className="text-slate-900">{ppeAsset.parts || '-'}</p>
+                <p className="text-slate-900">{Array.isArray(ppeAsset.parts) ? ppeAsset.parts.join(', ') : '-'}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Unit of Measurement</Label>
-                <p className="text-slate-900">{ppeAsset.unit_of_measurement}</p>
+                <p className="text-slate-900">{ppeAsset.unitOfMeasurement || '-'}</p>
               </div>
             </div>
           </div>
@@ -156,18 +156,18 @@ export function PPEViewCard({ ppeAsset, onEdit, onClose }: PPEViewCardProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <Label className="text-sm font-medium text-slate-600">Unit Value</Label>
-              <p className="text-2xl font-bold text-slate-900">{formatCurrency(ppeAsset.unit_value)}</p>
-            </div>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(ppeAsset.unitValue)}</p>
+              </div>
 
-            <div>
-              <Label className="text-sm font-medium text-slate-600">Date Acquired</Label>
-              <p className="text-lg text-slate-900">{formatDate(ppeAsset.date_acquired)}</p>
-            </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Date Acquired</Label>
+                <p className="text-lg text-slate-900">{formatDate(ppeAsset.dateAcquired)}</p>
+              </div>
 
-            <div>
-              <Label className="text-sm font-medium text-slate-600">Estimated Useful Life</Label>
-              <p className="text-lg text-slate-900">{ppeAsset.estimated_useful_life} years</p>
-            </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Estimated Useful Life</Label>
+                <p className="text-lg text-slate-900">{ppeAsset.estimatedUsefulLife} years</p>
+              </div>
           </div>
         </CardContent>
       </Card>
@@ -185,37 +185,37 @@ export function PPEViewCard({ ppeAsset, onEdit, onClose }: PPEViewCardProps) {
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium text-slate-600">PAR/ITR Number</Label>
-                <p className="text-slate-900">{ppeAsset.par_itr_number || '-'}</p>
+                <p className="text-slate-900">{ppeAsset.movements && ppeAsset.movements.length > 0 ? ppeAsset.movements[0].parItrNumber || '-' : '-'}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Plantilla Employee ID</Label>
-                <p className="text-slate-900">{ppeAsset.plantilla_employee_id || '-'}</p>
+                <p className="text-slate-900">{ppeAsset.movements && ppeAsset.movements.length > 0 ? ppeAsset.movements[0].plantillaEmployeeIdOriginal || '-' : '-'}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Non-Plantilla Employee ID</Label>
-                <p className="text-slate-900">{ppeAsset.non_plantilla_employee_id || '-'}</p>
+                <p className="text-slate-900">{ppeAsset.movements && ppeAsset.movements.length > 0 ? ppeAsset.movements[0].nonPlantillaEmployeeIdOriginal || '-' : '-'}</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
                 <Label className="text-sm font-medium text-slate-600">Actual Division</Label>
-                <p className="text-slate-900">{ppeAsset.actual_division || '-'}</p>
+                <p className="text-slate-900">{ppeAsset.movements && ppeAsset.movements.length > 0 && typeof ppeAsset.movements[0].division === 'object' && ppeAsset.movements[0].division !== null ? ppeAsset.movements[0].division.name : '-'}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Condition</Label>
                 <div className="flex items-center gap-2 mt-1">
-                  {getConditionIcon(ppeAsset.condition)}
-                  {getConditionBadge(ppeAsset.condition)}
+                  {ppeAsset.movements && ppeAsset.movements.length > 0 ? getConditionIcon(ppeAsset.movements[0].condition || '') : getConditionIcon('')}
+                  {ppeAsset.movements && ppeAsset.movements.length > 0 ? getConditionBadge(ppeAsset.movements[0].condition || '') : getConditionBadge('')}
                 </div>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Date</Label>
-                <p className="text-slate-900">{formatDate(ppeAsset.date)}</p>
+                <p className="text-slate-900">{ppeAsset.movements && ppeAsset.movements.length > 0 ? formatDate(ppeAsset.movements[0].dateAssigned) : '-'}</p>
               </div>
             </div>
           </div>
@@ -250,7 +250,7 @@ export function PPEViewCard({ ppeAsset, onEdit, onClose }: PPEViewCardProps) {
                       <span className="font-medium">Employee:</span> {entry.plantilla_employee_id || entry.non_plantilla_employee_id || '-'}
                     </p>
                     <p className="text-slate-600">
-                      <span className="font-medium">Division:</span> {entry.actual_division || '-'}
+                      <span className="font-medium">Division:</span> {typeof entry.actual_division === 'object' && entry.actual_division !== null ? (entry.actual_division as any).name : entry.actual_division || '-'}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-slate-600 font-medium">Condition:</span>

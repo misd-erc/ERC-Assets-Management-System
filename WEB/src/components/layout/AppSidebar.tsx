@@ -133,7 +133,7 @@ export function AppSidebar({ activeModule, onModuleChange }: any) {
   return (
     <Sidebar className="w-64 shrink-0 border-r bg-white">
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-3 px-4 py-3">
+        <div className="flex items-center gap-3 px-4 py-1">
           <img src="/images/erc-logo.png" className="w-8 h-8" />
           <div className="flex flex-col min-w-0">
             <p className="text-sm font-semibold truncate">

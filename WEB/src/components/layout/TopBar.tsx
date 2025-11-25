@@ -43,7 +43,7 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigat
   return (
     <>
       <header
-        className={`fixed top-0 ${leftOffset} right-0 h-20 bg-white border-b border-gray-200 shadow-sm z-50 flex items-center justify-between px-4 sm:px-6`}
+        className={`fixed top-0 ${leftOffset} right-0  bg-white border-b border-gray-200 shadow-sm z-50 flex items-center justify-between px-4 py-[0.08rem] sm:px-6`}
         role="banner"
       >
         {isMobile && onMenuClick && (

@@ -3,7 +3,34 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Edit } from 'lucide-react';
 import { PPEViewCard } from '@/components/ppe/PPEViewCard';
-import { PPEAsset } from '@/types/asset/ppe';
+import { PPEAsset } from '@/types/asset/PPEAsset';
+
+const convertSnakeToCamel = (item: any): PPEAsset => {
+  return {
+    id: item.id,
+    propertyNumber: item.property_number,
+    category: item.category,
+    legend: item.legend,
+    description: item.description,
+    brand: item.brand,
+    model: item.model,
+    serialNumber: item.serial_number,
+    parts: Array.isArray(item.parts) ? item.parts : (item.parts ? JSON.parse(item.parts) : []),
+    unitOfMeasurement: item.unit_of_measurement,
+    unitValue: item.unit_value,
+    dateAcquired: item.date_acquired,
+    movements: item.movements || [],
+    estimatedUsefulLife: item.estimated_useful_life,
+    parItrNumber: item.par_itr_number,
+    plantillaEmployeeId: item.plantilla_employee_id,
+    nonPlantillaEmployeeId: item.non_plantilla_employee_id,
+    actualDivision: item.actual_division,
+    condition: item.condition,
+    date: item.date,
+    history: item.history,
+    dateEncoded: item.dateEncoded,
+  };
+};
 import { PPEService } from '@/services/ppeService';
 import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -12,6 +39,10 @@ export function PPEView() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [ppeAsset, setPPEAsset] = useState<PPEAsset | null>(null);
+
+  const setPPEAssetCamelCase = (item: any) => {
+    setPPEAsset(item ? convertSnakeToCamel(item) : null);
+  };
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,19 +51,19 @@ export function PPEView() {
     }
   }, [id]);
 
-  const loadPPEAsset = async (assetId: string) => {
-    try {
-      setLoading(true);
-      const asset = await PPEService.getById(assetId);
-      setPPEAsset(asset);
-    } catch (error) {
-      console.error('Error loading PPE asset:', error);
-      toast.error('Failed to load PPE asset');
-      navigate('/ppe');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const loadPPEAsset = async (assetId: string) => {
+      try {
+        setLoading(true);
+        const asset = await PPEService.getById(assetId);
+        setPPEAssetCamelCase(asset);
+      } catch (error) {
+        console.error('Error loading PPE asset:', error);
+        toast.error('Failed to load PPE asset');
+        navigate('/ppe');
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const handleEdit = () => {
     if (ppeAsset) {
@@ -88,7 +119,7 @@ export function PPEView() {
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-slate-900">PPE Asset Details</h1>
-          <p className="text-slate-600">View detailed information for {ppeAsset.property_number}</p>
+            <p className="text-slate-600">View detailed information for {ppeAsset.propertyNumber}</p>
         </div>
         <Button onClick={handleEdit} className="gap-2">
           <Edit className="size-4" />
@@ -97,11 +128,11 @@ export function PPEView() {
       </div>
 
       {/* PPE View Card */}
-      <PPEViewCard
-        ppeAsset={ppeAsset}
-        onEdit={handleEdit}
-        onClose={handleClose}
-      />
+          <PPEViewCard
+            ppeAsset={ppeAsset}
+            onEdit={handleEdit}
+            onClose={handleClose}
+          />
     </div>
   );
 }

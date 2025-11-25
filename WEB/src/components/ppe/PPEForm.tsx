@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Package, DollarSign, User } from 'lucide-react';
-import { PPEAsset } from '@/types/asset/ppe';
+import { PPEAsset } from '@/types/asset/PPEAsset';
 
 interface PPEFormProps {
   ppeAsset?: PPEAsset;
@@ -17,23 +17,23 @@ interface PPEFormProps {
 
 export function PPEForm({ ppeAsset, onSubmit, onCancel, isEditing = false }: PPEFormProps) {
   const [formData, setFormData] = useState({
-    property_number: ppeAsset?.property_number || '',
+    propertyNumber: ppeAsset?.propertyNumber || '',
     category: ppeAsset?.category || '',
     legend: ppeAsset?.legend || '',
     description: ppeAsset?.description || '',
     brand: ppeAsset?.brand || '',
     model: ppeAsset?.model || '',
-    serial_number: ppeAsset?.serial_number || '',
-    parts: ppeAsset?.parts || '',
-    unit_of_measurement: ppeAsset?.unit_of_measurement || 'unit',
-    unit_value: ppeAsset?.unit_value || 0,
-    date_acquired: ppeAsset?.date_acquired || '',
-    estimated_useful_life: ppeAsset?.estimated_useful_life || 5,
+    serialNumber: ppeAsset?.serialNumber || '',
+    parts: ppeAsset?.parts || [],
+    unitOfMeasurement: ppeAsset?.unitOfMeasurement || 'unit',
+    unitValue: ppeAsset?.unitValue || 0,
+    dateAcquired: ppeAsset?.dateAcquired || '',
+    estimatedUsefulLife: ppeAsset?.estimatedUsefulLife || 5,
     date: new Date().toISOString().split('T')[0],
-    par_itr_number: ppeAsset?.par_itr_number || '',
-    plantilla_employee_id: ppeAsset?.plantilla_employee_id || '',
-    non_plantilla_employee_id: ppeAsset?.non_plantilla_employee_id || '',
-    actual_division: ppeAsset?.actual_division || '',
+    parItrNumber: ppeAsset?.parItrNumber || '',
+    plantillaEmployeeId: ppeAsset?.plantillaEmployeeId || '',
+    nonPlantillaEmployeeId: ppeAsset?.nonPlantillaEmployeeId || '',
+    actualDivision: ppeAsset?.actualDivision || '',
     condition: ppeAsset?.condition || 'Working',
     history: ppeAsset?.history || []
   });
@@ -42,12 +42,15 @@ export function PPEForm({ ppeAsset, onSubmit, onCancel, isEditing = false }: PPE
     e.preventDefault();
 
     // Validate required fields
-    if (!formData.property_number || !formData.description || !formData.serial_number || !formData.date_acquired) {
+    if (!formData.propertyNumber || !formData.description || !formData.serialNumber || !formData.dateAcquired) {
       alert('Please fill in all required fields (Property Number, Description, Serial Number, Date Acquired)');
       return;
     }
 
-    onSubmit(formData);
+    onSubmit({
+      ...formData,
+      movements: ppeAsset?.movements || [],
+    });
   };
 
   return (
@@ -68,9 +71,9 @@ export function PPEForm({ ppeAsset, onSubmit, onCancel, isEditing = false }: PPE
                 Property Number <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="property_number"
-                value={formData.property_number}
-                onChange={(e) => setFormData(prev => ({ ...prev, property_number: e.target.value }))}
+                id="propertyNumber"
+                value={formData.propertyNumber}
+                onChange={(e) => setFormData(prev => ({ ...prev, propertyNumber: e.target.value }))}
                 placeholder="e.g., PPE-2024-0001"
                 required
               />
@@ -120,9 +123,9 @@ export function PPEForm({ ppeAsset, onSubmit, onCancel, isEditing = false }: PPE
                 Serial Number <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="serial_number"
-                value={formData.serial_number}
-                onChange={(e) => setFormData(prev => ({ ...prev, serial_number: e.target.value }))}
+                id="serialNumber"
+                value={formData.serialNumber}
+                onChange={(e) => setFormData(prev => ({ ...prev, serialNumber: e.target.value }))}
                 placeholder="Serial/identification number"
                 required
               />
@@ -168,9 +171,9 @@ export function PPEForm({ ppeAsset, onSubmit, onCancel, isEditing = false }: PPE
               <Label htmlFor="parts">Parts</Label>
               <Input
                 id="parts"
-                value={formData.parts}
-                onChange={(e) => setFormData(prev => ({ ...prev, parts: e.target.value }))}
-                placeholder="Component parts"
+                value={Array.isArray(formData.parts) ? formData.parts.join(', ') : formData.parts}
+                onChange={(e) => setFormData(prev => ({ ...prev, parts: e.target.value.split(',').map(p => p.trim()) }))}
+                placeholder="Component parts (comma separated)"
               />
             </div>
           </div>
@@ -190,8 +193,8 @@ export function PPEForm({ ppeAsset, onSubmit, onCancel, isEditing = false }: PPE
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="unit_of_measurement">Unit of Measurement</Label>
-              <Select value={formData.unit_of_measurement} onValueChange={(value) => setFormData(prev => ({ ...prev, unit_of_measurement: value }))}>
-                <SelectTrigger id="unit_of_measurement">
+              <Select value={formData.unitOfMeasurement} onValueChange={(value) => setFormData(prev => ({ ...prev, unitOfMeasurement: value }))}>
+                <SelectTrigger id="unitOfMeasurement">
                   <SelectValue placeholder="Select unit" />
                 </SelectTrigger>
                 <SelectContent>
@@ -206,11 +209,11 @@ export function PPEForm({ ppeAsset, onSubmit, onCancel, isEditing = false }: PPE
             <div className="space-y-2">
               <Label htmlFor="unit_value">Unit Value (â‚±)</Label>
               <Input
-                id="unit_value"
+                id="unitValue"
                 type="number"
                 step="0.01"
-                value={formData.unit_value}
-                onChange={(e) => setFormData(prev => ({ ...prev, unit_value: parseFloat(e.target.value) || 0 }))}
+                value={formData.unitValue}
+                onChange={(e) => setFormData(prev => ({ ...prev, unitValue: parseFloat(e.target.value) || 0 }))}
                 placeholder="0.00"
               />
             </div>
@@ -222,10 +225,10 @@ export function PPEForm({ ppeAsset, onSubmit, onCancel, isEditing = false }: PPE
                 Date Acquired <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="date_acquired"
+                id="dateAcquired"
                 type="date"
-                value={formData.date_acquired}
-                onChange={(e) => setFormData(prev => ({ ...prev, date_acquired: e.target.value }))}
+                value={formData.dateAcquired}
+                onChange={(e) => setFormData(prev => ({ ...prev, dateAcquired: e.target.value }))}
                 required
               />
             </div>
@@ -233,10 +236,10 @@ export function PPEForm({ ppeAsset, onSubmit, onCancel, isEditing = false }: PPE
             <div className="space-y-2">
               <Label htmlFor="estimated_useful_life">Estimated Useful Life (Years)</Label>
               <Input
-                id="estimated_useful_life"
+                id="estimatedUsefulLife"
                 type="number"
-                value={formData.estimated_useful_life}
-                onChange={(e) => setFormData(prev => ({ ...prev, estimated_useful_life: parseInt(e.target.value) || 5 }))}
+                value={formData.estimatedUsefulLife}
+                onChange={(e) => setFormData(prev => ({ ...prev, estimatedUsefulLife: parseInt(e.target.value) || 5 }))}
                 placeholder="5"
               />
             </div>
@@ -258,17 +261,17 @@ export function PPEForm({ ppeAsset, onSubmit, onCancel, isEditing = false }: PPE
             <div className="space-y-2">
               <Label htmlFor="par_itr_number">PAR/ITR Number</Label>
               <Input
-                id="par_itr_number"
-                value={formData.par_itr_number}
-                onChange={(e) => setFormData(prev => ({ ...prev, par_itr_number: e.target.value }))}
+                id="parItrNumber"
+                value={formData.parItrNumber}
+                onChange={(e) => setFormData(prev => ({ ...prev, parItrNumber: e.target.value }))}
                 placeholder="PAR-2024-0001"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="actual_division">Actual Division</Label>
-              <Select value={formData.actual_division} onValueChange={(value) => setFormData(prev => ({ ...prev, actual_division: value }))}>
-                <SelectTrigger id="actual_division">
+              <Select value={formData.actualDivision} onValueChange={(value) => setFormData(prev => ({ ...prev, actualDivision: value }))}>
+                <SelectTrigger id="actualDivision">
                   <SelectValue placeholder="Select division" />
                 </SelectTrigger>
                 <SelectContent>
@@ -287,9 +290,9 @@ export function PPEForm({ ppeAsset, onSubmit, onCancel, isEditing = false }: PPE
             <div className="space-y-2">
               <Label htmlFor="plantilla_employee_id">Plantilla Employee ID</Label>
               <Input
-                id="plantilla_employee_id"
-                value={formData.plantilla_employee_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, plantilla_employee_id: e.target.value }))}
+                id="plantillaEmployeeId"
+                value={formData.plantillaEmployeeId}
+                onChange={(e) => setFormData(prev => ({ ...prev, plantillaEmployeeId: e.target.value }))}
                 placeholder="Employee ID"
               />
             </div>
@@ -297,9 +300,9 @@ export function PPEForm({ ppeAsset, onSubmit, onCancel, isEditing = false }: PPE
             <div className="space-y-2">
               <Label htmlFor="non_plantilla_employee_id">Non-Plantilla Employee ID</Label>
               <Input
-                id="non_plantilla_employee_id"
-                value={formData.non_plantilla_employee_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, non_plantilla_employee_id: e.target.value }))}
+                id="nonPlantillaEmployeeId"
+                value={formData.nonPlantillaEmployeeId}
+                onChange={(e) => setFormData(prev => ({ ...prev, nonPlantillaEmployeeId: e.target.value }))}
                 placeholder="Employee ID"
               />
             </div>

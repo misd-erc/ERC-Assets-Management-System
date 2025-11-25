@@ -51,7 +51,7 @@ export function RolesManagement() {
     id: apiRole.id,
     roleName: apiRole.roleName,
     description: apiRole.description,
-    scope: apiRole.scope ? apiRole.scope.map(s => s.module.name) : [],
+    scope: apiRole.scope ? apiRole.scope.filter(s => s.module).map(s => s.module.name) : [],
     isActive: apiRole.isActive,
     isDeleted: apiRole.isDeleted,
     createdAt: apiRole.createdAt,
@@ -94,7 +94,7 @@ export function RolesManagement() {
       'Office Management': 16,
       'System Settings': 17,
       'Audit Logs': 18,
-    };
+          };
 
     const scopes = roleData.scope.map((moduleName: string) => ({
       systemModuleId: moduleNameToId[moduleName] || 0,
@@ -144,7 +144,7 @@ export function RolesManagement() {
       'Office Management': 16,
       'System Settings': 17,
       'Audit Logs': 18,
-    };
+          };
 
     const scopes = roleData.scope.map((moduleName: string) => ({
       systemModuleId: moduleNameToId[moduleName] || 0,
