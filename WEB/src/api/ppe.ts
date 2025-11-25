@@ -1,97 +1,108 @@
 ﻿import { PPEAsset } from '@/types/asset/ppe';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 export const ppeApi = {
-  // Get all PPE assets
-  // getAll: async (): Promise<PPEAsset[]> => {
-  //   const response = await fetch(`${API_BASE_URL}/ppe`);
-  //   if (!response.ok) {
-  //     throw new Error('Failed to fetch PPE assets');
-  //   }
-  //   return response.json();
-  // },
-
-  // Get PPE asset by ID
-  getById: async (id: string): Promise<PPEAsset> => {
-    const response = await fetch(`${API_BASE_URL}/ppe/${id}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch PPE asset');
-    }
-    return response.json();
-  },
-
-  // Create new PPE asset
-  create: async (data: Omit<PPEAsset, 'id' | 'dateEncoded'>): Promise<PPEAsset> => {
-    const response = await fetch(`${API_BASE_URL}/ppe`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to create PPE asset');
-    }
-    return response.json();
-  },
-
-  // Update PPE asset
-  update: async (id: string, data: Partial<PPEAsset>): Promise<PPEAsset> => {
-    const response = await fetch(`${API_BASE_URL}/ppe/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to update PPE asset');
-    }
-    return response.json();
-  },
-
-  // Delete PPE asset
-  delete: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/ppe/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete PPE asset');
-    }
-  },
-
-  // Search PPE assets
-  search: async (query: string): Promise<PPEAsset[]> => {
-    const response = await fetch(`${API_BASE_URL}/ppe/search?q=${encodeURIComponent(query)}`);
-    if (!response.ok) {
-      throw new Error('Failed to search PPE assets');
-    }
-    return response.json();
-  },
-
-  // Export PPE data
-  export: async (format: 'csv' | 'excel' = 'csv'): Promise<Blob> => {
-    const response = await fetch(`${API_BASE_URL}/ppe/export?format=${format}`);
-    if (!response.ok) {
-      throw new Error('Failed to export PPE data');
-    }
-    return response.blob();
-  },
-
-  // Import PPE data
-  import: async (file: File): Promise<{ imported: number; errors: string[] }> => {
+  // Batch upload PPE assets with file, ActionBySystemUserId and SessionKey params
+  batchUpload: async (
+    file: File,
+    actionBySystemUserId: string,
+    sessionKey: string
+  ): Promise<{ imported: number; errors: string[] }> => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_BASE_URL}/ppe/import`, {
+    const url =
+      API_BASE_URL +
+      '/Inventory/ppe/batch-upload?ActionBySystemUserId=' +
+      actionBySystemUserId +
+      '&SessionKey=' +
+      encodeURIComponent(sessionKey);
+
+    const response = await fetch(url, {
       method: 'POST',
       body: formData,
     });
+
     if (!response.ok) {
-      throw new Error('Failed to import PPE data');
+      throw new Error('Failed to batch upload PPE assets');
     }
+
+    return response.json();
+  },
+
+  // List PPE assets with pagination, search, optional date filters, and user/session auth
+  list: async (params: {
+    SearchString?: string;
+    PageNumber: number;
+    PageSize: number;
+    StartDate?: string;
+    EndDate?: string;
+    ActionBySystemUserId: string;
+    SessionKey: string;
+  }): Promise<{ items: PPEAsset[]; totalCount: number }> => {
+    const query = new URLSearchParams();
+
+    if (params.SearchString) {
+      query.append('SearchString', params.SearchString);
+    }
+    query.append('PageNumber', params.PageNumber.toString());
+    query.append('PageSize', params.PageSize.toString());
+
+    if (params.StartDate) {
+      query.append('StartDate', params.StartDate);
+    }
+
+    if (params.EndDate) {
+      query.append('EndDate', params.EndDate);
+    }
+
+    query.append('ActionBySystemUserId', params.ActionBySystemUserId);
+    query.append('SessionKey', params.SessionKey);
+
+    const url = API_BASE_URL + '/Inventory/ppe/all?' + query.toString();
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch PPE asset list');
+    }
+
+    const data = await response.json();
+
+    return {
+      items: data.data?.items || [],
+      totalCount: data.data?.totalCount || 0,
+    };
+  },
+
+  // Get PPE asset details by ID
+  getById: async (
+    id: string,
+    actionBySystemUserId: string,
+    sessionKey: string
+  ): Promise<PPEAsset> => {
+    const url =
+      API_BASE_URL +
+      '/Inventory/ppe/all/' +
+      id +
+      '?ActionBySystemUserId=' +
+      actionBySystemUserId +
+      '&SessionKey=' +
+      encodeURIComponent(sessionKey);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch PPE asset details');
+    }
+
     return response.json();
   },
 };
-

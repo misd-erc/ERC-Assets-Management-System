@@ -98,70 +98,13 @@ export function SEList() {
   };
 
   const downloadSETemplate = () => {
-    // SE CSV Template with headers and sample row
-    const headers = [
-      'SE Property Number',
-      'Category',
-      'Legend',
-      'Description',
-      'Brand',
-      'Model',
-      'Serial Number',
-      'Parts/Accessories',
-      'Unit of Measurement',
-      'Unit Value (PHP)',
-      'Date Acquired (YYYY-MM-DD)',
-      'Warranty Status',
-      'Status',
-      'Current ITR/RRSP Number',
-      'Current Plantilla Employee ID',
-      'Current Non-Plantilla Employee ID',
-      'Current Division/Section',
-      'Current Condition',
-      'Current Date Issued (YYYY-MM-DD)',
-      'Current Remarks'
-    ];
-
-    const sampleRow = [
-      'SE-2024-0001',
-      'ICT Equipment',
-      'I',
-      'Wireless Mouse',
-      'Logitech',
-      'MX Master 3',
-      'LG-MX3-2024-001',
-      'USB Receiver',
-      'unit',
-      '2500',
-      '2024-01-15',
-      'In Warranty',
-      'Active',
-      'ITR-2024-0001',
-      'ERC-2024-0001',
-      '',
-      'Technical Service',
-      'Working',
-      '2024-01-20',
-      'New assignment'
-    ];
-
-    const csvContent = [
-      headers.join(','),
-      sampleRow.join(','),
-      // Add empty rows for bulk entry
-      Array(20).fill('').join(',')
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `ERC_SE_Template_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
+    link.href = '/ppe-templates/ppe_template.xlsx';
+    link.setAttribute('download', 'ppe_template.xlsx');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('SE Template downloaded successfully');
+    toast.success('SE Excel Template downloaded successfully');
   };
 
   if (loading) {

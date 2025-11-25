@@ -1,4 +1,4 @@
-﻿import React from 'react';
+ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +50,18 @@ export function PPETable({
     }).format(amount);
   };
 
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString();
+  };
+
+  // Extract division name from PPE asset's actual_division field
+  const getDivisionName = (ppe: PPEAsset) => {
+    return ppe.actual_division || '-';
+  };
+
   return (
     <Card>
       <CardContent className="p-0">
@@ -61,8 +73,13 @@ export function PPETable({
                 <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Category</th>
                 <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Legend</th>
                 <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Description</th>
+                <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Brand</th>
+                <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Model</th>
                 <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Serial #</th>
+                <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Unit of Measurement</th>
                 <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Unit Value</th>
+                <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Date Acquired</th>
+                <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Estimated Useful Life</th>
                 <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Condition</th>
                 <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Division</th>
                 <th className="px-4 py-3 text-left text-xs text-slate-600 uppercase tracking-wider">Actions</th>
@@ -71,7 +88,7 @@ export function PPETable({
             <tbody className="bg-white divide-y divide-slate-200">
               {ppeAssets.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={13} className="px-4 py-8 text-center text-slate-500">
                     <Package className="size-12 mx-auto mb-2 text-slate-300" />
                     <p>No PPE assets found</p>
                   </td>
@@ -90,13 +107,18 @@ export function PPETable({
                         <span className="font-medium text-slate-900">{ppe.property_number || '-'}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.category}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.legend}</td>
-                    <td className="px-4 py-3 text-sm text-slate-900 max-w-xs truncate">{ppe.description}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{typeof ppe.category === 'object' && ppe.category !== null ? (ppe.category as any).name : ppe.category || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{typeof ppe.legend === 'object' && ppe.legend !== null ? (ppe.legend as any).name : ppe.legend || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-900 max-w-xs truncate">{ppe.description || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.brand || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.model || '-'}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{ppe.serial_number || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.unit_of_measurement || '-'}</td>
                     <td className="px-4 py-3 text-sm text-slate-900">{formatCurrency(ppe.unit_value)}</td>
-                    <td className="px-4 py-3">{getConditionBadge(ppe.condition)}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.actual_division}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{formatDate(ppe.date_acquired)}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{ppe.estimated_useful_life || '-'}</td>
+                    <td className="px-4 py-3">{getConditionBadge(ppe.condition || '')}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{getDivisionName(ppe)}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         <Button

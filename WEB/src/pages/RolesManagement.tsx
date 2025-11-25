@@ -51,7 +51,7 @@ export function RolesManagement() {
     id: apiRole.id,
     roleName: apiRole.roleName,
     description: apiRole.description,
-    scope: apiRole.scope ? apiRole.scope.map(s => s.module.name) : [],
+    scope: apiRole.scope ? apiRole.scope.filter(s => s.module).map(s => s.module.name) : [],
     isActive: apiRole.isActive,
     isDeleted: apiRole.isDeleted,
     createdAt: apiRole.createdAt,

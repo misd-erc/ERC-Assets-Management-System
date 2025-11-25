@@ -8,6 +8,7 @@ import { PPEForm } from '@/components/ppe/PPEForm';
 import { PPEViewCard } from '@/components/ppe/PPEViewCard';
 import { PPEAsset } from '@/types/asset/ppe';
 import { PPEService } from '@/services/ppeService';
+import { ppeApi } from '@/api/ppe';
 import { toast } from 'sonner';
 
 export function PPEList() {
@@ -41,20 +42,25 @@ export function PPEList() {
         category: categoryFilter === 'all' ? undefined : categoryFilter,
         condition: conditionFilter === 'all' ? undefined : conditionFilter,
         division: divisionFilter === 'all' ? undefined : divisionFilter,
+        startDate: undefined,
+        endDate: undefined,
       };
 
-      const assets = await PPEService.getAll(filters);
+      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const sessionKey = localStorage.getItem('sessionToken') || '';
 
-      // Simple pagination (10 items per page)
-      const itemsPerPage = 10;
-      const totalItems = assets.length;
-      setTotalPages(Math.ceil(totalItems / itemsPerPage));
+      if (!actionBySystemUserId || !sessionKey) {
+        toast.error('User session info missing. Please log in again.');
+        setLoading(false);
+        return;
+      }
 
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      const paginatedAssets = assets.slice(startIndex, endIndex);
+      const response = await PPEService.getAll(filters);
 
-      setPPEAssets(paginatedAssets);
+      setPPEAssets(response.items);
+
+      setTotalPages(Math.ceil(response.totalCount / 10));
+
     } catch (error) {
       console.error('Error loading PPE assets:', error);
       toast.error('Failed to load PPE assets');
@@ -63,9 +69,26 @@ export function PPEList() {
     }
   };
 
-  const handleViewDetails = (ppe: PPEAsset) => {
-    setSelectedPPE(ppe);
-    setShowViewDialog(true);
+  const handleViewDetails = async (ppe: PPEAsset) => {
+    try {
+      setLoading(true);
+      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const sessionKey = localStorage.getItem('sessionToken') || '';
+
+      if (!actionBySystemUserId || !sessionKey) {
+        toast.error('User session info missing. Please log in again.');
+        return;
+      }
+
+      const detailedPPE = await PPEService.getById(ppe.id);
+      setSelectedPPE(detailedPPE);
+      setShowViewDialog(true);
+    } catch (error) {
+      console.error('Error fetching PPE details:', error);
+      toast.error('Failed to load PPE details');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (ppe: PPEAsset) => {
@@ -95,66 +118,13 @@ export function PPEList() {
   };
 
   const downloadPPETemplate = () => {
-    // PPE CSV Template with headers and sample row
-    const headers = [
-      'Property Number',
-      'Category',
-      'Legend',
-      'Description',
-      'Brand',
-      'Model',
-      'Serial Number',
-      'Parts',
-      'Unit of Measurement',
-      'Unit Value (PHP)',
-      'Date Acquired (YYYY-MM-DD)',
-      'Estimated Useful Life',
-      'PAR/ITR Number',
-      'Plantilla Employee ID',
-      'Non-Plantilla Employee ID',
-      'Actual Division',
-      'Condition',
-      'Date (YYYY-MM-DD)'
-    ];
-
-    const sampleRow = [
-      'PPE-2024-0001',
-      'ICT Equipment',
-      'I',
-      'Desktop Computer',
-      'Dell',
-      'OptiPlex 7090',
-      'DL-PC-2024-001',
-      'Mouse, Keyboard',
-      'unit',
-      '45000',
-      '2024-01-15',
-      '5',
-      'PAR-2024-0001',
-      'ERC-2024-0001',
-      '',
-      'Technical Service',
-      'Working',
-      '2024-01-20'
-    ];
-
-    const csvContent = [
-      headers.join(','),
-      sampleRow.join(','),
-      // Add empty rows for bulk entry
-      Array(18).fill('').join(',')
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `ERC_PPE_Template_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
+    link.href = '/ppe-templates/ppe_template.xlsx';
+    link.setAttribute('download', 'ppe_template.xlsx');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('PPE Template downloaded successfully');
+    toast.success('PPE Excel Template downloaded successfully');
   };
 
   if (loading) {
@@ -185,10 +155,53 @@ export function PPEList() {
               <Button
                 variant="outline"
                 className="gap-2"
+                onClick={() => {
+                  const fileInput = document.getElementById('ppe-upload-input');
+                  if (fileInput) {
+                    fileInput.click();
+                  }
+                }}
               >
                 <Upload className="size-4" />
                 Upload Bulk (Excel)
               </Button>
+              <input
+                type="file"
+                id="ppe-upload-input"
+                accept=".xlsx, .xls"
+                style={{ display: 'none' }}
+                onChange={async (e) => {
+                  const files = e.target.files;
+                  if (!files || files.length === 0) {
+                    return;
+                  }
+                  const file = files[0];
+
+                  const actionBySystemUserId = localStorage.getItem('systemUserId');
+                  const sessionKey = localStorage.getItem('sessionToken') || '';
+
+                  if (!actionBySystemUserId || !sessionKey) {
+                    toast.error('User session info missing. Please log in again.');
+                    return;
+                  }
+
+                  try {
+                    const result = await PPEService.batchUpload(file, actionBySystemUserId, sessionKey);
+                    toast.success(`Upload successful: ${result.imported} items imported`);
+
+                    // Reload PPE assets
+                    loadPPEAssets();
+                  } catch (error) {
+                    console.error('Batch upload failed:', error);
+                    toast.error(`Batch upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                  } finally {
+                    // Reset the input value to allow uploading the same file again if needed
+                    if (e.target) {
+                      e.target.value = '';
+                    }
+                  }
+                }}
+              />
             </div>
             <Button variant="outline" className="gap-2" onClick={downloadPPETemplate}>
               <Download className="size-4" />
