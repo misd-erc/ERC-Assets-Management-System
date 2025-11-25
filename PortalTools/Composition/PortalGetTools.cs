@@ -1,4 +1,5 @@
-﻿using PortalTools.Services.GetEditTools.ASSET.PPE;
+﻿using PortalTools.Services.GetEditTools.ASSET.SE;
+using PortalTools.Services.GetEditTools.ASSET.PPE;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
 using PortalTools.Services.GetEditTools.DBO.Office;
@@ -15,7 +16,8 @@ public class PortalGetTools : IPortalGetTools
         LogGetTools log,
         StorageGetTools storage,
         NotificationGetTools notification,
-        PPEGetTools ppe
+        PPEGetTools ppe,
+        SEGetTools se
     )
     {
         Account = account;
@@ -24,6 +26,7 @@ public class PortalGetTools : IPortalGetTools
         Log = log;
         Notification = notification;
         PPE = ppe;
+        SE = se;
     }
 
     public AccountGetTools Account { get; }
@@ -32,5 +35,6 @@ public class PortalGetTools : IPortalGetTools
     public LogGetTools Log { get; }
     public NotificationGetTools Notification { get; }
     public PPEGetTools PPE { get; }
+    public SEGetTools SE { get; }
 
 }

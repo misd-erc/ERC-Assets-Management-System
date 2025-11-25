@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalDB.Models.ParserModels.PPE
+namespace PortalDB.Models.ParserModels.SE
 {
-    public class AnnualCount
+    public class SEAnnualCount
     {
         public DateTime? DateAssigned { get; set; }
         public string ParItrNumber { get; set; } = string.Empty;

@@ -5,6 +5,7 @@ using PortalCommon.Utilities;
 using PortalDB.Services;
 using PortalTools.Composition;
 using PortalTools.Services;
+using PortalTools.Services.GetEditTools.ASSET.SE;
 using PortalTools.Services.GetEditTools.ASSET.PPE;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
@@ -57,6 +58,8 @@ builder.Services.AddScoped<NotificationEditTools>();
 builder.Services.AddScoped<NotificationGetTools>();
 builder.Services.AddScoped<PPEEditTools>();
 builder.Services.AddScoped<PPEGetTools>();
+builder.Services.AddScoped<SEEditTools>();
+builder.Services.AddScoped<SEGetTools>();
 
 builder.Services.AddScoped<AuthTools>();
 builder.Services.AddScoped<ParserTools>();

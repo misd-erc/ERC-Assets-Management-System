@@ -39,6 +39,8 @@ namespace API.Controllers
             _authTools = authTools;
         }
 
+        #region POST
+
         [HttpPost("upload/user/profile-picture")]
         [RequestSizeLimit(1_000_000)] // optional, limit 1MB
         [ValidateSessionToken]
@@ -95,6 +97,10 @@ namespace API.Controllers
             }
         }
 
+        #endregion
+
+        #region GET
+
         [HttpGet("retrieve/{fileStorageId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -133,6 +139,6 @@ namespace API.Controllers
             }
         }
 
-
+        #endregion
     }
 }

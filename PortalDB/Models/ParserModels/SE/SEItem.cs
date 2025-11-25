@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PortalDB.Models.ParserModels.PPE
+namespace PortalDB.Models.ParserModels.SE
 {
-    public class PPEItem
+    public class SEItem
     {
         public string PropertyNumber { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
@@ -15,11 +15,11 @@ namespace PortalDB.Models.ParserModels.PPE
         public string Brand { get; set; } = string.Empty;
         public string Model { get; set; } = string.Empty;
         public string SerialNumber { get; set; } = string.Empty;
-        public List<PPEPart>? Parts { get; set; }
+        public List<SEPart>? Parts { get; set; }
         public string UnitOfMeasurement { get; set; } = string.Empty;
         public long? UnitValue { get; set; }
         public DateTime? DateAssigned { get; set; }
-        public List<PPEAnnualCount>? AnnualCount { get; set; }
+        public List<SEAnnualCount>? AnnualCount { get; set; }
         public long? EstimatedUsefulLife { get; set; }
     }
 }

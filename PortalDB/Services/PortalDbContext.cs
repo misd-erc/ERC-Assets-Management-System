@@ -13,6 +13,7 @@ using PortalDB.Entities.DBO.Notification;
 using PortalDB.Entities.DBO.Module;
 using PortalDB.Entities.ASSET.PPE;
 using PortalDB.Seeds.DBO.Module;
+using PortalDB.Entities.ASSET.SE;
 
 namespace PortalDB.Services
 {
@@ -60,6 +61,13 @@ namespace PortalDB.Services
         public DbSet<TblPPELegend> TblPPELegends { get; set; }
         public DbSet<TblPPEMovement> TblPPEMovements { get; set; }
         public DbSet<TblPPEPart> TblPPEParts { get; set; }
+        #endregion
+        #region SE
+        public DbSet<TblSE> TblSEs { get; set; }
+        public DbSet<TblSECategory> TblSECategories { get; set; }
+        public DbSet<TblSELegend> TblSELegends { get; set; }
+        public DbSet<TblSEMovement> TblSEMovements { get; set; }
+        public DbSet<TblSEPart> TblSEParts { get; set; }
         #endregion
         #endregion
 
