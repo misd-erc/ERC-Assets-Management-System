@@ -5,10 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Package, DollarSign, User } from 'lucide-react';
+import { Package, DollarSign, User, Plus, X } from 'lucide-react';
 import { PPEAsset } from '@/types/asset/PPEAsset';
 import { SEAsset } from '@/types/supply/se';
 import { AssetType } from '@/services/assetService';
+import { getOffices } from '@/api/office-management/officeApi';
+import { getDivisions } from '@/api/office-management/divisionApi';
+import { VwOffice, VwDivision } from '@/types/office';
 
 interface AssetsFormProps {
   type: AssetType;
@@ -49,6 +52,26 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
     status: 'Active',
   });
 
+  const [accountabilityEntries, setAccountabilityEntries] = useState<any[]>([]);
+  const [offices, setOffices] = useState<VwOffice[]>([]);
+  const [divisions, setDivisions] = useState<VwDivision[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [officesData, divisionsData] = await Promise.all([
+          getOffices(),
+          getDivisions()
+        ]);
+        setOffices(officesData);
+        setDivisions(divisionsData);
+      } catch (error) {
+        console.error('Failed to load offices and divisions:', error);
+      }
+    };
+    loadData();
+  }, []);
+
   useEffect(() => {
     if (asset && isEditing) {
       if (type === 'ppe') {
@@ -72,6 +95,31 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
           actualDivision: ppeAsset.movements && ppeAsset.movements.length > 0 && typeof ppeAsset.movements[0].division === 'object' && ppeAsset.movements[0].division !== null ? ppeAsset.movements[0].division.name : '',
           condition: ppeAsset.movements && ppeAsset.movements.length > 0 ? ppeAsset.movements[0].condition || 'Working' : 'Working',
         });
+
+        // Initialize accountability entries from movements
+        if (ppeAsset.movements && ppeAsset.movements.length > 0) {
+          const entries = ppeAsset.movements.map(movement => ({
+            dateAssigned: movement.dateAssigned || new Date().toISOString(),
+            parItrNumber: movement.parItrNumber || '',
+            plantillaEmployeeId: movement.plantillaEmployeeIdOriginal || '',
+            nonPlantillaEmployeeId: movement.nonPlantillaEmployeeIdOriginal || '',
+            actualOfficeId: movement.office?.id || '',
+            actualDivisionId: movement.division?.id || '',
+            condition: movement.condition || 'Working',
+          }));
+          setAccountabilityEntries(entries);
+        } else {
+          // Default entry
+          setAccountabilityEntries([{
+            dateAssigned: new Date().toISOString(),
+            parItrNumber: '',
+            plantillaEmployeeId: '',
+            nonPlantillaEmployeeId: '',
+            actualOfficeId: '',
+            actualDivisionId: '',
+            condition: 'Working',
+          }]);
+        }
       } else {
         const seAsset = asset as SEAsset;
         setFormData({
@@ -84,8 +132,45 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
           date_acquired: seAsset.date_acquired || '',
           description: seAsset.description || '',
           status: seAsset.status || 'Active',
+          parts_accessories: seAsset.parts_accessories || '',
         });
+
+        // Initialize accountability entries from accountabilityBlocks
+        if (seAsset.accountabilityBlocks && seAsset.accountabilityBlocks.length > 0) {
+          const entries = seAsset.accountabilityBlocks.map(block => ({
+            dateAssigned: block.date_issued_returned || new Date().toISOString(),
+            parItrNumber: block.itr_rrsp_number || '',
+            plantillaEmployeeId: block.plantilla_employee_id || '',
+            nonPlantillaEmployeeId: block.non_plantilla_employee_id || '',
+            actualOfficeId: '', // SE doesn't have office/division in the same way
+            actualDivisionId: '', // SE uses division_section as string
+            condition: block.condition || 'Working',
+          }));
+          setAccountabilityEntries(entries);
+        } else {
+          // Default entry
+          setAccountabilityEntries([{
+            dateAssigned: new Date().toISOString(),
+            parItrNumber: '',
+            plantillaEmployeeId: '',
+            nonPlantillaEmployeeId: '',
+            actualOfficeId: '',
+            actualDivisionId: '',
+            condition: 'Working',
+          }]);
+        }
       }
+    } else {
+      // For new assets, initialize with default entry
+      setAccountabilityEntries([{
+        dateAssigned: new Date().toISOString(),
+        parItrNumber: '',
+        plantillaEmployeeId: '',
+        nonPlantillaEmployeeId: '',
+        actualOfficeId: '',
+        actualDivisionId: '',
+        condition: 'Working',
+      }]);
     }
   }, [asset, isEditing, type]);
 
@@ -98,6 +183,9 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
         alert('Property Number and Description are required');
         return;
       }
+
+      // Use the first accountability entry (current holder) for submission
+      const currentEntry = accountabilityEntries[0] || {};
 
       const submitData = {
         propertyNumber: formData.propertyNumber,
@@ -112,14 +200,15 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
         unitValue: formData.unitValue,
         dateAcquired: formData.dateAcquired,
         estimatedUsefulLife: formData.estimatedUsefulLife,
-        movements: [{
-          parItrNumber: formData.parItrNumber,
-          plantillaEmployeeIdOriginal: formData.plantillaEmployeeId,
-          nonPlantillaEmployeeIdOriginal: formData.nonPlantillaEmployeeId,
-          division: { name: formData.actualDivision },
-          condition: formData.condition,
-          dateAssigned: new Date().toISOString(),
-        }],
+        movements: accountabilityEntries.map(entry => ({
+          parItrNumber: entry.parItrNumber,
+          plantillaEmployeeIdOriginal: entry.plantillaEmployeeId,
+          nonPlantillaEmployeeIdOriginal: entry.nonPlantillaEmployeeId,
+          office: entry.actualOfficeId ? { id: entry.actualOfficeId } : null,
+          division: entry.actualDivisionId ? { id: entry.actualDivisionId } : null,
+          condition: entry.condition,
+          dateAssigned: entry.dateAssigned,
+        })),
       };
 
       onSubmit(submitData);
@@ -146,13 +235,14 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
         date_acquired: formData.date_acquired,
         description: formData.description,
         status: formData.status,
-        accountabilityBlocks: [{
-          plantilla_employee_id: formData.plantillaEmployeeId || null,
-          non_plantilla_employee_id: formData.nonPlantillaEmployeeId || null,
-          division_section: formData.actualDivision || '',
-          condition: formData.condition || 'Working',
-          date_assigned: new Date().toISOString(),
-        }],
+        accountabilityBlocks: accountabilityEntries.map(entry => ({
+          itr_rrsp_number: entry.parItrNumber,
+          plantilla_employee_id: entry.plantillaEmployeeId || null,
+          non_plantilla_employee_id: entry.nonPlantillaEmployeeId || null,
+          division_section: entry.actualDivisionId ? divisions.find(d => d.id.toString() === entry.actualDivisionId)?.name || '' : '',
+          condition: entry.condition || 'Working',
+          date_issued_returned: entry.dateAssigned,
+        })),
       };
 
       onSubmit(submitData);
@@ -161,6 +251,58 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
 
   const handleInputChange = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddPart = () => {
+    setFormData((prev: any) => ({
+      ...prev,
+      parts: [...prev.parts, { name: '', serialNumber: '' }]
+    }));
+  };
+
+  const handleRemovePart = (index: number) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      parts: prev.parts.filter((_: any, i: number) => i !== index)
+    }));
+  };
+
+  const handlePartChange = (index: number, field: string, value: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      parts: prev.parts.map((part: any, i: number) =>
+        i === index ? { ...part, [field]: value } : part
+      )
+    }));
+  };
+
+  const handleAddAccountabilityEntry = () => {
+    setAccountabilityEntries((prev) => [
+      ...prev,
+      {
+        dateAssigned: new Date().toISOString(),
+        parItrNumber: '',
+        plantillaEmployeeId: '',
+        nonPlantillaEmployeeId: '',
+        actualOfficeId: '',
+        actualDivisionId: '',
+        condition: 'Working',
+      }
+    ]);
+  };
+
+  const handleRemoveAccountabilityEntry = (index: number) => {
+    if (accountabilityEntries.length > 1) {
+      setAccountabilityEntries((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleAccountabilityEntryChange = (index: number, field: string, value: any) => {
+    setAccountabilityEntries((prev) =>
+      prev.map((entry, i) =>
+        i === index ? { ...entry, [field]: value } : entry
+      )
+    );
   };
 
   const getCategoryOptions = () => {
@@ -194,7 +336,7 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 w-full">
       {/* Item Identification */}
       <Card>
         <CardHeader>
@@ -207,7 +349,7 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="propertyNumber">
                 {type === 'ppe' ? 'Property Number' : 'SE Property Number'} *
@@ -300,6 +442,64 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
         </CardContent>
       </Card>
 
+      {/* Parts Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Package className="size-5 text-blue-600" />
+              Parts
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={handleAddPart}>
+              <Plus className="size-4 mr-2" />
+              Add Parts
+            </Button>
+          </CardTitle>
+          <CardDescription>
+            Add components or parts that make up this asset
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {formData.parts.length === 0 ? (
+            <p className="text-sm text-gray-500">No parts added yet. Click "Add Parts" to add components.</p>
+          ) : (
+            <div className="space-y-4">
+              {formData.parts.map((part: any, index: number) => (
+                <div key={index} className="flex items-end gap-4 p-4 border rounded-lg">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor={`part-name-${index}`}>Name</Label>
+                    <Input
+                      id={`part-name-${index}`}
+                      value={part.name}
+                      onChange={(e) => handlePartChange(index, 'name', e.target.value)}
+                      placeholder="Enter part name"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor={`part-serial-${index}`}>Serial Number</Label>
+                    <Input
+                      id={`part-serial-${index}`}
+                      value={part.serialNumber}
+                      onChange={(e) => handlePartChange(index, 'serialNumber', e.target.value)}
+                      placeholder="Enter serial number"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRemovePart(index)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Classification Details */}
       <Card>
         <CardHeader>
@@ -375,87 +575,163 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
       {/* Accountability Information */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="size-5 text-blue-600" />
-            Accountability Information
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <User className="size-5 text-blue-600" />
+              Accountability Information
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={handleAddAccountabilityEntry}>
+              <Plus className="size-4 mr-2" />
+              Add Entry
+            </Button>
           </CardTitle>
           <CardDescription>
-            Current assignment and responsibility details
+            Current assignment and responsibility details (multiple entries for movement history)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="plantillaEmployeeId">Plantilla Employee ID</Label>
-              <Input
-                id="plantillaEmployeeId"
-                value={formData.plantillaEmployeeId}
-                onChange={(e) => handleInputChange('plantillaEmployeeId', e.target.value)}
-              />
-            </div>
+          <div className="space-y-6">
+            {accountabilityEntries.map((entry, index) => (
+              <div key={index} className="p-4 border rounded-lg bg-gray-50">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-sm">
+                    {index === 0 ? 'Current Holder' : `Previous Holder ${index}`}
+                  </h4>
+                  {accountabilityEntries.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRemoveAccountabilityEntry(index)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor={`dateAssigned-${index}`}>Date Assigned</Label>
+                    <Input
+                      id={`dateAssigned-${index}`}
+                      type="datetime-local"
+                      value={entry.dateAssigned ? new Date(entry.dateAssigned).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => handleAccountabilityEntryChange(index, 'dateAssigned', e.target.value)}
+                    />
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="nonPlantillaEmployeeId">Non-Plantilla Employee ID</Label>
-              <Input
-                id="nonPlantillaEmployeeId"
-                value={formData.nonPlantillaEmployeeId}
-                onChange={(e) => handleInputChange('nonPlantillaEmployeeId', e.target.value)}
-              />
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`parItrNumber-${index}`}>PAR/ITR Number</Label>
+                    <Input
+                      id={`parItrNumber-${index}`}
+                      value={entry.parItrNumber}
+                      onChange={(e) => handleAccountabilityEntryChange(index, 'parItrNumber', e.target.value)}
+                    />
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="actualDivision">Division/Section</Label>
-              <Input
-                id="actualDivision"
-                value={formData.actualDivision}
-                onChange={(e) => handleInputChange('actualDivision', e.target.value)}
-              />
-            </div>
+                  <div className="space-y-2">
+                    <Label htmlFor={`plantillaEmployeeId-${index}`}>Plantilla Employee ID</Label>
+                    <Input
+                      id={`plantillaEmployeeId-${index}`}
+                      value={entry.plantillaEmployeeId}
+                      onChange={(e) => handleAccountabilityEntryChange(index, 'plantillaEmployeeId', e.target.value)}
+                    />
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="condition">Condition</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor={`nonPlantillaEmployeeId-${index}`}>Non-Plantilla Employee ID</Label>
+                    <Input
+                      id={`nonPlantillaEmployeeId-${index}`}
+                      value={entry.nonPlantillaEmployeeId}
+                      onChange={(e) => handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`actualOffice-${index}`}>Office</Label>
+                    <Select
+                      value={entry.actualOfficeId}
+                      onValueChange={(value) => handleAccountabilityEntryChange(index, 'actualOfficeId', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select office" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {offices.map(office => (
+                          <SelectItem key={office.id} value={office.id.toString()}>
+                            {office.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`actualDivision-${index}`}>Division</Label>
+                    <Select
+                      value={entry.actualDivisionId}
+                      onValueChange={(value) => handleAccountabilityEntryChange(index, 'actualDivisionId', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select division" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {divisions.map(division => (
+                          <SelectItem key={division.id} value={division.id.toString()}>
+                            {division.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`condition-${index}`}>Condition</Label>
+                    <Select
+                      value={entry.condition}
+                      onValueChange={(value) => handleAccountabilityEntryChange(index, 'condition', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select condition" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Working">Working</SelectItem>
+                        <SelectItem value="Not Working">Not Working</SelectItem>
+                        {type === 'se' && <SelectItem value="Unserviceable">Unserviceable</SelectItem>}
+                        {type === 'ppe' && (
+                          <>
+                            <SelectItem value="IIRUP">IIRUP</SelectItem>
+                            <SelectItem value="Disposed">Disposed</SelectItem>
+                            <SelectItem value="Missing">Missing</SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {type === 'se' && (
+            <div className="mt-6 space-y-2">
+              <Label htmlFor="status">Status</Label>
               <Select
-                value={formData.condition}
-                onValueChange={(value) => handleInputChange('condition', value)}
+                value={formData.status}
+                onValueChange={(value) => handleInputChange('status', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select condition" />
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Working">Working</SelectItem>
-                  <SelectItem value="Not Working">Not Working</SelectItem>
-                  {type === 'se' && <SelectItem value="Unserviceable">Unserviceable</SelectItem>}
-                  {type === 'ppe' && (
-                    <>
-                      <SelectItem value="IIRUP">IIRUP</SelectItem>
-                      <SelectItem value="Disposed">Disposed</SelectItem>
-                      <SelectItem value="Missing">Missing</SelectItem>
-                    </>
-                  )}
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Returned">Returned</SelectItem>
+                  <SelectItem value="Lost">Lost</SelectItem>
+                  <SelectItem value="Unserviceable">Unserviceable</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            {type === 'se' && (
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => handleInputChange('status', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Returned">Returned</SelectItem>
-                    <SelectItem value="Lost">Lost</SelectItem>
-                    <SelectItem value="Unserviceable">Unserviceable</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
+          )}
         </CardContent>
       </Card>
 

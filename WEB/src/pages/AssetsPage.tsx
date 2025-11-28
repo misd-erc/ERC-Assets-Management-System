@@ -12,6 +12,7 @@ import { AssetsFilters } from '@/components/assets/AssetsFilters';
 import { AssetsForm } from '@/components/assets/AssetsForm';
 import { AssetsViewCard } from '@/components/assets/AssetsViewCard';
 import { AssetService, AssetType } from '@/services/assetService';
+import { PPEService } from '@/services/ppeService';
 import { PPEAsset } from '@/types/asset/PPEAsset';
 import { SEAsset } from '@/types/supply/se';
 
@@ -60,7 +61,12 @@ export function AssetsPage({ type }: AssetsPageProps) {
         division: divisionFilter !== 'all' ? divisionFilter : undefined,
       };
 
-      const response = await AssetService.getAll(type, filters);
+      let response;
+      if (type === 'ppe') {
+        response = await PPEService.getAll(filters);
+      } else {
+        response = await AssetService.getAll(type, filters);
+      }
       setAssets(response.items);
       setTotalCount(response.totalCount);
       setTotalPages(Math.ceil(response.totalCount / 10));
@@ -74,7 +80,11 @@ export function AssetsPage({ type }: AssetsPageProps) {
 
   const handleAddAsset = async (data: any) => {
     try {
-      await AssetService.create(type, data);
+      if (type === 'ppe') {
+        await PPEService.create(data);
+      } else {
+        await AssetService.create(type, data);
+      }
       toast.success(`${type.toUpperCase()} asset added successfully`);
       setAddDialogOpen(false);
       loadAssets();
@@ -87,7 +97,11 @@ export function AssetsPage({ type }: AssetsPageProps) {
   const handleEditAsset = async (data: any) => {
     if (!selectedAsset) return;
     try {
-      await AssetService.update(type, selectedAsset.id, data);
+      if (type === 'ppe') {
+        await PPEService.update(selectedAsset.id, data);
+      } else {
+        await AssetService.update(type, selectedAsset.id, data);
+      }
       toast.success(`${type.toUpperCase()} asset updated successfully`);
       setEditDialogOpen(false);
       setSelectedAsset(null);
@@ -101,7 +115,11 @@ export function AssetsPage({ type }: AssetsPageProps) {
   const handleDeleteAsset = async () => {
     if (!selectedAsset) return;
     try {
-      await AssetService.delete(type, selectedAsset.id);
+      if (type === 'ppe') {
+        await PPEService.delete(selectedAsset.id);
+      } else {
+        await AssetService.delete(type, selectedAsset.id);
+      }
       toast.success(`${type.toUpperCase()} asset deleted successfully`);
       setDeleteDialogOpen(false);
       setSelectedAsset(null);
@@ -127,7 +145,12 @@ export function AssetsPage({ type }: AssetsPageProps) {
         return;
       }
 
-      const result = await AssetService.batchUpload(type, uploadFile, actionBySystemUserId, sessionKey);
+      let result;
+      if (type === 'ppe') {
+        result = await PPEService.batchUpload(uploadFile, actionBySystemUserId, sessionKey);
+      } else {
+        result = await AssetService.batchUpload(type, uploadFile, actionBySystemUserId, sessionKey);
+      }
 
       if (result.errors.length > 0) {
         toast.error(`Upload completed with errors: ${result.errors.join(', ')}`);
@@ -257,7 +280,7 @@ export function AssetsPage({ type }: AssetsPageProps) {
 
       {/* Add Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[85vw] !max-w-none max-h-[90vh] overflow-y-auto p-5 md:p-6 lg:p-8">
           <DialogHeader>
             <DialogTitle>Add New {type.toUpperCase()} Asset</DialogTitle>
             <DialogDescription>
@@ -274,7 +297,8 @@ export function AssetsPage({ type }: AssetsPageProps) {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[85vw] !max-w-none max-h-[90vh] overflow-y-auto p-5 md:p-6 lg:p-8">
+
           <DialogHeader>
             <DialogTitle>Edit {type.toUpperCase()} Asset</DialogTitle>
             <DialogDescription>
@@ -298,7 +322,8 @@ export function AssetsPage({ type }: AssetsPageProps) {
 
       {/* View Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+       <DialogContent className="w-[95vw] !max-w-none max-h-[90vh] overflow-y-auto p-5 md:p-6 lg:p-8">
+
           <DialogHeader>
             <DialogTitle>{type.toUpperCase()} Asset Details</DialogTitle>
           </DialogHeader>
