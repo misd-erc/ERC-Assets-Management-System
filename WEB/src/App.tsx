@@ -8,7 +8,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { isSessionValid, isSessionExpired, handleSessionExpired } from '@/utils/sessionUtils';
 import { NoRolePage, UnderConstructionPage } from '@/pages';
-import { PPEUpdate } from '@/pages/ppe/PPEUpdate';  // Changed to named import
+
 import { decrypt } from '@/utils/encryption';
 
 
@@ -96,7 +96,7 @@ function AppContent() {
           <Route path="dashboard" element={<div />} />
           <Route path="profile" element={<div />} />
           <Route path="under-construction" element={<div />} />
-          <Route path="ppe/update/:id" element={<PPEUpdate />} />  {/* Added PPE update route */}
+
         </Route>
         
         {/* No Role Route */}
@@ -149,4 +149,3 @@ export default function App() {
     </Router>
   );
 }
-
