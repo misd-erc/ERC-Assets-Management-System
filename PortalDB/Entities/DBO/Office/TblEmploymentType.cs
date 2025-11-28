@@ -11,6 +11,15 @@ namespace PortalDB.Entities.DBO.Office
     [Table("tblEmploymentTypes", Schema = "dbo")]
     public class TblEmploymentType
     {
+
+        #region Constants
+        [NotMapped] public const string PLANTILLA = "Plantilla";
+        [NotMapped] public const string COS = "Contract of Service";
+        [NotMapped] public const string JO   = "Job Order";
+        [NotMapped] public const string COTERMINOUS = "Co-Terminous";
+        [NotMapped] public const string CONTRACTUAL = "Contractual";
+        #endregion
+
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("EmploymentTypeId")]

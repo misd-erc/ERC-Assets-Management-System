@@ -39,6 +39,7 @@ namespace PortalDB.Services
 
                 TblEmploymentTypeSeeder.Seed(context);
                 TblPositionSeeder.Seed(context);
+                TblEmployeeSeeder.Seed(context);
                 #endregion
                 #endregion
                 #region ASSET

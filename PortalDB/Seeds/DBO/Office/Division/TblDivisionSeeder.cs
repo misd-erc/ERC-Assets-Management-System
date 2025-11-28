@@ -52,6 +52,7 @@ namespace PortalDB.Seeds.DBO.Office.Division
                 Division(offices.Where(x => x.Name == TblOffice.ROS).First().Id, "Tariffs and Rates Division", "TRD"),
                 Division(offices.Where(x => x.Name == TblOffice.ROS).First().Id, "Standards Division", "SD"),
                 Division(offices.Where(x => x.Name == TblOffice.ROS).First().Id, "Investigation and Enforcement Division for Distribution Utilities", "IED-DUs"),
+                Division(offices.Where(x => x.Name == TblOffice.ROS).First().Id, "Investigation and Enforcement Division for Transmission", "IED-Transmission"),
                 Division(offices.Where(x => x.Name == TblOffice.ROS).First().Id, "Investigation and Enforcement Division for Adjudication", "IED-Adju"),
                 Division(offices.Where(x => x.Name == TblOffice.ROS).First().Id, "Over/Under Group", "OU Group"),
 

@@ -52,6 +52,7 @@ namespace PortalDB.Services
         public DbSet<TblErrorLog> TblErrorLogs { get; set; }
         public DbSet<TblActivityLog> TblActivityLogs { get; set; }
         #endregion
+
         #endregion
         #region ASSET
         #region PTA

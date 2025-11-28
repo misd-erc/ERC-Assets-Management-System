@@ -49,6 +49,15 @@ namespace PortalDB.Entities.DBO.Account
             set => LastNameEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
+        [Column("EmployeeSuffixName")]
+        public string? SuffixNameEncrypted { get; set; }
+        [NotMapped]
+        public string? SuffixName
+        {
+            get => string.IsNullOrEmpty(SuffixNameEncrypted) ? null : EncryptionHelper.Decrypt(SuffixNameEncrypted);
+            set => SuffixNameEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+        }
+
         [Column("EmployeeIdOriginal")]
         public string? EmployeeIdOriginalEncrypted { get; set; }
         [NotMapped]
@@ -57,6 +66,7 @@ namespace PortalDB.Entities.DBO.Account
             get => string.IsNullOrEmpty(EmployeeIdOriginalEncrypted) ? null : EncryptionHelper.Decrypt(EmployeeIdOriginalEncrypted);
             set => EmployeeIdOriginalEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
+
 
         [Column("OfficeId")]
         public long? OfficeId { get; set; }
