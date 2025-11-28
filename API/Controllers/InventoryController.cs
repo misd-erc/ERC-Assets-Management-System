@@ -173,8 +173,8 @@ namespace API.Controllers
             }
         }
 
-        // GET api/inventory/pta/ppe/all
-        [HttpGet("pta/ppe/all")]
+        // GET api/inventory/pta/se-ppe/all
+        [HttpGet("pta/se-ppe/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetAllPTAs([FromQuery] PaginationGenericQueryParams model)
@@ -267,7 +267,7 @@ namespace API.Controllers
         }
 
         // GET api/inventory/pta/ppe/all
-        [HttpGet("pta/ppe/all/{ppeId}")]
+        [HttpGet("pta/se-ppe/all/{ppeId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetPTA([FromQuery] SoloQueryParams model, [FromRoute] long ppeId)
@@ -306,147 +306,6 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed PTA information for PTA {ppe.Id}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<PTAResponseModel>.Ok(ppeResponses, "PTA have been retrieved"
-                ));
-
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
-                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-            }
-        }
-
-        // GET api/inventory/pta/se/all
-        [HttpGet("pta/se/all")]
-        [ValidateSessionToken]
-        [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllSEs([FromQuery] PaginationGenericQueryParams model)
-        {
-            await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
-
-            try
-            {
-
-                IEnumerable<TblPTA?> ses = await _getTools.PTA.GetTblPTAsByGroup(TblPTA.SE, context).ToListAsync();
-
-                if (!string.IsNullOrWhiteSpace(model.SearchString))
-                {
-                    string searchLower = model.SearchString.ToLower();
-                    ses = ses.Where(x =>
-                        x.PropertyNumber.ToLower().Contains(searchLower) ||
-                        x.Description.ToLower().Contains(searchLower) ||
-                        x.Brand.ToLower().Contains(searchLower) ||
-                        x.Model.ToLower().Contains(searchLower) ||
-                        x.SerialNumber.ToLower().Contains(searchLower) ||
-                        x.UnitOfMeasurement.ToLower().Contains(searchLower) ||
-                        x.UnitValue.ToString().Contains(searchLower) ||
-                        x.DateAcquired.ToString().Contains(searchLower));
-                }
-
-                if (model.StartDate.HasValue)
-                    ses = ses.Where(x => x.CreatedAt >= model.StartDate.Value);
-
-                if (model.EndDate.HasValue)
-                    ses = ses.Where(x => x.CreatedAt <= model.EndDate.Value);
-
-                int totalCount = ses.Count();
-
-                int skip = (model.PageNumber - 1) * model.PageSize;
-
-                var sesList = ses
-                    .OrderByDescending(x => x.CreatedAt)
-                    .Skip(skip)
-                    .Take(model.PageSize)
-                    .ToList();
-
-                var ptasResponses = new List<PTAResponseModel>();
-
-                foreach (var x in sesList)
-                {
-                    var seModel = new PTAResponseModel
-                    {
-                        Id = x.Id,
-                        Group = x.Group,
-                        PropertyNumber = x.PropertyNumber,
-                        Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
-                        Legend = await _getTools.PTA.GetTblPTALegendAsync(x.CategoryId, context),
-                        Description = x.Description,
-                        Brand = x.Brand,
-                        Model = x.Model,
-                        SerialNumber = x.SerialNumber,
-                        UnitOfMeasurement = x.UnitOfMeasurement,
-                        UnitValue = x.UnitValue,
-                        DateAcquired = x.DateAcquired,
-                        Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                        Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
-                        IsActive = x.IsActive,
-                        CreatedAt = x.CreatedAt
-                    };
-                    ptasResponses.Add(seModel);
-                }
-
-
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed SEs", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<PTAResponseModel>.OkPaginated(
-                    ptasResponses,
-                    model.PageNumber,
-                    model.PageSize,
-                    totalCount,
-                    "SEs have been retrieved"
-                ));
-
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
-                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-            }
-        }
-
-        // GET api/inventory/pta/se/all
-        [HttpGet("pta/se/all/{ptaId}")]
-        [ValidateSessionToken]
-        [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetSE([FromQuery] SoloQueryParams model, [FromRoute] long ptaId)
-        {
-            await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
-
-            try
-            {
-
-                TblPTA? se = await _getTools.PTA.GetTblPTAAsync(ptaId, context);
-                var ptaResponse = new List<PTAResponseModel>();
-                var seModel = new PTAResponseModel
-                {
-                    Id = se.Id,
-                    Group = se.Group,
-                    PropertyNumber = se.PropertyNumber,
-                    Category = await _getTools.PTA.GetTblPTACategoryAsync(se.CategoryId, context),
-                    Legend = await _getTools.PTA.GetTblPTALegendAsync(se.CategoryId, context),
-                    Description = se.Description,
-                    Brand = se.Brand,
-                    Model = se.Model,
-                    SerialNumber = se.SerialNumber,
-                    UnitOfMeasurement = se.UnitOfMeasurement,
-                    UnitValue = se.UnitValue,
-                    DateAcquired = se.DateAcquired,
-                    Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(se.Id, context).ToListAsync(),
-                    Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(se.Id, context).ToListAsync(),
-                    IsActive = se.IsActive,
-                    CreatedAt = se.CreatedAt
-                };
-                ptaResponse.Add(seModel);
-
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed PTA information for PTA {se.Id}", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<PTAResponseModel>.Ok(ptaResponse, "PTA have been retrieved"
                 ));
 
             }

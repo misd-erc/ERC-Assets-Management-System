@@ -31,6 +31,15 @@ namespace PortalDB.Entities.DBO.Account
             set => FirstNameEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
+        [Column("EmployeeMiddleName")]
+        public string? MiddleNameEncrypted { get; set; }
+        [NotMapped]
+        public string? MiddleName
+        {
+            get => string.IsNullOrEmpty(MiddleNameEncrypted) ? null : EncryptionHelper.Decrypt(MiddleNameEncrypted);
+            set => MiddleNameEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+        }
+
         [Column("EmployeeLastName")]
         public string? LastNameEncrypted { get; set; }
         [NotMapped]

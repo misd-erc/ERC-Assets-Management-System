@@ -47,7 +47,7 @@ namespace PortalDB.Entities.DBO.Office.Division
         [Column("OfficeId")]
         public long OfficeId { get; set; }
 
-        [MaxLength(50)]
+        [MaxLength(100)]
         [Column("DivisionName")]
         public string? Name { get; set; }
 
