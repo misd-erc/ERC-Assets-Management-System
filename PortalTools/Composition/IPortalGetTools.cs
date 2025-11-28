@@ -1,5 +1,4 @@
-﻿using PortalTools.Services.GetEditTools.ASSET.SE;
-using PortalTools.Services.GetEditTools.ASSET.PPE;
+﻿using PortalTools.Services.GetEditTools.ASSET.PTA;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
 using PortalTools.Services.GetEditTools.DBO.Office;
@@ -15,6 +14,5 @@ public interface IPortalGetTools
     StorageGetTools Storage { get; }
     LogGetTools Log { get; }
     NotificationGetTools Notification { get; }
-    PPEGetTools PPE { get; }
-    SEGetTools SE { get; }
+    PTAGetTools PTA { get; }
 }

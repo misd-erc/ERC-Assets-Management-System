@@ -1,5 +1,4 @@
-﻿using PortalTools.Services.GetEditTools.ASSET.SE;
-using PortalTools.Services.GetEditTools.ASSET.PPE;
+﻿using PortalTools.Services.GetEditTools.ASSET.PTA;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
 using PortalTools.Services.GetEditTools.DBO.Office;
@@ -17,22 +16,19 @@ public class PortalEditTools : IPortalEditTools
         OfficeEditTools office,
         LogEditTools log,
         NotificationEditTools notification,
-        PPEEditTools ppe,
-        SEEditTools se
+        PTAEditTools pta
     )
     {
         Account = account;
         Office = office;
         Log = log;
         Notification = notification;
-        PPE = ppe;
-        SE = se;
+        PTA = pta;
     }
 
     public AccountEditTools Account { get; }
     public OfficeEditTools Office { get; }
     public LogEditTools Log { get; }
     public NotificationEditTools Notification { get; }
-    public PPEEditTools PPE { get; }
-    public SEEditTools SE { get; }
+    public PTAEditTools PTA { get; }
 }

@@ -11,9 +11,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 using PortalDB.Entities.DBO.Storage;
 using PortalDB.Entities.DBO.Notification;
 using PortalDB.Entities.DBO.Module;
-using PortalDB.Entities.ASSET.PPE;
+using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Seeds.DBO.Module;
-using PortalDB.Entities.ASSET.SE;
 
 namespace PortalDB.Services
 {
@@ -55,19 +54,12 @@ namespace PortalDB.Services
         #endregion
         #endregion
         #region ASSET
-        #region PPE
-        public DbSet<TblPPE> TblPPEs { get; set; }
-        public DbSet<TblPPECategory> TblPPECategories { get; set; }
-        public DbSet<TblPPELegend> TblPPELegends { get; set; }
-        public DbSet<TblPPEMovement> TblPPEMovements { get; set; }
-        public DbSet<TblPPEPart> TblPPEParts { get; set; }
-        #endregion
-        #region SE
-        public DbSet<TblSE> TblSEs { get; set; }
-        public DbSet<TblSECategory> TblSECategories { get; set; }
-        public DbSet<TblSELegend> TblSELegends { get; set; }
-        public DbSet<TblSEMovement> TblSEMovements { get; set; }
-        public DbSet<TblSEPart> TblSEParts { get; set; }
+        #region PTA
+        public DbSet<TblPTA> TblPTAs { get; set; }
+        public DbSet<TblPTACategory> TblPTACategories { get; set; }
+        public DbSet<TblPTALegend> TblPTALegends { get; set; }
+        public DbSet<TblPTAMovement> TblPTAMovements { get; set; }
+        public DbSet<TblPTAPart> TblPTAParts { get; set; }
         #endregion
         #endregion
 

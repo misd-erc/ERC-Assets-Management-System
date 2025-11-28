@@ -27,7 +27,7 @@ namespace PortalDB.Services
                 TblSystemUserStatusSeeder.Seed(context);
                 TblSystemRoleSeeder.Seed(context);
                 TblSystemRoleScopeSeeder.Seed(context);
-                TblPPECategorySeeder.Seed(context);
+                TblPTACategorySeeder.Seed(context);
                 TblSystemModuleSeeder.Seed(context);
                 #endregion
 
@@ -42,7 +42,7 @@ namespace PortalDB.Services
                 #endregion
                 #endregion
                 #region ASSET
-                TblPPECategorySeeder.Seed(context);
+                TblPTACategorySeeder.Seed(context);
                 #endregion
 
                 Console.WriteLine("Database seeding completed successfully!");
