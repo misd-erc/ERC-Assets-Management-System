@@ -38,6 +38,8 @@ namespace PortalDB.Seeds.DBO.Office.Division
                 Division(offices.Where(x => x.Name == TblOffice.OGCS).First().Id, "Secretariat", "Secretariat"),
                 Division(offices.Where(x => x.Name == TblOffice.OGCS).First().Id, "Central Records Division", "CRD"),
 
+                Division(offices.Where(x => x.Name == TblOffice.BAC).First().Id, "Competitive", "Competitive"),
+
                 Division(offices.Where(x => x.Name == TblOffice.LS).First().Id, "Office of the Director", "OD"),
                 Division(offices.Where(x => x.Name == TblOffice.LS).First().Id, "Legal Division for Rates Cases", "LDRC"),
                 Division(offices.Where(x => x.Name == TblOffice.LS).First().Id, "Legal Division for Compliance Cases", "LDCC"),

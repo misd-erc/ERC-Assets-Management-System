@@ -55,7 +55,7 @@ namespace API.Controllers
 
         #region GET
 
-        // GET api/inventory/pta/ppe/categories/all
+        // GET api/inventory/pta/category/all
         [HttpGet("pta/category/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -114,7 +114,7 @@ namespace API.Controllers
             }
         }
 
-        // GET api/inventory/pta/ppe/categories/all
+        // GET api/inventory/pta/legend/all
         [HttpGet("pta/legend/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -177,85 +177,119 @@ namespace API.Controllers
         [HttpGet("pta/se-ppe/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllPTAs([FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
+                //#region General PTA/By SE/PPE
 
-                IEnumerable<TblPTA?> ppes = await _getTools.PTA.GetTblPTAsByGroup(TblPTA.PPE, context).ToListAsync();
+                //if (model.GroupBy == null || string.IsNullOrEmpty(model.GroupBy)) { 
+                    IEnumerable<TblPTA?> ptas = await _getTools.PTA.GetTblPTAsByGroup(model.GroupName!, context).Where(x => x.Group == model.GroupName).ToListAsync();
 
-                if (!string.IsNullOrWhiteSpace(model.SearchString))
-                {
-                    string searchLower = model.SearchString.ToLower();
-                    ppes = ppes.Where(x =>
-                        x.PropertyNumber.ToLower().Contains(searchLower) ||
-                        x.Description.ToLower().Contains(searchLower) ||
-                        x.Brand.ToLower().Contains(searchLower) ||
-                        x.Model.ToLower().Contains(searchLower) ||
-                        x.SerialNumber.ToLower().Contains(searchLower) ||
-                        x.UnitOfMeasurement.ToLower().Contains(searchLower) ||
-                        x.UnitValue.ToString().Contains(searchLower) ||
-                        x.DateAcquired.ToString().Contains(searchLower) ||
-                        x.EstimatedUsefulLife.ToString().Contains(searchLower));
-                }
-
-                if (model.StartDate.HasValue)
-                    ppes = ppes.Where(x => x.CreatedAt >= model.StartDate.Value);
-
-                if (model.EndDate.HasValue)
-                    ppes = ppes.Where(x => x.CreatedAt <= model.EndDate.Value);
-
-                int totalCount = ppes.Count();
-
-                int skip = (model.PageNumber - 1) * model.PageSize;
-
-                var ppesList = ppes
-                    .OrderByDescending(x => x.CreatedAt)
-                    .Skip(skip)
-                    .Take(model.PageSize)
-                    .ToList();
-
-                var ppesResponses = new List<PTAResponseModel>();
-
-                foreach (var x in ppesList)
-                {
-                    var ppeModel = new PTAResponseModel
+                    if (!string.IsNullOrWhiteSpace(model.SearchString))
                     {
-                        Id = x.Id,
-                        Group = x.Group,
-                        PropertyNumber = x.PropertyNumber,
-                        Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
-                        Legend = await _getTools.PTA.GetTblPTALegendAsync(x.CategoryId, context),
-                        Description = x.Description,
-                        Brand = x.Brand,
-                        Model = x.Model,
-                        SerialNumber = x.SerialNumber,
-                        UnitOfMeasurement = x.UnitOfMeasurement,
-                        UnitValue = x.UnitValue,
-                        DateAcquired = x.DateAcquired,
-                        EstimatedUsefulLife = x.EstimatedUsefulLife,
-                        Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                        Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
-                        IsActive = x.IsActive,
-                        CreatedAt = x.CreatedAt
-                    };
-                    ppesResponses.Add(ppeModel);
-                }
+                        string searchLower = model.SearchString.ToLower();
+                        ptas = ptas.Where(x =>
+                            x.PropertyNumber.ToLower().Contains(searchLower) ||
+                            x.Description.ToLower().Contains(searchLower) ||
+                            x.Brand.ToLower().Contains(searchLower) ||
+                            x.Model.ToLower().Contains(searchLower) ||
+                            x.SerialNumber.ToLower().Contains(searchLower) ||
+                            x.UnitOfMeasurement.ToLower().Contains(searchLower) ||
+                            x.UnitValue.ToString().Contains(searchLower) ||
+                            x.DateAcquired.ToString().Contains(searchLower) ||
+                            x.EstimatedUsefulLife.ToString().Contains(searchLower));
+                    }
 
+                    if (model.StartDate.HasValue)
+                        ptas = ptas.Where(x => x.CreatedAt >= model.StartDate.Value);
 
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed PTAs", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<PTAResponseModel>.OkPaginated(
-                    ppesResponses,
-                    model.PageNumber,
-                    model.PageSize,
-                    totalCount,
-                    "PTAs have been retrieved"
-                ));
+                    if (model.EndDate.HasValue)
+                        ptas = ptas.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                    int totalCount = ptas.Count();
+
+                    int skip = (model.PageNumber - 1) * model.PageSize;
+
+                    var ptasList = ptas
+                        .OrderByDescending(x => x.CreatedAt)
+                        .Skip(skip)
+                        .Take(model.PageSize)
+                        .ToList();
+
+                    var ptasResponses = new List<PTAResponseModel>();
+
+                    foreach (var x in ptasList)
+                    {
+                        var ppeModel = new PTAResponseModel
+                        {
+                            Id = x.Id,
+                            Group = x.Group,
+                            PropertyNumber = x.PropertyNumber,
+                            Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
+                            Legend = await _getTools.PTA.GetTblPTALegendAsync(x.CategoryId, context),
+                            Description = x.Description,
+                            Brand = x.Brand,
+                            Model = x.Model,
+                            SerialNumber = x.SerialNumber,
+                            UnitOfMeasurement = x.UnitOfMeasurement,
+                            UnitValue = x.UnitValue,
+                            DateAcquired = x.DateAcquired,
+                            EstimatedUsefulLife = x.EstimatedUsefulLife,
+                            Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
+                            Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
+                            IsActive = x.IsActive,
+                            CreatedAt = x.CreatedAt
+                        };
+                        ptasResponses.Add(ppeModel);
+                    }
+
+                    await context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    await AuditTrailTool.LogActivityAsync(_options, $"Viewed {model.GroupName}", actionBy: model.ActionBySystemUserId);
+
+                    return Ok(ApiResponse<PTAResponseModel>.OkPaginated(
+                        ptasResponses,
+                        model.PageNumber,
+                        model.PageSize,
+                        totalCount,
+                        "PTAs have been retrieved"
+                    ));
+                //}
+                //#endregion
+
+                //#region Group by Employee
+                //else if (model.GroupBy == "Employee")
+                //{
+
+                //}
+                //#endregion
+
+                //#region Group by Category
+                //else if (model.GroupBy == "Category")
+                //{
+
+                //}
+                //#endregion
+
+                //#region Group by Condition
+                //else if (model.GroupBy == "Condition")
+                //{
+
+                //}
+                //#endregion
+
+                //#region Group by Division
+                //else if (model.GroupBy == "Division")
+                //{
+
+                //}
+                //#endregion
+
 
             }
             catch (Exception ex)
