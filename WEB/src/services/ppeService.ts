@@ -98,6 +98,7 @@ export class PPEService {
         EndDate: filters?.endDate,
         ActionBySystemUserId: actionBySystemUserId,
         SessionKey: sessionKey,
+        GroupName: 'ppe',
       });
 
       // Map the API response items to PPEAsset interface

@@ -9,37 +9,40 @@ export class SEService {
     division?: string;
     status?: string;
     search?: string;
-  }): Promise<SEAsset[]> {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{ items: SEAsset[]; totalCount: number }> {
     try {
-      // API not ready, return empty array for now
-      let assets: SEAsset[] = [];
+      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const sessionKey = localStorage.getItem('sessionToken') || '';
 
+      // Call API with pagination parameters hardcoded here for example,
+      // ideally you'd pass them from SEList or elsewhere
+      const pageNumber = 1;
+      const pageSize = 5;
+
+      // Compose SearchString from search or filters, adapt as needed
+      let searchString = '';
       if (filters) {
-        assets = assets.filter(asset => {
-          if (filters.category && asset.category !== filters.category) return false;
-          if (filters.status && asset.status !== filters.status) return false;
-
-          if (filters.condition || filters.division) {
-            const currentBlock = asset.accountabilityBlocks.find(b => b.label === 'Current Holder');
-            if (filters.condition && currentBlock?.condition !== filters.condition) return false;
-            if (filters.division && currentBlock?.division_section !== filters.division) return false;
-          }
-
-          if (filters.search) {
-            const searchLower = filters.search.toLowerCase();
-            return (
-              asset.se_property_number.toLowerCase().includes(searchLower) ||
-              asset.description.toLowerCase().includes(searchLower) ||
-              asset.serial_number?.toLowerCase().includes(searchLower) ||
-              asset.brand?.toLowerCase().includes(searchLower) ||
-              asset.model?.toLowerCase().includes(searchLower)
-            );
-          }
-          return true;
-        });
+        if (filters.search) {
+          searchString = filters.search;
+        } else if (filters.category) {
+          searchString = filters.category;
+        }
       }
 
-      return assets;
+      const response = await seApi.list({
+        SearchString: searchString,
+        PageNumber: pageNumber,
+        PageSize: pageSize,
+        StartDate: filters?.startDate,
+        EndDate: filters?.endDate,
+        ActionBySystemUserId: actionBySystemUserId,
+        SessionKey: sessionKey,
+        GroupName: 'se',
+      });
+
+      return { items: response.items || [], totalCount: response.totalCount };
     } catch (error) {
       console.error('Error fetching SE assets:', error);
       throw error;
@@ -49,7 +52,9 @@ export class SEService {
   // Get SE asset by ID
   static async getById(id: string): Promise<SEAsset> {
     try {
-      return await seApi.getById(id);
+      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const sessionKey = localStorage.getItem('sessionToken') || '';
+      return await seApi.getById(id, actionBySystemUserId, sessionKey);
     } catch (error) {
       console.error('Error fetching SE asset:', error);
       throw error;
@@ -177,6 +182,16 @@ export class SEService {
     }
   }
 
+  // Batch upload SE assets
+  static async batchUpload(file: File, actionBySystemUserId: string, sessionKey: string): Promise<{ imported: number; errors: string[] }> {
+    try {
+      return await seApi.batchUpload(file, actionBySystemUserId, sessionKey);
+    } catch (error) {
+      console.error('Error during SE batch upload:', error);
+      throw error;
+    }
+  }
+
   // Get SE statistics
   static async getStatistics(): Promise<{
     total: number;
@@ -189,7 +204,8 @@ export class SEService {
     totalValue: number;
   }> {
     try {
-      const assets = await this.getAll();
+      const response = await this.getAll();
+      const assets = response.items;
 
       const stats = {
         total: assets.length,
@@ -202,7 +218,7 @@ export class SEService {
         totalValue: 0,
       };
 
-      assets.forEach(asset => {
+      assets.forEach((asset: SEAsset) => {
         // Count by status
         switch (asset.status) {
           case 'Active':
@@ -223,7 +239,7 @@ export class SEService {
         stats.byCategory[asset.category] = (stats.byCategory[asset.category] || 0) + 1;
 
         // Count by current condition
-        const currentBlock = asset.accountabilityBlocks.find(b => b.label === 'Current Holder');
+        const currentBlock = asset.accountabilityBlocks.find((b: any) => b.label === 'Current Holder');
         if (currentBlock) {
           stats.byCondition[currentBlock.condition] = (stats.byCondition[currentBlock.condition] || 0) + 1;
         }

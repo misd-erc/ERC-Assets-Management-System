@@ -33,6 +33,8 @@ export function AssetsPage({ type }: AssetsPageProps) {
   const [conditionFilter, setConditionFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [divisionFilter, setDivisionFilter] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   // Dialog states
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -45,10 +47,11 @@ export function AssetsPage({ type }: AssetsPageProps) {
 
   // Batch upload
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadConfirmDialogOpen, setUploadConfirmDialogOpen] = useState(false);
 
   useEffect(() => {
     loadAssets();
-  }, [type, currentPage, searchTerm, categoryFilter, conditionFilter, statusFilter, divisionFilter]);
+  }, [type, currentPage, searchTerm, categoryFilter, conditionFilter, statusFilter, divisionFilter, startDate, endDate]);
 
   const loadAssets = async () => {
     try {
@@ -59,6 +62,8 @@ export function AssetsPage({ type }: AssetsPageProps) {
         condition: conditionFilter !== 'all' ? conditionFilter : undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         division: divisionFilter !== 'all' ? divisionFilter : undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
       };
 
       let response;
@@ -177,6 +182,8 @@ export function AssetsPage({ type }: AssetsPageProps) {
     setConditionFilter('all');
     setStatusFilter('all');
     setDivisionFilter('all');
+    setStartDate('');
+    setEndDate('');
   };
 
   const handleViewDetails = (asset: PPEAsset | SEAsset) => {
@@ -234,7 +241,7 @@ export function AssetsPage({ type }: AssetsPageProps) {
               </Button>
             </Label>
             {uploadFile && (
-              <Button onClick={handleBatchUpload} className="gap-2">
+              <Button onClick={() => setUploadConfirmDialogOpen(true)} className="gap-2">
                 <FileText className="size-4" />
                 Upload {uploadFile.name}
               </Button>
@@ -261,6 +268,10 @@ export function AssetsPage({ type }: AssetsPageProps) {
         onStatusFilterChange={setStatusFilter}
         divisionFilter={divisionFilter}
         onDivisionFilterChange={setDivisionFilter}
+        startDate={startDate}
+        onStartDateChange={setStartDate}
+        endDate={endDate}
+        onEndDateChange={setEndDate}
         onClearFilters={handleClearFilters}
         totalResults={totalCount}
       />
@@ -357,6 +368,27 @@ export function AssetsPage({ type }: AssetsPageProps) {
             <AlertDialogCancel onClick={() => setSelectedAsset(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAsset} className="bg-red-600 hover:bg-red-700">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Batch Upload Confirmation */}
+      <AlertDialog open={uploadConfirmDialogOpen} onOpenChange={setUploadConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Batch Upload</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to upload the file "{uploadFile?.name}"? This will import {type.toUpperCase()} assets from the selected file.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              setUploadConfirmDialogOpen(false);
+              handleBatchUpload();
+            }}>
+              OK
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

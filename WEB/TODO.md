@@ -1,12 +1,11 @@
-# AssetsForm Accountability Information Update
+# TODO: Update Assets Filters UI to Funnel Design and Add Group By Feature
 
-## Tasks to Complete
+## Tasks
+- [ ] Update `src/components/assets/AssetsFilters.tsx`: Redesign UI to funnel-like layout with funnel icon, add Group By select with options (None, Category, Condition, Status, Division).
+- [ ] Update `src/pages/AssetsPage.tsx`: Add `groupByFilter` state, pass to AssetsFilters, implement client-side grouping logic for assets based on selected group field.
+- [ ] Update `src/components/assets/AssetsTable.tsx`: Modify to display grouped assets with headers for each group.
+- [ ] Test the new funnel UI and ensure filters and grouping work correctly.
 
-- [ ] Update Accountability Information Card UI to render dynamic list of entries instead of single fields
-- [ ] Add functions to handle adding/removing accountability entries
-- [ ] Convert office and division fields to dropdown selects populated from API data
-- [ ] Update form initialization logic to properly use accountabilityEntries state
-- [ ] Modify handleSubmit to construct movements/accountabilityBlocks from accountabilityEntries
-- [ ] Ensure compatibility for both PPE and SE asset types
-- [ ] Update formData initialization to remove redundant single accountability fields
-- [ ] Test form submission and data mapping for both asset types
+## Progress
+- Started: [Date/Time]
+- Completed: [Date/Time]

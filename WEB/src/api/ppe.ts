@@ -14,7 +14,7 @@ export const ppeApi = {
 
     const url =
       API_BASE_URL +
-      '/Inventory/ppe/batch-upload?ActionBySystemUserId=' +
+      '/Inventory/pta/batch-upload?ActionBySystemUserId=' +
       actionBySystemUserId +
       '&SessionKey=' +
       encodeURIComponent(sessionKey);
@@ -40,6 +40,7 @@ export const ppeApi = {
     EndDate?: string;
     ActionBySystemUserId: string;
     SessionKey: string;
+    GroupName: string;
   }): Promise<{ items: PPEAsset[]; totalCount: number }> => {
     const query = new URLSearchParams();
 
@@ -59,8 +60,9 @@ export const ppeApi = {
 
     query.append('ActionBySystemUserId', params.ActionBySystemUserId);
     query.append('SessionKey', params.SessionKey);
+    query.append('GroupName', params.GroupName);
 
-    const url = API_BASE_URL + '/Inventory/ppe/all?' + query.toString();
+    const url = API_BASE_URL + '/Inventory/pta/se-ppe/all?' + query.toString();
 
     const response = await fetch(url, {
       method: 'GET',

@@ -17,6 +17,7 @@ interface AssetsTableProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  groupBy?: string;
 }
 
 export function AssetsTable({
@@ -29,6 +30,7 @@ export function AssetsTable({
   currentPage,
   totalPages,
   onPageChange,
+  groupBy,
 }: AssetsTableProps): React.JSX.Element {
   const getConditionBadge = (condition: string) => {
     const styles = {
@@ -309,6 +311,37 @@ export function AssetsTable({
     return type === 'ppe' ? 12 : 11;
   };
 
+  const groupAssets = (assets: (PPEAsset | SEAsset)[], groupBy: string) => {
+    if (groupBy === 'none') return { '': assets };
+
+    const groups: Record<string, (PPEAsset | SEAsset)[]> = {};
+
+    assets.forEach(asset => {
+      let groupKey = '';
+      switch (groupBy) {
+        case 'category':
+          groupKey = getAssetCategory(asset);
+          break;
+        case 'condition':
+          groupKey = getAssetCondition(asset);
+          break;
+        case 'division':
+          groupKey = getAssetDivision(asset);
+          break;
+        default:
+          groupKey = '';
+      }
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+      groups[groupKey].push(asset);
+    });
+
+    return groups;
+  };
+
+  const groupedAssets = groupBy ? groupAssets(assets, groupBy) : { '': assets };
+
   return (
     <Card>
       <CardContent className="p-0">
@@ -335,13 +368,27 @@ export function AssetsTable({
                   </td>
                 </tr>
               ) : (
-                assets.map(asset => (
-                  <tr
-                    key={asset.id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    {renderTableRow(asset)}
-                  </tr>
+                Object.entries(groupedAssets).map(([groupName, groupAssets]) => (
+                  <React.Fragment key={groupName}>
+                    {groupName && (
+                      <tr className="bg-slate-100">
+                        <td colSpan={getColSpan()} className="px-4 py-3 text-sm font-semibold text-slate-900">
+                          {groupBy === 'category' && 'Category: '}
+                          {groupBy === 'condition' && 'Condition: '}
+                          {groupBy === 'division' && 'Division: '}
+                          {groupName} ({groupAssets.length} assets)
+                        </td>
+                      </tr>
+                    )}
+                    {groupAssets.map(asset => (
+                      <tr
+                        key={asset.id}
+                        className="hover:bg-slate-50 transition-colors"
+                      >
+                        {renderTableRow(asset)}
+                      </tr>
+                    ))}
+                  </React.Fragment>
                 ))
               )}
             </tbody>
