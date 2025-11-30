@@ -179,8 +179,13 @@ export function AssetsPage({ type }: AssetsPageProps) {
   };
 
   const handleDownloadTemplate = () => {
-    // For now, just show a message. In a real implementation, this would download a template file
-    toast.info('Template download feature coming soon');
+    const link = document.createElement('a');
+    link.href = '/ppe-templates/ppe_template.xlsx';
+    link.download = 'ppe_template.xlsx';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Template downloaded successfully');
   };
 
   const handleClearFilters = () => {
