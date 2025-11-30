@@ -141,10 +141,10 @@ export function AssetsPage() {
 
       const result = await UnifiedAssetService.batchUpload(uploadFile, actionBySystemUserId, sessionKey);
 
-      if (result.errors.length > 0) {
-        toast.error(`Upload completed with errors: ${result.errors.join(', ')}`);
+      if (result.success) {
+        toast.success(result.data);
       } else {
-        toast.success(`Successfully uploaded ${result.imported} assets`);
+        toast.error(result.message || 'Failed to upload file');
       }
 
       setUploadFile(null);

@@ -294,7 +294,7 @@ export class PPEService {
     }
   }
 
-  static async batchUpload(file: File, actionBySystemUserId: string, sessionKey: string): Promise<{ imported: number; errors: string[] }> {
+  static async batchUpload(file: File, actionBySystemUserId: string, sessionKey: string): Promise<{ success: boolean; code: string; message: string; data: string }> {
     try {
       return await ppeApi.batchUpload(file, actionBySystemUserId, sessionKey);
     } catch (error) {
