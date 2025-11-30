@@ -14,7 +14,7 @@ export const ppeApi = {
 
     const url =
       API_BASE_URL +
-      '/Inventory/ppe/batch-upload?ActionBySystemUserId=' +
+      '/Inventory/pta/batch-upload?ActionBySystemUserId=' +
       actionBySystemUserId +
       '&SessionKey=' +
       encodeURIComponent(sessionKey);
@@ -40,6 +40,7 @@ export const ppeApi = {
     EndDate?: string;
     ActionBySystemUserId: string;
     SessionKey: string;
+    GroupName: string;
   }): Promise<{ items: PPEAsset[]; totalCount: number }> => {
     const query = new URLSearchParams();
 
@@ -59,8 +60,9 @@ export const ppeApi = {
 
     query.append('ActionBySystemUserId', params.ActionBySystemUserId);
     query.append('SessionKey', params.SessionKey);
+    query.append('GroupName', params.GroupName);
 
-    const url = API_BASE_URL + '/Inventory/ppe/all?' + query.toString();
+    const url = API_BASE_URL + '/Inventory/pta/se-ppe/all?' + query.toString();
 
     const response = await fetch(url, {
       method: 'GET',
@@ -101,6 +103,180 @@ export const ppeApi = {
 
     if (!response.ok) {
       throw new Error('Failed to fetch PPE asset details');
+    }
+
+    return response.json();
+  },
+
+  // Get PPE asset details by ID using unified endpoint
+  getByIdUnified: async (
+    id: string,
+    actionBySystemUserId: string,
+    sessionKey: string
+  ): Promise<PPEAsset> => {
+    const url =
+      API_BASE_URL +
+      '/Inventory/pta/se-ppe/all/' +
+      id +
+      '?ActionBySystemUserId=' +
+      actionBySystemUserId +
+      '&SessionKey=' +
+      encodeURIComponent(sessionKey);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch PPE asset details');
+    }
+
+    return response.json();
+  },
+
+  // Edit SE-PPE asset
+  editSePpe: async (data: {
+    id: number;
+    ptaId: number;
+    name: string;
+    serialNumber: string;
+    isActive: boolean;
+    actionBySystemUserId: number;
+    sessionKey: string;
+  }): Promise<any> => {
+    const url = API_BASE_URL + '/Inventory/pta/se-ppe/edit';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to edit SE-PPE asset');
+    }
+
+    return response.json();
+  },
+
+  // Edit part
+  editPart: async (data: {
+    id: number;
+    ptaId: number;
+    name: string;
+    serialNumber: string;
+    isActive: boolean;
+    actionBySystemUserId: number;
+    sessionKey: string;
+  }): Promise<any> => {
+    const url = API_BASE_URL + '/Inventory/pta/part/edit';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to edit part');
+    }
+
+    return response.json();
+  },
+
+  // Edit movement
+  editMovement: async (data: {
+    id: number;
+    ptaId: number;
+    dateAssigned: string;
+    parItrNumber: string;
+    plantillaEmployeeId: number;
+    nonPlantillaEmployeeId: number;
+    condition: string;
+    actualOfficeId: number;
+    actualDivisionId: number;
+    isActive: boolean;
+    actionBySystemUserId: number;
+    sessionKey: string;
+  }): Promise<any> => {
+    const url = API_BASE_URL + '/Inventory/pta/movement/edit';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to edit movement');
+    }
+
+    return response.json();
+  },
+
+  // Create new PPE asset
+  create: async (data: {
+    propertyNumber: string;
+    category: string;
+    legend: string;
+    description: string;
+    brand: string;
+    model: string;
+    serialNumber: string;
+    parts: any[];
+    unitOfMeasurement: string;
+    unitValue: number;
+    dateAcquired: string;
+    estimatedUsefulLife: number;
+    movements: any[];
+    actionBySystemUserId: string;
+    sessionKey: string;
+  }): Promise<PPEAsset> => {
+    const url = API_BASE_URL + '/Inventory/pta/se-ppe/edit';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create PPE asset');
+    }
+
+    return response.json();
+  },
+
+  // Update PPE asset
+  update: async (data: {
+    id: string;
+    propertyNumber: string;
+    category: string;
+    legend: string;
+    description: string;
+    brand: string;
+    model: string;
+    serialNumber: string;
+    parts: any[];
+    unitOfMeasurement: string;
+    unitValue: number;
+    dateAcquired: string;
+    estimatedUsefulLife: number;
+    movements: any[];
+    actionBySystemUserId: string;
+    sessionKey: string;
+  }): Promise<PPEAsset> => {
+    const url = API_BASE_URL + '/Inventory/pta/se-ppe/update';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update PPE asset');
     }
 
     return response.json();

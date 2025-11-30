@@ -1,5 +1,4 @@
 ﻿export * from '@/api/user-management/authApi';
-export * from '@/api/assets/assetApi';
 export * from '@/api/user-management/userApi';
 export * from '@/api/user-management/departmentApi';
 export * from '@/api/storage/uploadApi';
