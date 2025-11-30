@@ -8,7 +8,7 @@ export const ppeApi = {
     file: File,
     actionBySystemUserId: string,
     sessionKey: string
-  ): Promise<{ imported: number; errors: string[] }> => {
+  ): Promise<{ success: boolean; code: string; message: string; data: string }> => {
     const formData = new FormData();
     formData.append('file', file);
 

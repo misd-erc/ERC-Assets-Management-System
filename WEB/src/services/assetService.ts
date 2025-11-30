@@ -46,7 +46,7 @@ export class AssetService {
     }
   }
 
-  static async batchUpload(type: AssetType, file: File, actionBySystemUserId: string, sessionKey: string): Promise<{ imported: number; errors: string[] }> {
+  static async batchUpload(type: AssetType, file: File, actionBySystemUserId: string, sessionKey: string): Promise<{ success: boolean; code: string; message: string; data: string }> {
     if (type === 'ppe') {
       return await PPEService.batchUpload(file, actionBySystemUserId, sessionKey);
     } else {

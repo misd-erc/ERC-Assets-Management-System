@@ -290,7 +290,7 @@ export class SEService {
     }
   }
 
-  static async batchUpload(file: File, actionBySystemUserId: string, sessionKey: string): Promise<{ imported: number; errors: string[] }> {
+  static async batchUpload(file: File, actionBySystemUserId: string, sessionKey: string): Promise<{ success: boolean; code: string; message: string; data: string }> {
     try {
       return await seApi.batchUpload(file, actionBySystemUserId, sessionKey);
     } catch (error) {

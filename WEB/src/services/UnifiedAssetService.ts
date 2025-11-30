@@ -339,7 +339,7 @@ export class UnifiedAssetService {
     throw new Error('Delete operation not implemented in API');
   }
 
-  static async batchUpload(file: File, userId: string, sessionKey: string): Promise<{ imported: number; errors: string[] }> {
+  static async batchUpload(file: File, userId: string, sessionKey: string): Promise<{ success: boolean; code: string; message: string; data: string }> {
     // Use PPE API for batch upload (both PPE and SE use the same endpoint)
     return await ppeApi.batchUpload(file, userId, sessionKey);
   }
