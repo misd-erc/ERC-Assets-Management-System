@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { isSessionValid, isSessionExpired, handleSessionExpired } from '@/utils/sessionUtils';
 import { NoRolePage, UnderConstructionPage } from '@/pages';
+import { initUserSync } from '@/utils/userSync';
 
 import { decrypt } from '@/utils/encryption';
 
@@ -61,6 +62,7 @@ function AppContent() {
   // Initialize auth state on app start
   useEffect(() => {
     initialize();
+    initUserSync();
   }, [initialize]);
 
   // Sync session IDs on every page load
