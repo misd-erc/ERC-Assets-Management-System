@@ -6,9 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Package, DollarSign, User, Plus, X } from 'lucide-react';
-import { PPEAsset } from '@/types/asset/PPEAsset';
-import { SEAsset } from '@/types/supply/se';
-import { AssetType } from '@/services/assetService';
+import { Asset, UnifiedMovement } from '@/types/asset/UnifiedAsset';
 import { getOffices } from '@/api/office-management/officeApi';
 import { getDivisions } from '@/api/office-management/divisionApi';
 import { VwOffice, VwDivision } from '@/types/office';
@@ -16,49 +14,37 @@ import { useAuthStore } from '@/store/auth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface AssetsFormProps {
-  type: AssetType;
-  asset?: PPEAsset | SEAsset;
-  onSubmit: (data: any) => void;
+  asset?: Asset;
+  onSubmit: (data: Omit<Asset, 'id'>) => void;
   onCancel: () => void;
   isEditing?: boolean;
 }
 
-export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false }: AssetsFormProps) {
+export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: AssetsFormProps) {
   const { systemUserId } = useAuthStore();
   const { userProfile } = useUserProfile();
 
-  const [formData, setFormData] = useState<any>({
-    // Common fields
+  const [formData, setFormData] = useState<Omit<Asset, 'id'>>({
+    group: 'PPE',
+    propertyNumber: '',
     category: '',
+    legend: '',
     description: '',
     brand: '',
     model: '',
-    condition: 'Working',
-    group: '', // Add group field
-
-    // PPE specific fields
-    propertyNumber: '',
-    legend: '',
     serialNumber: '',
-    parts: [] as {id: number, name: string, serialNumber: string}[],
+    parts: [],
     unitOfMeasurement: '',
     unitValue: 0,
     dateAcquired: '',
     estimatedUsefulLife: 5,
-    parItrNumber: '',
-    plantillaEmployeeId: '',
-    nonPlantillaEmployeeId: '',
+    condition: 'Working',
     actualDivision: '',
-
-    // SE specific fields
-    se_property_number: '',
-    serial_number: '',
-    unit_value: 0,
-    date_acquired: '',
-    status: 'Active',
+    movements: [],
+    history: [],
   });
 
-  const [accountabilityEntries, setAccountabilityEntries] = useState<any[]>([]);
+  const [accountabilityEntries, setAccountabilityEntries] = useState<UnifiedMovement[]>([]);
   const [offices, setOffices] = useState<VwOffice[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
 
@@ -85,9 +71,9 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
       const userDivisionId = userProfile.division?.id?.toString() || '';
 
       // Only set defaults if the current entry doesn't have values already
-      if (accountabilityEntries[0] && !accountabilityEntries[0].actualOfficeId && !accountabilityEntries[0].actualDivisionId) {
+      if (accountabilityEntries[0] && !accountabilityEntries[0].officeId && !accountabilityEntries[0].divisionId) {
         setAccountabilityEntries(prev => prev.map((entry, index) =>
-          index === 0 ? { ...entry, actualOfficeId: userOfficeId, actualDivisionId: userDivisionId } : entry
+          index === 0 ? { ...entry, officeId: userOfficeId, divisionId: userDivisionId } : entry
         ));
       }
     }
@@ -95,205 +81,86 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
 
   useEffect(() => {
     if (asset && isEditing) {
-      if (type === 'ppe') {
-        const ppeAsset = asset as PPEAsset;
-        setFormData({
-          propertyNumber: ppeAsset.propertyNumber || '',
-          category: typeof ppeAsset.category === 'object' && ppeAsset.category !== null ? (ppeAsset.category as any).id : ppeAsset.category || '',
-          legend: typeof ppeAsset.legend === 'object' && ppeAsset.legend !== null ? (ppeAsset.legend as any).id : ppeAsset.legend || '',
-          description: ppeAsset.description || '',
-          brand: ppeAsset.brand || '',
-          model: ppeAsset.model || '',
-          serialNumber: ppeAsset.serialNumber || '',
-          parts: Array.isArray(ppeAsset.parts) ? ppeAsset.parts.map((part: any) => ({
-            id: part.id,
-            name: part.name || '',
-            serialNumber: part.serialNumber || ''
-          })) : [],
-          unitOfMeasurement: ppeAsset.unitOfMeasurement || '',
-          unitValue: ppeAsset.unitValue || 0,
-          dateAcquired: ppeAsset.dateAcquired || '',
-          estimatedUsefulLife: ppeAsset.estimatedUsefulLife || 5,
-          parItrNumber: ppeAsset.movements && ppeAsset.movements.length > 0 ? ppeAsset.movements[0].parItrNumber || '' : '',
-          plantillaEmployeeId: ppeAsset.movements && ppeAsset.movements.length > 0 ? ppeAsset.movements[0].plantillaEmployeeIdOriginal || '' : '',
-          nonPlantillaEmployeeId: ppeAsset.movements && ppeAsset.movements.length > 0 ? ppeAsset.movements[0].nonPlantillaEmployeeIdOriginal || '' : '',
-          actualDivision: ppeAsset.movements && ppeAsset.movements.length > 0 && typeof ppeAsset.movements[0].division === 'object' && ppeAsset.movements[0].division !== null ? ppeAsset.movements[0].division.name : '',
-          condition: ppeAsset.movements && ppeAsset.movements.length > 0 ? ppeAsset.movements[0].condition || 'Working' : 'Working',
-        });
+      setFormData({
+        group: asset.group,
+        propertyNumber: asset.propertyNumber,
+        category: asset.category,
+        legend: asset.legend,
+        description: asset.description,
+        brand: asset.brand,
+        model: asset.model,
+        serialNumber: asset.serialNumber,
+        parts: asset.parts,
+        unitOfMeasurement: asset.unitOfMeasurement,
+        unitValue: asset.unitValue,
+        dateAcquired: asset.dateAcquired,
+        estimatedUsefulLife: asset.estimatedUsefulLife,
+        condition: asset.condition,
+        actualDivision: asset.actualDivision,
+        movements: asset.movements,
+        history: asset.history,
+      });
 
-        // Initialize accountability entries from movements
-        if (ppeAsset.movements && ppeAsset.movements.length > 0) {
-          const entries = ppeAsset.movements.map(movement => ({
-            id: movement.id,
-            dateAssigned: movement.dateAssigned || new Date().toISOString(),
-            parItrNumber: movement.parItrNumber || '',
-            plantillaEmployeeId: movement.plantillaEmployeeIdOriginal || '',
-            nonPlantillaEmployeeId: movement.nonPlantillaEmployeeIdOriginal || '',
-            actualOfficeId: movement.office?.id || '',
-            actualDivisionId: movement.division?.id || '',
-            condition: movement.condition || 'Working',
-          }));
-          setAccountabilityEntries(entries);
-        } else {
-          // Default entry
-          setAccountabilityEntries([{
-            id: 0,
-            dateAssigned: new Date().toISOString(),
-            parItrNumber: '',
-            plantillaEmployeeId: '',
-            nonPlantillaEmployeeId: '',
-            actualOfficeId: '',
-            actualDivisionId: '',
-            condition: 'Working',
-          }]);
-        }
+      // Initialize accountability entries from movements
+      if (asset.movements && asset.movements.length > 0) {
+        setAccountabilityEntries(asset.movements);
       } else {
-        const seAsset = asset as SEAsset;
-        setFormData({
-          se_property_number: seAsset.se_property_number || '',
-          category: seAsset.category || '',
-          serial_number: seAsset.serial_number || '',
-          brand: seAsset.brand || '',
-          model: seAsset.model || '',
-          unit_value: seAsset.unit_value || 0,
-          date_acquired: seAsset.date_acquired || '',
-          description: seAsset.description || '',
-          status: seAsset.status || 'Active',
-          parts_accessories: seAsset.parts_accessories || '',
-        });
-
-        // Initialize accountability entries from accountabilityBlocks
-        if (seAsset.accountabilityBlocks && seAsset.accountabilityBlocks.length > 0) {
-          const entries = seAsset.accountabilityBlocks.map(block => ({
-            dateAssigned: block.date_issued_returned || new Date().toISOString(),
-            parItrNumber: block.itr_rrsp_number || '',
-            plantillaEmployeeId: block.plantilla_employee_id || '',
-            nonPlantillaEmployeeId: block.non_plantilla_employee_id || '',
-            actualOfficeId: '', // SE doesn't have office/division in the same way
-            actualDivisionId: '', // SE uses division_section as string
-            condition: block.condition || 'Working',
-          }));
-          setAccountabilityEntries(entries);
-        } else {
-          // Default entry
-          setAccountabilityEntries([{
-            dateAssigned: new Date().toISOString(),
-            parItrNumber: '',
-            plantillaEmployeeId: '',
-            nonPlantillaEmployeeId: '',
-            actualOfficeId: '',
-            actualDivisionId: '',
-            condition: 'Working',
-          }]);
-        }
+        // Default entry
+        setAccountabilityEntries([{
+          id: '0',
+          dateAssigned: new Date().toISOString(),
+          parItrNumber: '',
+          plantillaEmployeeId: '',
+          nonPlantillaEmployeeId: '',
+          officeId: '',
+          divisionId: '',
+          condition: 'Working',
+        }]);
       }
     } else {
       // For new assets, initialize with default entry
       setAccountabilityEntries([{
+        id: '0',
         dateAssigned: new Date().toISOString(),
         parItrNumber: '',
         plantillaEmployeeId: '',
         nonPlantillaEmployeeId: '',
-        actualOfficeId: '',
-        actualDivisionId: '',
+        officeId: '',
+        divisionId: '',
         condition: 'Working',
       }]);
     }
-  }, [asset, isEditing, type]);
+  }, [asset, isEditing]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (type === 'ppe') {
-      // Validate required PPE fields
-      if (!formData.propertyNumber || !formData.description) {
-        alert('Property Number and Description are required');
-        return;
-      }
-
-      // Use the first accountability entry (current holder) for submission
-      const currentEntry = accountabilityEntries[0] || {};
-
-      const submitData = {
-        propertyNumber: formData.propertyNumber,
-        category: formData.category,
-        legend: formData.legend,
-        description: formData.description,
-        brand: formData.brand,
-        model: formData.model,
-        serialNumber: formData.serialNumber,
-        parts: formData.parts,
-        unitOfMeasurement: formData.unitOfMeasurement,
-        unitValue: formData.unitValue,
-        dateAcquired: formData.dateAcquired,
-        estimatedUsefulLife: formData.estimatedUsefulLife,
-        group: 'PPE',
-        movements: accountabilityEntries.map(entry => ({
-          id: entry.id,
-          parItrNumber: entry.parItrNumber,
-          plantillaEmployeeIdOriginal: entry.plantillaEmployeeId,
-          nonPlantillaEmployeeIdOriginal: entry.nonPlantillaEmployeeId,
-          office: entry.actualOfficeId ? { id: entry.actualOfficeId } : null,
-          division: entry.actualDivisionId ? { id: entry.actualDivisionId } : null,
-          condition: entry.condition,
-          dateAssigned: entry.dateAssigned,
-        })),
-      };
-
-      onSubmit(submitData);
-    } else {
-      // Validate required SE fields
-      if (!formData.se_property_number || !formData.description) {
-        alert('SE Property Number and Description are required');
-        return;
-      }
-
-      // Validate unit value is below 50,000
-      if (formData.unit_value >= 50000) {
-        alert('Unit value for Semi-Expendable must be below ₱50,000');
-        return;
-      }
-
-      const submitData = {
-        se_property_number: formData.se_property_number,
-        category: formData.category,
-        serial_number: formData.serial_number,
-        brand: formData.brand,
-        model: formData.model,
-        unit_value: formData.unit_value,
-        date_acquired: formData.date_acquired,
-        description: formData.description,
-        status: formData.status,
-        group: 'SE',
-        accountabilityBlocks: accountabilityEntries.map(entry => ({
-          itr_rrsp_number: entry.parItrNumber,
-          plantilla_employee_id: entry.plantillaEmployeeId || null,
-          non_plantilla_employee_id: entry.nonPlantillaEmployeeId || null,
-          division_section: entry.actualDivisionId ? divisions.find(d => d.id.toString() === entry.actualDivisionId)?.name || '' : '',
-          condition: entry.condition || 'Working',
-          date_issued_returned: entry.dateAssigned,
-        })),
-      };
-
-      onSubmit(submitData);
+    // Validate required fields
+    if (!formData.propertyNumber || !formData.description || !formData.brand || !formData.model || !formData.serialNumber || !formData.unitOfMeasurement) {
+      alert('Property Number, Description, Brand, Model, Serial Number, and Unit of Measurement are required');
+      return;
     }
+
+    // Determine group based on unit value
+    const group = formData.unitValue >= 50000 ? 'SE' : 'PPE';
+
+    const submitData: Omit<Asset, 'id'> = {
+      ...formData,
+      group,
+      movements: accountabilityEntries,
+      history: accountabilityEntries,
+    };
+
+    onSubmit(submitData);
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData((prev: any) => {
+    setFormData((prev) => {
       const updatedData = { ...prev, [field]: value };
 
       // Automatically set group based on unit value
-      if (field === 'unitValue' || field === 'unit_value') {
-        const unitValue = field === 'unitValue' ? value : prev.unitValue;
-        const unit_value = field === 'unit_value' ? value : prev.unit_value;
-        const actualValue = type === 'ppe' ? unitValue : unit_value;
-
-        if (actualValue <= 49999) {
-          updatedData.group = 'PPE';
-        } else if (actualValue >= 50000) {
-          updatedData.group = 'SE';
-        }
+      if (field === 'unitValue') {
+        updatedData.group = value >= 50000 ? 'SE' : 'PPE';
       }
 
       return updatedData;
@@ -301,23 +168,23 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
   };
 
   const handleAddPart = () => {
-    setFormData((prev: any) => ({
+    setFormData((prev) => ({
       ...prev,
       parts: [...prev.parts, { id: 0, name: '', serialNumber: '' }]
     }));
   };
 
   const handleRemovePart = (index: number) => {
-    setFormData((prev: any) => ({
+    setFormData((prev) => ({
       ...prev,
-      parts: prev.parts.filter((_: any, i: number) => i !== index)
+      parts: prev.parts.filter((_, i) => i !== index)
     }));
   };
 
   const handlePartChange = (index: number, field: string, value: string) => {
-    setFormData((prev: any) => ({
+    setFormData((prev) => ({
       ...prev,
-      parts: prev.parts.map((part: any, i: number) =>
+      parts: prev.parts.map((part, i) =>
         i === index ? { ...part, [field]: value } : part
       )
     }));
@@ -327,12 +194,13 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
     setAccountabilityEntries((prev) => [
       ...prev,
       {
+        id: Date.now().toString(),
         dateAssigned: new Date().toISOString(),
         parItrNumber: '',
         plantillaEmployeeId: '',
         nonPlantillaEmployeeId: '',
-        actualOfficeId: '',
-        actualDivisionId: '',
+        officeId: '',
+        divisionId: '',
         condition: 'Working',
       }
     ]);
@@ -392,19 +260,19 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
             Item Identification
           </CardTitle>
           <CardDescription>
-            Basic information about the {type.toUpperCase()} asset
+            Basic information about the asset
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="propertyNumber">
-                {type === 'ppe' ? 'Property Number' : 'SE Property Number'} *
+                Property Number *
               </Label>
               <Input
                 id="propertyNumber"
-                value={type === 'ppe' ? formData.propertyNumber : formData.se_property_number}
-                onChange={(e) => handleInputChange(type === 'ppe' ? 'propertyNumber' : 'se_property_number', e.target.value)}
+                value={formData.propertyNumber}
+                onChange={(e) => handleInputChange('propertyNumber', e.target.value)}
                 required
               />
             </div>
@@ -428,33 +296,31 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
               </Select>
             </div>
 
-            {type === 'ppe' && (
-              <div className="space-y-2">
-                <Label htmlFor="legend">Legend</Label>
-                <Select
-                  value={formData.legend}
-                  onValueChange={(value) => handleInputChange('legend', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select legend" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getLegendOptions().map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="legend">Legend</Label>
+              <Select
+                value={formData.legend}
+                onValueChange={(value) => handleInputChange('legend', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select legend" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getLegendOptions().map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="serialNumber">Serial Number</Label>
               <Input
                 id="serialNumber"
-                value={type === 'ppe' ? formData.serialNumber : formData.serial_number}
-                onChange={(e) => handleInputChange(type === 'ppe' ? 'serialNumber' : 'serial_number', e.target.value)}
+                value={formData.serialNumber}
+                onChange={(e) => handleInputChange('serialNumber', e.target.value)}
               />
             </div>
 
@@ -511,7 +377,7 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
             <p className="text-sm text-gray-500">No parts added yet. Click "Add Parts" to add components.</p>
           ) : (
             <div className="space-y-4">
-              {formData.parts.map((part: any, index: number) => (
+              {formData.parts.map((part, index) => (
                 <div key={index} className="flex items-end gap-4 p-4 border rounded-lg">
                   <div className="flex-1 space-y-2">
                     <Label htmlFor={`part-name-${index}`}>Name</Label>
@@ -559,27 +425,25 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {type === 'ppe' && (
-              <div className="space-y-2">
-                <Label htmlFor="unitOfMeasurement">Unit of Measurement</Label>
-                <Select
-                  value={formData.unitOfMeasurement}
-                  onValueChange={(value) => handleInputChange('unitOfMeasurement', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getUnitOfMeasurementOptions().map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="unitOfMeasurement">Unit of Measurement</Label>
+              <Select
+                value={formData.unitOfMeasurement}
+                onValueChange={(value) => handleInputChange('unitOfMeasurement', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getUnitOfMeasurementOptions().map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="unitValue">Unit Value *</Label>
@@ -587,8 +451,8 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
                 id="unitValue"
                 type="number"
                 step="0.01"
-                value={type === 'ppe' ? formData.unitValue : formData.unit_value}
-                onChange={(e) => handleInputChange(type === 'ppe' ? 'unitValue' : 'unit_value', parseFloat(e.target.value) || 0)}
+                value={formData.unitValue}
+                onChange={(e) => handleInputChange('unitValue', parseFloat(e.target.value) || 0)}
                 required
               />
             </div>
@@ -598,23 +462,21 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
               <Input
                 id="dateAcquired"
                 type="date"
-                value={type === 'ppe' ? formData.dateAcquired : formData.date_acquired}
-                onChange={(e) => handleInputChange(type === 'ppe' ? 'dateAcquired' : 'date_acquired', e.target.value)}
+                value={formData.dateAcquired}
+                onChange={(e) => handleInputChange('dateAcquired', e.target.value)}
                 required
               />
             </div>
 
-            {type === 'ppe' && (
-              <div className="space-y-2">
-                <Label htmlFor="estimatedUsefulLife">Estimated Useful Life (years)</Label>
-                <Input
-                  id="estimatedUsefulLife"
-                  type="number"
-                  value={formData.estimatedUsefulLife}
-                  onChange={(e) => handleInputChange('estimatedUsefulLife', parseInt(e.target.value) || 5)}
-                />
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="estimatedUsefulLife">Estimated Useful Life (years)</Label>
+              <Input
+                id="estimatedUsefulLife"
+                type="number"
+                value={formData.estimatedUsefulLife}
+                onChange={(e) => handleInputChange('estimatedUsefulLife', parseInt(e.target.value) || 5)}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -697,8 +559,8 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
                   <div className="space-y-2">
                     <Label htmlFor={`actualOffice-${index}`}>Office</Label>
                     <Select
-                      value={entry.actualOfficeId}
-                      onValueChange={(value) => handleAccountabilityEntryChange(index, 'actualOfficeId', value)}
+                      value={entry.officeId}
+                      onValueChange={(value) => handleAccountabilityEntryChange(index, 'officeId', value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select office" />
@@ -716,8 +578,8 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
                   <div className="space-y-2">
                     <Label htmlFor={`actualDivision-${index}`}>Division</Label>
                     <Select
-                      value={entry.actualDivisionId}
-                      onValueChange={(value) => handleAccountabilityEntryChange(index, 'actualDivisionId', value)}
+                      value={entry.divisionId}
+                      onValueChange={(value) => handleAccountabilityEntryChange(index, 'divisionId', value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select division" />
@@ -744,14 +606,10 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
                       <SelectContent>
                         <SelectItem value="Working">Working</SelectItem>
                         <SelectItem value="Not Working">Not Working</SelectItem>
-                        {type === 'se' && <SelectItem value="Unserviceable">Unserviceable</SelectItem>}
-                        {type === 'ppe' && (
-                          <>
-                            <SelectItem value="IIRUP">IIRUP</SelectItem>
-                            <SelectItem value="Disposed">Disposed</SelectItem>
-                            <SelectItem value="Missing">Missing</SelectItem>
-                          </>
-                        )}
+                        <SelectItem value="IIRUP">IIRUP</SelectItem>
+                        <SelectItem value="Disposed">Disposed</SelectItem>
+                        <SelectItem value="Missing">Missing</SelectItem>
+                        <SelectItem value="Unserviceable">Unserviceable</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -759,26 +617,6 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
               </div>
             ))}
           </div>
-
-          {type === 'se' && (
-            <div className="mt-6 space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={(value) => handleInputChange('status', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Returned">Returned</SelectItem>
-                  <SelectItem value="Lost">Lost</SelectItem>
-                  <SelectItem value="Unserviceable">Unserviceable</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -788,7 +626,7 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
           Cancel
         </Button>
         <Button type="submit">
-          {isEditing ? 'Update' : 'Create'} {type.toUpperCase()} Asset
+          {isEditing ? 'Update' : 'Create'} Asset
         </Button>
       </div>
     </form>

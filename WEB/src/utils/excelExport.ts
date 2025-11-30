@@ -7,7 +7,7 @@ import { seApi } from '@/api/se';
 export interface ExportOptions {
   startDate?: string;
   endDate?: string;
-  groupName: 'PPE' | 'SE';
+  groupName: 'PPE' | 'SE' | 'All';
 }
 
 export class ExcelExportService {
@@ -21,11 +21,35 @@ export class ExcelExportService {
     }
 
     const allItems: any[] = [];
+
+    if (groupName === 'All') {
+      // Fetch both PPE and SE assets
+      const [ppeItems, seItems] = await Promise.all([
+        this.fetchAssetsByType('PPE', startDate, endDate, actionBySystemUserId, sessionKey),
+        this.fetchAssetsByType('SE', startDate, endDate, actionBySystemUserId, sessionKey)
+      ]);
+      allItems.push(...ppeItems, ...seItems);
+    } else {
+      // Fetch specific type
+      const items = await this.fetchAssetsByType(groupName, startDate, endDate, actionBySystemUserId, sessionKey);
+      allItems.push(...items);
+    }
+
+    console.log(`[ExcelExport] Total rows exported: ${allItems.length}`);
+    return allItems;
+  }
+
+  private static async fetchAssetsByType(
+    groupName: 'PPE' | 'SE',
+    startDate: string | undefined,
+    endDate: string | undefined,
+    actionBySystemUserId: string,
+    sessionKey: string
+  ): Promise<any[]> {
+    const allItems: any[] = [];
     const pageSize = 100;
     let pageNumber = 1;
     let hasMorePages = true;
-
-    console.log('[ExcelExport] Fetching all pages...');
 
     while (hasMorePages) {
       const params = {
@@ -36,15 +60,12 @@ export class ExcelExportService {
         EndDate: endDate,
         ActionBySystemUserId: actionBySystemUserId,
         SessionKey: sessionKey,
-        GroupName: groupName,
+        GroupName: groupName.toLowerCase(),
       };
 
-      let response;
-      if (groupName === 'PPE') {
-        response = await ppeApi.list(params);
-      } else {
-        response = await seApi.list(params);
-      }
+      const response = groupName === 'PPE'
+        ? await ppeApi.list(params)
+        : await seApi.list(params);
 
       allItems.push(...response.items);
 
@@ -55,7 +76,6 @@ export class ExcelExportService {
       }
     }
 
-    console.log(`[ExcelExport] Total rows exported: ${allItems.length}`);
     return allItems;
   }
 
@@ -116,7 +136,7 @@ export class ExcelExportService {
       const assets = await this.fetchAllAssets(options);
 
       const rows = assets.map(asset => {
-        if (options.groupName === 'PPE') {
+        if (options.groupName === 'PPE' || (options.groupName === 'All' && asset.propertyNumber)) {
           return this.mapPPEAssetToRow(asset as PPEAsset);
         } else {
           return this.mapSEAssetToRow(asset as SEAsset);

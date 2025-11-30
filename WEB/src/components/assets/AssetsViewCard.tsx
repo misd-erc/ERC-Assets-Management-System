@@ -18,16 +18,15 @@ import {
 } from 'lucide-react';
 import { PPEAsset } from '@/types/asset/PPEAsset';
 import { SEAsset } from '@/types/supply/se';
-import { AssetType } from '@/services/assetService';
+import { Asset } from '@/types/asset/UnifiedAsset';
 
 interface AssetsViewCardProps {
-  type: AssetType;
-  asset: PPEAsset | SEAsset;
+  asset: Asset;
   onEdit: () => void;
   onClose: () => void;
 }
 
-export function AssetsViewCard({ type, asset, onEdit, onClose }: AssetsViewCardProps) {
+export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) {
   const getConditionBadge = (condition: string) => {
     const styles = {
       Working: 'bg-green-100 text-green-800 border-green-200',
@@ -73,8 +72,8 @@ export function AssetsViewCard({ type, asset, onEdit, onClose }: AssetsViewCardP
     });
   };
 
-  if (type === 'ppe') {
-    const ppeAsset = asset as PPEAsset;
+  if (asset.group === 'PPE') {
+    const ppeAsset = asset as unknown as PPEAsset;
     return (
       <div className="space-y-6">
         {/* Header */}
@@ -285,7 +284,7 @@ export function AssetsViewCard({ type, asset, onEdit, onClose }: AssetsViewCardP
       </div>
     );
   } else {
-    const seAsset = asset as SEAsset;
+    const seAsset = asset as unknown as SEAsset;
     return (
       <div className="space-y-6">
         {/* Header */}

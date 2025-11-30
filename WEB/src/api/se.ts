@@ -1,17 +1,8 @@
-﻿﻿import { SEAsset, SEMovementHistory, RRSPEntry } from '@/types/supply/se';
+import { SEAsset } from '@/types/supply/se';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 export const seApi = {
-  // Get all SE assets
-  // getAll: async (): Promise<SEAsset[]> => {
-  //   const response = await fetch(`${API_BASE_URL}/se`);
-  //   if (!response.ok) {
-  //     throw new Error('Failed to fetch SE assets');
-  //   }
-  //   return response.json();
-  // },
-
   // Batch upload SE assets with file, ActionBySystemUserId and SessionKey params
   batchUpload: async (
     file: File,
@@ -90,7 +81,7 @@ export const seApi = {
     };
   },
 
-  // Get SE asset by ID
+  // Get SE asset details by ID
   getById: async (
     id: string,
     actionBySystemUserId: string,
@@ -117,116 +108,151 @@ export const seApi = {
     return response.json();
   },
 
-  // Create new SE asset
-  create: async (data: Omit<SEAsset, 'id' | 'dateEncoded'>): Promise<SEAsset> => {
-    const response = await fetch(`${API_BASE_URL}/se`, {
+  // Edit SE-PPE asset
+  editSePpe: async (data: {
+    id: number;
+    ptaId: number;
+    name: string;
+    serialNumber: string;
+    isActive: boolean;
+    actionBySystemUserId: number;
+    sessionKey: string;
+  }): Promise<any> => {
+    const url = API_BASE_URL + '/Inventory/pta/se-ppe/edit';
+
+    const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
+
+    if (!response.ok) {
+      throw new Error('Failed to edit SE-PPE asset');
+    }
+
+    return response.json();
+  },
+
+  // Edit part
+  editPart: async (data: {
+    id: number;
+    ptaId: number;
+    name: string;
+    serialNumber: string;
+    isActive: boolean;
+    actionBySystemUserId: number;
+    sessionKey: string;
+  }): Promise<any> => {
+    const url = API_BASE_URL + '/Inventory/pta/part/edit';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to edit part');
+    }
+
+    return response.json();
+  },
+
+  // Edit movement
+  editMovement: async (data: {
+    id: number;
+    ptaId: number;
+    dateAssigned: string;
+    parItrNumber: string;
+    plantillaEmployeeId: number;
+    nonPlantillaEmployeeId: number;
+    condition: string;
+    actualOfficeId: number;
+    actualDivisionId: number;
+    isActive: boolean;
+    actionBySystemUserId: number;
+    sessionKey: string;
+  }): Promise<any> => {
+    const url = API_BASE_URL + '/Inventory/pta/movement/edit';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to edit movement');
+    }
+
+    return response.json();
+  },
+
+  // Create new SE asset
+  create: async (data: {
+    propertyNumber: string;
+    category: string;
+    legend: string;
+    description: string;
+    brand: string;
+    model: string;
+    serialNumber: string;
+    parts: any[];
+    unitOfMeasurement: string;
+    unitValue: number;
+    dateAcquired: string;
+    estimatedUsefulLife: number;
+    group: string;
+    movements: any[];
+    actionBySystemUserId: string;
+    sessionKey: string;
+  }): Promise<SEAsset> => {
+    const url = API_BASE_URL + '/Inventory/pta/se-ppe/edit';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
     if (!response.ok) {
       throw new Error('Failed to create SE asset');
     }
+
     return response.json();
   },
 
   // Update SE asset
-  update: async (id: string, data: Partial<SEAsset>): Promise<SEAsset> => {
-    const response = await fetch(`${API_BASE_URL}/se/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+  update: async (data: {
+    id: string;
+    propertyNumber: string;
+    category: string;
+    legend: string;
+    description: string;
+    brand: string;
+    model: string;
+    serialNumber: string;
+    parts: any[];
+    unitOfMeasurement: string;
+    unitValue: number;
+    dateAcquired: string;
+    estimatedUsefulLife: number;
+    movements: any[];
+    actionBySystemUserId: string;
+    sessionKey: string;
+  }): Promise<SEAsset> => {
+    const url = API_BASE_URL + '/Inventory/pta/se-ppe/update';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
+
     if (!response.ok) {
       throw new Error('Failed to update SE asset');
     }
+
     return response.json();
-  },
-
-  // Delete SE asset
-  delete: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/se/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete SE asset');
-    }
-  },
-
-  // Record movement
-  recordMovement: async (assetId: string, movement: Omit<SEMovementHistory, 'id'>): Promise<SEMovementHistory> => {
-    const response = await fetch(`${API_BASE_URL}/se/${assetId}/movement`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(movement),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to record movement');
-    }
-    return response.json();
-  },
-
-  // Record RRSP
-  recordRRSP: async (assetId: string, rrsp: Omit<RRSPEntry, 'id'>): Promise<RRSPEntry> => {
-    const response = await fetch(`${API_BASE_URL}/se/${assetId}/rrsp`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(rrsp),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to record RRSP');
-    }
-    return response.json();
-  },
-
-  // Search SE assets
-  search: async (query: string): Promise<SEAsset[]> => {
-    const response = await fetch(`${API_BASE_URL}/se/search?q=${encodeURIComponent(query)}`);
-    if (!response.ok) {
-      throw new Error('Failed to search SE assets');
-    }
-    return response.json();
-  },
-
-  // Export SE data
-  export: async (format: 'csv' | 'excel' = 'csv'): Promise<Blob> => {
-    const response = await fetch(`${API_BASE_URL}/se/export?format=${format}`);
-    if (!response.ok) {
-      throw new Error('Failed to export SE data');
-    }
-    return response.blob();
-  },
-
-  // Import SE data
-  import: async (file: File): Promise<{ imported: number; errors: string[] }> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch(`${API_BASE_URL}/se/import`, {
-      method: 'POST',
-      body: formData,
-    });
-    if (!response.ok) {
-      throw new Error('Failed to import SE data');
-    }
-    return response.json();
-  },
-
-  // Download SE template
-  downloadTemplate: async (): Promise<Blob> => {
-    const response = await fetch(`${API_BASE_URL}/se/template`);
-    if (!response.ok) {
-      throw new Error('Failed to download SE template');
-    }
-    return response.blob();
   },
 };
-

@@ -5,34 +5,31 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Upload, Download, Plus, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { AssetsTable } from '@/components/assets/AssetsTable';
 import { AssetsFilters } from '@/components/assets/AssetsFilters';
 import { AssetsForm } from '@/components/assets/AssetsForm';
 import { AssetsViewCard } from '@/components/assets/AssetsViewCard';
-import { AssetService, AssetType } from '@/services/assetService';
-import { PPEService } from '@/services/ppeService';
-import { PPEAsset } from '@/types/asset/PPEAsset';
-import { SEAsset } from '@/types/supply/se';
-import { ExcelExportService, ExportOptions } from '@/utils/excelExport';
+import { UnifiedAssetService } from '@/services/UnifiedAssetService';
+import { Asset } from '@/types/asset/UnifiedAsset';
+import { ExcelExportService } from '@/utils/excelExport';
 
-interface AssetsPageProps {
-  type: AssetType;
-}
-
-export function AssetsPage({ type }: AssetsPageProps) {
-  const [assets, setAssets] = useState<(PPEAsset | SEAsset)[]>([]);
+export function AssetsPage() {
+  const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
+  // Active tab
+  const [activeTab, setActiveTab] = useState('all');
+
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [conditionFilter, setConditionFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [divisionFilter, setDivisionFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -44,7 +41,7 @@ export function AssetsPage({ type }: AssetsPageProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Selected asset
-  const [selectedAsset, setSelectedAsset] = useState<PPEAsset | SEAsset | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
 
   // Batch upload
   const [uploadFile, setUploadFile] = useState<File | null>(null);
@@ -58,7 +55,7 @@ export function AssetsPage({ type }: AssetsPageProps) {
 
   useEffect(() => {
     loadAssets();
-  }, [type, currentPage, searchTerm, categoryFilter, conditionFilter, statusFilter, divisionFilter, startDate, endDate]);
+  }, [currentPage, searchTerm, categoryFilter, conditionFilter, divisionFilter, startDate, endDate, activeTab]);
 
   const loadAssets = async () => {
     try {
@@ -67,21 +64,18 @@ export function AssetsPage({ type }: AssetsPageProps) {
         search: searchTerm || undefined,
         category: categoryFilter !== 'all' ? categoryFilter : undefined,
         condition: conditionFilter !== 'all' ? conditionFilter : undefined,
-        status: statusFilter !== 'all' ? statusFilter : undefined,
         division: divisionFilter !== 'all' ? divisionFilter : undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
+        group: activeTab !== 'all' ? activeTab : undefined,
+        PageNumber: currentPage,
+        PageSize: 5,
       };
 
-      let response;
-      if (type === 'ppe') {
-        response = await PPEService.getAll(filters);
-      } else {
-        response = await AssetService.getAll(type, filters);
-      }
+      const response = await UnifiedAssetService.getAll(filters);
       setAssets(response.items);
       setTotalCount(response.totalCount);
-      setTotalPages(Math.ceil(response.totalCount / 10));
+      setTotalPages(Math.ceil(response.totalCount / 5));
     } catch (error) {
       console.error('Error loading assets:', error);
       toast.error('Failed to load assets');
@@ -90,14 +84,10 @@ export function AssetsPage({ type }: AssetsPageProps) {
     }
   };
 
-  const handleAddAsset = async (data: any) => {
+  const handleAddAsset = async (data: Omit<Asset, 'id'>) => {
     try {
-      if (type === 'ppe') {
-        await PPEService.create(data);
-      } else {
-        await AssetService.create(type, data);
-      }
-      toast.success(`${type.toUpperCase()} asset added successfully`);
+      await UnifiedAssetService.create(data);
+      toast.success('Asset added successfully');
       setAddDialogOpen(false);
       loadAssets();
     } catch (error) {
@@ -106,15 +96,11 @@ export function AssetsPage({ type }: AssetsPageProps) {
     }
   };
 
-  const handleEditAsset = async (data: any) => {
+  const handleEditAsset = async (data: Omit<Asset, 'id'>) => {
     if (!selectedAsset) return;
     try {
-      if (type === 'ppe') {
-        await PPEService.update(selectedAsset.id, data);
-      } else {
-        await AssetService.update(type, selectedAsset.id, data);
-      }
-      toast.success(`${type.toUpperCase()} asset updated successfully`);
+      await UnifiedAssetService.update(selectedAsset.id, data);
+      toast.success('Asset updated successfully');
       setEditDialogOpen(false);
       setSelectedAsset(null);
       loadAssets();
@@ -127,12 +113,8 @@ export function AssetsPage({ type }: AssetsPageProps) {
   const handleDeleteAsset = async () => {
     if (!selectedAsset) return;
     try {
-      if (type === 'ppe') {
-        await PPEService.delete(selectedAsset.id);
-      } else {
-        await AssetService.delete(type, selectedAsset.id);
-      }
-      toast.success(`${type.toUpperCase()} asset deleted successfully`);
+      await UnifiedAssetService.delete(selectedAsset.id);
+      toast.success('Asset deleted successfully');
       setDeleteDialogOpen(false);
       setSelectedAsset(null);
       loadAssets();
@@ -157,17 +139,12 @@ export function AssetsPage({ type }: AssetsPageProps) {
         return;
       }
 
-      let result;
-      if (type === 'ppe') {
-        result = await PPEService.batchUpload(uploadFile, actionBySystemUserId, sessionKey);
-      } else {
-        result = await AssetService.batchUpload(type, uploadFile, actionBySystemUserId, sessionKey);
-      }
+      const result = await UnifiedAssetService.batchUpload(uploadFile, actionBySystemUserId, sessionKey);
 
       if (result.errors.length > 0) {
         toast.error(`Upload completed with errors: ${result.errors.join(', ')}`);
       } else {
-        toast.success(`Successfully uploaded ${result.imported} ${type.toUpperCase()} assets`);
+        toast.success(`Successfully uploaded ${result.imported} assets`);
       }
 
       setUploadFile(null);
@@ -192,23 +169,22 @@ export function AssetsPage({ type }: AssetsPageProps) {
     setSearchTerm('');
     setCategoryFilter('all');
     setConditionFilter('all');
-    setStatusFilter('all');
     setDivisionFilter('all');
     setStartDate('');
     setEndDate('');
   };
 
-  const handleViewDetails = (asset: PPEAsset | SEAsset) => {
+  const handleViewDetails = (asset: Asset) => {
     setSelectedAsset(asset);
     setViewDialogOpen(true);
   };
 
-  const handleEdit = (asset: PPEAsset | SEAsset) => {
+  const handleEdit = (asset: Asset) => {
     setSelectedAsset(asset);
     setEditDialogOpen(true);
   };
 
-  const handleDelete = (asset: PPEAsset | SEAsset) => {
+  const handleDelete = (asset: Asset) => {
     setSelectedAsset(asset);
     setDeleteDialogOpen(true);
   };
@@ -220,8 +196,9 @@ export function AssetsPage({ type }: AssetsPageProps) {
   const handleExportExcel = async () => {
     try {
       setExporting(true);
+      const groupName = activeTab === 'all' ? 'All' : (activeTab as 'PPE' | 'SE');
       await ExcelExportService.exportToExcel({
-        groupName: type === 'ppe' ? 'PPE' : 'SE',
+        groupName,
         startDate: exportStartDate || undefined,
         endDate: exportEndDate || undefined,
       });
@@ -238,22 +215,22 @@ export function AssetsPage({ type }: AssetsPageProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 pt-20 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
-            {type === 'ppe' ? 'Property, Plant & Equipment' : 'Semi-Expendable'} Assets
+            Assets Management
           </h1>
           <p className="text-slate-600">
-            Manage and track your {type.toUpperCase()} assets
+            Manage and track your PPE and SE assets
           </p>
         </div>
 
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setExportModalOpen(true)} className="gap-2">
             <Download className="size-4" />
-            Download Excel Report
+            Export To Excel ({activeTab === 'all' ? 'ALL' : activeTab})
           </Button>
 
           <Button variant="outline" onClick={handleDownloadTemplate} className="gap-2">
@@ -287,56 +264,126 @@ export function AssetsPage({ type }: AssetsPageProps) {
 
           <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
             <Plus className="size-4" />
-            Add {type.toUpperCase()} Asset
+            Add Asset
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <AssetsFilters
-        type={type}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        categoryFilter={categoryFilter}
-        onCategoryFilterChange={setCategoryFilter}
-        conditionFilter={conditionFilter}
-        onConditionFilterChange={setConditionFilter}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        divisionFilter={divisionFilter}
-        onDivisionFilterChange={setDivisionFilter}
-        startDate={startDate}
-        onStartDateChange={setStartDate}
-        endDate={endDate}
-        onEndDateChange={setEndDate}
-        onClearFilters={handleClearFilters}
-        totalResults={totalCount}
-      />
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="all">All Assets</TabsTrigger>
+          <TabsTrigger value="PPE">PPE Assets</TabsTrigger>
+          <TabsTrigger value="SE">SE Assets</TabsTrigger>
+        </TabsList>
 
-      {/* Table */}
-      <AssetsTable
-        type={type}
-        assets={assets}
-        loading={loading}
-        onViewDetails={handleViewDetails}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
+        <TabsContent value="all" className="space-y-6">
+          {/* Filters */}
+          <AssetsFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={setCategoryFilter}
+            conditionFilter={conditionFilter}
+            onConditionFilterChange={setConditionFilter}
+            divisionFilter={divisionFilter}
+            onDivisionFilterChange={setDivisionFilter}
+            startDate={startDate}
+            onStartDateChange={setStartDate}
+            endDate={endDate}
+            onEndDateChange={setEndDate}
+            onClearFilters={handleClearFilters}
+            totalResults={totalCount}
+          />
+
+          {/* Table */}
+          <AssetsTable
+            assets={assets}
+            loading={loading}
+            onViewDetails={handleViewDetails}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </TabsContent>
+
+        <TabsContent value="PPE" className="space-y-6">
+          {/* Filters */}
+          <AssetsFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={setCategoryFilter}
+            conditionFilter={conditionFilter}
+            onConditionFilterChange={setConditionFilter}
+            divisionFilter={divisionFilter}
+            onDivisionFilterChange={setDivisionFilter}
+            startDate={startDate}
+            onStartDateChange={setStartDate}
+            endDate={endDate}
+            onEndDateChange={setEndDate}
+            onClearFilters={handleClearFilters}
+            totalResults={totalCount}
+          />
+
+          {/* Table */}
+          <AssetsTable
+            assets={assets}
+            loading={loading}
+            onViewDetails={handleViewDetails}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </TabsContent>
+
+        <TabsContent value="SE" className="space-y-6">
+          {/* Filters */}
+          <AssetsFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={setCategoryFilter}
+            conditionFilter={conditionFilter}
+            onConditionFilterChange={setConditionFilter}
+            divisionFilter={divisionFilter}
+            onDivisionFilterChange={setDivisionFilter}
+            startDate={startDate}
+            onStartDateChange={setStartDate}
+            endDate={endDate}
+            onEndDateChange={setEndDate}
+            onClearFilters={handleClearFilters}
+            totalResults={totalCount}
+          />
+
+          {/* Table */}
+          <AssetsTable
+            assets={assets}
+            loading={loading}
+            onViewDetails={handleViewDetails}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Add Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent className="w-[85vw] !max-w-none max-h-[90vh] overflow-y-auto p-5 md:p-6 lg:p-8">
           <DialogHeader>
-            <DialogTitle>Add New {type.toUpperCase()} Asset</DialogTitle>
+            <DialogTitle>Add New Asset</DialogTitle>
             <DialogDescription>
-              Enter the details for the new {type.toUpperCase()} asset.
+              Enter the details for the new asset.
             </DialogDescription>
           </DialogHeader>
           <AssetsForm
-            type={type}
             onSubmit={handleAddAsset}
             onCancel={() => setAddDialogOpen(false)}
           />
@@ -345,17 +392,15 @@ export function AssetsPage({ type }: AssetsPageProps) {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-      <DialogContent className="w-[85vw] !max-w-none max-h-[90vh] overflow-y-auto p-5 md:p-6 lg:p-8">
-
+        <DialogContent className="w-[85vw] !max-w-none max-h-[90vh] overflow-y-auto p-5 md:p-6 lg:p-8">
           <DialogHeader>
-            <DialogTitle>Edit {type.toUpperCase()} Asset</DialogTitle>
+            <DialogTitle>Edit Asset</DialogTitle>
             <DialogDescription>
-              Update the details for this {type.toUpperCase()} asset.
+              Update the details for this asset.
             </DialogDescription>
           </DialogHeader>
           {selectedAsset && (
             <AssetsForm
-              type={type}
               asset={selectedAsset}
               onSubmit={handleEditAsset}
               onCancel={() => {
@@ -370,14 +415,12 @@ export function AssetsPage({ type }: AssetsPageProps) {
 
       {/* View Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-       <DialogContent className="w-[95vw] !max-w-none max-h-[90vh] overflow-y-auto p-5 md:p-6 lg:p-8">
-
+        <DialogContent className="w-[95vw] !max-w-none max-h-[90vh] overflow-y-auto p-5 md:p-6 lg:p-8">
           <DialogHeader>
-            <DialogTitle>{type.toUpperCase()} Asset Details</DialogTitle>
+            <DialogTitle>Asset Details</DialogTitle>
           </DialogHeader>
           {selectedAsset && (
             <AssetsViewCard
-              type={type}
               asset={selectedAsset}
               onEdit={() => {
                 setViewDialogOpen(false);
@@ -396,9 +439,9 @@ export function AssetsPage({ type }: AssetsPageProps) {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {type.toUpperCase()} Asset</AlertDialogTitle>
+            <AlertDialogTitle>Delete Asset</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this {type.toUpperCase()} asset? This action cannot be undone.
+              Are you sure you want to delete this asset? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -416,7 +459,7 @@ export function AssetsPage({ type }: AssetsPageProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Batch Upload</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to upload the file "{uploadFile?.name}"? This will import {type.toUpperCase()} assets from the selected file.
+              Are you sure you want to upload the file "{uploadFile?.name}"? This will import assets from the selected file.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -435,9 +478,9 @@ export function AssetsPage({ type }: AssetsPageProps) {
       <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Download Excel Report</DialogTitle>
+            <DialogTitle>Export to  Excel</DialogTitle>
             <DialogDescription>
-              Select date range for the {type.toUpperCase()} assets report. Leave empty to export all records.
+              Select date range for the assets report. Leave empty to export all records.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

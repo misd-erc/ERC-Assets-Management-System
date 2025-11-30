@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, X, Funnel, ChevronDown, ChevronUp } from 'lucide-react';
-import { AssetType } from '@/services/assetService';
+import { Button } from '@/components/ui/button';
+import { Search, Filter, X } from 'lucide-react';
+import { getDivisions } from '@/api/office-management/divisionApi';
+import { VwDivision } from '@/types/office';
 
 interface AssetsFiltersProps {
-  type: AssetType;
   searchTerm: string;
   onSearchChange: (value: string) => void;
   categoryFilter: string;
   onCategoryFilterChange: (value: string) => void;
   conditionFilter: string;
   onConditionFilterChange: (value: string) => void;
-  statusFilter: string;
-  onStatusFilterChange: (value: string) => void;
   divisionFilter: string;
   onDivisionFilterChange: (value: string) => void;
   startDate: string;
@@ -28,15 +26,12 @@ interface AssetsFiltersProps {
 }
 
 export function AssetsFilters({
-  type,
   searchTerm,
   onSearchChange,
   categoryFilter,
   onCategoryFilterChange,
   conditionFilter,
   onConditionFilterChange,
-  statusFilter,
-  onStatusFilterChange,
   divisionFilter,
   onDivisionFilterChange,
   startDate,
@@ -46,158 +41,159 @@ export function AssetsFilters({
   onClearFilters,
   totalResults,
 }: AssetsFiltersProps) {
-  const [showFilters, setShowFilters] = useState(false);
-  const getSearchPlaceholder = () => {
-    return type === 'ppe'
-      ? "Search Property #, Serial #, Description..."
-      : "Search SE Property #, Serial #, Description...";
+  const [divisions, setDivisions] = useState<VwDivision[]>([]);
+
+  React.useEffect(() => {
+    const loadDivisions = async () => {
+      try {
+        const divisionsData = await getDivisions();
+        setDivisions(divisionsData);
+      } catch (error) {
+        console.error('Failed to load divisions:', error);
+      }
+    };
+    loadDivisions();
+  }, []);
+
+  const getCategoryOptions = () => {
+    return [
+      { value: 'all', label: 'All Categories' },
+      { value: 'ICT Equipment', label: 'ICT Equipment' },
+      { value: 'Office Equipment', label: 'Office Equipment' },
+      { value: 'Motor Vehicle', label: 'Motor Vehicle' },
+      { value: 'Furniture and Fixtures', label: 'Furniture and Fixtures' },
+      { value: 'Communication Equipment', label: 'Communication Equipment' },
+      { value: 'Technical and Scientific Equipment', label: 'Technical and Scientific Equipment' },
+      { value: 'Sports Equipment', label: 'Sports Equipment' }
+    ];
   };
 
-  const getStatusOptions = () => {
-    if (type === 'se') {
-      return [
-        { value: 'Active', label: 'Active' },
-        { value: 'Returned', label: 'Returned' },
-        { value: 'Lost', label: 'Lost' },
-        { value: 'Unserviceable', label: 'Unserviceable' }
-      ];
-    }
-    return [];
+  const getConditionOptions = () => {
+    return [
+      { value: 'all', label: 'All Conditions' },
+      { value: 'Working', label: 'Working' },
+      { value: 'Not Working', label: 'Not Working' },
+      { value: 'IIRUP', label: 'IIRUP' },
+      { value: 'Disposed', label: 'Disposed' },
+      { value: 'Missing', label: 'Missing' },
+      { value: 'Unserviceable', label: 'Unserviceable' }
+    ];
   };
-
-
 
   return (
-    <div className="space-y-4">
-      {/* Search bar with filter button */}
-      <div className="flex justify-center items-center gap-2">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-slate-400" />
-          <Input
-            placeholder={getSearchPlaceholder()}
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => setShowFilters(!showFilters)}
-          className="gap-2"
-        >
-          <Funnel className="size-4" />
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Filter className="size-5 text-blue-600" />
           Filters
-          {showFilters ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-        </Button>
-      </div>
-
-      {/* Collapsible filter panel */}
-      {showFilters && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              {/* Filter selects in rows */}
-              <div className="space-y-3">
-                <div className="flex justify-center gap-3 flex-wrap">
-                  {type === 'se' && (
-                    <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        {getStatusOptions().map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-
-                {/* Date filters */}
-                <div className="flex justify-center gap-3 flex-wrap">
-                  <div className="flex flex-col gap-1">
-                    <Label htmlFor="start-date" className="text-sm font-medium">
-                      Start Date
-                    </Label>
-                    <Input
-                      id="start-date"
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => onStartDateChange(e.target.value)}
-                      className="w-48"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Label htmlFor="end-date" className="text-sm font-medium">
-                      End Date
-                    </Label>
-                    <Input
-                      id="end-date"
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => onEndDateChange(e.target.value)}
-                      className="w-48"
-                    />
-                  </div>
-                </div>
-
-
-
-                {/* Additional filters */}
-                <div className="flex justify-center gap-3 flex-wrap">
-                  <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {/* Add category options here */}
-                    </SelectContent>
-                  </Select>
-                  <Select value={conditionFilter} onValueChange={onConditionFilterChange}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Condition" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Conditions</SelectItem>
-                      {/* Add condition options here */}
-                    </SelectContent>
-                  </Select>
-                  <Select value={divisionFilter} onValueChange={onDivisionFilterChange}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Division" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Divisions</SelectItem>
-                      {/* Add division options here */}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Actions and results */}
-              <div className="flex justify-center items-center gap-4 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={onClearFilters}
-                  className="gap-2"
-                >
-                  <X className="size-4" />
-                  Clear Filters
-                </Button>
-
-                <div className="flex items-center text-sm text-slate-600">
-                  <span className="font-medium">{totalResults}</span>
-                  <span className="ml-1">items</span>
-                </div>
-              </div>
+        </CardTitle>
+        <CardDescription>
+          Filter assets by various criteria. Showing {totalResults} results.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Search */}
+          <div className="space-y-2">
+            <Label htmlFor="search">Search</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 size-4" />
+              <Input
+                id="search"
+                placeholder="Search by property number, description..."
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="pl-10"
+              />
             </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          </div>
+
+          {/* Category Filter */}
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                {getCategoryOptions().map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Condition Filter */}
+          <div className="space-y-2">
+            <Label htmlFor="condition">Condition</Label>
+            <Select value={conditionFilter} onValueChange={onConditionFilterChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Conditions" />
+              </SelectTrigger>
+              <SelectContent>
+                {getConditionOptions().map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Division Filter */}
+          <div className="space-y-2">
+            <Label htmlFor="division">Division</Label>
+            <Select value={divisionFilter} onValueChange={onDivisionFilterChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Divisions" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Divisions</SelectItem>
+                {divisions.map(division => (
+                  <SelectItem key={division.id} value={division.id.toString()}>
+                    {division.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Date Range */}
+          <div className="space-y-2">
+            <Label htmlFor="startDate">Start Date</Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={startDate}
+              onChange={(e) => onStartDateChange(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="endDate">End Date</Label>
+            <Input
+              id="endDate"
+              type="date"
+              value={endDate}
+              onChange={(e) => onEndDateChange(e.target.value)}
+            />
+          </div>
+
+          {/* Clear Filters */}
+          <div className="flex items-end">
+            <Button
+              variant="outline"
+              onClick={onClearFilters}
+              className="w-full gap-2"
+            >
+              <X className="size-4" />
+              Clear Filters
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
