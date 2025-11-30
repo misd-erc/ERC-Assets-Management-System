@@ -136,14 +136,81 @@ export class PPEService {
 
   static async create(data: Omit<PPEAsset, 'id' | 'dateEncoded'>): Promise<PPEAsset> {
     try {
-      const newAsset: PPEAsset = {
-        ...data,
-        id: (Math.random() * 1000000).toFixed(0),
-        dateEncoded: new Date().toISOString(),
+      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const sessionKey = localStorage.getItem('sessionToken') || '';
+
+      const apiData = {
+        propertyNumber: data.propertyNumber,
+        category: typeof data.category === 'object' && data.category ? data.category.name : data.category || '',
+        legend: typeof data.legend === 'object' && data.legend ? data.legend.name : data.legend || '',
+        description: data.description,
+        brand: data.brand || '',
+        model: data.model || '',
+        serialNumber: data.serialNumber || '',
+        parts: data.parts || [],
+        unitOfMeasurement: data.unitOfMeasurement,
+        unitValue: data.unitValue,
+        dateAcquired: data.dateAcquired,
+        estimatedUsefulLife: data.estimatedUsefulLife,
+        group: (data as any).group || 'PPE',
         movements: data.movements || [],
+        actionBySystemUserId,
+        sessionKey,
       };
-      this.mockAssets.push(newAsset);
-      return newAsset;
+
+      // Create the main PPE asset
+      const apiResponse = await ppeApi.create(apiData);
+
+      // Since the API response doesn't include the created asset ID,
+      // we need to search for the asset by propertyNumber to get the ID
+      const searchResults = await this.getAll({ search: data.propertyNumber });
+      const createdAsset = searchResults.items.find(asset => asset.propertyNumber === data.propertyNumber);
+
+      if (!createdAsset || !createdAsset.id) {
+        throw new Error('Failed to retrieve created PPE asset ID');
+      }
+
+      const ptaId = parseInt(createdAsset.id);
+
+      // After successful creation, handle parts and movements
+      // Create parts
+      if (data.parts && data.parts.length > 0) {
+        for (const part of data.parts as any[]) {
+          if (part.name && part.serialNumber) {
+            await ppeApi.editPart({
+              id: part.id || 0,
+              ptaId,
+              name: part.name,
+              serialNumber: part.serialNumber,
+              isActive: true,
+              actionBySystemUserId: parseInt(actionBySystemUserId),
+              sessionKey,
+            });
+          }
+        }
+      }
+
+      // Create movements
+      if (data.movements && data.movements.length > 0) {
+        for (const movement of data.movements as any[]) {
+          await ppeApi.editMovement({
+            id: movement.id || 0,
+            ptaId,
+            dateAssigned: movement.dateAssigned,
+            parItrNumber: movement.parItrNumber || '',
+            plantillaEmployeeId: movement.plantillaEmployeeIdOriginal ? parseInt(movement.plantillaEmployeeIdOriginal) : 0,
+            nonPlantillaEmployeeId: movement.nonPlantillaEmployeeIdOriginal ? parseInt(movement.nonPlantillaEmployeeIdOriginal) : 0,
+            condition: movement.condition || 'Working',
+            actualOfficeId: movement.office?.id ? movement.office.id.toString() : '0',
+            actualDivisionId: movement.division?.id ? movement.division.id.toString() : '0',
+            isActive: true,
+            actionBySystemUserId: parseInt(actionBySystemUserId),
+            sessionKey,
+          });
+        }
+      }
+
+      return createdAsset;
     } catch (error) {
       console.error('Error creating PPE asset:', error);
       throw error;
@@ -152,10 +219,30 @@ export class PPEService {
 
   static async update(id: string, data: Partial<PPEAsset>): Promise<PPEAsset> {
     try {
-      const index = this.mockAssets.findIndex(asset => asset.id === id);
-      if (index === -1) throw new Error('PPE asset not found');
-      this.mockAssets[index] = { ...this.mockAssets[index], ...data };
-      return this.mockAssets[index];
+      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const sessionKey = localStorage.getItem('sessionToken') || '';
+
+      const apiData = {
+        id,
+        propertyNumber: data.propertyNumber || '',
+        category: typeof data.category === 'object' && data.category ? data.category.name : data.category || '',
+        legend: typeof data.legend === 'object' && data.legend ? data.legend.name : data.legend || '',
+        description: data.description || '',
+        brand: data.brand || '',
+        model: data.model || '',
+        serialNumber: data.serialNumber || '',
+        parts: data.parts || [],
+        unitOfMeasurement: data.unitOfMeasurement || '',
+        unitValue: data.unitValue || 0,
+        dateAcquired: data.dateAcquired || '',
+        estimatedUsefulLife: data.estimatedUsefulLife || 0,
+        movements: data.movements || [],
+        actionBySystemUserId,
+        sessionKey,
+      };
+
+      const apiResponse = await ppeApi.update(apiData);
+      return this.mapApiPpeToPpeAsset(apiResponse);
     } catch (error) {
       console.error('Error updating PPE asset:', error);
       throw error;

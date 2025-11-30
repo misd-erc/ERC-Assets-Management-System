@@ -107,4 +107,151 @@ export const ppeApi = {
 
     return response.json();
   },
+
+  // Edit SE-PPE asset
+  editSePpe: async (data: {
+    id: number;
+    ptaId: number;
+    name: string;
+    serialNumber: string;
+    isActive: boolean;
+    actionBySystemUserId: number;
+    sessionKey: string;
+  }): Promise<any> => {
+    const url = API_BASE_URL + '/Inventory/pta/se-ppe/edit';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to edit SE-PPE asset');
+    }
+
+    return response.json();
+  },
+
+  // Edit part
+  editPart: async (data: {
+    id: number;
+    ptaId: number;
+    name: string;
+    serialNumber: string;
+    isActive: boolean;
+    actionBySystemUserId: number;
+    sessionKey: string;
+  }): Promise<any> => {
+    const url = API_BASE_URL + '/Inventory/pta/part/edit';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to edit part');
+    }
+
+    return response.json();
+  },
+
+  // Edit movement
+  editMovement: async (data: {
+    id: number;
+    ptaId: number;
+    dateAssigned: string;
+    parItrNumber: string;
+    plantillaEmployeeId: number;
+    nonPlantillaEmployeeId: number;
+    condition: string;
+    actualOfficeId: number;
+    actualDivisionId: number;
+    isActive: boolean;
+    actionBySystemUserId: number;
+    sessionKey: string;
+  }): Promise<any> => {
+    const url = API_BASE_URL + '/Inventory/pta/movement/edit';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to edit movement');
+    }
+
+    return response.json();
+  },
+
+  // Create new PPE asset
+  create: async (data: {
+    propertyNumber: string;
+    category: string;
+    legend: string;
+    description: string;
+    brand: string;
+    model: string;
+    serialNumber: string;
+    parts: any[];
+    unitOfMeasurement: string;
+    unitValue: number;
+    dateAcquired: string;
+    estimatedUsefulLife: number;
+    movements: any[];
+    actionBySystemUserId: string;
+    sessionKey: string;
+  }): Promise<PPEAsset> => {
+    const url = API_BASE_URL + '/Inventory/pta/se-ppe/edit';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create PPE asset');
+    }
+
+    return response.json();
+  },
+
+  // Update PPE asset
+  update: async (data: {
+    id: string;
+    propertyNumber: string;
+    category: string;
+    legend: string;
+    description: string;
+    brand: string;
+    model: string;
+    serialNumber: string;
+    parts: any[];
+    unitOfMeasurement: string;
+    unitValue: number;
+    dateAcquired: string;
+    estimatedUsefulLife: number;
+    movements: any[];
+    actionBySystemUserId: string;
+    sessionKey: string;
+  }): Promise<PPEAsset> => {
+    const url = API_BASE_URL + '/Inventory/pta/se-ppe/update';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update PPE asset');
+    }
+
+    return response.json();
+  },
 };

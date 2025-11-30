@@ -12,6 +12,8 @@ import { AssetType } from '@/services/assetService';
 import { getOffices } from '@/api/office-management/officeApi';
 import { getDivisions } from '@/api/office-management/divisionApi';
 import { VwOffice, VwDivision } from '@/types/office';
+import { useAuthStore } from '@/store/auth';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 interface AssetsFormProps {
   type: AssetType;
@@ -22,6 +24,9 @@ interface AssetsFormProps {
 }
 
 export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false }: AssetsFormProps) {
+  const { systemUserId } = useAuthStore();
+  const { userProfile } = useUserProfile();
+
   const [formData, setFormData] = useState<any>({
     // Common fields
     category: '',
@@ -29,12 +34,13 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
     brand: '',
     model: '',
     condition: 'Working',
+    group: '', // Add group field
 
     // PPE specific fields
     propertyNumber: '',
     legend: '',
     serialNumber: '',
-    parts: [],
+    parts: [] as {id: number, name: string, serialNumber: string}[],
     unitOfMeasurement: '',
     unitValue: 0,
     dateAcquired: '',
@@ -72,6 +78,21 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
     loadData();
   }, []);
 
+  // Set default office and division from user profile for new assets
+  useEffect(() => {
+    if (!isEditing && userProfile && offices.length > 0 && divisions.length > 0 && accountabilityEntries.length > 0) {
+      const userOfficeId = userProfile.office?.id?.toString() || '';
+      const userDivisionId = userProfile.division?.id?.toString() || '';
+
+      // Only set defaults if the current entry doesn't have values already
+      if (accountabilityEntries[0] && !accountabilityEntries[0].actualOfficeId && !accountabilityEntries[0].actualDivisionId) {
+        setAccountabilityEntries(prev => prev.map((entry, index) =>
+          index === 0 ? { ...entry, actualOfficeId: userOfficeId, actualDivisionId: userDivisionId } : entry
+        ));
+      }
+    }
+  }, [userProfile, offices, divisions, isEditing, accountabilityEntries.length]);
+
   useEffect(() => {
     if (asset && isEditing) {
       if (type === 'ppe') {
@@ -84,7 +105,11 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
           brand: ppeAsset.brand || '',
           model: ppeAsset.model || '',
           serialNumber: ppeAsset.serialNumber || '',
-          parts: Array.isArray(ppeAsset.parts) ? ppeAsset.parts : [],
+          parts: Array.isArray(ppeAsset.parts) ? ppeAsset.parts.map((part: any) => ({
+            id: part.id,
+            name: part.name || '',
+            serialNumber: part.serialNumber || ''
+          })) : [],
           unitOfMeasurement: ppeAsset.unitOfMeasurement || '',
           unitValue: ppeAsset.unitValue || 0,
           dateAcquired: ppeAsset.dateAcquired || '',
@@ -99,6 +124,7 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
         // Initialize accountability entries from movements
         if (ppeAsset.movements && ppeAsset.movements.length > 0) {
           const entries = ppeAsset.movements.map(movement => ({
+            id: movement.id,
             dateAssigned: movement.dateAssigned || new Date().toISOString(),
             parItrNumber: movement.parItrNumber || '',
             plantillaEmployeeId: movement.plantillaEmployeeIdOriginal || '',
@@ -111,6 +137,7 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
         } else {
           // Default entry
           setAccountabilityEntries([{
+            id: 0,
             dateAssigned: new Date().toISOString(),
             parItrNumber: '',
             plantillaEmployeeId: '',
@@ -200,7 +227,9 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
         unitValue: formData.unitValue,
         dateAcquired: formData.dateAcquired,
         estimatedUsefulLife: formData.estimatedUsefulLife,
+        group: 'PPE',
         movements: accountabilityEntries.map(entry => ({
+          id: entry.id,
           parItrNumber: entry.parItrNumber,
           plantillaEmployeeIdOriginal: entry.plantillaEmployeeId,
           nonPlantillaEmployeeIdOriginal: entry.nonPlantillaEmployeeId,
@@ -235,6 +264,7 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
         date_acquired: formData.date_acquired,
         description: formData.description,
         status: formData.status,
+        group: 'SE',
         accountabilityBlocks: accountabilityEntries.map(entry => ({
           itr_rrsp_number: entry.parItrNumber,
           plantilla_employee_id: entry.plantillaEmployeeId || null,
@@ -250,13 +280,30 @@ export function AssetsForm({ type, asset, onSubmit, onCancel, isEditing = false 
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData((prev: any) => ({ ...prev, [field]: value }));
+    setFormData((prev: any) => {
+      const updatedData = { ...prev, [field]: value };
+
+      // Automatically set group based on unit value
+      if (field === 'unitValue' || field === 'unit_value') {
+        const unitValue = field === 'unitValue' ? value : prev.unitValue;
+        const unit_value = field === 'unit_value' ? value : prev.unit_value;
+        const actualValue = type === 'ppe' ? unitValue : unit_value;
+
+        if (actualValue <= 49999) {
+          updatedData.group = 'PPE';
+        } else if (actualValue >= 50000) {
+          updatedData.group = 'SE';
+        }
+      }
+
+      return updatedData;
+    });
   };
 
   const handleAddPart = () => {
     setFormData((prev: any) => ({
       ...prev,
-      parts: [...prev.parts, { name: '', serialNumber: '' }]
+      parts: [...prev.parts, { id: 0, name: '', serialNumber: '' }]
     }));
   };
 
