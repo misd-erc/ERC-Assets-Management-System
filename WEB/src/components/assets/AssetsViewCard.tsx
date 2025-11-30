@@ -284,14 +284,14 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
       </div>
     );
   } else {
-    const seAsset = asset as unknown as SEAsset;
+    // SE Asset using unified Asset type
     return (
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">{seAsset.se_property_number}</h2>
-            <p className="text-slate-600">{seAsset.description}</p>
+            <h2 className="text-2xl font-bold text-slate-900">{asset.propertyNumber}</h2>
+            <p className="text-slate-600">{asset.description}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onEdit} className="gap-2">
@@ -316,95 +316,131 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-600">SE Property Number</Label>
-                  <p className="text-lg font-semibold text-slate-900">{seAsset.se_property_number}</p>
+                  <Label className="text-sm font-medium text-slate-600">Property Number</Label>
+                  <p className="text-lg font-semibold text-slate-900">{asset.propertyNumber}</p>
                 </div>
 
                 <div>
                   <Label className="text-sm font-medium text-slate-600">Category</Label>
-                  <p className="text-slate-900">{seAsset.category || '-'}</p>
+                  <p className="text-slate-900">{asset.category || '-'}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">Legend</Label>
+                  <p className="text-slate-900">{asset.legend || '-'}</p>
                 </div>
 
                 <div>
                   <Label className="text-sm font-medium text-slate-600">Serial Number</Label>
-                  <p className="text-slate-900">{seAsset.serial_number || '-'}</p>
+                  <p className="text-slate-900">{asset.serialNumber || '-'}</p>
                 </div>
               </div>
 
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium text-slate-600">Brand</Label>
-                  <p className="text-slate-900">{seAsset.brand || '-'}</p>
+                  <p className="text-slate-900">{asset.brand || '-'}</p>
                 </div>
 
                 <div>
                   <Label className="text-sm font-medium text-slate-600">Model</Label>
-                  <p className="text-slate-900">{seAsset.model || '-'}</p>
+                  <p className="text-slate-900">{asset.model || '-'}</p>
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-slate-600">Unit Value</Label>
-                  <p className="text-2xl font-bold text-slate-900">{formatCurrency(seAsset.unit_value)}</p>
+                  <Label className="text-sm font-medium text-slate-600">Parts</Label>
+                  <p className="text-slate-900">{Array.isArray(asset.parts) && asset.parts.length > 0 ? asset.parts.map(part => part.name).join(', ') : '-'}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">Unit of Measurement</Label>
+                  <p className="text-slate-900">{asset.unitOfMeasurement || '-'}</p>
                 </div>
               </div>
-            </div>
-
-            <div className="mt-6">
-              <Label className="text-sm font-medium text-slate-600">Date Acquired</Label>
-              <p className="text-lg text-slate-900">{seAsset.date_acquired ? formatDate(seAsset.date_acquired) : '-'}</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Current Holder */}
-        {seAsset.accountabilityBlocks && seAsset.accountabilityBlocks.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="size-5 text-blue-600" />
-                Current Holder
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-slate-600">Plantilla Employee ID</Label>
-                    <p className="text-slate-900">{seAsset.accountabilityBlocks[0].plantilla_employee_id || '-'}</p>
-                  </div>
+        {/* Financial Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="size-5 text-blue-600" />
+              Financial Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Unit Value</Label>
+                <p className="text-2xl font-bold text-slate-900">{formatCurrency(asset.unitValue)}</p>
+              </div>
 
-                  <div>
-                    <Label className="text-sm font-medium text-slate-600">Non-Plantilla Employee ID</Label>
-                    <p className="text-slate-900">{seAsset.accountabilityBlocks[0].non_plantilla_employee_id || '-'}</p>
-                  </div>
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Date Acquired</Label>
+                <p className="text-lg text-slate-900">{formatDate(asset.dateAcquired)}</p>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-600">Estimated Useful Life</Label>
+                <p className="text-lg text-slate-900">{asset.estimatedUsefulLife} years</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Accountability Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="size-5 text-blue-600" />
+              Accountability Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">PAR/ITR Number</Label>
+                  <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? asset.movements[0].parItrNumber || '-' : '-'}</p>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-slate-600">Division/Section</Label>
-                    <p className="text-slate-900">{seAsset.accountabilityBlocks[0].division_section || '-'}</p>
-                  </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">Plantilla Employee ID</Label>
+                  <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? asset.movements[0].plantillaEmployeeId || '-' : '-'}</p>
+                </div>
 
-                  <div>
-                    <Label className="text-sm font-medium text-slate-600">Condition</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      {getConditionIcon(seAsset.accountabilityBlocks[0].condition)}
-                      {getConditionBadge(seAsset.accountabilityBlocks[0].condition)}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium text-slate-600">Date Issued/Returned</Label>
-                    <p className="text-slate-900">{seAsset.accountabilityBlocks[0].date_issued_returned ? formatDate(seAsset.accountabilityBlocks[0].date_issued_returned) : '-'}</p>
-                  </div>
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">Non-Plantilla Employee ID</Label>
+                  <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? asset.movements[0].nonPlantillaEmployeeId || '-' : '-'}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">Actual Division</Label>
+                  <p className="text-slate-900">{asset.actualDivision || '-'}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">Condition</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    {getConditionIcon(asset.condition || '')}
+                    {getConditionBadge(asset.condition || '')}
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">Date</Label>
+                  <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? formatDate(asset.movements[0].dateAssigned) : '-'}</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Movement History */}
-        {seAsset.movementHistory && seAsset.movementHistory.length > 0 && (
+        {asset.history && asset.history.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -415,70 +451,28 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {seAsset.movementHistory.map((entry, index) => (
+                {asset.history.map((entry, index) => (
                   <div key={entry.id} className="border-l-2 border-blue-200 pl-4 pb-4">
                     <div className="flex items-center gap-2 mb-2">
                       <Calendar className="size-4 text-slate-400" />
                       <span className="text-sm text-slate-600">
-                        {formatDate(entry.date)}
+                        {formatDate(entry.dateAssigned)}
                       </span>
                     </div>
                     <div className="space-y-1 text-sm">
                       <p className="text-slate-900">
-                        <span className="font-medium">From:</span> {entry.from_employee || '-'}
+                        <span className="font-medium">PAR/ITR:</span> {entry.parItrNumber || '-'}
                       </p>
                       <p className="text-slate-600">
-                        <span className="font-medium">To:</span> {entry.to_employee || '-'}
+                        <span className="font-medium">Employee:</span> {entry.plantillaEmployeeId || entry.nonPlantillaEmployeeId || '-'}
+                      </p>
+                      <p className="text-slate-600">
+                        <span className="font-medium">Division:</span> {entry.divisionId || '-'}
                       </p>
                       <div className="flex items-center gap-2 mt-2">
                         <span className="text-slate-600 font-medium">Condition:</span>
                         {getConditionBadge(entry.condition)}
                       </div>
-                      {entry.remarks && (
-                        <p className="text-slate-500 italic mt-2">{entry.remarks}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* RRSP History */}
-        {seAsset.rrspHistory && seAsset.rrspHistory.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <History className="size-5 text-blue-600" />
-                RRSP History
-              </CardTitle>
-              <CardDescription>Return and Repair Service Procedure records</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {seAsset.rrspHistory.map((entry, index) => (
-                  <div key={entry.id} className="border-l-2 border-blue-200 pl-4 pb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Calendar className="size-4 text-slate-400" />
-                      <span className="text-sm text-slate-600">
-                        {formatDate(entry.date_returned)}
-                      </span>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <p className="text-slate-900">
-                        <span className="font-medium">RRSP Number:</span> {entry.rrsp_number}
-                      </p>
-                      <p className="text-slate-600">
-                        <span className="font-medium">Employee Returning:</span> {entry.employee_returning}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-slate-600 font-medium">Condition on Return:</span>
-                        {getConditionBadge(entry.condition_on_return)}
-                      </div>
-                      {entry.findings && (
-                        <p className="text-slate-500 italic mt-2">{entry.findings}</p>
-                      )}
                     </div>
                   </div>
                 ))}

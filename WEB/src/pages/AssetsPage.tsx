@@ -174,9 +174,16 @@ export function AssetsPage() {
     setEndDate('');
   };
 
-  const handleViewDetails = (asset: Asset) => {
-    setSelectedAsset(asset);
-    setViewDialogOpen(true);
+  const handleViewDetails = async (asset: Asset) => {
+    try {
+      // Fetch complete asset data using the unified endpoint
+      const fullAssetData = await UnifiedAssetService.getById(asset.id);
+      setSelectedAsset(fullAssetData);
+      setViewDialogOpen(true);
+    } catch (error) {
+      console.error('Error fetching asset details for viewing:', error);
+      toast.error('Failed to load asset details');
+    }
   };
 
   const handleEdit = async (asset: Asset) => {
