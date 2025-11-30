@@ -167,7 +167,24 @@ export class UnifiedAssetService {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
 
-      // First try PPE API
+      // Use unified endpoint for both PPE and SE assets
+      try {
+        const unifiedResponse: any = await ppeApi.getByIdUnified(id, actionBySystemUserId, sessionKey);
+        let apiItem = unifiedResponse?.data;
+        if (Array.isArray(apiItem)) {
+          apiItem = apiItem[0];
+        }
+        if (apiItem && apiItem.id) {
+          // Determine group based on unit value (same logic as in AssetsForm)
+          const group = apiItem.unitValue >= 50000 ? 'SE' : 'PPE';
+          return this.mapApiToUnifiedAsset(apiItem, group);
+        }
+      } catch (error) {
+        // If unified endpoint fails, try fallback to individual APIs
+        console.warn('Unified endpoint failed, trying individual APIs:', error);
+      }
+
+      // Fallback: First try PPE API
       try {
         const ppeResponse: any = await ppeApi.getById(id, actionBySystemUserId, sessionKey);
         let apiItem = ppeResponse?.data;
@@ -181,7 +198,7 @@ export class UnifiedAssetService {
         // PPE not found, try SE
       }
 
-      // Try SE API
+      // Fallback: Try SE API
       const seResponse: any = await seApi.getById(id, actionBySystemUserId, sessionKey);
       let apiItem = seResponse?.data;
       if (Array.isArray(apiItem)) {

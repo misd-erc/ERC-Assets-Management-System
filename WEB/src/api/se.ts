@@ -108,6 +108,33 @@ export const seApi = {
     return response.json();
   },
 
+  // Get SE asset details by ID using unified endpoint
+  getByIdUnified: async (
+    id: string,
+    actionBySystemUserId: string,
+    sessionKey: string
+  ): Promise<SEAsset> => {
+    const url =
+      API_BASE_URL +
+      '/Inventory/pta/se-ppe/all/' +
+      id +
+      '?ActionBySystemUserId=' +
+      actionBySystemUserId +
+      '&SessionKey=' +
+      encodeURIComponent(sessionKey);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch SE asset details');
+    }
+
+    return response.json();
+  },
+
   // Edit SE-PPE asset
   editSePpe: async (data: {
     id: number;

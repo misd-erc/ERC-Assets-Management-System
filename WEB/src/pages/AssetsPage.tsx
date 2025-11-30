@@ -179,9 +179,16 @@ export function AssetsPage() {
     setViewDialogOpen(true);
   };
 
-  const handleEdit = (asset: Asset) => {
-    setSelectedAsset(asset);
-    setEditDialogOpen(true);
+  const handleEdit = async (asset: Asset) => {
+    try {
+      // Fetch complete asset data using the unified endpoint
+      const fullAssetData = await UnifiedAssetService.getById(asset.id);
+      setSelectedAsset(fullAssetData);
+      setEditDialogOpen(true);
+    } catch (error) {
+      console.error('Error fetching asset details for edit:', error);
+      toast.error('Failed to load asset details for editing');
+    }
   };
 
   const handleDelete = (asset: Asset) => {
