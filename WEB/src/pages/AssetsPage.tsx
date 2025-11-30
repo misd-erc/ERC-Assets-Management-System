@@ -15,6 +15,7 @@ import { AssetService, AssetType } from '@/services/assetService';
 import { PPEService } from '@/services/ppeService';
 import { PPEAsset } from '@/types/asset/PPEAsset';
 import { SEAsset } from '@/types/supply/se';
+import { ExcelExportService, ExportOptions } from '@/utils/excelExport';
 
 interface AssetsPageProps {
   type: AssetType;
@@ -48,6 +49,12 @@ export function AssetsPage({ type }: AssetsPageProps) {
   // Batch upload
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadConfirmDialogOpen, setUploadConfirmDialogOpen] = useState(false);
+
+  // Excel export
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportStartDate, setExportStartDate] = useState('');
+  const [exportEndDate, setExportEndDate] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     loadAssets();
@@ -205,6 +212,26 @@ export function AssetsPage({ type }: AssetsPageProps) {
     setCurrentPage(page);
   };
 
+  const handleExportExcel = async () => {
+    try {
+      setExporting(true);
+      await ExcelExportService.exportToExcel({
+        groupName: type === 'ppe' ? 'PPE' : 'SE',
+        startDate: exportStartDate || undefined,
+        endDate: exportEndDate || undefined,
+      });
+      toast.success('Excel report downloaded successfully');
+      setExportModalOpen(false);
+      setExportStartDate('');
+      setExportEndDate('');
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      toast.error('Failed to export Excel report');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -219,6 +246,11 @@ export function AssetsPage({ type }: AssetsPageProps) {
         </div>
 
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setExportModalOpen(true)} className="gap-2">
+            <Download className="size-4" />
+            Download Excel Report
+          </Button>
+
           <Button variant="outline" onClick={handleDownloadTemplate} className="gap-2">
             <Download className="size-4" />
             Download Template
@@ -393,6 +425,52 @@ export function AssetsPage({ type }: AssetsPageProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Excel Export Modal */}
+      <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Download Excel Report</DialogTitle>
+            <DialogDescription>
+              Select date range for the {type.toUpperCase()} assets report. Leave empty to export all records.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="start-date" className="text-right">
+                Start Date
+              </Label>
+              <Input
+                id="start-date"
+                type="date"
+                value={exportStartDate}
+                onChange={(e) => setExportStartDate(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="end-date" className="text-right">
+                End Date
+              </Label>
+              <Input
+                id="end-date"
+                type="date"
+                value={exportEndDate}
+                onChange={(e) => setExportEndDate(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setExportModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleExportExcel} disabled={exporting}>
+              {exporting ? 'Downloading...' : 'Download'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
