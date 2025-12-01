@@ -191,17 +191,20 @@ namespace API.Controllers
 
                     if (!string.IsNullOrWhiteSpace(model.SearchString))
                     {
-                        string searchLower = model.SearchString.ToLower();
+                        string searchLower = (model.SearchString ?? "").ToLowerInvariant();
+
                         ptas = ptas.Where(x =>
-                            x.PropertyNumber.ToLower().Contains(searchLower) ||
-                            x.Description.ToLower().Contains(searchLower) ||
-                            x.Brand.ToLower().Contains(searchLower) ||
-                            x.Model.ToLower().Contains(searchLower) ||
-                            x.SerialNumber.ToLower().Contains(searchLower) ||
-                            x.UnitOfMeasurement.ToLower().Contains(searchLower) ||
+                            (x.PropertyNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                            (x.Description ?? "").ToLowerInvariant().Contains(searchLower) ||
+                            (x.Brand ?? "").ToLowerInvariant().Contains(searchLower) ||
+                            (x.Model ?? "").ToLowerInvariant().Contains(searchLower) ||
+                            (x.SerialNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                            (x.UnitOfMeasurement ?? "").ToLowerInvariant().Contains(searchLower) ||
                             x.UnitValue.ToString().Contains(searchLower) ||
-                            x.DateAcquired.ToString().Contains(searchLower) ||
-                            x.EstimatedUsefulLife.ToString().Contains(searchLower));
+                            (x.DateAcquired?.ToString("yyyy-MM-dd") ?? "").Contains(searchLower) ||
+                            (model.GroupName == TblPTA.PPE &&
+                             (x.EstimatedUsefulLife?.ToString() ?? "").Contains(searchLower))
+                        );
                     }
 
                     if (model.StartDate.HasValue)
