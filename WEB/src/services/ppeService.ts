@@ -1,5 +1,6 @@
 ﻿import { ppeApi } from '@/api/ppe';
 import { PPEAsset, Movement } from '@/types/asset/PPEAsset';
+import { normalizeMovement } from '@/utils/normalizer';
 
 export class PPEService {
   // Mocked data for testing and to prevent errors
@@ -190,25 +191,7 @@ export class PPEService {
         }
       }
 
-      // Create movements
-      if (data.movements && data.movements.length > 0) {
-        for (const movement of data.movements as any[]) {
-          await ppeApi.editMovement({
-            id: movement.id || 0,
-            ptaId,
-            dateAssigned: movement.dateAssigned,
-            parItrNumber: movement.parItrNumber || '',
-            plantillaEmployeeId: movement.plantillaEmployeeIdOriginal ? parseInt(movement.plantillaEmployeeIdOriginal) : 0,
-            nonPlantillaEmployeeId: movement.nonPlantillaEmployeeIdOriginal ? parseInt(movement.nonPlantillaEmployeeIdOriginal) : 0,
-            condition: movement.condition || 'Working',
-            actualOfficeId: movement.office?.id ? movement.office.id.toString() : '0',
-            actualDivisionId: movement.division?.id ? movement.division.id.toString() : '0',
-            isActive: true,
-            actionBySystemUserId: parseInt(actionBySystemUserId),
-            sessionKey,
-          });
-        }
-      }
+
 
       return createdAsset;
     } catch (error) {

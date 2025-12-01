@@ -1,11 +1,10 @@
-# TODO: Update Assets Filters UI to Funnel Design and Add Group By Feature
+# Unified PPE/SE Movement Payload Fix
 
 ## Tasks
-- [ ] Update `src/components/assets/AssetsFilters.tsx`: Redesign UI to funnel-like layout with funnel icon, add Group By select with options (None, Category, Condition, Status, Division).
-- [ ] Update `src/pages/AssetsPage.tsx`: Add `groupByFilter` state, pass to AssetsFilters, implement client-side grouping logic for assets based on selected group field.
-- [ ] Update `src/components/assets/AssetsTable.tsx`: Modify to display grouped assets with headers for each group.
-- [ ] Test the new funnel UI and ensure filters and grouping work correctly.
-
-## Progress
-- Started: [Date/Time]
-- Completed: [Date/Time]
+- [x] Add `normalizeMovement(entry, assetModel)` helper in UnifiedAssetService.ts
+- [x] Update AssetsForm.tsx to normalize movements before submitting
+- [x] Update UnifiedAssetService.create() to use normalizeMovement
+- [x] Update UnifiedAssetService.update() to use normalizeMovement
+- [x] Update mapApiToUnifiedAsset to map actualOfficeId → officeId, actualDivisionId → divisionId
+- [x] Remove duplicated movement logic from PPE services
+- [x] Remove duplicated movement logic from SE services

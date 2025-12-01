@@ -83,22 +83,22 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
     if (asset && isEditing) {
       setFormData({
         group: asset.group,
-        propertyNumber: asset.propertyNumber,
-        category: asset.category,
-        legend: asset.legend,
-        description: asset.description,
-        brand: asset.brand,
-        model: asset.model,
-        serialNumber: asset.serialNumber,
-        parts: asset.parts,
-        unitOfMeasurement: asset.unitOfMeasurement,
-        unitValue: asset.unitValue,
-        dateAcquired: asset.dateAcquired,
-        estimatedUsefulLife: asset.estimatedUsefulLife,
-        condition: asset.condition,
-        actualDivision: asset.actualDivision,
-        movements: asset.movements,
-        history: asset.history,
+        propertyNumber: asset.propertyNumber || '',
+        category: asset.category || '',
+        legend: asset.legend || '',
+        description: asset.description || '',
+        brand: asset.brand || '',
+        model: asset.model || '',
+        serialNumber: asset.serialNumber || '',
+        parts: asset.parts || [],
+        unitOfMeasurement: asset.unitOfMeasurement || '',
+        unitValue: asset.unitValue || 0,
+        dateAcquired: asset.dateAcquired || '',
+        estimatedUsefulLife: asset.estimatedUsefulLife || 5,
+        condition: asset.condition || 'Working',
+        actualDivision: asset.actualDivision || '',
+        movements: asset.movements || [],
+        history: asset.history || [],
       });
 
       // Initialize accountability entries from movements
@@ -135,8 +135,8 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate required fields
-    if (!formData.propertyNumber || !formData.description || !formData.brand || !formData.model || !formData.serialNumber || !formData.unitOfMeasurement) {
+    // Validate required fields - check for non-empty strings
+    if (!formData.propertyNumber?.trim() || !formData.description?.trim() || !formData.brand?.trim() || !formData.model?.trim() || !formData.serialNumber?.trim() || !formData.unitOfMeasurement?.trim()) {
       alert('Property Number, Description, Brand, Model, Serial Number, and Unit of Measurement are required');
       return;
     }
