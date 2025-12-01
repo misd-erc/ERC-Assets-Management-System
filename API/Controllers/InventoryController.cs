@@ -579,15 +579,9 @@ namespace API.Controllers
 
                 long ptaId = await _editTools.PTA.EditTblPTAAsync(pta, model.ActionBySystemUserId, context);
 
-                UserSimplePublicResponseModel publicRM = new()
-                {
-                    SystemUserId = model.ActionBySystemUserId,
-                    SessionKey = model.SessionKey
-                };
-
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(publicRM, $"{(model.Group == TblPTA.PPE ? TblPTA.PPE : TblPTA.SE)} has been {(model.Id == 0 ? "added" : "updated")}"));
+                return Ok(ApiResponse<object>.Ok(new { PTAId = ptaId }, $"{(model.Group == TblPTA.PPE ? TblPTA.PPE : TblPTA.SE)} has been {(model.Id == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
@@ -610,7 +604,7 @@ namespace API.Controllers
             try
             {
 
-                TblPTAPart ppePart = new()
+                TblPTAPart ptaPart = new()
                 {
                     Id = model.Id,
                     Name = model.Name,
@@ -618,17 +612,11 @@ namespace API.Controllers
                     IsActive = model.IsActive
                 };
 
-                long ppePartId = await _editTools.PTA.EditTblPTAPartAsync(ppePart, model.ActionBySystemUserId, context);
-
-                UserSimplePublicResponseModel publicRM = new()
-                {
-                    SystemUserId = model.ActionBySystemUserId,
-                    SessionKey = model.SessionKey
-                };
+                long ptaPartId = await _editTools.PTA.EditTblPTAPartAsync(ptaPart, model.ActionBySystemUserId, context);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(publicRM, $"PTA Part has been {(model.Id == 0 ? "added" : "updated")}"));
+                return Ok(ApiResponse<object>.Ok(new { PTAPartId = ptaPartId }, $"PTA Part has been {(model.Id == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
@@ -651,7 +639,7 @@ namespace API.Controllers
             try
             {
 
-                TblPTAMovement ppeMovement = new()
+                TblPTAMovement ptaMovement = new()
                 {
                     Id = model.Id,
                     PTAId = model.PTAId,
@@ -665,17 +653,11 @@ namespace API.Controllers
                     IsActive = model.IsActive
                 };
 
-                long ppeMovementId = await _editTools.PTA.EditTblPTAMovementAsync(ppeMovement, model.ActionBySystemUserId, context);
-
-                UserSimplePublicResponseModel publicRM = new()
-                {
-                    SystemUserId = model.ActionBySystemUserId,
-                    SessionKey = model.SessionKey
-                };
+                long ptaMovementId = await _editTools.PTA.EditTblPTAMovementAsync(ptaMovement, model.ActionBySystemUserId, context);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(publicRM, $"PTA Movement has been {(model.Id == 0 ? "added" : "updated")}"));
+                return Ok(ApiResponse<object>.Ok(new { PTAMovementId = ptaMovementId }, $"PTA Movement has been {(model.Id == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)

@@ -521,15 +521,9 @@ namespace API.Controllers
 
                 long officeId = await _editTools.Office.EditTblOfficeAsync(office, model.ActionBySystemUserId, context);
 
-                UserSimplePublicResponseModel publicRM = new()
-                {
-                    SystemUserId = model.ActionBySystemUserId,
-                    SessionKey = model.SessionKey
-                };
-
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(publicRM, $"Office has been {(model.OfficeId == 0 ? "added" : "updated")}"));
+                return Ok(ApiResponse<object>.Ok(new { OfficeId = officeId }, $"Office has been {(model.OfficeId == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
@@ -563,16 +557,9 @@ namespace API.Controllers
 
                 long divisionId = await _editTools.Office.EditTblDivisionAsync(division, model.ActionBySystemUserId, context);
 
-
-                UserSimplePublicResponseModel publicRM = new()
-                {
-                    SystemUserId = model.ActionBySystemUserId,
-                    SessionKey = model.SessionKey
-                };
-
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(publicRM, $"Division has been {(model.DivisionId == 0 ? "added" : "updated")}"));
+                return Ok(ApiResponse<object>.Ok(new { DivisionId = divisionId }, $"Division has been {(model.DivisionId == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
@@ -605,15 +592,9 @@ namespace API.Controllers
 
                 long employmentTypeId = await _editTools.Office.EditTblEmploymentTypeAsync(employmentType, model.ActionBySystemUserId, context);
 
-                UserSimplePublicResponseModel publicRM = new()
-                {
-                    SystemUserId = model.ActionBySystemUserId,
-                    SessionKey = model.SessionKey
-                };
-
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(publicRM, $"Employment type has been {(model.EmploymentTypeId == 0 ? "added" : "updated")}"));
+                return Ok(ApiResponse<object>.Ok(new { EmploymentTypeId = employmentTypeId }, $"Employment type has been {(model.EmploymentTypeId == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
@@ -648,15 +629,9 @@ namespace API.Controllers
 
                 long positionId = await _editTools.Office.EditTblPositionAsync(position, model.ActionBySystemUserId, context);
 
-                UserSimplePublicResponseModel publicRM = new()
-                {
-                    SystemUserId = model.ActionBySystemUserId,
-                    SessionKey = model.SessionKey
-                };
-
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(publicRM, $"Position has been {(model.PositionId == 0? "added" : "updated")}"));
+                return Ok(ApiResponse<object>.Ok(new { PositionId = positionId }, $"Position has been {(model.PositionId == 0? "added" : "updated")}"));
 
             }
             catch (Exception ex)

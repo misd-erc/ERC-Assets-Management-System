@@ -663,12 +663,6 @@ namespace API.Controllers
                 TblSystemUser? oldUserInfo = await _getTools.Account.GetTblSystemUserAsync(user.Id, context);
                 long systemUserId = await _editTools.Account.EditTblSystemUserAsync(user, context);
 
-                UserSimplePublicResponseModel publicRM = new()
-                {
-                    SystemUserId = systemUserId,
-                    SessionKey = model.SessionKey
-                };
-
                 if(oldUserInfo != null && oldUserInfo.StatusId != TblSystemUserStatus.Dictionary[TblSystemUserStatus.INACTIVE] && model.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.INACTIVE])
                 {
                     //email and notify user that the account is set to inactive
@@ -735,7 +729,7 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(publicRM, $"System user account has been {(model.SystemUserId == 0? "added":"updated")}"));
+                return Ok(ApiResponse<object>.Ok(new { SystemUserId = systemUserId }, $"System user account has been {(model.SystemUserId == 0? "added":"updated")}"));
 
             }
             catch (Exception ex)
