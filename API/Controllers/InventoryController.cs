@@ -7,6 +7,7 @@ using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office;
+using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Models.ParserModels.PTA;
 using PortalDB.Models.ParserModels.PTA;
 using PortalDB.Models.QueryParams.Office;
@@ -16,6 +17,7 @@ using PortalDB.Models.QueryParams.PTA;
 using PortalDB.Models.QueryParams.Universal;
 using PortalDB.Models.ResponseModels.Account;
 using PortalDB.Models.ResponseModels.Office;
+using PortalDB.Models.ResponseModels.PPE;
 using PortalDB.Models.ResponseModels.PTA;
 using PortalDB.Models.ResponseModels.PTA;
 using PortalDB.Models.Responses;
@@ -27,6 +29,7 @@ using PortalTools.Services.GetEditTools.ASSET.PTA;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Office;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -184,9 +187,9 @@ namespace API.Controllers
 
             try
             {
-                //#region General PTA/By SE/PPE
+                #region General PTA By SE/PPE
 
-                //if (model.GroupBy == null || string.IsNullOrEmpty(model.GroupBy)) { 
+                if (model.GroupBy == null || string.IsNullOrEmpty(model.GroupBy)) { 
                     IEnumerable<TblPTA?> ptas = await _getTools.PTA.GetTblPTAsByGroup(model.GroupName!, context).Where(x => x.Group == model.GroupName).ToListAsync();
 
                     if (!string.IsNullOrWhiteSpace(model.SearchString))
@@ -262,15 +265,162 @@ namespace API.Controllers
                         totalCount,
                         "PTAs have been retrieved"
                     ));
-                //}
-                //#endregion
+                }
+                #endregion
 
-                //#region Group by Employee
-                //else if (model.GroupBy == "Employee")
-                //{
+                #region Group by Employee
+                else if (model.GroupBy == "Employee")
+                {
+                    IQueryable<VwPTA?> ptasQuery = _getTools.PTA.GetVwPTAsByGroup(model.GroupName!, context)
+                        .Where(x => x.Group == model.GroupName);
 
-                //}
-                //#endregion
+                    if (!string.IsNullOrWhiteSpace(model.SearchString))
+                    {
+                        string searchLower = model.SearchString.ToLowerInvariant();
+                        ptasQuery = ptasQuery.Where(x =>
+                                (x.PropertyNumber != null && x.PropertyNumber.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.Description != null && x.Description.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.Brand != null && x.Brand.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.Model != null && x.Model.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.SerialNumber != null && x.SerialNumber.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.UnitOfMeasurement != null && x.UnitOfMeasurement.ToLowerInvariant().Contains(searchLower)) ||
+                                x.UnitValue.ToString().Contains(searchLower) || // UnitValue is value type, safe
+                                (x.DateAcquired != null && x.DateAcquired.Value.ToString("yyyy-MM-dd").Contains(searchLower)) ||
+                                (model.GroupName == TblPTA.PPE &&
+                                 x.EstimatedUsefulLife != null &&
+                                 x.EstimatedUsefulLife.Value.ToString().Contains(searchLower))
+                            );
+                    }
+
+                    // Apply date range filters
+                    if (model.StartDate.HasValue)
+                        ptasQuery = ptasQuery.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                    if (model.EndDate.HasValue)
+                        ptasQuery = ptasQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                    // Get distinct employees who have at least one PTA
+                    var employeeGroups = ptasQuery
+                        .Where(x => x.NonPlantillaEmployeeId.HasValue || x.PlantillaEmployeeId.HasValue)
+                        .GroupBy(x => x.NonPlantillaEmployeeId.HasValue ? x.NonPlantillaEmployeeId.Value : x.PlantillaEmployeeId.Value)
+                        .Select(g => new
+                        {
+                            EmployeeId = g.Key,
+                            PTAIds = g.Select(p => p.Id).ToList()
+                        })
+                        .AsEnumerable(); // Switch to client-side for complex grouping logic
+
+                    int totalCount = employeeGroups.Count();
+                    int skip = (model.PageNumber - 1) * model.PageSize;
+
+                    var pagedEmployeeGroups = employeeGroups
+                        .Skip(skip)
+                        .Take(model.PageSize)
+                        .ToList();
+
+                    var ptasResponses = new List<PTAGroupedByEmployeeResponseModel>();
+
+                    foreach (var group in pagedEmployeeGroups)
+                    {
+                        long employeeId = group.EmployeeId;
+
+                        // Get one sample record to extract employee details
+                        var samplePta = ptasQuery
+                            .FirstOrDefault(x =>
+                                (x.PlantillaEmployeeId == employeeId) ||
+                                (x.NonPlantillaEmployeeId == employeeId));
+
+                        if (samplePta == null) continue;
+
+                        bool isPlantilla = samplePta.PlantillaEmployeeId == employeeId;
+
+                        long? systemUserId = isPlantilla ? samplePta.PlantillaSystemUserId : samplePta.NonPlantillaSystemUserId;
+                        string? employeeIdOriginal = isPlantilla ? samplePta.PlantillaEmployeeIdOriginal : samplePta.NonPlantillaEmployeeIdOriginal;
+                        string fullName = isPlantilla
+                            ? $"{samplePta.PlantillaEmployeeFirstName} {samplePta.PlantillaEmployeeMiddleName} {samplePta.PlantillaEmployeeLastName} {samplePta.PlantillaEmployeeSuffixName}".Trim()
+                            : $"{samplePta.NonPlantillaEmployeeFirstName} {samplePta.NonPlantillaEmployeeMiddleName} {samplePta.NonPlantillaEmployeeLastName} {samplePta.NonPlantillaEmployeeSuffixName}".Trim();
+
+                        long? positionId = isPlantilla ? samplePta.PlantillaPositionId : samplePta.NonPlantillaPositionId;
+                        long? employmentTypeId = isPlantilla ? samplePta.PlantillaEmploymentTypeId : samplePta.NonPlantillaEmploymentTypeId;
+                        long? officeId = samplePta.ActualOfficeId
+                            ?? (isPlantilla ? samplePta.PlantillaOfficeId : samplePta.NonPlantillaOfficeId);
+                        long? divisionId = samplePta.ActualDivisionId
+                            ?? (isPlantilla ? samplePta.PlantillaDivisionId : samplePta.NonPlantillaDivisionId);
+
+                        var position = positionId.HasValue
+                            ? await _getTools.Office.GetTblPositionAsync(positionId.Value, context)
+                            : null;
+                        var employmentType = employmentTypeId.HasValue
+                            ? await _getTools.Office.GetTblEmploymentTypeAsync(employmentTypeId.Value, context)
+                            : null;
+                        var office = officeId.HasValue
+                            ? await _getTools.Office.GetTblOfficeAsync(officeId.Value, context)
+                            : null;
+                        var division = divisionId.HasValue
+                            ? await _getTools.Office.GetTblDivisionAsync(divisionId.Value, context)
+                            : null;
+
+                        // Get all PTAs for this employee (filtered already by search/date)
+                        var employeePtaList = ptasQuery
+                            .Where(x => (isPlantilla ? x.PlantillaEmployeeId : x.NonPlantillaEmployeeId) == employeeId)
+                            .ToList();
+
+                        var ptaResponseModels = new List<PTAResponseModel>();
+
+                        foreach (var x in employeePtaList)
+                        {
+                            var ptaModel = new PTAResponseModel
+                            {
+                                Id = x.Id,
+                                Group = x.Group,
+                                PropertyNumber = x.PropertyNumber,
+                                Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
+                                Legend = await _getTools.PTA.GetTblPTALegendAsync(x.CategoryId, context),
+                                Description = x.Description,
+                                Brand = x.Brand,
+                                Model = x.Model,
+                                SerialNumber = x.SerialNumber,
+                                UnitOfMeasurement = x.UnitOfMeasurement,
+                                UnitValue = x.UnitValue,
+                                DateAcquired = x.DateAcquired,
+                                EstimatedUsefulLife = x.EstimatedUsefulLife,
+                                Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
+                                Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
+                                IsActive = x.IsActive,
+                                CreatedAt = x.CreatedAt
+                            };
+                            ptaResponseModels.Add(ptaModel);
+                        }
+
+                        ptasResponses.Add(new PTAGroupedByEmployeeResponseModel
+                        {
+                            EmployeeId = employeeId,
+                            SystemUserId = systemUserId,
+                            EmployeeIdOriginal = employeeIdOriginal,
+                            FullName = fullName,
+                            Position = position,
+                            EmploymentType = employmentType,
+                            Office = office,
+                            Division = division,
+                            PTA = ptaResponseModels
+                        });
+                    }
+
+                    await AuditTrailTool.LogActivityAsync(_options, $"Viewed {model.GroupName} grouped by Employee with filters", actionBy: model.ActionBySystemUserId);
+
+                    return Ok(ApiResponse<PTAGroupedByEmployeeResponseModel>.OkPaginated(
+                        ptasResponses,
+                        model.PageNumber,
+                        model.PageSize,
+                        totalCount,
+                        "PTAs grouped by employee retrieved successfully"
+                    ));
+                }
+                #endregion
+                else
+                {
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "In Progress"));
+                }
 
                 //#region Group by Category
                 //else if (model.GroupBy == "Category")

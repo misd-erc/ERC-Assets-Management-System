@@ -56,7 +56,9 @@ namespace PortalDB.Services
         #endregion
         #region ASSET
         #region PTA
+
         public DbSet<TblPTA> TblPTAs { get; set; }
+        public DbSet<VwPTA> VwPTAs { get; set; }
         public DbSet<TblPTACategory> TblPTACategories { get; set; }
         public DbSet<TblPTALegend> TblPTALegends { get; set; }
         public DbSet<TblPTAMovement> TblPTAMovements { get; set; }

@@ -17,7 +17,7 @@ namespace PortalDB.Models.QueryParams.Pagination
 
         public DateTime? EndDate { get; set; }
         [Required] public string? GroupName { get; set; }
-        //[Required] public string? GroupBy { get; set; }
+        public string? GroupBy { get; set; }
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;
     }

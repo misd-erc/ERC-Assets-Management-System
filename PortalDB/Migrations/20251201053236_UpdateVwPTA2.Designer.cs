@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251201053236_UpdateVwPTA2")]
+    partial class UpdateVwPTA2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -258,193 +261,6 @@ namespace PortalDB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblPTAParts", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.VwPTA", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("PTAId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<long?>("ActualDivisionId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PTAMovementActualDivisionId");
-
-                    b.Property<long?>("ActualOfficeId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PTAMovementActualOfficeId");
-
-                    b.Property<string>("BrandEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTABrand");
-
-                    b.Property<long?>("CategoryId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PTACategoryId");
-
-                    b.Property<string>("CategoryName")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTACategoryName");
-
-                    b.Property<string>("DateAcquiredEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTADateAcquired");
-
-                    b.Property<string>("DateAssignedEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAMovementDateAssigned");
-
-                    b.Property<string>("DescriptionEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTADescription");
-
-                    b.Property<string>("EstimatedUsefulLifeEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAEstimatedUsefulLife");
-
-                    b.Property<string>("Group")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAGroup");
-
-                    b.Property<long?>("LegendId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PTALegendId");
-
-                    b.Property<string>("LegendName")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTALegendName");
-
-                    b.Property<string>("ModelEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAModel");
-
-                    b.Property<long>("MovementId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PTAMovementId");
-
-                    b.Property<long?>("NonPlantillaDivisionId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("NonPlantillaDivisionId");
-
-                    b.Property<string>("NonPlantillaEmployeeFirstNameEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("NonPlantillaEmployeeFirstName");
-
-                    b.Property<long?>("NonPlantillaEmployeeId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("NonPlantillaEmployeeId");
-
-                    b.Property<string>("NonPlantillaEmployeeIdOriginalEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("NonPlantillaEmployeeIdOriginal");
-
-                    b.Property<string>("NonPlantillaEmployeeLastNameEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("NonPlantillaEmployeeLastName");
-
-                    b.Property<string>("NonPlantillaEmployeeMiddleNameEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("NonPlantillaEmployeeMiddleName");
-
-                    b.Property<string>("NonPlantillaEmployeeSuffixNameEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("NonPlantillaEmployeeSuffixName");
-
-                    b.Property<long?>("NonPlantillaEmploymentTypeId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("NonPlantillaEmploymentTypeId");
-
-                    b.Property<long?>("NonPlantillaOfficeId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("NonPlantillaOfficeId");
-
-                    b.Property<long?>("NonPlantillaPositionId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("NonPlantillaPositionId");
-
-                    b.Property<long?>("NonPlantillaSystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("NonPlantillaSystemUserId");
-
-                    b.Property<string>("PARITRNumberEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAMovementPARITRNumber");
-
-                    b.Property<long?>("PlantillaDivisionId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PlantillaDivisionId");
-
-                    b.Property<string>("PlantillaEmployeeFirstNameEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PlantillaEmployeeFirstName");
-
-                    b.Property<long?>("PlantillaEmployeeId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PlantillaEmployeeId");
-
-                    b.Property<string>("PlantillaEmployeeIdOriginalEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PlantillaEmployeeIdOriginal");
-
-                    b.Property<string>("PlantillaEmployeeLastNameEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PlantillaEmployeeLastName");
-
-                    b.Property<string>("PlantillaEmployeeMiddleNameEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PlantillaEmployeeMiddleName");
-
-                    b.Property<string>("PlantillaEmployeeSuffixNameEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PlantillaEmployeeSuffixName");
-
-                    b.Property<long?>("PlantillaEmploymentTypeId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PlantillaEmploymentTypeId");
-
-                    b.Property<long?>("PlantillaOfficeId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PlantillaOfficeId");
-
-                    b.Property<long?>("PlantillaPositionId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PlantillaPositionId");
-
-                    b.Property<long?>("PlantillaSystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PlantillaSystemUserId");
-
-                    b.Property<string>("PropertyNumberEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAPropertyNumber");
-
-                    b.Property<string>("RemarksEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAMovementRemarks");
-
-                    b.Property<string>("SerialNumberEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTASerialNumber");
-
-                    b.Property<string>("UnitOfMeasurementEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAUnitOfMeasurement");
-
-                    b.Property<string>("UnitValueEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAUnitValue");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("vwPTAs", "asset", t =>
-                        {
-                            t.ExcludeFromMigrations();
-                        });
-
-                    b.ToView("vwPTAs", "asset");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.DBO.Account.TblEmployee", b =>
