@@ -67,7 +67,7 @@ namespace PortalDB.Entities.DBO.Office.Division
         [Column("DivisionName")]
         public string? Name { get; set; }
 
-        [MaxLength(15)]
+        [MaxLength(30)]
         [Column("DivisionAcronym")]
         public string? Acronym { get; set; }
 
