@@ -68,12 +68,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontendClient",
         policy =>
         {
-            policy.WithOrigins(
-                "http://localhost:3000", //Local http
-                "https://localhost:3000", //Local https
-                "https://ams-uat.erc.ph", //Staging
-                "https://ams.erc.ph" //Production
-            )
+            policy.WithOrigins("https://ams-uat.erc.ph")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
