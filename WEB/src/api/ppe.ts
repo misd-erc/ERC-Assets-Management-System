@@ -199,6 +199,7 @@ export const ppeApi = {
     isActive: boolean;
     actionBySystemUserId: number;
     sessionKey: string;
+    model: string;
   }): Promise<any> => {
     const url = API_BASE_URL + '/Inventory/pta/movement/edit';
 
@@ -232,7 +233,7 @@ export const ppeApi = {
     movements: any[];
     actionBySystemUserId: string;
     sessionKey: string;
-  }): Promise<PPEAsset> => {
+  }): Promise<{ success: boolean; code: string; message: string; data: { ptaId: number } }> => {
     const url = API_BASE_URL + '/Inventory/pta/se-ppe/edit';
 
     const response = await fetch(url, {
