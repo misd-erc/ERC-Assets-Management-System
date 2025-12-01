@@ -17,6 +17,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
     public class PTAGetTools
     {
 
+        public IQueryable<TblPTA> GetTblPTAs(PortalDbContext context) => context.TblPTAs.AsNoTracking().Where(x => !x.IsDeleted);
         public IQueryable<TblPTA> GetTblPTAsByGroup(string groupName, PortalDbContext context) => context.TblPTAs.AsNoTracking().Where(x => !x.IsDeleted && x.Group == groupName);
         public IQueryable<VwPTA> GetVwPTAsByGroup(string groupName, PortalDbContext context) => context.VwPTAs.AsNoTracking().Where(x => !x.IsDeleted && x.Group == groupName);
         public async Task<TblPTA?> GetTblPTAAsync(long? id, PortalDbContext context) => await context.TblPTAs.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
@@ -68,6 +69,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
 
             return query;
         }
+        public IQueryable<TblPTAMovement> GetTblPTAMovements(PortalDbContext context) => context.TblPTAMovements.AsNoTracking().Where(x => !x.IsDeleted);
         public IQueryable<PTAPartResponseModel> GetTblPTAPartsByPTAId(long? ptaId, PortalDbContext context)
         {
             var ptaParts = context.TblPTAParts.AsNoTracking().Where(x => !x.IsDeleted && x.PTAId == ptaId);
