@@ -164,5 +164,6 @@ namespace PortalTools.Services.GetEditTools.DBO.Account
                 .AsNoTracking().Where(x => !x.IsDeleted && x.EmployeeIdOriginalEncrypted == encryptedEmployeeId)
                 .FirstOrDefaultAsync();
         }
+        public IQueryable<TblEmployee?> GetEmployees(PortalDbContext context) => context.TblEmployees.AsNoTracking().Where(x => !x.IsDeleted);
     }
 }

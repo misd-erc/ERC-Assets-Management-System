@@ -138,6 +138,91 @@ namespace API.Controllers
             }
         }
 
+        // GET api/users/employees/all
+        [HttpGet("employees/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllEmployees([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblEmployee?> employees = await _getTools.Account.GetEmployees(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    employees = employees.Where(x =>
+                        (x.FirstName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.MiddleName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.LastName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.SuffixName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.EmployeeIdOriginal ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    employees = employees.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    employees = employees.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = employees.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var employeesList = employees
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var employeeResponses = new List<EmployeeResponseModel>();
+
+                foreach (var x in employeesList)
+                {
+                    var userBasicModel = new EmployeeResponseModel
+                    {
+                        Id = x.Id,
+                        SystemUser = x.SystemUserId.HasValue ? await _getTools.Account.GetTblSystemUserAsync(x.SystemUserId.Value, context) : null,
+                        FirstName = x.FirstName,
+                        MiddleName = x.MiddleName,
+                        LastName = x.LastName,
+                        SuffixName = x.SuffixName,
+                        EmployeeIdOriginal = x.EmployeeIdOriginal,
+                        Office = await _getTools.Office.GetTblOfficeAsync(x.OfficeId, context),
+                        Division = await _getTools.Office.GetTblDivisionAsync(x.DivisionId, context),
+                        EmploymentType = await _getTools.Office.GetTblEmploymentTypeAsync(x.EmploymentTypeId ?? 0, context),
+                        Position = await _getTools.Office.GetTblPositionAsync(x.PositionId ?? 0, context),
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt,
+                    };
+                    employeeResponses.Add(userBasicModel);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed employees", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<EmployeeResponseModel>.OkPaginated(
+                    employeeResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Employees have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         // GET api/users/all
         [HttpGet("all/{systemUserId}")]
         [ValidateSessionToken]
