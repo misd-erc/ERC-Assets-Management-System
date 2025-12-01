@@ -30,6 +30,7 @@ using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Office;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -106,6 +107,46 @@ namespace API.Controllers
                     model.PageSize,
                     totalCount,
                     "PTA Categories have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("pta/conditions/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllPTAConditions([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                var ppeConditions = _getTools.PTA
+                    .GetTblPTAMovements(context)
+                    .Where(x => x.RemarksEncrypted != null && x.RemarksEncrypted != "")
+                    .AsEnumerable()
+                    .Select(x => CultureInfo.CurrentCulture.TextInfo.ToTitleCase(x.Remarks!))
+                    .Where(r => !string.IsNullOrWhiteSpace(r))
+                    .Select(r => r.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(r => r).ToList();
+
+                var ppeConditionsResponses = ppeConditions;
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                //await AuditTrailTool.LogActivityAsync(_options, "Viewed PTA Conditions", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<object>.Ok(
+                    ppeConditionsResponses,
+                    "PTA Conditions have been retrieved"
                 ));
 
             }
