@@ -191,14 +191,15 @@ export const seApi = {
     ptaId: number;
     dateAssigned: string;
     parItrNumber: string;
-    plantillaEmployeeId: number;
-    nonPlantillaEmployeeId: number;
+    plantillaEmployeeId: string | null;
+    nonPlantillaEmployeeId: string | null;
     condition: string;
     actualOfficeId: number;
     actualDivisionId: number;
     isActive: boolean;
     actionBySystemUserId: number;
     sessionKey: string;
+    model: string;
   }): Promise<any> => {
     const url = API_BASE_URL + '/Inventory/pta/movement/edit';
 
@@ -233,7 +234,7 @@ export const seApi = {
     movements: any[];
     actionBySystemUserId: string;
     sessionKey: string;
-  }): Promise<SEAsset> => {
+  }): Promise<{ success: boolean; code: string; message: string; data: { ptaId: number } }> => {
     const url = API_BASE_URL + '/Inventory/pta/se-ppe/edit';
 
     const response = await fetch(url, {

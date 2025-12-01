@@ -1,8 +1,36 @@
 import { ppeApi } from '@/api/ppe';
 import { seApi } from '@/api/se';
 import { Asset, UnifiedMovement, AssetGroup } from '@/types/asset/UnifiedAsset';
+import { normalizeMovement } from '@/utils/normalizer';
 
 export class UnifiedAssetService {
+  // Helper function to normalize movement payload for backend
+  private static normalizeMovement(entry: UnifiedMovement, assetModel: string): any {
+    // Convert employee IDs from string format (e.g., "P-20-0020") to numbers
+    const parseEmployeeId = (id: string): number => {
+      if (!id || id === '') return 0;
+      if (typeof id === 'number') return id;
+      // Extract last segment if contains hyphen
+      const parts = id.split('-');
+      const lastPart = parts[parts.length - 1];
+      return parseInt(lastPart, 10) || 0;
+    };
+
+    return {
+      id: parseInt(entry.id || '0', 10),
+      dateAssigned: entry.dateAssigned,
+      parItrNumber: entry.parItrNumber || '',
+      plantillaEmployeeId: parseEmployeeId(entry.plantillaEmployeeId),
+      nonPlantillaEmployeeId: parseEmployeeId(entry.nonPlantillaEmployeeId),
+      actualOfficeId: parseInt(entry.officeId || '0', 10),
+      actualDivisionId: parseInt(entry.divisionId || '0', 10),
+      isActive: true,
+      condition: entry.condition || 'Working',
+      actionBySystemUserId: parseInt(localStorage.getItem('systemUserId') || '0'),
+      sessionKey: localStorage.getItem('sessionToken') || '',
+      model: assetModel || '',
+    };
+  }
   // Map API response to unified Asset model
   private static mapApiToUnifiedAsset(apiItem: any, group: AssetGroup): Asset {
     if (!apiItem || !apiItem.id) {
@@ -27,8 +55,8 @@ export class UnifiedAssetService {
       parItrNumber: mv.parItrNumber || '',
       plantillaEmployeeId: mv.plantillaEmployeeIdOriginal || '',
       nonPlantillaEmployeeId: mv.nonPlantillaEmployeeIdOriginal || '',
-      officeId: mv.office?.id?.toString() || '',
-      divisionId: mv.division?.id?.toString() || '',
+      officeId: mv.actualOfficeId?.toString() || '',
+      divisionId: mv.actualDivisionId?.toString() || '',
       condition: mv.condition || 'Working',
       dateAssigned: mv.dateAssigned || mv.createdAt || '',
     }));
@@ -243,16 +271,34 @@ export class UnifiedAssetService {
       const api = data.group === 'PPE' ? ppeApi : seApi;
       const apiResponse = await api.create(apiData);
 
-      // Since the API response doesn't include the created asset ID,
-      // we need to search for the asset by propertyNumber to get the ID
-      const searchResults = await this.getAll({ search: data.propertyNumber });
-      const createdAsset = searchResults.items.find(asset => asset.propertyNumber === data.propertyNumber);
-
-      if (!createdAsset || !createdAsset.id) {
-        throw new Error('Failed to retrieve created asset ID');
+      // Extract ptaId from the API response
+      if (!apiResponse.success || !apiResponse.data?.ptaId) {
+        throw new Error('Failed to create asset: ' + (apiResponse.message || 'Unknown error'));
       }
 
-      const ptaId = parseInt(createdAsset.id);
+      const ptaId = apiResponse.data.ptaId;
+
+      // Construct the created asset from input data and ptaId
+      const createdAsset: Asset = {
+        id: ptaId.toString(),
+        group: data.group,
+        propertyNumber: data.propertyNumber,
+        category: data.category,
+        legend: data.legend,
+        description: data.description,
+        brand: data.brand,
+        model: data.model,
+        serialNumber: data.serialNumber,
+        parts: data.parts,
+        unitOfMeasurement: data.unitOfMeasurement,
+        unitValue: data.unitValue,
+        dateAcquired: data.dateAcquired,
+        estimatedUsefulLife: data.estimatedUsefulLife,
+        condition: 'Working', // Default condition for new assets
+        actualDivision: data.movements?.[0]?.divisionId || '',
+        movements: data.movements,
+        history: data.movements,
+      };
 
       // Handle parts and movements if they exist
       if (data.parts && data.parts.length > 0) {
@@ -273,20 +319,9 @@ export class UnifiedAssetService {
 
       if (data.movements && data.movements.length > 0) {
         for (const movement of data.movements) {
-          await api.editMovement({
-            id: parseInt(movement.id || '0'),
-            ptaId,
-            dateAssigned: movement.dateAssigned,
-            parItrNumber: movement.parItrNumber || '',
-            plantillaEmployeeId: parseInt(movement.plantillaEmployeeId || '0', 10),
-            nonPlantillaEmployeeId: parseInt(movement.nonPlantillaEmployeeId || '0', 10),
-            condition: movement.condition || 'Working',
-            actualOfficeId: parseInt(movement.officeId || '0', 10),
-            actualDivisionId: parseInt(movement.divisionId || '0', 10),
-            isActive: true,
-            actionBySystemUserId: parseInt(actionBySystemUserId),
-            sessionKey,
-          });
+          const normalizedMovement = this.normalizeMovement(movement, data.model || '');
+          normalizedMovement.ptaId = ptaId;
+          await api.editMovement(normalizedMovement);
         }
       }
 
@@ -327,6 +362,16 @@ export class UnifiedAssetService {
       };
 
       const apiResponse = await api.update(apiData);
+
+      // Handle movements update if provided
+      if (data.movements && data.movements.length > 0) {
+        for (const movement of data.movements) {
+          const normalizedMovement = normalizeMovement(movement, data.model || currentAsset.model, parseInt(id));
+          console.debug('movement payload', normalizedMovement);
+          await api.editMovement(normalizedMovement);
+        }
+      }
+
       return this.mapApiToUnifiedAsset(apiResponse, group);
     } catch (error) {
       console.error('Error updating unified asset:', error);
@@ -343,4 +388,8 @@ export class UnifiedAssetService {
     // Use PPE API for batch upload (both PPE and SE use the same endpoint)
     return await ppeApi.batchUpload(file, userId, sessionKey);
   }
+
+
+
+  
 }

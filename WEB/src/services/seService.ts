@@ -1,5 +1,6 @@
 import { seApi } from '@/api/se';
 import { SEAsset, SEMovementHistory, RRSPEntry } from '@/types/supply/se';
+import { normalizeMovement } from '@/utils/normalizer';
 
 type AccountabilityBlock = {
   id: string;
@@ -189,20 +190,18 @@ export class SEService {
       // Create movements
       if (data.accountabilityBlocks && data.accountabilityBlocks.length > 0) {
         for (const block of data.accountabilityBlocks as any[]) {
-          await seApi.editMovement({
-            id: parseInt(block.id || '0'),
-            ptaId,
+          const normalizedMovement = normalizeMovement({
+            id: block.id || '0',
             dateAssigned: block.date_issued_returned,
             parItrNumber: block.itr_rrsp_number || '',
-            plantillaEmployeeId: parseInt(block.plantilla_employee_id || '0'),
-            nonPlantillaEmployeeId: parseInt(block.non_plantilla_employee_id || '0'),
+            plantillaEmployeeId: block.plantillaEmployeeId || block.plantilla_employee_id,
+            nonPlantillaEmployeeId: block.nonPlantillaEmployeeId || block.non_plantilla_employee_id,
+            officeId: '0', // Assuming default
+            divisionId: '0', // Assuming default
             condition: block.condition || 'Working',
-            actualOfficeId: 0, // Assuming default
-            actualDivisionId: 0, // Assuming default
-            isActive: block.label === 'Current Holder',
-            actionBySystemUserId: parseInt(actionBySystemUserId),
-            sessionKey,
-          });
+          }, data.model || '', ptaId);
+          normalizedMovement.isActive = block.label === 'Current Holder';
+          await seApi.editMovement(normalizedMovement);
         }
       }
 
