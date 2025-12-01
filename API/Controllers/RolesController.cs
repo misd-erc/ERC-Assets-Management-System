@@ -60,8 +60,8 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     roles = roles.Where(x =>
-                        x.RoleName.ToLower().Contains(searchLower) ||
-                        x.Description.ToLower().Contains(searchLower));
+                        (x.RoleName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
