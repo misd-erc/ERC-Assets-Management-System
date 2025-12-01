@@ -417,32 +417,225 @@ namespace API.Controllers
                     ));
                 }
                 #endregion
+
+                #region Group by Condition
+                else if (model.GroupBy == "Condition")
+                {
+                    IQueryable<VwPTA?> ptasQuery = _getTools.PTA.GetVwPTAsByGroup(model.GroupName!, context)
+                        .Where(x => x.Group == model.GroupName);
+
+                    if (!string.IsNullOrWhiteSpace(model.SearchString))
+                    {
+                        string searchLower = model.SearchString.ToLowerInvariant();
+                        ptasQuery = ptasQuery.Where(x =>
+                                (x.PropertyNumber != null && x.PropertyNumber.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.Description != null && x.Description.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.Brand != null && x.Brand.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.Model != null && x.Model.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.SerialNumber != null && x.SerialNumber.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.UnitOfMeasurement != null && x.UnitOfMeasurement.ToLowerInvariant().Contains(searchLower)) ||
+                                x.UnitValue.ToString().Contains(searchLower) || // UnitValue is value type, safe
+                                (x.DateAcquired != null && x.DateAcquired.Value.ToString("yyyy-MM-dd").Contains(searchLower)) ||
+                                (model.GroupName == TblPTA.PPE &&
+                                 x.EstimatedUsefulLife != null &&
+                                 x.EstimatedUsefulLife.Value.ToString().Contains(searchLower))
+                            );
+                    }
+
+                    // Apply date range filters
+                    if (model.StartDate.HasValue)
+                        ptasQuery = ptasQuery.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                    if (model.EndDate.HasValue)
+                        ptasQuery = ptasQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                    // Get distinct employees who have at least one PTA
+                    var conditionGroups = ptasQuery
+                        .Where(x => x.RemarksEncrypted != null && x.RemarksEncrypted != "")
+                        .ToList()
+                        .GroupBy(x => x.Remarks.ToLower())
+                        .Select(g => new
+                        {
+                            Remarks = g.Key
+                        })
+                        .AsEnumerable(); // Switch to client-side for complex grouping logic
+
+                    int totalCount = conditionGroups.Count();
+                    int skip = (model.PageNumber - 1) * model.PageSize;
+
+                    var pagedEmployeeGroups = conditionGroups
+                        .Skip(skip)
+                        .Take(model.PageSize)
+                        .ToList();
+
+                    var ptasResponses = new List<PTAGroupedByConditionResponseModel>();
+
+                    foreach (var group in pagedEmployeeGroups)
+                    {
+                        string condition = group.Remarks;
+
+                        var conditionPtaList = ptasQuery.Where(x => x.RemarksEncrypted != null && x.RemarksEncrypted != "")
+                         .ToList().Where(x => x.Remarks.ToLower() == condition.ToLower());
+
+                        var ptaResponseModels = new List<PTAResponseModel>();
+
+                        foreach (var x in conditionPtaList)
+                        {
+                            var ptaModel = new PTAResponseModel
+                            {
+                                Id = x.Id,
+                                Group = x.Group,
+                                PropertyNumber = x.PropertyNumber,
+                                Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
+                                Legend = await _getTools.PTA.GetTblPTALegendAsync(x.CategoryId, context),
+                                Description = x.Description,
+                                Brand = x.Brand,
+                                Model = x.Model,
+                                SerialNumber = x.SerialNumber,
+                                UnitOfMeasurement = x.UnitOfMeasurement,
+                                UnitValue = x.UnitValue,
+                                DateAcquired = x.DateAcquired,
+                                EstimatedUsefulLife = x.EstimatedUsefulLife,
+                                Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
+                                Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
+                                IsActive = x.IsActive,
+                                CreatedAt = x.CreatedAt
+                            };
+                            ptaResponseModels.Add(ptaModel);
+                        }
+
+                        ptasResponses.Add(new PTAGroupedByConditionResponseModel
+                        {
+                            Condition = condition,
+                            PTA = ptaResponseModels
+                        });
+                    }
+
+                    await AuditTrailTool.LogActivityAsync(_options, $"Viewed {model.GroupName} grouped by Condition with filters", actionBy: model.ActionBySystemUserId);
+
+                    return Ok(ApiResponse<PTAGroupedByConditionResponseModel>.OkPaginated(
+                        ptasResponses,
+                        model.PageNumber,
+                        model.PageSize,
+                        totalCount,
+                        "PTAs grouped by condition retrieved successfully"
+                    ));
+                }
+                #endregion
+
+                #region Group by Division
+                else if (model.GroupBy == "Division")
+                {
+                    IQueryable<VwPTA?> ptasQuery = _getTools.PTA.GetVwPTAsByGroup(model.GroupName!, context)
+                        .Where(x => x.Group == model.GroupName);
+
+                    if (!string.IsNullOrWhiteSpace(model.SearchString))
+                    {
+                        string searchLower = model.SearchString.ToLowerInvariant();
+                        ptasQuery = ptasQuery.Where(x =>
+                                (x.PropertyNumber != null && x.PropertyNumber.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.Description != null && x.Description.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.Brand != null && x.Brand.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.Model != null && x.Model.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.SerialNumber != null && x.SerialNumber.ToLowerInvariant().Contains(searchLower)) ||
+                                (x.UnitOfMeasurement != null && x.UnitOfMeasurement.ToLowerInvariant().Contains(searchLower)) ||
+                                x.UnitValue.ToString().Contains(searchLower) || // UnitValue is value type, safe
+                                (x.DateAcquired != null && x.DateAcquired.Value.ToString("yyyy-MM-dd").Contains(searchLower)) ||
+                                (model.GroupName == TblPTA.PPE &&
+                                 x.EstimatedUsefulLife != null &&
+                                 x.EstimatedUsefulLife.Value.ToString().Contains(searchLower))
+                            );
+                    }
+
+                    // Apply date range filters
+                    if (model.StartDate.HasValue)
+                        ptasQuery = ptasQuery.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                    if (model.EndDate.HasValue)
+                        ptasQuery = ptasQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                    // Get distinct employees who have at least one PTA
+                    var divisionGroups = ptasQuery
+                        .Where(x => x.ActualDivisionId != null)
+                        .GroupBy(x => x.ActualDivisionId)
+                        .Select(g => new
+                        {
+                            DivisionId = g.Key
+                        })
+                        .AsEnumerable(); // Switch to client-side for complex grouping logic
+
+                    int totalCount = divisionGroups.Count();
+                    int skip = (model.PageNumber - 1) * model.PageSize;
+
+                    var pagedEmployeeGroups = divisionGroups
+                        .Skip(skip)
+                        .Take(model.PageSize)
+                        .ToList();
+
+                    var ptasResponses = new List<PTAGroupedByDivisionResponseModel>();
+
+                    foreach (var group in pagedEmployeeGroups)
+                    {
+                        long? divisionId = group.DivisionId;
+
+                        var divisionPtaList = ptasQuery.Where(x => x.ActualDivisionId == divisionId).ToList();
+
+                        var ptaResponseModels = new List<PTAResponseModel>();
+
+                        foreach (var x in divisionPtaList)
+                        {
+                            var ptaModel = new PTAResponseModel
+                            {
+                                Id = x.Id,
+                                Group = x.Group,
+                                PropertyNumber = x.PropertyNumber,
+                                Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
+                                Legend = await _getTools.PTA.GetTblPTALegendAsync(x.CategoryId, context),
+                                Description = x.Description,
+                                Brand = x.Brand,
+                                Model = x.Model,
+                                SerialNumber = x.SerialNumber,
+                                UnitOfMeasurement = x.UnitOfMeasurement,
+                                UnitValue = x.UnitValue,
+                                DateAcquired = x.DateAcquired,
+                                EstimatedUsefulLife = x.EstimatedUsefulLife,
+                                Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
+                                Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
+                                IsActive = x.IsActive,
+                                CreatedAt = x.CreatedAt
+                            };
+                            ptaResponseModels.Add(ptaModel);
+                        }
+
+                        TblDivision? division = await _getTools.Office.GetTblDivisionAsync(divisionId, context);
+                        TblOffice? office = await _getTools.Office.GetTblOfficeAsync(division.OfficeId, context);
+
+                        ptasResponses.Add(new PTAGroupedByDivisionResponseModel
+                        {
+                            DivisionId = division.Id,
+                            Name = division.Name,
+                            Acronym = division.Acronym,
+                            Office = office,
+                            PTA = ptaResponseModels
+                        });
+                    }
+
+                    await AuditTrailTool.LogActivityAsync(_options, $"Viewed {model.GroupName} grouped by Division with filters", actionBy: model.ActionBySystemUserId);
+
+                    return Ok(ApiResponse<PTAGroupedByDivisionResponseModel>.OkPaginated(
+                        ptasResponses,
+                        model.PageNumber,
+                        model.PageSize,
+                        totalCount,
+                        "PTAs grouped by division retrieved successfully"
+                    ));
+                }
+                #endregion
+
                 else
                 {
-                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "In Progress"));
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid Group By Input"));
                 }
-
-                //#region Group by Category
-                //else if (model.GroupBy == "Category")
-                //{
-
-                //}
-                //#endregion
-
-                //#region Group by Condition
-                //else if (model.GroupBy == "Condition")
-                //{
-
-                //}
-                //#endregion
-
-                //#region Group by Division
-                //else if (model.GroupBy == "Division")
-                //{
-
-                //}
-                //#endregion
-
 
             }
             catch (Exception ex)
