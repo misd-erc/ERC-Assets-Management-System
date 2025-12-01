@@ -30,10 +30,12 @@ namespace API.Controllers
         private readonly IPortalEditTools _editTools;
 
         public RolesController(
-            DbContextOptions<PortalDbContext> options,
-            IPortalEditTools editTools,
-            IPortalGetTools getTools)
+            AccountGetTools accountGetTools,
+            AccountEditTools accountEditTools,
+            DbContextOptions<PortalDbContext> options)
         {
+            _accountGetTools = accountGetTools;
+            _accountEditTools = accountEditTools;
             _options = options;
             _getTools = getTools;
             _editTools = editTools;
@@ -52,7 +54,7 @@ namespace API.Controllers
 
             try
             {
-                IEnumerable<TblSystemRole?> roles = await _getTools.Account
+                IEnumerable<TblSystemRole?> roles = await _accountGetTools
                     .GetSystemRoles(context)
                     .ToListAsync();
 
@@ -99,13 +101,7 @@ namespace API.Controllers
             {
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(RolesController));
-                return StatusCode(
-                    ApiStatusCode.InternalServerError,
-                    ApiResponse<object>.Fail(
-                        ErrorCodes.SERVER_ERROR,
-                        "An error occurred while processing your request."
-                    )
-                );
+                return StatusCode(500, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
 
@@ -123,7 +119,7 @@ namespace API.Controllers
             try
             {
                 SystemRoleResponseModel? role =
-                    await _getTools.Account.GetSystemRoleWithScopesAsync(systemRoleId, context);
+                    await _accountGetTools.GetSystemRoleWithScopesAsync(systemRoleId, context);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -144,7 +140,7 @@ namespace API.Controllers
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(RolesController));
                 return StatusCode(
-                    ApiStatusCode.InternalServerError,
+                    500,
                     ApiResponse<object>.Fail(
                         ErrorCodes.SERVER_ERROR,
                         "An error occurred while processing your request."
@@ -197,7 +193,7 @@ namespace API.Controllers
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(RolesController));
                 return StatusCode(
-                    ApiStatusCode.InternalServerError,
+                    500,
                     ApiResponse<object>.Fail(
                         ErrorCodes.SERVER_ERROR,
                         "An error occurred while processing your request."
@@ -224,7 +220,7 @@ namespace API.Controllers
             try
             {
                 bool isDeleted =
-                    await _editTools.Account.DeleteTblSystemRoleAsync(
+                    await _accountEditTools.DeleteTblSystemRoleAsync(
                         roleId,
                         model.ActionBySystemUserId,
                         context
@@ -243,7 +239,7 @@ namespace API.Controllers
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
                 return StatusCode(
-                    ApiStatusCode.InternalServerError,
+                    500,
                     ApiResponse<object>.Fail(
                         ErrorCodes.SERVER_ERROR,
                         "An error occurred while processing your request."
