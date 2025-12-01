@@ -63,8 +63,8 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     auditTrailQuery = auditTrailQuery.Where(x =>
-                        x.TableName.ToLower().Contains(searchLower) ||
-                        x.Action.ToLower().Contains(searchLower));
+                        (x.TableName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Action ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
@@ -143,8 +143,8 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     auditTrailQuery = auditTrailQuery.Where(x =>
-                        x.TableName.ToLower().Contains(searchLower) ||
-                        x.Action.ToLower().Contains(searchLower));
+                        (x.TableName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Action ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
@@ -211,8 +211,8 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     auditTrailQuery = auditTrailQuery.Where(x =>
-                        x.TableName.ToLower().Contains(searchLower) ||
-                        x.Action.ToLower().Contains(searchLower));
+                        (x.TableName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Action ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
@@ -290,7 +290,7 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     activityLogQuery = activityLogQuery.Where(x =>
-                        x.Action.ToLower().Contains(searchLower));
+                        (x.Action ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
@@ -511,7 +511,7 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     errorLogQuery = errorLogQuery.Where(x =>
-                        x.Description.ToLower().Contains(searchLower));
+                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)

@@ -61,8 +61,8 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     offices = offices.Where(x =>
-                        x.Name.ToLower().Contains(searchLower) ||
-                        x.Acronym.ToLower().Contains(searchLower));
+                        (x.Name ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Acronym ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
@@ -174,10 +174,10 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     divisions = divisions.Where(x =>
-                        x.Name.ToLower().Contains(searchLower) ||
-                        x.Acronym.ToLower().Contains(searchLower) ||
-                        x.OfficeName.ToLower().Contains(searchLower) ||
-                        x.OfficeAcronym.ToLower().Contains(searchLower));
+                        (x.Name ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Acronym ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.OfficeName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.OfficeAcronym ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
@@ -290,7 +290,7 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     employmentTypes = employmentTypes.Where(x =>
-                        x.Name.ToLower().Contains(searchLower));
+                        (x.Name ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
@@ -398,9 +398,9 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     positions = positions.Where(x =>
-                        x.Name.ToLower().Contains(searchLower) ||
-                        x.Acronym.ToLower().Contains(searchLower) ||
-                        x.SalaryGrade.ToLower().Contains(searchLower));
+                        (x.Name ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Acronym ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.SalaryGrade ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)

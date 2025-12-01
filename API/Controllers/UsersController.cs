@@ -65,15 +65,15 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     users = users.Where(x =>
-                        x.Email.ToLower().Contains(searchLower) ||
-                        x.FirstName.ToLower().Contains(searchLower) ||
-                        x.LastName.ToLower().Contains(searchLower) ||
-                        x.SystemRoleName.ToLower().Contains(searchLower) ||
-                        x.StatusName.ToLower().Contains(searchLower) ||
-                        x.OfficeName.ToLower().Contains(searchLower) ||
-                        x.OfficeAcronym.ToLower().Contains(searchLower) ||
-                        x.DivisionName.ToLower().Contains(searchLower) ||
-                        x.DivisionAcronym.ToLower().Contains(searchLower));
+                        (x.Email ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.FirstName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.LastName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.SystemRoleName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.StatusName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.OfficeName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.OfficeAcronym ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.DivisionName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.DivisionAcronym ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
@@ -186,7 +186,7 @@ namespace API.Controllers
             }
         }
 
-   //     // GET api/users/system-role/all
+        //     // GET api/users/system-role/all
    //     [HttpGet("system-role/all")]
    //     [ValidateSessionToken]
    //     [ValidateModelRequiredFields]
@@ -290,6 +290,7 @@ namespace API.Controllers
    //     }
 
         // GET api/users/system-notification/all
+
         [HttpGet("system-notification/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -307,8 +308,8 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     notifications = notifications.Where(x =>
-                        x.Title.ToLower().Contains(searchLower) ||
-                        x.Description.ToLower().Contains(searchLower));
+                        (x.Title ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
@@ -375,8 +376,8 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     notifications = notifications.Where(x =>
-                        x.Title.ToLower().Contains(searchLower) ||
-                        x.Description.ToLower().Contains(searchLower));
+                        (x.Title ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
@@ -481,8 +482,8 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     modules = modules.Where(x =>
-                        x.Name.ToLower().Contains(searchLower) ||
-                        x.Acronym.ToLower().Contains(searchLower));
+                        (x.Name ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Acronym ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)

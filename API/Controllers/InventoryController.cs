@@ -73,7 +73,7 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     ppeCategories = ppeCategories.Where(x =>
-                        x.Name.ToLower().Contains(searchLower));
+                        (x.Name ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
@@ -132,7 +132,7 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     ppeLegends = ppeLegends.Where(x =>
-                        x.Name.ToLower().Contains(searchLower));
+                        (x.Name ?? "").ToLowerInvariant().ToLower().Contains(searchLower));
                 }
 
                 if (model.StartDate.HasValue)
