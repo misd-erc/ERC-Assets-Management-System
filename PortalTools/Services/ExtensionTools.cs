@@ -11,6 +11,8 @@ namespace PortalTools.Services
 {
     public static class ExtensionTools
     {
+
+        #region Softdelete
         /// <summary>
         /// Soft deletes all entities in the query by setting IsDeleted = true and DeletedAt = now.
         /// Tracks the deletion in TblAuditTrail if AuditTrailTool is available.
@@ -49,6 +51,7 @@ namespace PortalTools.Services
 
             return await context.SaveChangesAsync();
         }
+        #endregion
 
     }
 }

@@ -24,7 +24,7 @@ namespace PortalTools.Services
             ExcelPackage.License.SetNonCommercialPersonal("ERC AMS");
         }
 
-        #region PPE Parser
+        #region PTA Parser
 
         public List<PTAItem> ParsePtaFile(IFormFile file)
         {

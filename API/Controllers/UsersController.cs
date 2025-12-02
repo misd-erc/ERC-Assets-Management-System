@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.CallRecords;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
@@ -20,6 +21,7 @@ using PortalDB.Models.ViewModels.Email;
 using PortalDB.Services;
 using PortalTools.Composition;
 using PortalTools.Services;
+using static System.Net.WebRequestMethods;
 
 namespace API.Controllers
 {
@@ -707,7 +709,7 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                //await AuditTrailTool.LogActivityAsync(_options, $"Microsoft Entra information validated", actionBy: user.Id);
+
                 return Ok(ApiResponse<object>.Ok(publicRM, $"OTP has been sent to email address"));
 
             }
@@ -934,8 +936,44 @@ namespace API.Controllers
 
                     await context.SaveChangesAsync();
                     await transaction.CommitAsync();
-                    //await AuditTrailTool.LogActivityAsync(_options, $"OTP has been verified", actionBy: sessionToken.SystemUserId);
-                    await AuditTrailTool.LogActivityAsync(_options, $"Successfully logged in", actionBy: sessionToken.SystemUserId);
+
+                    if (userInfo.IsActive)
+                        await AuditTrailTool.LogActivityAsync(_options, $"Successfully logged in", actionBy: sessionToken.SystemUserId);
+                    else if (!userInfo.IsActive && userInfo.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.PENDING])
+                    {
+                        await EmailTools.SendSystemEmailAsync(
+                            _options,
+                            subject: EmailConstants.SUBJECT_ACCOUNT_STATUS_UPDATE,
+                            templateNameOrBody: EmailConstants.TEMPLATE_GENERAL_EMAIL,
+                            recipient: userInfo.Email,
+                            model: new EmailViewModel
+                            {
+                                Name = userInfo.FirstName,
+                                Body = EmailConstants.BODY_PENDING_ACCOUNT
+                            }
+                        );
+
+                            var adminQueryable = await _getTools.Account
+                            .GetSystemUsersBySystemRoleWithContextAsync(TblSystemRole.ADMINISTRATOR.ToString(), context);
+
+                            var adminEmails = await adminQueryable
+                                .Select(u => EncryptionHelper.Decrypt(u.EmailEncrypted))
+                                .ToListAsync();
+
+                            await EmailTools.SendSystemEmailAsync(
+                            _options,
+                            subject: EmailConstants.SUBJECT_ACCOUNT_STATUS_UPDATE,
+                            templateNameOrBody: EmailConstants.TEMPLATE_PENDING_USER_FOR_ADMIN_EMAIL,
+                            recipients: adminEmails,
+                            model: new EmailViewModel
+                            {
+                                Name = $"{userInfo.FirstName} {userInfo.LastName}{(userInfo.EmployeeId != null ? $" - {userInfo.EmployeeId}" : "")}",
+                                Body = EmailConstants.BODY_PENDING_ACCOUNT
+                            }
+                        );
+
+                    }
+
                     return Ok(ApiResponse<object>.Ok(publicRM, $"OTP has been verified"));
 
                 }

@@ -11,11 +11,20 @@
 
   <ItemGroup>
     <Compile Remove="bin\**" />
+    <Compile Remove="Entities\ACCT\**" />
+    <Compile Remove="Entities\INV\**" />
     <Compile Remove="obj\**" />
+    <Compile Remove="Properties\**" />
     <EmbeddedResource Remove="bin\**" />
+    <EmbeddedResource Remove="Entities\ACCT\**" />
+    <EmbeddedResource Remove="Entities\INV\**" />
     <EmbeddedResource Remove="obj\**" />
+    <EmbeddedResource Remove="Properties\**" />
     <None Remove="bin\**" />
+    <None Remove="Entities\ACCT\**" />
+    <None Remove="Entities\INV\**" />
     <None Remove="obj\**" />
+    <None Remove="Properties\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,11 +38,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Entities\INV\" />
-    <Folder Include="Entities\ACCT\" />
     <Folder Include="Migrations\" />
     <Folder Include="Models\QueryParams\AuditTrail\" />
-    <Folder Include="Properties\" />
   </ItemGroup>
 
   <ItemGroup>
