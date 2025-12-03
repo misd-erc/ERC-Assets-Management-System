@@ -12,7 +12,7 @@ namespace API.Controllers
     {
         [HttpGet("system-environment")]
         [AllowAnonymous]
-        public IActionResult Get()
+        public IActionResult GetSystemEnvironment()
         {
             var type = typeof(EnvironmentConstants);
             var fields = type.GetFields(BindingFlags.Public | BindingFlags.Static)
