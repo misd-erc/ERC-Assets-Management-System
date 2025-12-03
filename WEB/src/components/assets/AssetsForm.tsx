@@ -12,6 +12,7 @@ import { getDivisions } from '@/api/office-management/divisionApi';
 import { VwOffice, VwDivision } from '@/types/office';
 import { useAuthStore } from '@/store/auth';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { getCategories, getLegends } from '@/api/inventoryApi';
 
 interface AssetsFormProps {
   asset?: Asset;
@@ -44,6 +45,8 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
   const [accountabilityEntries, setAccountabilityEntries] = useState<UnifiedMovement[]>([]);
   const [offices, setOffices] = useState<VwOffice[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [legends, setLegends] = useState<string[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -59,6 +62,11 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
       }
     };
     loadData();
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchLegends();
   }, []);
 
   // Set default office and division from user profile for new assets
@@ -216,26 +224,25 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
     );
   };
 
-  const getCategoryOptions = () => {
-    return [
-      { value: 'ICT Equipment', label: 'ICT Equipment' },
-      { value: 'Office Equipment', label: 'Office Equipment' },
-      { value: 'Motor Vehicle', label: 'Motor Vehicle' },
-      { value: 'Furniture and Fixtures', label: 'Furniture and Fixtures' },
-      { value: 'Communication Equipment', label: 'Communication Equipment' },
-      { value: 'Technical and Scientific Equipment', label: 'Technical and Scientific Equipment' },
-      { value: 'Sports Equipment', label: 'Sports Equipment' }
-    ];
+  const fetchCategories = async () => {
+    try {
+      const data = await getCategories();
+      setCategories(data);
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+    }
   };
 
-  const getLegendOptions = () => {
-    return [
-      { value: 'Office Equipment', label: 'Office Equipment' },
-      { value: 'IT Equipment', label: 'IT Equipment' },
-      { value: 'Motor Vehicle', label: 'Motor Vehicle' },
-      { value: 'Furniture', label: 'Furniture' }
-    ];
+  const fetchLegends = async () => {
+    try {
+      const data = await getLegends();
+      setLegends(data);
+    } catch (error) {
+      console.error('Failed to fetch legends:', error);
+    }
   };
+
+
 
   const getUnitOfMeasurementOptions = () => {
     return [
@@ -283,9 +290,9 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {getCategoryOptions().map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -302,9 +309,9 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
                   <SelectValue placeholder="Select legend" />
                 </SelectTrigger>
                 <SelectContent>
-                  {getLegendOptions().map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {legends.map(legend => (
+                    <SelectItem key={legend} value={legend}>
+                      {legend}
                     </SelectItem>
                   ))}
                 </SelectContent>
