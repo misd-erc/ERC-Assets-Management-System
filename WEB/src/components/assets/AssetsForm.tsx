@@ -27,8 +27,8 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
   const [formData, setFormData] = useState<Omit<Asset, 'id'>>({
     group: 'PPE',
     propertyNumber: '',
-    category: '',
-    legend: '',
+    category: null,
+    legend: null,
     description: '',
     brand: '',
     model: '',
@@ -38,10 +38,7 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
     unitValue: 0,
     dateAcquired: '',
     estimatedUsefulLife: 5,
-    condition: 'Working',
-    actualDivision: '',
     movements: [],
-    history: [],
   });
 
   const [accountabilityEntries, setAccountabilityEntries] = useState<UnifiedMovement[]>([]);
@@ -67,13 +64,13 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
   // Set default office and division from user profile for new assets
   useEffect(() => {
     if (!isEditing && userProfile && offices.length > 0 && divisions.length > 0 && accountabilityEntries.length > 0) {
-      const userOfficeId = userProfile.office?.id?.toString() || '';
-      const userDivisionId = userProfile.division?.id?.toString() || '';
+      const userOffice = offices.find(o => o.id === userProfile.office?.id);
+      const userDivision = divisions.find(d => d.id === userProfile.division?.id);
 
       // Only set defaults if the current entry doesn't have values already
-      if (accountabilityEntries[0] && !accountabilityEntries[0].officeId && !accountabilityEntries[0].divisionId) {
+      if (accountabilityEntries[0] && accountabilityEntries[0].office.id === 0 && accountabilityEntries[0].division.id === 0) {
         setAccountabilityEntries(prev => prev.map((entry, index) =>
-          index === 0 ? { ...entry, officeId: userOfficeId, divisionId: userDivisionId } : entry
+          index === 0 ? { ...entry, office: userOffice || entry.office, division: userDivision || entry.division } : entry
         ));
       }
     }
@@ -84,8 +81,8 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
       setFormData({
         group: asset.group,
         propertyNumber: asset.propertyNumber || '',
-        category: asset.category || '',
-        legend: asset.legend || '',
+        category: asset.category,
+        legend: asset.legend,
         description: asset.description || '',
         brand: asset.brand || '',
         model: asset.model || '',
@@ -95,10 +92,7 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
         unitValue: asset.unitValue || 0,
         dateAcquired: asset.dateAcquired || '',
         estimatedUsefulLife: asset.estimatedUsefulLife || 5,
-        condition: asset.condition || 'Working',
-        actualDivision: asset.actualDivision || '',
         movements: asset.movements || [],
-        history: asset.history || [],
       });
 
       // Initialize accountability entries from movements
@@ -107,26 +101,28 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
       } else {
         // Default entry
         setAccountabilityEntries([{
-          id: '0',
+          id: Date.now(),
+          ptaId: 0,
           dateAssigned: new Date().toISOString(),
           parItrNumber: '',
-          plantillaEmployeeId: '',
-          nonPlantillaEmployeeId: '',
-          officeId: '',
-          divisionId: '',
+          plantillaEmployeeId: null,
+          nonPlantillaEmployeeId: null,
+          office: { id: 0, name: '', acronym: '' },
+          division: { id: 0, name: '', acronym: '' },
           condition: 'Working',
         }]);
       }
     } else {
       // For new assets, initialize with default entry
       setAccountabilityEntries([{
-        id: '0',
+        id: Date.now(),
+        ptaId: 0,
         dateAssigned: new Date().toISOString(),
         parItrNumber: '',
-        plantillaEmployeeId: '',
-        nonPlantillaEmployeeId: '',
-        officeId: '',
-        divisionId: '',
+        plantillaEmployeeId: null,
+        nonPlantillaEmployeeId: null,
+        office: { id: 0, name: '', acronym: '' },
+        division: { id: 0, name: '', acronym: '' },
         condition: 'Working',
       }]);
     }
@@ -148,7 +144,6 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
       ...formData,
       group,
       movements: accountabilityEntries,
-      history: accountabilityEntries,
     };
 
     onSubmit(submitData);
@@ -170,7 +165,7 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
   const handleAddPart = () => {
     setFormData((prev) => ({
       ...prev,
-      parts: [...prev.parts, { id: 0, name: '', serialNumber: '' }]
+      parts: [...prev.parts, { id: 0, ptaId: 0, name: '', serialNumber: '', isActive: true }]
     }));
   };
 
@@ -194,13 +189,14 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
     setAccountabilityEntries((prev) => [
       ...prev,
       {
-        id: Date.now().toString(),
+        id: Date.now(),
+        ptaId: 0,
         dateAssigned: new Date().toISOString(),
         parItrNumber: '',
-        plantillaEmployeeId: '',
-        nonPlantillaEmployeeId: '',
-        officeId: '',
-        divisionId: '',
+        plantillaEmployeeId: null,
+        nonPlantillaEmployeeId: null,
+        office: { id: 0, name: '', acronym: '' },
+        division: { id: 0, name: '', acronym: '' },
         condition: 'Working',
       }
     ]);
@@ -280,7 +276,7 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
               <Select
-                value={formData.category}
+                value={formData.category ?? undefined}
                 onValueChange={(value) => handleInputChange('category', value)}
               >
                 <SelectTrigger>
@@ -299,7 +295,7 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
             <div className="space-y-2">
               <Label htmlFor="legend">Legend</Label>
               <Select
-                value={formData.legend}
+                value={formData.legend ?? undefined}
                 onValueChange={(value) => handleInputChange('legend', value)}
               >
                 <SelectTrigger>
@@ -473,7 +469,7 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
               <Input
                 id="estimatedUsefulLife"
                 type="number"
-                value={formData.estimatedUsefulLife}
+                value={formData.estimatedUsefulLife ?? ''}
                 onChange={(e) => handleInputChange('estimatedUsefulLife', parseInt(e.target.value) || 5)}
               />
             </div>
@@ -542,8 +538,8 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
                     <Label htmlFor={`plantillaEmployeeId-${index}`}>Plantilla Employee ID</Label>
                     <Input
                       id={`plantillaEmployeeId-${index}`}
-                      value={entry.plantillaEmployeeId}
-                      onChange={(e) => handleAccountabilityEntryChange(index, 'plantillaEmployeeId', e.target.value)}
+                      value={(entry.plantillaEmployeeId?.toString() || '') as string | undefined}
+                      onChange={(e) => handleAccountabilityEntryChange(index, 'plantillaEmployeeId', e.target.value ? parseInt(e.target.value) : null)}
                     />
                   </div>
 
@@ -551,16 +547,19 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
                     <Label htmlFor={`nonPlantillaEmployeeId-${index}`}>Non-Plantilla Employee ID</Label>
                     <Input
                       id={`nonPlantillaEmployeeId-${index}`}
-                      value={entry.nonPlantillaEmployeeId}
-                      onChange={(e) => handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', e.target.value)}
+                      value={(entry.nonPlantillaEmployeeId?.toString() || '') as string | undefined}
+                      onChange={(e) => handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', e.target.value ? parseInt(e.target.value) : null)}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor={`actualOffice-${index}`}>Office</Label>
                     <Select
-                      value={entry.officeId}
-                      onValueChange={(value) => handleAccountabilityEntryChange(index, 'officeId', value)}
+                      value={(entry.office.id ?? 0).toString()}
+                      onValueChange={(value) => {
+                        const selectedOffice = offices.find(o => o.id.toString() === value);
+                        handleAccountabilityEntryChange(index, 'office', selectedOffice || { id: 0, name: '', acronym: '' });
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select office" />
@@ -578,8 +577,11 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
                   <div className="space-y-2">
                     <Label htmlFor={`actualDivision-${index}`}>Division</Label>
                     <Select
-                      value={entry.divisionId}
-                      onValueChange={(value) => handleAccountabilityEntryChange(index, 'divisionId', value)}
+                      value={entry.division.id?.toString() || ''}
+                      onValueChange={(value) => {
+                        const selectedDivision = divisions.find(d => d.id.toString() === value);
+                        handleAccountabilityEntryChange(index, 'division', selectedDivision || { id: 0, name: '', acronym: '' });
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select division" />

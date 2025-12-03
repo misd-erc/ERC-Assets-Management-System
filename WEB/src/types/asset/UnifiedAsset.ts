@@ -1,26 +1,41 @@
 export interface Part {
   id: number;
+  ptaId: number;
   name: string;
   serialNumber: string;
+  isActive: boolean;
+}
+
+export interface Office {
+  id: number;
+  name: string;
+  acronym: string;
+}
+
+export interface Division {
+  id: number;
+  name: string;
+  acronym: string;
 }
 
 export interface UnifiedMovement {
-  id: string;
-  parItrNumber: string;
-  plantillaEmployeeId: string;
-  nonPlantillaEmployeeId: string;
-  officeId: string;
-  divisionId: string;
-  condition: string;
+  id: number;
+  ptaId: number;
   dateAssigned: string;
+  parItrNumber: string;
+  plantillaEmployeeId: number | null;
+  nonPlantillaEmployeeId: number | null;
+  office: Office;
+  division: Division;
+  condition: string;
 }
 
 export interface Asset {
-  id: string;
+  id: number;
   group: "PPE" | "SE";
   propertyNumber: string;
-  category: string;
-  legend: string;
+  category: string | null;
+  legend: string | null;
   description: string;
   brand: string;
   model: string;
@@ -29,11 +44,8 @@ export interface Asset {
   unitOfMeasurement: string;
   unitValue: number;
   dateAcquired: string;
-  estimatedUsefulLife: number;
-  condition: string;
-  actualDivision: string;
   movements: UnifiedMovement[];
-  history: UnifiedMovement[];
+  estimatedUsefulLife: number | null;
 }
 
 export type AssetGroup = "PPE" | "SE";

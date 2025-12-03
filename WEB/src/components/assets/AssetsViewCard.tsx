@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Package,
   DollarSign,
@@ -70,6 +71,10 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const formatDateToYYYYMMDD = (dateString: string) => {
+    return new Date(dateString).toISOString().split('T')[0];
   };
 
   if (asset.group === 'PPE') {
@@ -349,7 +354,32 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
 
                 <div>
                   <Label className="text-sm font-medium text-slate-600">Parts</Label>
-                  <p className="text-slate-900">{Array.isArray(asset.parts) && asset.parts.length > 0 ? asset.parts.map(part => part.name).join(', ') : '-'}</p>
+                  {Array.isArray(asset.parts) && asset.parts.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Serial Number</TableHead>
+                          <TableHead>Active</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {asset.parts.map((part) => (
+                          <TableRow key={part.id}>
+                            <TableCell>{part.name}</TableCell>
+                            <TableCell>{part.serialNumber}</TableCell>
+                            <TableCell>
+                              <Badge variant={part.isActive ? "default" : "secondary"}>
+                                {part.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-slate-900">-</p>
+                  )}
                 </div>
 
                 <div>
@@ -418,20 +448,25 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
 
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium text-slate-600">Actual Division</Label>
-                  <p className="text-slate-900">{asset.actualDivision || '-'}</p>
+                  <Label className="text-sm font-medium text-slate-600">Office</Label>
+                  <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? asset.movements[0].office.name : '-'}</p>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium text-slate-600">Division</Label>
+                  <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? asset.movements[0].division.name : '-'}</p>
                 </div>
 
                 <div>
                   <Label className="text-sm font-medium text-slate-600">Condition</Label>
                   <div className="flex items-center gap-2 mt-1">
-                    {getConditionIcon(asset.condition || '')}
-                    {getConditionBadge(asset.condition || '')}
+                    {asset.movements && asset.movements.length > 0 ? getConditionIcon(asset.movements[0].condition || '') : getConditionIcon('')}
+                    {asset.movements && asset.movements.length > 0 ? getConditionBadge(asset.movements[0].condition || '') : getConditionBadge('')}
                   </div>
                 </div>
 
                 <div>
-                  <Label className="text-sm font-medium text-slate-600">Date</Label>
+                  <Label className="text-sm font-medium text-slate-600">Date Assigned</Label>
                   <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? formatDate(asset.movements[0].dateAssigned) : '-'}</p>
                 </div>
               </div>
@@ -439,47 +474,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
           </CardContent>
         </Card>
 
-        {/* Movement History */}
-        {asset.history && asset.history.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <History className="size-5 text-blue-600" />
-                Movement History
-              </CardTitle>
-              <CardDescription>Previous transfers and assignments</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {asset.history.map((entry, index) => (
-                  <div key={entry.id} className="border-l-2 border-blue-200 pl-4 pb-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Calendar className="size-4 text-slate-400" />
-                      <span className="text-sm text-slate-600">
-                        {formatDate(entry.dateAssigned)}
-                      </span>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <p className="text-slate-900">
-                        <span className="font-medium">PAR/ITR:</span> {entry.parItrNumber || '-'}
-                      </p>
-                      <p className="text-slate-600">
-                        <span className="font-medium">Employee:</span> {entry.plantillaEmployeeId || entry.nonPlantillaEmployeeId || '-'}
-                      </p>
-                      <p className="text-slate-600">
-                        <span className="font-medium">Division:</span> {entry.divisionId || '-'}
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-slate-600 font-medium">Condition:</span>
-                        {getConditionBadge(entry.condition)}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+
       </div>
     );
   }
