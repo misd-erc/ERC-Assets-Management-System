@@ -3,6 +3,7 @@ using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Entities.DBO.Storage;
+using PortalDB.Models.ResponseModels.Account;
 using PortalDB.Models.ResponseModels.PTA;
 using PortalDB.Services;
 using PortalTools.Composition;
@@ -27,47 +28,98 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
             if (!ptaId.HasValue || ptaId.Value <= 0)
                 return Enumerable.Empty<PTAMovementResponseModel>().AsQueryable();
 
-            var query = context.TblPTAMovements
-                .AsNoTracking() // Best practice for read-only queries
+            return context.TblPTAMovements
+                .AsNoTracking()
                 .Where(m => !m.IsDeleted && m.PTAId == ptaId.Value)
 
-                // Left Join: TblOffices
+                // LEFT JOIN 1: ActualOffice
                 .GroupJoin(
                     context.TblOffices.AsNoTracking(),
                     movement => movement.ActualOfficeId,
                     office => office.Id,
-                    (movement, officeGroup) => new { movement, officeGroup })
+                    (movement, officeGroup) => new { movement, officeGroup }
+                )
                 .SelectMany(
-                    x => x.officeGroup.DefaultIfEmpty(),
-                    (x, office) => new { x.movement, office })
+                    temp => temp.officeGroup.DefaultIfEmpty(),
+                    (temp, actualOffice) => new { temp.movement, actualOffice }
+                )
 
-                // Left Join: TblDivisions
+                // LEFT JOIN 2: ActualDivision
                 .GroupJoin(
                     context.TblDivisions.AsNoTracking(),
-                    x => x.movement.ActualDivisionId,
+                    temp => temp.movement.ActualDivisionId,
                     division => division.Id,
-                    (x, divisionGroup) => new { x.movement, x.office, divisionGroup })
+                    (temp, divisionGroup) => new { temp.movement, temp.actualOffice, divisionGroup }
+                )
                 .SelectMany(
-                    x => x.divisionGroup.DefaultIfEmpty(),
-                    (x, division) => new PTAMovementResponseModel
+                    temp => temp.divisionGroup.DefaultIfEmpty(),
+                    (temp, actualDivision) => new PTAMovementResponseModel
                     {
-                        Id = x.movement.Id,
-                        PTAId = x.movement.PTAId,
-                        DateAssigned = x.movement.DateAssigned,
-                        ParItrNumber = x.movement.PARITRNumber,
-                        PlantillaEmployeeId = x.movement.PlantillaEmployeeId,
-                        NonPlantillaEmployeeId = x.movement.NonPlantillaEmployeeId,
-                        PlantillaEmployeeIdOriginal = x.movement.PlantillaEmployeeIdOriginal,
-                        NonPlantillaEmployeeIdOriginal = x.movement.NonPlantillaEmployeeIdOriginal,
+                        Id = temp.movement.Id,
+                        PTAId = temp.movement.PTAId,
+                        DateAssigned = temp.movement.DateAssigned,
+                        ParItrNumber = temp.movement.PARITRNumber ?? string.Empty,
+                        PlantillaEmployeeId = temp.movement.PlantillaEmployeeId,
+                        NonPlantillaEmployeeId = temp.movement.NonPlantillaEmployeeId,
+                        PlantillaEmployeeIdOriginal = temp.movement.PlantillaEmployeeIdOriginal ?? string.Empty,
+                        NonPlantillaEmployeeIdOriginal = temp.movement.NonPlantillaEmployeeIdOriginal ?? string.Empty,
 
-                        Office = x.office,
-                        Division = division,
-                        Condition = x.movement.Remarks,
-                        IsActive = x.movement.IsActive,
-                        CreatedAt = x.movement.CreatedAt
+                        // Employee (fully translatable sub-query)
+                        Employee = temp.movement.NonPlantillaEmployeeId != null
+                            ? context.TblEmployees
+                                .Where(e => e.Id == temp.movement.NonPlantillaEmployeeId)
+                                .Select(e => new EmployeeResponseModel
+                                {
+                                    Id = e.Id,
+                                    SystemUser = e.SystemUserId.HasValue
+                                        ? context.TblSystemUsers.FirstOrDefault(u => u.Id == e.SystemUserId.Value)
+                                        : null,
+                                    FirstName = e.FirstName,
+                                    MiddleName = e.MiddleName,
+                                    LastName = e.LastName,
+                                    SuffixName = e.SuffixName,
+                                    EmployeeIdOriginal = e.EmployeeIdOriginal,
+                                    Office = e.OfficeId.HasValue ? context.TblOffices.FirstOrDefault(o => o.Id == e.OfficeId) : null,
+                                    Division = e.DivisionId.HasValue ? context.TblDivisions.FirstOrDefault(d => d.Id == e.DivisionId) : null,
+                                    EmploymentType = e.EmploymentTypeId.HasValue ? context.TblEmploymentTypes.FirstOrDefault(et => et.Id == e.EmploymentTypeId) : null,
+                                    Position = e.PositionId.HasValue ? context.TblPositions.FirstOrDefault(p => p.Id == e.PositionId) : null,
+                                    IsActive = e.IsActive,
+                                    CreatedAt = e.CreatedAt
+                                })
+                                .FirstOrDefault()
+                            : temp.movement.PlantillaEmployeeId != null
+                                ? context.TblEmployees
+                                    .Where(e => e.Id == temp.movement.PlantillaEmployeeId)
+                                    .Select(e => new EmployeeResponseModel
+                                    {
+                                        Id = e.Id,
+                                        SystemUser = e.SystemUserId.HasValue
+                                            ? context.TblSystemUsers.FirstOrDefault(u => u.Id == e.SystemUserId.Value)
+                                            : null,
+                                        FirstName = e.FirstName,
+                                        MiddleName = e.MiddleName,
+                                        LastName = e.LastName,
+                                        SuffixName = e.SuffixName,
+                                        EmployeeIdOriginal = e.EmployeeIdOriginal,
+                                        Office = e.OfficeId.HasValue ? context.TblOffices.FirstOrDefault(o => o.Id == e.OfficeId) : null,
+                                        Division = e.DivisionId.HasValue ? context.TblDivisions.FirstOrDefault(d => d.Id == e.DivisionId) : null,
+                                        EmploymentType = e.EmploymentTypeId.HasValue ? context.TblEmploymentTypes.FirstOrDefault(et => et.Id == e.EmploymentTypeId) : null,
+                                        Position = e.PositionId.HasValue ? context.TblPositions.FirstOrDefault(p => p.Id == e.PositionId) : null,
+                                        IsActive = e.IsActive,
+                                        CreatedAt = e.CreatedAt
+                                    })
+                                    .FirstOrDefault()
+                                : null,
+
+                        // These are now 100% in scope
+                        Office = temp.actualOffice,
+                        Division = actualDivision,
+
+                        Condition = temp.movement.Remarks ?? string.Empty,
+                        IsActive = temp.movement.IsActive,
+                        IsDeleted = temp.movement.IsDeleted,
+                        CreatedAt = temp.movement.CreatedAt
                     });
-
-            return query;
         }
         public IQueryable<TblPTAMovement> GetTblPTAMovements(PortalDbContext context) => context.TblPTAMovements.AsNoTracking().Where(x => !x.IsDeleted);
         public IQueryable<PTAPartResponseModel> GetTblPTAPartsByPTAId(long? ptaId, PortalDbContext context)
