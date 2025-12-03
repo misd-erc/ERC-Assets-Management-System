@@ -107,8 +107,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
           parItrNumber: '',
           plantillaEmployeeId: null,
           nonPlantillaEmployeeId: null,
-          office: { id: 0, name: '', acronym: '' },
-          division: { id: 0, name: '', acronym: '' },
+          actualOfficeId: 0,
+          actualDivisionId: 0,
           condition: 'Working',
         }]);
       }
@@ -137,9 +137,9 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
     }));
 
     // Prepare movements with correct id and ptaId (ptaId always asset.id for edit)
-    // Filter out any null/undefined entries and ensure office/division objects exist
+    // Filter out any null/undefined entries
     const preparedMovements: any[] = accountabilityEntries
-      .filter(movement => movement != null && movement.office != null && movement.division != null)
+      .filter(movement => movement != null)
       .map(movement => ({
         id: movement.id || 0, // Use 0 for new movements, existing id for edits
         ptaId: asset.id,
@@ -147,8 +147,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         parItrNumber: movement.parItrNumber || '',
         plantillaEmployeeId: movement.plantillaEmployeeId || 0,
         nonPlantillaEmployeeId: movement.nonPlantillaEmployeeId || 0,
-        actualOfficeId: movement.office?.id || 0,
-        actualDivisionId: movement.division?.id || 0,
+        actualOfficeId: movement.actualOfficeId || 0,
+        actualDivisionId: movement.actualDivisionId || 0,
         condition: movement.condition || 'Working',
       }));
 
@@ -227,8 +227,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         parItrNumber: '',
         plantillaEmployeeId: null,
         nonPlantillaEmployeeId: null,
-        office: { id: 0, name: '', acronym: '' },
-        division: { id: 0, name: '', acronym: '' },
+        actualOfficeId: 0,
+        actualDivisionId: 0,
         condition: 'Working',
       }
     ]);

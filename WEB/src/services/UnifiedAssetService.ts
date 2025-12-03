@@ -9,10 +9,6 @@ export class UnifiedAssetService {
     // Null-safety: return null if entry is undefined/null
     if (!entry) return null;
 
-    // Null-safety: ensure office and division objects exist
-    const office = entry.office || { id: 0 };
-    const division = entry.division || { id: 0 };
-
     return {
       id: mode === 'create' ? 0 : (entry.id ?? 0),
       ptaId: mode === 'create' ? 0 : (assetId || entry.ptaId || 0),
@@ -20,8 +16,8 @@ export class UnifiedAssetService {
       parItrNumber: entry.parItrNumber ?? '',
       plantillaEmployeeId: entry.plantillaEmployeeId ?? 0,
       nonPlantillaEmployeeId: entry.nonPlantillaEmployeeId ?? 0,
-      actualOfficeId: office.id ?? 0,
-      actualDivisionId: division.id ?? 0,
+      actualOfficeId: entry.actualOfficeId ?? 0,
+      actualDivisionId: entry.actualDivisionId ?? 0,
       isActive: true,
       condition: entry.condition ?? 'Working',
       actionBySystemUserId: parseInt(localStorage.getItem('systemUserId') || '0'),
@@ -49,7 +45,7 @@ export class UnifiedAssetService {
       throw new Error('apiItem or apiItem.id is undefined');
     }
 
-    // Map movements to unified format - handle new API structure with office/division objects
+    // Map movements to unified format - handle new API structure with actualOfficeId/actualDivisionId
     const unifiedMovements: UnifiedMovement[] = (apiItem.movements || []).map((mv: any) => ({
       id: mv.id,
       ptaId: mv.ptaId || 0,
@@ -57,24 +53,8 @@ export class UnifiedAssetService {
       parItrNumber: mv.parItrNumber || '',
       plantillaEmployeeId: mv.plantillaEmployeeId || null,
       nonPlantillaEmployeeId: mv.nonPlantillaEmployeeId || null,
-      office: mv.office ? {
-        id: mv.office.id,
-        name: mv.office.name,
-        acronym: mv.office.acronym
-      } : {
-        id: 0,
-        name: '',
-        acronym: ''
-      },
-      division: mv.division ? {
-        id: mv.division.id,
-        name: mv.division.name,
-        acronym: mv.division.acronym
-      } : {
-        id: 0,
-        name: '',
-        acronym: ''
-      },
+      actualOfficeId: mv.actualOfficeId || mv.office?.id || 0,
+      actualDivisionId: mv.actualDivisionId || mv.division?.id || 0,
       condition: mv.condition || 'Working',
     }));
 

@@ -21,6 +21,9 @@ import { PPEAsset } from '@/types/asset/PPEAsset';
 import { SEAsset } from '@/types/supply/se';
 import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { getEmployees } from '@/api/user-management/userApi';
+import { getOffices } from '@/api/office-management/officeApi';
+import { getDivisions } from '@/api/office-management/divisionApi';
+import { VwOffice, VwDivision } from '@/types/office';
 import { normalizeEmployee } from '@/utils/employeeUtils';
 
 interface AssetsViewCardProps {
@@ -31,25 +34,45 @@ interface AssetsViewCardProps {
 
 export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) {
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
+  const [offices, setOffices] = useState<VwOffice[]>([]);
+  const [divisions, setDivisions] = useState<VwDivision[]>([]);
 
   useEffect(() => {
-    const fetchEmployees = async () => {
+    const fetchData = async () => {
       try {
-        const employeeData = await getEmployees();
+        const [employeeData, officesData, divisionsData] = await Promise.all([
+          getEmployees(),
+          getOffices(),
+          getDivisions()
+        ]);
         const normalizedEmployees = employeeData.data.items.map(normalizeEmployee);
         setEmployees(normalizedEmployees);
+        setOffices(officesData);
+        setDivisions(divisionsData);
       } catch (error) {
-        console.error('Failed to fetch employees:', error);
+        console.error('Failed to fetch data:', error);
       }
     };
 
-    fetchEmployees();
+    fetchData();
   }, []);
 
   const getEmployeeName = (employeeId: string | number | null) => {
     if (!employeeId) return '-';
     const employee = employees.find(emp => emp.id === Number(employeeId));
     return employee ? `${employee.firstName} ${employee.lastName}` : String(employeeId);
+  };
+
+  const getOfficeName = (officeId: number | null) => {
+    if (!officeId) return '-';
+    const office = offices.find(o => o.id === officeId);
+    return office ? office.name : String(officeId);
+  };
+
+  const getDivisionName = (divisionId: number | null) => {
+    if (!divisionId) return '-';
+    const division = divisions.find(d => d.id === divisionId);
+    return division ? division.name : String(divisionId);
   };
 
   const getConditionBadge = (condition: string) => {
@@ -233,7 +256,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
                       <TableCell>{movement.parItrNumber || '-'}</TableCell>
                       <TableCell>{movement.plantillaEmployeeIdOriginal || movement.nonPlantillaEmployeeIdOriginal || '-'}</TableCell>
-                      <TableCell>{typeof movement.division === 'object' && movement.division !== null ? movement.division.name : '-'}</TableCell>
+                      <TableCell>{movement.division?.name || '-'}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getConditionIcon(movement.condition || '')}
@@ -469,8 +492,8 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                           ? getEmployeeName(movement.nonPlantillaEmployeeId)
                           : '-'}
                       </TableCell>
-                      <TableCell>{movement.office.name}</TableCell>
-                      <TableCell>{movement.division.name}</TableCell>
+                      <TableCell>{getOfficeName(movement.actualOfficeId)}</TableCell>
+                      <TableCell>{getDivisionName(movement.actualDivisionId)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getConditionIcon(movement.condition || '')}

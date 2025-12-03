@@ -56,8 +56,8 @@ export interface UnifiedMovement {
   parItrNumber: string;
   plantillaEmployeeId: number | null;
   nonPlantillaEmployeeId: number | null;
-  office: Office;
-  division: Division;
+  actualOfficeId: number;
+  actualDivisionId: number;
   condition: string;
 }
 

@@ -76,13 +76,10 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
   // Set default office and division from user profile for new assets
   useEffect(() => {
     if (userProfile && offices.length > 0 && divisions.length > 0 && accountabilityEntries.length > 0) {
-      const userOffice = offices.find(o => o.id === userProfile.office?.id);
-      const userDivision = divisions.find(d => d.id === userProfile.division?.id);
-
       // Only set defaults if the current entry doesn't have values already
-      if (accountabilityEntries[0] && accountabilityEntries[0].office.id === 0 && accountabilityEntries[0].division.id === 0) {
+      if (accountabilityEntries[0] && accountabilityEntries[0].actualOfficeId === 0 && accountabilityEntries[0].actualDivisionId === 0) {
         setAccountabilityEntries(prev => prev.map((entry, index) =>
-          index === 0 ? { ...entry, office: userOffice || entry.office, division: userDivision || entry.division } : entry
+          index === 0 ? { ...entry, actualOfficeId: userProfile.office?.id || 0, actualDivisionId: userProfile.division?.id || 0 } : entry
         ));
       }
     }
@@ -97,8 +94,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
       parItrNumber: '',
       plantillaEmployeeId: null,
       nonPlantillaEmployeeId: null,
-      office: { id: 0, name: '', acronym: '' },
-      division: { id: 0, name: '', acronym: '' },
+      actualOfficeId: 0,
+      actualDivisionId: 0,
       condition: 'Working',
     }]);
   }, []);
@@ -170,8 +167,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
         parItrNumber: '',
         plantillaEmployeeId: null,
         nonPlantillaEmployeeId: null,
-        office: { id: 0, name: '', acronym: '' },
-        division: { id: 0, name: '', acronym: '' },
+        actualOfficeId: 0,
+        actualDivisionId: 0,
         condition: 'Working',
       }
     ]);
