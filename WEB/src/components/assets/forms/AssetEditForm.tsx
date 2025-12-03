@@ -28,8 +28,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
   const [formData, setFormData] = useState<Omit<Asset, 'id'>>({
     group: asset.group,
     propertyNumber: asset.propertyNumber || '',
-    category: asset.category,
-    legend: asset.legend,
+    categoryId: asset.categoryId || 0,
+    legendId: asset.legendId || 0,
     description: asset.description || '',
     brand: asset.brand || '',
     model: asset.model || '',
@@ -45,8 +45,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
   const [accountabilityEntries, setAccountabilityEntries] = useState<UnifiedMovement[]>([]);
   const [offices, setOffices] = useState<VwOffice[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [legends, setLegends] = useState<string[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [legends, setLegends] = useState<{ id: number; name: string }[]>([]);
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<{ value: string; label: string }[]>([]);
 
@@ -81,8 +81,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
       setFormData({
         group: asset.group,
         propertyNumber: asset.propertyNumber || '',
-        category: asset.category,
-        legend: asset.legend,
+        categoryId: asset.categoryId || 0,
+        legendId: asset.legendId || 0,
         description: asset.description || '',
         brand: asset.brand || '',
         model: asset.model || '',
@@ -155,8 +155,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
     const finalPayload = {
       id: asset.id,
       propertyNumber: formData.propertyNumber,
-      category: formData.category,
-      legend: formData.legend,
+      categoryId: formData.categoryId,
+      legendId: formData.legendId,
       description: formData.description,
       brand: formData.brand,
       model: formData.model,

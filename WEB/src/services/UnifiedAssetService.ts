@@ -58,12 +58,38 @@ export class UnifiedAssetService {
       condition: mv.condition || 'Working',
     }));
 
+    // Extract categoryId and category name
+    let categoryId = 0;
+    let category: string | undefined;
+    if (apiItem.category) {
+      if (typeof apiItem.category === 'object') {
+        categoryId = apiItem.category.id || 0;
+        category = apiItem.category.name;
+      } else if (typeof apiItem.category === 'number') {
+        categoryId = apiItem.category;
+      }
+    }
+
+    // Extract legendId and legend name
+    let legendId = 0;
+    let legend: string | undefined;
+    if (apiItem.legend) {
+      if (typeof apiItem.legend === 'object') {
+        legendId = apiItem.legend.id || 0;
+        legend = apiItem.legend.name;
+      } else if (typeof apiItem.legend === 'number') {
+        legendId = apiItem.legend;
+      }
+    }
+
     return {
       id: apiItem.id,
       group,
       propertyNumber: apiItem.propertyNumber || '',
-      category: apiItem.category ? (typeof apiItem.category === 'object' ? apiItem.category.name : apiItem.category) : null,
-      legend: apiItem.legend ? (typeof apiItem.legend === 'object' ? apiItem.legend.name : apiItem.legend) : null,
+      categoryId,
+      legendId,
+      category,
+      legend,
       description: apiItem.description || '',
       brand: apiItem.brand || '',
       model: apiItem.model || '',
@@ -79,7 +105,7 @@ export class UnifiedAssetService {
       unitValue: apiItem.unitValue || 0,
       dateAcquired: apiItem.dateAcquired || '',
       movements: unifiedMovements,
-      estimatedUsefulLife: apiItem.estimatedUsefulLife || null,
+      estimatedUsefulLife: apiItem.estimatedUsefulLife || 5,
     };
   }
 
@@ -258,8 +284,8 @@ export class UnifiedAssetService {
       const apiData = {
         ...(data.id && { id: data.id }),
         propertyNumber: data.propertyNumber,
-        category: data.category || '',
-        legend: data.legend || '',
+        category: data.categoryId || 0,
+        legend: data.legendId || 0,
         description: data.description,
         brand: data.brand || '',
         model: data.model || '',
@@ -291,6 +317,8 @@ export class UnifiedAssetService {
         id: ptaId,
         group: data.group,
         propertyNumber: data.propertyNumber,
+        categoryId: data.categoryId || 0,
+        legendId: data.legendId || 0,
         category: data.category,
         legend: data.legend,
         description: data.description,
@@ -335,8 +363,8 @@ export class UnifiedAssetService {
       const apiData = {
         id: id,
         propertyNumber: data.propertyNumber || currentAsset.propertyNumber,
-        category: data.category || currentAsset.category || '',
-        legend: data.legend || currentAsset.legend || '',
+        category: data.categoryId || currentAsset.categoryId || 0,
+        legend: data.legendId || currentAsset.legendId || 0,
         description: data.description || currentAsset.description,
         brand: data.brand || currentAsset.brand,
         model: data.model || currentAsset.model,

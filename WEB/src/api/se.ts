@@ -220,8 +220,10 @@ export const seApi = {
   create: async (data: {
     id?: number;
     propertyNumber: string;
-    category: string;
-    legend: string;
+    category?: number;
+    legend?: number;
+    categoryId?: number;
+    legendId?: number;
     description: string;
     brand: string;
     model: string;
@@ -231,7 +233,6 @@ export const seApi = {
     unitValue: number;
     dateAcquired: string;
     estimatedUsefulLife: number;
-    group: string;
     movements: any[];
     actionBySystemUserId: string;
     sessionKey: string;
@@ -255,8 +256,10 @@ export const seApi = {
   update: async (data: {
     id: string;
     propertyNumber: string;
-    category: string;
-    legend: string;
+    category?: number;
+    legend?: number;
+    categoryId?: number;
+    legendId?: number;
     description: string;
     brand: string;
     model: string;

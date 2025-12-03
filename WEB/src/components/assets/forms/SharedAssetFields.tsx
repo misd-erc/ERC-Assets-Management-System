@@ -18,8 +18,8 @@ interface SharedAssetFieldsProps {
   setAccountabilityEntries: React.Dispatch<React.SetStateAction<UnifiedMovement[]>>;
   handleEmployeeSelect: (index: number, employeeId: number) => void;
   employees: NormalizedEmployee[];
-  categories: string[];
-  legends: string[];
+  categories: { id: number; name: string }[];
+  legends: { id: number; name: string }[];
   offices: VwOffice[];
   divisions: VwDivision[];
   handleInputChange: (field: string, value: any) => void;
@@ -85,16 +85,16 @@ export function SharedAssetFields({
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
               <Select
-                value={formData.category ?? undefined}
-                onValueChange={(value) => handleInputChange('category', value)}
+                value={formData.categoryId?.toString() ?? undefined}
+                onValueChange={(value) => handleInputChange('categoryId', parseInt(value))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map(category => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -104,16 +104,16 @@ export function SharedAssetFields({
             <div className="space-y-2">
               <Label htmlFor="legend">Legend</Label>
               <Select
-                value={formData.legend ?? undefined}
-                onValueChange={(value) => handleInputChange('legend', value)}
+                value={formData.legendId?.toString() ?? undefined}
+                onValueChange={(value) => handleInputChange('legendId', parseInt(value))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select legend" />
                 </SelectTrigger>
                 <SelectContent>
                   {legends.map(legend => (
-                    <SelectItem key={legend} value={legend}>
-                      {legend}
+                    <SelectItem key={legend.id} value={legend.id.toString()}>
+                      {legend.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

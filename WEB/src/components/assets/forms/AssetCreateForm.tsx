@@ -25,8 +25,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
   const [formData, setFormData] = useState<Omit<Asset, 'id'>>({
     group: 'PPE',
     propertyNumber: '',
-    category: null,
-    legend: null,
+    categoryId: 0,
+    legendId: 0,
     description: '',
     brand: '',
     model: '',
@@ -42,8 +42,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
   const [accountabilityEntries, setAccountabilityEntries] = useState<UnifiedMovement[]>([]);
   const [offices, setOffices] = useState<VwOffice[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [legends, setLegends] = useState<string[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [legends, setLegends] = useState<{ id: number; name: string }[]>([]);
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<{ value: string; label: string }[]>([]);
 

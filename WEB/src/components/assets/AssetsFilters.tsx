@@ -47,7 +47,7 @@ export function AssetsFilters({
   onClearFilters,
   totalResults,
 }: AssetsFiltersProps) {
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [conditions, setConditions] = useState<string[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
@@ -112,8 +112,8 @@ export function AssetsFilters({
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(category => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                  <SelectItem key={category.id} value={category.name}>
+                    {category.name}
                   </SelectItem>
                 ))}
               </SelectContent>

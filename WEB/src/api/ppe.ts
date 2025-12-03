@@ -220,8 +220,10 @@ export const ppeApi = {
   create: async (data: {
     id?: number;
     propertyNumber: string;
-    category: string;
-    legend: string;
+    category?: number;
+    legend?: number;
+    categoryId?: number;
+    legendId?: number;
     description: string;
     brand: string;
     model: string;

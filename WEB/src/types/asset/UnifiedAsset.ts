@@ -65,8 +65,13 @@ export interface Asset {
   id: number;
   group: "PPE" | "SE";
   propertyNumber: string;
-  category: string | null;
-  legend: string | null;
+
+  categoryId: number;   // number always
+  legendId: number;     // number always
+
+  category?: string;    // optional string from lookup
+  legend?: string;      // optional string from lookup
+
   description: string;
   brand: string;
   model: string;
@@ -75,8 +80,8 @@ export interface Asset {
   unitOfMeasurement: string;
   unitValue: number;
   dateAcquired: string;
+  estimatedUsefulLife: number;
   movements: UnifiedMovement[];
-  estimatedUsefulLife: number | null;
 }
 
 export type AssetGroup = "PPE" | "SE";

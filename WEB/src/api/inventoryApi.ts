@@ -10,7 +10,7 @@ interface ApiResponse<T> {
 
 /* ------------------------------- GET ------------------------------- */
 
-export const getCategories = async (): Promise<string[]> => {
+export const getCategories = async (): Promise<{ id: number; name: string }[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -23,14 +23,14 @@ export const getCategories = async (): Promise<string[]> => {
       return [];
     }
 
-    return response.data.data?.items?.map(item => item.name) || [];
+    return response.data.data?.items?.map(item => ({ id: item.id, name: item.name })) || [];
   } catch (error) {
     console.error('Error fetching categories:', error);
     return [];
   }
 };
 
-export const getLegends = async (): Promise<string[]> => {
+export const getLegends = async (): Promise<{ id: number; name: string }[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -43,7 +43,7 @@ export const getLegends = async (): Promise<string[]> => {
       return [];
     }
 
-    return response.data.data?.items?.map(item => item.name) || [];
+    return response.data.data?.items?.map(item => ({ id: item.id, name: item.name })) || [];
   } catch (error) {
     console.error('Error fetching legends:', error);
     return [];
