@@ -30,6 +30,7 @@ export function AssetsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [conditionFilter, setConditionFilter] = useState('all');
+  const [officeFilter, setOfficeFilter] = useState('all');
   const [divisionFilter, setDivisionFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -55,7 +56,7 @@ export function AssetsPage() {
 
   useEffect(() => {
     loadAssets();
-  }, [currentPage, searchTerm, categoryFilter, conditionFilter, divisionFilter, startDate, endDate, activeTab]);
+  }, [currentPage, searchTerm, categoryFilter, conditionFilter, officeFilter, divisionFilter, startDate, endDate, activeTab]);
 
   const loadAssets = async () => {
     try {
@@ -169,6 +170,7 @@ export function AssetsPage() {
     setSearchTerm('');
     setCategoryFilter('all');
     setConditionFilter('all');
+    setOfficeFilter('all');
     setDivisionFilter('all');
     setStartDate('');
     setEndDate('');
@@ -300,6 +302,8 @@ export function AssetsPage() {
             onCategoryFilterChange={setCategoryFilter}
             conditionFilter={conditionFilter}
             onConditionFilterChange={setConditionFilter}
+            officeFilter={officeFilter}
+            onOfficeFilterChange={setOfficeFilter}
             divisionFilter={divisionFilter}
             onDivisionFilterChange={setDivisionFilter}
             startDate={startDate}
@@ -332,6 +336,8 @@ export function AssetsPage() {
             onCategoryFilterChange={setCategoryFilter}
             conditionFilter={conditionFilter}
             onConditionFilterChange={setConditionFilter}
+            officeFilter={officeFilter}
+            onOfficeFilterChange={setOfficeFilter}
             divisionFilter={divisionFilter}
             onDivisionFilterChange={setDivisionFilter}
             startDate={startDate}
@@ -364,6 +370,8 @@ export function AssetsPage() {
             onCategoryFilterChange={setCategoryFilter}
             conditionFilter={conditionFilter}
             onConditionFilterChange={setConditionFilter}
+            officeFilter={officeFilter}
+            onOfficeFilterChange={setOfficeFilter}
             divisionFilter={divisionFilter}
             onDivisionFilterChange={setDivisionFilter}
             startDate={startDate}
