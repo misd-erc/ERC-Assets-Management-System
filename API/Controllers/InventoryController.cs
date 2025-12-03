@@ -994,6 +994,7 @@ namespace API.Controllers
                 TblPTAPart ptaPart = new()
                 {
                     Id = model.Id,
+                    PTAId = model.PTAId,
                     Name = model.Name,
                     SerialNumber = model.SerialNumber,
                     IsActive = model.IsActive
