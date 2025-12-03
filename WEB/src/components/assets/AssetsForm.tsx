@@ -6,13 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Package, DollarSign, User, Plus, X } from 'lucide-react';
-import { Asset, UnifiedMovement } from '@/types/asset/UnifiedAsset';
+import ReactSelect from 'react-select';
+import { Asset, UnifiedMovement, Employee, ApiEmployee, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { getOffices } from '@/api/office-management/officeApi';
 import { getDivisions } from '@/api/office-management/divisionApi';
 import { VwOffice, VwDivision } from '@/types/office';
 import { useAuthStore } from '@/store/auth';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { getCategories, getLegends } from '@/api/inventoryApi';
+import { getEmployees } from '@/api/user-management/userApi';
 
 interface AssetsFormProps {
   asset?: Asset;
@@ -47,6 +49,8 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [legends, setLegends] = useState<string[]>([]);
+  const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
+  const [employeeOptions, setEmployeeOptions] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -67,7 +71,12 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
   useEffect(() => {
     fetchCategories();
     fetchLegends();
+    fetchEmployees();
   }, []);
+
+  useEffect(() => {
+    setEmployeeOptions(employees.filter(emp => emp.id != null).map(emp => ({ value: emp.id.toString(), label: emp.label })));
+  }, [employees]);
 
   // Set default office and division from user profile for new assets
   useEffect(() => {
@@ -224,6 +233,46 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
     );
   };
 
+  function normalizeEmployee(e: ApiEmployee): NormalizedEmployee {
+    const firstName = e.firstName ?? "";
+    const middleName = e.middleName ?? "";
+    const lastName = e.lastName ?? "";
+    const suffixName = e.suffixName ?? "";
+    const employeeIdOriginal = e.employeeIdOriginal ?? "";
+    const employmentTypeId = e.employmentType?.id ?? 1;
+    const employmentTypeName = employmentTypeId === 1 ? 'Plantilla' : 'Non-Plantilla';
+
+    const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${employmentTypeName})`;
+
+    return {
+      id: e.id,
+      firstName,
+      middleName,
+      lastName,
+      suffixName,
+      employeeIdOriginal,
+      employmentTypeId,
+      label,
+    };
+  }
+
+  function handleEmployeeSelect(index: number, employeeId: number) {
+    const emp = employees.find(e => e.id === employeeId);
+    if (!emp) {
+      handleAccountabilityEntryChange(index, 'plantillaEmployeeId', 0);
+      handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', 0);
+      return;
+    }
+
+    if (emp.employmentTypeId === 1) {
+      handleAccountabilityEntryChange(index, 'plantillaEmployeeId', employeeId);
+      handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', 0);
+    } else {
+      handleAccountabilityEntryChange(index, 'plantillaEmployeeId', 0);
+      handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', employeeId);
+    }
+  }
+
   const fetchCategories = async () => {
     try {
       const data = await getCategories();
@@ -241,6 +290,19 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
       console.error('Failed to fetch legends:', error);
     }
   };
+
+  async function fetchEmployees() {
+    const response = await getEmployees(); // API already exists
+    setEmployees(response.data.items.map(normalizeEmployee));
+  }
+
+  function formatEmployeeName(emp: NormalizedEmployee) {
+    return (
+      emp.lastName + ", " + emp.firstName +
+      (emp.middleName ? " " + emp.middleName : "") +
+      (emp.suffixName ? " " + emp.suffixName : "")
+    );
+  }
 
 
 
@@ -541,21 +603,23 @@ export function AssetsForm({ asset, onSubmit, onCancel, isEditing = false }: Ass
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor={`plantillaEmployeeId-${index}`}>Plantilla Employee ID</Label>
-                    <Input
-                      id={`plantillaEmployeeId-${index}`}
-                      value={(entry.plantillaEmployeeId?.toString() || '') as string | undefined}
-                      onChange={(e) => handleAccountabilityEntryChange(index, 'plantillaEmployeeId', e.target.value ? parseInt(e.target.value) : null)}
-                    />
-                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label>Accountable Employee</Label>
 
-                  <div className="space-y-2">
-                    <Label htmlFor={`nonPlantillaEmployeeId-${index}`}>Non-Plantilla Employee ID</Label>
-                    <Input
-                      id={`nonPlantillaEmployeeId-${index}`}
-                      value={(entry.nonPlantillaEmployeeId?.toString() || '') as string | undefined}
-                      onChange={(e) => handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', e.target.value ? parseInt(e.target.value) : null)}
+                    <ReactSelect
+                      options={employeeOptions}
+                      value={employeeOptions.find(option =>
+                        option.value === String(entry.plantillaEmployeeId || entry.nonPlantillaEmployeeId)
+                      ) || null}
+                      onChange={(selected) => {
+                        if (selected) {
+                          handleEmployeeSelect(index, parseInt(selected.value));
+                        } else {
+                          handleEmployeeSelect(index, 0);
+                        }
+                      }}
+                      placeholder="Select employee"
+                      isClearable
                     />
                   </div>
 

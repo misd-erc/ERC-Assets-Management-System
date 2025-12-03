@@ -1,3 +1,34 @@
+export interface ApiEmployee {
+  id: number;
+  firstName: string;
+  middleName?: string | null;
+  lastName: string;
+  suffixName?: string | null;
+  employeeIdOriginal?: string | null;
+  employmentType?: { id: number; name: string } | null;
+  // keep other fields as optional
+}
+
+export interface NormalizedEmployee {
+  id: number;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  suffixName: string;
+  employeeIdOriginal: string;
+  employmentTypeId: number;
+  label: string;
+}
+
+export interface Employee {
+  employeeId: number;
+  employeeFirstName: string;
+  employeeLastName: string;
+  employeeMiddleName?: string | null;
+  employeeSuffixName?: string | null;
+  employmentTypeId: number;
+}
+
 export interface Part {
   id: number;
   ptaId: number;
