@@ -10,7 +10,8 @@ import { Upload, Download, Plus, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { AssetsTable } from '@/components/assets/AssetsTable';
 import { AssetsFilters } from '@/components/assets/AssetsFilters';
-import { AssetsForm } from '@/components/assets/AssetsForm';
+import { AssetCreateForm } from '@/components/assets/forms/AssetCreateForm';
+import { AssetEditForm } from '@/components/assets/forms/AssetEditForm';
 import { AssetsViewCard } from '@/components/assets/AssetsViewCard';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { Asset } from '@/types/asset/UnifiedAsset';
@@ -405,7 +406,7 @@ export function AssetsPage() {
               Enter the details for the new asset.
             </DialogDescription>
           </DialogHeader>
-          <AssetsForm
+          <AssetCreateForm
             onSubmit={handleAddAsset}
             onCancel={() => setAddDialogOpen(false)}
           />
@@ -422,14 +423,13 @@ export function AssetsPage() {
             </DialogDescription>
           </DialogHeader>
           {selectedAsset && (
-            <AssetsForm
+            <AssetEditForm
               asset={selectedAsset}
               onSubmit={handleEditAsset}
               onCancel={() => {
                 setEditDialogOpen(false);
                 setSelectedAsset(null);
               }}
-              isEditing
             />
           )}
         </DialogContent>

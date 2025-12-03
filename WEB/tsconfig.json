@@ -16,8 +16,9 @@
     "allowSyntheticDefaultImports": true,
     "noEmit": true,
     "baseUrl": "src",
-   "paths": {
+  "paths": {
   "@/*": ["*"],
+  "@components/*": ["components/*"],
 
   "@/components/*": ["components/*"],
   "@/components/ui/*": ["components/ui/*"],

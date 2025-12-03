@@ -30,7 +30,7 @@ export interface Employee {
 }
 
 export interface Part {
-  id: number;
+  id: number | null;
   ptaId: number;
   name: string;
   serialNumber: string;
@@ -50,7 +50,7 @@ export interface Division {
 }
 
 export interface UnifiedMovement {
-  id: number;
+  id: number | null;
   ptaId: number;
   dateAssigned: string;
   parItrNumber: string;
