@@ -144,6 +144,7 @@ export function LoginScreen() {
           <div>
             <h1 className="text-2xl font-semibold text-slate-900">Energy Regulatory Commission</h1>
             <p className="text-slate-600 mt-1">Asset Management System</p>
+            <p className='text-slate-600 mt-1'>{process.env.REACT_APP_Deployment_Type} ver. {process.env.REACT_APP_Staging_Version}</p>
           </div>
         </div>
 
