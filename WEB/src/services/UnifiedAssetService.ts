@@ -312,6 +312,32 @@ export class UnifiedAssetService {
 
       const ptaId = apiResponse.data.ptaId;
 
+      // After successful creation, handle parts and movements separately
+      if (normalizedParts.length > 0) {
+        for (const part of normalizedParts) {
+          if (part.name && part.serialNumber) {
+            await api.editPart({
+              id: part.id || 0,
+              ptaId: ptaId,
+              name: part.name,
+              serialNumber: part.serialNumber,
+              isActive: part.isActive ?? true,
+              actionBySystemUserId: parseInt(actionBySystemUserId),
+              sessionKey,
+            });
+          }
+        }
+      }
+
+      if (normalizedMovements.length > 0) {
+        for (const movement of normalizedMovements) {
+          const normalizedMovement = this.normalizeMovement(movement, data.model || '', 'edit', ptaId);
+          if (normalizedMovement) {
+            await api.editMovement(normalizedMovement);
+          }
+        }
+      }
+
       // Construct the created asset from input data and ptaId
       const createdAsset: Asset = {
         id: ptaId,

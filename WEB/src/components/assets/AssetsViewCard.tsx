@@ -190,7 +190,32 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
 
                 <div>
                   <Label className="text-sm font-medium text-slate-600">Parts</Label>
-                  <p className="text-slate-900">{Array.isArray(ppeAsset.parts) ? ppeAsset.parts.join(', ') : '-'}</p>
+                  {Array.isArray(ppeAsset.parts) && ppeAsset.parts.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Serial Number</TableHead>
+                          <TableHead>Active</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {ppeAsset.parts.map(part => (
+                          <TableRow key={part.id}>
+                            <TableCell>{part.name}</TableCell>
+                            <TableCell>{part.serialNumber}</TableCell>
+                            <TableCell>
+                              <Badge variant={part.isActive ? "default" : "destructive"}>
+                                {part.isActive ? "Active" : "Inactive"}
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="text-slate-900">No parts available</p>
+                  )}
                 </div>
 
                 <div>
