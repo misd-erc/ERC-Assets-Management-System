@@ -98,18 +98,10 @@ export function AssetsPage() {
     }
   };
 
-  const handleEditAsset = async (data: Omit<Asset, 'id'>) => {
-    if (!selectedAsset) return;
-    try {
-      await UnifiedAssetService.update(selectedAsset.id, data);
-      toast.success('Asset updated successfully');
-      setEditDialogOpen(false);
-      setSelectedAsset(null);
-      loadAssets();
-    } catch (error) {
-      console.error('Error updating asset:', error);
-      toast.error('Failed to update asset');
-    }
+  const handleEditAsset = async (data: Asset) => {
+    // This function is now only used for closing the dialog, actual update is handled in AssetEditForm
+    setEditDialogOpen(false);
+    setSelectedAsset(null);
   };
 
   const handleDeleteAsset = async () => {
@@ -430,6 +422,7 @@ export function AssetsPage() {
                 setEditDialogOpen(false);
                 setSelectedAsset(null);
               }}
+              onSuccess={loadAssets}
             />
           )}
         </DialogContent>

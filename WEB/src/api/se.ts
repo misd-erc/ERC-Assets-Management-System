@@ -218,6 +218,7 @@ export const seApi = {
 
   // Create new SE asset
   create: async (data: {
+    id?: number;
     propertyNumber: string;
     category: string;
     legend: string;

@@ -230,12 +230,13 @@ export class UnifiedAssetService {
     }
   }
 
-  static async create(data: Omit<Asset, 'id'>): Promise<Asset> {
+  static async create(data: Omit<Asset, 'id'> & { id?: number }): Promise<Asset> {
     try {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
 
       const apiData = {
+        ...(data.id && { id: data.id }),
         propertyNumber: data.propertyNumber,
         category: data.category || '',
         legend: data.legend || '',
@@ -316,7 +317,7 @@ export class UnifiedAssetService {
     }
   }
 
-  static async update(id: number, data: Partial<Asset>): Promise<Asset> {
+  static async update(id: number, data: Partial<Asset>): Promise<{ success: boolean; ptaId: number | null }> {
     try {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
@@ -327,36 +328,44 @@ export class UnifiedAssetService {
       const api = group === 'PPE' ? ppeApi : seApi;
 
       const apiData = {
-        id: id.toString(),
-        propertyNumber: data.propertyNumber || '',
-        category: data.category || '',
-        legend: data.legend || '',
-        description: data.description || '',
-        brand: data.brand || '',
-        model: data.model || '',
-        serialNumber: data.serialNumber || '',
-        parts: data.parts || [],
-        unitOfMeasurement: data.unitOfMeasurement || '',
-        unitValue: data.unitValue || 0,
-        dateAcquired: data.dateAcquired || '',
-        estimatedUsefulLife: data.estimatedUsefulLife ?? 0,
-        movements: data.movements || [],
+        id: id,
+        propertyNumber: data.propertyNumber || currentAsset.propertyNumber,
+        category: data.category || currentAsset.category || '',
+        legend: data.legend || currentAsset.legend || '',
+        description: data.description || currentAsset.description,
+        brand: data.brand || currentAsset.brand,
+        model: data.model || currentAsset.model,
+        serialNumber: data.serialNumber || currentAsset.serialNumber,
+        parts: data.parts || currentAsset.parts,
+        unitOfMeasurement: data.unitOfMeasurement || currentAsset.unitOfMeasurement,
+        unitValue: data.unitValue || currentAsset.unitValue,
+        dateAcquired: data.dateAcquired || currentAsset.dateAcquired,
+        estimatedUsefulLife: data.estimatedUsefulLife ?? currentAsset.estimatedUsefulLife ?? 0,
+        movements: (data.movements || currentAsset.movements).map(movement => ({
+          ...movement,
+          nonPlantillaEmployeeId: movement.nonPlantillaEmployeeId || 0,
+        })),
+        group: group,
         actionBySystemUserId,
         sessionKey,
       };
 
-      const apiResponse = await api.update(apiData);
+      // Use the same create endpoint for updates (as per task requirements)
+      const apiResponse = await api.create(apiData);
 
       // Handle movements update if provided
       if (data.movements && data.movements.length > 0) {
         for (const movement of data.movements) {
-          const normalizedMovement = normalizeMovement(movement, data.model || currentAsset.model, id);
+          const normalizedMovement = this.normalizeMovement(movement, data.model || currentAsset.model);
+          normalizedMovement.ptaId = id;
           console.debug('movement payload', normalizedMovement);
           await api.editMovement(normalizedMovement);
         }
       }
 
-      return this.mapApiToUnifiedAsset(apiResponse, group);
+      // Validate response and return minimal object
+      if (!apiResponse.success) throw new Error("Update failed");
+      return { success: true, ptaId: apiResponse.data?.ptaId ?? null };
     } catch (error) {
       console.error('Error updating unified asset:', error);
       throw error;

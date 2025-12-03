@@ -12,14 +12,16 @@ import { getCategories, getLegends } from '@/api/inventoryApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { SharedAssetFields } from '@/components/assets/forms/SharedAssetFields';
+import { toast } from 'sonner';
 
 interface AssetEditFormProps {
   asset: Asset;
-  onSubmit: (data: Omit<Asset, 'id'>) => void;
+  onSubmit: (data: Asset) => void;
   onCancel: () => void;
+  onSuccess?: () => void;
 }
 
-export function AssetEditForm({ asset, onSubmit, onCancel }: AssetEditFormProps) {
+export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEditFormProps) {
   const { systemUserId } = useAuthStore();
   const { userProfile } = useUserProfile();
 
@@ -113,25 +115,67 @@ export function AssetEditForm({ asset, onSubmit, onCancel }: AssetEditFormProps)
     }
   }, [asset]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validate required fields
     if (!formData.propertyNumber?.trim() || !formData.description?.trim() || !formData.brand?.trim() || !formData.model?.trim() || !formData.serialNumber?.trim() || !formData.unitOfMeasurement?.trim()) {
-      alert('Property Number, Description, Brand, Model, Serial Number, and Unit of Measurement are required');
+      toast.error('Property Number, Description, Brand, Model, Serial Number, and Unit of Measurement are required');
       return;
     }
 
     // Determine group based on unit value
     const group = formData.unitValue >= 50000 ? 'SE' : 'PPE';
 
-    const submitData: Omit<Asset, 'id'> = {
-      ...formData,
-      group,
-      movements: accountabilityEntries,
+    // Prepare parts with correct id and ptaId (ptaId always asset.id for edit)
+    const preparedParts: Part[] = formData.parts.map(part => ({
+      id: part.id || null,
+      ptaId: asset.id,
+      name: part.name,
+      serialNumber: part.serialNumber,
+      isActive: part.isActive ?? true,
+    }));
+
+    // Prepare movements with correct id and ptaId (ptaId always asset.id for edit)
+    const preparedMovements: UnifiedMovement[] = accountabilityEntries.map(movement => ({
+      id: movement.id || null,
+      ptaId: asset.id,
+      dateAssigned: movement.dateAssigned,
+      parItrNumber: movement.parItrNumber,
+      plantillaEmployeeId: movement.plantillaEmployeeId || null,
+      nonPlantillaEmployeeId: movement.nonPlantillaEmployeeId || null,
+      office: movement.office,
+      division: movement.division,
+      condition: movement.condition,
+    }));
+
+    const finalPayload = {
+      id: asset.id,
+      propertyNumber: formData.propertyNumber,
+      category: formData.category,
+      legend: formData.legend,
+      description: formData.description,
+      brand: formData.brand,
+      model: formData.model,
+      serialNumber: formData.serialNumber,
+      unitOfMeasurement: formData.unitOfMeasurement,
+      unitValue: formData.unitValue,
+      dateAcquired: formData.dateAcquired,
+      estimatedUsefulLife: formData.estimatedUsefulLife,
+      group: group as 'PPE' | 'SE',
+      parts: preparedParts,
+      movements: preparedMovements,
     };
 
-    onSubmit(submitData);
+    try {
+      await UnifiedAssetService.update(asset.id, finalPayload);
+      toast.success('Asset updated successfully');
+      onCancel(); // Close the dialog
+      onSuccess?.(); // Trigger reload
+    } catch (error) {
+      console.error('Error updating asset:', error);
+      toast.error('Failed to update asset');
+    }
   };
 
   const handleInputChange = (field: string, value: any) => {

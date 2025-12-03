@@ -23,7 +23,7 @@ import { Asset } from '@/types/asset/UnifiedAsset';
 
 interface AssetsViewCardProps {
   asset: Asset;
-  onEdit: () => void;
+  onEdit: (asset: Asset) => void;
   onClose: () => void;
 }
 
@@ -88,7 +88,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
             <p className="text-slate-600">{ppeAsset.description}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onEdit} className="gap-2">
+            <Button variant="outline" onClick={() => onEdit(asset)} className="gap-2">
               <Edit className="size-4" />
               Edit
             </Button>
@@ -299,7 +299,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
             <p className="text-slate-600">{asset.description}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onEdit} className="gap-2">
+            <Button variant="outline" onClick={() => onEdit(asset)} className="gap-2">
               <Edit className="size-4" />
               Edit
             </Button>
