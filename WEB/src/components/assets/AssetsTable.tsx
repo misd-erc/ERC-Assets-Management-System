@@ -114,55 +114,62 @@ export function AssetsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {assets.map((asset) => (
-                <TableRow key={asset.id}>
-                  <TableCell className="font-medium">{asset.propertyNumber}</TableCell>
-                  <TableCell className="max-w-xs truncate" title={asset.description}>
-                    {asset.description}
-                  </TableCell>
-                  <TableCell>{asset.category}</TableCell>
-                  <TableCell>{formatCurrency(asset.unitValue)}</TableCell>
-                  <TableCell>
-                    <Badge variant={getConditionBadgeVariant(asset.condition)}>
-                      {asset.condition}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={asset.group === 'PPE' ? 'default' : 'secondary'}>
-                      {asset.group}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{formatDate(asset.dateAcquired)}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onViewDetails(asset)}
-                        className="size-8 p-0"
-                      >
-                        <Eye className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onEdit(asset)}
-                        className="size-8 p-0"
-                      >
-                        <Edit className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onDelete(asset)}
-                        className="size-8 p-0 text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {assets.map((asset) => {
+                const latestMovement =
+                  asset.movements && asset.movements.length > 0
+                    ? asset.movements[asset.movements.length - 1]
+                    : null;
+
+                return (
+                  <TableRow key={asset.id}>
+                    <TableCell className="font-medium">{asset.propertyNumber}</TableCell>
+                    <TableCell className="max-w-xs truncate" title={asset.description}>
+                      {asset.description}
+                    </TableCell>
+                    <TableCell>{asset.category}</TableCell>
+                    <TableCell>{formatCurrency(asset.unitValue)}</TableCell>
+                    <TableCell>
+                      <Badge variant={getConditionBadgeVariant(latestMovement?.condition || 'Working')}>
+                        {latestMovement?.condition || 'Working'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={asset.group === 'PPE' ? 'default' : 'secondary'}>
+                        {asset.group}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{formatDate(asset.dateAcquired)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onViewDetails(asset)}
+                          className="size-8 p-0"
+                        >
+                          <Eye className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEdit(asset)}
+                          className="size-8 p-0"
+                        >
+                          <Edit className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDelete(asset)}
+                          className="size-8 p-0 text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>

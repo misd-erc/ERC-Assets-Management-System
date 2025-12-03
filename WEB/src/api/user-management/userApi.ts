@@ -1,5 +1,6 @@
 ﻿import axiosInstance from '@/lib/axios';
 import { User, ApiResponse, Office, Division, EmploymentType, Position, SystemRole } from '@/types';
+import { Employee, ApiEmployee } from '@/types/asset/UnifiedAsset';
 import { UserDetails, getUserDetails } from '@/api/user-management/authApi';
 import { getAuditTrail } from '@/api/audit/auditApi';
 
@@ -239,6 +240,17 @@ export const getUsersDetails = async (userId: string): Promise<UserDetails> => {
   }
 
   return response.data.data;
+};
+
+export const getEmployees = async (page: number = 1, pageSize: number = 1000): Promise<ApiResponse<{ items: ApiEmployee[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>> => {
+  const systemUserId = localStorage.getItem('systemUserId') || '';
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
+  const response = await axiosInstance.get<ApiResponse<{ items: ApiEmployee[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>>(
+    `/Users/employees/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}&pageNumber=${page}&pageSize=${pageSize}`
+  );
+
+  return response.data;
 };
 
 
