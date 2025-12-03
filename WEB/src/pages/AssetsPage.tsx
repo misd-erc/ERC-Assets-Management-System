@@ -16,6 +16,7 @@ import { AssetsViewCard } from '@/components/assets/AssetsViewCard';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { Asset } from '@/types/asset/UnifiedAsset';
 import { ExcelExportService } from '@/utils/excelExport';
+import { ReportTab } from '@/components/reports/ReportTab';
 
 export function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -280,10 +281,11 @@ export function AssetsPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="all">All Assets</TabsTrigger>
           <TabsTrigger value="PPE">PPE Assets</TabsTrigger>
           <TabsTrigger value="SE">SE Assets</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-6">
@@ -386,6 +388,10 @@ export function AssetsPage() {
             totalPages={totalPages}
             onPageChange={handlePageChange}
           />
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <ReportTab />
         </TabsContent>
       </Tabs>
 
