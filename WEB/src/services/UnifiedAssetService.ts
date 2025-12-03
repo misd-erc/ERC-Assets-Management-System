@@ -5,20 +5,41 @@ import { normalizeMovement } from '@/utils/normalizer';
 
 export class UnifiedAssetService {
   // Helper function to normalize movement payload for backend
-  private static normalizeMovement(entry: UnifiedMovement, assetModel: string): any {
+  private static normalizeMovement(entry: UnifiedMovement, assetModel: string, mode: 'create' | 'edit', assetId?: number): any {
+    // Null-safety: return null if entry is undefined/null
+    if (!entry) return null;
+
+    // Null-safety: ensure office and division objects exist
+    const office = entry.office || { id: 0 };
+    const division = entry.division || { id: 0 };
+
     return {
-      id: entry.id,
-      dateAssigned: entry.dateAssigned,
-      parItrNumber: entry.parItrNumber || '',
-      plantillaEmployeeId: entry.plantillaEmployeeId || 0,
-      nonPlantillaEmployeeId: entry.nonPlantillaEmployeeId || 0,
-      actualOfficeId: entry.office.id,
-      actualDivisionId: entry.division.id,
+      id: mode === 'create' ? 0 : (entry.id ?? 0),
+      ptaId: mode === 'create' ? 0 : (assetId || entry.ptaId || 0),
+      dateAssigned: entry.dateAssigned ?? new Date().toISOString(),
+      parItrNumber: entry.parItrNumber ?? '',
+      plantillaEmployeeId: entry.plantillaEmployeeId ?? 0,
+      nonPlantillaEmployeeId: entry.nonPlantillaEmployeeId ?? 0,
+      actualOfficeId: office.id ?? 0,
+      actualDivisionId: division.id ?? 0,
       isActive: true,
-      condition: entry.condition || 'Working',
+      condition: entry.condition ?? 'Working',
       actionBySystemUserId: parseInt(localStorage.getItem('systemUserId') || '0'),
       sessionKey: localStorage.getItem('sessionToken') || '',
       model: assetModel || '',
+    };
+  }
+
+  // Helper function to normalize part payload for backend
+  private static normalizePart(part: any, mode: 'create' | 'edit', assetId?: number): any {
+    return {
+      id: mode === 'create' ? 0 : (part.id || 0),
+      ptaId: mode === 'create' ? 0 : (assetId || part.ptaId || 0),
+      name: part.name || '',
+      serialNumber: part.serialNumber || '',
+      isActive: part.isActive !== undefined ? part.isActive : true,
+      actionBySystemUserId: parseInt(localStorage.getItem('systemUserId') || '0'),
+      sessionKey: localStorage.getItem('sessionToken') || '',
     };
   }
   // Map API response to unified Asset model
@@ -28,7 +49,7 @@ export class UnifiedAssetService {
       throw new Error('apiItem or apiItem.id is undefined');
     }
 
-    // Map movements to unified format
+    // Map movements to unified format - handle new API structure with office/division objects
     const unifiedMovements: UnifiedMovement[] = (apiItem.movements || []).map((mv: any) => ({
       id: mv.id,
       ptaId: mv.ptaId || 0,
@@ -36,15 +57,23 @@ export class UnifiedAssetService {
       parItrNumber: mv.parItrNumber || '',
       plantillaEmployeeId: mv.plantillaEmployeeId || null,
       nonPlantillaEmployeeId: mv.nonPlantillaEmployeeId || null,
-      office: {
-        id: mv.actualOfficeId || 0,
-        name: mv.officeName || '',
-        acronym: mv.officeAcronym || ''
+      office: mv.office ? {
+        id: mv.office.id,
+        name: mv.office.name,
+        acronym: mv.office.acronym
+      } : {
+        id: 0,
+        name: '',
+        acronym: ''
       },
-      division: {
-        id: mv.actualDivisionId || 0,
-        name: mv.divisionName || '',
-        acronym: mv.divisionAcronym || ''
+      division: mv.division ? {
+        id: mv.division.id,
+        name: mv.division.name,
+        acronym: mv.division.acronym
+      } : {
+        id: 0,
+        name: '',
+        acronym: ''
       },
       condition: mv.condition || 'Working',
     }));
@@ -60,11 +89,11 @@ export class UnifiedAssetService {
       model: apiItem.model || '',
       serialNumber: apiItem.serialNumber || '',
       parts: Array.isArray(apiItem.parts) ? apiItem.parts.map((part: any) => ({
-        id: part.id || 0,
+        id: part.id || null,
         ptaId: part.ptaId || 0,
         name: part.name || '',
         serialNumber: part.serialNumber || '',
-        isActive: part.isActive || true
+        isActive: part.isActive !== undefined ? part.isActive : true
       })) : [],
       unitOfMeasurement: apiItem.unitOfMeasurement || '',
       unitValue: apiItem.unitValue || 0,
@@ -235,6 +264,17 @@ export class UnifiedAssetService {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
 
+      // Normalize parts for create mode
+      const normalizedParts = (data.parts || []).map(part =>
+        this.normalizePart(part, 'create')
+      );
+
+      // Normalize movements for create mode - filter out null/undefined
+      const validMovements = (data.movements || []).filter(movement => movement != null);
+      const normalizedMovements = validMovements.map(movement =>
+        this.normalizeMovement(movement, data.model || '', 'create')
+      ).filter(movement => movement != null); // Filter out null results from normalizeMovement
+
       const apiData = {
         ...(data.id && { id: data.id }),
         propertyNumber: data.propertyNumber,
@@ -244,13 +284,13 @@ export class UnifiedAssetService {
         brand: data.brand || '',
         model: data.model || '',
         serialNumber: data.serialNumber || '',
-        parts: data.parts || [],
+        parts: normalizedParts,
         unitOfMeasurement: data.unitOfMeasurement,
         unitValue: data.unitValue,
         dateAcquired: data.dateAcquired,
         estimatedUsefulLife: data.estimatedUsefulLife ?? 0,
         group: data.group,
-        movements: data.movements || [],
+        movements: normalizedMovements,
         actionBySystemUserId,
         sessionKey,
       };
@@ -285,31 +325,6 @@ export class UnifiedAssetService {
         estimatedUsefulLife: data.estimatedUsefulLife,
       };
 
-      // Handle parts and movements if they exist
-      if (data.parts && data.parts.length > 0) {
-        for (const part of data.parts) {
-          if (part.name && part.serialNumber) {
-            await api.editPart({
-              id: part.id || 0,
-              ptaId,
-              name: part.name,
-              serialNumber: part.serialNumber,
-              isActive: true,
-              actionBySystemUserId: parseInt(actionBySystemUserId),
-              sessionKey,
-            });
-          }
-        }
-      }
-
-      if (data.movements && data.movements.length > 0) {
-        for (const movement of data.movements) {
-          const normalizedMovement = this.normalizeMovement(movement, data.model || '');
-          normalizedMovement.ptaId = ptaId;
-          await api.editMovement(normalizedMovement);
-        }
-      }
-
       return createdAsset;
     } catch (error) {
       console.error('Error creating unified asset:', error);
@@ -327,6 +342,16 @@ export class UnifiedAssetService {
       const group = data.group || currentAsset.group;
       const api = group === 'PPE' ? ppeApi : seApi;
 
+      // Normalize parts for edit mode
+      const normalizedParts = (data.parts || currentAsset.parts || []).map(part =>
+        this.normalizePart(part, 'edit', id)
+      );
+
+      // Normalize movements for edit mode
+      const normalizedMovements = (data.movements || currentAsset.movements || []).map(movement =>
+        this.normalizeMovement(movement, data.model || currentAsset.model, 'edit', id)
+      );
+
       const apiData = {
         id: id,
         propertyNumber: data.propertyNumber || currentAsset.propertyNumber,
@@ -336,15 +361,12 @@ export class UnifiedAssetService {
         brand: data.brand || currentAsset.brand,
         model: data.model || currentAsset.model,
         serialNumber: data.serialNumber || currentAsset.serialNumber,
-        parts: data.parts || currentAsset.parts,
+        parts: [], // Parts handled separately via editPart API
         unitOfMeasurement: data.unitOfMeasurement || currentAsset.unitOfMeasurement,
         unitValue: data.unitValue || currentAsset.unitValue,
         dateAcquired: data.dateAcquired || currentAsset.dateAcquired,
         estimatedUsefulLife: data.estimatedUsefulLife ?? currentAsset.estimatedUsefulLife ?? 0,
-        movements: (data.movements || currentAsset.movements).map(movement => ({
-          ...movement,
-          nonPlantillaEmployeeId: movement.nonPlantillaEmployeeId || 0,
-        })),
+        movements: [], // Movements handled separately via editMovement API
         group: group,
         actionBySystemUserId,
         sessionKey,
@@ -353,18 +375,33 @@ export class UnifiedAssetService {
       // Use the same create endpoint for updates (as per task requirements)
       const apiResponse = await api.create(apiData);
 
-      // Handle movements update if provided
+      // Validate response and return minimal object - DO NOT use mapApiToUnifiedAsset()
+      if (!apiResponse.success) throw new Error("Update failed");
+
+      // Handle parts and movements separately for edit operations
+      if (data.parts && data.parts.length > 0) {
+        for (const part of data.parts) {
+          if (part.name && part.serialNumber) {
+            await api.editPart({
+              id: part.id || 0,
+              ptaId: id,
+              name: part.name,
+              serialNumber: part.serialNumber,
+              isActive: part.isActive ?? true,
+              actionBySystemUserId: parseInt(actionBySystemUserId),
+              sessionKey,
+            });
+          }
+        }
+      }
+
       if (data.movements && data.movements.length > 0) {
         for (const movement of data.movements) {
-          const normalizedMovement = this.normalizeMovement(movement, data.model || currentAsset.model);
-          normalizedMovement.ptaId = id;
-          console.debug('movement payload', normalizedMovement);
+          const normalizedMovement = this.normalizeMovement(movement, data.model || currentAsset.model, 'edit', id);
           await api.editMovement(normalizedMovement);
         }
       }
 
-      // Validate response and return minimal object
-      if (!apiResponse.success) throw new Error("Update failed");
       return { success: true, ptaId: apiResponse.data?.ptaId ?? null };
     } catch (error) {
       console.error('Error updating unified asset:', error);

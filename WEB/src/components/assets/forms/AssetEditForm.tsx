@@ -99,9 +99,9 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
       if (asset.movements && asset.movements.length > 0) {
         setAccountabilityEntries(asset.movements);
       } else {
-        // Default entry
+        // Auto-add a NEW movement object if API returns empty movements
         setAccountabilityEntries([{
-          id: Date.now(),
+          id: 0,
           ptaId: asset.id,
           dateAssigned: new Date().toISOString(),
           parItrNumber: '',
@@ -137,17 +137,20 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
     }));
 
     // Prepare movements with correct id and ptaId (ptaId always asset.id for edit)
-    const preparedMovements: UnifiedMovement[] = accountabilityEntries.map(movement => ({
-      id: movement.id || null,
-      ptaId: asset.id,
-      dateAssigned: movement.dateAssigned,
-      parItrNumber: movement.parItrNumber,
-      plantillaEmployeeId: movement.plantillaEmployeeId || null,
-      nonPlantillaEmployeeId: movement.nonPlantillaEmployeeId || null,
-      office: movement.office,
-      division: movement.division,
-      condition: movement.condition,
-    }));
+    // Filter out any null/undefined entries and ensure office/division objects exist
+    const preparedMovements: any[] = accountabilityEntries
+      .filter(movement => movement != null && movement.office != null && movement.division != null)
+      .map(movement => ({
+        id: movement.id || 0, // Use 0 for new movements, existing id for edits
+        ptaId: asset.id,
+        dateAssigned: movement.dateAssigned || new Date().toISOString(),
+        parItrNumber: movement.parItrNumber || '',
+        plantillaEmployeeId: movement.plantillaEmployeeId || 0,
+        nonPlantillaEmployeeId: movement.nonPlantillaEmployeeId || 0,
+        actualOfficeId: movement.office?.id || 0,
+        actualDivisionId: movement.division?.id || 0,
+        condition: movement.condition || 'Working',
+      }));
 
     const finalPayload = {
       id: asset.id,
@@ -194,7 +197,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
   const handleAddPart = () => {
     setFormData((prev) => ({
       ...prev,
-      parts: [...prev.parts, { id: null, ptaId: asset.id, name: '', serialNumber: '', isActive: true }]
+      parts: [...prev.parts, { id: 0, ptaId: asset.id, name: '', serialNumber: '', isActive: true }]
     }));
   };
 

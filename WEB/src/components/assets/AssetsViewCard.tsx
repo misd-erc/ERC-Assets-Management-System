@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,9 @@ import {
 } from 'lucide-react';
 import { PPEAsset } from '@/types/asset/PPEAsset';
 import { SEAsset } from '@/types/supply/se';
-import { Asset } from '@/types/asset/UnifiedAsset';
+import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
+import { getEmployees } from '@/api/user-management/userApi';
+import { normalizeEmployee } from '@/utils/employeeUtils';
 
 interface AssetsViewCardProps {
   asset: Asset;
@@ -28,6 +30,28 @@ interface AssetsViewCardProps {
 }
 
 export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) {
+  const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const employeeData = await getEmployees();
+        const normalizedEmployees = employeeData.data.items.map(normalizeEmployee);
+        setEmployees(normalizedEmployees);
+      } catch (error) {
+        console.error('Failed to fetch employees:', error);
+      }
+    };
+
+    fetchEmployees();
+  }, []);
+
+  const getEmployeeName = (employeeId: string | number | null) => {
+    if (!employeeId) return '-';
+    const employee = employees.find(emp => emp.id === Number(employeeId));
+    return employee ? `${employee.firstName} ${employee.lastName}` : String(employeeId);
+  };
+
   const getConditionBadge = (condition: string) => {
     const styles = {
       Working: 'bg-green-100 text-green-800 border-green-200',
@@ -192,44 +216,37 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">PAR/ITR Number</Label>
-                  <p className="text-slate-900">{ppeAsset.movements && ppeAsset.movements.length > 0 ? ppeAsset.movements[0].parItrNumber || '-' : '-'}</p>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">Plantilla Employee ID</Label>
-                  <p className="text-slate-900">{ppeAsset.movements && ppeAsset.movements.length > 0 ? ppeAsset.movements[0].plantillaEmployeeIdOriginal || '-' : '-'}</p>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">Non-Plantilla Employee ID</Label>
-                  <p className="text-slate-900">{ppeAsset.movements && ppeAsset.movements.length > 0 ? ppeAsset.movements[0].nonPlantillaEmployeeIdOriginal || '-' : '-'}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">Actual Division</Label>
-                  <p className="text-slate-900">{ppeAsset.movements && ppeAsset.movements.length > 0 && typeof ppeAsset.movements[0].division === 'object' && ppeAsset.movements[0].division !== null ? ppeAsset.movements[0].division.name : '-'}</p>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">Condition</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    {ppeAsset.movements && ppeAsset.movements.length > 0 ? getConditionIcon(ppeAsset.movements[0].condition || '') : getConditionIcon('')}
-                    {ppeAsset.movements && ppeAsset.movements.length > 0 ? getConditionBadge(ppeAsset.movements[0].condition || '') : getConditionBadge('')}
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">Date</Label>
-                  <p className="text-slate-900">{ppeAsset.movements && ppeAsset.movements.length > 0 ? formatDate(ppeAsset.movements[0].dateAssigned) : '-'}</p>
-                </div>
-              </div>
-            </div>
+            {ppeAsset.movements && ppeAsset.movements.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date Assigned</TableHead>
+                    <TableHead>PAR/ITR Number</TableHead>
+                    <TableHead>Employee ID</TableHead>
+                    <TableHead>Division</TableHead>
+                    <TableHead>Condition</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ppeAsset.movements.map((movement) => (
+                    <TableRow key={movement.id}>
+                      <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
+                      <TableCell>{movement.parItrNumber || '-'}</TableCell>
+                      <TableCell>{movement.plantillaEmployeeIdOriginal || movement.nonPlantillaEmployeeIdOriginal || '-'}</TableCell>
+                      <TableCell>{typeof movement.division === 'object' && movement.division !== null ? movement.division.name : '-'}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getConditionIcon(movement.condition || '')}
+                          {getConditionBadge(movement.condition || '')}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-slate-500">No accountability information available</p>
+            )}
           </CardContent>
         </Card>
 
@@ -428,49 +445,45 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">PAR/ITR Number</Label>
-                  <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? asset.movements[0].parItrNumber || '-' : '-'}</p>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">Plantilla Employee ID</Label>
-                  <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? asset.movements[0].plantillaEmployeeId || '-' : '-'}</p>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">Non-Plantilla Employee ID</Label>
-                  <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? asset.movements[0].nonPlantillaEmployeeId || '-' : '-'}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">Office</Label>
-                  <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? asset.movements[0].office.name : '-'}</p>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">Division</Label>
-                  <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? asset.movements[0].division.name : '-'}</p>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">Condition</Label>
-                  <div className="flex items-center gap-2 mt-1">
-                    {asset.movements && asset.movements.length > 0 ? getConditionIcon(asset.movements[0].condition || '') : getConditionIcon('')}
-                    {asset.movements && asset.movements.length > 0 ? getConditionBadge(asset.movements[0].condition || '') : getConditionBadge('')}
-                  </div>
-                </div>
-
-                <div>
-                  <Label className="text-sm font-medium text-slate-600">Date Assigned</Label>
-                  <p className="text-slate-900">{asset.movements && asset.movements.length > 0 ? formatDate(asset.movements[0].dateAssigned) : '-'}</p>
-                </div>
-              </div>
-            </div>
+            {asset.movements && asset.movements.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date Assigned</TableHead>
+                    <TableHead>PAR/ITR Number</TableHead>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Office</TableHead>
+                    <TableHead>Division</TableHead>
+                    <TableHead>Condition</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {asset.movements.map((movement) => (
+                    <TableRow key={movement.id}>
+                      <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
+                      <TableCell>{movement.parItrNumber || '-'}</TableCell>
+                      <TableCell>
+                        {movement.plantillaEmployeeId
+                          ? getEmployeeName(movement.plantillaEmployeeId)
+                          : movement.nonPlantillaEmployeeId
+                          ? getEmployeeName(movement.nonPlantillaEmployeeId)
+                          : '-'}
+                      </TableCell>
+                      <TableCell>{movement.office.name}</TableCell>
+                      <TableCell>{movement.division.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getConditionIcon(movement.condition || '')}
+                          {getConditionBadge(movement.condition || '')}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-slate-500">No accountability information available</p>
+            )}
           </CardContent>
         </Card>
 
