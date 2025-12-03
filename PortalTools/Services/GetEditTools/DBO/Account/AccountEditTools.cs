@@ -152,7 +152,7 @@ namespace PortalTools.Services.GetEditTools.DBO.Account
             {
                 ////remove since it's not needed
                 //await context.TblOneTimePasswords.Where(x => x.SystemUserId == model.SystemUserId).ExecuteSoftDeleteAsync(context);
-                await context.TblOneTimePasswords.Where(x => x.SystemUserId == model.SystemUserId).ExecuteDeleteAsync();
+                context.TblOneTimePasswords.Where(x => x.SystemUserId == model.SystemUserId).ExecuteDelete();
                 await context.TblOneTimePasswords.AddAsync(model);
                 await context.SaveChangesAsync();
 
@@ -182,7 +182,7 @@ namespace PortalTools.Services.GetEditTools.DBO.Account
 
                 //remove since it's not needed
                 //await context.TblSessionTokens.Where(x => x.SystemUserId == model.SystemUserId).ExecuteSoftDeleteAsync(context);
-                await context.TblSessionTokens.Where(x => x.SystemUserId == model.SystemUserId).ExecuteDeleteAsync();
+                context.TblSessionTokens.Where(x => x.SystemUserId == model.SystemUserId).ExecuteDelete();
                 await context.TblSessionTokens.AddAsync(model);
                 await context.SaveChangesAsync();
                 //AuditTrailTool.TrackChanges(context, null!, model, nameof(TblOneTimePassword), UniversalConstants.SYSTEM_ID, "Insert");
