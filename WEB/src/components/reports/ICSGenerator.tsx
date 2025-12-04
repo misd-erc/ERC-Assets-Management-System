@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
 /** Format currency (PHP) */
 function currency(val?: number | null): string {
   if (val == null) return '';
-  return "₱" + new Intl.NumberFormat('en-PH', {
+  return "PHP" + new Intl.NumberFormat('en-PH', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(val);
@@ -231,7 +231,7 @@ const ICSDocument = ({
           <View style={styles.sigBlock}>
             <Text>Received from:</Text>
             <View style={styles.sigLine} />
-            <Text style={styles.sigSub}>Juan Dela Cruz</Text>
+            <Text style={styles.sigSub}>Roselle Guintu </Text>
             <Text style={styles.sigSub}>Property Officer</Text>
 
             <View style={styles.sigLine} />
