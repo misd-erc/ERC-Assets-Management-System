@@ -10,11 +10,13 @@ import { Upload, Download, Plus, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { AssetsTable } from '@/components/assets/AssetsTable';
 import { AssetsFilters } from '@/components/assets/AssetsFilters';
-import { AssetsForm } from '@/components/assets/AssetsForm';
+import { AssetCreateForm } from '@/components/assets/forms/AssetCreateForm';
+import { AssetEditForm } from '@/components/assets/forms/AssetEditForm';
 import { AssetsViewCard } from '@/components/assets/AssetsViewCard';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { Asset } from '@/types/asset/UnifiedAsset';
 import { ExcelExportService } from '@/utils/excelExport';
+import { ReportTab } from '@/components/reports/ReportTab';
 
 export function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -30,6 +32,7 @@ export function AssetsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [conditionFilter, setConditionFilter] = useState('all');
+  const [officeFilter, setOfficeFilter] = useState('all');
   const [divisionFilter, setDivisionFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -55,7 +58,7 @@ export function AssetsPage() {
 
   useEffect(() => {
     loadAssets();
-  }, [currentPage, searchTerm, categoryFilter, conditionFilter, divisionFilter, startDate, endDate, activeTab]);
+  }, [currentPage, searchTerm, categoryFilter, conditionFilter, officeFilter, divisionFilter, startDate, endDate, activeTab]);
 
   const loadAssets = async () => {
     try {
@@ -96,18 +99,10 @@ export function AssetsPage() {
     }
   };
 
-  const handleEditAsset = async (data: Omit<Asset, 'id'>) => {
-    if (!selectedAsset) return;
-    try {
-      await UnifiedAssetService.update(selectedAsset.id, data);
-      toast.success('Asset updated successfully');
-      setEditDialogOpen(false);
-      setSelectedAsset(null);
-      loadAssets();
-    } catch (error) {
-      console.error('Error updating asset:', error);
-      toast.error('Failed to update asset');
-    }
+  const handleEditAsset = async (data: Asset) => {
+    // This function is now only used for closing the dialog, actual update is handled in AssetEditForm
+    setEditDialogOpen(false);
+    setSelectedAsset(null);
   };
 
   const handleDeleteAsset = async () => {
@@ -169,6 +164,7 @@ export function AssetsPage() {
     setSearchTerm('');
     setCategoryFilter('all');
     setConditionFilter('all');
+    setOfficeFilter('all');
     setDivisionFilter('all');
     setStartDate('');
     setEndDate('');
@@ -285,10 +281,11 @@ export function AssetsPage() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="all">All Assets</TabsTrigger>
           <TabsTrigger value="PPE">PPE Assets</TabsTrigger>
           <TabsTrigger value="SE">SE Assets</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
         <TabsContent value="all" className="space-y-6">
@@ -300,6 +297,8 @@ export function AssetsPage() {
             onCategoryFilterChange={setCategoryFilter}
             conditionFilter={conditionFilter}
             onConditionFilterChange={setConditionFilter}
+            officeFilter={officeFilter}
+            onOfficeFilterChange={setOfficeFilter}
             divisionFilter={divisionFilter}
             onDivisionFilterChange={setDivisionFilter}
             startDate={startDate}
@@ -332,6 +331,8 @@ export function AssetsPage() {
             onCategoryFilterChange={setCategoryFilter}
             conditionFilter={conditionFilter}
             onConditionFilterChange={setConditionFilter}
+            officeFilter={officeFilter}
+            onOfficeFilterChange={setOfficeFilter}
             divisionFilter={divisionFilter}
             onDivisionFilterChange={setDivisionFilter}
             startDate={startDate}
@@ -364,6 +365,8 @@ export function AssetsPage() {
             onCategoryFilterChange={setCategoryFilter}
             conditionFilter={conditionFilter}
             onConditionFilterChange={setConditionFilter}
+            officeFilter={officeFilter}
+            onOfficeFilterChange={setOfficeFilter}
             divisionFilter={divisionFilter}
             onDivisionFilterChange={setDivisionFilter}
             startDate={startDate}
@@ -386,6 +389,10 @@ export function AssetsPage() {
             onPageChange={handlePageChange}
           />
         </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <ReportTab />
+        </TabsContent>
       </Tabs>
 
       {/* Add Dialog */}
@@ -397,7 +404,7 @@ export function AssetsPage() {
               Enter the details for the new asset.
             </DialogDescription>
           </DialogHeader>
-          <AssetsForm
+          <AssetCreateForm
             onSubmit={handleAddAsset}
             onCancel={() => setAddDialogOpen(false)}
           />
@@ -414,14 +421,14 @@ export function AssetsPage() {
             </DialogDescription>
           </DialogHeader>
           {selectedAsset && (
-            <AssetsForm
+            <AssetEditForm
               asset={selectedAsset}
               onSubmit={handleEditAsset}
               onCancel={() => {
                 setEditDialogOpen(false);
                 setSelectedAsset(null);
               }}
-              isEditing
+              onSuccess={loadAssets}
             />
           )}
         </DialogContent>

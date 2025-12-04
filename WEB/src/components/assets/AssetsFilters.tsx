@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,7 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Search, Filter, X } from 'lucide-react';
 import { getDivisions } from '@/api/office-management/divisionApi';
-import { VwDivision } from '@/types/office';
+import { getOffices } from '@/api/office-management/officeApi';
+import { getCategories, getConditions } from '@/api/inventoryApi';
+import { VwDivision, Office } from '@/types/office';
 
 interface AssetsFiltersProps {
   searchTerm: string;
@@ -15,6 +17,8 @@ interface AssetsFiltersProps {
   onCategoryFilterChange: (value: string) => void;
   conditionFilter: string;
   onConditionFilterChange: (value: string) => void;
+  officeFilter: string;
+  onOfficeFilterChange: (value: string) => void;
   divisionFilter: string;
   onDivisionFilterChange: (value: string) => void;
   startDate: string;
@@ -32,6 +36,8 @@ export function AssetsFilters({
   onCategoryFilterChange,
   conditionFilter,
   onConditionFilterChange,
+  officeFilter,
+  onOfficeFilterChange,
   divisionFilter,
   onDivisionFilterChange,
   startDate,
@@ -41,44 +47,32 @@ export function AssetsFilters({
   onClearFilters,
   totalResults,
 }: AssetsFiltersProps) {
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [conditions, setConditions] = useState<string[]>([]);
+  const [offices, setOffices] = useState<Office[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
 
-  React.useEffect(() => {
-    const loadDivisions = async () => {
+  useEffect(() => {
+    const loadFilters = async () => {
       try {
-        const divisionsData = await getDivisions();
-        setDivisions(divisionsData);
+        const [categoriesData, conditionsData, officesData, divisionsData] = await Promise.all([
+          getCategories(),
+          getConditions(),
+          getOffices(),
+          getDivisions(),
+        ]);
+        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+        setConditions(Array.isArray(conditionsData) ? conditionsData : []);
+        setOffices(Array.isArray(officesData) ? officesData : []);
+        setDivisions(Array.isArray(divisionsData) ? divisionsData : []);
       } catch (error) {
-        console.error('Failed to load divisions:', error);
+        console.error('Failed to load filters:', error);
       }
     };
-    loadDivisions();
+    loadFilters();
   }, []);
 
-  const getCategoryOptions = () => {
-    return [
-      { value: 'all', label: 'All Categories' },
-      { value: 'ICT Equipment', label: 'ICT Equipment' },
-      { value: 'Office Equipment', label: 'Office Equipment' },
-      { value: 'Motor Vehicle', label: 'Motor Vehicle' },
-      { value: 'Furniture and Fixtures', label: 'Furniture and Fixtures' },
-      { value: 'Communication Equipment', label: 'Communication Equipment' },
-      { value: 'Technical and Scientific Equipment', label: 'Technical and Scientific Equipment' },
-      { value: 'Sports Equipment', label: 'Sports Equipment' }
-    ];
-  };
 
-  const getConditionOptions = () => {
-    return [
-      { value: 'all', label: 'All Conditions' },
-      { value: 'Working', label: 'Working' },
-      { value: 'Not Working', label: 'Not Working' },
-      { value: 'IIRUP', label: 'IIRUP' },
-      { value: 'Disposed', label: 'Disposed' },
-      { value: 'Missing', label: 'Missing' },
-      { value: 'Unserviceable', label: 'Unserviceable' }
-    ];
-  };
 
   return (
     <Card>
@@ -111,14 +105,15 @@ export function AssetsFilters({
           {/* Category Filter */}
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
-            <Select value={categoryFilter} onValueChange={onCategoryFilterChange}>
+            <Select value={categoryFilter ?? undefined} onValueChange={onCategoryFilterChange}>
               <SelectTrigger>
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                {getCategoryOptions().map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category.id} value={category.name}>
+                    {category.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -128,14 +123,33 @@ export function AssetsFilters({
           {/* Condition Filter */}
           <div className="space-y-2">
             <Label htmlFor="condition">Condition</Label>
-            <Select value={conditionFilter} onValueChange={onConditionFilterChange}>
+            <Select value={conditionFilter ?? undefined} onValueChange={onConditionFilterChange}>
               <SelectTrigger>
                 <SelectValue placeholder="All Conditions" />
               </SelectTrigger>
               <SelectContent>
-                {getConditionOptions().map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                <SelectItem value="all">All Conditions</SelectItem>
+                {conditions.map(condition => (
+                  <SelectItem key={condition} value={condition}>
+                    {condition}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Office Filter */}
+          <div className="space-y-2">
+            <Label htmlFor="office">Office</Label>
+            <Select value={officeFilter ?? undefined} onValueChange={onOfficeFilterChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Offices" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Offices</SelectItem>
+                {offices.map(office => (
+                  <SelectItem key={office.id} value={office.id.toString()}>
+                    {office.name}
                   </SelectItem>
                 ))}
               </SelectContent>

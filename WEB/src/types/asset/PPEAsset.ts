@@ -1,3 +1,5 @@
+import { Part } from './UnifiedAsset';
+
 export interface Movement {
   id: number;
   ppeId: number;
@@ -39,7 +41,7 @@ export interface PPEAsset {
   brand?: string | null;
   model?: string | null;
   serialNumber?: string | null;
-  parts?: string[] | null;
+  parts?: Part[] | null;
   unitOfMeasurement: string;
   unitValue: number;
   dateAcquired: string;

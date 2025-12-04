@@ -155,8 +155,8 @@ export class SEService {
 
       const apiData = {
         propertyNumber: data.se_property_number,
-        category: data.category || '',
-        legend: data.legend || '',
+        category: parseInt(data.category) || 0,
+        legend: parseInt(data.legend) || 0,
         description: data.description,
         brand: data.brand || '',
         model: data.model || '',
@@ -220,8 +220,8 @@ export class SEService {
       const apiData = {
         id,
         propertyNumber: data.se_property_number || '',
-        category: data.category || '',
-        legend: data.legend || '',
+        category: parseInt(data.category || '0') || 0,
+        legend: parseInt(data.legend || '0') || 0,
         description: data.description || '',
         brand: data.brand || '',
         model: data.model || '',

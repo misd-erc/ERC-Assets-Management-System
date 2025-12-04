@@ -1,5 +1,5 @@
-import { PPEService } from './ppeService';
-import { SEService } from './seService';
+﻿import { PPEService } from '@/services/ppeService';
+import { SEService } from '@/services/seService';
 import { PPEAsset } from '@/types/asset/PPEAsset';
 import { SEAsset } from '@/types/supply/se';
 
@@ -54,3 +54,4 @@ export class AssetService {
     }
   }
 }
+
