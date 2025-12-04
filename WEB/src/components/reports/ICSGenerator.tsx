@@ -75,7 +75,6 @@ const styles = StyleSheet.create({
   },
 
   tableWrap: {
-    flex: 1,
     marginTop: 8,
   },
   table: {
@@ -109,40 +108,39 @@ const styles = StyleSheet.create({
   colInvNo: { width: '14%' },
   colUsefulLife: { width: '8%' },
 
-  signatureSection: {
+  /** SIGNATURES (Option A – NO SPACING, directly below items) */
+  sigRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 20,
-    marginTop: 'auto',
+    marginTop: 10,
   },
-  signatureBlock: {
-    width: '45%',
+  sigBlock: {
+    width: '48%',
   },
-  signatureLabel: {
+  sigLabel: {
     fontSize: 9,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  signatureLine: {
-    borderBottomWidth: 0.8,
+  sigLine: {
+    borderBottomWidth: 1,
     borderColor: '#000',
-    height: 20,
+    marginTop: 4,
     marginBottom: 4,
   },
-  signatureSub: {
+  sigSub: {
     fontSize: 8,
+    marginBottom: 6,
   },
 });
 
 /** Format currency (PHP) */
 function currency(val?: number | null): string {
   if (val == null) return '';
-  return "PHP " + new Intl.NumberFormat('en-PH', {
+  return "PHP" + new Intl.NumberFormat('en-PH', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(val);
 }
-
 
 /** Truncate long descriptions */
 function truncate(text = '', max = 250) {
@@ -162,101 +160,102 @@ interface ICSRow {
 
 const ICSDocument = ({
   rows,
-  entityName,
-  fundCluster = '',
-  icsNumber = '',
+  employeeName,
 }: {
   rows: ICSRow[];
-  entityName: string;
-  fundCluster?: string;
-  icsNumber?: string;
+  employeeName: string;
 }) => {
-  const rowsPerPage = 18;
-  const pages: ICSRow[][] = [];
-
-  for (let i = 0; i < rows.length; i += rowsPerPage) {
-    pages.push(rows.slice(i, i + rowsPerPage));
-  }
 
   return (
     <Document>
-      {pages.map((pageRows, index) => (
-        <Page key={index} size="A4" style={styles.page}>
-          <Text style={styles.appendix}>Appendix 59</Text>
+      <Page size="A4" style={styles.page}>
+        <Text style={styles.appendix}>Appendix 59</Text>
 
-          {/* Header */}
-          <View style={styles.headerContainer}>
-            <Image src={logoSrc} style={styles.logo} />
-            <View style={styles.titleBlock}>
-              <Text style={styles.headerSmall}>Republic of the Philippines</Text>
-              <Text style={styles.headerTitle}>INVENTORY CUSTODIAN SLIP</Text>
-            </View>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <Image src={logoSrc} style={styles.logo} />
+          <View style={styles.titleBlock}>
+            <Text style={styles.headerSmall}>Republic of the Philippines</Text>
+            <Text style={styles.headerTitle}>INVENTORY CUSTODIAN SLIP</Text>
+          </View>
+        </View>
+
+        <View style={styles.blueRule} />
+
+        {/* Entity + Cluster + ICS No */}
+        <View style={styles.metaRow}>
+          <View style={styles.metaLeft}>
+            <Text style={styles.metaLabel}>
+              Entity Name: <Text>ENERGY REGULATORY COMMISSION</Text>
+            </Text>
+            <Text style={{ marginTop: 4 }}>
+              Fund Cluster: _______________________
+            </Text>
           </View>
 
-          <View style={styles.blueRule} />
-
-          {/* Entity / ICS No */}
-          <View style={styles.metaRow}>
-            <View style={styles.metaLeft}>
-              <Text style={styles.metaLabel}>
-                Entity Name: <Text style={styles.metaValue}>{entityName}</Text>
-              </Text>
-              <Text style={{ marginTop: 4 }}>
-                Fund Cluster: <Text style={styles.metaValue}>{fundCluster}</Text>
-              </Text>
-            </View>
-
-            <View style={styles.metaRight}>
-              <Text style={styles.metaLabel}>ICS No.: {icsNumber}</Text>
-            </View>
+          <View style={styles.metaRight}>
+            <Text style={styles.metaLabel}>ICS No.: ______________</Text>
           </View>
+        </View>
 
-          {/* Table */}
-          <View style={styles.tableWrap}>
-            <View style={styles.table}>
-              {/* Table Header */}
-              <View style={styles.tableHeaderRow}>
-                <Text style={[styles.cell, styles.colQty]}>Qty</Text>
-                <Text style={[styles.cell, styles.colUnit]}>Unit</Text>
-                <Text style={[styles.cell, styles.colUnitCost]}>Unit Cost</Text>
-                <Text style={[styles.cell, styles.colTotalCost]}>Total Cost</Text>
-                <Text style={[styles.cell, styles.colDescription]}>Description</Text>
-                <Text style={[styles.cell, styles.colInvNo]}>Inventory Item No.</Text>
-                <Text style={[styles.cell, styles.colUsefulLife]}>Useful Life</Text>
+        {/* TABLE */}
+        <View style={styles.tableWrap}>
+          <View style={styles.table}>
+            <View style={styles.tableHeaderRow}>
+              <Text style={[styles.cell, styles.colQty]}>Qty</Text>
+              <Text style={[styles.cell, styles.colUnit]}>Unit</Text>
+              <Text style={[styles.cell, styles.colUnitCost]}>Unit Cost</Text>
+              <Text style={[styles.cell, styles.colTotalCost]}>Total Cost</Text>
+              <Text style={[styles.cell, styles.colDescription]}>Description</Text>
+              <Text style={[styles.cell, styles.colInvNo]}>Inventory Item No.</Text>
+              <Text style={[styles.cell, styles.colUsefulLife]}>Useful Life</Text>
+            </View>
+
+            {rows.map((r, i) => (
+              <View key={i} style={styles.tableRow}>
+                <Text style={[styles.cell, styles.colQty]}>{r.qty}</Text>
+                <Text style={[styles.cell, styles.colUnit]}>{r.unit}</Text>
+                <Text style={[styles.cell, styles.colUnitCost]}>{currency(r.unitCost)}</Text>
+                <Text style={[styles.cell, styles.colTotalCost]}>{currency(r.totalCost)}</Text>
+                <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
+                <Text style={[styles.cell, styles.colInvNo]}>{r.invNo}</Text>
+                <Text style={[styles.cell, styles.colUsefulLife]}>{r.usefulLife}</Text>
               </View>
-
-              {pageRows.map((r, i) => (
-                <View key={i} style={styles.tableRow}>
-                  <Text style={[styles.cell, styles.colQty]}>{r.qty}</Text>
-                  <Text style={[styles.cell, styles.colUnit]}>{r.unit}</Text>
-                  <Text style={[styles.cell, styles.colUnitCost]}>{currency(r.unitCost)}</Text>
-                  <Text style={[styles.cell, styles.colTotalCost]}>{currency(r.totalCost)}</Text>
-                  <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
-                  <Text style={[styles.cell, styles.colInvNo]}>{r.invNo}</Text>
-                  <Text style={[styles.cell, styles.colUsefulLife]}>{r.usefulLife}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Signatures - Last Page Only */}
-            {index === pages.length - 1 && (
-              <View style={styles.signatureSection}>
-                <View style={styles.signatureBlock}>
-                  <Text style={styles.signatureLabel}>Issued By:</Text>
-                  <View style={styles.signatureLine} />
-                  <Text style={styles.signatureSub}>Office / Position</Text>
-                </View>
-
-                <View style={styles.signatureBlock}>
-                  <Text style={styles.signatureLabel}>Received By:</Text>
-                  <View style={styles.signatureLine} />
-                  <Text style={styles.signatureSub}>Date</Text>
-                </View>
-              </View>
-            )}
+            ))}
           </View>
-        </Page>
-      ))}
+        </View>
+
+        {/* SIGNATURES — OPTION A (stick directly below items) */}
+        <View style={styles.sigRow}>
+          {/* LEFT SIDE */}
+          <View style={styles.sigBlock}>
+            <Text>Received from:</Text>
+            <View style={styles.sigLine} />
+            <Text style={styles.sigSub}>Roselle Guintu </Text>
+            <Text style={styles.sigSub}>Property Officer</Text>
+
+            <View style={styles.sigLine} />
+            <Text style={styles.sigSub}>Position/Office</Text>
+
+            <View style={styles.sigLine} />
+            <Text style={styles.sigSub}>Date</Text>
+          </View>
+
+          {/* RIGHT SIDE */}
+          <View style={styles.sigBlock}>
+            <Text>Received by:</Text>
+            <View style={styles.sigLine} />
+            <Text style={styles.sigSub}>{employeeName || '__________________'}</Text>
+            <Text style={styles.sigSub}>Signature Over Printed Name</Text>
+
+            <View style={styles.sigLine} />
+            <Text style={styles.sigSub}>Position/Office</Text>
+
+            <View style={styles.sigLine} />
+            <Text style={styles.sigSub}>Date</Text>
+          </View>
+        </View>
+      </Page>
     </Document>
   );
 };
@@ -267,33 +266,25 @@ export class ICSGenerator {
       throw new Error('No assets selected');
     }
 
-    // Fetch employees
-    const employeesResp = await getEmployees(1, 10000);
-    const employees = employeesResp.data.items;
+    const employeeResp = await getEmployees(1, 10000);
+    const employees = employeeResp.data.items;
 
     const rows: ICSRow[] = [];
-    let entityName = 'N/A';
+    let employeeName = 'N/A';
 
     for (const asset of assets) {
       const full = await UnifiedAssetService.getById(asset.id);
 
-      // Get latest movement
-      const latestMovement =
-        full.movements?.sort(
-          (a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
-        )[0];
+      const latest = full.movements?.sort(
+        (a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
+      )[0];
 
-      // Get employee
-      let emp = null;
-      if (latestMovement) {
-        emp =
-          employees.find((e: any) => e.id === latestMovement.plantillaEmployeeId) ||
-          employees.find((e: any) => e.id === latestMovement.nonPlantillaEmployeeId);
-      }
+      let emp =
+        employees.find((e: any) => e.id === latest?.plantillaEmployeeId) ||
+        employees.find((e: any) => e.id === latest?.nonPlantillaEmployeeId);
 
-      // Build employee name
-      entityName = emp
-        ? `${emp.lastName}, ${emp.firstName} ${emp.middleName ?? ''}`.trim()
+      employeeName = emp
+        ? `${emp.lastName}, ${emp.firstName} ${emp.middleName ?? ''}`
         : 'N/A';
 
       rows.push({
@@ -301,18 +292,14 @@ export class ICSGenerator {
         unit: full.unitOfMeasurement || 'Unit',
         unitCost: full.unitValue ?? null,
         totalCost: full.unitValue ?? null,
-        description: full.description || '',
-        invNo: full.propertyNumber || '',
-        usefulLife:
-          full.estimatedUsefulLife != null
-            ? String(full.estimatedUsefulLife)
-            : '',
+        description: full.description,
+        invNo: full.propertyNumber,
+        usefulLife: full.estimatedUsefulLife ? String(full.estimatedUsefulLife) : '',
       });
     }
 
-    // Generate PDF
     const blob = await pdf(
-      <ICSDocument rows={rows} entityName={entityName} />
+      <ICSDocument rows={rows} employeeName={employeeName} />
     ).toBlob();
 
     const url = URL.createObjectURL(blob);
