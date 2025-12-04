@@ -125,7 +125,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
     }
 
     // Determine group based on unit value
-    const group = formData.unitValue >= 50000 ? 'SE' : 'PPE';
+    const group = formData.unitValue <= 49999 ? 'SE' : 'PPE';
 
     // Prepare parts with correct id and ptaId (ptaId always asset.id for edit)
     const preparedParts: Part[] = formData.parts.map(part => ({
@@ -187,7 +187,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
 
       // Automatically set group based on unit value
       if (field === 'unitValue') {
-        updatedData.group = value >= 50000 ? 'SE' : 'PPE';
+        updatedData.group = value <= 49999 ? 'SE' : 'PPE';
       }
 
       return updatedData;
