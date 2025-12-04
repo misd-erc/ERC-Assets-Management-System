@@ -22,7 +22,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
             _getTools = getTools;
         }
 
-        public async Task<long> EditTblPTAAsync(TblPTA model, long actionBySystemUserId, PortalDbContext context)
+        public async Task<long> EditTblPTAAsync(TblPTA model, long actionBySystemUserId, PortalDbContext context, bool isBatch = false)
         {
             if (model == null)
                 return 0;
@@ -64,8 +64,9 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 
-                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a PTA", actionBy: actionBySystemUserId,
-                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingPTA!, model, nameof(TblPTA), actionBySystemUserId, isInsert ? "Insert" : "Update"));
+                if(!isBatch)
+                    await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a PTA", actionBy: actionBySystemUserId,
+                        linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingPTA!, model, nameof(TblPTA), actionBySystemUserId, isInsert ? "Insert" : "Update"));
 
 
                 return isInsert ? model.Id : existingPTA.Id;
@@ -76,7 +77,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                 throw;
             }
         }
-        public async Task<long> EditTblPTAPartAsync(TblPTAPart model, long actionBySystemUserId, PortalDbContext context)
+        public async Task<long> EditTblPTAPartAsync(TblPTAPart model, long actionBySystemUserId, PortalDbContext context, bool isBatch = false)
         {
             if (model == null)
                 return 0;
@@ -108,8 +109,9 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                             .SetProperty(x => x.SerialNumberEncrypted, model.SerialNumberEncrypted));
                 }
 
-                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a PTA Part", actionBy: actionBySystemUserId,
-                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingPTAPart!, model, nameof(TblPTAPart), actionBySystemUserId, isInsert ? "Insert" : "Update"));
+                if(!isBatch)
+                    await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a PTA Part", actionBy: actionBySystemUserId,
+                        linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingPTAPart!, model, nameof(TblPTAPart), actionBySystemUserId, isInsert ? "Insert" : "Update"));
 
 
                 return isInsert ? model.Id : existingPTAPart.Id;
@@ -120,7 +122,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                 throw;
             }
         }
-        public async Task<long> EditTblPTAMovementAsync(TblPTAMovement model, long actionBySystemUserId, PortalDbContext context)
+        public async Task<long> EditTblPTAMovementAsync(TblPTAMovement model, long actionBySystemUserId, PortalDbContext context, bool isBatch = false)
         {
             if (model == null)
                 return 0;
@@ -160,8 +162,9 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 
-                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a PTA Movement", actionBy: actionBySystemUserId,
-                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingPTAMovement!, model, nameof(TblPTAMovement), actionBySystemUserId, isInsert ? "Insert" : "Update"));
+                if(!isBatch)
+                    await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a PTA Movement", actionBy: actionBySystemUserId,
+                        linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingPTAMovement!, model, nameof(TblPTAMovement), actionBySystemUserId, isInsert ? "Insert" : "Update"));
 
 
                 return isInsert ? model.Id : existingPTAMovement.Id;
@@ -172,7 +175,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                 throw;
             }
         }
-        public async Task<long> EditTblPTACategoryAsync(TblPTACategory model, long actionBySystemUserId, PortalDbContext context)
+        public async Task<long> EditTblPTACategoryAsync(TblPTACategory model, long actionBySystemUserId, PortalDbContext context, bool isBatch = false)
         {
             if (model == null)
                 return 0;
@@ -203,8 +206,9 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 
-                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a PTA category", actionBy: actionBySystemUserId,
-                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingCategory!, model, nameof(TblPTACategory), actionBySystemUserId, isInsert ? "Insert" : "Update"));
+                if(!isBatch)
+                    await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a PTA category", actionBy: actionBySystemUserId,
+                        linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingCategory!, model, nameof(TblPTACategory), actionBySystemUserId, isInsert ? "Insert" : "Update"));
 
 
                 return isInsert ? model.Id : existingCategory.Id;
@@ -215,7 +219,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                 throw;
             }
         }
-        public async Task<long> EditTblPTALegendAsync(TblPTALegend model, long actionBySystemUserId, PortalDbContext context)
+        public async Task<long> EditTblPTALegendAsync(TblPTALegend model, long actionBySystemUserId, PortalDbContext context, bool isBatch = false)
         {
             if (model == null)
                 return 0;
@@ -246,8 +250,9 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 
-                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a PTA legend", actionBy: actionBySystemUserId,
-                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingLegend!, model, nameof(TblPTALegend), actionBySystemUserId, isInsert ? "Insert" : "Update"));
+                if(!isBatch)
+                    await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} a PTA legend", actionBy: actionBySystemUserId,
+                        linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingLegend!, model, nameof(TblPTALegend), actionBySystemUserId, isInsert ? "Insert" : "Update"));
 
 
                 return isInsert ? model.Id : existingLegend.Id;

@@ -783,7 +783,7 @@ namespace API.Controllers
                                 Name = item.Category,
                                 IsActive = true
                             };
-                            categoryId = await _editTools.PTA.EditTblPTACategoryAsync(newCategory, model.ActionBySystemUserId, context);
+                            categoryId = await _editTools.PTA.EditTblPTACategoryAsync(newCategory, model.ActionBySystemUserId, context, true);
                         }
                     }
                     if (!string.IsNullOrWhiteSpace(item.Legend))
@@ -801,7 +801,7 @@ namespace API.Controllers
                                 Name = item.Legend,
                                 IsActive = true
                             };
-                            legendId = await _editTools.PTA.EditTblPTALegendAsync(newLegend, model.ActionBySystemUserId, context);
+                            legendId = await _editTools.PTA.EditTblPTALegendAsync(newLegend, model.ActionBySystemUserId, context, true);
                         }
                     }
 
@@ -821,7 +821,7 @@ namespace API.Controllers
                         EstimatedUsefulLife = item.EstimatedUsefulLife
                     };
 
-                    ppeId = await _editTools.PTA.EditTblPTAAsync(newPTA, model.ActionBySystemUserId, context);
+                    ppeId = await _editTools.PTA.EditTblPTAAsync(newPTA, model.ActionBySystemUserId, context, true);
 
                     foreach (PTAPart part in item?.Parts ?? Enumerable.Empty<PTAPart>())
                     {
@@ -832,7 +832,7 @@ namespace API.Controllers
                             SerialNumber = part.PartSerialNumber
                         };
 
-                        await _editTools.PTA.EditTblPTAPartAsync(newPart, model.ActionBySystemUserId, context);
+                        await _editTools.PTA.EditTblPTAPartAsync(newPart, model.ActionBySystemUserId, context, true);
                     }
 
                     foreach (PTAAnnualCount movement in item?.AnnualCount ?? Enumerable.Empty<PTAAnnualCount>())
@@ -912,10 +912,12 @@ namespace API.Controllers
                             Remarks = movement.Condition
                         };
 
-                        await _editTools.PTA.EditTblPTAMovementAsync(newMovement, model.ActionBySystemUserId, context);
+                        await _editTools.PTA.EditTblPTAMovementAsync(newMovement, model.ActionBySystemUserId, context, true);
                     }
 
                 }
+
+                await AuditTrailTool.LogActivityAsync(_options, $"Performed batch upload PTA (PPE/SE) with a total of {items.Count()} PTA items", actionBy: model.ActionBySystemUserId);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
