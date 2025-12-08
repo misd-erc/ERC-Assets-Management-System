@@ -16,7 +16,7 @@ import { AssetsViewCard } from '@/components/assets/AssetsViewCard';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { Asset } from '@/types/asset/UnifiedAsset';
 import { ExcelExportService } from '@/utils/excelExport';
-import { ReportTab } from '@/components/reports/ReportTab';
+import { ReportTab } from '@/components/assets/reports/ReportTab';
 
 export function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([]);

@@ -9,8 +9,8 @@ import { FileText, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { Asset } from '@/types/asset/UnifiedAsset';
-import { PARGenerator } from '@/components/reports/PARGenerator';
-import { ICSGenerator } from '@/components/reports/ICSGenerator';
+import { PARGenerator } from '@/components/assets/reports/PARGenerator';
+import { ICSGenerator } from '@/components/assets/reports/ICSGenerator';
 
 export function ReportTab() {
   const [ppeAssets, setPpeAssets] = useState<Asset[]>([]);
