@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { FileText, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
@@ -243,203 +244,215 @@ export function ReportTab() {
           )}
         </CardContent>
       </Card>
-      {/* PAR Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="size-5" />
-            Property Acknowledgement Receipt (PAR) - PPE Assets
-          </CardTitle>
-          <CardDescription>
-            Generate PAR reports for selected PPE assets. Only PPE assets with valid movements and employee assignments will be included.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                checked={selectedPpeAssets.size === filteredPpeAssets.length && filteredPpeAssets.length > 0}
-                onCheckedChange={handleSelectAllPpe}
-              />
-              <span className="text-sm font-medium">Select All ({filteredPpeAssets.length} assets)</span>
-            </div>
-            <Button
-              onClick={handleGeneratePAR}
-              disabled={selectedPpeAssets.size === 0}
-              className="gap-2"
-            >
-              <Download className="size-4" />
-              Generate PAR PDF ({selectedPpeAssets.size} selected)
-            </Button>
-          </div>
 
-          <div className="border rounded-lg max-h-96 overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">Select</TableHead>
-                  <TableHead>Property Number</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Serial Number</TableHead>
-                  <TableHead>Brand/Model</TableHead>
-                  <TableHead>Condition</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedPpeAssets.map((asset) => (
-                  <TableRow key={asset.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedPpeAssets.has(asset.id)}
-                        onCheckedChange={(checked) => handlePpeAssetSelect(asset.id, checked as boolean)}
-                      />
-                    </TableCell>
-                    <TableCell>{asset.propertyNumber}</TableCell>
-                    <TableCell>{asset.description}</TableCell>
-                    <TableCell>{asset.serialNumber}</TableCell>
-                    <TableCell>{asset.brand} {asset.model}</TableCell>
-                    <TableCell>
-                      <Badge variant={asset.movements?.[0]?.condition === 'Working' ? 'default' : 'secondary'}>
-                        {asset.movements?.[0]?.condition || 'N/A'}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+      <Tabs defaultValue="ppe" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="ppe">PPE Reports</TabsTrigger>
+          <TabsTrigger value="se">SE Reports</TabsTrigger>
+        </TabsList>
 
-          {totalPagesPpe > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-muted-foreground">
-                Showing {((currentPagePpe - 1) * pageSize) + 1} to {Math.min(currentPagePpe * pageSize, filteredPpeAssets.length)} of {filteredPpeAssets.length} assets
-              </div>
-              <div className="flex items-center gap-2">
+        <TabsContent value="ppe" className="space-y-6">
+          {/* PAR Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="size-5" />
+                Property Acknowledgement Receipt (PAR) - PPE Assets
+              </CardTitle>
+              <CardDescription>
+                Generate PAR reports for selected PPE assets. Only PPE assets with valid movements and employee assignments will be included.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedPpeAssets.size === filteredPpeAssets.length && filteredPpeAssets.length > 0}
+                    onCheckedChange={handleSelectAllPpe}
+                  />
+                  <span className="text-sm font-medium">Select All ({filteredPpeAssets.length} assets)</span>
+                </div>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPagePpe(currentPagePpe - 1)}
-                  disabled={currentPagePpe === 1}
+                  onClick={handleGeneratePAR}
+                  disabled={selectedPpeAssets.size === 0}
+                  className="gap-2"
                 >
-                  <ChevronLeft className="size-4" />
-                  Previous
-                </Button>
-                <span className="text-sm">
-                  Page {currentPagePpe} of {totalPagesPpe}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPagePpe(currentPagePpe + 1)}
-                  disabled={currentPagePpe === totalPagesPpe}
-                >
-                  Next
-                  <ChevronRight className="size-4" />
+                  <Download className="size-4" />
+                  Generate PAR PDF ({selectedPpeAssets.size} selected)
                 </Button>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* ICS Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="size-5" />
-            Inventory Custodian Slip (ICS) - SE Assets
-          </CardTitle>
-          <CardDescription>
-            Generate ICS reports for selected SE assets. Only SE assets with valid movements and employee assignments will be included.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                checked={selectedSeAssets.size === filteredSeAssets.length && filteredSeAssets.length > 0}
-                onCheckedChange={handleSelectAllSe}
-              />
-              <span className="text-sm font-medium">Select All ({filteredSeAssets.length} assets)</span>
-            </div>
-            <Button
-              onClick={handleGenerateICS}
-              disabled={selectedSeAssets.size === 0}
-              className="gap-2"
-            >
-              <Download className="size-4" />
-              Generate ICS PDF ({selectedSeAssets.size} selected)
-            </Button>
-          </div>
-
-          <div className="border rounded-lg max-h-96 overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">Select</TableHead>
-                  <TableHead>Property Number</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Serial Number</TableHead>
-                  <TableHead>Brand/Model</TableHead>
-                  <TableHead>Condition</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedSeAssets.map((asset) => (
-                  <TableRow key={asset.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedSeAssets.has(asset.id)}
-                        onCheckedChange={(checked) => handleSeAssetSelect(asset.id, checked as boolean)}
-                      />
-                    </TableCell>
-                    <TableCell>{asset.propertyNumber}</TableCell>
-                    <TableCell>{asset.description}</TableCell>
-                    <TableCell>{asset.serialNumber}</TableCell>
-                    <TableCell>{asset.brand} {asset.model}</TableCell>
-                    <TableCell>
-                      <Badge variant={asset.movements?.[0]?.condition === 'Working' ? 'default' : 'secondary'}>
-                        {asset.movements?.[0]?.condition || 'N/A'}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {totalPagesSe > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-muted-foreground">
-                Showing {((currentPageSe - 1) * pageSize) + 1} to {Math.min(currentPageSe * pageSize, filteredSeAssets.length)} of {filteredSeAssets.length} assets
+              <div className="border rounded-lg max-h-96 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">Select</TableHead>
+                      <TableHead>Property Number</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Serial Number</TableHead>
+                      <TableHead>Brand/Model</TableHead>
+                      <TableHead>Condition</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedPpeAssets.map((asset) => (
+                      <TableRow key={asset.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedPpeAssets.has(asset.id)}
+                            onCheckedChange={(checked) => handlePpeAssetSelect(asset.id, checked as boolean)}
+                          />
+                        </TableCell>
+                        <TableCell>{asset.propertyNumber}</TableCell>
+                        <TableCell>{asset.description}</TableCell>
+                        <TableCell>{asset.serialNumber}</TableCell>
+                        <TableCell>{asset.brand} {asset.model}</TableCell>
+                        <TableCell>
+                          <Badge variant={asset.movements?.[0]?.condition === 'Working' ? 'default' : 'secondary'}>
+                            {asset.movements?.[0]?.condition || 'N/A'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-              <div className="flex items-center gap-2">
+
+              {totalPagesPpe > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {((currentPagePpe - 1) * pageSize) + 1} to {Math.min(currentPagePpe * pageSize, filteredPpeAssets.length)} of {filteredPpeAssets.length} assets
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPagePpe(currentPagePpe - 1)}
+                      disabled={currentPagePpe === 1}
+                    >
+                      <ChevronLeft className="size-4" />
+                      Previous
+                    </Button>
+                    <span className="text-sm">
+                      Page {currentPagePpe} of {totalPagesPpe}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPagePpe(currentPagePpe + 1)}
+                      disabled={currentPagePpe === totalPagesPpe}
+                    >
+                      Next
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="se" className="space-y-6">
+          {/* ICS Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="size-5" />
+                Inventory Custodian Slip (ICS) - SE Assets
+              </CardTitle>
+              <CardDescription>
+                Generate ICS reports for selected SE assets. Only SE assets with valid movements and employee assignments will be included.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={selectedSeAssets.size === filteredSeAssets.length && filteredSeAssets.length > 0}
+                    onCheckedChange={handleSelectAllSe}
+                  />
+                  <span className="text-sm font-medium">Select All ({filteredSeAssets.length} assets)</span>
+                </div>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPageSe(currentPageSe - 1)}
-                  disabled={currentPageSe === 1}
+                  onClick={handleGenerateICS}
+                  disabled={selectedSeAssets.size === 0}
+                  className="gap-2"
                 >
-                  <ChevronLeft className="size-4" />
-                  Previous
-                </Button>
-                <span className="text-sm">
-                  Page {currentPageSe} of {totalPagesSe}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPageSe(currentPageSe + 1)}
-                  disabled={currentPageSe === totalPagesSe}
-                >
-                  Next
-                  <ChevronRight className="size-4" />
+                  <Download className="size-4" />
+                  Generate ICS PDF ({selectedSeAssets.size} selected)
                 </Button>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
+              <div className="border rounded-lg max-h-96 overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">Select</TableHead>
+                      <TableHead>Property Number</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Serial Number</TableHead>
+                      <TableHead>Brand/Model</TableHead>
+                      <TableHead>Condition</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedSeAssets.map((asset) => (
+                      <TableRow key={asset.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedSeAssets.has(asset.id)}
+                            onCheckedChange={(checked) => handleSeAssetSelect(asset.id, checked as boolean)}
+                          />
+                        </TableCell>
+                        <TableCell>{asset.propertyNumber}</TableCell>
+                        <TableCell>{asset.description}</TableCell>
+                        <TableCell>{asset.serialNumber}</TableCell>
+                        <TableCell>{asset.brand} {asset.model}</TableCell>
+                        <TableCell>
+                          <Badge variant={asset.movements?.[0]?.condition === 'Working' ? 'default' : 'secondary'}>
+                            {asset.movements?.[0]?.condition || 'N/A'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {totalPagesSe > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {((currentPageSe - 1) * pageSize) + 1} to {Math.min(currentPageSe * pageSize, filteredSeAssets.length)} of {filteredSeAssets.length} assets
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPageSe(currentPageSe - 1)}
+                      disabled={currentPageSe === 1}
+                    >
+                      <ChevronLeft className="size-4" />
+                      Previous
+                    </Button>
+                    <span className="text-sm">
+                      Page {currentPageSe} of {totalPagesSe}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPageSe(currentPageSe + 1)}
+                      disabled={currentPageSe === totalPagesSe}
+                    >
+                      Next
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
