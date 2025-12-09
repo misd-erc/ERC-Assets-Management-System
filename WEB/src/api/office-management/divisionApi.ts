@@ -91,5 +91,22 @@ export const editDivision = async (payload: Division): Promise<{ message: string
   return { message: response.data.message ?? 'Success' };
 };
 
+/* ------------------------------- DELETE ------------------------------- */
+
+export const deleteDivision = async (divisionId: number): Promise<{ message: string }> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  const response = await axiosInstance.delete<ApiResponse<any>>(`/Office/division/delete/${divisionId}`, {
+    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+  });
+
+  if (!response.data.success) {
+    toast.error(response.data.message || 'Failed to delete division');
+    throw new Error(response.data.message || 'Failed to delete division');
+  }
+
+  return { message: response.data.message ?? 'Success' };
+};
+
 
 
