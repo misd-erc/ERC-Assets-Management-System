@@ -110,7 +110,7 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
     }
 
     // Determine group based on unit value
-    const group = formData.unitValue >= 50000 ? 'SE' : 'PPE';
+    const group = formData.unitValue <= 49999 ? 'SE' : 'PPE';
 
     const submitData: Omit<Asset, 'id'> = {
       ...formData,
@@ -127,7 +127,7 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
 
       // Automatically set group based on unit value
       if (field === 'unitValue') {
-        updatedData.group = value >= 50000 ? 'SE' : 'PPE';
+        updatedData.group = value <= 49999 ? 'SE' : 'PPE';
       }
 
       return updatedData;
