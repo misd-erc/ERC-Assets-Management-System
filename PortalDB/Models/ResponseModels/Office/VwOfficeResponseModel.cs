@@ -13,6 +13,7 @@ namespace PortalDB.Models.ResponseModels.Office
     {
         public long? Id { get; set; }
         public string? Name { get; set; }
+        public string? GeneralCode { get; set; }
         public string? Acronym { get; set; }
         public List<TblSystemUser>? Users { get; set; }
         public bool? IsActive { get; set; }

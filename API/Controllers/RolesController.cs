@@ -241,7 +241,7 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(RolesController));
                 return StatusCode(
                     ApiStatusCode.InternalServerError,
                     ApiResponse<object>.Fail(

@@ -89,6 +89,7 @@ namespace API.Controllers
                     {
                         Id = x.Id,
                         Name = x.Name,
+                        GeneralCode = x.GeneralCode,
                         Acronym = x.Acronym,
                         Users = await _getTools.Account.GetTblSystemUsersByOfficeId(x.Id, context).ToListAsync(),
                         IsActive = x.IsActive,
@@ -136,6 +137,7 @@ namespace API.Controllers
                 {
                     Id = office.Id,
                     Name = office.Name,
+                    GeneralCode = office.GeneralCode,
                     Acronym = office.Acronym,
                     Users = await _getTools.Account.GetTblSystemUsersByOfficeId(office.Id, context).ToListAsync(),
                     IsActive = office.IsActive,
@@ -309,11 +311,11 @@ namespace API.Controllers
                     .Take(model.PageSize)
                     .ToList();
 
-                var employmentTypesResponses = new List<VwOfficeResponseModel>();
+                var employmentTypesResponses = new List<VwEmploymentTypeResponseModel>();
 
                 foreach (var x in employmentTypesList)
                 {
-                    var employmentTypeModel = new VwOfficeResponseModel
+                    var employmentTypeModel = new VwEmploymentTypeResponseModel
                     {
                         Id = x.Id,
                         Name = x.Name,
@@ -327,7 +329,7 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed employment types", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<VwOfficeResponseModel?>.OkPaginated(
+                return Ok(ApiResponse<VwEmploymentTypeResponseModel?>.OkPaginated(
                     employmentTypesResponses,
                     model.PageNumber,
                     model.PageSize,
@@ -514,6 +516,7 @@ namespace API.Controllers
                 TblOffice office = new()
                 {
                     Id = model.OfficeId,
+                    GeneralCode = model.GeneralCode,
                     Name = model.Name,
                     Acronym = model.Acronym,
                     IsActive = model.IsActive

@@ -52,6 +52,7 @@ namespace PortalTools.Services.GetEditTools.DBO.Office
                     await context.TblOffices.Where(u => u.Id == model.Id)
                         .ExecuteUpdateAsync(u => u
                             .SetProperty(x => x.Name, model.Name)
+                            .SetProperty(x => x.GeneralCode, model.GeneralCode)
                             .SetProperty(x => x.Acronym, model.Acronym)
                             .SetProperty(x => x.IsActive, model.IsActive));
 

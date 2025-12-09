@@ -37,6 +37,10 @@ namespace PortalDB.Entities.DBO.Office
         [Column("OfficeAcronym")]
         public string? Acronym { get; set; }
 
+        [MaxLength(15)]
+        [Column("OfficeGeneralCode")]
+        public string? GeneralCode { get; set; }
+
         [Column("OfficeIsActive")]
         public bool? IsActive { get; set; } = true;
 

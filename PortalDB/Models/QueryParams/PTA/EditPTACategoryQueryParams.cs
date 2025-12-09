@@ -2,18 +2,15 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace PortalDB.Models.QueryParams.Office
+namespace PortalDB.Models.QueryParams.PTA
 {
-    public class EditOfficeQueryParams
+    public class EditPTACategoryQueryParams
     {
-        [Required] public long OfficeId { get; set; }
+        [Required] public long Id { get; set; }
         [Required] public string Name { get; set; } = string.Empty;
         [Required] public string GeneralCode { get; set; } = string.Empty;
-        [Required] public string Acronym { get; set; } = string.Empty;
         [Required] public bool IsActive { get; set; }
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;

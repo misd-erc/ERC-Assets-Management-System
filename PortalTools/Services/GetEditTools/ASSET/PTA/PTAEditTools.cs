@@ -203,6 +203,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                     await context.TblPTACategories.Where(u => u.Id == model.Id)
                         .ExecuteUpdateAsync(u => u
                             .SetProperty(x => x.Name, model.Name)
+                            .SetProperty(x => x.GeneralCode, model.GeneralCode)
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 

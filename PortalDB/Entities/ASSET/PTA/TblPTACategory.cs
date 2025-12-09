@@ -21,6 +21,10 @@ namespace PortalDB.Entities.ASSET.PTA
         [Column("PTACategoryName")]
         public string? Name { get; set; }
 
+        [MaxLength(15)]
+        [Column("PTAGeneralCode")]
+        public string? GeneralCode { get; set; }
+
         [Column("PTACategoryIsActive")]
         public bool IsActive { get; set; } = true;
 

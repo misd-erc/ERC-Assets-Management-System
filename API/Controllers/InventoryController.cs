@@ -113,7 +113,7 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
@@ -153,7 +153,7 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
@@ -212,7 +212,7 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
@@ -682,7 +682,7 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
@@ -733,7 +733,7 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
@@ -928,7 +928,7 @@ namespace API.Controllers
             {
 
                 await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(OfficeController));
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
                 return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request. Please check the template format."));
 
             }
@@ -1058,6 +1058,44 @@ namespace API.Controllers
             }
         }
 
+        // POST api/inventory/pta/movement/edit
+        [HttpPost("pta/movement/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditPTACategory([FromBody] EditPTACategoryQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblPTACategory ptaCategory = new()
+                {
+                    Id = model.Id,
+                    Name = model.Name,
+                    GeneralCode = model.GeneralCode,
+                    IsActive = model.IsActive
+                };
+
+                long ptaCategoryId = await _editTools.PTA.EditTblPTACategoryAsync(ptaCategory, model.ActionBySystemUserId, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { PTACategoryId = ptaCategoryId }, $"PTA Category has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        #endregion
+
+        #region DELETE
         #endregion
 
     }
