@@ -3,6 +3,7 @@ using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Services;
 using PortalTools.Composition;
+using PortalTools.Services.GetEditTools.DBO.Office;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -77,6 +78,27 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                 throw;
             }
         }
+        public async Task<bool> DeleteTblPTAAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (id == 0)
+                return false;
+
+            try
+            {
+                TblPTA? ptaModel = await _getTools.PTA.GetTblPTAAsync(id, context);
+                await context.TblPTAParts.Where(x => x.PTAId == id).ExecuteSoftDeleteAsync(context);
+                await context.TblPTAMovements.Where(x => x.PTAId == id).ExecuteSoftDeleteAsync(context);
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a PTA - {ptaModel.Group}", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, ptaModel, null, nameof(TblPTA), actionBySystemUserId, "Delete"));
+
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(PTAEditTools));
+                throw;
+            }
+        }
         public async Task<long> EditTblPTAPartAsync(TblPTAPart model, long actionBySystemUserId, PortalDbContext context, bool isBatch = false)
         {
             if (model == null)
@@ -115,6 +137,26 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
 
 
                 return isInsert ? model.Id : existingPTAPart.Id;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(PTAEditTools));
+                throw;
+            }
+        }
+        public async Task<bool> DeleteTblPTAPartAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (id == 0)
+                return false;
+
+            try
+            {
+                TblPTAPart? ptaPartModel = await _getTools.PTA.GetTblPTAPartAsync(id, context);
+                await context.TblPTAParts.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a PTA Part", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, ptaPartModel, null, nameof(TblPTAPart), actionBySystemUserId, "Delete"));
+
+                return true;
             }
             catch (DbUpdateException ex)
             {
@@ -175,6 +217,26 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                 throw;
             }
         }
+        public async Task<bool> DeleteTblPTAMovementAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (id == 0)
+                return false;
+
+            try
+            {
+                TblPTAMovement? ptaMovementModel = await _getTools.PTA.GetTblPTAMovementAsync(id, context);
+                await context.TblPTAMovements.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a PTA Movement", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, ptaMovementModel, null, nameof(TblPTAMovement), actionBySystemUserId, "Delete"));
+
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(PTAEditTools));
+                throw;
+            }
+        }
         public async Task<long> EditTblPTACategoryAsync(TblPTACategory model, long actionBySystemUserId, PortalDbContext context, bool isBatch = false)
         {
             if (model == null)
@@ -213,6 +275,26 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
 
 
                 return isInsert ? model.Id : existingCategory.Id;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(PTAEditTools));
+                throw;
+            }
+        }
+        public async Task<bool> DeleteTblPTACategoryAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (id == 0)
+                return false;
+
+            try
+            {
+                TblPTACategory? ptaCategoryModel = await _getTools.PTA.GetTblPTACategoryAsync(id, context);
+                await context.TblPTACategories.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a PTA Category", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, ptaCategoryModel, null, nameof(TblPTACategory), actionBySystemUserId, "Delete"));
+
+                return true;
             }
             catch (DbUpdateException ex)
             {
@@ -264,6 +346,27 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                 throw;
             }
         }
+        public async Task<bool> DeleteTblPTALegendAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (id == 0)
+                return false;
+
+            try
+            {
+                TblPTALegend? ptaLegendModel = await _getTools.PTA.GetTblPTALegendAsync(id, context);
+                await context.TblPTACategories.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a PTA Legend", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, ptaLegendModel, null, nameof(TblPTALegend), actionBySystemUserId, "Delete"));
+
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(PTAEditTools));
+                throw;
+            }
+        }
+
     }
 }
 
