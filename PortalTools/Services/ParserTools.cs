@@ -24,7 +24,33 @@ namespace PortalTools.Services
             ExcelPackage.License.SetNonCommercialPersonal("ERC AMS");
         }
 
-        #region PTA Parser
+        #region Required Columns
+        private static readonly HashSet<string> RequiredStaticColumns = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Property Number",
+            "Category",
+            "Legend/Sub-Category",
+            "Description",
+            "Brand",
+            "Model",
+            "Serial Number",
+            "Parts/Accessories",
+            "Unit of Measurement",
+            "Unit Value (PHP)",
+            "Date Acquired (YYYY-MM-DD)",
+            "Estimated Useful Life (Years)"
+        };
+
+        private static readonly string[] RequiredMovementColumns = new[]
+        {
+            "PAR/ITR Number",
+            "Plantilla Employee ID",
+            "Non-Plantilla Employee ID",
+            "Office/Division",
+            "Condition",
+            "Date Assigned (YYYY-MM-DD)"
+        };
+        #endregion
 
         public List<PTAItem> ParsePtaFile(IFormFile file)
         {
@@ -61,6 +87,7 @@ namespace PortalTools.Services
                 rows.Add(fields.ToArray());
             }
 
+            ValidatePtaTemplate(rows);
             return ParsePtaRows(rows);
         }
 
@@ -68,10 +95,9 @@ namespace PortalTools.Services
         {
             using var package = new ExcelPackage(stream);
             var ws = package.Workbook.Worksheets[0];
+            if (ws.Dimension == null) throw new InvalidDataException("The Excel file is empty or corrupted.");
+
             var rows = new List<string[]>();
-
-            if (ws.Dimension == null) return new List<PTAItem>();
-
             int rowCount = ws.Dimension.Rows;
             int colCount = ws.Dimension.Columns;
 
@@ -86,14 +112,72 @@ namespace PortalTools.Services
                 rows.Add(row);
             }
 
+            ValidatePtaTemplate(rows);
             return ParsePtaRows(rows);
+        }
+
+        private void ValidatePtaTemplate(List<string[]> rows)
+        {
+            if (rows.Count < 3)
+                throw new InvalidDataException("Invalid template: File must have at least 3 rows (title, header, data).");
+
+            var headerRow = rows[1];
+            var headers = headerRow
+                .Select(h => h.Trim())
+                .Where(h => !string.IsNullOrWhiteSpace(h))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            // 1. Always check static columns
+            var missingStatic = RequiredStaticColumns.Except(headers).ToList();
+            if (missingStatic.Any())
+            {
+                throw new InvalidDataException(
+                    $"Invalid PTA template: Missing required column(s): {string.Join(", ", missingStatic)}. " +
+                    "Please use the official template.");
+            }
+
+            // 2. Only validate movement columns IF they exist (i.e., file has more than 11 columns)
+            if (headerRow.Length <= 11)
+            {
+                // No movement columns at all → this is perfectly valid
+                return;
+            }
+
+            // 3. There are extra columns → check if at least one complete, correct movement block exists
+            int movementStart = 11;
+            bool hasValidMovementBlock = false;
+
+            while (movementStart + 5 < headerRow.Length)
+            {
+                var block = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < 6; i++)
+                {
+                    var header = headerRow[movementStart + i].Trim();
+                    if (!string.IsNullOrWhiteSpace(header))
+                        block.Add(header);
+                }
+
+                // Check if this block contains ALL required movement columns
+                if (RequiredMovementColumns.All(col => block.Contains(col)))
+                {
+                    hasValidMovementBlock = true;
+                    break;
+                }
+
+                movementStart += 6;
+            }
+
+            if (!hasValidMovementBlock)
+            {
+                throw new InvalidDataException(
+                    "Invalid PTA template: Movement columns detected but incorrectly formatted. " +
+                    $"Expected complete blocks of: {string.Join(" | ", RequiredMovementColumns)}. " +
+                    "Either remove movement columns entirely or ensure they follow the official template exactly.");
+            }
         }
 
         private List<PTAItem> ParsePtaRows(List<string[]> rows)
         {
-            if (rows.Count < 3)
-                throw new InvalidDataException("File must have at least 3 rows.");
-
             var headerRow = rows[1].Select(h => h.Trim()).ToArray();
             var dataRows = rows.Skip(2)
                               .Where(row => row.Any(cell => !string.IsNullOrWhiteSpace(cell)))
@@ -105,7 +189,6 @@ namespace PortalTools.Services
             {
                 var item = new PTAItem();
 
-                // Build dictionary from ALL columns (critical fix!)
                 var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 int colCount = Math.Min(headerRow.Length, dataRow.Length);
                 for (int i = 0; i < colCount; i++)
@@ -117,7 +200,6 @@ namespace PortalTools.Services
                     }
                 }
 
-                // String fields
                 item.PropertyNumber = Get(map, "Property Number", "property_number");
                 item.Category = Get(map, "Category", "category");
                 item.Legend = Get(map, "Legend/Sub-Category", "legend");
@@ -127,7 +209,6 @@ namespace PortalTools.Services
                 item.SerialNumber = Get(map, "Serial Number", "serial_number", "sn");
                 item.UnitOfMeasurement = Get(map, "Unit of Measurement", "unit_of_measurement", "uom");
 
-                // Numeric fields — NOW WORKS 100%
                 item.UnitValue = ParseLong(Get(map, "Unit Value (PHP)", "unit_value", "Unit Value")) ?? 0;
                 item.EstimatedUsefulLife = ParseLong(Get(map,
                     "Estimated Useful Life (Years)",
@@ -137,17 +218,15 @@ namespace PortalTools.Services
                     "EUL",
                     "Estimated Useful Life")) ?? 0;
 
-                // Date
                 var dateAcquired = Get(map, "Date Acquired (YYYY-MM-DD)", "date_acquired", "Date Acquired");
                 item.DateAssigned = TryParseDate(dateAcquired);
 
-                // Parts
                 var partsStr = Get(map, "Parts/Accessories", "parts", "accessories");
                 item.Parts = string.IsNullOrWhiteSpace(partsStr) ? null : ParsePtaParts(partsStr);
 
-                // Annual movements (dynamic columns after column 11)
+                // Parse movement blocks (only if columns exist)
                 var movements = new List<PTAAnnualCount>();
-                int col = 11; // start after first 11 static columns
+                int col = 11;
 
                 while (col + 5 < dataRow.Length)
                 {
@@ -167,7 +246,6 @@ namespace PortalTools.Services
                         ActualOfficeAndDivision = GetCell(dataRow, col + 4),
                         Condition = GetCell(dataRow, col + 5)
                     };
-
                     movements.Add(movement);
                     col += 6;
                 }
@@ -179,10 +257,7 @@ namespace PortalTools.Services
             return result;
         }
 
-        #endregion
-
         #region Helpers
-
         private static string? Get(Dictionary<string, string> map, params string[] keys)
         {
             foreach (var key in keys)
@@ -198,23 +273,13 @@ namespace PortalTools.Services
 
         private static long? ParseLong(string? input)
         {
-            if (string.IsNullOrWhiteSpace(input))
-                return null;
-
-            var cleaned = input
-                .Replace(",", "", StringComparison.Ordinal)
-                .Replace("₱", "", StringComparison.Ordinal)
-                .Replace("$", "", StringComparison.Ordinal)
-                .Replace("PHP", "", StringComparison.Ordinal)
-                .Trim();
-
-            if (long.TryParse(cleaned, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result))
-                return result;
-
-            if (double.TryParse(cleaned, NumberStyles.Any, CultureInfo.InvariantCulture, out var d))
-                return (long)Math.Round(d);
-
-            return null;
+            if (string.IsNullOrWhiteSpace(input)) return null;
+            var cleaned = input.Replace(",", "").Replace("₱", "").Replace("$", "").Replace("PHP", "").Trim();
+            return long.TryParse(cleaned, NumberStyles.Integer, CultureInfo.InvariantCulture, out var result)
+                ? result
+                : double.TryParse(cleaned, NumberStyles.Any, CultureInfo.InvariantCulture, out var d)
+                    ? (long)Math.Round(d)
+                    : null;
         }
 
         private static List<PTAPart> ParsePtaParts(string input)
@@ -239,10 +304,8 @@ namespace PortalTools.Services
         private static DateTime? TryParseDate(string? input)
         {
             if (string.IsNullOrWhiteSpace(input)) return null;
-
             var s = input.Trim();
 
-            // Excel serial date
             if (double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var serial))
             {
                 try
@@ -251,18 +314,14 @@ namespace PortalTools.Services
                     if (days > 60) days--; // Excel leap year bug
                     return ExcelEpoch.AddDays(days);
                 }
-                catch { /* ignore */ }
+                catch { }
             }
 
-            // Standard formats
-            if (DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
-                return dt;
-
-            var formats = new[] { "yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yyyy", "yyyy/MM/dd" };
-            return DateTime.TryParseExact(s, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt) ? dt : null;
+            var formats = new[] { "yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yyyy", "yyyy/MM/dd", "M/d/yyyy", "d/M/yyyy" };
+            return DateTime.TryParseExact(s, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)
+                ? dt
+                : DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt) ? dt : null;
         }
-
         #endregion
-
     }
 }
