@@ -1058,8 +1058,8 @@ namespace API.Controllers
             }
         }
 
-        // POST api/inventory/pta/movement/edit
-        [HttpPost("pta/movement/edit")]
+        // POST api/inventory/pta/category/edit
+        [HttpPost("pta/category/edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
         public async Task<IActionResult> EditPTACategory([FromBody] EditPTACategoryQueryParams model)
