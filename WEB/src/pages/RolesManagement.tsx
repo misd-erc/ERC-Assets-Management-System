@@ -8,7 +8,7 @@ import { SearchAndSummary } from '@/components/roles-management/SearchAndSummary
 import { RolesTable } from '@/components/roles-management/RolesTable';
 import { RoleDialog } from '@/components/roles-management/RoleDialog';
 import { DeleteRoleDialog } from '@/components/roles-management/DeleteRoleDialog';
-import { getSystemRoleById } from '@/api/roles/rolesApi';
+import { getSystemRoleById, deleteSystemRole } from '@/api/roles/rolesApi';
 import { toast } from 'sonner';
 
 export function RolesManagement() {
@@ -172,15 +172,19 @@ export function RolesManagement() {
 
     console.log('[RolesManagement] Deleting role with userId:', userId);
 
-    // For delete, we set isActive to false
-    await createOrUpdateRole({
-      systemRoleId: roleId,
-      systemRoleName: '',
-      systemRoleDescription: '',
-      systemRoleIsActive: false,
-      systemRoleScopes: [],
-      actionBySystemUserId: userId,
-    });
+    try {
+      await deleteSystemRole(roleId, userId);
+      // Refresh the roles list after deletion
+      fetchRoles({
+        pageNumber: 1,
+        pageSize: 10,
+        actionBySystemUserId: userId,
+      });
+      toast.success('Role deleted successfully');
+    } catch (error) {
+      console.error('[RolesManagement] Error deleting role:', error);
+      toast.error('Failed to delete role');
+    }
 
     setDeleteRoleId(null);
   };
