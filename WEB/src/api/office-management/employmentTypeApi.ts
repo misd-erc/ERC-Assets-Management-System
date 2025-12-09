@@ -88,5 +88,22 @@ export const editEmploymentType = async (payload: {
   return { message: response.data.message ?? 'Success' };
 };
 
+/* ------------------------------- DELETE ------------------------------- */
+
+export const deleteEmploymentType = async (employmentTypeId: number): Promise<{ message: string }> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  const response = await axiosInstance.delete<ApiResponse<any>>(`/Office/employment-type/delete/${employmentTypeId}`, {
+    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+  });
+
+  if (!response.data.success) {
+    toast.error(response.data.message || 'Failed to delete employment type');
+    throw new Error(response.data.message || 'Failed to delete employment type');
+  }
+
+  return { message: response.data.message ?? 'Success' };
+};
+
 
 

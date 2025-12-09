@@ -158,6 +158,23 @@ export const editSystemRole = async (params: EditSystemRoleQueryParams): Promise
   return { systemRoleId: response.data.data.SystemRoleId };
 };
 
+export const deleteSystemRole = async (roleId: number, actionBySystemUserId: string): Promise<void> => {
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
+  const queryParams = new URLSearchParams({
+    ActionBySystemUserId: actionBySystemUserId,
+    SessionKey: sessionKey,
+  });
+
+  const response = await axiosInstance.delete<ApiResponse<void>>(
+    `/Roles/delete/${roleId}?${queryParams.toString()}`
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Failed to delete role');
+  }
+};
+
 
 
 

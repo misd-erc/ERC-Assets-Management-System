@@ -7,6 +7,7 @@ import {
   Building2,
   Settings,
   FileSearch,
+  Tag,
 } from "lucide-react";
 
 // CONFIG MAP FOR KNOWN MODULES
@@ -33,6 +34,14 @@ export const moduleConfig: Record<string, any> = {
     group: "Asset Management",
     icon: HardHat,
     implemented: false,
+  },
+
+  CATM: {
+    id: "category-management",
+    title: "Category Management",
+    group: "Asset Management",
+    icon: Tag,
+    implemented: true,
   },
 
   UM: {

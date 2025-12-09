@@ -92,5 +92,22 @@ export const editOffice = async (payload: EditOfficePayload): Promise<{ message:
   return { message: response.data.message ?? 'Success' };
 };
 
+/* ------------------------------- DELETE ------------------------------- */
+
+export const deleteOffice = async (officeId: number): Promise<{ message: string }> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  const response = await axiosInstance.delete<ApiResponse<any>>(`/Office/delete/${officeId}`, {
+    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+  });
+
+  if (!response.data.success) {
+    toast.error(response.data.message || 'Failed to delete office');
+    throw new Error(response.data.message || 'Failed to delete office');
+  }
+
+  return { message: response.data.message ?? 'Success' };
+};
+
 
 

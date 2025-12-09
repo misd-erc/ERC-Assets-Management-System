@@ -10,6 +10,7 @@ import UserManagement from "@/pages/UserManagement";
 import { RolesManagement } from "@/pages/RolesManagement";
 import OfficeManagement from "@/pages/OfficeManagement";
 import AuditLogs from "@/pages/AuditLogs";
+import CategoryManagementPage from "@/pages/CategoryManagementPage";
 import { MyProfile } from "@/components/profile/MyProfile";
 import UCPage from "@/pages/UC";
 
@@ -35,6 +36,9 @@ export default function MainLayout() {
 
       case "audit-logs":
         return <AuditLogs />;
+
+      case "category-management":
+        return <CategoryManagementPage />;
 
       case "profile":
         return <MyProfile />;
