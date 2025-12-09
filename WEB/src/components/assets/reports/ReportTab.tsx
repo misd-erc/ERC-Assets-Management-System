@@ -6,12 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { FileText, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { Asset } from '@/types/asset/UnifiedAsset';
 import { PARGenerator } from '@/components/assets/reports/PARGenerator';
 import { ICSGenerator } from '@/components/assets/reports/ICSGenerator';
+import { ReportPreviewModal } from '@/components/assets/reports/ReportPreviewModal';
 
 export function ReportTab() {
   const [ppeAssets, setPpeAssets] = useState<Asset[]>([]);
@@ -26,6 +27,13 @@ export function ReportTab() {
   const [currentPagePpe, setCurrentPagePpe] = useState(1);
   const [currentPageSe, setCurrentPageSe] = useState(1);
   const pageSize = 10;
+
+  // Preview modal state
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [previewType, setPreviewType] = useState<'PAR' | 'ICS'>('PAR');
+  const [previewAssets, setPreviewAssets] = useState<Asset[]>([]);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
   useEffect(() => {
     loadAssets();
@@ -131,36 +139,73 @@ export function ReportTab() {
     }
   };
 
-  const handleGeneratePAR = async () => {
+  const handlePreviewPAR = async () => {
     if (selectedPpeAssets.size === 0) {
       toast.error('Please select at least one PPE asset');
       return;
     }
 
     try {
+      setIsPreviewLoading(true);
       const selectedAssets = ppeAssets.filter(asset => selectedPpeAssets.has(asset.id));
-      await PARGenerator.generatePAR(selectedAssets);
-      toast.success('PAR PDF generated successfully');
+      const url = await PARGenerator.generatePARPreview(selectedAssets);
+      setPreviewUrl(url);
+      setPreviewType('PAR');
+      setPreviewAssets(selectedAssets);
+      setIsPreviewOpen(true);
     } catch (error) {
-      console.error('Error generating PAR:', error);
-      toast.error('Failed to generate PAR PDF');
+      console.error('Error generating PAR preview:', error);
+      toast.error('Failed to generate PAR preview');
+    } finally {
+      setIsPreviewLoading(false);
     }
   };
 
-  const handleGenerateICS = async () => {
+  const handlePreviewICS = async () => {
     if (selectedSeAssets.size === 0) {
       toast.error('Please select at least one SE asset');
       return;
     }
 
     try {
+      setIsPreviewLoading(true);
       const selectedAssets = seAssets.filter(asset => selectedSeAssets.has(asset.id));
-      await ICSGenerator.generateICS(selectedAssets);
-      toast.success('ICS PDF generated successfully');
+      const url = await ICSGenerator.generateICSPreview(selectedAssets);
+      setPreviewUrl(url);
+      setPreviewType('ICS');
+      setPreviewAssets(selectedAssets);
+      setIsPreviewOpen(true);
     } catch (error) {
-      console.error('Error generating ICS:', error);
-      toast.error('Failed to generate ICS PDF');
+      console.error('Error generating ICS preview:', error);
+      toast.error('Failed to generate ICS preview');
+    } finally {
+      setIsPreviewLoading(false);
     }
+  };
+
+  const handleConfirmDownload = async () => {
+    try {
+      if (previewType === 'PAR') {
+        await PARGenerator.generatePAR(previewAssets);
+        toast.success('PAR PDF downloaded successfully');
+      } else {
+        await ICSGenerator.generateICS(previewAssets);
+        toast.success('ICS PDF downloaded successfully');
+      }
+      handleClosePreview();
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Failed to download PDF');
+    }
+  };
+
+  const handleClosePreview = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl('');
+    setPreviewAssets([]);
+    setIsPreviewOpen(false);
   };
 
   const handleClearDates = () => {
@@ -273,12 +318,12 @@ export function ReportTab() {
                   <span className="text-sm font-medium">Select All ({filteredPpeAssets.length} assets)</span>
                 </div>
                 <Button
-                  onClick={handleGeneratePAR}
-                  disabled={selectedPpeAssets.size === 0}
+                  onClick={handlePreviewPAR}
+                  disabled={selectedPpeAssets.size === 0 || isPreviewLoading}
                   className="gap-2"
                 >
-                  <Download className="size-4" />
-                  Generate PAR PDF ({selectedPpeAssets.size} selected)
+                  <Eye className="size-4" />
+                  Preview PAR ({selectedPpeAssets.size} selected)
                 </Button>
               </div>
 
@@ -374,12 +419,12 @@ export function ReportTab() {
                   <span className="text-sm font-medium">Select All ({filteredSeAssets.length} assets)</span>
                 </div>
                 <Button
-                  onClick={handleGenerateICS}
-                  disabled={selectedSeAssets.size === 0}
+                  onClick={handlePreviewICS}
+                  disabled={selectedSeAssets.size === 0 || isPreviewLoading}
                   className="gap-2"
                 >
-                  <Download className="size-4" />
-                  Generate ICS PDF ({selectedSeAssets.size} selected)
+                  <Eye className="size-4" />
+                  Preview ICS ({selectedSeAssets.size} selected)
                 </Button>
               </div>
 
@@ -453,6 +498,15 @@ export function ReportTab() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <ReportPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={handleClosePreview}
+        onConfirm={handleConfirmDownload}
+        pdfUrl={previewUrl}
+        reportType={previewType}
+        isLoading={isPreviewLoading}
+      />
     </div>
   );
 }

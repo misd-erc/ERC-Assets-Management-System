@@ -294,6 +294,51 @@ const PARDocument = ({
 );
 
 export class PARGenerator {
+  static async generatePARPreview(assets: Asset[]): Promise<string> {
+    if (!assets.length) throw new Error("No assets selected.");
+
+    const empResp = await getEmployees(1, 10000);
+    const employees = empResp.data.items;
+
+    const rows: PARRow[] = [];
+    let employeeName = "N/A";
+
+    for (const asset of assets) {
+      const full = await UnifiedAssetService.getById(asset.id);
+
+      const latest = full.movements?.sort(
+        (a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
+      )[0];
+
+      const emp =
+        employees.find((e: any) => e.id === latest?.plantillaEmployeeId) ||
+        employees.find((e: any) => e.id === latest?.nonPlantillaEmployeeId);
+
+      if (emp)
+        employeeName = `${emp.lastName}, ${emp.firstName} ${
+          emp.middleName ?? ""
+        }`;
+
+      rows.push({
+        qty: 1,
+        unit: full.unitOfMeasurement || "Unit",
+        unitCost: full.unitValue ?? null,
+        totalCost: full.unitValue ?? null,
+        description: full.description,
+        propertyNo: full.propertyNumber,
+        usefulLife: full.estimatedUsefulLife
+          ? String(full.estimatedUsefulLife)
+          : "",
+      });
+    }
+
+    const blob = await pdf(
+      <PARDocument rows={rows} employeeName={employeeName} />
+    ).toBlob();
+
+    return URL.createObjectURL(blob);
+  }
+
   static async generatePAR(assets: Asset[]) {
     if (!assets.length) throw new Error("No assets selected.");
 

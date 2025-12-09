@@ -261,6 +261,50 @@ const ICSDocument = ({
 };
 
 export class ICSGenerator {
+  static async generateICSPreview(assets: Asset[]): Promise<string> {
+    if (!assets || assets.length === 0) {
+      throw new Error('No assets selected');
+    }
+
+    const employeeResp = await getEmployees(1, 10000);
+    const employees = employeeResp.data.items;
+
+    const rows: ICSRow[] = [];
+    let employeeName = 'N/A';
+
+    for (const asset of assets) {
+      const full = await UnifiedAssetService.getById(asset.id);
+
+      const latest = full.movements?.sort(
+        (a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
+      )[0];
+
+      let emp =
+        employees.find((e: any) => e.id === latest?.plantillaEmployeeId) ||
+        employees.find((e: any) => e.id === latest?.nonPlantillaEmployeeId);
+
+      employeeName = emp
+        ? `${emp.lastName}, ${emp.firstName} ${emp.middleName ?? ''}`
+        : 'N/A';
+
+      rows.push({
+        qty: 1,
+        unit: full.unitOfMeasurement || 'Unit',
+        unitCost: full.unitValue ?? null,
+        totalCost: full.unitValue ?? null,
+        description: full.description,
+        invNo: full.propertyNumber,
+        usefulLife: full.estimatedUsefulLife ? String(full.estimatedUsefulLife) : '',
+      });
+    }
+
+    const blob = await pdf(
+      <ICSDocument rows={rows} employeeName={employeeName} />
+    ).toBlob();
+
+    return URL.createObjectURL(blob);
+  }
+
   static async generateICS(assets: Asset[]) {
     if (!assets || assets.length === 0) {
       throw new Error('No assets selected');
