@@ -1,5 +1,6 @@
 ﻿using API.Attributes;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
@@ -31,6 +32,7 @@ using PortalTools.Services.GetEditTools.DBO.Office;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -271,27 +273,66 @@ namespace API.Controllers
 
                     foreach (var x in ptasList)
                     {
-                        var ppeModel = new PTAResponseModel
+                        if(model.EmployeeId != null && model.EmployeeId != 0)
                         {
-                            Id = x.Id,
-                            Group = x.Group,
-                            PropertyNumber = x.PropertyNumber,
-                            Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
-                            Legend = await _getTools.PTA.GetTblPTALegendAsync(x.CategoryId, context),
-                            Description = x.Description,
-                            Brand = x.Brand,
-                            Model = x.Model,
-                            SerialNumber = x.SerialNumber,
-                            UnitOfMeasurement = x.UnitOfMeasurement,
-                            UnitValue = x.UnitValue,
-                            DateAcquired = x.DateAcquired,
-                            EstimatedUsefulLife = x.EstimatedUsefulLife,
-                            Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                            Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
-                            IsActive = x.IsActive,
-                            CreatedAt = x.CreatedAt
-                        };
-                        ptasResponses.Add(ppeModel);
+                            var movements = _getTools.PTA
+                                .GetTblPTAMovementsByPTAId(x.Id, context)
+                                .Where(m => m.NonPlantillaEmployeeId != null
+                                    ? m.NonPlantillaEmployeeId == model.EmployeeId.Value
+                                    : m.PlantillaEmployeeId == model.EmployeeId.Value);
+
+                            if(!movements.Any())
+                                continue;
+
+                            var ppeModel = new PTAResponseModel
+                            {
+                                Id = x.Id,
+                                Group = x.Group,
+                                PropertyNumber = x.PropertyNumber,
+                                Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
+                                Legend = await _getTools.PTA.GetTblPTALegendAsync(x.CategoryId, context),
+                                Description = x.Description,
+                                Brand = x.Brand,
+                                Model = x.Model,
+                                SerialNumber = x.SerialNumber,
+                                UnitOfMeasurement = x.UnitOfMeasurement,
+                                UnitValue = x.UnitValue,
+                                DateAcquired = x.DateAcquired,
+                                EstimatedUsefulLife = x.EstimatedUsefulLife,
+                                Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
+                                Movements = await movements.ToListAsync(),
+                                IsActive = x.IsActive,
+                                CreatedAt = x.CreatedAt
+                            };
+
+                            ptasResponses.Add(ppeModel);
+                        }
+                        else
+                        {
+                            var ppeModel = new PTAResponseModel
+                            {
+                                Id = x.Id,
+                                Group = x.Group,
+                                PropertyNumber = x.PropertyNumber,
+                                Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
+                                Legend = await _getTools.PTA.GetTblPTALegendAsync(x.CategoryId, context),
+                                Description = x.Description,
+                                Brand = x.Brand,
+                                Model = x.Model,
+                                SerialNumber = x.SerialNumber,
+                                UnitOfMeasurement = x.UnitOfMeasurement,
+                                UnitValue = x.UnitValue,
+                                DateAcquired = x.DateAcquired,
+                                EstimatedUsefulLife = x.EstimatedUsefulLife,
+                                Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
+                                Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
+                                IsActive = x.IsActive,
+                                CreatedAt = x.CreatedAt
+                            };
+
+                            ptasResponses.Add(ppeModel);
+                        }
+
                     }
 
                     await context.SaveChangesAsync();
@@ -687,11 +728,11 @@ namespace API.Controllers
             }
         }
 
-        // GET api/inventory/pta/ppe/all
-        [HttpGet("pta/se-ppe/all/{ppeId}")]
+        // GET api/inventory/pta/se-ppe/all
+        [HttpGet("pta/se-ppe/all/{ptaId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetPTA([FromQuery] SoloQueryParams model, [FromRoute] long ppeId)
+        public async Task<IActionResult> GetPTA([FromQuery] SoloQueryParams model, [FromRoute] long ptaId)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -699,34 +740,34 @@ namespace API.Controllers
             try
             {
 
-                TblPTA? ppe = await _getTools.PTA.GetTblPTAAsync(ppeId, context);
-                var ppeResponses = new List<PTAResponseModel>();
-                var ppeModel = new PTAResponseModel
+                TblPTA? pta = await _getTools.PTA.GetTblPTAAsync(ptaId, context);
+                var ptaResponses = new List<PTAResponseModel>();
+                var ptaModel = new PTAResponseModel
                 {
-                    Id = ppe.Id,
-                    Group = ppe.Group,
-                    PropertyNumber = ppe.PropertyNumber,
-                    Category = await _getTools.PTA.GetTblPTACategoryAsync(ppe.CategoryId, context),
-                    Legend = await _getTools.PTA.GetTblPTALegendAsync(ppe.CategoryId, context),
-                    Description = ppe.Description,
-                    Brand = ppe.Brand,
-                    Model = ppe.Model,
-                    SerialNumber = ppe.SerialNumber,
-                    UnitOfMeasurement = ppe.UnitOfMeasurement,
-                    UnitValue = ppe.UnitValue,
-                    DateAcquired = ppe.DateAcquired,
-                    EstimatedUsefulLife = ppe.EstimatedUsefulLife,
-                    Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(ppe.Id, context).ToListAsync(),
-                    Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(ppe.Id, context).ToListAsync(),
-                    IsActive = ppe.IsActive,
-                    CreatedAt = ppe.CreatedAt
+                    Id = pta.Id,
+                    Group = pta.Group,
+                    PropertyNumber = pta.PropertyNumber,
+                    Category = await _getTools.PTA.GetTblPTACategoryAsync(pta.CategoryId, context),
+                    Legend = await _getTools.PTA.GetTblPTALegendAsync(pta.CategoryId, context),
+                    Description = pta.Description,
+                    Brand = pta.Brand,
+                    Model = pta.Model,
+                    SerialNumber = pta.SerialNumber,
+                    UnitOfMeasurement = pta.UnitOfMeasurement,
+                    UnitValue = pta.UnitValue,
+                    DateAcquired = pta.DateAcquired,
+                    EstimatedUsefulLife = pta.EstimatedUsefulLife,
+                    Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(pta.Id, context).ToListAsync(),
+                    Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(pta.Id, context).ToListAsync(),
+                    IsActive = pta.IsActive,
+                    CreatedAt = pta.CreatedAt
                 };
-                ppeResponses.Add(ppeModel);
+                ptaResponses.Add(ptaModel);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed PTA information for PTA {ppe.Id}", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<PTAResponseModel>.Ok(ppeResponses, "PTA have been retrieved"
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed PTA information for PTA {pta.Id}", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<PTAResponseModel>.Ok(ptaResponses, "PTA have been retrieved"
                 ));
 
             }
