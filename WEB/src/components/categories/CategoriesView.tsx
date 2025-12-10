@@ -1,20 +1,31 @@
-﻿import React from 'react';
+﻿import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useSupplyStore } from '@/store/supply/useSupplyStore';
+import { useCategoriesStore } from '@/store/supply/categoriesStore';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 import { formatCurrency, getStockStatus } from '@/utils/formatters';
 
 export const CategoriesView: React.FC = () => {
   const { supplies } = useSupplyStore();
+  const { categories, fetchCategories } = useCategoriesStore();
 
-  const categories = [
-    { name: 'Janitorial', icon: 'ðŸ§¹', color: 'bg-blue-50 border-blue-200' },
-    { name: 'Accountable Forms', icon: 'ðŸ“‹', color: 'bg-green-50 border-green-200' },
-    { name: 'Electrical', icon: 'âš¡', color: 'bg-yellow-50 border-yellow-200' },
-    { name: 'Office Supply', icon: 'ðŸ“Ž', color: 'bg-purple-50 border-purple-200' },
-    { name: 'Other Office Supplies', icon: 'ðŸ“¦', color: 'bg-gray-50 border-gray-200' }
-  ];
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  // Define icons and colors for categories
+  const getCategoryStyle = (categoryName: string) => {
+    const styles = [
+      { icon: '🧹', color: 'bg-blue-50 border-blue-200' },
+      { icon: '📋', color: 'bg-green-50 border-green-200' },
+      { icon: '⚡', color: 'bg-yellow-50 border-yellow-200' },
+      { icon: '📎', color: 'bg-purple-50 border-purple-200' },
+      { icon: '📦', color: 'bg-gray-50 border-gray-200' }
+    ];
+    const index = categoryName.length % styles.length;
+    return styles[index];
+  };
 
   return (
     <Card>
@@ -25,19 +36,20 @@ export const CategoriesView: React.FC = () => {
       <CardContent>
         <div className="space-y-3">
           {categories.map(cat => {
-            const items = supplies.filter(s => s.category.toLowerCase().includes(cat.name.toLowerCase()));
+            const style = getCategoryStyle(cat.categoryName);
+            const items = supplies.filter(s => s.category.toLowerCase().includes(cat.categoryName.toLowerCase()));
             const value = items.reduce((sum, i) => sum + (i.totalValue || 0), 0);
             const low = items.filter(i => getStockStatus(i) === 'Low Stock').length;
 
             return (
-              <div key={cat.name} className={`border-2 ${cat.color} rounded-lg overflow-hidden`}>
+              <div key={cat.id} className={`border-2 ${style.color} rounded-lg overflow-hidden`}>
                 <div className="p-4 cursor-pointer hover:bg-white/50 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className="text-2xl">{cat.icon}</div>
+                      <div className="text-2xl">{style.icon}</div>
                       <div>
-                        <h3 className="font-medium">{cat.name}</h3>
-                        <p className="text-sm text-slate-600">{items.length} items â€¢ {formatCurrency(value)}</p>
+                        <h3 className="font-medium">{cat.categoryName}</h3>
+                        <p className="text-sm text-slate-600">{items.length} items • {formatCurrency(value)}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -46,7 +58,13 @@ export const CategoriesView: React.FC = () => {
                           <AlertTriangle className="w-3 h-3 mr-1" />{low} Low Stock
                         </Badge>
                       )}
-                      <Badge className="bg-blue-100 text-blue-800">Auto-tracked</Badge>
+                      <Badge className={`${
+                        cat.status === 'Active'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {cat.status}
+                      </Badge>
                     </div>
                   </div>
                 </div>

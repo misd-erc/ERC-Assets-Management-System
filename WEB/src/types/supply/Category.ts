@@ -4,6 +4,7 @@ export interface Category {
   id: string;
   categoryId: string;
   categoryName: string;
+  generalCode?: string;
   description: string;
   status: CategoryStatus;
   dateCreated: string;
@@ -14,12 +15,14 @@ export interface Category {
 
 export interface CreateCategoryRequest {
   categoryName: string;
+  generalCode?: string;
   description: string;
   status: CategoryStatus;
 }
 
 export interface UpdateCategoryRequest {
   categoryName?: string;
+  generalCode?: string;
   description?: string;
   status?: CategoryStatus;
 }
