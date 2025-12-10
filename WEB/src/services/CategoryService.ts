@@ -1,28 +1,39 @@
 import * as categoriesApi from '@/api/supply/categoriesApi';
 import { Category, CreateCategoryRequest, UpdateCategoryRequest, CategoryStats } from '@/types/supply/Category';
+import { getAuthParams } from '@/utils/auth';
 
 export class CategoryService {
-  // Map API response to Category model (if needed for data transformation)
-  private static mapApiToCategory(apiItem: any): Category {
+  // Map inventory API response to Category model
+  private static mapInventoryToCategory(apiItem: categoriesApi.InventoryCategory): Category {
+    if (!apiItem || typeof apiItem.id === 'undefined') {
+      throw new Error('Invalid category data received from API');
+    }
+
     return {
-      id: apiItem.id,
-      categoryId: apiItem.categoryId,
-      categoryName: apiItem.categoryName,
-      description: apiItem.description,
-      status: apiItem.status,
-      dateCreated: apiItem.dateCreated,
-      itemCount: apiItem.itemCount || 0,
-      createdBy: apiItem.createdBy,
-      updatedAt: apiItem.updatedAt,
+      id: apiItem.id.toString(),
+      categoryId: `CAT-${apiItem.id.toString().padStart(3, '0')}`,
+      categoryName: apiItem.name || '',
+      generalCode: apiItem.generalCode || '',
+      description: '', // Inventory API doesn't provide description
+      status: apiItem.isActive ? 'Active' : 'Inactive',
+      dateCreated: new Date().toISOString().split('T')[0], // Inventory API doesn't provide date
+      itemCount: 0, // Inventory API doesn't provide item count
+      createdBy: '',
+      updatedAt: new Date().toISOString(),
     };
   }
 
-  // Generate category ID based on existing categories
-  private static generateCategoryId(existingCategories: Category[]): string {
-    const maxId = existingCategories.length > 0
-      ? Math.max(...existingCategories.map(cat => parseInt(cat.categoryId.split('-')[1])))
-      : 0;
-    return `CAT-${String(maxId + 1).padStart(3, '0')}`;
+  // Map Category to inventory API format
+  private static mapCategoryToInventory(category: Category): categoriesApi.EditCategoryRequest {
+    const { systemUserId, sessionKey } = getAuthParams();
+    return {
+      id: parseInt(category.id),
+      name: category.categoryName,
+      generalCode: category.categoryId,
+      isActive: category.status === 'Active',
+      actionBySystemUserId: systemUserId,
+      sessionKey: sessionKey,
+    };
   }
 
   // Calculate category statistics
@@ -45,26 +56,24 @@ export class CategoryService {
   // Get all categories with optional filtering
   static async getAll(search?: string, status?: string): Promise<Category[]> {
     try {
-      const categories = await categoriesApi.getCategories();
+      const { systemUserId, sessionKey } = getAuthParams();
+      const params: categoriesApi.GetCategoriesParams = {
+        SearchString: search || '',
+        PageNumber: 1,
+        PageSize: 1000, // Get all categories
+        ActionBySystemUserId: systemUserId,
+        SessionKey: sessionKey,
+      };
 
-      let filteredCategories = categories;
-
-      // Apply search filter
-      if (search) {
-        const searchLower = search.toLowerCase();
-        filteredCategories = filteredCategories.filter(cat =>
-          cat.categoryName.toLowerCase().includes(searchLower) ||
-          cat.categoryId.toLowerCase().includes(searchLower) ||
-          cat.description.toLowerCase().includes(searchLower)
-        );
-      }
+      const inventoryCategories = await categoriesApi.getInventoryCategories(params);
+      let categories = inventoryCategories.map(cat => this.mapInventoryToCategory(cat));
 
       // Apply status filter
       if (status && status !== 'all') {
-        filteredCategories = filteredCategories.filter(cat => cat.status.toLowerCase() === status.toLowerCase());
+        categories = categories.filter(cat => cat.status.toLowerCase() === status.toLowerCase());
       }
 
-      return filteredCategories;
+      return categories;
     } catch (error) {
       console.error('Error fetching categories:', error);
       throw error;
@@ -74,7 +83,14 @@ export class CategoryService {
   // Get category by ID
   static async getById(id: string): Promise<Category> {
     try {
-      return await categoriesApi.getCategoryById(id);
+      // Since the inventory API doesn't have a get by ID endpoint,
+      // we'll fetch all and filter
+      const categories = await this.getAll();
+      const category = categories.find(cat => cat.id === id);
+      if (!category) {
+        throw new Error('Category not found');
+      }
+      return category;
     } catch (error) {
       console.error('Error fetching category:', error);
       throw error;
@@ -84,18 +100,17 @@ export class CategoryService {
   // Create new category
   static async create(data: CreateCategoryRequest): Promise<Category> {
     try {
-      // Get existing categories to generate ID
-      const existingCategories = await categoriesApi.getCategories();
-      const categoryId = this.generateCategoryId(existingCategories);
-
-      const categoryData = {
-        ...data,
-        categoryId,
-        dateCreated: new Date().toISOString().split('T')[0],
-        itemCount: 0,
+      const { systemUserId, sessionKey } = getAuthParams();
+      const requestData = {
+        name: data.categoryName,
+        generalCode: data.generalCode || '',
+        isActive: data.status === 'Active',
+        actionBySystemUserId: systemUserId,
+        sessionKey: sessionKey,
       };
 
-      return await categoriesApi.createCategory(categoryData);
+      const inventoryCategory = await categoriesApi.createInventoryCategory(requestData);
+      return this.mapInventoryToCategory(inventoryCategory);
     } catch (error) {
       console.error('Error creating category:', error);
       throw error;
@@ -105,7 +120,18 @@ export class CategoryService {
   // Update existing category
   static async update(id: string, data: UpdateCategoryRequest): Promise<Category> {
     try {
-      return await categoriesApi.updateCategory(id, data);
+      const { systemUserId, sessionKey } = getAuthParams();
+      const requestData: categoriesApi.EditCategoryRequest = {
+        id: parseInt(id),
+        name: data.categoryName || '',
+        generalCode: data.generalCode || '',
+        isActive: data.status === 'Active',
+        actionBySystemUserId: systemUserId,
+        sessionKey: sessionKey,
+      };
+
+      const inventoryCategory = await categoriesApi.editInventoryCategory(requestData);
+      return this.mapInventoryToCategory(inventoryCategory);
     } catch (error) {
       console.error('Error updating category:', error);
       throw error;
@@ -115,7 +141,8 @@ export class CategoryService {
   // Delete category
   static async delete(id: string): Promise<void> {
     try {
-      await categoriesApi.deleteCategory(id);
+      const { systemUserId, sessionKey } = getAuthParams();
+      await categoriesApi.deleteInventoryCategory(parseInt(id), systemUserId, sessionKey);
     } catch (error) {
       console.error('Error deleting category:', error);
       throw error;
@@ -125,7 +152,7 @@ export class CategoryService {
   // Get category statistics
   static async getStats(): Promise<CategoryStats> {
     try {
-      const categories = await categoriesApi.getCategories();
+      const categories = await this.getAll();
       return this.calculateStats(categories);
     } catch (error) {
       console.error('Error fetching category stats:', error);

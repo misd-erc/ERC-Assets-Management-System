@@ -25,6 +25,7 @@ interface CategoriesState {
   // Form data
   formData: {
     categoryName: string;
+    generalCode: string;
     description: string;
     status: 'Active' | 'Inactive';
   };
@@ -72,6 +73,7 @@ export const useCategoriesStore = create<CategoriesState>()(
       categoryToDelete: null,
       formData: {
         categoryName: '',
+        generalCode: '',
         description: '',
         status: 'Active',
       },
@@ -97,6 +99,7 @@ export const useCategoriesStore = create<CategoriesState>()(
           editingCategory: category,
           formData: {
             categoryName: category.categoryName,
+            generalCode: category.generalCode || '',
             description: category.description,
             status: category.status,
           },
@@ -138,6 +141,7 @@ export const useCategoriesStore = create<CategoriesState>()(
         set({
           formData: {
             categoryName: '',
+            generalCode: '',
             description: '',
             status: 'Active',
           }

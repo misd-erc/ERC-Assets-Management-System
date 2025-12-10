@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, FolderOpen, Edit, Trash2, Eye, Filter, Download, Search } from 'lucide-react';
+import { Plus, FolderOpen, Edit, Trash2, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable } from '@/components/common/DataTable';
@@ -56,6 +56,10 @@ export function CategoryManagement() {
     fetchCategories();
     fetchStats();
   }, [fetchCategories, fetchStats]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [searchTerm, statusFilter, fetchCategories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,14 +117,6 @@ export function CategoryManagement() {
       )
     },
     {
-      key: 'itemCount',
-      label: 'Items',
-      sortable: true,
-      render: (value: number) => (
-        <span className="font-medium text-slate-700">{value}</span>
-      )
-    },
-    {
       key: 'dateCreated',
       label: 'Date Created',
       sortable: true,
@@ -133,14 +129,6 @@ export function CategoryManagement() {
       label: 'Actions',
       render: (_: any, row: any) => (
         <div className="flex items-center space-x-1">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {/* Handle view */}}
-            className="h-8 w-8 p-0 hover:bg-blue-50"
-          >
-            <Eye className="w-4 h-4 text-blue-600" />
-          </Button>
           <Button
             size="sm"
             variant="ghost"
@@ -163,7 +151,7 @@ export function CategoryManagement() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 pt-20 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Category Management</h1>
@@ -178,7 +166,7 @@ export function CategoryManagement() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="hover:shadow-md transition-shadow">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -213,20 +201,6 @@ export function CategoryManagement() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Total Items</p>
-                <p className="text-3xl font-bold text-slate-900 mt-1">{stats?.totalItems || 0}</p>
-                <p className="text-xs text-slate-500 mt-1">Across all categories</p>
-              </div>
-              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                <div className="w-6 h-6 bg-purple-600 rounded-lg"></div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
                 <p className="text-sm font-medium text-slate-600">Created This Month</p>
                 <p className="text-3xl font-bold text-slate-900 mt-1">{stats?.createdThisMonth || 0}</p>
                 <p className="text-xs text-slate-500 mt-1">New this month</p>
@@ -242,19 +216,11 @@ export function CategoryManagement() {
       {/* Categories Table */}
       <Card className="shadow-sm">
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl text-slate-900">Category Management</CardTitle>
-              <CardDescription className="text-slate-600">
-                Manage and organize asset and supply categories with status tracking
-              </CardDescription>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" className="border-slate-200 hover:bg-slate-50">
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
-            </div>
+          <div>
+            <CardTitle className="text-xl text-slate-900">Category Management</CardTitle>
+            <CardDescription className="text-slate-600">
+              Manage and organize asset and supply categories with status tracking
+            </CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -269,7 +235,7 @@ export function CategoryManagement() {
                 className="pl-9 border-slate-200 focus:border-blue-500"
               />
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[140px] border-slate-200">
                   <SelectValue placeholder="All Status" />
@@ -280,10 +246,6 @@ export function CategoryManagement() {
                   <SelectItem value="inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" className="border-slate-200 hover:bg-slate-50">
-                <Filter className="w-4 h-4 mr-2" />
-                Filter
-              </Button>
             </div>
           </div>
 
@@ -323,6 +285,17 @@ export function CategoryManagement() {
                 onChange={(e) => updateFormData({ categoryName: e.target.value })}
                 placeholder="Enter category name"
                 required
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="generalCode">General Code</Label>
+              <Input
+                id="generalCode"
+                value={formData.generalCode || ''}
+                onChange={(e) => updateFormData({ generalCode: e.target.value })}
+                placeholder="Enter general code (optional)"
                 disabled={isLoading}
               />
             </div>

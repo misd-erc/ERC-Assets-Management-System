@@ -1,11 +1,8 @@
-# Category Management Refactor TODO
+# TODO: Add Action Buttons and Implement APIs for Legends Management
 
-## Tasks to Complete
-- [x] Create src/types/supply/Category.ts - Type definitions for Category interface
-- [x] Create src/api/supply/categoriesApi.ts - API layer for CRUD operations
-- [x] Create src/services/CategoryService.ts - Business logic and data transformation
-- [x] Create src/store/supply/categoriesStore.ts - Zustand store for global state management
-- [x] Create src/components/supplies/CategoryManagement.tsx - Pure UI component
-- [x] Create src/pages/CategoryManagementPage.tsx - Page-level routing
-- [x] Fix TypeScript errors in CategoryManagement.tsx
-- [x] Verify integration and imports
+## Tasks
+- [ ] Add editLegend and deleteLegend API functions to inventoryApi.ts
+- [ ] Update legendsStore.ts to include edit and delete state and actions
+- [ ] Add action buttons (Edit and Delete) to LegendsManagement.tsx columns
+- [ ] Add edit dialog and delete confirmation dialog to LegendsManagement.tsx
+- [ ] Update imports in LegendsManagement.tsx for new icons and components
