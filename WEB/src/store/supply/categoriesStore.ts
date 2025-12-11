@@ -182,14 +182,14 @@ export const useCategoriesStore = create<CategoriesState>()(
             return;
           }
 
-          const newCategory = await CategoryService.create(formData);
-          set((state) => ({
-            categories: [...state.categories, newCategory],
+          await CategoryService.create(formData);
+          set({
             isLoading: false,
             showAddDialog: false,
-          }));
+          });
 
           get().resetForm();
+          await get().fetchCategories();
           get().fetchStats();
           toast.success('Category created successfully');
         } catch (error) {

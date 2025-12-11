@@ -1,10 +1,20 @@
-# TODO: Add General Code Field to Office Edit Modal
+# Category Creation Error Fix
 
-## Tasks
-- [x] Update Office interface to include generalCode: string;
-- [x] Add generalCode to form state in OfficeEditModal
-- [x] Update useEffect to set generalCode in edit mode
-- [x] Add validation for generalCode in submit function
-- [x] Add General Code input field in UI
-- [x] Update EditOfficePayload interface to include generalCode
-- [x] Update requestPayload to include GeneralCode
+## Issue
+Error when creating new category: "Invalid category data received from API" thrown in CategoryService.mapInventoryToCategory when apiItem.id is undefined.
+
+## Root Cause
+The createInventoryCategory API endpoint does not return the created category data with an ID. The response structure differs from get/edit endpoints.
+
+## Solution
+- Modified CategoryService.create() to return void instead of Category
+- Updated categoriesStore.createCategory() to refresh categories list after successful creation
+
+## Changes Made
+- [x] CategoryService.ts: Changed create method to return void and removed mapInventoryToCategory call
+- [x] categoriesStore.ts: Updated createCategory to call fetchCategories() after creation
+
+## Testing
+- [ ] Test category creation functionality
+- [ ] Verify categories list updates correctly after creation
+- [ ] Check that no errors occur during creation process
