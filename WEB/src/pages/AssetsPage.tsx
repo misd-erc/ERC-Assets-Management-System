@@ -17,6 +17,7 @@ import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { Asset } from '@/types/asset/UnifiedAsset';
 import { ExcelExportService } from '@/utils/excelExport';
 import { ReportTab } from '@/components/assets/reports/ReportTab';
+import * as XLSX from 'xlsx';
 
 export function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -120,6 +121,114 @@ export function AssetsPage() {
     }
   };
 
+const validateBatchUploadFile = async (file: File): Promise<boolean> => {
+  try {
+    //
+    // FIXED BASE HEADERS FROM PPE TEMPLATE (ROW 2)
+    //
+    const baseHeaders = [
+      "Property Number",
+      "Category",
+      "Legend/Sub-Category",
+      "Description",
+      "Brand",
+      "Model",
+      "Serial Number",
+      "Parts/Accessories",
+      "Unit of Measurement",
+      "Unit Value (PHP)",
+      "Date Acquired (YYYY-MM-DD)",
+      "Estimated Useful Life (Years)"
+    ];
+
+    //
+    // MOVEMENT BLOCK HEADERS (6 COLUMNS, REPEATABLE)
+    //
+    const movementBlock = [
+      "PAR/ITR Number",
+      "Plantilla Employee ID",
+      "Non-Plantilla Employee ID",
+      "Office/Division",
+      "Condition",
+      "Date Assigned (YYYY-MM-DD)"
+    ];
+
+    //
+    // READ UPLOADED FILE
+    //
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, { type: "array" });
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+
+    //
+    // HEADER ROW IS EXCEL ROW 2 → INDEX 1
+    //
+    const HEADER_ROW = 1;
+    const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+
+    const headers: string[] = [];
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      const cell = worksheet[XLSX.utils.encode_cell({ r: HEADER_ROW, c: col })];
+      headers.push(cell?.v?.toString().trim() || "");
+    }
+
+    //
+    // VALIDATE BASE COLUMNS EXACTLY
+    //
+    for (let i = 0; i < baseHeaders.length; i++) {
+      if (headers[i] !== baseHeaders[i]) {
+        console.log(
+          `Base header mismatch at column ${i + 1}: "${headers[i]}" != "${baseHeaders[i]}"`
+        );
+        return false;
+      }
+    }
+
+    //
+    // GET REMAINING HEADERS (MOVEMENT COLUMNS)
+    //
+    const remaining = headers.slice(baseHeaders.length);
+    const blockSize = movementBlock.length;
+
+    //
+    // VALIDATE COLUMN COUNT IS MULTIPLE OF MOVEMENT BLOCK SIZE
+    //
+    if (remaining.length % blockSize !== 0) {
+      console.log(
+        `Invalid movement block column count (${remaining.length}), expected multiples of ${blockSize}`
+      );
+      return false;
+    }
+
+    //
+    // VALIDATE EACH MOVEMENT BLOCK
+    //
+    const blockCount = remaining.length / blockSize;
+    for (let b = 0; b < blockCount; b++) {
+      for (let i = 0; i < blockSize; i++) {
+        const actual = remaining[b * blockSize + i];
+        const expected = movementBlock[i];
+
+        if (actual !== expected) {
+          console.log(
+            `Movement block ${b + 1} header mismatch at column ${i + 1}: "${actual}" != "${expected}"`
+          );
+          return false;
+        }
+      }
+    }
+
+    //
+    // TEMPLATE IS VALID
+    //
+    return true;
+  } catch (error) {
+    console.error("Error validating file:", error);
+    return false;
+  }
+};
+
   const handleBatchUpload = async () => {
     if (!uploadFile) {
       toast.error('Please select a file to upload');
@@ -127,6 +236,13 @@ export function AssetsPage() {
     }
 
     try {
+      // Validate the file against the template
+      const isValid = await validateBatchUploadFile(uploadFile);
+      if (!isValid) {
+        toast.error('The uploaded file does not match the required template format. Please download the template and ensure your file follows the same structure.');
+        return;
+      }
+
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
 
