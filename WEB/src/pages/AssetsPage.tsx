@@ -24,6 +24,7 @@ export function AssetsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [pageSize, setPageSize] = useState(5);
 
   // Active tab
   const [activeTab, setActiveTab] = useState('all');
@@ -58,7 +59,7 @@ export function AssetsPage() {
 
   useEffect(() => {
     loadAssets();
-  }, [currentPage, searchTerm, categoryFilter, conditionFilter, officeFilter, divisionFilter, startDate, endDate, activeTab]);
+  }, [currentPage, pageSize, searchTerm, categoryFilter, conditionFilter, officeFilter, divisionFilter, startDate, endDate, activeTab]);
 
   const loadAssets = async () => {
     try {
@@ -72,13 +73,13 @@ export function AssetsPage() {
         endDate: endDate || undefined,
         group: activeTab !== 'all' ? activeTab : undefined,
         PageNumber: currentPage,
-        PageSize: 5,
+        PageSize: pageSize,
       };
 
       const response = await UnifiedAssetService.getAll(filters);
       setAssets(response.items);
       setTotalCount(response.totalCount);
-      setTotalPages(Math.ceil(response.totalCount / 5));
+      setTotalPages(Math.ceil(response.totalCount / pageSize));
     } catch (error) {
       console.error('Error loading assets:', error);
       toast.error('Failed to load assets');
@@ -203,6 +204,11 @@ export function AssetsPage() {
     setCurrentPage(page);
   };
 
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when page size changes
+  };
+
   const handleExportExcel = async () => {
     try {
       setExporting(true);
@@ -319,6 +325,8 @@ export function AssetsPage() {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
+            pageSize={pageSize}
+            onPageSizeChange={handlePageSizeChange}
           />
         </TabsContent>
 
@@ -353,6 +361,8 @@ export function AssetsPage() {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
+            pageSize={pageSize}
+            onPageSizeChange={handlePageSizeChange}
           />
         </TabsContent>
 
@@ -387,6 +397,8 @@ export function AssetsPage() {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
+            pageSize={pageSize}
+            onPageSizeChange={handlePageSizeChange}
           />
         </TabsContent>
 

@@ -37,7 +37,7 @@ export function ReportTab() {
   const [currentPageSe, setCurrentPageSe] = useState(1);
   const [totalPpeAssets, setTotalPpeAssets] = useState(0);
   const [totalSeAssets, setTotalSeAssets] = useState(0);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   // Preview modal state
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -56,11 +56,11 @@ export function ReportTab() {
 
   useEffect(() => {
     loadPpeAssets();
-  }, [currentPagePpe, searchTerm, startDate, endDate, selectedEmployee]);
+  }, [currentPagePpe, searchTerm, startDate, endDate, selectedEmployee, pageSize]);
 
   useEffect(() => {
     loadSeAssets();
-  }, [currentPageSe, searchTerm, startDate, endDate, selectedEmployee]);
+  }, [currentPageSe, searchTerm, startDate, endDate, selectedEmployee, pageSize]);
 
   const allPpeSelected = ppeAssets.length > 0 && ppeAssets.every(asset => selectedPpeAssets.has(asset.id));
   const somePpeSelected = ppeAssets.some(asset => selectedPpeAssets.has(asset.id)) && !allPpeSelected;
@@ -627,12 +627,30 @@ export function ReportTab() {
                 </div>
               )}
 
-              {totalPagesPpe > 1 && (
+              {totalPpeAssets > 0 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
                     Showing {((currentPagePpe - 1) * pageSize) + 1} to {Math.min(currentPagePpe * pageSize, totalPpeAssets)} of {totalPpeAssets} assets
                   </div>
                   <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium">Page Size:</label>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => {
+                          setPageSize(Number(e.target.value));
+                          setCurrentPagePpe(1);
+                          setCurrentPageSe(1);
+                        }}
+                        className="flex h-8 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -741,12 +759,30 @@ export function ReportTab() {
                 </div>
               )}
 
-              {totalPagesSe > 1 && (
+              {totalSeAssets > 0 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
                     Showing {((currentPageSe - 1) * pageSize) + 1} to {Math.min(currentPageSe * pageSize, totalSeAssets)} of {totalSeAssets} assets
                   </div>
                   <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium">Page Size:</label>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => {
+                          setPageSize(Number(e.target.value));
+                          setCurrentPagePpe(1);
+                          setCurrentPageSe(1);
+                        }}
+                        className="flex h-8 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"

@@ -15,7 +15,9 @@ interface AssetsTableProps {
   onDelete: (asset: Asset) => void;
   currentPage: number;
   totalPages: number;
+  pageSize: number;
   onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
 }
 
 export function AssetsTable({
@@ -26,7 +28,9 @@ export function AssetsTable({
   onDelete,
   currentPage,
   totalPages,
+  pageSize,
   onPageChange,
+  onPageSizeChange,
 }: AssetsTableProps) {
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
 
@@ -245,12 +249,26 @@ export function AssetsTable({
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
+        {assets.length > 0 && (
           <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-700">
-              Page {currentPage} of {totalPages}
+            <div className="text-sm text-muted-foreground">
+              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, assets.length)} of {assets.length} assets
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Page Size:</label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                  className="flex h-8 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -259,6 +277,9 @@ export function AssetsTable({
               >
                 Previous
               </Button>
+              <span className="text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
               <Button
                 variant="outline"
                 size="sm"
