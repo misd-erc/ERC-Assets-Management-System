@@ -15,6 +15,8 @@ import { PARGenerator } from '@/components/assets/reports/PARGenerator';
 import { ICSGenerator } from '@/components/assets/reports/ICSGenerator';
 import { ReportPreviewModal } from '@/components/assets/reports/ReportPreviewModal';
 import { getEmployees } from '@/api/user-management/userApi';
+import ReactSelect from 'react-select';
+
 
 export function ReportTab() {
   const [ppeAssets, setPpeAssets] = useState<Asset[]>([]);
@@ -25,6 +27,8 @@ export function ReportTab() {
   const [selectedPpeEmployeeId, setSelectedPpeEmployeeId] = useState<number | null>(null);
   const [selectedSeEmployeeId, setSelectedSeEmployeeId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEmployee, setSelectedEmployee] = useState<{ value: string; label: string } | null>(null);
+
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -52,11 +56,11 @@ export function ReportTab() {
 
   useEffect(() => {
     loadPpeAssets();
-  }, [currentPagePpe, searchTerm, startDate, endDate]);
+  }, [currentPagePpe, searchTerm, startDate, endDate, selectedEmployee]);
 
   useEffect(() => {
     loadSeAssets();
-  }, [currentPageSe, searchTerm, startDate, endDate]);
+  }, [currentPageSe, searchTerm, startDate, endDate, selectedEmployee]);
 
   const allPpeSelected = ppeAssets.length > 0 && ppeAssets.every(asset => selectedPpeAssets.has(asset.id));
   const somePpeSelected = ppeAssets.some(asset => selectedPpeAssets.has(asset.id)) && !allPpeSelected;
@@ -90,6 +94,10 @@ export function ReportTab() {
         filters.EndDate = endDate;
       }
 
+      if (selectedEmployee) {
+        filters.EmployeeId = parseInt(selectedEmployee.value);
+      }
+
       const ppeResponse = await UnifiedAssetService.getAll(filters);
       setPpeAssets(ppeResponse.items);
       setTotalPpeAssets(ppeResponse.totalCount || ppeResponse.items.length);
@@ -121,6 +129,10 @@ export function ReportTab() {
 
       if (endDate) {
         filters.EndDate = endDate;
+      }
+
+      if (selectedEmployee) {
+        filters.EmployeeId = parseInt(selectedEmployee.value);
       }
 
       const seResponse = await UnifiedAssetService.getAll(filters);
@@ -424,6 +436,7 @@ export function ReportTab() {
     setDateError('');
     setCurrentPagePpe(1);
     setCurrentPageSe(1);
+    setSelectedEmployee(null);
   };
 
   const handleSearchChange = (value: string) => {
@@ -471,6 +484,20 @@ export function ReportTab() {
                 onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
+            <div className="flex-1 min-w-64">
+              <label className="text-sm font-medium mb-2 block">Filter by Employee</label>
+              <ReactSelect
+                options={employees.filter(emp => emp.id != null).map(emp => ({ value: emp.id.toString(), label: emp.label }))}
+                value={selectedEmployee}
+                onChange={(selected) => {
+                  setSelectedEmployee(selected);
+                  setCurrentPagePpe(1);
+                  setCurrentPageSe(1);
+                }}
+                placeholder="Select employee (optional)"
+                isClearable
+              />
+            </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Start Date</label>
               <Input
@@ -479,6 +506,7 @@ export function ReportTab() {
                 onChange={(e) => handleStartDateChange(e.target.value)}
               />
             </div>
+
             <div>
               <label className="text-sm font-medium mb-2 block">End Date</label>
               <Input
