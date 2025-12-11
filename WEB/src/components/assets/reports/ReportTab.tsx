@@ -22,7 +22,10 @@ export function ReportTab() {
   const [loading, setLoading] = useState(false);
   const [selectedPpeAssets, setSelectedPpeAssets] = useState<Set<number>>(new Set());
   const [selectedSeAssets, setSelectedSeAssets] = useState<Set<number>>(new Set());
+  const [selectedPpeEmployeeId, setSelectedPpeEmployeeId] = useState<number | null>(null);
+  const [selectedSeEmployeeId, setSelectedSeEmployeeId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [dateError, setDateError] = useState('');
@@ -53,7 +56,7 @@ export function ReportTab() {
       const ppeResponse = await UnifiedAssetService.getAll({
         group: 'PPE',
         PageNumber: 1,
-        PageSize: 1000, // Load more for selection
+        PageSize: 10,
       });
       setPpeAssets(ppeResponse.items);
 
@@ -61,7 +64,7 @@ export function ReportTab() {
       const seResponse = await UnifiedAssetService.getAll({
         group: 'SE',
         PageNumber: 1,
-        PageSize: 1000,
+        PageSize: 10,
       });
       setSeAssets(seResponse.items);
     } catch (error) {
@@ -117,6 +120,15 @@ export function ReportTab() {
     return 'N/A';
   };
 
+  const getEmployeeId = (asset: Asset): number | null => {
+    if (asset.movements && asset.movements.length > 0) {
+      const latestMovement = asset.movements.sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+      return latestMovement.plantillaEmployeeId || latestMovement.nonPlantillaEmployeeId || null;
+    }
+    return null;
+  };
+
+
   const getAssetDate = (asset: Asset): Date => {
     if (asset.movements && asset.movements.length > 0) {
       const latestMovement = asset.movements.sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
@@ -155,14 +167,35 @@ export function ReportTab() {
   const filteredSeAssets = filterAssets(seAssets);
 
   const handlePpeAssetSelect = (assetId: number, checked: boolean) => {
+    const asset = ppeAssets.find(a => a.id === assetId);
+    if (!asset) return;
+
+    const employeeId = getEmployeeId(asset);
+    if (checked && employeeId === null) {
+      toast.error('An employee should not already be associated with this record.');
+      return;
+    }
+
+    if (checked && selectedPpeEmployeeId !== null && employeeId !== selectedPpeEmployeeId) {
+      toast.error('An employee should not already be associated with this record.');
+      return;
+    }
+
     const newSelected = new Set(selectedPpeAssets);
     if (checked) {
       newSelected.add(assetId);
+      if (selectedPpeEmployeeId === null) {
+        setSelectedPpeEmployeeId(employeeId);
+      }
     } else {
       newSelected.delete(assetId);
+      if (newSelected.size === 0) {
+        setSelectedPpeEmployeeId(null);
+      }
     }
     setSelectedPpeAssets(newSelected);
   };
+
 
   const handleSeAssetSelect = (assetId: number, checked: boolean) => {
     const newSelected = new Set(selectedSeAssets);
@@ -176,19 +209,83 @@ export function ReportTab() {
 
   const handleSelectAllPpe = (checked: boolean) => {
     if (checked) {
-      setSelectedPpeAssets(new Set(filteredPpeAssets.map(asset => asset.id)));
+      // Check if there are already selected assets with different employee IDs
+      if (selectedPpeAssets.size > 0) {
+        const selectedEmployeeIds = new Set(
+          Array.from(selectedPpeAssets).map(assetId => {
+            const asset = ppeAssets.find(a => a.id === assetId);
+            return asset ? getEmployeeId(asset) : null;
+          }).filter(id => id !== null)
+        );
+
+        if (selectedEmployeeIds.size > 1) {
+          toast.error('There are selected items that are associated with different employees.');
+          return;
+        }
+      }
+
+      // Filter assets that have the same employee ID as already selected or no selection
+      const assetsToSelect = filteredPpeAssets.filter(asset => {
+        const employeeId = getEmployeeId(asset);
+        if (employeeId === null) return false; // Skip N/A assets
+        if (selectedPpeAssets.size === 0) return true; // If no selection, allow first employee
+        const selectedEmployeeId = Array.from(selectedPpeAssets).map(assetId => {
+          const asset = ppeAssets.find(a => a.id === assetId);
+          return asset ? getEmployeeId(asset) : null;
+        }).find(id => id !== null);
+        return employeeId === selectedEmployeeId;
+      });
+
+      setSelectedPpeAssets(new Set(assetsToSelect.map(asset => asset.id)));
+      if (assetsToSelect.length > 0 && selectedPpeEmployeeId === null) {
+        setSelectedPpeEmployeeId(getEmployeeId(assetsToSelect[0]));
+      }
     } else {
       setSelectedPpeAssets(new Set());
+      setSelectedPpeEmployeeId(null);
     }
   };
 
+
   const handleSelectAllSe = (checked: boolean) => {
     if (checked) {
-      setSelectedSeAssets(new Set(filteredSeAssets.map(asset => asset.id)));
+      // Check if there are already selected assets with different employee IDs
+      if (selectedSeAssets.size > 0) {
+        const selectedEmployeeIds = new Set(
+          Array.from(selectedSeAssets).map(assetId => {
+            const asset = seAssets.find(a => a.id === assetId);
+            return asset ? getEmployeeId(asset) : null;
+          }).filter(id => id !== null)
+        );
+
+        if (selectedEmployeeIds.size > 1) {
+          toast.error('Meron na select na di mag ka parehas ng employee');
+          return;
+        }
+      }
+
+      // Filter assets that have the same employee ID as already selected or no selection
+      const assetsToSelect = filteredSeAssets.filter(asset => {
+        const employeeId = getEmployeeId(asset);
+        if (employeeId === null) return false; // Skip N/A assets
+        if (selectedSeAssets.size === 0) return true; // If no selection, allow first employee
+        const selectedEmployeeId = Array.from(selectedSeAssets).map(assetId => {
+          const asset = seAssets.find(a => a.id === assetId);
+          return asset ? getEmployeeId(asset) : null;
+        }).find(id => id !== null);
+        return employeeId === selectedEmployeeId;
+      });
+
+      setSelectedSeAssets(new Set(assetsToSelect.map(asset => asset.id)));
+      if (assetsToSelect.length > 0 && selectedSeEmployeeId === null) {
+        setSelectedSeEmployeeId(getEmployeeId(assetsToSelect[0]));
+      }
     } else {
       setSelectedSeAssets(new Set());
+      setSelectedSeEmployeeId(null);
     }
   };
+
 
   const handlePreviewPAR = async () => {
     if (selectedPpeAssets.size === 0) {
