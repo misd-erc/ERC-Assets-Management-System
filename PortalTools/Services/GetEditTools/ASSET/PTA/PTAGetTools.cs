@@ -65,7 +65,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                         NonPlantillaEmployeeIdOriginal = temp.movement.NonPlantillaEmployeeIdOriginal ?? string.Empty,
 
                         // Employee (fully translatable sub-query)
-                        Employee = temp.movement.NonPlantillaEmployeeId != null
+                        Employee = temp.movement.NonPlantillaEmployeeId != null && temp.movement.NonPlantillaEmployeeId != 0
                             ? context.TblEmployees
                                 .Where(e => e.Id == temp.movement.NonPlantillaEmployeeId)
                                 .Select(e => new EmployeeResponseModel

@@ -277,7 +277,7 @@ namespace API.Controllers
                         {
                             var movements = _getTools.PTA
                                 .GetTblPTAMovementsByPTAId(x.Id, context)
-                                .Where(m => m.NonPlantillaEmployeeId != null
+                                .Where(m => m.NonPlantillaEmployeeId != null && m.NonPlantillaEmployeeId != 0
                                     ? m.NonPlantillaEmployeeId == model.EmployeeId.Value
                                     : m.PlantillaEmployeeId == model.EmployeeId.Value);
 
