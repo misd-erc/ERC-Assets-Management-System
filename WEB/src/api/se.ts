@@ -293,4 +293,24 @@ export const seApi = {
 
     return response.json();
   },
+
+  // Delete SE asset
+  delete: async (
+    id: number,
+    actionBySystemUserId: string,
+    sessionKey: string
+  ): Promise<{ success: boolean; message?: string }> => {
+    const url = API_BASE_URL + `/Inventory/pta/delete/${id}?ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete SE asset');
+    }
+
+    return response.json();
+  },
 };
