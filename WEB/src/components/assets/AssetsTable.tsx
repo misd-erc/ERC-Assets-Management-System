@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Eye, Edit, Trash2, Package } from 'lucide-react';
-import { Asset } from '@/types/asset/UnifiedAsset';
+import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
+import { getEmployees } from '@/api/user-management/userApi';
 
 interface AssetsTableProps {
   assets: Asset[];
@@ -27,6 +28,57 @@ export function AssetsTable({
   totalPages,
   onPageChange,
 }: AssetsTableProps) {
+  const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await getEmployees();
+      const normalizedEmployees = response.data.items.map(normalizeEmployee);
+      setEmployees(normalizedEmployees);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  function normalizeEmployee(e: any): NormalizedEmployee {
+    const firstName = e.firstName ?? "";
+    const middleName = e.middleName ?? "";
+    const lastName = e.lastName ?? "";
+    const suffixName = e.suffixName ?? "";
+    const employeeIdOriginal = e.employeeIdOriginal ?? "";
+    const employmentTypeId = e.employmentType?.id ?? 1;
+    const employmentTypeName = employmentTypeId === 1 ? 'Plantilla' : 'Non-Plantilla';
+
+    const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${employmentTypeName})`;
+
+    return {
+      id: e.id,
+      firstName,
+      middleName,
+      lastName,
+      suffixName,
+      employeeIdOriginal,
+      employmentTypeId,
+      label,
+    };
+  }
+
+  const getEmployeeName = (asset: Asset): string => {
+    if (asset.movements && asset.movements.length > 0) {
+      const latestMovement = asset.movements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+      const employeeId = latestMovement.plantillaEmployeeId || latestMovement.nonPlantillaEmployeeId;
+      if (employeeId) {
+        const employee = employees.find((e: NormalizedEmployee) => e.id === employeeId);
+        return employee ? employee.label : 'Unknown Employee';
+      }
+    }
+    return 'N/A';
+  };
+
   const getConditionBadgeVariant = (condition: string) => {
     switch (condition?.toLowerCase()) {
       case 'working':
@@ -104,6 +156,7 @@ export function AssetsTable({
             <TableHeader>
               <TableRow>
                 <TableHead>Property Number</TableHead>
+                <TableHead>Employee Name</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Unit Value</TableHead>
@@ -123,6 +176,7 @@ export function AssetsTable({
                 return (
                   <TableRow key={asset.id}>
                     <TableCell className="font-medium">{asset.propertyNumber}</TableCell>
+                    <TableCell>{getEmployeeName(asset)}</TableCell>
                     <TableCell className="max-w-xs truncate" title={asset.description}>
                       {asset.description}
                     </TableCell>

@@ -6,13 +6,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
 import { FileText, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
-import { Asset } from '@/types/asset/UnifiedAsset';
+import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { PARGenerator } from '@/components/assets/reports/PARGenerator';
 import { ICSGenerator } from '@/components/assets/reports/ICSGenerator';
 import { ReportPreviewModal } from '@/components/assets/reports/ReportPreviewModal';
+import { getEmployees } from '@/api/user-management/userApi';
 
 export function ReportTab() {
   const [ppeAssets, setPpeAssets] = useState<Asset[]>([]);
@@ -35,8 +37,12 @@ export function ReportTab() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
+  // Employees state
+  const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
+
   useEffect(() => {
     loadAssets();
+    fetchEmployees();
   }, []);
 
   const loadAssets = async () => {
@@ -64,6 +70,51 @@ export function ReportTab() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await getEmployees();
+      const normalizedEmployees = response.data.items.map(normalizeEmployee);
+      setEmployees(normalizedEmployees);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  function normalizeEmployee(e: any): NormalizedEmployee {
+    const firstName = e.firstName ?? "";
+    const middleName = e.middleName ?? "";
+    const lastName = e.lastName ?? "";
+    const suffixName = e.suffixName ?? "";
+    const employeeIdOriginal = e.employeeIdOriginal ?? "";
+    const employmentTypeId = e.employmentType?.id ?? 1;
+    const employmentTypeName = employmentTypeId === 1 ? 'Plantilla' : 'Non-Plantilla';
+
+    const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${employmentTypeName})`;
+
+    return {
+      id: e.id,
+      firstName,
+      middleName,
+      lastName,
+      suffixName,
+      employeeIdOriginal,
+      employmentTypeId,
+      label,
+    };
+  }
+
+  const getEmployeeName = (asset: Asset): string => {
+    if (asset.movements && asset.movements.length > 0) {
+      const latestMovement = asset.movements.sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+      const employeeId = latestMovement.plantillaEmployeeId || latestMovement.nonPlantillaEmployeeId;
+      if (employeeId) {
+        const employee = employees.find(e => e.id === employeeId);
+        return employee ? employee.label : 'Unknown Employee';
+      }
+    }
+    return 'N/A';
   };
 
   const getAssetDate = (asset: Asset): Date => {
@@ -327,41 +378,52 @@ export function ReportTab() {
                 </Button>
               </div>
 
-              <div className="border rounded-lg max-h-96 overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">Select</TableHead>
-                      <TableHead>Property Number</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Serial Number</TableHead>
-                      <TableHead>Brand/Model</TableHead>
-                      <TableHead>Condition</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedPpeAssets.map((asset) => (
-                      <TableRow key={asset.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedPpeAssets.has(asset.id)}
-                            onCheckedChange={(checked) => handlePpeAssetSelect(asset.id, checked as boolean)}
-                          />
-                        </TableCell>
-                        <TableCell>{asset.propertyNumber}</TableCell>
-                        <TableCell>{asset.description}</TableCell>
-                        <TableCell>{asset.serialNumber}</TableCell>
-                        <TableCell>{asset.brand} {asset.model}</TableCell>
-                        <TableCell>
-                          <Badge variant={asset.movements?.[0]?.condition === 'Working' ? 'default' : 'secondary'}>
-                            {asset.movements?.[0]?.condition || 'N/A'}
-                          </Badge>
-                        </TableCell>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600">Loading assets...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="border rounded-lg max-h-96 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">Select</TableHead>
+                        <TableHead>Property Number</TableHead>
+                        <TableHead>Employee Name</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Serial Number</TableHead>
+                        <TableHead>Brand/Model</TableHead>
+                        <TableHead>Condition</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedPpeAssets.map((asset) => (
+                        <TableRow key={asset.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedPpeAssets.has(asset.id)}
+                              onCheckedChange={(checked) => handlePpeAssetSelect(asset.id, checked as boolean)}
+                            />
+                          </TableCell>
+                          <TableCell>{asset.propertyNumber}</TableCell>
+                          <TableCell>{getEmployeeName(asset)}</TableCell>
+                          <TableCell>{asset.description}</TableCell>
+                          <TableCell>{asset.serialNumber}</TableCell>
+                          <TableCell>{asset.brand} {asset.model}</TableCell>
+                          <TableCell>
+                            <Badge variant={asset.movements?.[0]?.condition === 'Working' ? 'default' : 'secondary'}>
+                              {asset.movements?.[0]?.condition || 'N/A'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
 
               {totalPagesPpe > 1 && (
                 <div className="flex items-center justify-between mt-4">
@@ -428,41 +490,52 @@ export function ReportTab() {
                 </Button>
               </div>
 
-              <div className="border rounded-lg max-h-96 overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">Select</TableHead>
-                      <TableHead>Property Number</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Serial Number</TableHead>
-                      <TableHead>Brand/Model</TableHead>
-                      <TableHead>Condition</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedSeAssets.map((asset) => (
-                      <TableRow key={asset.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedSeAssets.has(asset.id)}
-                            onCheckedChange={(checked) => handleSeAssetSelect(asset.id, checked as boolean)}
-                          />
-                        </TableCell>
-                        <TableCell>{asset.propertyNumber}</TableCell>
-                        <TableCell>{asset.description}</TableCell>
-                        <TableCell>{asset.serialNumber}</TableCell>
-                        <TableCell>{asset.brand} {asset.model}</TableCell>
-                        <TableCell>
-                          <Badge variant={asset.movements?.[0]?.condition === 'Working' ? 'default' : 'secondary'}>
-                            {asset.movements?.[0]?.condition || 'N/A'}
-                          </Badge>
-                        </TableCell>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600">Loading assets...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="border rounded-lg max-h-96 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">Select</TableHead>
+                        <TableHead>Property Number</TableHead>
+                        <TableHead>Employee Name</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Serial Number</TableHead>
+                        <TableHead>Brand/Model</TableHead>
+                        <TableHead>Condition</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedSeAssets.map((asset) => (
+                        <TableRow key={asset.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedSeAssets.has(asset.id)}
+                              onCheckedChange={(checked) => handleSeAssetSelect(asset.id, checked as boolean)}
+                            />
+                          </TableCell>
+                          <TableCell>{asset.propertyNumber}</TableCell>
+                          <TableCell>{getEmployeeName(asset)}</TableCell>
+                          <TableCell>{asset.description}</TableCell>
+                          <TableCell>{asset.serialNumber}</TableCell>
+                          <TableCell>{asset.brand} {asset.model}</TableCell>
+                          <TableCell>
+                            <Badge variant={asset.movements?.[0]?.condition === 'Working' ? 'default' : 'secondary'}>
+                              {asset.movements?.[0]?.condition || 'N/A'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
 
               {totalPagesSe > 1 && (
                 <div className="flex items-center justify-between mt-4">
