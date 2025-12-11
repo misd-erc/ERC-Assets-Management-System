@@ -101,49 +101,49 @@ const styles = StyleSheet.create({
     fontSize: 8,
   },
 
-  colQty: { width: "7%" },
-  colUnit: { width: "7%" },
-  colUnitCost: { width: "12%" },
-  colTotalCost: { width: "12%" },
+  // updated column widths to match sample
+  colQty: { width: "6%" },
+  colUnit: { width: "8%" },
   colDescription: { width: "40%" },
-  colPropertyNo: { width: "16%" },
-  colUsefulLife: { width: "6%" },
+  colPropertyNo: { width: "20%" },
+  colDateAcquired: { width: "14%" },
+  colAmount: { width: "12%" },
 
- sigRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  marginTop: 25,
-},
+  // SIGNATURES
+  sigRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 25,
+  },
 
-sigBlock: {
-  width: '45%',
-  textAlign: 'center',
-},
+  sigBlock: {
+    width: "45%",
+    textAlign: "center",
+  },
 
-sigTitle: {
-  fontSize: 10,
-  marginBottom: 8,
-},
+  sigTitle: {
+    fontSize: 10,
+    marginBottom: 8,
+  },
 
-sigName: {
-  fontSize: 10,
-  marginBottom: 0,        // NO spacing before line
-},
+  sigName: {
+    fontSize: 10,
+    marginBottom: 0,
+  },
 
-sigLine: {
-  borderBottomWidth: 1,
-  borderColor: '#000',
-  height: 18,
-  marginTop: 0,   
-  marginBottom: 4,
-},
+  sigLine: {
+    borderBottomWidth: 1,
+    borderColor: "#000",
+    height: 18,
+    marginTop: 0,
+    marginBottom: 4,
+  },
 
-sigSub: {
-  fontSize: 8,
-  marginBottom: 3,
-  textAlign: 'left',
-},
-
+  sigSub: {
+    fontSize: 8,
+    marginBottom: 3,
+    textAlign: "left",
+  },
 });
 
 function currency(val?: number | null): string {
@@ -164,11 +164,10 @@ function truncate(text = "", max = 250) {
 interface PARRow {
   qty: number;
   unit: string;
-  unitCost: number | null;
-  totalCost: number | null;
   description: string;
   propertyNo: string;
-  usefulLife: string;
+  dateAcquired: string; // formatted as YYYY-MM-DD
+  amount: number | null;
 }
 
 const PARDocument = ({
@@ -214,80 +213,76 @@ const PARDocument = ({
           <View style={styles.tableHeaderRow}>
             <Text style={[styles.cell, styles.colQty]}>Qty</Text>
             <Text style={[styles.cell, styles.colUnit]}>Unit</Text>
-            <Text style={[styles.cell, styles.colUnitCost]}>Unit Cost</Text>
-            <Text style={[styles.cell, styles.colTotalCost]}>Total Cost</Text>
             <Text style={[styles.cell, styles.colDescription]}>Description</Text>
-            <Text style={[styles.cell, styles.colPropertyNo]}>
-              Property No.
-            </Text>
-            <Text style={[styles.cell, styles.colUsefulLife]}>U/L</Text>
+            <Text style={[styles.cell, styles.colPropertyNo]}>Property Number</Text>
+            <Text style={[styles.cell, styles.colDateAcquired]}>Date Acquired</Text>
+            <Text style={[styles.cell, styles.colAmount]}>Amount</Text>
           </View>
 
           {rows.map((r, i) => (
             <View key={i} style={styles.tableRow}>
               <Text style={[styles.cell, styles.colQty]}>{r.qty}</Text>
               <Text style={[styles.cell, styles.colUnit]}>{r.unit}</Text>
-              <Text style={[styles.cell, styles.colUnitCost]}>
-                {currency(r.unitCost)}
-              </Text>
-              <Text style={[styles.cell, styles.colTotalCost]}>
-                {currency(r.totalCost)}
-              </Text>
+
               <Text style={[styles.cell, styles.colDescription]}>
                 {truncate(r.description)}
               </Text>
+
               <Text style={[styles.cell, styles.colPropertyNo]}>
                 {r.propertyNo}
               </Text>
-              <Text style={[styles.cell, styles.colUsefulLife]}>
-                {r.usefulLife}
+
+              <Text style={[styles.cell, styles.colDateAcquired]}>
+                {r.dateAcquired}
+              </Text>
+
+              <Text style={[styles.cell, styles.colAmount]}>
+                {currency(r.amount)}
               </Text>
             </View>
           ))}
         </View>
       </View>
 
-     {/* SIGNATURES */}
-<View style={styles.sigRow}>
+      {/* SIGNATURES */}
+      <View style={styles.sigRow}>
 
-  {/* LEFT — RECEIVED BY (Employee) */}
-  <View style={styles.sigBlock}>
-    <Text style={styles.sigTitle}>Received by:</Text>
+        {/* LEFT — RECEIVED BY */}
+        <View style={styles.sigBlock}>
+          <Text style={styles.sigTitle}>Received by:</Text>
 
-    {/* Employee Signature */}
-    
-    <Text style={styles.sigName}>{employeeName}</Text>
-    <View style={styles.sigLine} />
-    <Text style={styles.sigSub}>Signature Over Printed Name</Text>
+          {/* Dynamic Employee Name */}
+          <Text style={styles.sigName}>{employeeName}</Text>
+          <View style={styles.sigLine} />
+          <Text style={styles.sigSub}>Signature over Printed Name of End User</Text>
 
-    {/* Position */}
-    <View style={styles.sigLine} />
-    <Text style={styles.sigSub}>Position/Office</Text>
+          {/* Position (blank for now) */}
+          <View style={styles.sigLine} />
+          <Text style={styles.sigSub}>Position/Office</Text>
 
-    {/* Date */}
-    <View style={styles.sigLine} />
-    <Text style={styles.sigSub}>Date</Text>
-  </View>
+          {/* Date */}
+          <View style={styles.sigLine} />
+          <Text style={styles.sigSub}>Date</Text>
+        </View>
 
-  {/* RIGHT — RECEIVED FROM (Property Officer) */}
-  <View style={styles.sigBlock}>
-    <Text style={styles.sigTitle}>Received from:</Text>
+        {/* RIGHT — ISSUED BY (STATIC) */}
+        <View style={styles.sigBlock}>
+          <Text style={styles.sigTitle}>Issued by:</Text>
 
-    {/* Property Officer Signature */}
-    <Text style={styles.sigName}>Roselle Guintu</Text>
-    <View style={styles.sigLine} />
-    <Text style={styles.sigSub}>Signature Over Printed Name</Text>
+          <Text style={styles.sigName}>CHERRYLYNN S. GONSALES</Text>
+          <View style={styles.sigLine} />
+          <Text style={styles.sigSub}>Signature over Printed Name of Supply and Property Custodian</Text>
 
-    {/* Position */}
-    <View style={styles.sigLine} />
-    <Text style={styles.sigSub}>Position/Office</Text>
+          {/* Static Position */}
+          <View style={styles.sigLine} />
+          <Text style={styles.sigSub}>Administrative Officer V - FAS, GSD</Text>
 
-    {/* Date */}
-    <View style={styles.sigLine} />
-    <Text style={styles.sigSub}>Date</Text>
-  </View>
+          {/* Date */}
+          <View style={styles.sigLine} />
+          <Text style={styles.sigSub}>Date</Text>
+        </View>
 
-</View>
+      </View>
 
     </Page>
   </Document>
@@ -307,7 +302,9 @@ export class PARGenerator {
       const full = await UnifiedAssetService.getById(asset.id);
 
       const latest = full.movements?.sort(
-        (a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
+        (a, b) =>
+          new Date(b.dateAssigned).getTime() -
+          new Date(a.dateAssigned).getTime()
       )[0];
 
       const emp =
@@ -315,20 +312,18 @@ export class PARGenerator {
         employees.find((e: any) => e.id === latest?.nonPlantillaEmployeeId);
 
       if (emp)
-        employeeName = `${emp.lastName}, ${emp.firstName} ${
-          emp.middleName ?? ""
-        }`;
+        employeeName = `${emp.lastName}, ${emp.firstName} ${emp.middleName ?? ""}`;
 
       rows.push({
         qty: 1,
         unit: full.unitOfMeasurement || "Unit",
-        unitCost: full.unitValue ?? null,
-        totalCost: full.unitValue ?? null,
-        description: full.description,
-        propertyNo: full.propertyNumber,
-        usefulLife: full.estimatedUsefulLife
-          ? String(full.estimatedUsefulLife)
+        description: full.description ?? "",
+        propertyNo: full.propertyNumber ?? "",
+        dateAcquired: full.dateAcquired
+          ? // format as YYYY-MM-DD (ISO-like)
+            new Date(full.dateAcquired).toISOString().slice(0, 10)
           : "",
+        amount: full.unitValue ?? null,
       });
     }
 
@@ -352,7 +347,9 @@ export class PARGenerator {
       const full = await UnifiedAssetService.getById(asset.id);
 
       const latest = full.movements?.sort(
-        (a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
+        (a, b) =>
+          new Date(b.dateAssigned).getTime() -
+          new Date(a.dateAssigned).getTime()
       )[0];
 
       const emp =
@@ -360,20 +357,17 @@ export class PARGenerator {
         employees.find((e: any) => e.id === latest?.nonPlantillaEmployeeId);
 
       if (emp)
-        employeeName = `${emp.lastName}, ${emp.firstName} ${
-          emp.middleName ?? ""
-        }`;
+        employeeName = `${emp.lastName}, ${emp.firstName} ${emp.middleName ?? ""}`;
 
       rows.push({
         qty: 1,
         unit: full.unitOfMeasurement || "Unit",
-        unitCost: full.unitValue ?? null,
-        totalCost: full.unitValue ?? null,
-        description: full.description,
-        propertyNo: full.propertyNumber,
-        usefulLife: full.estimatedUsefulLife
-          ? String(full.estimatedUsefulLife)
+        description: full.description ?? "",
+        propertyNo: full.propertyNumber ?? "",
+        dateAcquired: full.dateAcquired
+          ? new Date(full.dateAcquired).toISOString().slice(0, 10)
           : "",
+        amount: full.unitValue ?? null,
       });
     }
 

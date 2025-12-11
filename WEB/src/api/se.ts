@@ -41,6 +41,7 @@ export const seApi = {
     ActionBySystemUserId: string;
     SessionKey: string;
     GroupName: string;
+    EmployeeId?: number;
   }): Promise<{ items: SEAsset[]; totalCount: number }> => {
     const query = new URLSearchParams();
 
@@ -58,9 +59,14 @@ export const seApi = {
       query.append('EndDate', params.EndDate);
     }
 
+    if (params.EmployeeId) {
+      query.append('EmployeeId', params.EmployeeId.toString());
+    }
+
     query.append('ActionBySystemUserId', params.ActionBySystemUserId);
     query.append('SessionKey', params.SessionKey);
     query.append('GroupName', params.GroupName);
+
 
     const url = API_BASE_URL + '/Inventory/pta/se-ppe/all?' + query.toString();
 

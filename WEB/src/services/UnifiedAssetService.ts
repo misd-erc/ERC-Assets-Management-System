@@ -119,6 +119,7 @@ export class UnifiedAssetService {
     group?: string;
     PageNumber?: number;
     PageSize?: number;
+    EmployeeId?: number;
   }): Promise<{ items: Asset[]; totalCount: number }> {
     try {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
@@ -150,7 +151,9 @@ export class UnifiedAssetService {
           ActionBySystemUserId: actionBySystemUserId,
           SessionKey: sessionKey,
           GroupName: 'ppe',
+          EmployeeId: filters?.EmployeeId,
         });
+
 
         const ppeItems = (ppeResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'PPE'));
         return { items: ppeItems, totalCount: ppeResponse.totalCount };
@@ -165,7 +168,9 @@ export class UnifiedAssetService {
           ActionBySystemUserId: actionBySystemUserId,
           SessionKey: sessionKey,
           GroupName: 'se',
+          EmployeeId: filters?.EmployeeId,
         });
+
 
         const seItems = (seResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'SE'));
         return { items: seItems, totalCount: seResponse.totalCount };
@@ -181,6 +186,7 @@ export class UnifiedAssetService {
             ActionBySystemUserId: actionBySystemUserId,
             SessionKey: sessionKey,
             GroupName: 'ppe',
+            EmployeeId: filters?.EmployeeId,
           }),
           seApi.list({
             SearchString: searchString,
@@ -191,8 +197,10 @@ export class UnifiedAssetService {
             ActionBySystemUserId: actionBySystemUserId,
             SessionKey: sessionKey,
             GroupName: 'se',
+            EmployeeId: filters?.EmployeeId,
           })
         ]);
+
 
         // Map PPE assets
         const ppeItems = (ppeResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'PPE'));
@@ -455,5 +463,4 @@ export class UnifiedAssetService {
 
 
 
-  
 }

@@ -6,13 +6,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
 import { FileText, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
-import { Asset } from '@/types/asset/UnifiedAsset';
+import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { PARGenerator } from '@/components/assets/reports/PARGenerator';
 import { ICSGenerator } from '@/components/assets/reports/ICSGenerator';
 import { ReportPreviewModal } from '@/components/assets/reports/ReportPreviewModal';
+import { getEmployees } from '@/api/user-management/userApi';
+import ReactSelect from 'react-select';
+
 
 export function ReportTab() {
   const [ppeAssets, setPpeAssets] = useState<Asset[]>([]);
@@ -20,12 +24,19 @@ export function ReportTab() {
   const [loading, setLoading] = useState(false);
   const [selectedPpeAssets, setSelectedPpeAssets] = useState<Set<number>>(new Set());
   const [selectedSeAssets, setSelectedSeAssets] = useState<Set<number>>(new Set());
+  const [selectedPpeEmployeeId, setSelectedPpeEmployeeId] = useState<number | null>(null);
+  const [selectedSeEmployeeId, setSelectedSeEmployeeId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEmployee, setSelectedEmployee] = useState<{ value: string; label: string } | null>(null);
+
+
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [dateError, setDateError] = useState('');
   const [currentPagePpe, setCurrentPagePpe] = useState(1);
   const [currentPageSe, setCurrentPageSe] = useState(1);
+  const [totalPpeAssets, setTotalPpeAssets] = useState(0);
+  const [totalSeAssets, setTotalSeAssets] = useState(0);
   const pageSize = 10;
 
   // Preview modal state
@@ -35,35 +46,157 @@ export function ReportTab() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
 
+  // Employees state
+  const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
+
   useEffect(() => {
     loadAssets();
+    fetchEmployees();
   }, []);
 
+  useEffect(() => {
+    loadPpeAssets();
+  }, [currentPagePpe, searchTerm, startDate, endDate, selectedEmployee]);
+
+  useEffect(() => {
+    loadSeAssets();
+  }, [currentPageSe, searchTerm, startDate, endDate, selectedEmployee]);
+
+  const allPpeSelected = ppeAssets.length > 0 && ppeAssets.every(asset => selectedPpeAssets.has(asset.id));
+  const somePpeSelected = ppeAssets.some(asset => selectedPpeAssets.has(asset.id)) && !allPpeSelected;
+  const allSeSelected = seAssets.length > 0 && seAssets.every(asset => selectedSeAssets.has(asset.id));
+  const someSeSelected = seAssets.some(asset => selectedSeAssets.has(asset.id)) && !allSeSelected;
+
   const loadAssets = async () => {
+
+    await Promise.all([loadPpeAssets(), loadSeAssets()]);
+  };
+
+  const loadPpeAssets = async () => {
     try {
       setLoading(true);
 
-      // Load PPE assets
-      const ppeResponse = await UnifiedAssetService.getAll({
+      const filters: any = {
         group: 'PPE',
-        PageNumber: 1,
-        PageSize: 1000, // Load more for selection
-      });
-      setPpeAssets(ppeResponse.items);
+        PageNumber: currentPagePpe,
+        PageSize: pageSize,
+      };
 
-      // Load SE assets
-      const seResponse = await UnifiedAssetService.getAll({
-        group: 'SE',
-        PageNumber: 1,
-        PageSize: 1000,
-      });
-      setSeAssets(seResponse.items);
+      if (searchTerm) {
+        filters.SearchTerm = searchTerm;
+      }
+
+      if (startDate) {
+        filters.StartDate = startDate;
+      }
+
+      if (endDate) {
+        filters.EndDate = endDate;
+      }
+
+      if (selectedEmployee) {
+        filters.EmployeeId = parseInt(selectedEmployee.value);
+      }
+
+      const ppeResponse = await UnifiedAssetService.getAll(filters);
+      setPpeAssets(ppeResponse.items);
+      setTotalPpeAssets(ppeResponse.totalCount || ppeResponse.items.length);
     } catch (error) {
-      console.error('Error loading assets for reports:', error);
-      toast.error('Failed to load assets');
+      console.error('Error loading PPE assets for reports:', error);
+      toast.error('Failed to load PPE assets');
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadSeAssets = async () => {
+    try {
+      setLoading(true);
+
+      const filters: any = {
+        group: 'SE',
+        PageNumber: currentPageSe,
+        PageSize: pageSize,
+      };
+
+      if (searchTerm) {
+        filters.SearchTerm = searchTerm;
+      }
+
+      if (startDate) {
+        filters.StartDate = startDate;
+      }
+
+      if (endDate) {
+        filters.EndDate = endDate;
+      }
+
+      if (selectedEmployee) {
+        filters.EmployeeId = parseInt(selectedEmployee.value);
+      }
+
+      const seResponse = await UnifiedAssetService.getAll(filters);
+      setSeAssets(seResponse.items);
+      setTotalSeAssets(seResponse.totalCount || seResponse.items.length);
+    } catch (error) {
+      console.error('Error loading SE assets for reports:', error);
+      toast.error('Failed to load SE assets');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await getEmployees();
+      const normalizedEmployees = response.data.items.map(normalizeEmployee);
+      setEmployees(normalizedEmployees);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  function normalizeEmployee(e: any): NormalizedEmployee {
+    const firstName = e.firstName ?? "";
+    const middleName = e.middleName ?? "";
+    const lastName = e.lastName ?? "";
+    const suffixName = e.suffixName ?? "";
+    const employeeIdOriginal = e.employeeIdOriginal ?? "";
+    const employmentTypeId = e.employmentType?.id ?? 1;
+    const employmentTypeName = employmentTypeId === 1 ? 'Plantilla' : 'Non-Plantilla';
+
+    const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${employmentTypeName})`;
+
+    return {
+      id: e.id,
+      firstName,
+      middleName,
+      lastName,
+      suffixName,
+      employeeIdOriginal,
+      employmentTypeId,
+      label,
+    };
+  }
+
+  const getEmployeeName = (asset: Asset): string => {
+    if (asset.movements && asset.movements.length > 0) {
+      const latestMovement = asset.movements.sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+      const employeeId = latestMovement.plantillaEmployeeId || latestMovement.nonPlantillaEmployeeId;
+      if (employeeId) {
+        const employee = employees.find(e => e.id === employeeId);
+        return employee ? employee.label : 'Unknown Employee';
+      }
+    }
+    return 'N/A';
+  };
+
+  const getEmployeeId = (asset: Asset): number | null => {
+    if (asset.movements && asset.movements.length > 0) {
+      const latestMovement = asset.movements.sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+      return latestMovement.plantillaEmployeeId || latestMovement.nonPlantillaEmployeeId || null;
+    }
+    return null;
   };
 
   const getAssetDate = (asset: Asset): Date => {
@@ -74,70 +207,159 @@ export function ReportTab() {
     return new Date(asset.dateAcquired);
   };
 
-  const filterAssets = (assets: Asset[]): Asset[] => {
-    return assets.filter(asset => {
-      const matchesSearch = searchTerm === '' ||
-        asset.propertyNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.model.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const assetDate = getAssetDate(asset);
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
-
-      let matchesDate = true;
-      if (start && end) {
-        matchesDate = assetDate >= start && assetDate <= end;
-      } else if (start) {
-        matchesDate = assetDate >= start;
-      } else if (end) {
-        matchesDate = assetDate <= end;
-      }
-
-      return matchesSearch && matchesDate;
-    });
-  };
-
-  const filteredPpeAssets = filterAssets(ppeAssets);
-  const filteredSeAssets = filterAssets(seAssets);
-
   const handlePpeAssetSelect = (assetId: number, checked: boolean) => {
+    const asset = ppeAssets.find(a => a.id === assetId);
+    if (!asset) return;
+
+    const employeeId = getEmployeeId(asset);
+    if (checked && employeeId === null) {
+      toast.error('Cannot select asset with no assigned employee.');
+      return;
+    }
+
+    if (checked && selectedPpeEmployeeId !== null && employeeId !== selectedPpeEmployeeId) {
+      toast.error('Cannot select assets assigned to different employees.');
+      return;
+    }
+
+
     const newSelected = new Set(selectedPpeAssets);
     if (checked) {
       newSelected.add(assetId);
+      if (selectedPpeEmployeeId === null) {
+        setSelectedPpeEmployeeId(employeeId);
+      }
     } else {
       newSelected.delete(assetId);
+      if (newSelected.size === 0) {
+        setSelectedPpeEmployeeId(null);
+      }
     }
     setSelectedPpeAssets(newSelected);
   };
 
   const handleSeAssetSelect = (assetId: number, checked: boolean) => {
+    const asset = seAssets.find(a => a.id === assetId);
+    if (!asset) return;
+
+    const employeeId = getEmployeeId(asset);
+    if (checked && employeeId === null) {
+      toast.error('Cannot select asset with no assigned employee.');
+      return;
+    }
+
+    if (checked && selectedSeEmployeeId !== null && employeeId !== selectedSeEmployeeId) {
+      toast.error('Cannot select assets assigned to different employees.');
+      return;
+    }
+
+
     const newSelected = new Set(selectedSeAssets);
     if (checked) {
       newSelected.add(assetId);
+      if (selectedSeEmployeeId === null) {
+        setSelectedSeEmployeeId(employeeId);
+      }
     } else {
       newSelected.delete(assetId);
+      if (newSelected.size === 0) {
+        setSelectedSeEmployeeId(null);
+      }
     }
     setSelectedSeAssets(newSelected);
   };
 
   const handleSelectAllPpe = (checked: boolean) => {
     if (checked) {
-      setSelectedPpeAssets(new Set(filteredPpeAssets.map(asset => asset.id)));
+      // Select all current page assets (same logic as before)
+      // Check if there are already selected assets with different employee IDs
+      if (selectedPpeAssets.size > 0) {
+        const selectedEmployeeIds = new Set(
+          Array.from(selectedPpeAssets).map(assetId => {
+            const asset = ppeAssets.find(a => a.id === assetId);
+            return asset ? getEmployeeId(asset) : null;
+          }).filter(id => id !== null)
+        );
+
+        if (selectedEmployeeIds.size > 1) {
+          toast.error('Meron na select na di mag ka parehas ng employee');
+          return;
+        }
+      }
+
+      // Filter assets that have the same employee ID as already selected or no selection
+      const assetsToSelect = ppeAssets.filter(asset => {
+        const employeeId = getEmployeeId(asset);
+        if (employeeId === null) return false; // Skip N/A assets
+        if (selectedPpeAssets.size === 0) return true; // If no selection, allow first employee
+        const selectedEmployeeId = Array.from(selectedPpeAssets).map(assetId => {
+          const asset = ppeAssets.find(a => a.id === assetId);
+          return asset ? getEmployeeId(asset) : null;
+        }).find(id => id !== null);
+        return employeeId === selectedEmployeeId;
+      });
+
+      setSelectedPpeAssets(new Set(assetsToSelect.map(asset => asset.id)));
+      if (assetsToSelect.length > 0 && selectedPpeEmployeeId === null) {
+        setSelectedPpeEmployeeId(getEmployeeId(assetsToSelect[0]));
+      }
     } else {
-      setSelectedPpeAssets(new Set());
+      // Unselect all current page assets only
+      const newSelected = new Set(selectedPpeAssets);
+      ppeAssets.forEach(asset => newSelected.delete(asset.id));
+      setSelectedPpeAssets(newSelected);
+      if (newSelected.size === 0) {
+        setSelectedPpeEmployeeId(null);
+      }
     }
   };
 
+
   const handleSelectAllSe = (checked: boolean) => {
     if (checked) {
-      setSelectedSeAssets(new Set(filteredSeAssets.map(asset => asset.id)));
+      // Select all current page assets (same logic as before)
+      // Check if there are already selected assets with different employee IDs
+      if (selectedSeAssets.size > 0) {
+        const selectedEmployeeIds = new Set(
+          Array.from(selectedSeAssets).map(assetId => {
+            const asset = seAssets.find(a => a.id === assetId);
+            return asset ? getEmployeeId(asset) : null;
+          }).filter(id => id !== null)
+        );
+
+        if (selectedEmployeeIds.size > 1) {
+          toast.error('Meron na select na di mag ka parehas ng employee');
+          return;
+        }
+      }
+
+      // Filter assets that have the same employee ID as already selected or no selection
+      const assetsToSelect = seAssets.filter(asset => {
+        const employeeId = getEmployeeId(asset);
+        if (employeeId === null) return false; // Skip N/A assets
+        if (selectedSeAssets.size === 0) return true; // If no selection, allow first employee
+        const selectedEmployeeId = Array.from(selectedSeAssets).map(assetId => {
+          const asset = seAssets.find(a => a.id === assetId);
+          return asset ? getEmployeeId(asset) : null;
+        }).find(id => id !== null);
+        return employeeId === selectedEmployeeId;
+      });
+
+      setSelectedSeAssets(new Set(assetsToSelect.map(asset => asset.id)));
+      if (assetsToSelect.length > 0 && selectedSeEmployeeId === null) {
+        setSelectedSeEmployeeId(getEmployeeId(assetsToSelect[0]));
+      }
     } else {
-      setSelectedSeAssets(new Set());
+      // Unselect all current page assets only
+      const newSelected = new Set(selectedSeAssets);
+      seAssets.forEach(asset => newSelected.delete(asset.id));
+      setSelectedSeAssets(newSelected);
+      if (newSelected.size === 0) {
+        setSelectedSeEmployeeId(null);
+      }
     }
   };
+
 
   const handlePreviewPAR = async () => {
     if (selectedPpeAssets.size === 0) {
@@ -214,6 +436,7 @@ export function ReportTab() {
     setDateError('');
     setCurrentPagePpe(1);
     setCurrentPageSe(1);
+    setSelectedEmployee(null);
   };
 
   const handleSearchChange = (value: string) => {
@@ -244,11 +467,8 @@ export function ReportTab() {
     }
   };
 
-  const paginatedPpeAssets = filteredPpeAssets.slice((currentPagePpe - 1) * pageSize, currentPagePpe * pageSize);
-  const paginatedSeAssets = filteredSeAssets.slice((currentPageSe - 1) * pageSize, currentPageSe * pageSize);
-
-  const totalPagesPpe = Math.ceil(filteredPpeAssets.length / pageSize);
-  const totalPagesSe = Math.ceil(filteredSeAssets.length / pageSize);
+  const totalPagesPpe = Math.ceil(totalPpeAssets / pageSize);
+  const totalPagesSe = Math.ceil(totalSeAssets / pageSize);
 
   return (
     <div className="space-y-6">
@@ -264,6 +484,20 @@ export function ReportTab() {
                 onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
+            <div className="flex-1 min-w-64">
+              <label className="text-sm font-medium mb-2 block">Filter by Employee</label>
+              <ReactSelect
+                options={employees.filter(emp => emp.id != null).map(emp => ({ value: emp.id.toString(), label: emp.label }))}
+                value={selectedEmployee}
+                onChange={(selected) => {
+                  setSelectedEmployee(selected);
+                  setCurrentPagePpe(1);
+                  setCurrentPageSe(1);
+                }}
+                placeholder="Select employee (optional)"
+                isClearable
+              />
+            </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Start Date</label>
               <Input
@@ -272,6 +506,7 @@ export function ReportTab() {
                 onChange={(e) => handleStartDateChange(e.target.value)}
               />
             </div>
+
             <div>
               <label className="text-sm font-medium mb-2 block">End Date</label>
               <Input
@@ -312,10 +547,12 @@ export function ReportTab() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Checkbox
-                    checked={selectedPpeAssets.size === filteredPpeAssets.length && filteredPpeAssets.length > 0}
+                    checked={selectedPpeAssets.size === ppeAssets.length && ppeAssets.length > 0}
                     onCheckedChange={handleSelectAllPpe}
                   />
-                  <span className="text-sm font-medium">Select All ({filteredPpeAssets.length} assets)</span>
+
+
+                  <span className="text-sm font-medium">Select All ({ppeAssets.length} assets)</span>
                 </div>
                 <Button
                   onClick={handlePreviewPAR}
@@ -327,46 +564,57 @@ export function ReportTab() {
                 </Button>
               </div>
 
-              <div className="border rounded-lg max-h-96 overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">Select</TableHead>
-                      <TableHead>Property Number</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Serial Number</TableHead>
-                      <TableHead>Brand/Model</TableHead>
-                      <TableHead>Condition</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedPpeAssets.map((asset) => (
-                      <TableRow key={asset.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedPpeAssets.has(asset.id)}
-                            onCheckedChange={(checked) => handlePpeAssetSelect(asset.id, checked as boolean)}
-                          />
-                        </TableCell>
-                        <TableCell>{asset.propertyNumber}</TableCell>
-                        <TableCell>{asset.description}</TableCell>
-                        <TableCell>{asset.serialNumber}</TableCell>
-                        <TableCell>{asset.brand} {asset.model}</TableCell>
-                        <TableCell>
-                          <Badge variant={asset.movements?.[0]?.condition === 'Working' ? 'default' : 'secondary'}>
-                            {asset.movements?.[0]?.condition || 'N/A'}
-                          </Badge>
-                        </TableCell>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600">Loading assets...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="border rounded-lg max-h-96 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">Select</TableHead>
+                        <TableHead>Property Number</TableHead>
+                        <TableHead>Employee Name</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Serial Number</TableHead>
+                        <TableHead>Brand/Model</TableHead>
+                        <TableHead>Condition</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {ppeAssets.map((asset) => (
+                        <TableRow key={asset.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedPpeAssets.has(asset.id)}
+                              onCheckedChange={(checked) => handlePpeAssetSelect(asset.id, checked as boolean)}
+                            />
+                          </TableCell>
+                          <TableCell>{asset.propertyNumber}</TableCell>
+                          <TableCell>{getEmployeeName(asset)}</TableCell>
+                          <TableCell>{asset.description}</TableCell>
+                          <TableCell>{asset.serialNumber}</TableCell>
+                          <TableCell>{asset.brand} {asset.model}</TableCell>
+                          <TableCell>
+                            <Badge variant={asset.movements?.[0]?.condition === 'Working' ? 'default' : 'secondary'}>
+                              {asset.movements?.[0]?.condition || 'N/A'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
 
               {totalPagesPpe > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {((currentPagePpe - 1) * pageSize) + 1} to {Math.min(currentPagePpe * pageSize, filteredPpeAssets.length)} of {filteredPpeAssets.length} assets
+                    Showing {((currentPagePpe - 1) * pageSize) + 1} to {Math.min(currentPagePpe * pageSize, totalPpeAssets)} of {totalPpeAssets} assets
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -413,10 +661,12 @@ export function ReportTab() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Checkbox
-                    checked={selectedSeAssets.size === filteredSeAssets.length && filteredSeAssets.length > 0}
+                    checked={selectedSeAssets.size === seAssets.length && seAssets.length > 0}
                     onCheckedChange={handleSelectAllSe}
                   />
-                  <span className="text-sm font-medium">Select All ({filteredSeAssets.length} assets)</span>
+
+
+                  <span className="text-sm font-medium">Select All ({seAssets.length} assets)</span>
                 </div>
                 <Button
                   onClick={handlePreviewICS}
@@ -428,46 +678,57 @@ export function ReportTab() {
                 </Button>
               </div>
 
-              <div className="border rounded-lg max-h-96 overflow-y-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">Select</TableHead>
-                      <TableHead>Property Number</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Serial Number</TableHead>
-                      <TableHead>Brand/Model</TableHead>
-                      <TableHead>Condition</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedSeAssets.map((asset) => (
-                      <TableRow key={asset.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedSeAssets.has(asset.id)}
-                            onCheckedChange={(checked) => handleSeAssetSelect(asset.id, checked as boolean)}
-                          />
-                        </TableCell>
-                        <TableCell>{asset.propertyNumber}</TableCell>
-                        <TableCell>{asset.description}</TableCell>
-                        <TableCell>{asset.serialNumber}</TableCell>
-                        <TableCell>{asset.brand} {asset.model}</TableCell>
-                        <TableCell>
-                          <Badge variant={asset.movements?.[0]?.condition === 'Working' ? 'default' : 'secondary'}>
-                            {asset.movements?.[0]?.condition || 'N/A'}
-                          </Badge>
-                        </TableCell>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-sm text-gray-600">Loading assets...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="border rounded-lg max-h-96 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">Select</TableHead>
+                        <TableHead>Property Number</TableHead>
+                        <TableHead>Employee Name</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Serial Number</TableHead>
+                        <TableHead>Brand/Model</TableHead>
+                        <TableHead>Condition</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {seAssets.map((asset) => (
+                        <TableRow key={asset.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedSeAssets.has(asset.id)}
+                              onCheckedChange={(checked) => handleSeAssetSelect(asset.id, checked as boolean)}
+                            />
+                          </TableCell>
+                          <TableCell>{asset.propertyNumber}</TableCell>
+                          <TableCell>{getEmployeeName(asset)}</TableCell>
+                          <TableCell>{asset.description}</TableCell>
+                          <TableCell>{asset.serialNumber}</TableCell>
+                          <TableCell>{asset.brand} {asset.model}</TableCell>
+                          <TableCell>
+                            <Badge variant={asset.movements?.[0]?.condition === 'Working' ? 'default' : 'secondary'}>
+                              {asset.movements?.[0]?.condition || 'N/A'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
 
               {totalPagesSe > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {((currentPageSe - 1) * pageSize) + 1} to {Math.min(currentPageSe * pageSize, filteredSeAssets.length)} of {filteredSeAssets.length} assets
+                    Showing {((currentPageSe - 1) * pageSize) + 1} to {Math.min(currentPageSe * pageSize, totalSeAssets)} of {totalSeAssets} assets
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
