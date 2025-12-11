@@ -110,6 +110,9 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
           actualOfficeId: 0,
           actualDivisionId: 0,
           condition: 'Working',
+          isActive: true,
+          isDeleted: false,
+          createdAt: new Date().toISOString(),
         }]);
       }
     }
@@ -230,6 +233,9 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         actualOfficeId: 0,
         actualDivisionId: 0,
         condition: 'Working',
+        isActive: true,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
       }
     ]);
   };

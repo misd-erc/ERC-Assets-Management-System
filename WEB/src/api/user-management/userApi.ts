@@ -253,6 +253,17 @@ export const getEmployees = async (page: number = 1, pageSize: number = 1000): P
   return response.data;
 };
 
+export const getEmployeeById = async (employeeId: number): Promise<ApiResponse<ApiEmployee[]>> => {
+  const systemUserId = localStorage.getItem('systemUserId') || '';
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
+  const response = await axiosInstance.get<ApiResponse<ApiEmployee[]>>(
+    `/Users/employees/all/${employeeId}?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
+  );
+
+  return response.data;
+};
+
 
 
 

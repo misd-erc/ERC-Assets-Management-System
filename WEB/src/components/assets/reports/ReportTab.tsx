@@ -14,6 +14,7 @@ import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { PARGenerator } from '@/components/assets/reports/PARGenerator';
 import { ICSGenerator } from '@/components/assets/reports/ICSGenerator';
 import { ReportPreviewModal } from '@/components/assets/reports/ReportPreviewModal';
+import { EmployeeSelectModal } from '@/components/assets/reports/EmployeeSelectModal';
 import { getEmployees } from '@/api/user-management/userApi';
 import ReactSelect from 'react-select';
 
@@ -37,7 +38,7 @@ export function ReportTab() {
   const [currentPageSe, setCurrentPageSe] = useState(1);
   const [totalPpeAssets, setTotalPpeAssets] = useState(0);
   const [totalSeAssets, setTotalSeAssets] = useState(0);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   // Preview modal state
   const [previewUrl, setPreviewUrl] = useState<string>('');
@@ -49,6 +50,11 @@ export function ReportTab() {
   // Employees state
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
 
+  // Employee select modal state
+  const [employeeSelectModalOpen, setEmployeeSelectModalOpen] = useState(false);
+  const [employeeOptions, setEmployeeOptions] = useState<NormalizedEmployee[]>([]);
+  const [selectedReportEmployee, setSelectedReportEmployee] = useState<NormalizedEmployee | null>(null);
+
   useEffect(() => {
     loadAssets();
     fetchEmployees();
@@ -56,11 +62,11 @@ export function ReportTab() {
 
   useEffect(() => {
     loadPpeAssets();
-  }, [currentPagePpe, searchTerm, startDate, endDate, selectedEmployee]);
+  }, [currentPagePpe, searchTerm, startDate, endDate, selectedEmployee, pageSize]);
 
   useEffect(() => {
     loadSeAssets();
-  }, [currentPageSe, searchTerm, startDate, endDate, selectedEmployee]);
+  }, [currentPageSe, searchTerm, startDate, endDate, selectedEmployee, pageSize]);
 
   const allPpeSelected = ppeAssets.length > 0 && ppeAssets.every(asset => selectedPpeAssets.has(asset.id));
   const somePpeSelected = ppeAssets.some(asset => selectedPpeAssets.has(asset.id)) && !allPpeSelected;
@@ -181,10 +187,26 @@ export function ReportTab() {
 
   const getEmployeeName = (asset: Asset): string => {
     if (asset.movements && asset.movements.length > 0) {
-      const latestMovement = asset.movements.sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
-      const employeeId = latestMovement.plantillaEmployeeId || latestMovement.nonPlantillaEmployeeId;
+      const firstMovement = asset.movements.sort((a, b) => new Date(a.dateAssigned).getTime() - new Date(b.dateAssigned).getTime())[0];
+
+      // First try to use the embedded employee object from the movement
+      if (firstMovement.employee) {
+        const emp = firstMovement.employee;
+        const firstName = emp.firstName ?? "";
+        const middleName = emp.middleName ?? "";
+        const lastName = emp.lastName ?? "";
+        const suffixName = emp.suffixName ?? "";
+        const employeeIdOriginal = emp.employeeIdOriginal ?? "";
+        const employmentTypeId = emp.employmentType?.id ?? 1;
+        const employmentTypeName = employmentTypeId === 1 ? 'Plantilla' : 'Non-Plantilla';
+
+        return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${employmentTypeName})`;
+      }
+
+      // Fallback to using employee ID lookup
+      const employeeId = firstMovement.plantillaEmployeeId || firstMovement.nonPlantillaEmployeeId;
       if (employeeId) {
-        const employee = employees.find(e => e.id === employeeId);
+        const employee = employees.find((e: NormalizedEmployee) => e.id === employeeId);
         return employee ? employee.label : 'Unknown Employee';
       }
     }
@@ -193,8 +215,8 @@ export function ReportTab() {
 
   const getEmployeeId = (asset: Asset): number | null => {
     if (asset.movements && asset.movements.length > 0) {
-      const latestMovement = asset.movements.sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
-      return latestMovement.plantillaEmployeeId || latestMovement.nonPlantillaEmployeeId || null;
+      const firstMovement = asset.movements.sort((a, b) => new Date(a.dateAssigned).getTime() - new Date(b.dateAssigned).getTime())[0];
+      return firstMovement.plantillaEmployeeId || firstMovement.nonPlantillaEmployeeId || null;
     }
     return null;
   };
@@ -361,25 +383,58 @@ export function ReportTab() {
   };
 
 
+  const collectEmployeesFromAssets = (assets: Asset[], employees: NormalizedEmployee[]): NormalizedEmployee[] => {
+    const employeeMap = new Map<number, NormalizedEmployee>();
+
+    assets.forEach(asset => {
+      if (asset.movements) {
+        asset.movements.forEach(mv => {
+          if (mv.employee) {
+            const emp = mv.employee;
+            if (!employeeMap.has(emp.id)) {
+              employeeMap.set(emp.id, normalizeEmployee(emp));
+            }
+          } else {
+            // If no employee object, try to find by ID from the employees list
+            const employeeId = mv.plantillaEmployeeId || mv.nonPlantillaEmployeeId;
+            if (employeeId) {
+              const emp = employees.find(e => e.id === employeeId);
+              if (emp && !employeeMap.has(emp.id)) {
+                employeeMap.set(emp.id, emp);
+              }
+            }
+          }
+        });
+      }
+    });
+
+    return Array.from(employeeMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  };
+
   const handlePreviewPAR = async () => {
     if (selectedPpeAssets.size === 0) {
       toast.error('Please select at least one PPE asset');
       return;
     }
 
+    const selectedAssets = ppeAssets.filter(asset => selectedPpeAssets.has(asset.id));
+
     try {
-      setIsPreviewLoading(true);
-      const selectedAssets = ppeAssets.filter(asset => selectedPpeAssets.has(asset.id));
-      const url = await PARGenerator.generatePARPreview(selectedAssets);
-      setPreviewUrl(url);
+      const fullAssets = await Promise.all(selectedAssets.map(asset => UnifiedAssetService.getById(asset.id)));
+      const availableEmployees = collectEmployeesFromAssets(fullAssets, employees);
+
+      if (availableEmployees.length === 0) {
+        toast.error('No employees found for selected assets');
+        return;
+      }
+
+      setEmployeeOptions(availableEmployees);
       setPreviewType('PAR');
-      setPreviewAssets(selectedAssets);
-      setIsPreviewOpen(true);
+      setPreviewAssets(fullAssets);
+      setEmployeeSelectModalOpen(true);
     } catch (error) {
-      console.error('Error generating PAR preview:', error);
-      toast.error('Failed to generate PAR preview');
-    } finally {
-      setIsPreviewLoading(false);
+      console.error('Error fetching full assets:', error);
+      toast.error('Failed to load asset details');
     }
   };
 
@@ -389,29 +444,63 @@ export function ReportTab() {
       return;
     }
 
+    const selectedAssets = seAssets.filter(asset => selectedSeAssets.has(asset.id));
+
+    try {
+      const fullAssets = await Promise.all(selectedAssets.map(asset => UnifiedAssetService.getById(asset.id)));
+      const availableEmployees = collectEmployeesFromAssets(fullAssets, employees);
+
+      if (availableEmployees.length === 0) {
+        toast.error('No employees found for selected assets');
+        return;
+      }
+
+      setEmployeeOptions(availableEmployees);
+      setPreviewType('ICS');
+      setPreviewAssets(fullAssets);
+      setEmployeeSelectModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching full assets:', error);
+      toast.error('Failed to load asset details');
+    }
+  };
+
+  const handleEmployeeSelect = async (employee: NormalizedEmployee) => {
+    setSelectedReportEmployee(employee);
+    setEmployeeSelectModalOpen(false);
+
     try {
       setIsPreviewLoading(true);
-      const selectedAssets = seAssets.filter(asset => selectedSeAssets.has(asset.id));
-      const url = await ICSGenerator.generateICSPreview(selectedAssets);
+      let url: string;
+
+      if (previewType === 'PAR') {
+        url = await PARGenerator.generatePARPreview(previewAssets, employee);
+      } else {
+        url = await ICSGenerator.generateICSPreview(previewAssets, employee);
+      }
+
       setPreviewUrl(url);
-      setPreviewType('ICS');
-      setPreviewAssets(selectedAssets);
       setIsPreviewOpen(true);
     } catch (error) {
-      console.error('Error generating ICS preview:', error);
-      toast.error('Failed to generate ICS preview');
+      console.error('Error generating preview:', error);
+      toast.error(`Failed to generate ${previewType} preview`);
     } finally {
       setIsPreviewLoading(false);
     }
   };
 
   const handleConfirmDownload = async () => {
+    if (!selectedReportEmployee) {
+      toast.error('No employee selected');
+      return;
+    }
+
     try {
       if (previewType === 'PAR') {
-        await PARGenerator.generatePAR(previewAssets);
+        await PARGenerator.generatePAR(previewAssets, selectedReportEmployee);
         toast.success('PAR PDF downloaded successfully');
       } else {
-        await ICSGenerator.generateICS(previewAssets);
+        await ICSGenerator.generateICS(previewAssets, selectedReportEmployee);
         toast.success('ICS PDF downloaded successfully');
       }
       handleClosePreview();
@@ -611,12 +700,30 @@ export function ReportTab() {
                 </div>
               )}
 
-              {totalPagesPpe > 1 && (
+              {totalPpeAssets > 0 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
                     Showing {((currentPagePpe - 1) * pageSize) + 1} to {Math.min(currentPagePpe * pageSize, totalPpeAssets)} of {totalPpeAssets} assets
                   </div>
                   <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium">Page Size:</label>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => {
+                          setPageSize(Number(e.target.value));
+                          setCurrentPagePpe(1);
+                          setCurrentPageSe(1);
+                        }}
+                        className="flex h-8 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -725,12 +832,30 @@ export function ReportTab() {
                 </div>
               )}
 
-              {totalPagesSe > 1 && (
+              {totalSeAssets > 0 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
                     Showing {((currentPageSe - 1) * pageSize) + 1} to {Math.min(currentPageSe * pageSize, totalSeAssets)} of {totalSeAssets} assets
                   </div>
                   <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium">Page Size:</label>
+                      <select
+                        value={pageSize}
+                        onChange={(e) => {
+                          setPageSize(Number(e.target.value));
+                          setCurrentPagePpe(1);
+                          setCurrentPageSe(1);
+                        }}
+                        className="flex h-8 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </div>
                     <Button
                       variant="outline"
                       size="sm"
@@ -767,6 +892,13 @@ export function ReportTab() {
         pdfUrl={previewUrl}
         reportType={previewType}
         isLoading={isPreviewLoading}
+      />
+
+      <EmployeeSelectModal
+        isOpen={employeeSelectModalOpen}
+        onClose={() => setEmployeeSelectModalOpen(false)}
+        employees={employeeOptions}
+        onSelect={handleEmployeeSelect}
       />
     </div>
   );

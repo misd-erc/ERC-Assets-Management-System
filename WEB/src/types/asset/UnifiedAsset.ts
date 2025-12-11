@@ -6,6 +6,8 @@ export interface ApiEmployee {
   suffixName?: string | null;
   employeeIdOriginal?: string | null;
   employmentType?: { id: number; name: string } | null;
+  office?: { id: number; name: string; acronym: string } | null;
+  position?: { id: number; name: string } | null;
   // keep other fields as optional
 }
 
@@ -56,9 +58,17 @@ export interface UnifiedMovement {
   parItrNumber: string;
   plantillaEmployeeId: number | null;
   nonPlantillaEmployeeId: number | null;
-  actualOfficeId: number;
-  actualDivisionId: number;
+  plantillaEmployeeIdOriginal?: string | null;
+  nonPlantillaEmployeeIdOriginal?: string | null;
+  employee?: ApiEmployee | null;
+  office?: Office | null;
+  division?: Division | null;
+  actualOfficeId?: number;
+  actualDivisionId?: number;
   condition: string;
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt: string;
 }
 
 export interface Asset {

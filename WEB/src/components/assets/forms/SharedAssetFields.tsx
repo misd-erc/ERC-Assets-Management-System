@@ -368,7 +368,7 @@ export function SharedAssetFields({
                   <div className="space-y-2">
                     <Label htmlFor={`actualOffice-${index}`}>Office</Label>
                     <Select
-                      value={entry.actualOfficeId.toString()}
+                      value={entry.actualOfficeId?.toString() ?? ''}
                       onValueChange={(value) => {
                         handleAccountabilityEntryChange(index, 'actualOfficeId', parseInt(value));
                       }}
@@ -389,7 +389,7 @@ export function SharedAssetFields({
                   <div className="space-y-2">
                     <Label htmlFor={`actualDivision-${index}`}>Division</Label>
                     <Select
-                      value={entry.actualDivisionId.toString()}
+                      value={entry.actualDivisionId?.toString() ?? ''}
                       onValueChange={(value) => {
                         handleAccountabilityEntryChange(index, 'actualDivisionId', parseInt(value));
                       }}
