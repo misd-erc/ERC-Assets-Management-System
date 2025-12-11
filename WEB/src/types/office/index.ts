@@ -4,6 +4,7 @@ export interface Office {
   id: number;
   name: string;
   acronym: string;
+  generalCode?: string;
   isActive: boolean;
   isDeleted?: boolean;
   createdAt?: string;

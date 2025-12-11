@@ -452,8 +452,23 @@ export class UnifiedAssetService {
   }
 
   static async delete(id: number): Promise<void> {
-    // Note: The APIs don't seem to have delete endpoints, so this is a placeholder
-    throw new Error('Delete operation not implemented in API');
+    try {
+      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const sessionKey = localStorage.getItem('sessionToken') || '';
+
+      // Get current asset to determine group
+      const currentAsset = await this.getById(id);
+      const api = currentAsset.group === 'PPE' ? ppeApi : seApi;
+
+      const response = await api.delete(id, actionBySystemUserId, sessionKey);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to delete asset');
+      }
+    } catch (error) {
+      console.error('Error deleting unified asset:', error);
+      throw error;
+    }
   }
 
   static async batchUpload(file: File, userId: string, sessionKey: string): Promise<{ success: boolean; code: string; message: string; data: string }> {

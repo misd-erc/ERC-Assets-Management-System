@@ -98,7 +98,7 @@ export class CategoryService {
   }
 
   // Create new category
-  static async create(data: CreateCategoryRequest): Promise<Category> {
+  static async create(data: CreateCategoryRequest): Promise<void> {
     try {
       const { systemUserId, sessionKey } = getAuthParams();
       const requestData = {
@@ -109,8 +109,7 @@ export class CategoryService {
         sessionKey: sessionKey,
       };
 
-      const inventoryCategory = await categoriesApi.createInventoryCategory(requestData);
-      return this.mapInventoryToCategory(inventoryCategory);
+      await categoriesApi.createInventoryCategory(requestData);
     } catch (error) {
       console.error('Error creating category:', error);
       throw error;

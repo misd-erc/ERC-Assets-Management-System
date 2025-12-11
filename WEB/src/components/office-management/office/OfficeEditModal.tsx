@@ -33,6 +33,7 @@ export const OfficeEditModal = ({
   const [form, setForm] = useState<Partial<Office>>({
     name: '',
     acronym: '',
+    generalCode: '',
     isActive: true,
   });
   const [saving, setSaving] = useState(false);   // request in flight
@@ -44,17 +45,18 @@ export const OfficeEditModal = ({
       setForm({
         name: office.name,
         acronym: office.acronym,
+        generalCode: office.generalCode,
         isActive: office.isActive,
       });
     } else {
-      setForm({ name: '', acronym: '', isActive: true });
+      setForm({ name: '', acronym: '', generalCode: '', isActive: true });
     }
   }, [mode, office, open]);
 
   // â”€â”€â”€â”€â”€â”€ SUBMIT â”€â”€â”€â”€â”€â”€
   const submit = async () => {
-    if (!form.name?.trim() || !form.acronym?.trim()) {
-      toast.error('Name and Acronym are required');
+    if (!form.name?.trim() || !form.acronym?.trim() || !form.generalCode?.trim()) {
+      toast.error('Name, Acronym, and General Code are required');
       return;
     }
 
@@ -108,6 +110,18 @@ export const OfficeEditModal = ({
                 value={form.acronym ?? ''}
                 onChange={(e) => setForm({ ...form, acronym: e.target.value })}
                 placeholder="e.g. ODIR"
+                disabled={saving}
+              />
+            </div>
+
+            {/* General Code */}
+            <div className="grid gap-2">
+              <Label htmlFor="generalCode">General Code</Label>
+              <Input
+                id="generalCode"
+                value={form.generalCode ?? ''}
+                onChange={(e) => setForm({ ...form, generalCode: e.target.value })}
+                placeholder="e.g. GEN001"
                 disabled={saving}
               />
             </div>
