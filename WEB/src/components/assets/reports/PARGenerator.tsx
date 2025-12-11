@@ -10,12 +10,16 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
+import { getEmployeeById, getEmployees } from "@/api/user-management/userApi";
 import { UnifiedAssetService } from "@/services/UnifiedAssetService";
 
 const logoSrc =
   typeof window !== "undefined"
     ? `${window.location.origin}/images/erc-logo.png`
     : "/mnt/data/erc-logo.png";
+
+// Auto-date
+const today = new Date().toISOString().slice(0, 10);
 
 const styles = StyleSheet.create({
   page: {
@@ -39,21 +43,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 
-  logo: {
-    width: 55,
-    height: 55,
-  },
+  logo: { width: 55, height: 55 },
 
-  titleBlock: {
-    flex: 1,
-    textAlign: "center",
-  },
+  titleBlock: { flex: 1, textAlign: "center" },
 
-  headerTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginTop: 2,
-  },
+  headerTitle: { fontSize: 14, fontWeight: "bold", marginTop: 2 },
 
   blueRule: {
     height: 4,
@@ -66,31 +60,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  metaLeft: {
-    flex: 1,
-  },
-  metaRight: {
-    width: 160,
-  },
-  metaLabel: {
-    fontSize: 9,
-    fontWeight: "bold",
-  },
 
-  tableWrap: {
-    marginTop: 8,
-  },
-  table: {
-    borderWidth: 0.8,
-    borderColor: "#000",
-    borderStyle: "solid",
-  },
+  metaLeft: { flex: 1 },
+
+  metaRight: { width: 160 },
+
+  metaLabel: { fontSize: 9, fontWeight: "bold" },
+
+  tableWrap: { marginTop: 8 },
+
+  table: { borderWidth: 0.8, borderColor: "#000" },
+
   tableHeaderRow: {
     flexDirection: "row",
     backgroundColor: "#f0f0f0",
     borderBottomWidth: 0.8,
     borderColor: "#000",
   },
+
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 0.5,
@@ -98,12 +85,9 @@ const styles = StyleSheet.create({
     minHeight: 20,
     alignItems: "center",
   },
-  cell: {
-    padding: 3,
-    fontSize: 8,
-  },
 
-  // updated column widths
+  cell: { padding: 3, fontSize: 8 },
+
   colQty: { width: "6%" },
   colUnit: { width: "8%" },
   colDescription: { width: "40%" },
@@ -111,51 +95,49 @@ const styles = StyleSheet.create({
   colDateAcquired: { width: "14%" },
   colAmount: { width: "12%" },
 
-  // SIGNATURES
+  // SIGNATURE SECTION
   sigRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 25,
   },
+
   sigBlock: {
     width: "45%",
     textAlign: "center",
   },
-  sigTitle: {
-    fontSize: 10,
-    marginBottom: 8,
+
+  sigTitle: { fontSize: 10, marginBottom: 8 },
+
+  sigName: { fontSize: 10, textAlign: "center" },
+
+  sigTopText: {
+    fontSize: 9,
+    marginBottom: 2,
+    marginTop: 8,
+    textAlign: "center",
   },
-  sigName: {
-    fontSize: 10,
-    marginBottom: 0,
-  },
+
   sigLine: {
     borderBottomWidth: 1,
     borderColor: "#000",
     height: 18,
-    marginTop: 0,
     marginBottom: 4,
   },
-  sigSub: {
-    fontSize: 8,
-    marginBottom: 3,
-    textAlign: "left",
-  },
+
+  sigLabel: { fontSize: 8, marginBottom: 6, textAlign: "center" },
 });
 
-function currency(val?: number | null): string {
+function currency(val?: number | null) {
   if (val == null) return "";
   return (
     "PHP" +
-    new Intl.NumberFormat("en-PH", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(val)
+    new Intl.NumberFormat("en-PH", { minimumFractionDigits: 2 }).format(val)
   );
 }
 
 function truncate(text = "", max = 250) {
-  return text.length > max ? text.substring(0, max) + "…" : text;
+  return text.length > max ? text.slice(0, max) + "…" : text;
 }
 
 interface PARRow {
@@ -170,9 +152,13 @@ interface PARRow {
 const PARDocument = ({
   rows,
   employeeName,
+  position,
+  office,
 }: {
   rows: PARRow[];
   employeeName: string;
+  position: string;
+  office: string;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -192,11 +178,9 @@ const PARDocument = ({
       <View style={styles.metaRow}>
         <View style={styles.metaLeft}>
           <Text style={styles.metaLabel}>
-            Entity Name: <Text>ENERGY REGULATORY COMMISSION</Text>
+            Entity Name: ENERGY REGULATORY COMMISSION
           </Text>
-          <Text style={{ marginTop: 4 }}>
-            Fund Cluster: _______________________
-          </Text>
+          <Text style={{ marginTop: 4 }}>Fund Cluster: _______________________</Text>
         </View>
 
         <View style={styles.metaRight}>
@@ -211,12 +195,8 @@ const PARDocument = ({
             <Text style={[styles.cell, styles.colQty]}>Qty</Text>
             <Text style={[styles.cell, styles.colUnit]}>Unit</Text>
             <Text style={[styles.cell, styles.colDescription]}>Description</Text>
-            <Text style={[styles.cell, styles.colPropertyNo]}>
-              Property Number
-            </Text>
-            <Text style={[styles.cell, styles.colDateAcquired]}>
-              Date Acquired
-            </Text>
+            <Text style={[styles.cell, styles.colPropertyNo]}>Property Number</Text>
+            <Text style={[styles.cell, styles.colDateAcquired]}>Date Acquired</Text>
             <Text style={[styles.cell, styles.colAmount]}>Amount</Text>
           </View>
 
@@ -224,18 +204,10 @@ const PARDocument = ({
             <View key={i} style={styles.tableRow}>
               <Text style={[styles.cell, styles.colQty]}>{r.qty}</Text>
               <Text style={[styles.cell, styles.colUnit]}>{r.unit}</Text>
-              <Text style={[styles.cell, styles.colDescription]}>
-                {truncate(r.description)}
-              </Text>
-              <Text style={[styles.cell, styles.colPropertyNo]}>
-                {r.propertyNo}
-              </Text>
-              <Text style={[styles.cell, styles.colDateAcquired]}>
-                {r.dateAcquired}
-              </Text>
-              <Text style={[styles.cell, styles.colAmount]}>
-                {currency(r.amount)}
-              </Text>
+              <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
+              <Text style={[styles.cell, styles.colPropertyNo]}>{r.propertyNo}</Text>
+              <Text style={[styles.cell, styles.colDateAcquired]}>{r.dateAcquired}</Text>
+              <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
             </View>
           ))}
         </View>
@@ -243,40 +215,40 @@ const PARDocument = ({
 
       {/* SIGNATURES */}
       <View style={styles.sigRow}>
-        {/* LEFT SIDE */}
+        {/* RECEIVED BY */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Received by:</Text>
 
           <Text style={styles.sigName}>{employeeName}</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigSub}>
-            Signature over Printed Name of End User
-          </Text>
+          <Text style={styles.sigLabel}>Signature over Printed Name of End User</Text>
 
+          <Text style={styles.sigTopText}>{position} - {office}</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigSub}>Position/Office</Text>
+          <Text style={styles.sigLabel}>Position/Office</Text>
 
+          <Text style={styles.sigTopText}>{today}</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigSub}>Date</Text>
+          <Text style={styles.sigLabel}>Date</Text>
         </View>
 
-        {/* RIGHT SIDE */}
+        {/* ISSUED BY */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Issued by:</Text>
 
           <Text style={styles.sigName}>CHERRYLYNN S. GONSALES</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigSub}>
+          <Text style={styles.sigLabel}>
             Signature over Printed Name of Supply and Property Custodian
           </Text>
 
+          <Text style={styles.sigTopText}>Administrative Officer V – FAS, GSD</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigSub}>
-            Administrative Officer V - FAS, GSD
-          </Text>
+          <Text style={styles.sigLabel}>Position/Office</Text>
 
+          <Text style={styles.sigTopText}>{today}</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigSub}>Date</Text>
+          <Text style={styles.sigLabel}>Date</Text>
         </View>
       </View>
     </Page>
@@ -284,63 +256,117 @@ const PARDocument = ({
 );
 
 export class PARGenerator {
-  static async generatePARPreview(assets: Asset[], employee: NormalizedEmployee): Promise<string> {
-    if (!assets.length) throw new Error("No assets selected.");
-    if (!employee) throw new Error("Employee must be selected.");
+  static async generatePARPreview(assets: Asset[], employee?: NormalizedEmployee): Promise<string> {
+    if (!assets.length) throw new Error('No assets selected.');
 
     const rows: PARRow[] = [];
-    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
+    let employeeName = 'N/A';
+    let position = 'N/A';
+    let office = 'N/A';
+
+    if (employee) {
+      employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
+
+      // Fetch employee details to get position and office
+      const empResp = await getEmployeeById(employee.id);
+      if (empResp.success && empResp.data.length > 0) {
+        const empData = empResp.data[0];
+        position = empData.position?.name || 'N/A';
+        office = empData.office?.name || 'N/A';
+      }
+    } else {
+      // Fallback to extracting from assets if no employee provided
+      const empResp = await getEmployees(1, 10000);
+      const employees = empResp.data.items;
+
+      for (const asset of assets) {
+        const full = await UnifiedAssetService.getById(asset.id);
+
+        const latest = full.movements?.sort(
+          (a, b) =>
+            new Date(b.dateAssigned).getTime() -
+            new Date(a.dateAssigned).getTime()
+        )[0];
+
+        const emp =
+          employees.find((e: any) => e.id === latest?.plantillaEmployeeId) ||
+          employees.find((e: any) => e.id === latest?.nonPlantillaEmployeeId);
+
+        if (emp) {
+          employeeName = `${emp.lastName}, ${emp.firstName} ${emp.middleName ?? ''}`;
+          position = emp.position?.name || 'N/A';
+          office = emp.office?.name || 'N/A';
+          break; // Use the first found employee
+        }
+      }
+    }
 
     for (const asset of assets) {
       const full = await UnifiedAssetService.getById(asset.id);
 
       rows.push({
         qty: 1,
-        unit: full.unitOfMeasurement || "Unit",
+        unit: full.unitOfMeasurement ?? "Unit",
         description: full.description ?? "",
         propertyNo: full.propertyNumber ?? "",
-        dateAcquired: full.dateAcquired
-          ? new Date(full.dateAcquired).toISOString().slice(0, 10)
-          : "",
+        dateAcquired: full.dateAcquired?.slice(0, 10) ?? "",
         amount: full.unitValue ?? null,
       });
     }
 
     const blob = await pdf(
-      <PARDocument rows={rows} employeeName={employeeName} />
+      <PARDocument
+        rows={rows}
+        employeeName={employeeName}
+        position={position}
+        office={office}
+      />
     ).toBlob();
 
     return URL.createObjectURL(blob);
   }
 
   static async generatePAR(assets: Asset[], employee: NormalizedEmployee) {
-    if (!assets.length) throw new Error("No assets selected.");
-    if (!employee) throw new Error("Employee must be selected.");
+    if (!assets.length) throw new Error('No assets selected.');
+    if (!employee) throw new Error('Employee must be selected.');
 
     const rows: PARRow[] = [];
     const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
+
+    // Fetch employee details to get position and office
+    const empResp = await getEmployeeById(employee.id);
+    let position = 'N/A';
+    let office = 'N/A';
+    if (empResp.success && empResp.data.length > 0) {
+      const empData = empResp.data[0];
+      position = empData.position?.name || 'N/A';
+      office = empData.office?.name || 'N/A';
+    }
 
     for (const asset of assets) {
       const full = await UnifiedAssetService.getById(asset.id);
 
       rows.push({
         qty: 1,
-        unit: full.unitOfMeasurement || "Unit",
+        unit: full.unitOfMeasurement ?? "Unit",
         description: full.description ?? "",
         propertyNo: full.propertyNumber ?? "",
-        dateAcquired: full.dateAcquired
-          ? new Date(full.dateAcquired).toISOString().slice(0, 10)
-          : "",
+        dateAcquired: full.dateAcquired?.slice(0, 10) ?? "",
         amount: full.unitValue ?? null,
       });
     }
 
     const blob = await pdf(
-      <PARDocument rows={rows} employeeName={employeeName} />
+      <PARDocument
+        rows={rows}
+        employeeName={employeeName}
+        position={position}
+        office={office}
+      />
     ).toBlob();
 
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = url;
     link.download = `PAR_${Date.now()}.pdf`;
     link.click();
