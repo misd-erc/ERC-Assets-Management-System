@@ -1,7 +1,7 @@
 // src/components/reports/ICSGenerator.tsx
 import React from 'react';
 import { pdf, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
-import { Asset } from '@/types/asset/UnifiedAsset';
+import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { getEmployees } from '@/api/user-management/userApi';
 
@@ -222,30 +222,41 @@ const ICSDocument = ({
 );
 
 export class ICSGenerator {
-  static async generateICSPreview(assets: Asset[]): Promise<string> {
+  static async generateICSPreview(assets: Asset[], employee?: NormalizedEmployee): Promise<string> {
     if (!assets.length) throw new Error('No assets selected.');
-
-    const empResp = await getEmployees(1, 10000);
-    const employees = empResp.data.items;
 
     const rows: ICSRow[] = [];
     let employeeName = 'N/A';
 
+    if (employee) {
+      employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
+    } else {
+      // Fallback to extracting from assets if no employee provided
+      const empResp = await getEmployees(1, 10000);
+      const employees = empResp.data.items;
+
+      for (const asset of assets) {
+        const full = await UnifiedAssetService.getById(asset.id);
+
+        const latest = full.movements?.sort(
+          (a, b) =>
+            new Date(b.dateAssigned).getTime() -
+            new Date(a.dateAssigned).getTime()
+        )[0];
+
+        const emp =
+          employees.find((e: any) => e.id === latest?.plantillaEmployeeId) ||
+          employees.find((e: any) => e.id === latest?.nonPlantillaEmployeeId);
+
+        if (emp) {
+          employeeName = `${emp.lastName}, ${emp.firstName} ${emp.middleName ?? ''}`;
+          break; // Use the first found employee
+        }
+      }
+    }
+
     for (const asset of assets) {
       const full = await UnifiedAssetService.getById(asset.id);
-
-      const latest = full.movements?.sort(
-        (a, b) =>
-          new Date(b.dateAssigned).getTime() -
-          new Date(a.dateAssigned).getTime()
-      )[0];
-
-      const emp =
-        employees.find((e: any) => e.id === latest?.plantillaEmployeeId) ||
-        employees.find((e: any) => e.id === latest?.nonPlantillaEmployeeId);
-
-      if (emp)
-        employeeName = `${emp.lastName}, ${emp.firstName} ${emp.middleName ?? ''}`;
 
       rows.push({
         qty: 1,
@@ -263,30 +274,15 @@ export class ICSGenerator {
     return URL.createObjectURL(blob);
   }
 
-  static async generateICS(assets: Asset[]) {
+  static async generateICS(assets: Asset[], employee: NormalizedEmployee) {
     if (!assets.length) throw new Error('No assets selected.');
-
-    const empResp = await getEmployees(1, 10000);
-    const employees = empResp.data.items;
+    if (!employee) throw new Error('Employee must be selected.');
 
     const rows: ICSRow[] = [];
-    let employeeName = 'N/A';
+    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
 
     for (const asset of assets) {
       const full = await UnifiedAssetService.getById(asset.id);
-
-      const latest = full.movements?.sort(
-        (a, b) =>
-          new Date(b.dateAssigned).getTime() -
-          new Date(a.dateAssigned).getTime()
-      )[0];
-
-      const emp =
-        employees.find((e: any) => e.id === latest?.plantillaEmployeeId) ||
-        employees.find((e: any) => e.id === latest?.nonPlantillaEmployeeId);
-
-      if (emp)
-        employeeName = `${emp.lastName}, ${emp.firstName} ${emp.middleName ?? ''}`;
 
       rows.push({
         qty: 1,

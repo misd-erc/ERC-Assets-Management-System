@@ -9,8 +9,7 @@ import {
   StyleSheet,
   Image,
 } from "@react-pdf/renderer";
-import { Asset } from "@/types/asset/UnifiedAsset";
-import { getEmployees } from "@/api/user-management/userApi";
+import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { UnifiedAssetService } from "@/services/UnifiedAssetService";
 
 const logoSrc =
@@ -39,14 +38,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 12,
   },
+
   logo: {
     width: 55,
     height: 55,
   },
+
   titleBlock: {
     flex: 1,
     textAlign: "center",
   },
+
   headerTitle: {
     fontSize: 14,
     fontWeight: "bold",
@@ -101,7 +103,7 @@ const styles = StyleSheet.create({
     fontSize: 8,
   },
 
-  // updated column widths to match sample
+  // updated column widths
   colQty: { width: "6%" },
   colUnit: { width: "8%" },
   colDescription: { width: "40%" },
@@ -115,22 +117,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 25,
   },
-
   sigBlock: {
     width: "45%",
     textAlign: "center",
   },
-
   sigTitle: {
     fontSize: 10,
     marginBottom: 8,
   },
-
   sigName: {
     fontSize: 10,
     marginBottom: 0,
   },
-
   sigLine: {
     borderBottomWidth: 1,
     borderColor: "#000",
@@ -138,7 +136,6 @@ const styles = StyleSheet.create({
     marginTop: 0,
     marginBottom: 4,
   },
-
   sigSub: {
     fontSize: 8,
     marginBottom: 3,
@@ -166,7 +163,7 @@ interface PARRow {
   unit: string;
   description: string;
   propertyNo: string;
-  dateAcquired: string; // formatted as YYYY-MM-DD
+  dateAcquired: string;
   amount: number | null;
 }
 
@@ -214,8 +211,12 @@ const PARDocument = ({
             <Text style={[styles.cell, styles.colQty]}>Qty</Text>
             <Text style={[styles.cell, styles.colUnit]}>Unit</Text>
             <Text style={[styles.cell, styles.colDescription]}>Description</Text>
-            <Text style={[styles.cell, styles.colPropertyNo]}>Property Number</Text>
-            <Text style={[styles.cell, styles.colDateAcquired]}>Date Acquired</Text>
+            <Text style={[styles.cell, styles.colPropertyNo]}>
+              Property Number
+            </Text>
+            <Text style={[styles.cell, styles.colDateAcquired]}>
+              Date Acquired
+            </Text>
             <Text style={[styles.cell, styles.colAmount]}>Amount</Text>
           </View>
 
@@ -223,19 +224,15 @@ const PARDocument = ({
             <View key={i} style={styles.tableRow}>
               <Text style={[styles.cell, styles.colQty]}>{r.qty}</Text>
               <Text style={[styles.cell, styles.colUnit]}>{r.unit}</Text>
-
               <Text style={[styles.cell, styles.colDescription]}>
                 {truncate(r.description)}
               </Text>
-
               <Text style={[styles.cell, styles.colPropertyNo]}>
                 {r.propertyNo}
               </Text>
-
               <Text style={[styles.cell, styles.colDateAcquired]}>
                 {r.dateAcquired}
               </Text>
-
               <Text style={[styles.cell, styles.colAmount]}>
                 {currency(r.amount)}
               </Text>
@@ -246,73 +243,56 @@ const PARDocument = ({
 
       {/* SIGNATURES */}
       <View style={styles.sigRow}>
-
-        {/* LEFT — RECEIVED BY */}
+        {/* LEFT SIDE */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Received by:</Text>
 
-          {/* Dynamic Employee Name */}
           <Text style={styles.sigName}>{employeeName}</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigSub}>Signature over Printed Name of End User</Text>
+          <Text style={styles.sigSub}>
+            Signature over Printed Name of End User
+          </Text>
 
-          {/* Position (blank for now) */}
           <View style={styles.sigLine} />
           <Text style={styles.sigSub}>Position/Office</Text>
 
-          {/* Date */}
           <View style={styles.sigLine} />
           <Text style={styles.sigSub}>Date</Text>
         </View>
 
-        {/* RIGHT — ISSUED BY (STATIC) */}
+        {/* RIGHT SIDE */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Issued by:</Text>
 
           <Text style={styles.sigName}>CHERRYLYNN S. GONSALES</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigSub}>Signature over Printed Name of Supply and Property Custodian</Text>
+          <Text style={styles.sigSub}>
+            Signature over Printed Name of Supply and Property Custodian
+          </Text>
 
-          {/* Static Position */}
           <View style={styles.sigLine} />
-          <Text style={styles.sigSub}>Administrative Officer V - FAS, GSD</Text>
+          <Text style={styles.sigSub}>
+            Administrative Officer V - FAS, GSD
+          </Text>
 
-          {/* Date */}
           <View style={styles.sigLine} />
           <Text style={styles.sigSub}>Date</Text>
         </View>
-
       </View>
-
     </Page>
   </Document>
 );
 
 export class PARGenerator {
-  static async generatePARPreview(assets: Asset[]): Promise<string> {
+  static async generatePARPreview(assets: Asset[], employee: NormalizedEmployee): Promise<string> {
     if (!assets.length) throw new Error("No assets selected.");
-
-    const empResp = await getEmployees(1, 10000);
-    const employees = empResp.data.items;
+    if (!employee) throw new Error("Employee must be selected.");
 
     const rows: PARRow[] = [];
-    let employeeName = "N/A";
+    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
 
     for (const asset of assets) {
       const full = await UnifiedAssetService.getById(asset.id);
-
-      const latest = full.movements?.sort(
-        (a, b) =>
-          new Date(b.dateAssigned).getTime() -
-          new Date(a.dateAssigned).getTime()
-      )[0];
-
-      const emp =
-        employees.find((e: any) => e.id === latest?.plantillaEmployeeId) ||
-        employees.find((e: any) => e.id === latest?.nonPlantillaEmployeeId);
-
-      if (emp)
-        employeeName = `${emp.lastName}, ${emp.firstName} ${emp.middleName ?? ""}`;
 
       rows.push({
         qty: 1,
@@ -320,8 +300,7 @@ export class PARGenerator {
         description: full.description ?? "",
         propertyNo: full.propertyNumber ?? "",
         dateAcquired: full.dateAcquired
-          ? // format as YYYY-MM-DD (ISO-like)
-            new Date(full.dateAcquired).toISOString().slice(0, 10)
+          ? new Date(full.dateAcquired).toISOString().slice(0, 10)
           : "",
         amount: full.unitValue ?? null,
       });
@@ -334,30 +313,15 @@ export class PARGenerator {
     return URL.createObjectURL(blob);
   }
 
-  static async generatePAR(assets: Asset[]) {
+  static async generatePAR(assets: Asset[], employee: NormalizedEmployee) {
     if (!assets.length) throw new Error("No assets selected.");
-
-    const empResp = await getEmployees(1, 10000);
-    const employees = empResp.data.items;
+    if (!employee) throw new Error("Employee must be selected.");
 
     const rows: PARRow[] = [];
-    let employeeName = "N/A";
+    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
 
     for (const asset of assets) {
       const full = await UnifiedAssetService.getById(asset.id);
-
-      const latest = full.movements?.sort(
-        (a, b) =>
-          new Date(b.dateAssigned).getTime() -
-          new Date(a.dateAssigned).getTime()
-      )[0];
-
-      const emp =
-        employees.find((e: any) => e.id === latest?.plantillaEmployeeId) ||
-        employees.find((e: any) => e.id === latest?.nonPlantillaEmployeeId);
-
-      if (emp)
-        employeeName = `${emp.lastName}, ${emp.firstName} ${emp.middleName ?? ""}`;
 
       rows.push({
         qty: 1,

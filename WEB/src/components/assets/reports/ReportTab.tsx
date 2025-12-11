@@ -14,6 +14,7 @@ import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { PARGenerator } from '@/components/assets/reports/PARGenerator';
 import { ICSGenerator } from '@/components/assets/reports/ICSGenerator';
 import { ReportPreviewModal } from '@/components/assets/reports/ReportPreviewModal';
+import { EmployeeSelectModal } from '@/components/assets/reports/EmployeeSelectModal';
 import { getEmployees } from '@/api/user-management/userApi';
 import ReactSelect from 'react-select';
 
@@ -48,6 +49,11 @@ export function ReportTab() {
 
   // Employees state
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
+
+  // Employee select modal state
+  const [employeeSelectModalOpen, setEmployeeSelectModalOpen] = useState(false);
+  const [employeeOptions, setEmployeeOptions] = useState<NormalizedEmployee[]>([]);
+  const [selectedReportEmployee, setSelectedReportEmployee] = useState<NormalizedEmployee | null>(null);
 
   useEffect(() => {
     loadAssets();
@@ -377,25 +383,58 @@ export function ReportTab() {
   };
 
 
+  const collectEmployeesFromAssets = (assets: Asset[], employees: NormalizedEmployee[]): NormalizedEmployee[] => {
+    const employeeMap = new Map<number, NormalizedEmployee>();
+
+    assets.forEach(asset => {
+      if (asset.movements) {
+        asset.movements.forEach(mv => {
+          if (mv.employee) {
+            const emp = mv.employee;
+            if (!employeeMap.has(emp.id)) {
+              employeeMap.set(emp.id, normalizeEmployee(emp));
+            }
+          } else {
+            // If no employee object, try to find by ID from the employees list
+            const employeeId = mv.plantillaEmployeeId || mv.nonPlantillaEmployeeId;
+            if (employeeId) {
+              const emp = employees.find(e => e.id === employeeId);
+              if (emp && !employeeMap.has(emp.id)) {
+                employeeMap.set(emp.id, emp);
+              }
+            }
+          }
+        });
+      }
+    });
+
+    return Array.from(employeeMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  };
+
   const handlePreviewPAR = async () => {
     if (selectedPpeAssets.size === 0) {
       toast.error('Please select at least one PPE asset');
       return;
     }
 
+    const selectedAssets = ppeAssets.filter(asset => selectedPpeAssets.has(asset.id));
+
     try {
-      setIsPreviewLoading(true);
-      const selectedAssets = ppeAssets.filter(asset => selectedPpeAssets.has(asset.id));
-      const url = await PARGenerator.generatePARPreview(selectedAssets);
-      setPreviewUrl(url);
+      const fullAssets = await Promise.all(selectedAssets.map(asset => UnifiedAssetService.getById(asset.id)));
+      const availableEmployees = collectEmployeesFromAssets(fullAssets, employees);
+
+      if (availableEmployees.length === 0) {
+        toast.error('No employees found for selected assets');
+        return;
+      }
+
+      setEmployeeOptions(availableEmployees);
       setPreviewType('PAR');
-      setPreviewAssets(selectedAssets);
-      setIsPreviewOpen(true);
+      setPreviewAssets(fullAssets);
+      setEmployeeSelectModalOpen(true);
     } catch (error) {
-      console.error('Error generating PAR preview:', error);
-      toast.error('Failed to generate PAR preview');
-    } finally {
-      setIsPreviewLoading(false);
+      console.error('Error fetching full assets:', error);
+      toast.error('Failed to load asset details');
     }
   };
 
@@ -405,29 +444,63 @@ export function ReportTab() {
       return;
     }
 
+    const selectedAssets = seAssets.filter(asset => selectedSeAssets.has(asset.id));
+
+    try {
+      const fullAssets = await Promise.all(selectedAssets.map(asset => UnifiedAssetService.getById(asset.id)));
+      const availableEmployees = collectEmployeesFromAssets(fullAssets, employees);
+
+      if (availableEmployees.length === 0) {
+        toast.error('No employees found for selected assets');
+        return;
+      }
+
+      setEmployeeOptions(availableEmployees);
+      setPreviewType('ICS');
+      setPreviewAssets(fullAssets);
+      setEmployeeSelectModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching full assets:', error);
+      toast.error('Failed to load asset details');
+    }
+  };
+
+  const handleEmployeeSelect = async (employee: NormalizedEmployee) => {
+    setSelectedReportEmployee(employee);
+    setEmployeeSelectModalOpen(false);
+
     try {
       setIsPreviewLoading(true);
-      const selectedAssets = seAssets.filter(asset => selectedSeAssets.has(asset.id));
-      const url = await ICSGenerator.generateICSPreview(selectedAssets);
+      let url: string;
+
+      if (previewType === 'PAR') {
+        url = await PARGenerator.generatePARPreview(previewAssets, employee);
+      } else {
+        url = await ICSGenerator.generateICSPreview(previewAssets, employee);
+      }
+
       setPreviewUrl(url);
-      setPreviewType('ICS');
-      setPreviewAssets(selectedAssets);
       setIsPreviewOpen(true);
     } catch (error) {
-      console.error('Error generating ICS preview:', error);
-      toast.error('Failed to generate ICS preview');
+      console.error('Error generating preview:', error);
+      toast.error(`Failed to generate ${previewType} preview`);
     } finally {
       setIsPreviewLoading(false);
     }
   };
 
   const handleConfirmDownload = async () => {
+    if (!selectedReportEmployee) {
+      toast.error('No employee selected');
+      return;
+    }
+
     try {
       if (previewType === 'PAR') {
-        await PARGenerator.generatePAR(previewAssets);
+        await PARGenerator.generatePAR(previewAssets, selectedReportEmployee);
         toast.success('PAR PDF downloaded successfully');
       } else {
-        await ICSGenerator.generateICS(previewAssets);
+        await ICSGenerator.generateICS(previewAssets, selectedReportEmployee);
         toast.success('ICS PDF downloaded successfully');
       }
       handleClosePreview();
@@ -819,6 +892,13 @@ export function ReportTab() {
         pdfUrl={previewUrl}
         reportType={previewType}
         isLoading={isPreviewLoading}
+      />
+
+      <EmployeeSelectModal
+        isOpen={employeeSelectModalOpen}
+        onClose={() => setEmployeeSelectModalOpen(false)}
+        employees={employeeOptions}
+        onSelect={handleEmployeeSelect}
       />
     </div>
   );
