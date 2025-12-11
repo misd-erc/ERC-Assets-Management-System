@@ -71,6 +71,7 @@ export interface EditOfficePayload {
   officeId: number;
   name: string;
   acronym: string;
+  generalCode?: string;
   isActive: boolean;
 }
 
@@ -81,6 +82,7 @@ export const editOffice = async (payload: EditOfficePayload): Promise<{ message:
     OfficeId: payload.officeId ?? 0,
     Name: payload.name,
     Acronym: payload.acronym,
+    GeneralCode: payload.generalCode,
     IsActive: payload.isActive,
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,

@@ -1,7 +1,10 @@
-## TODO Steps
-- [x] Create EmployeeSelectModal.tsx component
-- [ ] Update ReportTab.tsx to add new state and modal logic
-- [ ] Update PARGenerator.tsx to accept employee parameter and remove auto-detection
-- [ ] Update ICSGenerator.tsx to accept employee parameter and remove auto-detection
-- [ ] Update ReportPreviewModal.tsx if needed to accept employeeName
-- [ ] Test the workflow to ensure it works correctly
+# TODO: Add General Code Field to Office Edit Modal
+
+## Tasks
+- [x] Update Office interface to include generalCode: string;
+- [x] Add generalCode to form state in OfficeEditModal
+- [x] Update useEffect to set generalCode in edit mode
+- [x] Add validation for generalCode in submit function
+- [x] Add General Code input field in UI
+- [x] Update EditOfficePayload interface to include generalCode
+- [x] Update requestPayload to include GeneralCode
