@@ -21,6 +21,7 @@ using PortalDB.Models.ViewModels.Email;
 using PortalDB.Services;
 using PortalTools.Composition;
 using PortalTools.Services;
+using System.ComponentModel.DataAnnotations;
 using static System.Net.WebRequestMethods;
 
 namespace API.Controllers
@@ -213,6 +214,60 @@ namespace API.Controllers
                     model.PageNumber,
                     model.PageSize,
                     totalCount,
+                    "Employees have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // GET api/users/employees/all
+        [HttpGet("employees/all/{employeeId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetEmployee([FromQuery] SoloQueryParams model, [Required] long employeeId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblEmployee? employee = await _getTools.Account.GetTblEmployeeAsync(employeeId, context);
+
+                var employeeResponse = new List<EmployeeResponseModel>
+                {
+                    new EmployeeResponseModel
+                    {
+                        Id = employee.Id,
+                        SystemUser = employee.SystemUserId.HasValue
+                            ? await _getTools.Account.GetTblSystemUserAsync(employee.SystemUserId.Value, context)
+                            : null,
+                        FirstName = employee.FirstName,
+                        MiddleName = employee.MiddleName,
+                        LastName = employee.LastName,
+                        SuffixName = employee.SuffixName,
+                        EmployeeIdOriginal = employee.EmployeeIdOriginal,
+                        Office = await _getTools.Office.GetTblOfficeAsync(employee.OfficeId, context),
+                        Division = await _getTools.Office.GetTblDivisionAsync(employee.DivisionId, context),
+                        EmploymentType = await _getTools.Office.GetTblEmploymentTypeAsync(employee.EmploymentTypeId ?? 0, context),
+                        Position = await _getTools.Office.GetTblPositionAsync(employee.PositionId ?? 0, context),
+                        IsActive = employee.IsActive,
+                        CreatedAt = employee.CreatedAt
+                    }
+                };
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed employee information for employee {employeeId}", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<EmployeeResponseModel>.Ok(
+                    employeeResponse,
                     "Employees have been retrieved"
                 ));
 
