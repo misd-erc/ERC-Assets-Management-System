@@ -181,10 +181,26 @@ export function ReportTab() {
 
   const getEmployeeName = (asset: Asset): string => {
     if (asset.movements && asset.movements.length > 0) {
-      const latestMovement = asset.movements.sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
-      const employeeId = latestMovement.plantillaEmployeeId || latestMovement.nonPlantillaEmployeeId;
+      const firstMovement = asset.movements.sort((a, b) => new Date(a.dateAssigned).getTime() - new Date(b.dateAssigned).getTime())[0];
+
+      // First try to use the embedded employee object from the movement
+      if (firstMovement.employee) {
+        const emp = firstMovement.employee;
+        const firstName = emp.firstName ?? "";
+        const middleName = emp.middleName ?? "";
+        const lastName = emp.lastName ?? "";
+        const suffixName = emp.suffixName ?? "";
+        const employeeIdOriginal = emp.employeeIdOriginal ?? "";
+        const employmentTypeId = emp.employmentType?.id ?? 1;
+        const employmentTypeName = employmentTypeId === 1 ? 'Plantilla' : 'Non-Plantilla';
+
+        return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${employmentTypeName})`;
+      }
+
+      // Fallback to using employee ID lookup
+      const employeeId = firstMovement.plantillaEmployeeId || firstMovement.nonPlantillaEmployeeId;
       if (employeeId) {
-        const employee = employees.find(e => e.id === employeeId);
+        const employee = employees.find((e: NormalizedEmployee) => e.id === employeeId);
         return employee ? employee.label : 'Unknown Employee';
       }
     }
@@ -193,8 +209,8 @@ export function ReportTab() {
 
   const getEmployeeId = (asset: Asset): number | null => {
     if (asset.movements && asset.movements.length > 0) {
-      const latestMovement = asset.movements.sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
-      return latestMovement.plantillaEmployeeId || latestMovement.nonPlantillaEmployeeId || null;
+      const firstMovement = asset.movements.sort((a, b) => new Date(a.dateAssigned).getTime() - new Date(b.dateAssigned).getTime())[0];
+      return firstMovement.plantillaEmployeeId || firstMovement.nonPlantillaEmployeeId || null;
     }
     return null;
   };

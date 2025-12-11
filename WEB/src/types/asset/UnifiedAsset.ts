@@ -56,9 +56,17 @@ export interface UnifiedMovement {
   parItrNumber: string;
   plantillaEmployeeId: number | null;
   nonPlantillaEmployeeId: number | null;
-  actualOfficeId: number;
-  actualDivisionId: number;
+  plantillaEmployeeIdOriginal?: string | null;
+  nonPlantillaEmployeeIdOriginal?: string | null;
+  employee?: ApiEmployee | null;
+  office?: Office | null;
+  division?: Division | null;
+  actualOfficeId?: number;
+  actualDivisionId?: number;
   condition: string;
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt: string;
 }
 
 export interface Asset {

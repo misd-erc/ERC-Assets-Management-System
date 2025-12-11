@@ -517,8 +517,8 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                           ? getEmployeeName(movement.nonPlantillaEmployeeId)
                           : '-'}
                       </TableCell>
-                      <TableCell>{getOfficeName(movement.actualOfficeId)}</TableCell>
-                      <TableCell>{getDivisionName(movement.actualDivisionId)}</TableCell>
+                      <TableCell>{getOfficeName(movement.actualOfficeId ?? null)}</TableCell>
+                      <TableCell>{getDivisionName(movement.actualDivisionId ?? null)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getConditionIcon(movement.condition || '')}
