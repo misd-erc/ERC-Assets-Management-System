@@ -31,6 +31,8 @@ export function ReportTab() {
   const [dateError, setDateError] = useState('');
   const [currentPagePpe, setCurrentPagePpe] = useState(1);
   const [currentPageSe, setCurrentPageSe] = useState(1);
+  const [totalPpeAssets, setTotalPpeAssets] = useState(0);
+  const [totalSeAssets, setTotalSeAssets] = useState(0);
   const pageSize = 10;
 
   // Preview modal state
@@ -48,28 +50,85 @@ export function ReportTab() {
     fetchEmployees();
   }, []);
 
+  useEffect(() => {
+    loadPpeAssets();
+  }, [currentPagePpe, searchTerm, startDate, endDate]);
+
+  useEffect(() => {
+    loadSeAssets();
+  }, [currentPageSe, searchTerm, startDate, endDate]);
+
+  const allPpeSelected = ppeAssets.length > 0 && ppeAssets.every(asset => selectedPpeAssets.has(asset.id));
+  const somePpeSelected = ppeAssets.some(asset => selectedPpeAssets.has(asset.id)) && !allPpeSelected;
+  const allSeSelected = seAssets.length > 0 && seAssets.every(asset => selectedSeAssets.has(asset.id));
+  const someSeSelected = seAssets.some(asset => selectedSeAssets.has(asset.id)) && !allSeSelected;
+
   const loadAssets = async () => {
+
+    await Promise.all([loadPpeAssets(), loadSeAssets()]);
+  };
+
+  const loadPpeAssets = async () => {
     try {
       setLoading(true);
 
-      // Load PPE assets
-      const ppeResponse = await UnifiedAssetService.getAll({
+      const filters: any = {
         group: 'PPE',
-        PageNumber: 1,
-        PageSize: 10,
-      });
-      setPpeAssets(ppeResponse.items);
+        PageNumber: currentPagePpe,
+        PageSize: pageSize,
+      };
 
-      // Load SE assets
-      const seResponse = await UnifiedAssetService.getAll({
-        group: 'SE',
-        PageNumber: 1,
-        PageSize: 10,
-      });
-      setSeAssets(seResponse.items);
+      if (searchTerm) {
+        filters.SearchTerm = searchTerm;
+      }
+
+      if (startDate) {
+        filters.StartDate = startDate;
+      }
+
+      if (endDate) {
+        filters.EndDate = endDate;
+      }
+
+      const ppeResponse = await UnifiedAssetService.getAll(filters);
+      setPpeAssets(ppeResponse.items);
+      setTotalPpeAssets(ppeResponse.totalCount || ppeResponse.items.length);
     } catch (error) {
-      console.error('Error loading assets for reports:', error);
-      toast.error('Failed to load assets');
+      console.error('Error loading PPE assets for reports:', error);
+      toast.error('Failed to load PPE assets');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSeAssets = async () => {
+    try {
+      setLoading(true);
+
+      const filters: any = {
+        group: 'SE',
+        PageNumber: currentPageSe,
+        PageSize: pageSize,
+      };
+
+      if (searchTerm) {
+        filters.SearchTerm = searchTerm;
+      }
+
+      if (startDate) {
+        filters.StartDate = startDate;
+      }
+
+      if (endDate) {
+        filters.EndDate = endDate;
+      }
+
+      const seResponse = await UnifiedAssetService.getAll(filters);
+      setSeAssets(seResponse.items);
+      setTotalSeAssets(seResponse.totalCount || seResponse.items.length);
+    } catch (error) {
+      console.error('Error loading SE assets for reports:', error);
+      toast.error('Failed to load SE assets');
     } finally {
       setLoading(false);
     }
@@ -128,7 +187,6 @@ export function ReportTab() {
     return null;
   };
 
-
   const getAssetDate = (asset: Asset): Date => {
     if (asset.movements && asset.movements.length > 0) {
       const latestMovement = asset.movements.sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
@@ -137,49 +195,21 @@ export function ReportTab() {
     return new Date(asset.dateAcquired);
   };
 
-  const filterAssets = (assets: Asset[]): Asset[] => {
-    return assets.filter(asset => {
-      const matchesSearch = searchTerm === '' ||
-        asset.propertyNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.serialNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.model.toLowerCase().includes(searchTerm.toLowerCase());
-
-      const assetDate = getAssetDate(asset);
-      const start = startDate ? new Date(startDate) : null;
-      const end = endDate ? new Date(endDate) : null;
-
-      let matchesDate = true;
-      if (start && end) {
-        matchesDate = assetDate >= start && assetDate <= end;
-      } else if (start) {
-        matchesDate = assetDate >= start;
-      } else if (end) {
-        matchesDate = assetDate <= end;
-      }
-
-      return matchesSearch && matchesDate;
-    });
-  };
-
-  const filteredPpeAssets = filterAssets(ppeAssets);
-  const filteredSeAssets = filterAssets(seAssets);
-
   const handlePpeAssetSelect = (assetId: number, checked: boolean) => {
     const asset = ppeAssets.find(a => a.id === assetId);
     if (!asset) return;
 
     const employeeId = getEmployeeId(asset);
     if (checked && employeeId === null) {
-      toast.error('An employee should not already be associated with this record.');
+      toast.error('Cannot select asset with no assigned employee.');
       return;
     }
 
     if (checked && selectedPpeEmployeeId !== null && employeeId !== selectedPpeEmployeeId) {
-      toast.error('An employee should not already be associated with this record.');
+      toast.error('Cannot select assets assigned to different employees.');
       return;
     }
+
 
     const newSelected = new Set(selectedPpeAssets);
     if (checked) {
@@ -196,19 +226,40 @@ export function ReportTab() {
     setSelectedPpeAssets(newSelected);
   };
 
-
   const handleSeAssetSelect = (assetId: number, checked: boolean) => {
+    const asset = seAssets.find(a => a.id === assetId);
+    if (!asset) return;
+
+    const employeeId = getEmployeeId(asset);
+    if (checked && employeeId === null) {
+      toast.error('Cannot select asset with no assigned employee.');
+      return;
+    }
+
+    if (checked && selectedSeEmployeeId !== null && employeeId !== selectedSeEmployeeId) {
+      toast.error('Cannot select assets assigned to different employees.');
+      return;
+    }
+
+
     const newSelected = new Set(selectedSeAssets);
     if (checked) {
       newSelected.add(assetId);
+      if (selectedSeEmployeeId === null) {
+        setSelectedSeEmployeeId(employeeId);
+      }
     } else {
       newSelected.delete(assetId);
+      if (newSelected.size === 0) {
+        setSelectedSeEmployeeId(null);
+      }
     }
     setSelectedSeAssets(newSelected);
   };
 
   const handleSelectAllPpe = (checked: boolean) => {
     if (checked) {
+      // Select all current page assets (same logic as before)
       // Check if there are already selected assets with different employee IDs
       if (selectedPpeAssets.size > 0) {
         const selectedEmployeeIds = new Set(
@@ -219,13 +270,13 @@ export function ReportTab() {
         );
 
         if (selectedEmployeeIds.size > 1) {
-          toast.error('There are selected items that are associated with different employees.');
+          toast.error('Meron na select na di mag ka parehas ng employee');
           return;
         }
       }
 
       // Filter assets that have the same employee ID as already selected or no selection
-      const assetsToSelect = filteredPpeAssets.filter(asset => {
+      const assetsToSelect = ppeAssets.filter(asset => {
         const employeeId = getEmployeeId(asset);
         if (employeeId === null) return false; // Skip N/A assets
         if (selectedPpeAssets.size === 0) return true; // If no selection, allow first employee
@@ -241,14 +292,20 @@ export function ReportTab() {
         setSelectedPpeEmployeeId(getEmployeeId(assetsToSelect[0]));
       }
     } else {
-      setSelectedPpeAssets(new Set());
-      setSelectedPpeEmployeeId(null);
+      // Unselect all current page assets only
+      const newSelected = new Set(selectedPpeAssets);
+      ppeAssets.forEach(asset => newSelected.delete(asset.id));
+      setSelectedPpeAssets(newSelected);
+      if (newSelected.size === 0) {
+        setSelectedPpeEmployeeId(null);
+      }
     }
   };
 
 
   const handleSelectAllSe = (checked: boolean) => {
     if (checked) {
+      // Select all current page assets (same logic as before)
       // Check if there are already selected assets with different employee IDs
       if (selectedSeAssets.size > 0) {
         const selectedEmployeeIds = new Set(
@@ -265,7 +322,7 @@ export function ReportTab() {
       }
 
       // Filter assets that have the same employee ID as already selected or no selection
-      const assetsToSelect = filteredSeAssets.filter(asset => {
+      const assetsToSelect = seAssets.filter(asset => {
         const employeeId = getEmployeeId(asset);
         if (employeeId === null) return false; // Skip N/A assets
         if (selectedSeAssets.size === 0) return true; // If no selection, allow first employee
@@ -281,8 +338,13 @@ export function ReportTab() {
         setSelectedSeEmployeeId(getEmployeeId(assetsToSelect[0]));
       }
     } else {
-      setSelectedSeAssets(new Set());
-      setSelectedSeEmployeeId(null);
+      // Unselect all current page assets only
+      const newSelected = new Set(selectedSeAssets);
+      seAssets.forEach(asset => newSelected.delete(asset.id));
+      setSelectedSeAssets(newSelected);
+      if (newSelected.size === 0) {
+        setSelectedSeEmployeeId(null);
+      }
     }
   };
 
@@ -392,11 +454,8 @@ export function ReportTab() {
     }
   };
 
-  const paginatedPpeAssets = filteredPpeAssets.slice((currentPagePpe - 1) * pageSize, currentPagePpe * pageSize);
-  const paginatedSeAssets = filteredSeAssets.slice((currentPageSe - 1) * pageSize, currentPageSe * pageSize);
-
-  const totalPagesPpe = Math.ceil(filteredPpeAssets.length / pageSize);
-  const totalPagesSe = Math.ceil(filteredSeAssets.length / pageSize);
+  const totalPagesPpe = Math.ceil(totalPpeAssets / pageSize);
+  const totalPagesSe = Math.ceil(totalSeAssets / pageSize);
 
   return (
     <div className="space-y-6">
@@ -460,10 +519,12 @@ export function ReportTab() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Checkbox
-                    checked={selectedPpeAssets.size === filteredPpeAssets.length && filteredPpeAssets.length > 0}
+                    checked={selectedPpeAssets.size === ppeAssets.length && ppeAssets.length > 0}
                     onCheckedChange={handleSelectAllPpe}
                   />
-                  <span className="text-sm font-medium">Select All ({filteredPpeAssets.length} assets)</span>
+
+
+                  <span className="text-sm font-medium">Select All ({ppeAssets.length} assets)</span>
                 </div>
                 <Button
                   onClick={handlePreviewPAR}
@@ -497,7 +558,7 @@ export function ReportTab() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginatedPpeAssets.map((asset) => (
+                      {ppeAssets.map((asset) => (
                         <TableRow key={asset.id}>
                           <TableCell>
                             <Checkbox
@@ -525,7 +586,7 @@ export function ReportTab() {
               {totalPagesPpe > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {((currentPagePpe - 1) * pageSize) + 1} to {Math.min(currentPagePpe * pageSize, filteredPpeAssets.length)} of {filteredPpeAssets.length} assets
+                    Showing {((currentPagePpe - 1) * pageSize) + 1} to {Math.min(currentPagePpe * pageSize, totalPpeAssets)} of {totalPpeAssets} assets
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -572,10 +633,12 @@ export function ReportTab() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Checkbox
-                    checked={selectedSeAssets.size === filteredSeAssets.length && filteredSeAssets.length > 0}
+                    checked={selectedSeAssets.size === seAssets.length && seAssets.length > 0}
                     onCheckedChange={handleSelectAllSe}
                   />
-                  <span className="text-sm font-medium">Select All ({filteredSeAssets.length} assets)</span>
+
+
+                  <span className="text-sm font-medium">Select All ({seAssets.length} assets)</span>
                 </div>
                 <Button
                   onClick={handlePreviewICS}
@@ -609,7 +672,7 @@ export function ReportTab() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginatedSeAssets.map((asset) => (
+                      {seAssets.map((asset) => (
                         <TableRow key={asset.id}>
                           <TableCell>
                             <Checkbox
@@ -637,7 +700,7 @@ export function ReportTab() {
               {totalPagesSe > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {((currentPageSe - 1) * pageSize) + 1} to {Math.min(currentPageSe * pageSize, filteredSeAssets.length)} of {filteredSeAssets.length} assets
+                    Showing {((currentPageSe - 1) * pageSize) + 1} to {Math.min(currentPageSe * pageSize, totalSeAssets)} of {totalSeAssets} assets
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
