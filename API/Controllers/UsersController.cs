@@ -1023,7 +1023,7 @@ namespace API.Controllers
                             model: new EmailViewModel
                             {
                                 Name = $"{userInfo.FirstName} {userInfo.LastName}{(userInfo.EmployeeId != null ? $" - {userInfo.EmployeeId}" : "")}",
-                                Body = EmailConstants.BODY_PENDING_ACCOUNT
+                                Body = EmailConstants.BODY_PENDING_ACCOUNT_ADMIN_APPROVAL_REQUEST
                             }
                         );
 
