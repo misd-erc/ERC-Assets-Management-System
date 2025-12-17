@@ -12,6 +12,7 @@ import {
 import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById, getEmployees } from "@/api/user-management/userApi";
 import { UnifiedAssetService } from "@/services/UnifiedAssetService";
+import { getEmployeeAssets } from "@/api/inventoryApi";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -326,8 +327,12 @@ export class PARGenerator {
     return URL.createObjectURL(blob);
   }
 
-  static async generatePAR(assets: Asset[], employee: NormalizedEmployee) {
-    if (!assets.length) throw new Error('No assets selected.');
+  static async generatePAR(employee: NormalizedEmployee) {
+    const assets = await getEmployeeAssets(employee.id, 'PPE');
+    if (!assets.length) {
+      alert('No PPE assets found for this employee. Cannot generate PAR report.');
+      return;
+    }
     if (!employee) throw new Error('Employee must be selected.');
 
     const rows: PARRow[] = [];
@@ -344,15 +349,13 @@ export class PARGenerator {
     }
 
     for (const asset of assets) {
-      const full = await UnifiedAssetService.getById(asset.id);
-
       rows.push({
         qty: 1,
-        unit: full.unitOfMeasurement ?? "Unit",
-        description: full.description ?? "",
-        propertyNo: full.propertyNumber ?? "",
-        dateAcquired: full.dateAcquired?.slice(0, 10) ?? "",
-        amount: full.unitValue ?? null,
+        unit: asset.unitOfMeasurement ?? "Unit",
+        description: asset.description ?? "",
+        propertyNo: asset.propertyNumber ?? "",
+        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+        amount: asset.unitValue ?? null,
       });
     }
 

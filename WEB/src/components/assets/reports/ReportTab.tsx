@@ -7,6 +7,8 @@ import { FileText, Receipt, ArrowRightLeft, BookOpen, BarChart3, ClipboardList }
 import { getEmployees } from '@/api/user-management/userApi';
 import { normalizeEmployee } from '@/utils/employeeUtils';
 import { NormalizedEmployee } from '@/types/asset/UnifiedAsset';
+import { PARGenerator } from './PARGenerator';
+import { ICSGenerator } from './ICSGenerator';
 
 
 export function ReportTab() {
@@ -35,11 +37,20 @@ export function ReportTab() {
     setIsEmployeeModalOpen(true);
   };
 
-  const handleEmployeeSelect = (employee: NormalizedEmployee) => {
-    console.log(`Selected employee for ${selectedReportType}:`, employee);
+  const handleEmployeeSelect = async (employee: NormalizedEmployee) => {
+    try {
+      if (selectedReportType === 'ICS') {
+        await ICSGenerator.generateICS(employee);
+      } else if (selectedReportType === 'PAR') {
+        await PARGenerator.generatePAR(employee);
+      }
+      console.log(`Report generated successfully for ${selectedReportType}:`, employee);
+    } catch (error) {
+      console.error(`Failed to generate ${selectedReportType} report:`, error);
+      alert(`Failed to generate ${selectedReportType} report. Please try again.`);
+    }
     setIsEmployeeModalOpen(false);
     setSelectedReportType(null);
-    // TODO: Proceed with report generation using the selected employee
   };
 
   const reports = [
