@@ -73,11 +73,11 @@ export function AssetsTable({
 
   const getEmployeeName = (asset: Asset): string => {
     if (asset.movements && asset.movements.length > 0) {
-      const firstMovement = asset.movements.sort((a: any, b: any) => new Date(a.dateAssigned).getTime() - new Date(b.dateAssigned).getTime())[0];
+      const latestMovement = asset.movements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
 
       // First try to use the embedded employee object from the movement
-      if (firstMovement.employee) {
-        const emp = firstMovement.employee;
+      if (latestMovement.employee) {
+        const emp = latestMovement.employee;
         const firstName = emp.firstName ?? "";
         const middleName = emp.middleName ?? "";
         const lastName = emp.lastName ?? "";
@@ -90,7 +90,7 @@ export function AssetsTable({
       }
 
       // Fallback to using employee ID lookup
-      const employeeId = firstMovement.plantillaEmployeeId || firstMovement.nonPlantillaEmployeeId;
+      const employeeId = latestMovement.plantillaEmployeeId || latestMovement.nonPlantillaEmployeeId;
       if (employeeId) {
         const employee = employees.find((e: NormalizedEmployee) => e.id === employeeId);
         return employee ? employee.label : 'Unknown Employee';
@@ -176,7 +176,7 @@ export function AssetsTable({
             <TableHeader>
               <TableRow>
                 <TableHead>Property Number</TableHead>
-                <TableHead>Employee Name</TableHead>
+                <TableHead>Accountable Personel</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Unit Value</TableHead>
