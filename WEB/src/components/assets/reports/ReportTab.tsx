@@ -1,12 +1,47 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ReportPreviewModal } from '@/components/assets/reports/ReportPreviewModal';
 import { EmployeeSelectModal } from '@/components/assets/reports/EmployeeSelectModal';
 import { motion } from 'framer-motion';
 import { FileText, Receipt, ArrowRightLeft, BookOpen, BarChart3, ClipboardList } from 'lucide-react';
+import { getEmployees } from '@/api/user-management/userApi';
+import { normalizeEmployee } from '@/utils/employeeUtils';
+import { NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 
 
 export function ReportTab() {
+  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
+  const [selectedReportType, setSelectedReportType] = useState<'PAR' | 'ICS' | null>(null);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const response = await getEmployees(1, 1000);
+        if (response.success) {
+          const normalized = response.data.items.map(normalizeEmployee);
+          setEmployees(normalized);
+        }
+      } catch (error) {
+        console.error('Failed to fetch employees:', error);
+      }
+    };
+
+    fetchEmployees();
+  }, []);
+
+  const handleReportClick = (reportType: 'PAR' | 'ICS') => {
+    setSelectedReportType(reportType);
+    setIsEmployeeModalOpen(true);
+  };
+
+  const handleEmployeeSelect = (employee: NormalizedEmployee) => {
+    console.log(`Selected employee for ${selectedReportType}:`, employee);
+    setIsEmployeeModalOpen(false);
+    setSelectedReportType(null);
+    // TODO: Proceed with report generation using the selected employee
+  };
+
   const reports = [
     {
       title: 'RPCPPE',
@@ -18,7 +53,7 @@ export function ReportTab() {
       title: 'PAR',
       description: 'Property Acknowledgement Receipt - Generates receipts for property acknowledgements and transfers.',
       icon: Receipt,
-      onClick: () => console.log('PAR clicked'),
+      onClick: () => handleReportClick('PAR'),
     },
     {
       title: 'PTR',
@@ -36,7 +71,7 @@ export function ReportTab() {
       title: 'ICS',
       description: 'Inventory Custodian Slip - Creates slips for inventory custodians to acknowledge receipt of items.',
       icon: ClipboardList,
-      onClick: () => console.log('ICS clicked'),
+      onClick: () => handleReportClick('ICS'),
     },
     {
       title: 'ITR',
@@ -91,10 +126,10 @@ export function ReportTab() {
       />
 
       <EmployeeSelectModal
-        isOpen={false}
-        onClose={() => {}}
-        employees={[]}
-        onSelect={() => {}}
+        isOpen={isEmployeeModalOpen}
+        onClose={() => setIsEmployeeModalOpen(false)}
+        employees={employees}
+        onSelect={handleEmployeeSelect}
       />
     </div>
   );
