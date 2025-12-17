@@ -220,8 +220,8 @@ export class ICSGenerator {
   static async generateICSPreview(employee: NormalizedEmployee): Promise<string> {
     const assets = await getEmployeeAssets(employee.id, 'SE');
     if (!assets.length) {
-      alert('No SE assets found for this employee. Cannot generate ICS report.');
-      throw new Error('No assets found for this employee.');
+      alert('No SE assets found for this employee. Cannot generate ICS preview.');
+      return '';
     }
 
     const rows: ICSRow[] = [];

@@ -13,8 +13,12 @@ import { ICSGenerator } from './ICSGenerator';
 
 export function ReportTab() {
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   const [selectedReportType, setSelectedReportType] = useState<'PAR' | 'ICS' | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<NormalizedEmployee | null>(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -38,19 +42,64 @@ export function ReportTab() {
   };
 
   const handleEmployeeSelect = async (employee: NormalizedEmployee) => {
+    setSelectedEmployee(employee);
+    setIsEmployeeModalOpen(false);
+    setIsGeneratingPreview(true);
+    setIsPreviewModalOpen(true);
+
+    try {
+      let url = '';
+      if (selectedReportType === 'ICS') {
+        url = await ICSGenerator.generateICSPreview(employee);
+      } else if (selectedReportType === 'PAR') {
+        url = await PARGenerator.generatePARPreview(employee);
+      }
+
+      if (url) {
+        setPreviewUrl(url);
+      } else {
+        // If no URL returned (no assets), close the preview modal
+        setIsPreviewModalOpen(false);
+        setSelectedReportType(null);
+        setSelectedEmployee(null);
+      }
+    } catch (error) {
+      console.error(`Failed to generate ${selectedReportType} preview:`, error);
+      alert(`Failed to generate ${selectedReportType} preview. Please try again.`);
+      setIsPreviewModalOpen(false);
+      setSelectedReportType(null);
+      setSelectedEmployee(null);
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  };
+
+  const handlePreviewClose = () => {
+    setIsPreviewModalOpen(false);
+    setPreviewUrl('');
+    setSelectedReportType(null);
+    setSelectedEmployee(null);
+  };
+
+  const handlePreviewConfirm = async () => {
+    if (!selectedEmployee || !selectedReportType) return;
+
     try {
       if (selectedReportType === 'ICS') {
-        await ICSGenerator.generateICS(employee);
+        await ICSGenerator.generateICS(selectedEmployee);
       } else if (selectedReportType === 'PAR') {
-        await PARGenerator.generatePAR(employee);
+        await PARGenerator.generatePAR(selectedEmployee);
       }
-      console.log(`Report generated successfully for ${selectedReportType}:`, employee);
+      console.log(`Report downloaded successfully for ${selectedReportType}:`, selectedEmployee);
     } catch (error) {
-      console.error(`Failed to generate ${selectedReportType} report:`, error);
-      alert(`Failed to generate ${selectedReportType} report. Please try again.`);
+      console.error(`Failed to download ${selectedReportType} report:`, error);
+      alert(`Failed to download ${selectedReportType} report. Please try again.`);
     }
-    setIsEmployeeModalOpen(false);
+
+    setIsPreviewModalOpen(false);
+    setPreviewUrl('');
     setSelectedReportType(null);
+    setSelectedEmployee(null);
   };
 
   const reports = [
@@ -128,12 +177,12 @@ export function ReportTab() {
       </Card>
 
       <ReportPreviewModal
-        isOpen={false}
-        onClose={() => {}}
-        onConfirm={() => {}}
-        pdfUrl=""
-        reportType="PAR"
-        isLoading={false}
+        isOpen={isPreviewModalOpen}
+        onClose={handlePreviewClose}
+        onConfirm={handlePreviewConfirm}
+        pdfUrl={previewUrl}
+        reportType={selectedReportType || 'PAR'}
+        isLoading={isGeneratingPreview}
       />
 
       <EmployeeSelectModal

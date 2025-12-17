@@ -257,61 +257,34 @@ const PARDocument = ({
 );
 
 export class PARGenerator {
-  static async generatePARPreview(assets: Asset[], employee?: NormalizedEmployee): Promise<string> {
-    if (!assets.length) throw new Error('No assets selected.');
+  static async generatePARPreview(employee: NormalizedEmployee): Promise<string> {
+    const assets = await getEmployeeAssets(employee.id, 'PPE');
+    if (!assets.length) {
+      alert('No PPE assets found for this employee. Cannot generate PAR preview.');
+      return '';
+    }
 
     const rows: PARRow[] = [];
-    let employeeName = 'N/A';
+    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
+
+    // Fetch employee details to get position and office
+    const empResp = await getEmployeeById(employee.id);
     let position = 'N/A';
     let office = 'N/A';
-
-    if (employee) {
-      employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
-
-      // Fetch employee details to get position and office
-      const empResp = await getEmployeeById(employee.id);
-      if (empResp.success && empResp.data.length > 0) {
-        const empData = empResp.data[0];
-        position = empData.position?.name || 'N/A';
-        office = empData.office?.name || 'N/A';
-      }
-    } else {
-      // Fallback to extracting from assets if no employee provided
-      const empResp = await getEmployees(1, 10000);
-      const employees = empResp.data.items;
-
-      for (const asset of assets) {
-        const full = await UnifiedAssetService.getById(asset.id);
-
-        const latest = full.movements?.sort(
-          (a, b) =>
-            new Date(b.dateAssigned).getTime() -
-            new Date(a.dateAssigned).getTime()
-        )[0];
-
-        const emp =
-          employees.find((e: any) => e.id === latest?.plantillaEmployeeId) ||
-          employees.find((e: any) => e.id === latest?.nonPlantillaEmployeeId);
-
-        if (emp) {
-          employeeName = `${emp.lastName}, ${emp.firstName} ${emp.middleName ?? ''}`;
-          position = emp.position?.name || 'N/A';
-          office = emp.office?.name || 'N/A';
-          break; // Use the first found employee
-        }
-      }
+    if (empResp.success && empResp.data.length > 0) {
+      const empData = empResp.data[0];
+      position = empData.position?.name || 'N/A';
+      office = empData.office?.name || 'N/A';
     }
 
     for (const asset of assets) {
-      const full = await UnifiedAssetService.getById(asset.id);
-
       rows.push({
         qty: 1,
-        unit: full.unitOfMeasurement ?? "Unit",
-        description: full.description ?? "",
-        propertyNo: full.propertyNumber ?? "",
-        dateAcquired: full.dateAcquired?.slice(0, 10) ?? "",
-        amount: full.unitValue ?? null,
+        unit: asset.unitOfMeasurement ?? "Unit",
+        description: asset.description ?? "",
+        propertyNo: asset.propertyNumber ?? "",
+        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+        amount: asset.unitValue ?? null,
       });
     }
 
