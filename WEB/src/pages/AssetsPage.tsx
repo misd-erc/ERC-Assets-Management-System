@@ -69,6 +69,7 @@ export function AssetsPage() {
         search: searchTerm || undefined,
         category: categoryFilter !== 'all' ? categoryFilter : undefined,
         condition: conditionFilter !== 'all' ? conditionFilter : undefined,
+        office: officeFilter !== 'all' ? officeFilter : undefined,
         division: divisionFilter !== 'all' ? divisionFilter : undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,

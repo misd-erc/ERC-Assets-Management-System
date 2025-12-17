@@ -65,6 +65,10 @@ export class UnifiedAssetService {
       if (typeof apiItem.category === 'object') {
         categoryId = apiItem.category.id || 0;
         category = apiItem.category.name;
+      } else if (typeof apiItem.category === 'string') {
+        category = apiItem.category;
+        // Try to find the category ID if we have a categories list, otherwise keep as 0
+        categoryId = 0;
       } else if (typeof apiItem.category === 'number') {
         categoryId = apiItem.category;
       }
@@ -113,6 +117,7 @@ export class UnifiedAssetService {
     category?: string;
     condition?: string;
     division?: string;
+    office?: string;
     search?: string;
     startDate?: string;
     endDate?: string;
@@ -128,11 +133,18 @@ export class UnifiedAssetService {
       const pageNumber = filters?.PageNumber || 1;
       const pageSize = filters?.PageSize || 10;
 
+      // Check if specific filters (category, condition, office, division) are applied
+      const hasSpecificFilters = filters?.category && filters.category !== 'all' ||
+                                filters?.condition && filters.condition !== 'all' ||
+                                filters?.office && filters.office !== 'all' ||
+                                filters?.division && filters.division !== 'all';
+
       let searchString = '';
       if (filters) {
         if (filters.search) {
           searchString = filters.search;
-        } else if (filters.category) {
+        } else if (filters.category && !hasSpecificFilters) {
+          // Only use category as search if not using specific filtering
           searchString = filters.category;
         }
       }
@@ -140,44 +152,123 @@ export class UnifiedAssetService {
       // Determine which APIs to call based on group filter
       const groupFilter = filters?.group?.toLowerCase();
 
-      if (groupFilter === 'ppe') {
-        // Only fetch PPE assets
-        const ppeResponse = await ppeApi.list({
-          SearchString: searchString,
-          PageNumber: pageNumber,
-          PageSize: pageSize,
-          StartDate: filters?.startDate,
-          EndDate: filters?.endDate,
-          ActionBySystemUserId: actionBySystemUserId,
-          SessionKey: sessionKey,
-          GroupName: 'ppe',
-          EmployeeId: filters?.EmployeeId,
-        });
+      let allItems: Asset[] = [];
+      let totalCount = 0;
 
+      if (hasSpecificFilters) {
+        // When specific filters are applied, fetch all data and filter on frontend
+        const largePageSize = 10000; // Large page size to get all data
 
-        const ppeItems = (ppeResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'PPE'));
-        return { items: ppeItems, totalCount: ppeResponse.totalCount };
-      } else if (groupFilter === 'se') {
-        // Only fetch SE assets
-        const seResponse = await seApi.list({
-          SearchString: searchString,
-          PageNumber: pageNumber,
-          PageSize: pageSize,
-          StartDate: filters?.startDate,
-          EndDate: filters?.endDate,
-          ActionBySystemUserId: actionBySystemUserId,
-          SessionKey: sessionKey,
-          GroupName: 'se',
-          EmployeeId: filters?.EmployeeId,
-        });
+        if (groupFilter === 'ppe') {
+          const ppeResponse = await ppeApi.list({
+            SearchString: searchString,
+            PageNumber: 1,
+            PageSize: largePageSize,
+            StartDate: filters?.startDate,
+            EndDate: filters?.endDate,
+            ActionBySystemUserId: actionBySystemUserId,
+            SessionKey: sessionKey,
+            GroupName: 'ppe',
+            EmployeeId: filters?.EmployeeId,
+          });
+          allItems = (ppeResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'PPE'));
+          totalCount = ppeResponse.totalCount;
+        } else if (groupFilter === 'se') {
+          const seResponse = await seApi.list({
+            SearchString: searchString,
+            PageNumber: 1,
+            PageSize: largePageSize,
+            StartDate: filters?.startDate,
+            EndDate: filters?.endDate,
+            ActionBySystemUserId: actionBySystemUserId,
+            SessionKey: sessionKey,
+            GroupName: 'se',
+            EmployeeId: filters?.EmployeeId,
+          });
+          allItems = (seResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'SE'));
+          totalCount = seResponse.totalCount;
+        } else {
+          // Fetch both PPE and SE assets
+          const [ppeResponse, seResponse] = await Promise.all([
+            ppeApi.list({
+              SearchString: searchString,
+              PageNumber: 1,
+              PageSize: largePageSize,
+              StartDate: filters?.startDate,
+              EndDate: filters?.endDate,
+              ActionBySystemUserId: actionBySystemUserId,
+              SessionKey: sessionKey,
+              GroupName: 'ppe',
+              EmployeeId: filters?.EmployeeId,
+            }),
+            seApi.list({
+              SearchString: searchString,
+              PageNumber: 1,
+              PageSize: largePageSize,
+              StartDate: filters?.startDate,
+              EndDate: filters?.endDate,
+              ActionBySystemUserId: actionBySystemUserId,
+              SessionKey: sessionKey,
+              GroupName: 'se',
+              EmployeeId: filters?.EmployeeId,
+            })
+          ]);
 
+          const ppeItems = (ppeResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'PPE'));
+          const seItems = (seResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'SE'));
+          allItems = [...ppeItems, ...seItems];
+          totalCount = ppeResponse.totalCount + seResponse.totalCount;
+        }
 
-        const seItems = (seResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'SE'));
-        return { items: seItems, totalCount: seResponse.totalCount };
+        // Apply frontend filtering
+        let filteredItems = allItems;
+
+        // Filter by category
+        if (filters.category && filters.category !== 'all') {
+          filteredItems = filteredItems.filter(asset =>
+            asset.category?.toLowerCase() === filters.category?.toLowerCase()
+          );
+        }
+
+        // Filter by condition
+        if (filters.condition && filters.condition !== 'all') {
+          filteredItems = filteredItems.filter(asset =>
+            asset.movements?.some(movement =>
+              movement.condition?.toLowerCase() === filters.condition?.toLowerCase()
+            )
+          );
+        }
+
+        // Filter by office
+        if (filters.office && filters.office !== 'all') {
+          const officeId = parseInt(filters.office);
+          filteredItems = filteredItems.filter(asset =>
+            asset.movements?.some(movement =>
+              movement.actualOfficeId === officeId
+            )
+          );
+        }
+
+        // Filter by division
+        if (filters.division && filters.division !== 'all') {
+          const divisionId = parseInt(filters.division);
+          filteredItems = filteredItems.filter(asset =>
+            asset.movements?.some(movement =>
+              movement.actualDivisionId === divisionId
+            )
+          );
+        }
+
+        // Apply pagination to filtered results
+        const startIndex = (pageNumber - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+        return { items: paginatedItems, totalCount: filteredItems.length };
       } else {
-        // Fetch both PPE and SE assets (default behavior)
-        const [ppeResponse, seResponse] = await Promise.all([
-          ppeApi.list({
+        // Normal API call without specific filters
+        if (groupFilter === 'ppe') {
+          const ppeResponse = await ppeApi.list({
             SearchString: searchString,
             PageNumber: pageNumber,
             PageSize: pageSize,
@@ -187,8 +278,12 @@ export class UnifiedAssetService {
             SessionKey: sessionKey,
             GroupName: 'ppe',
             EmployeeId: filters?.EmployeeId,
-          }),
-          seApi.list({
+          });
+
+          const ppeItems = (ppeResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'PPE'));
+          return { items: ppeItems, totalCount: ppeResponse.totalCount };
+        } else if (groupFilter === 'se') {
+          const seResponse = await seApi.list({
             SearchString: searchString,
             PageNumber: pageNumber,
             PageSize: pageSize,
@@ -198,21 +293,44 @@ export class UnifiedAssetService {
             SessionKey: sessionKey,
             GroupName: 'se',
             EmployeeId: filters?.EmployeeId,
-          })
-        ]);
+          });
 
+          const seItems = (seResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'SE'));
+          return { items: seItems, totalCount: seResponse.totalCount };
+        } else {
+          // Fetch both PPE and SE assets (default behavior)
+          const [ppeResponse, seResponse] = await Promise.all([
+            ppeApi.list({
+              SearchString: searchString,
+              PageNumber: pageNumber,
+              PageSize: pageSize,
+              StartDate: filters?.startDate,
+              EndDate: filters?.endDate,
+              ActionBySystemUserId: actionBySystemUserId,
+              SessionKey: sessionKey,
+              GroupName: 'ppe',
+              EmployeeId: filters?.EmployeeId,
+            }),
+            seApi.list({
+              SearchString: searchString,
+              PageNumber: pageNumber,
+              PageSize: pageSize,
+              StartDate: filters?.startDate,
+              EndDate: filters?.endDate,
+              ActionBySystemUserId: actionBySystemUserId,
+              SessionKey: sessionKey,
+              GroupName: 'se',
+              EmployeeId: filters?.EmployeeId,
+            })
+          ]);
 
-        // Map PPE assets
-        const ppeItems = (ppeResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'PPE'));
+          const ppeItems = (ppeResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'PPE'));
+          const seItems = (seResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'SE'));
+          allItems = [...ppeItems, ...seItems];
+          totalCount = ppeResponse.totalCount + seResponse.totalCount;
 
-        // Map SE assets
-        const seItems = (seResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'SE'));
-
-        // Combine and return
-        const allItems = [...ppeItems, ...seItems];
-        const totalCount = ppeResponse.totalCount + seResponse.totalCount;
-
-        return { items: allItems, totalCount };
+          return { items: allItems, totalCount };
+        }
       }
     } catch (error) {
       console.error('Error fetching unified assets:', error);

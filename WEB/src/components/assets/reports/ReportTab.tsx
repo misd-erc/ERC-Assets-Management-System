@@ -1,196 +1,141 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ReportPreviewModal } from '@/components/assets/reports/ReportPreviewModal';
-import { EmployeeSelectModal } from '@/components/assets/reports/EmployeeSelectModal';
 import { motion } from 'framer-motion';
-import { FileText, Receipt, ArrowRightLeft, BookOpen, BarChart3, ClipboardList } from 'lucide-react';
+import {
+  FileText,
+  Receipt,
+  ArrowRightLeft,
+  BookOpen,
+  BarChart3,
+  ClipboardList,
+} from 'lucide-react';
+
 import { getEmployees } from '@/api/user-management/userApi';
 import { normalizeEmployee } from '@/utils/employeeUtils';
-import { NormalizedEmployee } from '@/types/asset/UnifiedAsset';
+import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
+import { UnifiedAssetService } from '@/services/UnifiedAssetService';
+import { PTAService } from '@/services/PTAService';
+
+import { ReportPreviewModal } from './ReportPreviewModal';
+import { EmployeeSelectModal } from './EmployeeSelectModal';
+import { RPCPPEFilterModal } from './RPCPPEFilterModal';
 import { PARGenerator } from './PARGenerator';
 import { ICSGenerator } from './ICSGenerator';
+import { RPCPPEPdfGenerator } from './RPCPPEExcelGenerator';
 
+import { toast } from 'sonner';
 
 export function ReportTab() {
-  const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
-  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
-  const [selectedReportType, setSelectedReportType] = useState<'PAR' | 'ICS' | null>(null);
   const [selectedEmployee, setSelectedEmployee] = useState<NormalizedEmployee | null>(null);
+  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
-  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showRPCPPE, setShowRPCPPE] = useState(false);
 
   useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const response = await getEmployees(1, 1000);
-        if (response.success) {
-          const normalized = response.data.items.map(normalizeEmployee);
-          setEmployees(normalized);
-        }
-      } catch (error) {
-        console.error('Failed to fetch employees:', error);
+    getEmployees(1, 1000).then(res => {
+      if (res.success) {
+        setEmployees(res.data.items.map(normalizeEmployee));
       }
-    };
-
-    fetchEmployees();
+    });
   }, []);
 
-  const handleReportClick = (reportType: 'PAR' | 'ICS') => {
-    setSelectedReportType(reportType);
-    setIsEmployeeModalOpen(true);
-  };
+  const handleEmployeeSelect = async (emp: NormalizedEmployee) => {
+    setSelectedEmployee(emp);
+    setShowEmployeeModal(false);
+    setShowPreview(true);
+    setLoadingPreview(true);
 
-  const handleEmployeeSelect = async (employee: NormalizedEmployee) => {
-    setSelectedEmployee(employee);
-    setIsEmployeeModalOpen(false);
-    setIsGeneratingPreview(true);
-    setIsPreviewModalOpen(true);
+    const url =
+      selectedReport === 'ICS'
+        ? await ICSGenerator.generateICSPreview(emp)
+        : await PARGenerator.generatePARPreview(emp);
 
-    try {
-      let url = '';
-      if (selectedReportType === 'ICS') {
-        url = await ICSGenerator.generateICSPreview(employee);
-      } else if (selectedReportType === 'PAR') {
-        url = await PARGenerator.generatePARPreview(employee);
-      }
-
-      if (url) {
-        setPreviewUrl(url);
-      } else {
-        // If no URL returned (no assets), close the preview modal
-        setIsPreviewModalOpen(false);
-        setSelectedReportType(null);
-        setSelectedEmployee(null);
-      }
-    } catch (error) {
-      console.error(`Failed to generate ${selectedReportType} preview:`, error);
-      alert(`Failed to generate ${selectedReportType} preview. Please try again.`);
-      setIsPreviewModalOpen(false);
-      setSelectedReportType(null);
-      setSelectedEmployee(null);
-    } finally {
-      setIsGeneratingPreview(false);
-    }
-  };
-
-  const handlePreviewClose = () => {
-    setIsPreviewModalOpen(false);
-    setPreviewUrl('');
-    setSelectedReportType(null);
-    setSelectedEmployee(null);
+    setPreviewUrl(url);
+    setLoadingPreview(false);
   };
 
   const handlePreviewConfirm = async () => {
-    if (!selectedEmployee || !selectedReportType) return;
+    if (!selectedEmployee || !selectedReport) return;
 
+    selectedReport === 'ICS'
+      ? await ICSGenerator.generateICS(selectedEmployee)
+      : await PARGenerator.generatePAR(selectedEmployee);
+
+    setShowPreview(false);
+  };
+
+  const handleRPCPPEGenerate = async (year: number, categoryId?: number) => {
     try {
-      if (selectedReportType === 'ICS') {
-        await ICSGenerator.generateICS(selectedEmployee);
-      } else if (selectedReportType === 'PAR') {
-        await PARGenerator.generatePAR(selectedEmployee);
+      const assets = await PTAService.getAllForRPCPPE(year, categoryId);
+
+      if (!assets.length) {
+        toast.error('No assets found for selected criteria');
+        return;
       }
-      console.log(`Report downloaded successfully for ${selectedReportType}:`, selectedEmployee);
+
+      await RPCPPEPdfGenerator.generate(assets, year, categoryId);
+      toast.success('RPCPPE PDF generated');
     } catch (error) {
-      console.error(`Failed to download ${selectedReportType} report:`, error);
-      alert(`Failed to download ${selectedReportType} report. Please try again.`);
+      console.error('RPCPPE generation failed:', error);
+      toast.error('RPCPPE generation failed');
     }
 
-    setIsPreviewModalOpen(false);
-    setPreviewUrl('');
-    setSelectedReportType(null);
-    setSelectedEmployee(null);
+    setShowRPCPPE(false);
   };
 
   const reports = [
-    {
-      title: 'RPCPPE',
-      description: 'Report on Property, Plant, and Equipment - Provides a comprehensive overview of all property, plant, and equipment assets.',
-      icon: FileText,
-      onClick: () => console.log('RPCPPE clicked'),
-    },
-    {
-      title: 'PAR',
-      description: 'Property Acknowledgement Receipt - Generates receipts for property acknowledgements and transfers.',
-      icon: Receipt,
-      onClick: () => handleReportClick('PAR'),
-    },
-    {
-      title: 'PTR',
-      description: 'Property Transfer Report - Tracks and reports on property transfers within the organization.',
-      icon: ArrowRightLeft,
-      onClick: () => console.log('PTR clicked'),
-    },
-    {
-      title: 'Reg SPI',
-      description: 'Registry of Semi-Expendable Property Issued.',
-      icon: BookOpen,
-      onClick: () => console.log('Register SPI clicked'),
-    },
-     {
-      title: 'ICS',
-      description: 'Inventory Custodian Slip - Creates slips for inventory custodians to acknowledge receipt of items.',
-      icon: ClipboardList,
-      onClick: () => handleReportClick('ICS'),
-    },
-    {
-      title: 'ITR',
-      description: 'Inventory Turnover Report - Analyzes inventory turnover rates and efficiency metrics.',
-      icon: BarChart3,
-      onClick: () => console.log('ITR clicked'),
-    },
+    { title: 'RPCPPE', icon: FileText, action: () => setShowRPCPPE(true) },
+    { title: 'PAR', icon: Receipt, action: () => { setSelectedReport('PAR'); setShowEmployeeModal(true); }},
+    { title: 'PTR', icon: ArrowRightLeft, action: () => {} },
+    { title: 'Register SPI', icon: BookOpen, action: () => {} },
+    { title: 'ICS', icon: ClipboardList, action: () => { setSelectedReport('ICS'); setShowEmployeeModal(true); }},
+    { title: 'ITR', icon: BarChart3, action: () => {} },
   ];
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Report Launcher</CardTitle>
-          <CardDescription>Select a report to generate</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reports.map((report, index) => {
-              const IconComponent = report.icon;
-              return (
-                <motion.div
-                  key={index}
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="cursor-pointer"
-                  onClick={report.onClick}
-                >
-                  <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 hover:from-blue-100 hover:to-indigo-200 transition-all duration-300 shadow-md hover:shadow-xl border-0 overflow-hidden">
-                    <CardHeader className="text-center pb-4">
-                      <div className="flex justify-center mb-3">
-                        <IconComponent className="w-10 h-10 text-indigo-600" />
-                      </div>
-                      <CardTitle className="text-lg font-semibold text-gray-800 mb-2">{report.title}</CardTitle>
-                      <CardDescription className="text-sm text-gray-600 leading-relaxed">{report.description}</CardDescription>
-                    </CardHeader>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+    <Card>
+      <CardHeader>
+        <CardTitle>Report Launcher</CardTitle>
+        <CardDescription>Select a report to generate</CardDescription>
+      </CardHeader>
 
-      <ReportPreviewModal
-        isOpen={isPreviewModalOpen}
-        onClose={handlePreviewClose}
-        onConfirm={handlePreviewConfirm}
-        pdfUrl={previewUrl}
-        reportType={selectedReportType || 'PAR'}
-        isLoading={isGeneratingPreview}
-      />
+      <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {reports.map((r, i) => (
+          <motion.div key={i} whileHover={{ scale: 1.05 }}>
+            <Card onClick={r.action} className="cursor-pointer text-center p-4">
+              <r.icon className="mx-auto mb-2" />
+              <CardTitle>{r.title}</CardTitle>
+            </Card>
+          </motion.div>
+        ))}
+      </CardContent>
 
       <EmployeeSelectModal
-        isOpen={isEmployeeModalOpen}
-        onClose={() => setIsEmployeeModalOpen(false)}
+        isOpen={showEmployeeModal}
         employees={employees}
+        onClose={() => setShowEmployeeModal(false)}
         onSelect={handleEmployeeSelect}
       />
-    </div>
+
+      <ReportPreviewModal
+        isOpen={showPreview}
+        pdfUrl={previewUrl}
+        reportType={selectedReport || 'PAR'}
+        isLoading={loadingPreview}
+        onClose={() => setShowPreview(false)}
+        onConfirm={handlePreviewConfirm}
+      />
+
+      <RPCPPEFilterModal
+        isOpen={showRPCPPE}
+        onClose={() => setShowRPCPPE(false)}
+        onGenerate={handleRPCPPEGenerate}
+      />
+    </Card>
   );
 }
