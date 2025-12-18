@@ -8,7 +8,7 @@ interface ReportPreviewModalProps {
   onClose: () => void;
   onConfirm: () => void;
   pdfUrl: string;
-  reportType: 'PAR' | 'ICS' | 'PTR' | 'ITR';
+  reportType: 'PAR' | 'ICS' | 'PTR' | 'ITR' | 'SESPI';
   isLoading?: boolean;
 }
 
@@ -23,7 +23,8 @@ export function ReportPreviewModal({
   const reportTitle = reportType === 'PAR' ? 'Property Acknowledgement Receipt (PAR)' :
                      reportType === 'ICS' ? 'Inventory Custodian Slip (ICS)' :
                      reportType === 'PTR' ? 'Property Transfer Report (PTR)' :
-                     'Inventory Transfer Report (ITR)';
+                     reportType === 'ITR' ? 'Inventory Transfer Report (ITR)' :
+                     'Report of Semi-Expandable Property Issued (SESPI)';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

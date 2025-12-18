@@ -86,7 +86,7 @@ export class RPCPPEPdfGenerator {
               REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT
             </Text>
             <Text style={styles.subtitle}>
-              Account Code {accountCode}
+              {categoryName ? `Account Code ${accountCode}` : 'All Categories'}
             </Text>
             <Text style={styles.subtitle}>As of December 31, {year}</Text>
           </View>

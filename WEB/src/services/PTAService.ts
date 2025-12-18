@@ -65,6 +65,42 @@ export class PTAService {
     }
   }
 
+  static async getAllForSE(year: number): Promise<Asset[]> {
+    try {
+      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const sessionKey = localStorage.getItem('sessionToken') || '';
+
+      const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
+      // Set StartDate to Jan 1 and EndDate to Dec 31 of the selected year
+      const startDate = `${year}-01-01`;
+      const endDate = `${year}-12-31`;
+
+      // Build URL with new API parameters for SE assets
+      const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?StartDate=${startDate}&EndDate=${endDate}&GroupName=se&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch SE PTA data');
+      }
+
+      const data = await response.json();
+      const ptaItems: PTAData[] = data.data?.items || [];
+
+      // Convert PTA data to Asset format
+      const assets: Asset[] = ptaItems.map(item => this.mapPTAToAsset(item));
+
+      return assets;
+    } catch (error) {
+      console.error('Error fetching SE PTA data:', error);
+      throw error;
+    }
+  }
+
   private static mapPTAToAsset(ptaItem: PTAData): Asset {
     // Map category string to categoryId
     const categoryMapping: { [key: string]: number } = {

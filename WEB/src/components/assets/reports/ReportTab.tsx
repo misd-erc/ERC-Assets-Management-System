@@ -22,6 +22,7 @@ import { RPCPPEFilterModal } from './RPCPPEFilterModal';
 import { PARGenerator } from './PARGenerator';
 import { ICSGenerator } from './ICSGenerator';
 import { RPCPPEPdfGenerator } from './RPCPPEExcelGenerator';
+import { SESPIExcelGenerator } from './SESPIGenerator';
 import { PTRGenerationModal } from './PTRGenerationModal';
 import { ITRGenerationModal } from './ITRGenerationModal';
 import { toast } from 'sonner';
@@ -29,7 +30,7 @@ import { toast } from 'sonner';
 export function ReportTab() {
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<NormalizedEmployee | null>(null);
-  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | null>(null);
+  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
 
@@ -63,11 +64,16 @@ export function ReportTab() {
   };
 
   const handlePreviewConfirm = async () => {
-    if (!selectedEmployee || !selectedReport) return;
+    if (!selectedReport) return;
 
-    selectedReport === 'ICS'
-      ? await ICSGenerator.generateICS(selectedEmployee)
-      : await PARGenerator.generatePAR(selectedEmployee);
+    if (selectedReport === 'SESPI') {
+      await SESPIExcelGenerator.generate();
+      toast.success('Register SPI PDF generated');
+    } else if (selectedEmployee) {
+      selectedReport === 'ICS'
+        ? await ICSGenerator.generateICS(selectedEmployee)
+        : await PARGenerator.generatePAR(selectedEmployee);
+    }
 
     setShowPreview(false);
   };
@@ -103,11 +109,28 @@ export function ReportTab() {
     setShowRPCPPE(false);
   };
 
+  const handleSESPIGenerate = async () => {
+    setSelectedReport('SESPI');
+    setShowPreview(true);
+    setLoadingPreview(true);
+
+    try {
+      const url = await SESPIExcelGenerator.generateSESPIPreview();
+      setPreviewUrl(url);
+      setLoadingPreview(false);
+    } catch (error) {
+      console.error('SE SPI preview generation failed:', error);
+      toast.error('SE SPI preview generation failed');
+      setShowPreview(false);
+      setLoadingPreview(false);
+    }
+  };
+
   const reports = [
     { title: 'RPCPPE', icon: FileText, action: () => setShowRPCPPE(true) },
     { title: 'PAR', icon: Receipt, action: () => { setSelectedReport('PAR'); setShowEmployeeModal(true); }},
     { title: 'PTR', icon: ArrowRightLeft, action: () => setShowPTR(true) },
-    { title: 'Register SPI', icon: BookOpen, action: () => {} },
+    { title: 'Register SPI', icon: BookOpen, action: () => handleSESPIGenerate() },
     { title: 'ICS', icon: ClipboardList, action: () => { setSelectedReport('ICS'); setShowEmployeeModal(true); }},
     { title: 'ITR', icon: BarChart3, action: () => setShowITR(true) },
   ];
