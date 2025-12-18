@@ -25,13 +25,14 @@ interface PTRGenerationModalProps {
   employees: NormalizedEmployee[];
 }
 
-type Step = 'from' | 'to' | 'date' | 'assets' | 'preview';
+type Step = 'from' | 'to' | 'date' | 'transferType' | 'assets' | 'preview';
 
 export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGenerationModalProps) {
   const [currentStep, setCurrentStep] = useState<Step>('from');
   const [fromEmployee, setFromEmployee] = useState<NormalizedEmployee | null>(null);
   const [toEmployee, setToEmployee] = useState<NormalizedEmployee | null>(null);
   const [transferDate, setTransferDate] = useState<Date>(new Date());
+  const [transferType, setTransferType] = useState<'DONATION' | 'REASSIGNMENT' | 'RELOCATE' | 'OTHERS'>('REASSIGNMENT');
   const [availableAssets, setAvailableAssets] = useState<Asset[]>([]);
   const [selectedAssets, setSelectedAssets] = useState<Asset[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
@@ -85,7 +86,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setTransferDate(date);
-      setCurrentStep('assets');
+      setCurrentStep('transferType');
     }
   };
 
@@ -115,7 +116,8 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         fromEmployee,
         toEmployee,
         transferDate.toISOString().slice(0, 10),
-        selectedAssets
+        selectedAssets,
+        transferType
       );
       setPreviewUrl(url);
     } catch (error) {
@@ -132,7 +134,8 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         fromEmployee,
         toEmployee,
         transferDate.toISOString().slice(0, 10),
-        selectedAssets
+        selectedAssets,
+        transferType
       );
       onClose();
     } catch (error) {
@@ -237,6 +240,39 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
           </div>
         );
 
+      case 'transferType':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Select Transfer Type</h3>
+            <p className="text-sm text-gray-600">
+              From: {fromEmployee?.label} → To: {toEmployee?.label} on {format(transferDate, "PPP")}
+            </p>
+            <div className="space-y-2">
+              {[
+                { value: 'DONATION', label: 'Donation' },
+                { value: 'REASSIGNMENT', label: 'Reassignment' },
+                { value: 'RELOCATE', label: 'Relocate' },
+                { value: 'OTHERS', label: 'Others' },
+              ].map((type) => (
+                <div key={type.value} className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id={type.value}
+                    name="transferType"
+                    value={type.value}
+                    checked={transferType === type.value}
+                    onChange={(e) => setTransferType(e.target.value as typeof transferType)}
+                    className="w-4 h-4"
+                  />
+                  <label htmlFor={type.value} className="text-sm font-medium">
+                    {type.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
       case 'assets':
         return (
           <div className="space-y-4">
@@ -297,7 +333,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
   };
 
   const getStepNumber = (step: Step) => {
-    const steps: Step[] = ['from', 'to', 'date', 'assets', 'preview'];
+    const steps: Step[] = ['from', 'to', 'date', 'transferType', 'assets', 'preview'];
     return steps.indexOf(step) + 1;
   };
 
@@ -306,6 +342,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
       case 'from': return !!fromEmployee;
       case 'to': return canProceedFromTo;
       case 'date': return !!transferDate;
+      case 'transferType': return !!transferType;
       case 'assets': return selectedAssets.length > 0;
       case 'preview': return !!previewUrl;
       default: return false;
@@ -318,7 +355,8 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
     switch (currentStep) {
       case 'from': setCurrentStep('to'); break;
       case 'to': setCurrentStep('date'); break;
-      case 'date': setCurrentStep('assets'); break;
+      case 'date': setCurrentStep('transferType'); break;
+      case 'transferType': setCurrentStep('assets'); break;
       case 'assets': handleAssetsNext(); break;
       case 'preview': setShowPreview(true); break;
     }
@@ -328,7 +366,8 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
     switch (currentStep) {
       case 'to': setCurrentStep('from'); break;
       case 'date': setCurrentStep('to'); break;
-      case 'assets': setCurrentStep('date'); break;
+      case 'transferType': setCurrentStep('date'); break;
+      case 'assets': setCurrentStep('transferType'); break;
       case 'preview': setCurrentStep('assets'); break;
     }
   };
@@ -339,7 +378,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              Generate PTR - Step {getStepNumber(currentStep)} of 5
+              Generate PTR - Step {getStepNumber(currentStep)} of 6
             </DialogTitle>
           </DialogHeader>
 

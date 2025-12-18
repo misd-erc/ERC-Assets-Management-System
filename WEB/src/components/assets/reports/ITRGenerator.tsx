@@ -136,7 +136,7 @@ const ITRDocument = ({
       <View style={styles.headerContainer}>
         <Image src={logoSrc} style={styles.logo} />
         <View style={styles.titleBlock}>
-          <Text style={styles.headerTitle}>INVENTORY TRANSFER REPORT</Text>
+          <Text style={styles.headerTitle}>18. INVENTORY TRANSFER REPORT (ITR)</Text>
         </View>
       </View>
 

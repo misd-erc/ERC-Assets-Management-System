@@ -10,36 +10,48 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
-import { getEmployeeById } from "@/api/user-management/userApi";
 import { ppeApi } from "@/api/ppe";
 import { seApi } from "@/api/se";
+
+/* -------------------------------- CONSTANTS -------------------------------- */
 
 const logoSrc =
   typeof window !== "undefined"
     ? `${window.location.origin}/images/erc-logo.png`
     : "/mnt/data/erc-logo.png";
 
-const today = new Date().toISOString().slice(0, 10);
+type TransferType = "DONATION" | "REASSIGNMENT" | "RELOCATE" | "OTHERS";
+
+const APPROVED_BY = {
+  name: "CHERRY LYNN S. GONZALES",
+  designation: "Administrative Officer V-FAS, GSD",
+};
+
+const RELEASED_BY = {
+  name: "ROSELLE M. GUINTU",
+  designation: "Administrative Officer III - FAS, GSD",
+};
+
+/* -------------------------------- STYLES -------------------------------- */
 
 const styles = StyleSheet.create({
   page: {
     padding: 20,
     fontSize: 9,
     fontFamily: "Helvetica",
-    flexDirection: "column",
   },
 
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 12,
+    marginTop: 10,
   },
 
   logo: { width: 55, height: 55 },
 
   titleBlock: { flex: 1, textAlign: "center" },
 
-  headerTitle: { fontSize: 14, fontWeight: "bold", marginTop: 2 },
+  headerTitle: { fontSize: 14, fontWeight: "bold" },
 
   blueRule: {
     height: 4,
@@ -55,9 +67,56 @@ const styles = StyleSheet.create({
 
   metaLeft: { flex: 1 },
 
-  metaRight: { width: 160 },
+  metaRight: { width: 170 },
 
   metaLabel: { fontSize: 9, fontWeight: "bold" },
+
+  /* ---------------- Transfer Type ---------------- */
+
+  transferBlock: {
+    marginTop: 8,
+    borderWidth: 0.8,
+    borderColor: "#000",
+    padding: 6,
+  },
+
+  transferTitle: {
+    fontSize: 9,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+
+  transferRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  transferItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "48%",
+    marginBottom: 4,
+  },
+
+  checkbox: {
+    width: 10,
+    height: 10,
+    borderWidth: 1,
+    borderColor: "#000",
+    marginRight: 6,
+    textAlign: "center",
+    fontSize: 8,
+    lineHeight: 10,
+  },
+
+  othersLine: {
+    borderBottomWidth: 0.8,
+    borderColor: "#000",
+    flex: 1,
+    marginLeft: 4,
+  },
+
+  /* ---------------- Table ---------------- */
 
   tableWrap: { marginTop: 8 },
 
@@ -86,6 +145,8 @@ const styles = StyleSheet.create({
   colAmount: { width: "15%" },
   colCondition: { width: "10%" },
 
+  /* ---------------- Signatures ---------------- */
+
   sigRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -97,9 +158,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  sigTitle: { fontSize: 10, marginBottom: 8 },
+  sigTitle: { fontSize: 10, marginBottom: 6 },
 
-  sigName: { fontSize: 10, textAlign: "center" },
+  sigNameAboveLine: {
+    fontSize: 10,
+    marginBottom: 2,
+    textAlign: "center",
+  },
 
   sigLine: {
     borderBottomWidth: 1,
@@ -108,18 +173,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 
-  sigLabel: { fontSize: 8, marginBottom: 6, textAlign: "center" },
+  sigLabel: { fontSize: 8, marginBottom: 4 },
+
+  sigDesignation: { fontSize: 8 },
 });
+
+/* -------------------------------- HELPERS -------------------------------- */
 
 function currency(val?: number | null) {
   if (val == null) return "";
   return (
-    "PHP" +
+    "PHP " +
     new Intl.NumberFormat("en-PH", { minimumFractionDigits: 2 }).format(val)
   );
 }
 
-function truncate(text = "", max = 250) {
+function truncate(text = "", max = 200) {
   return text.length > max ? text.slice(0, max) + "…" : text;
 }
 
@@ -131,21 +200,26 @@ interface PTRRow {
   condition: string;
 }
 
+/* -------------------------------- DOCUMENT -------------------------------- */
+
 const PTRDocument = ({
   rows,
   ptrNumber,
   transferDate,
   fromEmployee,
   toEmployee,
+  transferType,
 }: {
   rows: PTRRow[];
   ptrNumber: string;
   transferDate: string;
   fromEmployee: NormalizedEmployee;
   toEmployee: NormalizedEmployee;
+  transferType: TransferType;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
+      {/* HEADER */}
       <View style={styles.headerContainer}>
         <Image src={logoSrc} style={styles.logo} />
         <View style={styles.titleBlock}>
@@ -155,16 +229,19 @@ const PTRDocument = ({
 
       <View style={styles.blueRule} />
 
+      {/* META */}
       <View style={styles.metaRow}>
         <View style={styles.metaLeft}>
           <Text style={styles.metaLabel}>
             Entity Name: ENERGY REGULATORY COMMISSION
           </Text>
           <Text style={{ marginTop: 4 }}>
-            From Accountable Officer: {fromEmployee.lastName}, {fromEmployee.firstName}
+            From Accountable Officer: {fromEmployee.lastName},{" "}
+            {fromEmployee.firstName}
           </Text>
           <Text style={{ marginTop: 4 }}>
-            To Accountable Officer: {toEmployee.lastName}, {toEmployee.firstName}
+            To Accountable Officer: {toEmployee.lastName},{" "}
+            {toEmployee.firstName}
           </Text>
         </View>
 
@@ -174,76 +251,138 @@ const PTRDocument = ({
         </View>
       </View>
 
+      {/* TRANSFER TYPE */}
+      <View style={styles.transferBlock}>
+        <Text style={styles.transferTitle}>
+          Transfer Type: (check only one)
+        </Text>
+
+        <View style={styles.transferRow}>
+          <View style={styles.transferItem}>
+            <Text style={styles.checkbox}>
+              {transferType === "DONATION" ? "✓" : ""}
+            </Text>
+            <Text>Donation</Text>
+          </View>
+
+          <View style={styles.transferItem}>
+            <Text style={styles.checkbox}>
+              {transferType === "RELOCATE" ? "✓" : ""}
+            </Text>
+            <Text>Relocate</Text>
+          </View>
+        </View>
+
+        <View style={styles.transferRow}>
+          <View style={styles.transferItem}>
+            <Text style={styles.checkbox}>
+              {transferType === "REASSIGNMENT" ? "✓" : ""}
+            </Text>
+            <Text>Reassignment</Text>
+          </View>
+
+          <View style={styles.transferItem}>
+            <Text style={styles.checkbox}>
+              {transferType === "OTHERS" ? "✓" : ""}
+            </Text>
+            <Text>Others (Specify)</Text>
+            <View style={styles.othersLine} />
+          </View>
+        </View>
+      </View>
+
+      {/* TABLE */}
       <View style={styles.tableWrap}>
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
-            <Text style={[styles.cell, styles.colDateAcquired]}>Date Acquired</Text>
-            <Text style={[styles.cell, styles.colPropertyNo]}>Property Number</Text>
-            <Text style={[styles.cell, styles.colDescription]}>Description</Text>
+            <Text style={[styles.cell, styles.colDateAcquired]}>
+              Date Acquired
+            </Text>
+            <Text style={[styles.cell, styles.colPropertyNo]}>
+              Property Number
+            </Text>
+            <Text style={[styles.cell, styles.colDescription]}>
+              Description
+            </Text>
             <Text style={[styles.cell, styles.colAmount]}>Amount</Text>
             <Text style={[styles.cell, styles.colCondition]}>Condition</Text>
           </View>
 
           {rows.map((r, i) => (
             <View key={i} style={styles.tableRow}>
-              <Text style={[styles.cell, styles.colDateAcquired]}>{r.dateAcquired}</Text>
-              <Text style={[styles.cell, styles.colPropertyNo]}>{r.propertyNo}</Text>
-              <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
-              <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
-              <Text style={[styles.cell, styles.colCondition]}>{r.condition}</Text>
+              <Text style={[styles.cell, styles.colDateAcquired]}>
+                {r.dateAcquired}
+              </Text>
+              <Text style={[styles.cell, styles.colPropertyNo]}>
+                {r.propertyNo}
+              </Text>
+              <Text style={[styles.cell, styles.colDescription]}>
+                {truncate(r.description)}
+              </Text>
+              <Text style={[styles.cell, styles.colAmount]}>
+                {currency(r.amount)}
+              </Text>
+              <Text style={[styles.cell, styles.colCondition]}>
+                {r.condition}
+              </Text>
             </View>
           ))}
         </View>
       </View>
 
+      {/* SIGNATURES */}
       <View style={styles.sigRow}>
         <View style={styles.sigBlock}>
-          <Text style={styles.sigTitle}>Approved By:</Text>
+          <Text style={styles.sigTitle}>Approved by:</Text>
+          <Text style={styles.sigNameAboveLine}>{APPROVED_BY.name}</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Signature over Printed Name</Text>
+          <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
+          <Text style={styles.sigDesignation}>
+            {APPROVED_BY.designation}
+          </Text>
+          <Text style={styles.sigDesignation}>{transferDate}</Text>
         </View>
 
         <View style={styles.sigBlock}>
-          <Text style={styles.sigTitle}>Released By:</Text>
-          <Text style={styles.sigName}>{fromEmployee.lastName}, {fromEmployee.firstName}</Text>
+          <Text style={styles.sigTitle}>Released / Issued by:</Text>
+          <Text style={styles.sigNameAboveLine}>{RELEASED_BY.name}</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Signature over Printed Name</Text>
+          <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
+          <Text style={styles.sigDesignation}>
+            {RELEASED_BY.designation}
+          </Text>
+          <Text style={styles.sigDesignation}>{transferDate}</Text>
         </View>
 
         <View style={styles.sigBlock}>
-          <Text style={styles.sigTitle}>Received By:</Text>
-          <Text style={styles.sigName}>{toEmployee.lastName}, {toEmployee.firstName}</Text>
+          <Text style={styles.sigTitle}>Received by:</Text>
+          <Text style={styles.sigNameAboveLine}>
+            {toEmployee.lastName}, {toEmployee.firstName}
+          </Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Signature over Printed Name</Text>
+          <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
+          <Text style={styles.sigDesignation}>
+            Accountable Officer
+          </Text>
+          <Text style={styles.sigDesignation}>{transferDate}</Text>
         </View>
       </View>
     </Page>
   </Document>
 );
 
+/* -------------------------------- GENERATOR -------------------------------- */
+
 export class PTRGenerator {
   static async generatePTRPreview(
     fromEmployee: NormalizedEmployee,
     toEmployee: NormalizedEmployee,
     transferDate: string,
-    selectedAssets: Asset[]
+    selectedAssets: Asset[],
+    transferType: TransferType
   ): Promise<string> {
     const ptrNumber = this.generatePTRNumber();
-    const rows: PTRRow[] = [];
-
-    for (const asset of selectedAssets) {
-      const latestMovement = asset.movements
-        .filter(m => m.isActive)
-        .sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
-
-      rows.push({
-        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-        propertyNo: asset.propertyNumber ?? "",
-        description: asset.description ?? "",
-        amount: asset.unitValue ?? null,
-        condition: latestMovement?.condition ?? "Good",
-      });
-    }
+    const rows = this.buildRows(selectedAssets);
 
     const blob = await pdf(
       <PTRDocument
@@ -252,6 +391,7 @@ export class PTRGenerator {
         transferDate={transferDate}
         fromEmployee={fromEmployee}
         toEmployee={toEmployee}
+        transferType={transferType}
       />
     ).toBlob();
 
@@ -262,26 +402,22 @@ export class PTRGenerator {
     fromEmployee: NormalizedEmployee,
     toEmployee: NormalizedEmployee,
     transferDate: string,
-    selectedAssets: Asset[]
+    selectedAssets: Asset[],
+    transferType: TransferType
   ) {
     const ptrNumber = this.generatePTRNumber();
-    const rows: PTRRow[] = [];
+    const rows = this.buildRows(selectedAssets);
 
     for (const asset of selectedAssets) {
       const latestMovement = asset.movements
         .filter(m => m.isActive)
-        .sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+        .sort(
+          (a, b) =>
+            new Date(b.dateAssigned).getTime() -
+            new Date(a.dateAssigned).getTime()
+        )[0];
 
-      rows.push({
-        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-        propertyNo: asset.propertyNumber ?? "",
-        description: asset.description ?? "",
-        amount: asset.unitValue ?? null,
-        condition: latestMovement?.condition ?? "Good",
-      });
-
-      // Update movement for each asset
-      if (asset.group === 'PPE') {
+      if (asset.group === "PPE") {
         await ppeApi.editMovement({
           id: latestMovement?.id || 0,
           ptaId: asset.id,
@@ -293,9 +429,9 @@ export class PTRGenerator {
           actualOfficeId: latestMovement?.actualOfficeId || 0,
           actualDivisionId: latestMovement?.actualDivisionId || 0,
           isActive: true,
-          actionBySystemUserId: parseInt(localStorage.getItem('systemUserId') || '0'),
-          sessionKey: localStorage.getItem('sessionToken') || '',
-          model: asset.model || '',
+          actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
+          sessionKey: localStorage.getItem("sessionToken") || "",
+          model: asset.model || "",
         });
       } else {
         await seApi.editMovement({
@@ -309,9 +445,9 @@ export class PTRGenerator {
           actualOfficeId: latestMovement?.actualOfficeId || 0,
           actualDivisionId: latestMovement?.actualDivisionId || 0,
           isActive: true,
-          actionBySystemUserId: parseInt(localStorage.getItem('systemUserId') || '0'),
-          sessionKey: localStorage.getItem('sessionToken') || '',
-          model: asset.model || '',
+          actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
+          sessionKey: localStorage.getItem("sessionToken") || "",
+          model: asset.model || "",
         });
       }
     }
@@ -323,23 +459,46 @@ export class PTRGenerator {
         transferDate={transferDate}
         fromEmployee={fromEmployee}
         toEmployee={toEmployee}
+        transferType={transferType}
       />
     ).toBlob();
 
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `PTR_${ptrNumber}.pdf`;
-    link.click();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${ptrNumber}.pdf`;
+    a.click();
     URL.revokeObjectURL(url);
+  }
+
+  private static buildRows(assets: Asset[]): PTRRow[] {
+    return assets.map(asset => {
+      const latestMovement = asset.movements
+        .filter(m => m.isActive)
+        .sort(
+          (a, b) =>
+            new Date(b.dateAssigned).getTime() -
+            new Date(a.dateAssigned).getTime()
+        )[0];
+
+      return {
+        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+        propertyNo: asset.propertyNumber ?? "",
+        description: asset.description ?? "",
+        amount: asset.unitValue ?? null,
+        condition: latestMovement?.condition ?? "Good",
+      };
+    });
   }
 
   private static generatePTRNumber(): string {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const time = now.getTime();
-    return `PTR-${year}${month}${day}-${time}`;
+    return `PTR-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(now.getDate()).padStart(2, "0")}-${now
+      .getTime()
+      .toString()
+      .slice(-4)}`;
   }
 }
