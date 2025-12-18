@@ -22,7 +22,8 @@ import { RPCPPEFilterModal } from './RPCPPEFilterModal';
 import { PARGenerator } from './PARGenerator';
 import { ICSGenerator } from './ICSGenerator';
 import { RPCPPEPdfGenerator } from './RPCPPEExcelGenerator';
-
+import { PTRGenerationModal } from './PTRGenerationModal';
+import { ITRGenerationModal } from './ITRGenerationModal';
 import { toast } from 'sonner';
 
 export function ReportTab() {
@@ -35,6 +36,8 @@ export function ReportTab() {
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showRPCPPE, setShowRPCPPE] = useState(false);
+  const [showPTR, setShowPTR] = useState(false);
+  const [showITR, setShowITR] = useState(false);
 
   useEffect(() => {
     getEmployees(1, 1000).then(res => {
@@ -91,10 +94,10 @@ export function ReportTab() {
   const reports = [
     { title: 'RPCPPE', icon: FileText, action: () => setShowRPCPPE(true) },
     { title: 'PAR', icon: Receipt, action: () => { setSelectedReport('PAR'); setShowEmployeeModal(true); }},
-    { title: 'PTR', icon: ArrowRightLeft, action: () => {} },
+    { title: 'PTR', icon: ArrowRightLeft, action: () => setShowPTR(true) },
     { title: 'Register SPI', icon: BookOpen, action: () => {} },
     { title: 'ICS', icon: ClipboardList, action: () => { setSelectedReport('ICS'); setShowEmployeeModal(true); }},
-    { title: 'ITR', icon: BarChart3, action: () => {} },
+    { title: 'ITR', icon: BarChart3, action: () => setShowITR(true) },
   ];
 
   return (
@@ -135,6 +138,17 @@ export function ReportTab() {
         isOpen={showRPCPPE}
         onClose={() => setShowRPCPPE(false)}
         onGenerate={handleRPCPPEGenerate}
+      />
+
+      <PTRGenerationModal
+        isOpen={showPTR}
+        onClose={() => setShowPTR(false)}
+        employees={employees}
+      />
+
+      <ITRGenerationModal
+        isOpen={showITR}
+        onClose={() => setShowITR(false)}
       />
     </Card>
   );
