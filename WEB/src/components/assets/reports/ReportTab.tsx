@@ -8,6 +8,12 @@ import {
   BookOpen,
   BarChart3,
   ClipboardList,
+  Sparkles,
+  TrendingUp,
+  FileSpreadsheet,
+  FileBarChart,
+  FileCheck,
+  FileSearch,
 } from 'lucide-react';
 
 import { getEmployees } from '@/api/user-management/userApi';
@@ -167,32 +173,94 @@ export function ReportTab() {
   };
 
   const reports = [
-    { title: 'RPCPPE', icon: FileText, action: () => setShowRPCPPE(true) },
-    { title: 'PAR', icon: Receipt, action: () => { setSelectedReport('PAR'); setShowEmployeeModal(true); }},
-    { title: 'PTR', icon: ArrowRightLeft, action: () => setShowPTR(true) },
-    { title: 'Register SPI', icon: BookOpen, action: () => handleSESPIGenerate() },
-    { title: 'ICS', icon: ClipboardList, action: () => { setSelectedReport('ICS'); setShowEmployeeModal(true); }},
-    { title: 'ITR', icon: BarChart3, action: () => setShowITR(true) },
+    {
+      title: 'RPCPPE',
+      subtitle: 'Physical Count of PPE',
+      icon: FileSpreadsheet,
+      bgColor: 'bg-blue-600',
+      action: () => setShowRPCPPE(true)
+    },
+    {
+      title: 'PAR',
+      subtitle: 'Property Acknowledgement',
+      icon: FileCheck,
+      bgColor: 'bg-green-600',
+      action: () => { setSelectedReport('PAR'); setShowEmployeeModal(true); }
+    },
+    {
+      title: 'PTR',
+      subtitle: 'Property Transfer',
+      icon: ArrowRightLeft,
+      bgColor: 'bg-orange-600',
+      action: () => setShowPTR(true)
+    },
+    {
+      title: 'Register SPI',
+      subtitle: 'Semi-Expandable Property',
+      icon: BookOpen,
+      bgColor: 'bg-purple-600',
+      action: () => handleSESPIGenerate()
+    },
+    {
+      title: 'ICS',
+      subtitle: 'Inventory Custodian Slip',
+      icon: ClipboardList,
+      bgColor: 'bg-red-600',
+      action: () => { setSelectedReport('ICS'); setShowEmployeeModal(true); }
+    },
+    {
+      title: 'ITR',
+      subtitle: 'Inventory Transfer',
+      icon: TrendingUp,
+      bgColor: 'bg-teal-600',
+      action: () => setShowITR(true)
+    },
   ];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Report Launcher</CardTitle>
-        <CardDescription>Select a report to generate</CardDescription>
-      </CardHeader>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6">
+      <div className="max-w-7xl mx-auto space-y-12">
+        {/* Header Section */}
+        <div className="text-center space-y-4">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+            Reports
+          </h1>
+          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+            Generate comprehensive reports for asset management
+          </p>
+        </div>
 
-      <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {reports.map((r, i) => (
-          <motion.div key={i} whileHover={{ scale: 1.05 }}>
-            <Card onClick={r.action} className="cursor-pointer text-center p-4">
-              <r.icon className="mx-auto mb-2" />
-              <CardTitle>{r.title}</CardTitle>
+        {/* Reports Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {reports.map((r, i) => (
+            <Card
+              key={i}
+              onClick={r.action}
+              className="cursor-pointer group hover:shadow-xl transition-all duration-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+            >
+              <CardContent className="p-8 text-center">
+                <div className="space-y-4">
+                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-xl ${r.bgColor} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <r.icon className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">
+                      {r.title}
+                    </h3>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      {r.subtitle}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
-          </motion.div>
-        ))}
-      </CardContent>
+          ))}
+        </div>
 
+
+      </div>
+
+      {/* Modals */}
       <EmployeeSelectModal
         isOpen={showEmployeeModal}
         employees={employees}
@@ -226,6 +294,6 @@ export function ReportTab() {
         onClose={() => setShowITR(false)}
         employees={employees}
       />
-    </Card>
+    </div>
   );
 }
