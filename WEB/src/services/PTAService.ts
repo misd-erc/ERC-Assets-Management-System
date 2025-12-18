@@ -31,8 +31,17 @@ export class PTAService {
 
       const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
-      // Fetch PTA data for RPCPPE
-      const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageNumber=1&PageSize=10000&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}&GroupName=ppe`;
+      // Set StartDate to Jan 1 and EndDate to Dec 31 of the selected year
+      const startDate = `${year}-01-01`;
+      const endDate = `${year}-12-31`;
+
+      // Build URL with new API parameters
+      let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?StartDate=${startDate}&EndDate=${endDate}&GroupName=ppe&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+
+      // Add CategoryId if specified
+      if (categoryId) {
+        url += `&CategoryId=${categoryId}`;
+      }
 
       const response = await fetch(url, {
         method: 'GET',
@@ -47,24 +56,7 @@ export class PTAService {
       const ptaItems: PTAData[] = data.data?.items || [];
 
       // Convert PTA data to Asset format for RPCPPE generation
-      let assets: Asset[] = ptaItems.map(item => this.mapPTAToAsset(item));
-
-      // Filter by year using dateAssigned from latest movement
-      assets = assets.filter(asset => {
-        const latestMovement = asset.movements
-          .filter(m => m.dateAssigned)
-          .sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
-
-        if (!latestMovement) return false;
-
-        const movementYear = new Date(latestMovement.dateAssigned).getFullYear();
-        return movementYear === year;
-      });
-
-      // Filter by category if specified
-      if (categoryId) {
-        assets = assets.filter(asset => asset.categoryId === categoryId);
-      }
+      const assets: Asset[] = ptaItems.map(item => this.mapPTAToAsset(item));
 
       return assets;
     } catch (error) {

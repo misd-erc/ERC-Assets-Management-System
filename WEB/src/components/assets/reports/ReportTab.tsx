@@ -72,8 +72,20 @@ export function ReportTab() {
     setShowPreview(false);
   };
 
-  const handleRPCPPEGenerate = async (year: number, categoryId?: number) => {
+  const handleRPCPPEGenerate = async (year: number, categoryName?: string) => {
     try {
+      // Map categoryName to categoryId for API call
+      const categoryMapping: { [key: string]: number } = {
+        'Information and Communication Technology Equipment': 1,
+        'Communication Equipment': 2,
+        'Medical Equipment': 3,
+        'Office Equipment': 4,
+        'Furniture and Fixtures': 5,
+        'Books and Reference Materials': 6,
+        'Other PPE': 7,
+      };
+      const categoryId = categoryName ? categoryMapping[categoryName] : undefined;
+
       const assets = await PTAService.getAllForRPCPPE(year, categoryId);
 
       if (!assets.length) {
@@ -81,7 +93,7 @@ export function ReportTab() {
         return;
       }
 
-      await RPCPPEPdfGenerator.generate(assets, year, categoryId);
+      await RPCPPEPdfGenerator.generate(assets, year, categoryName);
       toast.success('RPCPPE PDF generated');
     } catch (error) {
       console.error('RPCPPE generation failed:', error);

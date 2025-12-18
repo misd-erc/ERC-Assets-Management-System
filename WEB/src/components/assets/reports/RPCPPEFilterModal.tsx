@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 interface RPCPPEFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerate: (year: number, categoryId?: number) => void;
+  onGenerate: (year: number, categoryName?: string) => void;
 }
 
 export function RPCPPEFilterModal({ isOpen, onClose, onGenerate }: RPCPPEFilterModalProps) {
@@ -35,7 +35,9 @@ export function RPCPPEFilterModal({ isOpen, onClose, onGenerate }: RPCPPEFilterM
       toast.error('Please select a year');
       return;
     }
-    onGenerate(Number(year), categoryId ? Number(categoryId) : undefined);
+    const selectedCategory = categories.find(cat => cat.id.toString() === categoryId);
+    const categoryName = categoryId === 'all' ? undefined : selectedCategory?.name;
+    onGenerate(Number(year), categoryName);
   };
 
   return (
@@ -64,7 +66,7 @@ export function RPCPPEFilterModal({ isOpen, onClose, onGenerate }: RPCPPEFilterM
 
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">Category</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
+            <Select value={categoryId} onValueChange={(value) => setCategoryId(value)}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>

@@ -55,24 +55,27 @@ const styles = StyleSheet.create({
 });
 
 export class RPCPPEPdfGenerator {
-  static getAccountCode(categoryId?: number): string {
-    const accountCodes: { [key: number]: string } = {
-      1: '10605030 – Information and Communication Technology Equipment',
-      2: '10605070 – Communication Equipment',
-      3: '10605080 – Medical Equipment',
-      4: '10605090 – Office Equipment',
-      5: '10605100 – Furniture and Fixtures',
-      6: '10605110 – Books and Reference Materials',
-      7: '10605120 – Other PPE',
+  static getAccountCode(categoryName?: string): string {
+    const accountCodes: { [key: string]: string } = {
+      'Office Equipment': '10605020 - Office Equipment',
+      'Information and Communication Technology Equipment': '10605030 - Information and Communication Technology Equipment',
+      'Communication Equipment': '10605070 - Communication Equipment',
+      'Technical and Scientific Equipment': '10605140 - Technical and Scientific Equipment',
+      'Motor Vehicles': '10606010 - Motor Vehicles',
+      'Furniture and Fixtures': '10607010 - Furniture and Fixtures',
+      'Sports Equipment': '10605130 - Sports Equipment',
     };
 
-    return accountCodes[categoryId || 0] || '10605030 – Information and Communication Technology Equipment';
+    return accountCodes[categoryName || ''] || '10605030 - Information and Communication Technology Equipment';
   }
 
-  static async generate(assets: Asset[], year: number, categoryId?: number) {
+  static async generate(assets: Asset[], year: number, categoryName?: string) {
     if (!assets?.length) return;
 
-    const accountCode = this.getAccountCode(categoryId);
+    const accountCode = this.getAccountCode(categoryName);
+
+    // Calculate total amount
+    const totalAmount = assets.reduce((sum, asset) => sum + (asset.unitValue || 0), 0);
 
     const doc = (
       <Document>
@@ -100,8 +103,7 @@ export class RPCPPEPdfGenerator {
               {[
                 'ARTICLE',
                 'DESCRIPTION',
-                'PROPERTY NUMBER (OLD)',
-                'PROPERTY NUMBER (NEW)',
+                'PROPERTY NUMBER (OLD)/(NEW)',
                 'UNIT',
                 'UNIT VALUE',
                 'DATE ACQUIRED',
@@ -128,27 +130,40 @@ export class RPCPPEPdfGenerator {
                 <Text style={[styles.td, { width: this.colWidth(2) }]}>
                   {asset.propertyNumber || ''}
                 </Text>
-                <Text style={[styles.td, { width: this.colWidth(3) }]}>
-                  {asset.propertyNumber}
-                </Text>
-                <Text style={[styles.td, styles.center, { width: this.colWidth(4) }]}>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(3) }]}>
                   {asset.unitOfMeasurement}
                 </Text>
-                <Text style={[styles.td, styles.center, { width: this.colWidth(5) }]}>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(4) }]}>
                   {asset.unitValue?.toLocaleString()}
                 </Text>
-                <Text style={[styles.td, styles.center, { width: this.colWidth(6) }]}>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(5) }]}>
                   {this.formatDate(asset.dateAcquired)}
                 </Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(6) }]}>1</Text>
                 <Text style={[styles.td, styles.center, { width: this.colWidth(7) }]}>1</Text>
-                <Text style={[styles.td, styles.center, { width: this.colWidth(8) }]}>1</Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(8) }]}>-</Text>
                 <Text style={[styles.td, styles.center, { width: this.colWidth(9) }]}>-</Text>
-                <Text style={[styles.td, styles.center, { width: this.colWidth(10) }]}>-</Text>
-                <Text style={[styles.td, { width: this.colWidth(11) }]}>
+                <Text style={[styles.td, { width: this.colWidth(10) }]}>
                   in good condition
                 </Text>
               </View>
             ))}
+
+            {/* TOTAL ROW */}
+            <View style={styles.row}>
+              <Text style={[styles.td, { width: this.colWidth(0) + this.colWidth(1) + this.colWidth(2) + this.colWidth(3) }]}>
+                {' '}
+              </Text>
+              <Text style={[styles.td, styles.center, { width: this.colWidth(4) }]}>
+                TOTAL
+              </Text>
+              <Text style={[styles.td, styles.center, { width: this.colWidth(5) }]}>
+                {totalAmount.toLocaleString()}
+              </Text>
+              <Text style={[styles.td, { width: this.colWidth(6) + this.colWidth(7) + this.colWidth(8) + this.colWidth(9) + this.colWidth(10) + this.colWidth(11) }]}>
+                {' '}
+              </Text>
+            </View>
           </View>
         </Page>
       </Document>
@@ -159,7 +174,7 @@ export class RPCPPEPdfGenerator {
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = categoryId ? `RPCPPE_${year}_Category_${categoryId}.pdf` : `RPCPPE_${year}_All_Categories.pdf`;
+    a.download = categoryName ? `RPCPPE_${year}_Category_${categoryName.replace(/\s+/g, '_')}.pdf` : `RPCPPE_${year}_All_Categories.pdf`;
     a.click();
   }
 
@@ -176,8 +191,7 @@ export class RPCPPEPdfGenerator {
     return [
       30,  // ARTICLE
       170, // DESCRIPTION
-      115, // OLD
-      115, // NEW
+      230, // PROPERTY NUMBER (OLD)/(NEW)
       50,  // UNIT
       70,  // VALUE
       70,  // DATE
