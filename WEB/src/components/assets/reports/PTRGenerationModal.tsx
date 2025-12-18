@@ -285,24 +285,45 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
             ) : availableAssets.length === 0 ? (
               <div>No assets found for this employee</div>
             ) : (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {availableAssets.map(asset => (
-                  <div key={asset.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`asset-${asset.id}`}
-                      checked={selectedAssets.some(a => a.id === asset.id)}
-                      onCheckedChange={(checked) =>
-                        handleAssetToggle(asset, checked as boolean)
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="select-all-assets"
+                    checked={selectedAssets.length === availableAssets.length && availableAssets.length > 0}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedAssets(availableAssets);
+                      } else {
+                        setSelectedAssets([]);
                       }
-                    />
-                    <label
-                      htmlFor={`asset-${asset.id}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      {asset.propertyNumber} - {asset.description}
-                    </label>
-                  </div>
-                ))}
+                    }}
+                  />
+                  <label
+                    htmlFor="select-all-assets"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Select All
+                  </label>
+                </div>
+                <div className="max-h-60 overflow-y-auto space-y-2">
+                  {availableAssets.map(asset => (
+                    <div key={asset.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`asset-${asset.id}`}
+                        checked={selectedAssets.some(a => a.id === asset.id)}
+                        onCheckedChange={(checked) =>
+                          handleAssetToggle(asset, checked as boolean)
+                        }
+                      />
+                      <label
+                        htmlFor={`asset-${asset.id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {asset.propertyNumber} - {asset.description}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
