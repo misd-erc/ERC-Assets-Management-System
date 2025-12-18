@@ -30,9 +30,11 @@ import { toast } from 'sonner';
 export function ReportTab() {
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<NormalizedEmployee | null>(null);
-  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | null>(null);
+  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | 'RPCPPE' | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [rpcppeYear, setRpcppeYear] = useState<number | null>(null);
+  const [rpcppeCategoryName, setRpcppeCategoryName] = useState<string | undefined>(undefined);
 
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -69,6 +71,33 @@ export function ReportTab() {
     if (selectedReport === 'SESPI') {
       await SESPIExcelGenerator.generate();
       toast.success('Register SPI PDF generated');
+    } else if (selectedReport === 'RPCPPE') {
+      try {
+        // Map categoryName to categoryId for API call
+        const categoryMapping: { [key: string]: number } = {
+          'Information and Communication Technology Equipment': 1,
+          'Communication Equipment': 2,
+          'Medical Equipment': 3,
+          'Office Equipment': 4,
+          'Furniture and Fixtures': 5,
+          'Books and Reference Materials': 6,
+          'Other PPE': 7,
+        };
+        const categoryId = rpcppeCategoryName ? categoryMapping[rpcppeCategoryName] : undefined;
+
+        const assets = await PTAService.getAllForRPCPPE(rpcppeYear!, categoryId);
+
+        if (!assets.length) {
+          toast.error('No assets found for selected criteria');
+          return;
+        }
+
+        await RPCPPEPdfGenerator.generate(assets, rpcppeYear!, rpcppeCategoryName);
+        toast.success('RPCPPE PDF generated');
+      } catch (error) {
+        console.error('RPCPPE generation failed:', error);
+        toast.error('RPCPPE generation failed');
+      }
     } else if (selectedEmployee) {
       selectedReport === 'ICS'
         ? await ICSGenerator.generateICS(selectedEmployee)
@@ -99,11 +128,22 @@ export function ReportTab() {
         return;
       }
 
-      await RPCPPEPdfGenerator.generate(assets, year, categoryName);
-      toast.success('RPCPPE PDF generated');
+      // Generate preview
+      setLoadingPreview(true);
+      const url = await RPCPPEPdfGenerator.generatePreview(assets, year, categoryName);
+      setPreviewUrl(url);
+      setLoadingPreview(false);
+
+      // Store parameters for download
+      setRpcppeYear(year);
+      setRpcppeCategoryName(categoryName);
+
+      // Show preview modal
+      setSelectedReport('RPCPPE');
+      setShowPreview(true);
     } catch (error) {
-      console.error('RPCPPE generation failed:', error);
-      toast.error('RPCPPE generation failed');
+      console.error('RPCPPE preview generation failed:', error);
+      toast.error('RPCPPE preview generation failed');
     }
 
     setShowRPCPPE(false);

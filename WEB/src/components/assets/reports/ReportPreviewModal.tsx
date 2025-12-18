@@ -8,7 +8,7 @@ interface ReportPreviewModalProps {
   onClose: () => void;
   onConfirm: () => void;
   pdfUrl: string;
-  reportType: 'PAR' | 'ICS' | 'PTR' | 'ITR' | 'SESPI';
+  reportType: 'PAR' | 'ICS' | 'PTR' | 'ITR' | 'SESPI' | 'RPCPPE';
   isLoading?: boolean;
 }
 
@@ -24,6 +24,7 @@ export function ReportPreviewModal({
                      reportType === 'ICS' ? 'Inventory Custodian Slip (ICS)' :
                      reportType === 'PTR' ? 'Property Transfer Report (PTR)' :
                      reportType === 'ITR' ? 'Inventory Transfer Report (ITR)' :
+                     reportType === 'RPCPPE' ? 'Report on the Physical Count of Property, Plant and Equipment (RPCPPE)' :
                      'Report of Semi-Expandable Property Issued (SESPI)';
 
   return (

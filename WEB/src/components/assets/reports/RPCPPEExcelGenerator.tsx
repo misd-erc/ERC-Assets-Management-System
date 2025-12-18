@@ -178,6 +178,110 @@ export class RPCPPEPdfGenerator {
     a.click();
   }
 
+  static async generatePreview(assets: Asset[], year: number, categoryName?: string): Promise<string> {
+    if (!assets?.length) return '';
+
+    const accountCode = this.getAccountCode(categoryName);
+
+    // Calculate total amount
+    const totalAmount = assets.reduce((sum, asset) => sum + (asset.unitValue || 0), 0);
+
+    const doc = (
+      <Document>
+        <Page size="LEGAL" orientation="landscape" style={styles.page}>
+          {/* HEADER */}
+          <View style={styles.header}>
+            <Text style={styles.title}>
+              REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT
+            </Text>
+            <Text style={styles.subtitle}>
+              {categoryName ? `Account Code ${accountCode}` : 'All Categories'}
+            </Text>
+            <Text style={styles.subtitle}>As of December 31, {year}</Text>
+          </View>
+
+          <Text style={styles.info}>Fund Cluster: Regular Agency Fund</Text>
+          <Text style={styles.info}>
+            For which CHERRY LYNN S. GONZALES, Administrative Officer V, Energy Regulatory
+            Commission is accountable having assumed such accountability on AUGUST 2018.
+          </Text>
+
+          {/* TABLE */}
+          <View style={styles.table}>
+            <View style={styles.row}>
+              {[
+                'ARTICLE',
+                'DESCRIPTION',
+                'PROPERTY NUMBER (OLD)/(NEW)',
+                'UNIT',
+                'UNIT VALUE',
+                'DATE ACQUIRED',
+                'QTY (CARD)',
+                'QTY (PHYSICAL)',
+                'SHORT/OVER QTY',
+                'SHORT/OVER VALUE',
+                'REMARKS',
+              ].map((h, i) => (
+                <Text key={i} style={[styles.th, { width: this.colWidth(i) }]}>
+                  {h}
+                </Text>
+              ))}
+            </View>
+
+            {assets.map((asset, index) => (
+              <View key={asset.id} style={styles.row}>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(0) }]}>
+                  {index + 1}
+                </Text>
+                <Text style={[styles.td, { width: this.colWidth(1) }]}>
+                  {asset.description}
+                </Text>
+                <Text style={[styles.td, { width: this.colWidth(2) }]}>
+                  {asset.propertyNumber || ''}
+                </Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(3) }]}>
+                  {asset.unitOfMeasurement}
+                </Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(4) }]}>
+                  {asset.unitValue?.toLocaleString()}
+                </Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(5) }]}>
+                  {this.formatDate(asset.dateAcquired)}
+                </Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(6) }]}>1</Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(7) }]}>1</Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(8) }]}>-</Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(9) }]}>-</Text>
+                <Text style={[styles.td, { width: this.colWidth(10) }]}>
+                  in good condition
+                </Text>
+              </View>
+            ))}
+
+            {/* TOTAL ROW */}
+            <View style={styles.row}>
+              <Text style={[styles.td, { width: this.colWidth(0) + this.colWidth(1) + this.colWidth(2) + this.colWidth(3) }]}>
+                {' '}
+              </Text>
+              <Text style={[styles.td, styles.center, { width: this.colWidth(4) }]}>
+                TOTAL
+              </Text>
+              <Text style={[styles.td, styles.center, { width: this.colWidth(5) }]}>
+                {totalAmount.toLocaleString()}
+              </Text>
+              <Text style={[styles.td, { width: this.colWidth(6) + this.colWidth(7) + this.colWidth(8) + this.colWidth(9) + this.colWidth(10) + this.colWidth(11) }]}>
+                {' '}
+              </Text>
+            </View>
+          </View>
+        </Page>
+      </Document>
+    );
+
+    const blob = await pdf(doc).toBlob();
+    return URL.createObjectURL(blob);
+  }
+
   private static formatDate(date?: string) {
     if (!date) return '';
     return new Date(date).toLocaleDateString('en-US', {
