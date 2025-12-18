@@ -305,7 +305,7 @@ const PTRDocument = ({
               Description
             </Text>
             <Text style={[styles.cell, styles.colAmount]}>Amount</Text>
-            <Text style={[styles.cell, styles.colCondition]}>Condition</Text>
+            <Text style={[styles.cell, styles.colCondition]}>Condition of PPE</Text>
           </View>
 
           {rows.map((r, i) => (
@@ -410,7 +410,7 @@ export class PTRGenerator {
 
     for (const asset of selectedAssets) {
       const latestMovement = asset.movements
-        .filter(m => m.isActive)
+        ?.filter(m => m.isActive)
         .sort(
           (a, b) =>
             new Date(b.dateAssigned).getTime() -
@@ -474,7 +474,7 @@ export class PTRGenerator {
   private static buildRows(assets: Asset[]): PTRRow[] {
     return assets.map(asset => {
       const latestMovement = asset.movements
-        .filter(m => m.isActive)
+        ?.filter(m => m.isActive)
         .sort(
           (a, b) =>
             new Date(b.dateAssigned).getTime() -
@@ -486,7 +486,7 @@ export class PTRGenerator {
         propertyNo: asset.propertyNumber ?? "",
         description: asset.description ?? "",
         amount: asset.unitValue ?? null,
-        condition: latestMovement?.condition ?? "Good",
+        condition: latestMovement?.condition || "Good",
       };
     });
   }

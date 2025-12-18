@@ -9,34 +9,48 @@ import {
   StyleSheet,
   Image,
 } from "@react-pdf/renderer";
-import { Asset } from "@/types/asset/UnifiedAsset";
+import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
+import { seApi } from "@/api/se";
+
+/* -------------------------------- CONSTANTS -------------------------------- */
 
 const logoSrc =
   typeof window !== "undefined"
     ? `${window.location.origin}/images/erc-logo.png`
     : "/mnt/data/erc-logo.png";
 
-const today = new Date().toISOString().slice(0, 10);
+type TransferType = "DONATION" | "REASSIGNMENT" | "RELOCATE" | "OTHERS";
+
+const APPROVED_BY = {
+  name: "CHERRY LYNN S. GONZALES",
+  designation: "Administrative Officer V-FAS, GSD",
+};
+
+const RELEASED_BY = {
+  name: "ROSELLE M. GUINTU",
+  designation: "Administrative Officer III - FAS, GSD",
+};
+
+/* -------------------------------- STYLES -------------------------------- */
 
 const styles = StyleSheet.create({
   page: {
     padding: 20,
     fontSize: 9,
     fontFamily: "Helvetica",
-    flexDirection: "column",
   },
 
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 12,
+    marginTop: 10,
   },
 
   logo: { width: 55, height: 55 },
 
   titleBlock: { flex: 1, textAlign: "center" },
 
-  headerTitle: { fontSize: 14, fontWeight: "bold", marginTop: 2 },
+  headerTitle: { fontSize: 14, fontWeight: "bold" },
 
   blueRule: {
     height: 4,
@@ -45,18 +59,63 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  assetInfoContainer: {
-    marginBottom: 12,
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
 
-  assetInfoRow: {
-    flexDirection: "row",
+  metaLeft: { flex: 1 },
+
+  metaRight: { width: 170 },
+
+  metaLabel: { fontSize: 9, fontWeight: "bold" },
+
+  /* ---------------- Transfer Type ---------------- */
+
+  transferBlock: {
+    marginTop: 8,
+    borderWidth: 0.8,
+    borderColor: "#000",
+    padding: 6,
+  },
+
+  transferTitle: {
+    fontSize: 9,
+    fontWeight: "bold",
     marginBottom: 4,
   },
 
-  assetInfoLabel: { fontSize: 9, fontWeight: "bold", width: 120 },
+  transferRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
 
-  assetInfoValue: { fontSize: 9, flex: 1 },
+  transferItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "48%",
+    marginBottom: 4,
+  },
+
+  checkbox: {
+    width: 10,
+    height: 10,
+    borderWidth: 1,
+    borderColor: "#000",
+    marginRight: 6,
+    textAlign: "center",
+    fontSize: 8,
+    lineHeight: 10,
+  },
+
+  othersLine: {
+    borderBottomWidth: 0.8,
+    borderColor: "#000",
+    flex: 1,
+    marginLeft: 4,
+  },
+
+  /* ---------------- Table ---------------- */
 
   tableWrap: { marginTop: 8 },
 
@@ -79,191 +138,348 @@ const styles = StyleSheet.create({
 
   cell: { padding: 3, fontSize: 8 },
 
-  colDate: { width: "12%" },
-  colParItrNumber: { width: "18%" },
-  colFromEmployee: { width: "20%" },
-  colToEmployee: { width: "20%" },
-  colOfficeDivision: { width: "15%" },
-  colCondition: { width: "15%" },
+  colDateAcquired: { width: "15%" },
+  colPropertyNo: { width: "20%" },
+  colDescription: { width: "40%" },
+  colAmount: { width: "15%" },
+  colCondition: { width: "10%" },
 
-  footerContainer: {
+  /* ---------------- Signatures ---------------- */
+
+  sigRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 25,
   },
 
-  footerBlock: {
-    width: "45%",
+  sigBlock: {
+    width: "30%",
     textAlign: "center",
   },
 
-  footerTitle: { fontSize: 10, marginBottom: 8 },
+  sigTitle: { fontSize: 10, marginBottom: 6 },
 
-  footerName: { fontSize: 10, textAlign: "center" },
+  sigNameAboveLine: {
+    fontSize: 10,
+    marginBottom: 2,
+    textAlign: "center",
+  },
 
-  footerLine: {
+  sigLine: {
     borderBottomWidth: 1,
     borderColor: "#000",
     height: 18,
     marginBottom: 4,
   },
 
-  footerLabel: { fontSize: 8, marginBottom: 6, textAlign: "center" },
+  sigLabel: { fontSize: 8, marginBottom: 4 },
+
+  sigDesignation: { fontSize: 8 },
 });
 
-function truncate(text = "", max = 250) {
+/* -------------------------------- HELPERS -------------------------------- */
+
+function currency(val?: number | null) {
+  if (val == null) return "";
+  return (
+    "PHP " +
+    new Intl.NumberFormat("en-PH", { minimumFractionDigits: 2 }).format(val)
+  );
+}
+
+function truncate(text = "", max = 200) {
   return text.length > max ? text.slice(0, max) + "…" : text;
 }
 
 interface ITRRow {
-  date: string;
-  parItrNumber: string;
-  fromEmployee: string;
-  toEmployee: string;
-  officeDivision: string;
+  dateAcquired: string;
+  propertyNo: string;
+  description: string;
+  amount: number | null;
   condition: string;
 }
 
+/* -------------------------------- DOCUMENT -------------------------------- */
+
 const ITRDocument = ({
-  asset,
-  movements,
+  rows,
+  itrNumber,
+  transferDate,
+  fromEmployee,
+  toEmployee,
+  transferType,
 }: {
-  asset: Asset;
-  movements: ITRRow[];
+  rows: ITRRow[];
+  itrNumber: string;
+  transferDate: string;
+  fromEmployee: NormalizedEmployee;
+  toEmployee: NormalizedEmployee;
+  transferType: TransferType;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
+      {/* HEADER */}
       <View style={styles.headerContainer}>
         <Image src={logoSrc} style={styles.logo} />
         <View style={styles.titleBlock}>
-          <Text style={styles.headerTitle}>18. INVENTORY TRANSFER REPORT (ITR)</Text>
+          <Text style={styles.headerTitle}>INVENTORY TRANSFER REPORT</Text>
         </View>
       </View>
 
       <View style={styles.blueRule} />
 
-      <View style={styles.assetInfoContainer}>
-        <View style={styles.assetInfoRow}>
-          <Text style={styles.assetInfoLabel}>Property Number:</Text>
-          <Text style={styles.assetInfoValue}>{asset.propertyNumber}</Text>
-        </View>
-        <View style={styles.assetInfoRow}>
-          <Text style={styles.assetInfoLabel}>Description:</Text>
-          <Text style={styles.assetInfoValue}>{asset.description}</Text>
-        </View>
-        <View style={styles.assetInfoRow}>
-          <Text style={styles.assetInfoLabel}>Category:</Text>
-          <Text style={styles.assetInfoValue}>{asset.category}</Text>
-        </View>
-        <View style={styles.assetInfoRow}>
-          <Text style={styles.assetInfoLabel}>Acquisition Date:</Text>
-          <Text style={styles.assetInfoValue}>{asset.dateAcquired?.slice(0, 10)}</Text>
-        </View>
-        <View style={styles.assetInfoRow}>
-          <Text style={styles.assetInfoLabel}>Unit Value:</Text>
-          <Text style={styles.assetInfoValue}>
-            PHP{asset.unitValue?.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+      {/* META */}
+      <View style={styles.metaRow}>
+        <View style={styles.metaLeft}>
+          <Text style={styles.metaLabel}>
+            Entity Name: ENERGY REGULATORY COMMISSION
           </Text>
+          <Text style={{ marginTop: 4 }}>
+            From Accountable Officer: {fromEmployee.lastName},{" "}
+            {fromEmployee.firstName}
+          </Text>
+          <Text style={{ marginTop: 4 }}>
+            To Accountable Officer: {toEmployee.lastName},{" "}
+            {toEmployee.firstName}
+          </Text>
+        </View>
+
+        <View style={styles.metaRight}>
+          <Text style={styles.metaLabel}>ITR No.: {itrNumber}</Text>
+          <Text style={{ marginTop: 4 }}>Date: {transferDate}</Text>
         </View>
       </View>
 
+      {/* TRANSFER TYPE */}
+      <View style={styles.transferBlock}>
+        <Text style={styles.transferTitle}>
+          Transfer Type: (check only one)
+        </Text>
+
+        <View style={styles.transferRow}>
+          <View style={styles.transferItem}>
+            <Text style={styles.checkbox}>
+              {transferType === "DONATION" ? "✓" : ""}
+            </Text>
+            <Text>Donation</Text>
+          </View>
+
+          <View style={styles.transferItem}>
+            <Text style={styles.checkbox}>
+              {transferType === "RELOCATE" ? "✓" : ""}
+            </Text>
+            <Text>Relocate</Text>
+          </View>
+        </View>
+
+        <View style={styles.transferRow}>
+          <View style={styles.transferItem}>
+            <Text style={styles.checkbox}>
+              {transferType === "REASSIGNMENT" ? "✓" : ""}
+            </Text>
+            <Text>Reassignment</Text>
+          </View>
+
+          <View style={styles.transferItem}>
+            <Text style={styles.checkbox}>
+              {transferType === "OTHERS" ? "✓" : ""}
+            </Text>
+            <Text>Others (Specify)</Text>
+            <View style={styles.othersLine} />
+          </View>
+        </View>
+      </View>
+
+      {/* TABLE */}
       <View style={styles.tableWrap}>
         <View style={styles.table}>
           <View style={styles.tableHeaderRow}>
-            <Text style={[styles.cell, styles.colDate]}>Date</Text>
-            <Text style={[styles.cell, styles.colParItrNumber]}>PAR/PTR/ITR Number</Text>
-            <Text style={[styles.cell, styles.colFromEmployee]}>From Employee</Text>
-            <Text style={[styles.cell, styles.colToEmployee]}>To Employee</Text>
-            <Text style={[styles.cell, styles.colOfficeDivision]}>Office/Division</Text>
-            <Text style={[styles.cell, styles.colCondition]}>Condition</Text>
+            <Text style={[styles.cell, styles.colDateAcquired]}>
+              Date Acquired
+            </Text>
+            <Text style={[styles.cell, styles.colPropertyNo]}>
+              Property Number
+            </Text>
+            <Text style={[styles.cell, styles.colDescription]}>
+              Description
+            </Text>
+            <Text style={[styles.cell, styles.colAmount]}>Amount</Text>
+            <Text style={[styles.cell, styles.colCondition]}>Condition of SE</Text>
           </View>
 
-          {movements.map((m, i) => (
+          {rows.map((r, i) => (
             <View key={i} style={styles.tableRow}>
-              <Text style={[styles.cell, styles.colDate]}>{m.date}</Text>
-              <Text style={[styles.cell, styles.colParItrNumber]}>{m.parItrNumber}</Text>
-              <Text style={[styles.cell, styles.colFromEmployee]}>{truncate(m.fromEmployee, 20)}</Text>
-              <Text style={[styles.cell, styles.colToEmployee]}>{truncate(m.toEmployee, 20)}</Text>
-              <Text style={[styles.cell, styles.colOfficeDivision]}>{truncate(m.officeDivision, 15)}</Text>
-              <Text style={[styles.cell, styles.colCondition]}>{m.condition}</Text>
+              <Text style={[styles.cell, styles.colDateAcquired]}>
+                {r.dateAcquired}
+              </Text>
+              <Text style={[styles.cell, styles.colPropertyNo]}>
+                {r.propertyNo}
+              </Text>
+              <Text style={[styles.cell, styles.colDescription]}>
+                {truncate(r.description)}
+              </Text>
+              <Text style={[styles.cell, styles.colAmount]}>
+                {currency(r.amount)}
+              </Text>
+              <Text style={[styles.cell, styles.colCondition]}>
+                {r.condition}
+              </Text>
             </View>
           ))}
         </View>
       </View>
 
-      <View style={styles.footerContainer}>
-        <View style={styles.footerBlock}>
-          <Text style={styles.footerTitle}>Prepared By:</Text>
-          <View style={styles.footerLine} />
-          <Text style={styles.footerLabel}>Signature over Printed Name</Text>
+      {/* SIGNATURES */}
+      <View style={styles.sigRow}>
+        <View style={styles.sigBlock}>
+          <Text style={styles.sigTitle}>Approved by:</Text>
+          <Text style={styles.sigNameAboveLine}>{APPROVED_BY.name}</Text>
+          <View style={styles.sigLine} />
+          <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
+          <Text style={styles.sigDesignation}>
+            {APPROVED_BY.designation}
+          </Text>
+          <Text style={styles.sigDesignation}>{transferDate}</Text>
         </View>
 
-        <View style={styles.footerBlock}>
-          <Text style={styles.footerTitle}>Noted By:</Text>
-          <View style={styles.footerLine} />
-          <Text style={styles.footerLabel}>Signature over Printed Name</Text>
-          <Text style={{ fontSize: 8, marginTop: 8, textAlign: "center" }}>
-            Date Generated: {today}
+        <View style={styles.sigBlock}>
+          <Text style={styles.sigTitle}>Released / Issued by:</Text>
+          <Text style={styles.sigNameAboveLine}>{RELEASED_BY.name}</Text>
+          <View style={styles.sigLine} />
+          <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
+          <Text style={styles.sigDesignation}>
+            {RELEASED_BY.designation}
           </Text>
+          <Text style={styles.sigDesignation}>{transferDate}</Text>
+        </View>
+
+        <View style={styles.sigBlock}>
+          <Text style={styles.sigTitle}>Received by:</Text>
+          <Text style={styles.sigNameAboveLine}>
+            {toEmployee.lastName}, {toEmployee.firstName}
+          </Text>
+          <View style={styles.sigLine} />
+          <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
+          <Text style={styles.sigDesignation}>
+            Accountable Officer
+          </Text>
+          <Text style={styles.sigDesignation}>{transferDate}</Text>
         </View>
       </View>
     </Page>
   </Document>
 );
 
+/* -------------------------------- GENERATOR -------------------------------- */
+
 export class ITRGenerator {
-  static async generateITRPreview(asset: Asset): Promise<string> {
-    const movements: ITRRow[] = asset.movements
-      .filter(m => m.isActive)
-      .sort((a, b) => new Date(a.dateAssigned).getTime() - new Date(b.dateAssigned).getTime())
-      .map(m => ({
-        date: m.dateAssigned.slice(0, 10),
-        parItrNumber: m.parItrNumber,
-        fromEmployee: m.employee?.firstName && m.employee?.lastName
-          ? `${m.employee.lastName}, ${m.employee.firstName}`
-          : 'N/A',
-        toEmployee: 'N/A', // Would need to track transfer history
-        officeDivision: m.office?.name || m.division?.name || 'N/A',
-        condition: m.condition,
-      }));
+  static async generateITRPreview(
+    fromEmployee: NormalizedEmployee,
+    toEmployee: NormalizedEmployee,
+    transferDate: string,
+    selectedAssets: Asset[],
+    transferType: TransferType
+  ): Promise<string> {
+    const itrNumber = this.generateITRNumber();
+    const rows = this.buildRows(selectedAssets);
 
     const blob = await pdf(
       <ITRDocument
-        asset={asset}
-        movements={movements}
+        rows={rows}
+        itrNumber={itrNumber}
+        transferDate={transferDate}
+        fromEmployee={fromEmployee}
+        toEmployee={toEmployee}
+        transferType={transferType}
       />
     ).toBlob();
 
     return URL.createObjectURL(blob);
   }
 
-  static async generateITR(asset: Asset) {
-    const movements: ITRRow[] = asset.movements
-      .filter(m => m.isActive)
-      .sort((a, b) => new Date(a.dateAssigned).getTime() - new Date(b.dateAssigned).getTime())
-      .map(m => ({
-        date: m.dateAssigned.slice(0, 10),
-        parItrNumber: m.parItrNumber,
-        fromEmployee: m.employee?.firstName && m.employee?.lastName
-          ? `${m.employee.lastName}, ${m.employee.firstName}`
-          : 'N/A',
-        toEmployee: 'N/A', // Would need to track transfer history
-        officeDivision: m.office?.name || m.division?.name || 'N/A',
-        condition: m.condition,
-      }));
+  static async generateITR(
+    fromEmployee: NormalizedEmployee,
+    toEmployee: NormalizedEmployee,
+    transferDate: string,
+    selectedAssets: Asset[],
+    transferType: TransferType
+  ) {
+    const itrNumber = this.generateITRNumber();
+    const rows = this.buildRows(selectedAssets);
+
+    for (const asset of selectedAssets) {
+      const latestMovement = asset.movements
+        ?.filter(m => m.isActive)
+        .sort(
+          (a, b) =>
+            new Date(b.dateAssigned).getTime() -
+            new Date(a.dateAssigned).getTime()
+        )[0];
+
+      await seApi.editMovement({
+        id: latestMovement?.id || 0,
+        ptaId: asset.id,
+        dateAssigned: transferDate,
+        parItrNumber: itrNumber,
+        plantillaEmployeeId: toEmployee.id.toString(),
+        nonPlantillaEmployeeId: null,
+        condition: latestMovement?.condition ?? "Good",
+        actualOfficeId: latestMovement?.actualOfficeId || 0,
+        actualDivisionId: latestMovement?.actualDivisionId || 0,
+        isActive: true,
+        actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
+        sessionKey: localStorage.getItem("sessionToken") || "",
+        model: asset.model || "",
+      });
+    }
 
     const blob = await pdf(
       <ITRDocument
-        asset={asset}
-        movements={movements}
+        rows={rows}
+        itrNumber={itrNumber}
+        transferDate={transferDate}
+        fromEmployee={fromEmployee}
+        toEmployee={toEmployee}
+        transferType={transferType}
       />
     ).toBlob();
 
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `ITR_${asset.propertyNumber}_${Date.now()}.pdf`;
-    link.click();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${itrNumber}.pdf`;
+    a.click();
     URL.revokeObjectURL(url);
+  }
+
+  private static buildRows(assets: Asset[]): ITRRow[] {
+    return assets.map(asset => {
+      const latestMovement = asset.movements
+        ?.filter(m => m.isActive)
+        .sort(
+          (a, b) =>
+            new Date(b.dateAssigned).getTime() -
+            new Date(a.dateAssigned).getTime()
+        )[0];
+
+      return {
+        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+        propertyNo: asset.propertyNumber ?? "",
+        description: asset.description ?? "",
+        amount: asset.unitValue ?? null,
+        condition: latestMovement?.condition ?? "Good",
+      };
+    });
+  }
+
+  private static generateITRNumber(): string {
+    const now = new Date();
+    return `ITR-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(now.getDate()).padStart(2, "0")}-${now
+      .getTime()
+      .toString()
+      .slice(-4)}`;
   }
 }

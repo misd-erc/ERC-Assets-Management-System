@@ -149,6 +149,7 @@ export function ReportTab() {
       <ITRGenerationModal
         isOpen={showITR}
         onClose={() => setShowITR(false)}
+        employees={employees}
       />
     </Card>
   );
