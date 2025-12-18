@@ -235,6 +235,9 @@ namespace API.Controllers
                 if (model.GroupBy == null || string.IsNullOrEmpty(model.GroupBy)) { 
                     IEnumerable<TblPTA?> ptas = await _getTools.PTA.GetTblPTAsByGroup(model.GroupName!, context).Where(x => x.Group == model.GroupName).ToListAsync();
 
+                    if(model.CategoryId != null && model.CategoryId != 0)
+                        ptas = ptas.Where(x => x.CategoryId == model.CategoryId);
+
                     if (!string.IsNullOrWhiteSpace(model.SearchString))
                     {
                         string searchLower = (model.SearchString ?? "").ToLowerInvariant();
@@ -355,6 +358,9 @@ namespace API.Controllers
                 {
                     IQueryable<VwPTA?> ptasQuery = _getTools.PTA.GetVwPTAsByGroup(model.GroupName!, context)
                         .Where(x => x.Group == model.GroupName);
+
+                    if (model.CategoryId != null && model.CategoryId != 0)
+                        ptasQuery = ptasQuery.Where(x => x.CategoryId == model.CategoryId);
 
                     if (!string.IsNullOrWhiteSpace(model.SearchString))
                     {
@@ -506,6 +512,9 @@ namespace API.Controllers
                     IQueryable<VwPTA?> ptasQuery = _getTools.PTA.GetVwPTAsByGroup(model.GroupName!, context)
                         .Where(x => x.Group == model.GroupName);
 
+                    if (model.CategoryId != null && model.CategoryId != 0)
+                        ptasQuery = ptasQuery.Where(x => x.CategoryId == model.CategoryId);
+
                     if (!string.IsNullOrWhiteSpace(model.SearchString))
                     {
                         string searchLower = model.SearchString.ToLowerInvariant();
@@ -610,6 +619,9 @@ namespace API.Controllers
                 {
                     IQueryable<VwPTA?> ptasQuery = _getTools.PTA.GetVwPTAsByGroup(model.GroupName!, context)
                         .Where(x => x.Group == model.GroupName);
+
+                    if (model.CategoryId != null && model.CategoryId != 0)
+                        ptasQuery = ptasQuery.Where(x => x.CategoryId == model.CategoryId);
 
                     if (!string.IsNullOrWhiteSpace(model.SearchString))
                     {
