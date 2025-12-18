@@ -172,3 +172,28 @@ export const deleteLegend = async (id: number): Promise<void> => {
     throw error;
   }
 };
+
+export const getEmployeeAssets = async (employeeId: number, groupName: 'SE' | 'PPE'): Promise<any[]> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  try {
+    const response = await axiosInstance.get<ApiResponse<{ items: any[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>>(`/Inventory/pta/se-ppe/all`, {
+      params: {
+        EmployeeId: employeeId,
+        GroupName: groupName,
+        ActionBySystemUserId: systemUserId,
+        SessionKey: sessionKey,
+      },
+    });
+
+    if (!response.data.success) {
+      console.error('Failed to fetch employee assets:', response.data.message);
+      return [];
+    }
+
+    return response.data.data?.items || [];
+  } catch (error) {
+    console.error('Error fetching employee assets:', error);
+    return [];
+  }
+};

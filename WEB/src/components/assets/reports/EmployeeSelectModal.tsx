@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 import { NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 
 interface EmployeeSelectModalProps {
@@ -14,6 +16,15 @@ interface EmployeeSelectModalProps {
 
 export function EmployeeSelectModal({ isOpen, onClose, employees, onSelect }: EmployeeSelectModalProps) {
   const [selectedEmployeeId, setSelectedEmployeeId] = React.useState<string>('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredEmployees = useMemo(() => {
+    if (!searchTerm) return employees;
+    return employees.filter(employee =>
+      employee.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.employeeIdOriginal?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [employees, searchTerm]);
 
   const handleContinue = () => {
     const selectedEmployee = employees.find(emp => emp.id.toString() === selectedEmployeeId);
@@ -26,12 +37,13 @@ export function EmployeeSelectModal({ isOpen, onClose, employees, onSelect }: Em
     if (!open) {
       onClose();
       setSelectedEmployeeId('');
+      setSearchTerm('');
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Select Employee</DialogTitle>
           <DialogDescription>
@@ -39,16 +51,27 @@ export function EmployeeSelectModal({ isOpen, onClose, employees, onSelect }: Em
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          <RadioGroup value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
-            {employees.map((employee) => (
-              <div key={employee.id} className="flex items-center space-x-2">
-                <RadioGroupItem value={employee.id.toString()} id={`employee-${employee.id}`} />
-                <Label htmlFor={`employee-${employee.id}`} className="text-sm font-normal">
-                  {employee.label}
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 size-4" />
+            <Input
+              placeholder="Search employees..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <div className="max-h-60 overflow-y-auto">
+            <RadioGroup value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
+              {filteredEmployees.map((employee) => (
+                <div key={employee.id} className="flex items-center space-x-2">
+                  <RadioGroupItem value={employee.id.toString()} id={`employee-${employee.id}`} />
+                  <Label htmlFor={`employee-${employee.id}`} className="text-sm font-normal">
+                    {employee.label}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>

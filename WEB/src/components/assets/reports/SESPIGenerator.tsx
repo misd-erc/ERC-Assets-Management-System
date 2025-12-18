@@ -1,0 +1,244 @@
+import React from 'react';
+import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { PTAService } from '@/services/PTAService';
+
+/** TABLE CONSTANT */
+const TABLE_WIDTH = 1000;
+
+const styles = StyleSheet.create({
+  page: {
+    padding: 20,
+    fontSize: 8,
+    fontFamily: 'Helvetica',
+  },
+
+  header: {
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+
+  annex: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+
+  title: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+
+  entity: {
+    marginTop: 10,
+    marginBottom: 4,
+  },
+
+  fund: {
+    marginBottom: 4,
+  },
+
+  division: {
+    marginBottom: 8,
+  },
+
+  table: {
+    width: TABLE_WIDTH,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: '#000',
+    marginTop: 8,
+  },
+
+  row: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderColor: '#000',
+  },
+
+  th: {
+    borderRightWidth: 1,
+    borderColor: '#000',
+    padding: 4,
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 7,
+  },
+
+  td: {
+    borderRightWidth: 1,
+    borderColor: '#000',
+    padding: 4,
+    fontSize: 7,
+  },
+
+  center: {
+    textAlign: 'center',
+  },
+
+  signature: {
+    marginTop: 20,
+    flexDirection: 'row',
+  },
+
+  sigBlock: {
+    flex: 1,
+    textAlign: 'center',
+  },
+
+  sigLine: {
+    borderBottomWidth: 1,
+    borderColor: '#000',
+    width: 180,
+    alignSelf: 'center',
+    marginVertical: 6,
+  },
+
+  sigText: {
+    fontSize: 8,
+  },
+});
+
+export class SESPIExcelGenerator {
+  /** COLUMN WIDTHS — MUST TOTAL 100% */
+  private static colWidth(i: number) {
+    const cols = [
+      0.10, // ICS No.
+      0.14, // Responsibility Center Code
+      0.18, // Semi-expandable Property No.
+      0.24, // Item Description
+      0.06, // Unit
+      0.10, // Quantity Issued
+      0.09, // Unit Cost
+      0.09, // Amount
+    ];
+    return TABLE_WIDTH * cols[i];
+  }
+
+  static async generateSESPIPreview(): Promise<string> {
+    const currentYear = new Date().getFullYear();
+    const seAssets = await PTAService.getAllForSE(currentYear);
+
+    const doc = this.buildDocument(seAssets);
+    const blob = await pdf(doc).toBlob();
+    return URL.createObjectURL(blob);
+  }
+
+  static async generate() {
+    const currentYear = new Date().getFullYear();
+    const seAssets = await PTAService.getAllForSE(currentYear);
+
+    const doc = this.buildDocument(seAssets);
+    const blob = await pdf(doc).toBlob();
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '20._Annex-A.7-Report_of_SE_Property_Issued.pdf';
+    a.click();
+  }
+
+  private static buildDocument(seAssets: any[]) {
+    return (
+      <Document>
+        <Page size="LEGAL" orientation="landscape" style={styles.page}>
+          {/* HEADER */}
+          <View style={styles.header}>
+            <Text style={styles.annex}>Annex A.7</Text>
+            <Text style={styles.title}>Report of Semi-Expandable Property Issued</Text>
+          </View>
+
+          <Text style={styles.entity}>Entity Name: Energy Regulatory Commission</Text>
+          <Text style={styles.fund}>Fund Cluster: Regular Agency Fund</Text>
+          <Text style={styles.division}>To be filled out by the Property and Supply Division</Text>
+
+          {/* TABLE */}
+          <View style={styles.table}>
+            {/* HEADER ROW */}
+            <View style={styles.row}>
+              {[
+                'ICS No.',
+                'Responsibility Center Code',
+                'Semi-expendable Property No.',
+                'Item Description',
+                'Unit',
+                'Quantity Issued',
+                'Unit Cost',
+                'Amount',
+              ].map((h, i) => (
+                <Text key={i} style={[styles.th, { width: this.colWidth(i) }]}>
+                  {h}
+                </Text>
+              ))}
+            </View>
+
+            {/* DATA ROWS */}
+            {seAssets.map((asset, index) => {
+              const latestMovement = asset.movements
+                ?.filter((m: any) => m.parItrNumber)
+                ?.sort(
+                  (a: any, b: any) =>
+                    new Date(b.dateAssigned).getTime() -
+                    new Date(a.dateAssigned).getTime()
+                )[0];
+
+              const ptrItrNumber = latestMovement?.parItrNumber || '';
+
+              return (
+                <View key={index} style={styles.row}>
+                  <Text style={[styles.td, styles.center, { width: this.colWidth(0) }]}>
+                    {ptrItrNumber}
+                  </Text>
+                  <Text style={[styles.td, { width: this.colWidth(1) }]} />
+                  <Text style={[styles.td, { width: this.colWidth(2) }]}>
+                    {asset.propertyNumber}
+                  </Text>
+                  <Text style={[styles.td, { width: this.colWidth(3) }]}>
+                    {asset.description}
+                  </Text>
+                  <Text style={[styles.td, styles.center, { width: this.colWidth(4) }]}>
+                    {asset.unitOfMeasurement}
+                  </Text>
+                  <Text style={[styles.td, styles.center, { width: this.colWidth(5) }]}>
+                    1
+                  </Text>
+                  <Text style={[styles.td, styles.center, { width: this.colWidth(6) }]}>
+                    {asset.unitValue?.toFixed(2)}
+                  </Text>
+                  <Text style={[styles.td, styles.center, { width: this.colWidth(7) }]}>
+                    {asset.unitValue?.toFixed(2)}
+                  </Text>
+                </View>
+              );
+            })}
+
+            {/* EMPTY ROWS */}
+            {Array.from({ length: Math.max(0, 20 - seAssets.length) }).map((_, i) => (
+              <View key={i} style={styles.row}>
+                {Array.from({ length: 8 }).map((_, c) => (
+                  <Text key={c} style={[styles.td, { width: this.colWidth(c) }]} />
+                ))}
+              </View>
+            ))}
+          </View>
+
+          {/* SIGNATURES */}
+          <View style={styles.signature}>
+            <View style={styles.sigBlock}>
+              <Text style={styles.sigText}>
+                I hereby certify the correctness of the information above.
+              </Text>
+              <View style={styles.sigLine} />
+              <Text style={styles.sigText}>SUPPLY OFFICER</Text>
+            </View>
+
+            <View style={styles.sigBlock}>
+              <Text style={styles.sigText}>Posted By:</Text>
+              <View style={styles.sigLine} />
+              <Text style={styles.sigText}>ACCOUNTING SECTION</Text>
+            </View>
+          </View>
+        </Page>
+      </Document>
+    );
+  }
+}
