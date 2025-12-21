@@ -138,6 +138,31 @@ export class SESPIExcelGenerator {
   }
 
   private static buildDocument(seAssets: any[]) {
+    const processedAssets = seAssets.map(asset => {
+      const latestMovement = asset.movements
+        ?.filter((m: any) => m.parItrNumber)
+        ?.sort(
+          (a: any, b: any) =>
+            new Date(b.dateAssigned).getTime() -
+            new Date(a.dateAssigned).getTime()
+        )[0];
+      return { ...asset, latestMovement };
+    });
+    const sequenceMap = new Map<string, number>();
+    const finalAssets = processedAssets.map(asset => {
+      let icsNo = '';
+      if (asset.latestMovement) {
+        const dateAssigned = new Date(asset.latestMovement.dateAssigned);
+        const year = dateAssigned.getFullYear();
+        const month = String(dateAssigned.getMonth() + 1).padStart(2, '0');
+        const key = `${year}-${month}`;
+        if (!sequenceMap.has(key)) sequenceMap.set(key, 1);
+        const seq = sequenceMap.get(key)!;
+        icsNo = `${key}-${String(seq).padStart(3, '0')}`;
+        sequenceMap.set(key, seq + 1);
+      }
+      return { ...asset, icsNo };
+    });
     return (
       <Document>
         <Page size="LEGAL" orientation="landscape" style={styles.page}>
@@ -172,47 +197,35 @@ export class SESPIExcelGenerator {
             </View>
 
             {/* DATA ROWS */}
-            {seAssets.map((asset, index) => {
-              const latestMovement = asset.movements
-                ?.filter((m: any) => m.parItrNumber)
-                ?.sort(
-                  (a: any, b: any) =>
-                    new Date(b.dateAssigned).getTime() -
-                    new Date(a.dateAssigned).getTime()
-                )[0];
-
-              const ptrItrNumber = latestMovement?.parItrNumber || '';
-
-              return (
-                <View key={index} style={styles.row}>
-                  <Text style={[styles.td, styles.center, { width: this.colWidth(0) }]}>
-                    {ptrItrNumber}
-                  </Text>
-                  <Text style={[styles.td, { width: this.colWidth(1) }]} />
-                  <Text style={[styles.td, { width: this.colWidth(2) }]}>
-                    {asset.propertyNumber}
-                  </Text>
-                  <Text style={[styles.td, { width: this.colWidth(3) }]}>
-                    {asset.description}
-                  </Text>
-                  <Text style={[styles.td, styles.center, { width: this.colWidth(4) }]}>
-                    {asset.unitOfMeasurement}
-                  </Text>
-                  <Text style={[styles.td, styles.center, { width: this.colWidth(5) }]}>
-                    1
-                  </Text>
-                  <Text style={[styles.td, styles.center, { width: this.colWidth(6) }]}>
-                    {asset.unitValue?.toFixed(2)}
-                  </Text>
-                  <Text style={[styles.td, styles.center, { width: this.colWidth(7) }]}>
-                    {asset.unitValue?.toFixed(2)}
-                  </Text>
-                </View>
-              );
-            })}
+            {finalAssets.map((asset, index) => (
+              <View key={index} style={styles.row}>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(0) }]}>
+                  {asset.icsNo}
+                </Text>
+                <Text style={[styles.td, { width: this.colWidth(1) }]} />
+                <Text style={[styles.td, { width: this.colWidth(2) }]}>
+                  {asset.propertyNumber}
+                </Text>
+                <Text style={[styles.td, { width: this.colWidth(3) }]}>
+                  {asset.description}
+                </Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(4) }]}>
+                  {asset.unitOfMeasurement}
+                </Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(5) }]}>
+                  1
+                </Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(6) }]}>
+                  {asset.unitValue?.toFixed(2)}
+                </Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(7) }]}>
+                  {asset.unitValue?.toFixed(2)}
+                </Text>
+              </View>
+            ))}
 
             {/* EMPTY ROWS */}
-            {Array.from({ length: Math.max(0, 20 - seAssets.length) }).map((_, i) => (
+            {Array.from({ length: Math.max(0, 20 - finalAssets.length) }).map((_, i) => (
               <View key={i} style={styles.row}>
                 {Array.from({ length: 8 }).map((_, c) => (
                   <Text key={c} style={[styles.td, { width: this.colWidth(c) }]} />
