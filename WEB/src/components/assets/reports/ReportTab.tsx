@@ -40,7 +40,7 @@ export function ReportTab() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [rpcppeYear, setRpcppeYear] = useState<number | null>(null);
-  const [rpcppeCategoryName, setRpcppeCategoryName] = useState<string | undefined>(undefined);
+  const [rpcppeCategoryId, setRpcppeCategoryId] = useState<number | undefined>(undefined);
 
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
@@ -79,26 +79,14 @@ export function ReportTab() {
       toast.success('Register SPI PDF generated');
     } else if (selectedReport === 'RPCPPE') {
       try {
-        // Map categoryName to categoryId for API call
-        const categoryMapping: { [key: string]: number } = {
-          'Information and Communication Technology Equipment': 1,
-          'Communication Equipment': 2,
-          'Medical Equipment': 3,
-          'Office Equipment': 4,
-          'Furniture and Fixtures': 5,
-          'Books and Reference Materials': 6,
-          'Other PPE': 7,
-        };
-        const categoryId = rpcppeCategoryName ? categoryMapping[rpcppeCategoryName] : undefined;
-
-        const assets = await PTAService.getAllForRPCPPE(rpcppeYear!, categoryId);
+        const assets = await PTAService.getAllForRPCPPE(rpcppeYear!, rpcppeCategoryId);
 
         if (!assets.length) {
           toast.error('No assets found for selected criteria');
           return;
         }
 
-        await RPCPPEPdfGenerator.generate(assets, rpcppeYear!, rpcppeCategoryName);
+        await RPCPPEPdfGenerator.generate(assets, rpcppeYear!, rpcppeCategoryId);
         toast.success('RPCPPE PDF generated');
       } catch (error) {
         console.error('RPCPPE generation failed:', error);
@@ -113,20 +101,8 @@ export function ReportTab() {
     setShowPreview(false);
   };
 
-  const handleRPCPPEGenerate = async (year: number, categoryName?: string) => {
+  const handleRPCPPEGenerate = async (year: number, categoryId?: number) => {
     try {
-      // Map categoryName to categoryId for API call
-      const categoryMapping: { [key: string]: number } = {
-        'Information and Communication Technology Equipment': 1,
-        'Communication Equipment': 2,
-        'Medical Equipment': 3,
-        'Office Equipment': 4,
-        'Furniture and Fixtures': 5,
-        'Books and Reference Materials': 6,
-        'Other PPE': 7,
-      };
-      const categoryId = categoryName ? categoryMapping[categoryName] : undefined;
-
       const assets = await PTAService.getAllForRPCPPE(year, categoryId);
 
       if (!assets.length) {
@@ -136,13 +112,13 @@ export function ReportTab() {
 
       // Generate preview
       setLoadingPreview(true);
-      const url = await RPCPPEPdfGenerator.generatePreview(assets, year, categoryName);
+      const url = await RPCPPEPdfGenerator.generatePreview(assets, year, categoryId?.toString());
       setPreviewUrl(url);
       setLoadingPreview(false);
 
       // Store parameters for download
       setRpcppeYear(year);
-      setRpcppeCategoryName(categoryName);
+      setRpcppeCategoryId(categoryId);
 
       // Show preview modal
       setSelectedReport('RPCPPE');
@@ -195,7 +171,7 @@ export function ReportTab() {
       action: () => setShowPTR(true)
     },
     {
-      title: 'Register SPI',
+      title: 'Registry SPI',
       subtitle: 'Semi-Expandable Property',
       icon: BookOpen,
       bgColor: 'bg-purple-600',
