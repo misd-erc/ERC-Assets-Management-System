@@ -92,8 +92,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
       ptaId: 0,
       dateAssigned: new Date().toISOString(),
       parItrNumber: '',
-      plantillaEmployeeId: null,
-      nonPlantillaEmployeeId: null,
+      plantillaEmployeeId: 0,
+      nonPlantillaEmployeeId: 0,
       actualOfficeId: 0,
       actualDivisionId: 0,
       condition: 'Working',
@@ -168,8 +168,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
         ptaId: 0,
         dateAssigned: new Date().toISOString(),
         parItrNumber: '',
-        plantillaEmployeeId: null,
-        nonPlantillaEmployeeId: null,
+        plantillaEmployeeId: 0,
+        nonPlantillaEmployeeId: 0,
         actualOfficeId: 0,
         actualDivisionId: 0,
         condition: 'Working',
@@ -219,12 +219,10 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
 
   function handlePlantillaEmployeeSelect(index: number, employeeId: number) {
     handleAccountabilityEntryChange(index, 'plantillaEmployeeId', employeeId);
-    handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', 0);
   }
 
   function handleNonPlantillaEmployeeSelect(index: number, employeeId: number) {
     handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', employeeId);
-    handleAccountabilityEntryChange(index, 'plantillaEmployeeId', 0);
   }
 
   const fetchCategories = async () => {
