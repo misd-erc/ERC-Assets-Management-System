@@ -277,21 +277,14 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
     };
   }
 
-  function handleEmployeeSelect(index: number, employeeId: number) {
-    const emp = employees.find(e => e.id === employeeId);
-    if (!emp) {
-      handleAccountabilityEntryChange(index, 'plantillaEmployeeId', 0);
-      handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', 0);
-      return;
-    }
+  function handlePlantillaEmployeeSelect(index: number, employeeId: number) {
+    handleAccountabilityEntryChange(index, 'plantillaEmployeeId', employeeId);
+    handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', 0);
+  }
 
-    if (emp.employmentTypeId === 1) {
-      handleAccountabilityEntryChange(index, 'plantillaEmployeeId', employeeId);
-      handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', 0);
-    } else {
-      handleAccountabilityEntryChange(index, 'plantillaEmployeeId', 0);
-      handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', employeeId);
-    }
+  function handleNonPlantillaEmployeeSelect(index: number, employeeId: number) {
+    handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', employeeId);
+    handleAccountabilityEntryChange(index, 'plantillaEmployeeId', 0);
   }
 
   const fetchCategories = async () => {
@@ -334,7 +327,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         setFormData={setFormData}
         accountabilityEntries={accountabilityEntries}
         setAccountabilityEntries={setAccountabilityEntries}
-        handleEmployeeSelect={handleEmployeeSelect}
+        handlePlantillaEmployeeSelect={handlePlantillaEmployeeSelect}
+        handleNonPlantillaEmployeeSelect={handleNonPlantillaEmployeeSelect}
         employees={employees}
         categories={categories}
         legends={legends}

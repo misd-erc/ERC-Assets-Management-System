@@ -16,7 +16,8 @@ interface SharedAssetFieldsProps {
   setFormData: React.Dispatch<React.SetStateAction<Omit<Asset, 'id'>>>;
   accountabilityEntries: UnifiedMovement[];
   setAccountabilityEntries: React.Dispatch<React.SetStateAction<UnifiedMovement[]>>;
-  handleEmployeeSelect: (index: number, employeeId: number) => void;
+  handlePlantillaEmployeeSelect: (index: number, employeeId: number) => void;
+  handleNonPlantillaEmployeeSelect: (index: number, employeeId: number) => void;
   employees: NormalizedEmployee[];
   categories: { id: number; name: string }[];
   legends: { id: number; name: string }[];
@@ -38,7 +39,8 @@ export function SharedAssetFields({
   setFormData,
   accountabilityEntries,
   setAccountabilityEntries,
-  handleEmployeeSelect,
+  handlePlantillaEmployeeSelect,
+  handleNonPlantillaEmployeeSelect,
   employees,
   categories,
   legends,
@@ -53,7 +55,8 @@ export function SharedAssetFields({
   handleAccountabilityEntryChange,
   getUnitOfMeasurementOptions,
 }: SharedAssetFieldsProps) {
-  const employeeOptions = employees.filter(emp => emp.id != null).map(emp => ({ value: emp.id.toString(), label: emp.label }));
+  const plantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId === 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
+  const nonPlantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId !== 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
 
   return (
     <>
@@ -346,21 +349,37 @@ export function SharedAssetFields({
                     />
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <Label>Accountable Employee</Label>
+                  <div className="flex flex-col gap-2">
+                    <Label>Accountable Employee (Plantilla)</Label>
                     <ReactSelect
-                      options={employeeOptions}
-                      value={employeeOptions.find(option =>
-                        option.value === String(entry.plantillaEmployeeId || entry.nonPlantillaEmployeeId)
+                      options={plantillaEmployeeOptions}
+                      value={plantillaEmployeeOptions.find(option =>
+                        option.value === String(entry.plantillaEmployeeId)
                       ) || null}
                       onChange={(selected) => {
                         if (selected) {
-                          handleEmployeeSelect(index, parseInt(selected.value));
+                          handlePlantillaEmployeeSelect(index, parseInt(selected.value));
                         } else {
-                          handleEmployeeSelect(index, 0);
+                          handlePlantillaEmployeeSelect(index, 0);
                         }
                       }}
-                      placeholder="Select employee"
+                      placeholder="Select plantilla employee"
+                      isClearable
+                    />
+                    <Label>Sub Accountable Employee (Non-Plantilla)</Label>
+                    <ReactSelect
+                      options={nonPlantillaEmployeeOptions}
+                      value={nonPlantillaEmployeeOptions.find(option =>
+                        option.value === String(entry.nonPlantillaEmployeeId)
+                      ) || null}
+                      onChange={(selected) => {
+                        if (selected) {
+                          handleNonPlantillaEmployeeSelect(index, parseInt(selected.value));
+                        } else {
+                          handleNonPlantillaEmployeeSelect(index, 0);
+                        }
+                      }}
+                      placeholder="Select non-plantilla employee"
                       isClearable
                     />
                   </div>
