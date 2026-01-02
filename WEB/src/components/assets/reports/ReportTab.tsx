@@ -28,7 +28,7 @@ import { RPCPPEFilterModal } from './RPCPPEFilterModal';
 import { PARGenerator } from './PARGenerator';
 import { ICSGenerator } from './ICSGenerator';
 import { RPCPPEPdfGenerator } from './RPCPPEExcelGenerator';
-import { SESPIExcelGenerator } from './SESPIGenerator';
+import { SESPIExcelGenerator, SESPIFilterModal } from './SESPIGenerator';
 import { PTRGenerationModal } from './PTRGenerationModal';
 import { ITRGenerationModal } from './ITRGenerationModal';
 import { toast } from 'sonner';
@@ -41,10 +41,12 @@ export function ReportTab() {
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [rpcppeYear, setRpcppeYear] = useState<number | null>(null);
   const [rpcppeCategoryId, setRpcppeCategoryId] = useState<number | undefined>(undefined);
+  const [sespiYear, setSespiYear] = useState<number | null>(null);
 
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showRPCPPE, setShowRPCPPE] = useState(false);
+  const [showSESPI, setShowSESPI] = useState(false);
   const [showPTR, setShowPTR] = useState(false);
   const [showITR, setShowITR] = useState(false);
 
@@ -75,7 +77,7 @@ export function ReportTab() {
     if (!selectedReport) return;
 
     if (selectedReport === 'SESPI') {
-      await SESPIExcelGenerator.generate();
+      await SESPIExcelGenerator.generate(sespiYear!);
       toast.success('Register SPI PDF generated');
     } else if (selectedReport === 'RPCPPE') {
       try {
@@ -131,21 +133,26 @@ export function ReportTab() {
     setShowRPCPPE(false);
   };
 
-  const handleSESPIGenerate = async () => {
-    setSelectedReport('SESPI');
-    setShowPreview(true);
-    setLoadingPreview(true);
-
+  const handleSESPIGenerate = async (year: number) => {
     try {
-      const url = await SESPIExcelGenerator.generateSESPIPreview();
+      // Generate preview
+      setLoadingPreview(true);
+      const url = await SESPIExcelGenerator.generateSESPIPreview(year);
       setPreviewUrl(url);
       setLoadingPreview(false);
+
+      // Store parameters for download
+      setSespiYear(year);
+      setSelectedReport('SESPI');
+
+      // Show preview modal
+      setShowPreview(true);
     } catch (error) {
       console.error('SE SPI preview generation failed:', error);
       toast.error('SE SPI preview generation failed');
-      setShowPreview(false);
-      setLoadingPreview(false);
     }
+
+    setShowSESPI(false);
   };
 
   const reports = [
@@ -175,7 +182,7 @@ export function ReportTab() {
       subtitle: 'Semi-Expandable Property',
       icon: BookOpen,
       bgColor: 'bg-purple-600',
-      action: () => handleSESPIGenerate()
+      action: () => setShowSESPI(true)
     },
     {
       title: 'ICS',
@@ -269,6 +276,12 @@ export function ReportTab() {
         isOpen={showITR}
         onClose={() => setShowITR(false)}
         employees={employees}
+      />
+
+      <SESPIFilterModal
+        isOpen={showSESPI}
+        onClose={() => setShowSESPI(false)}
+        onGenerate={handleSESPIGenerate}
       />
     </div>
   );
