@@ -93,6 +93,19 @@ const styles = StyleSheet.create({
     marginVertical: 6,
   },
 
+  sigName: {
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+
+  sigTopText: {
+    fontSize: 8,
+  },
+
+  sigLabel: {
+    fontSize: 8,
+  },
+
   sigText: {
     fontSize: 8,
   },
@@ -240,6 +253,8 @@ export class SESPIExcelGenerator {
               <Text style={styles.sigText}>
                 I hereby certify the correctness of the information above.
               </Text>
+              <Text style={styles.sigText}> </Text>
+              <Text style={styles.sigName}>CHERRYLYNN S. GONSALES</Text>
               <View style={styles.sigLine} />
               <Text style={styles.sigText}>SUPPLY OFFICER</Text>
             </View>
