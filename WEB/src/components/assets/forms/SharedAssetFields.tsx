@@ -242,6 +242,7 @@ export function SharedAssetFields({
               <Select
                 value={formData.unitOfMeasurement}
                 onValueChange={(value) => handleInputChange('unitOfMeasurement', value)}
+                required
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select unit" />
@@ -280,12 +281,13 @@ export function SharedAssetFields({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="estimatedUsefulLife">Estimated Useful Life (years)</Label>
+              <Label htmlFor="estimatedUsefulLife">Estimated Useful Life (years) *</Label>
               <Input
                 id="estimatedUsefulLife"
                 type="number"
                 value={formData.estimatedUsefulLife ?? ''}
                 onChange={(e) => handleInputChange('estimatedUsefulLife', parseInt(e.target.value) || 5)}
+                required
               />
             </div>
           </div>
@@ -331,26 +333,28 @@ export function SharedAssetFields({
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor={`dateAssigned-${index}`}>Date Assigned</Label>
+                    <Label htmlFor={`dateAssigned-${index}`}>Date Assigned *</Label>
                     <Input
                       id={`dateAssigned-${index}`}
                       type="datetime-local"
                       value={entry.dateAssigned ? new Date(entry.dateAssigned).toISOString().slice(0, 16) : ''}
                       onChange={(e) => handleAccountabilityEntryChange(index, 'dateAssigned', e.target.value)}
+                      required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`parItrNumber-${index}`}>PAR/ITR Number</Label>
+                    <Label htmlFor={`parItrNumber-${index}`}>PAR/ITR Number *</Label>
                     <Input
                       id={`parItrNumber-${index}`}
                       value={entry.parItrNumber}
                       onChange={(e) => handleAccountabilityEntryChange(index, 'parItrNumber', e.target.value)}
+                      required
                     />
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <Label>Accountable Employee (Plantilla)</Label>
+                    <Label>Accountable Employee (Plantilla) *</Label>
                     <ReactSelect
                       options={plantillaEmployeeOptions}
                       value={plantillaEmployeeOptions.find(option =>
@@ -366,7 +370,7 @@ export function SharedAssetFields({
                       placeholder="Select plantilla employee"
                       isClearable
                     />
-                    <Label>Sub Accountable Employee (Non-Plantilla)</Label>
+                    <Label>Sub Accountable Employee (Non-Plantilla) *</Label>
                     <ReactSelect
                       options={nonPlantillaEmployeeOptions}
                       value={nonPlantillaEmployeeOptions.find(option =>
@@ -385,12 +389,13 @@ export function SharedAssetFields({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`actualOffice-${index}`}>Office</Label>
+                    <Label htmlFor={`actualOffice-${index}`}>Office *</Label>
                     <Select
                       value={entry.actualOfficeId?.toString() ?? ''}
                       onValueChange={(value) => {
                         handleAccountabilityEntryChange(index, 'actualOfficeId', parseInt(value));
                       }}
+                      required
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select office" />
@@ -406,12 +411,13 @@ export function SharedAssetFields({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`actualDivision-${index}`}>Division</Label>
+                    <Label htmlFor={`actualDivision-${index}`}>Division *</Label>
                     <Select
                       value={entry.actualDivisionId?.toString() ?? ''}
                       onValueChange={(value) => {
                         handleAccountabilityEntryChange(index, 'actualDivisionId', parseInt(value));
                       }}
+                      required
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select division" />
@@ -427,10 +433,11 @@ export function SharedAssetFields({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`condition-${index}`}>Condition</Label>
+                    <Label htmlFor={`condition-${index}`}>Condition *</Label>
                     <Select
                       value={entry.condition}
                       onValueChange={(value) => handleAccountabilityEntryChange(index, 'condition', value)}
+                      required
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select condition" />

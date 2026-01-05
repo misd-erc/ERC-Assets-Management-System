@@ -12,6 +12,7 @@ import { getCategories, getLegends } from '@/api/inventoryApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { SharedAssetFields } from '@/components/assets/forms/SharedAssetFields';
+import { toast } from 'sonner';
 
 interface AssetCreateFormProps {
   onSubmit: (data: Omit<Asset, 'id'>) => void;
@@ -106,10 +107,58 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate required fields
-    if (!formData.propertyNumber?.trim() || !formData.description?.trim() || !formData.brand?.trim() || !formData.model?.trim() || !formData.serialNumber?.trim() || !formData.unitOfMeasurement?.trim()) {
-      alert('Property Number, Description, Brand, Model, Serial Number, and Unit of Measurement are required');
+    // Validate Item Identification required fields
+    if (!formData.propertyNumber?.trim() || !formData.description?.trim() || !formData.brand?.trim() || !formData.model?.trim() || !formData.serialNumber?.trim()) {
+      toast.error('Property Number, Description, Brand, Model, and Serial Number are required');
       return;
+    }
+
+    // Validate Classification Details required fields
+    if (!formData.unitOfMeasurement?.trim()) {
+      toast.error('Unit of Measurement is required');
+      return;
+    }
+    if (!formData.unitValue || formData.unitValue <= 0) {
+      toast.error('Unit Value is required and must be greater than 0');
+      return;
+    }
+    if (!formData.dateAcquired?.trim()) {
+      toast.error('Date Acquired is required');
+      return;
+    }
+    if (!formData.estimatedUsefulLife || formData.estimatedUsefulLife <= 0) {
+      toast.error('Estimated Useful Life is required and must be greater than 0');
+      return;
+    }
+
+    // Validate Accountability Information required fields
+    for (let i = 0; i < accountabilityEntries.length; i++) {
+      const entry = accountabilityEntries[i];
+      const entryLabel = i === 0 ? 'Current Holder' : `Previous Holder ${i}`;
+      
+      if (!entry.dateAssigned) {
+        toast.error(`Date Assigned is required for ${entryLabel}`);
+        return;
+      }
+      
+      if (!entry.parItrNumber?.trim()) {
+        toast.error(`PAR/ITR Number is required for ${entryLabel}`);
+        return;
+      }
+      
+      // Validate PTR number format (PTR-YYYY-MM-DD-XXXX)
+    
+      
+      if (entry.plantillaEmployeeId === 0) {
+        toast.error(`Accountable Employee (Plantilla) is required for ${entryLabel}`);
+        return;
+      }
+      
+      if (entry.nonPlantillaEmployeeId === 0) {
+        toast.error(`Sub Accountable Employee (Non-Plantilla) is required for ${entryLabel}`);
+        return;
+      }
+      
     }
 
     // Determine group based on unit value
