@@ -105,8 +105,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
           ptaId: asset.id,
           dateAssigned: new Date().toISOString(),
           parItrNumber: '',
-          plantillaEmployeeId: null,
-          nonPlantillaEmployeeId: null,
+          plantillaEmployeeId: 0,
+          nonPlantillaEmployeeId: 0,
           actualOfficeId: 0,
           actualDivisionId: 0,
           condition: 'Working',
@@ -228,8 +228,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         ptaId: asset.id,
         dateAssigned: new Date().toISOString(),
         parItrNumber: '',
-        plantillaEmployeeId: null,
-        nonPlantillaEmployeeId: null,
+        plantillaEmployeeId: 0,
+        nonPlantillaEmployeeId: 0,
         actualOfficeId: 0,
         actualDivisionId: 0,
         condition: 'Working',
@@ -277,21 +277,12 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
     };
   }
 
-  function handleEmployeeSelect(index: number, employeeId: number) {
-    const emp = employees.find(e => e.id === employeeId);
-    if (!emp) {
-      handleAccountabilityEntryChange(index, 'plantillaEmployeeId', 0);
-      handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', 0);
-      return;
-    }
+  function handlePlantillaEmployeeSelect(index: number, employeeId: number) {
+    handleAccountabilityEntryChange(index, 'plantillaEmployeeId', employeeId);
+  }
 
-    if (emp.employmentTypeId === 1) {
-      handleAccountabilityEntryChange(index, 'plantillaEmployeeId', employeeId);
-      handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', 0);
-    } else {
-      handleAccountabilityEntryChange(index, 'plantillaEmployeeId', 0);
-      handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', employeeId);
-    }
+  function handleNonPlantillaEmployeeSelect(index: number, employeeId: number) {
+    handleAccountabilityEntryChange(index, 'nonPlantillaEmployeeId', employeeId);
   }
 
   const fetchCategories = async () => {
@@ -334,7 +325,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         setFormData={setFormData}
         accountabilityEntries={accountabilityEntries}
         setAccountabilityEntries={setAccountabilityEntries}
-        handleEmployeeSelect={handleEmployeeSelect}
+        handlePlantillaEmployeeSelect={handlePlantillaEmployeeSelect}
+        handleNonPlantillaEmployeeSelect={handleNonPlantillaEmployeeSelect}
         employees={employees}
         categories={categories}
         legends={legends}

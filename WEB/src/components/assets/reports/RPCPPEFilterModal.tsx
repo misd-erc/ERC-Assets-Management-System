@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 interface RPCPPEFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerate: (year: number, categoryName?: string) => void;
+  onGenerate: (year: number, categoryId?: number) => void;
 }
 
 export function RPCPPEFilterModal({ isOpen, onClose, onGenerate }: RPCPPEFilterModalProps) {
@@ -35,9 +35,8 @@ export function RPCPPEFilterModal({ isOpen, onClose, onGenerate }: RPCPPEFilterM
       toast.error('Please select a year');
       return;
     }
-    const selectedCategory = categories.find(cat => cat.id.toString() === categoryId);
-    const categoryName = categoryId === 'all' ? undefined : selectedCategory?.name;
-    onGenerate(Number(year), categoryName);
+    const selectedCategoryId = categoryId === 'all' ? undefined : Number(categoryId);
+    onGenerate(Number(year), selectedCategoryId);
   };
 
   return (

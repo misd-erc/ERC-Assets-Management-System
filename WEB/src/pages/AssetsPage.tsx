@@ -28,7 +28,7 @@ export function AssetsPage() {
   const [pageSize, setPageSize] = useState(5);
 
   // Active tab
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('PPE');
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -404,48 +404,13 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all">All Assets</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="PPE">PPE Assets</TabsTrigger>
           <TabsTrigger value="SE">SE Assets</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="space-y-6">
-          {/* Filters */}
-          <AssetsFilters
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            categoryFilter={categoryFilter}
-            onCategoryFilterChange={setCategoryFilter}
-            conditionFilter={conditionFilter}
-            onConditionFilterChange={setConditionFilter}
-            officeFilter={officeFilter}
-            onOfficeFilterChange={setOfficeFilter}
-            divisionFilter={divisionFilter}
-            onDivisionFilterChange={setDivisionFilter}
-            startDate={startDate}
-            onStartDateChange={setStartDate}
-            endDate={endDate}
-            onEndDateChange={setEndDate}
-            onClearFilters={handleClearFilters}
-            totalResults={totalCount}
-          />
 
-          {/* Table */}
-          <AssetsTable
-            assets={assets}
-            loading={loading}
-            onViewDetails={handleViewDetails}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            pageSize={pageSize}
-            onPageSizeChange={handlePageSizeChange}
-          />
-        </TabsContent>
 
         <TabsContent value="PPE" className="space-y-6">
           {/* Filters */}

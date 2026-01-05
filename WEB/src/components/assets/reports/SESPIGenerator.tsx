@@ -1,6 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { PTAService } from '@/services/PTAService';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 /** TABLE CONSTANT */
 const TABLE_WIDTH = 1000;
@@ -93,10 +100,77 @@ const styles = StyleSheet.create({
     marginVertical: 6,
   },
 
+  sigName: {
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+
+  sigTopText: {
+    fontSize: 8,
+  },
+
+  sigLabel: {
+    fontSize: 8,
+  },
+
   sigText: {
     fontSize: 8,
   },
 });
+
+interface SESPIFilterModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onGenerate: (year: number) => void;
+}
+
+export function SESPIFilterModal({ isOpen, onClose, onGenerate }: SESPIFilterModalProps) {
+  const [year, setYear] = useState('');
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
+
+  const handleGenerate = () => {
+    if (!year) {
+      toast.error('Please select a year');
+      return;
+    }
+    onGenerate(Number(year));
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Generate SESPI Report</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label className="text-right">Year</Label>
+            <Select value={year} onValueChange={setYear}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map(y => (
+                  <SelectItem key={y} value={y.toString()}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleGenerate}>Generate Report</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export class SESPIExcelGenerator {
   /** COLUMN WIDTHS — MUST TOTAL 100% */
@@ -114,18 +188,16 @@ export class SESPIExcelGenerator {
     return TABLE_WIDTH * cols[i];
   }
 
-  static async generateSESPIPreview(): Promise<string> {
-    const currentYear = new Date().getFullYear();
-    const seAssets = await PTAService.getAllForSE(currentYear);
+  static async generateSESPIPreview(year: number): Promise<string> {
+    const seAssets = await PTAService.getAllForSE(year);
 
     const doc = this.buildDocument(seAssets);
     const blob = await pdf(doc).toBlob();
     return URL.createObjectURL(blob);
   }
 
-  static async generate() {
-    const currentYear = new Date().getFullYear();
-    const seAssets = await PTAService.getAllForSE(currentYear);
+  static async generate(year: number) {
+    const seAssets = await PTAService.getAllForSE(year);
 
     const doc = this.buildDocument(seAssets);
     const blob = await pdf(doc).toBlob();
@@ -240,6 +312,8 @@ export class SESPIExcelGenerator {
               <Text style={styles.sigText}>
                 I hereby certify the correctness of the information above.
               </Text>
+              <Text style={styles.sigText}> </Text>
+              <Text style={styles.sigName}>CHERRYLYNN S. GONSALES</Text>
               <View style={styles.sigLine} />
               <Text style={styles.sigText}>SUPPLY OFFICER</Text>
             </View>

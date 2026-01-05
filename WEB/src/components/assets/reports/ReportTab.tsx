@@ -28,7 +28,7 @@ import { RPCPPEFilterModal } from './RPCPPEFilterModal';
 import { PARGenerator } from './PARGenerator';
 import { ICSGenerator } from './ICSGenerator';
 import { RPCPPEPdfGenerator } from './RPCPPEExcelGenerator';
-import { SESPIExcelGenerator } from './SESPIGenerator';
+import { SESPIExcelGenerator, SESPIFilterModal } from './SESPIGenerator';
 import { PTRGenerationModal } from './PTRGenerationModal';
 import { ITRGenerationModal } from './ITRGenerationModal';
 import { toast } from 'sonner';
@@ -40,11 +40,13 @@ export function ReportTab() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [rpcppeYear, setRpcppeYear] = useState<number | null>(null);
-  const [rpcppeCategoryName, setRpcppeCategoryName] = useState<string | undefined>(undefined);
+  const [rpcppeCategoryId, setRpcppeCategoryId] = useState<number | undefined>(undefined);
+  const [sespiYear, setSespiYear] = useState<number | null>(null);
 
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showRPCPPE, setShowRPCPPE] = useState(false);
+  const [showSESPI, setShowSESPI] = useState(false);
   const [showPTR, setShowPTR] = useState(false);
   const [showITR, setShowITR] = useState(false);
 
@@ -75,30 +77,18 @@ export function ReportTab() {
     if (!selectedReport) return;
 
     if (selectedReport === 'SESPI') {
-      await SESPIExcelGenerator.generate();
+      await SESPIExcelGenerator.generate(sespiYear!);
       toast.success('Register SPI PDF generated');
     } else if (selectedReport === 'RPCPPE') {
       try {
-        // Map categoryName to categoryId for API call
-        const categoryMapping: { [key: string]: number } = {
-          'Information and Communication Technology Equipment': 1,
-          'Communication Equipment': 2,
-          'Medical Equipment': 3,
-          'Office Equipment': 4,
-          'Furniture and Fixtures': 5,
-          'Books and Reference Materials': 6,
-          'Other PPE': 7,
-        };
-        const categoryId = rpcppeCategoryName ? categoryMapping[rpcppeCategoryName] : undefined;
-
-        const assets = await PTAService.getAllForRPCPPE(rpcppeYear!, categoryId);
+        const assets = await PTAService.getAllForRPCPPE(rpcppeYear!, rpcppeCategoryId);
 
         if (!assets.length) {
           toast.error('No assets found for selected criteria');
           return;
         }
 
-        await RPCPPEPdfGenerator.generate(assets, rpcppeYear!, rpcppeCategoryName);
+        await RPCPPEPdfGenerator.generate(assets, rpcppeYear!, rpcppeCategoryId);
         toast.success('RPCPPE PDF generated');
       } catch (error) {
         console.error('RPCPPE generation failed:', error);
@@ -113,20 +103,8 @@ export function ReportTab() {
     setShowPreview(false);
   };
 
-  const handleRPCPPEGenerate = async (year: number, categoryName?: string) => {
+  const handleRPCPPEGenerate = async (year: number, categoryId?: number) => {
     try {
-      // Map categoryName to categoryId for API call
-      const categoryMapping: { [key: string]: number } = {
-        'Information and Communication Technology Equipment': 1,
-        'Communication Equipment': 2,
-        'Medical Equipment': 3,
-        'Office Equipment': 4,
-        'Furniture and Fixtures': 5,
-        'Books and Reference Materials': 6,
-        'Other PPE': 7,
-      };
-      const categoryId = categoryName ? categoryMapping[categoryName] : undefined;
-
       const assets = await PTAService.getAllForRPCPPE(year, categoryId);
 
       if (!assets.length) {
@@ -136,13 +114,13 @@ export function ReportTab() {
 
       // Generate preview
       setLoadingPreview(true);
-      const url = await RPCPPEPdfGenerator.generatePreview(assets, year, categoryName);
+      const url = await RPCPPEPdfGenerator.generatePreview(assets, year, categoryId?.toString());
       setPreviewUrl(url);
       setLoadingPreview(false);
 
       // Store parameters for download
       setRpcppeYear(year);
-      setRpcppeCategoryName(categoryName);
+      setRpcppeCategoryId(categoryId);
 
       // Show preview modal
       setSelectedReport('RPCPPE');
@@ -155,21 +133,26 @@ export function ReportTab() {
     setShowRPCPPE(false);
   };
 
-  const handleSESPIGenerate = async () => {
-    setSelectedReport('SESPI');
-    setShowPreview(true);
-    setLoadingPreview(true);
-
+  const handleSESPIGenerate = async (year: number) => {
     try {
-      const url = await SESPIExcelGenerator.generateSESPIPreview();
+      // Generate preview
+      setLoadingPreview(true);
+      const url = await SESPIExcelGenerator.generateSESPIPreview(year);
       setPreviewUrl(url);
       setLoadingPreview(false);
+
+      // Store parameters for download
+      setSespiYear(year);
+      setSelectedReport('SESPI');
+
+      // Show preview modal
+      setShowPreview(true);
     } catch (error) {
       console.error('SE SPI preview generation failed:', error);
       toast.error('SE SPI preview generation failed');
-      setShowPreview(false);
-      setLoadingPreview(false);
     }
+
+    setShowSESPI(false);
   };
 
   const reports = [
@@ -195,11 +178,11 @@ export function ReportTab() {
       action: () => setShowPTR(true)
     },
     {
-      title: 'Register SPI',
+      title: 'Registry SPI',
       subtitle: 'Semi-Expandable Property',
       icon: BookOpen,
       bgColor: 'bg-purple-600',
-      action: () => handleSESPIGenerate()
+      action: () => setShowSESPI(true)
     },
     {
       title: 'ICS',
@@ -293,6 +276,12 @@ export function ReportTab() {
         isOpen={showITR}
         onClose={() => setShowITR(false)}
         employees={employees}
+      />
+
+      <SESPIFilterModal
+        isOpen={showSESPI}
+        onClose={() => setShowSESPI(false)}
+        onGenerate={handleSESPIGenerate}
       />
     </div>
   );
