@@ -5,17 +5,17 @@ import {
   CheckCircle,
   Clock,
   Trash2,
-  Activity,
   AlertTriangle,
   TrendingUp
 } from 'lucide-react';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useData } from '@/hooks/data/useData';
-import { AssetOverviewChart } from '@/components/dashboard/AssetOverviewChart';
-import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
-import { PendingApprovalsCard } from '@/components/dashboard/PendingApprovalsCard';
-import { getDashboardSummary, DashboardSummary } from '@/api/dashboard/dashboardApi';
+// import { AssetOverviewChart } from '@/components/dashboard/AssetOverviewChart';
+// import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
+// import { PendingApprovalsCard } from '@/components/dashboard/PendingApprovalsCard';
+import { getDashboardSummary, DashboardSummary, getPTADashboard, PTADashboardData } from '@/api/dashboard/dashboardApi';
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 interface DashboardProps {
 }
@@ -38,29 +38,42 @@ function Dashboard() {
   const { assets, supplies, risRequests, contracts } = useData();
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [ptaData, setPtaData] = useState<PTADashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // const fetchSummary = async () => {
-    //   try {
-    //     const data = await getDashboardSummary();
-    //     setSummary(data);
-    //   } catch (error) {
-    //     console.error('Failed to fetch dashboard summary:', error);
-    //   }
-    // };
-    // fetchSummary();
+    const fetchDashboardData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch PTA dashboard data
+        const ptaDashboardData = await getPTADashboard();
+        setPtaData(ptaDashboardData);
+        
+        // Optionally fetch summary data if needed
+        // const summaryData = await getDashboardSummary();
+        // setSummary(summaryData);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+        toast.error('Failed to load dashboard data. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
-  // Use dynamic values from API or fallbacks
-  const totalAssets = summary?.totalAssets || 3586;
-  const totalPPE = summary?.ppe.count || 1847;
-  const totalSE = summary?.se.count || 956;
-  const totalSupplies = summary?.supplies.count || 783;
-
-  const ppeAmount = summary?.ppe.amount || 87456230.00;
-  const seAmount = summary?.se.amount || 12837450.00;
-  const suppliesAmount = summary?.supplies.amount || 3245870.00;
-  const totalAmount = ppeAmount + seAmount + suppliesAmount;
+  // Use PTA dashboard data or fallbacks
+  const totalPPE = ptaData?.totalPPE || 0;
+  const totalSE = ptaData?.totalSE || 0;
+  const ppeAmount = ptaData?.totalPPEValue || 0;
+  const seAmount = ptaData?.totalSEValue || 0;
+  const ppePercentage = ptaData?.totalPPEValuePercentage || 0;
+  const sePercentage = ptaData?.totalSEValuePercentage || 0;
+  
+  // Calculate totals
+  const totalAssets = totalPPE + totalSE;
+  const totalAmount = ppeAmount + seAmount;
 
   const pendingRequests = 47; // Awaiting approval
   const approvedRequests = 156; // Ready for processing
@@ -84,7 +97,7 @@ function Dashboard() {
       count: `${totalPPE.toLocaleString()} items`,
       description: 'Property, Plant & Equipment',
       changeType: 'positive' as const,
-      change: '+\u20B12.4M vs last quarter',
+      change: `${ppePercentage.toFixed(1)}% of total value`,
       icon: Package,
       color: 'bg-blue-50 text-blue-600 border-blue-200'
     },
@@ -94,19 +107,9 @@ function Dashboard() {
       count: `${totalSE.toLocaleString()} items`,
       description: 'Semi-Expendable Items',
       changeType: 'positive' as const,
-      change: '+\u20B1850K vs last quarter',
+      change: `${sePercentage.toFixed(1)}% of total value`,
       icon: Package,
       color: 'bg-green-50 text-green-600 border-green-200'
-    },
-    {
-      title: 'Supplies Total',
-      value: formatCurrency(suppliesAmount),
-      count: `${totalSupplies.toLocaleString()} items`,
-      description: 'Supplies Inventory',
-      changeType: 'neutral' as const,
-      change: '+\u20B1125K vs last quarter',
-      icon: Package,
-      color: 'bg-purple-50 text-purple-600 border-purple-200'
     },
     {
       title: 'Total Asset Value',
@@ -114,11 +117,24 @@ function Dashboard() {
       count: `${totalAssets.toLocaleString()} items`,
       description: 'Combined Assets Worth',
       changeType: 'positive' as const,
-      change: '+\u20B13.4M vs last quarter',
+      change: 'PPE & SE Combined',
       icon: TrendingUp,
       color: 'bg-indigo-50 text-indigo-600 border-indigo-200'
     }
   ];
+
+  if (isLoading) {
+    return (
+      <div className="p-6 pt-20 space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-slate-600">Loading dashboard data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 pt-20 space-y-6">
@@ -136,8 +152,8 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Cards - Enhanced 2x4 Grid with Amounts in â‚± */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* KPI Cards - Enhanced Grid with Amounts in â‚± */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {kpiData.map((kpi) => (
           <Card key={kpi.title} className={`hover:shadow-lg transition-all duration-200 border-2 ${kpi.color.includes('border') ? kpi.color.split(' ').pop() : 'border-slate-200'}`}>
             <CardContent className="p-6">
@@ -153,17 +169,8 @@ function Dashboard() {
                   <p className="text-xs text-slate-600 font-medium mb-1">{kpi.count}</p>
                   <p className="text-xs text-slate-500 mb-2">{kpi.description}</p>
                   <div className="flex items-center">
-                    {kpi.changeType === 'positive' && (
-                      <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
-                    )}
-                    {kpi.changeType === 'neutral' && (
-                      <Activity className="w-3 h-3 text-blue-600 mr-1" />
-                    )}
-                    <span className={`text-xs font-medium ${
-                      kpi.changeType === 'positive'
-                        ? 'text-green-600'
-                        : 'text-blue-600'
-                    }`}>
+                    <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
+                    <span className="text-xs font-medium text-green-600">
                       {kpi.change}
                     </span>
                   </div>
@@ -179,7 +186,7 @@ function Dashboard() {
         <CardHeader>
           <CardTitle>Asset Portfolio Summary</CardTitle>
           <CardDescription>
-            Breakdown of total asset value of \u20B1{(totalAmount / 1000000).toFixed(2)}M across all categories
+            Breakdown of total asset value of \u20B1{(totalAmount / 1000000).toFixed(2)}M (PPE & SE)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -199,11 +206,11 @@ function Dashboard() {
               <div className="w-full bg-slate-100 rounded-full h-2">
                 <div
                   className="bg-blue-600 h-2 rounded-full"
-                  style={{ width: `${(ppeAmount / totalAmount * 100).toFixed(1)}%` }}
+                  style={{ width: `${totalAmount > 0 ? ppePercentage.toFixed(1) : 0}%` }}
                 ></div>
               </div>
               <p className="text-xs text-slate-600 text-right">
-                {(ppeAmount / totalAmount * 100).toFixed(1)}% of total asset value
+                {ppePercentage.toFixed(1)}% of total asset value
               </p>
             </div>
 
@@ -222,34 +229,11 @@ function Dashboard() {
               <div className="w-full bg-slate-100 rounded-full h-2">
                 <div
                   className="bg-green-600 h-2 rounded-full"
-                  style={{ width: `${(seAmount / totalAmount * 100).toFixed(1)}%` }}
+                  style={{ width: `${totalAmount > 0 ? sePercentage.toFixed(1) : 0}%` }}
                 ></div>
               </div>
               <p className="text-xs text-slate-600 text-right">
-                {(seAmount / totalAmount * 100).toFixed(1)}% of total asset value
-              </p>
-            </div>
-
-            {/* Supplies Breakdown */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 rounded-full bg-purple-600"></div>
-                  <span className="text-sm font-medium">Supplies Inventory</span>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold">{formatCurrency(suppliesAmount)}</p>
-                  <p className="text-xs text-slate-500">{totalSupplies.toLocaleString()} items</p>
-                </div>
-              </div>
-              <div className="w-full bg-slate-100 rounded-full h-2">
-                <div
-                  className="bg-purple-600 h-2 rounded-full"
-                  style={{ width: `${(suppliesAmount / totalAmount * 100).toFixed(1)}%` }}
-                ></div>
-              </div>
-              <p className="text-xs text-slate-600 text-right">
-                {(suppliesAmount / totalAmount * 100).toFixed(1)}% of total asset value
+                {sePercentage.toFixed(1)}% of total asset value
               </p>
             </div>
           </div>
@@ -277,16 +261,16 @@ function Dashboard() {
 
       {/* TOR-Compliant Dashboard Content */}
       {/* Asset Overview Chart */}
-      <AssetOverviewChart />
+      {/* <AssetOverviewChart /> */}
 
       {/* Additional Dashboard Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activities */}
-        <RecentActivitiesCard />
+        {/* <RecentActivitiesCard /> */}
 
         {/* Pending Approvals */}
-        <PendingApprovalsCard />
-      </div>
+        {/* <PendingApprovalsCard /> */}
+      {/* </div> */}
     </div>
   );
 }
