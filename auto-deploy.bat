@@ -1,11 +1,4 @@
 @echo off
-
-echo ============================
-echo STASHING LOCAL CHANGES
-echo ============================
-
-git stash
-
 echo ============================
 echo GIT PULL LATEST CHANGES
 echo ============================
