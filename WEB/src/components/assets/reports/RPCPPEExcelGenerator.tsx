@@ -55,6 +55,20 @@ const styles = StyleSheet.create({
 });
 
 export class RPCPPEPdfGenerator {
+  static getCategoryName(categoryId?: number): string | undefined {
+    const categoryNames: { [key: number]: string } = {
+      1: 'Information and Communication Technology Equipment',
+      2: 'Communication Equipment',
+      3: 'Medical Equipment',
+      4: 'Office Equipment',
+      5: 'Furniture and Fixtures',
+      6: 'Books and Reference Materials',
+      7: 'Other PPE',
+    };
+
+    return categoryId ? categoryNames[categoryId] : undefined;
+  }
+
   static getAccountCode(categoryName?: string): string {
     const accountCodes: { [key: string]: string } = {
       'Office Equipment': '10605020 - Office Equipment',
@@ -69,9 +83,10 @@ export class RPCPPEPdfGenerator {
     return accountCodes[categoryName || ''] || '10605030 - Information and Communication Technology Equipment';
   }
 
-  static async generate(assets: Asset[], year: number, categoryName?: string) {
+  static async generate(assets: Asset[], year: number, categoryId?: number) {
     if (!assets?.length) return;
 
+    const categoryName = this.getCategoryName(categoryId);
     const accountCode = this.getAccountCode(categoryName);
 
     // Calculate total amount
