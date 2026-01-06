@@ -16,6 +16,9 @@ namespace PortalDB.Entities.ASSET.PTA
         [Column("PTAGroup")]
         public string? Group { get; set; }
 
+        [Column("PTAFiscalYear")]
+        public long? FiscalYear { get; set; }
+
         [Column("PTAPropertyNumber")]
         public string? PropertyNumberEncrypted { get; set; }
         [NotMapped]

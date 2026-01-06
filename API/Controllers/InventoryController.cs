@@ -871,7 +871,8 @@ namespace API.Controllers
                         UnitOfMeasurement = item.UnitOfMeasurement,
                         UnitValue = item.UnitValue,
                         DateAcquired = item.DateAssigned,
-                        EstimatedUsefulLife = item.EstimatedUsefulLife
+                        EstimatedUsefulLife = item.EstimatedUsefulLife,
+                        FiscalYear = item.FiscalYear
                     };
 
                     ppeId = await _editTools.PTA.EditTblPTAAsync(newPTA, model.ActionBySystemUserId, context, true);
