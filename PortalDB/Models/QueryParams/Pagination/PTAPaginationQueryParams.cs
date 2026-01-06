@@ -15,6 +15,7 @@ namespace PortalDB.Models.QueryParams.Pagination
 
         public DateTime? StartDate { get; set; }
 
+        public long? FiscalYear { get; set; }
         public DateTime? EndDate { get; set; }
         public long? CategoryId { get; set; }
         public long? EmployeeId { get; set; }

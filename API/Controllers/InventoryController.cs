@@ -174,6 +174,7 @@ namespace API.Controllers
 
                 IEnumerable<TblPTALegend?> ppeLegends = await _getTools.PTA.GetTblPTALegends(context).ToListAsync();
 
+
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
                     string searchLower = model.SearchString.ToLower();
@@ -235,7 +236,12 @@ namespace API.Controllers
                 if (model.GroupBy == null || string.IsNullOrEmpty(model.GroupBy)) { 
                     IEnumerable<TblPTA?> ptas = await _getTools.PTA.GetTblPTAsByGroup(model.GroupName!, context).Where(x => x.Group == model.GroupName).ToListAsync();
 
-                    if(model.CategoryId != null && model.CategoryId != 0)
+                    if (model.FiscalYear.HasValue)
+                    {
+                        ptas = ptas.Where(x => x.FiscalYear == model.FiscalYear.Value);
+                    }
+
+                    if (model.CategoryId != null && model.CategoryId != 0)
                         ptas = ptas.Where(x => x.CategoryId == model.CategoryId);
 
                     if (!string.IsNullOrWhiteSpace(model.SearchString))
@@ -728,6 +734,9 @@ namespace API.Controllers
                     ));
                 }
                 #endregion
+
+
+
 
                 else
                 {
