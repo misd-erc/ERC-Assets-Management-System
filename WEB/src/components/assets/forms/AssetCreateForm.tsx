@@ -37,6 +37,7 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
     unitValue: 0,
     dateAcquired: '',
     estimatedUsefulLife: 5,
+    fiscalYear: 0,
     condition: 'Working',
     movements: [],
   });

@@ -39,6 +39,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
     unitValue: asset.unitValue || 0,
     dateAcquired: asset.dateAcquired || '',
     estimatedUsefulLife: asset.estimatedUsefulLife || 5,
+    fiscalYear: asset.fiscalYear || 0,
     condition: asset.condition || 'Working',
     movements: asset.movements || [],
   });
@@ -93,6 +94,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         unitValue: asset.unitValue || 0,
         dateAcquired: asset.dateAcquired || '',
         estimatedUsefulLife: asset.estimatedUsefulLife || 5,
+        fiscalYear: asset.fiscalYear || 0,
         condition: asset.condition || 'Working',
         movements: asset.movements || [],
       });
@@ -170,6 +172,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
       unitValue: formData.unitValue,
       dateAcquired: formData.dateAcquired,
       estimatedUsefulLife: formData.estimatedUsefulLife,
+      fiscalYear: formData.fiscalYear ?? 0,
       group: group as 'PPE' | 'SE',
       parts: preparedParts,
       movements: preparedMovements,

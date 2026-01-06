@@ -239,6 +239,7 @@ export const seApi = {
     unitValue: number;
     dateAcquired: string;
     estimatedUsefulLife: number;
+    fiscalYear?: number;
     movements: any[];
     actionBySystemUserId: string;
     sessionKey: string;
@@ -275,6 +276,7 @@ export const seApi = {
     unitValue: number;
     dateAcquired: string;
     estimatedUsefulLife: number;
+    fiscalYear?: number;
     movements: any[];
     actionBySystemUserId: string;
     sessionKey: string;

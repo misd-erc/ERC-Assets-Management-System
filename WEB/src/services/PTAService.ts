@@ -10,6 +10,7 @@ export interface PTAData {
   unitOfMeasurement: string;
   unitValue: number;
   dateAcquired?: string;
+  fiscalYear?: number;
   movements: Array<{
     id: number;
     ptaId: number;
@@ -141,6 +142,7 @@ export class PTAService {
       unitValue: ptaItem.unitValue,
       dateAcquired,
       estimatedUsefulLife: 5,
+      fiscalYear: ptaItem.fiscalYear ?? 0,
       condition: latestMovement?.condition || '',
       movements: ptaItem.movements.map(m => ({
         id: m.id,
