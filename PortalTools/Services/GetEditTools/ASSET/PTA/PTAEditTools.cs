@@ -62,6 +62,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                             .SetProperty(x => x.UnitValueEncrypted, model.UnitValueEncrypted)
                             .SetProperty(x => x.DateAcquiredEncrypted, model.DateAcquiredEncrypted)
                             .SetProperty(x => x.EstimatedUsefulLifeEncrypted, model.Group == TblPTA.PPE ? model.EstimatedUsefulLifeEncrypted : null)
+                            .SetProperty(x => x.FiscalYear, model.FiscalYear)
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 

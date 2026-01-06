@@ -252,7 +252,8 @@ namespace API.Controllers
                             x.UnitValue.ToString().Contains(searchLower) ||
                             (x.DateAcquired?.ToString("yyyy-MM-dd") ?? "").Contains(searchLower) ||
                             (model.GroupName == TblPTA.PPE &&
-                             (x.EstimatedUsefulLife?.ToString() ?? "").Contains(searchLower))
+                             (x.EstimatedUsefulLife?.ToString() ?? "").Contains(searchLower)) ||
+                             x.FiscalYear.ToString().Contains(searchLower)
                         );
                     }
 
@@ -302,6 +303,7 @@ namespace API.Controllers
                                 UnitValue = x.UnitValue,
                                 DateAcquired = x.DateAcquired,
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
+                                FiscalYear = x.FiscalYear,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
                                 Movements = await movements.ToListAsync(),
                                 IsActive = x.IsActive,
@@ -327,6 +329,7 @@ namespace API.Controllers
                                 UnitValue = x.UnitValue,
                                 DateAcquired = x.DateAcquired,
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
+                                FiscalYear = x.FiscalYear,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
                                 Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
                                 IsActive = x.IsActive,
@@ -769,6 +772,7 @@ namespace API.Controllers
                     UnitValue = pta.UnitValue,
                     DateAcquired = pta.DateAcquired,
                     EstimatedUsefulLife = pta.EstimatedUsefulLife,
+                    FiscalYear = pta.FiscalYear,
                     Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(pta.Id, context).ToListAsync(),
                     Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(pta.Id, context).ToListAsync(),
                     IsActive = pta.IsActive,
@@ -1014,6 +1018,7 @@ namespace API.Controllers
                     UnitOfMeasurement = model.UnitOfMeasurement,
                     UnitValue = model.UnitValue,
                     DateAcquired = model.DateAcquired,
+                    FiscalYear = model.FiscalYear,
                     IsActive = model.IsActive
                 };
 
