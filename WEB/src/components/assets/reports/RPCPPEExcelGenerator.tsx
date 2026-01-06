@@ -122,9 +122,9 @@ export class RPCPPEPdfGenerator {
                 'UNIT',
                 'UNIT VALUE',
                 'DATE ACQUIRED',
-                'QTY (CARD)',
-                'QTY (PHYSICAL)',
-                'SHORT/OVER QTY',
+                'QUANTITY (PER PROPERTY CARD)',
+                'QUANTITY (PER PHYSICAL COUNT)',
+                'SHORT/OVER QUANTITY',
                 'SHORT/OVER VALUE',
                 'REMARKS',
               ].map((h, i) => (
@@ -166,16 +166,16 @@ export class RPCPPEPdfGenerator {
 
             {/* TOTAL ROW */}
             <View style={styles.row}>
-              <Text style={[styles.td, { width: this.colWidth(0) + this.colWidth(1) + this.colWidth(2) + this.colWidth(3) }]}>
+              <Text style={[styles.td, { width: this.colWidth(0) + this.colWidth(1) + this.colWidth(2) }]}>
                 {' '}
               </Text>
-              <Text style={[styles.td, styles.center, { width: this.colWidth(4) }]}>
+              <Text style={[styles.td, styles.center, { width: this.colWidth(3) }]}>
                 TOTAL
               </Text>
-              <Text style={[styles.td, styles.center, { width: this.colWidth(5) }]}>
+              <Text style={[styles.td, styles.center, { width: this.colWidth(4) }]}>
                 {totalAmount.toLocaleString()}
               </Text>
-              <Text style={[styles.td, { width: this.colWidth(6) + this.colWidth(7) + this.colWidth(8) + this.colWidth(9) + this.colWidth(10) + this.colWidth(11) }]}>
+              <Text style={[styles.td, { width: this.colWidth(5) + this.colWidth(6) + this.colWidth(7) + this.colWidth(8) + this.colWidth(9) + this.colWidth(10) }]}>
                 {' '}
               </Text>
             </View>
@@ -231,9 +231,9 @@ export class RPCPPEPdfGenerator {
                 'UNIT',
                 'UNIT VALUE',
                 'DATE ACQUIRED',
-                'QTY (CARD)',
-                'QTY (PHYSICAL)',
-                'SHORT/OVER QTY',
+                'QUANTITY (PER PROPERTY CARD)',
+                'QUANTITY (PER PHYSICAL COUNT)',
+                'SHORT/OVER QUANTITY',
                 'SHORT/OVER VALUE',
                 'REMARKS',
               ].map((h, i) => (
@@ -275,16 +275,16 @@ export class RPCPPEPdfGenerator {
 
             {/* TOTAL ROW */}
             <View style={styles.row}>
-              <Text style={[styles.td, { width: this.colWidth(0) + this.colWidth(1) + this.colWidth(2) + this.colWidth(3) }]}>
+              <Text style={[styles.td, { width: this.colWidth(0) + this.colWidth(1) + this.colWidth(2) }]}>
                 {' '}
               </Text>
-              <Text style={[styles.td, styles.center, { width: this.colWidth(4) }]}>
+              <Text style={[styles.td, styles.center, { width: this.colWidth(3) }]}>
                 TOTAL
               </Text>
-              <Text style={[styles.td, styles.center, { width: this.colWidth(5) }]}>
+              <Text style={[styles.td, styles.center, { width: this.colWidth(4) }]}>
                 {totalAmount.toLocaleString()}
               </Text>
-              <Text style={[styles.td, { width: this.colWidth(6) + this.colWidth(7) + this.colWidth(8) + this.colWidth(9) + this.colWidth(10) + this.colWidth(11) }]}>
+              <Text style={[styles.td, { width: this.colWidth(5) + this.colWidth(6) + this.colWidth(7) + this.colWidth(8) + this.colWidth(9) + this.colWidth(10) }]}>
                 {' '}
               </Text>
             </View>

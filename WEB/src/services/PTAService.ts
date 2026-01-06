@@ -139,7 +139,8 @@ export class PTAService {
       unitOfMeasurement: ptaItem.unitOfMeasurement,
       unitValue: ptaItem.unitValue,
       dateAcquired,
-      estimatedUsefulLife: 5, // Default
+      estimatedUsefulLife: 5,
+      condition: latestMovement?.condition || '',
       movements: ptaItem.movements.map(m => ({
         id: m.id,
         ptaId: m.ptaId,

@@ -82,6 +82,7 @@ export interface Asset {
   category?: string;    // optional string from lookup
   legend?: string;      // optional string from lookup
 
+  condition: string;
   description: string;
   brand: string;
   model: string;

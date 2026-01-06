@@ -39,6 +39,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
     unitValue: asset.unitValue || 0,
     dateAcquired: asset.dateAcquired || '',
     estimatedUsefulLife: asset.estimatedUsefulLife || 5,
+    condition: asset.condition || 'Working',
     movements: asset.movements || [],
   });
 
@@ -92,6 +93,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         unitValue: asset.unitValue || 0,
         dateAcquired: asset.dateAcquired || '',
         estimatedUsefulLife: asset.estimatedUsefulLife || 5,
+        condition: asset.condition || 'Working',
         movements: asset.movements || [],
       });
 

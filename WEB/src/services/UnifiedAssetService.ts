@@ -56,6 +56,9 @@ export class UnifiedAssetService {
       actualOfficeId: mv.actualOfficeId || mv.office?.id || 0,
       actualDivisionId: mv.actualDivisionId || mv.division?.id || 0,
       condition: mv.condition || 'Working',
+      isActive: mv.isActive !== undefined ? mv.isActive : true,
+      isDeleted: mv.isDeleted !== undefined ? mv.isDeleted : false,
+      createdAt: mv.createdAt || new Date().toISOString(),
     }));
 
     // Extract categoryId and category name
@@ -94,6 +97,7 @@ export class UnifiedAssetService {
       legendId,
       category,
       legend,
+      condition: unifiedMovements[0]?.condition || 'Working',
       description: apiItem.description || '',
       brand: apiItem.brand || '',
       model: apiItem.model || '',
@@ -473,6 +477,7 @@ export class UnifiedAssetService {
         legendId: data.legendId || 0,
         category: data.category,
         legend: data.legend,
+        condition: data.condition || data.movements?.[0]?.condition || 'Working',
         description: data.description,
         brand: data.brand,
         model: data.model,
