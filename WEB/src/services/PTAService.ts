@@ -9,6 +9,7 @@ export interface PTAData {
   description: string;
   unitOfMeasurement: string;
   unitValue: number;
+  dateAcquired?: string;
   movements: Array<{
     id: number;
     ptaId: number;
@@ -115,12 +116,12 @@ export class PTAService {
 
     const categoryId = categoryMapping[ptaItem.category] || 0;
 
-    // Use the latest movement's dateAssigned as dateAcquired
-    const latestMovement = ptaItem.movements
+    // Prefer explicit dateAcquired from API, otherwise fall back to latest movement
+    const latestMovement = (ptaItem.movements || [])
       .filter(m => m.dateAssigned)
       .sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
 
-    const dateAcquired = latestMovement?.dateAssigned || '';
+    const dateAcquired = ptaItem.dateAcquired || latestMovement?.dateAssigned || '';
 
     return {
       id: ptaItem.id,
