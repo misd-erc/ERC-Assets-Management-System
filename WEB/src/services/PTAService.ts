@@ -35,9 +35,10 @@ export class PTAService {
       // Set StartDate to Jan 1 and EndDate to Dec 31 of the selected year
       const startDate = `${year}-01-01`;
       const endDate = `${year}-12-31`;
+      const perPage = 1000;
 
       // Build URL with new API parameters
-      let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?StartDate=${startDate}&EndDate=${endDate}&GroupName=ppe&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+      let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PerSize=${perPage}&StartDate=${startDate}&EndDate=${endDate}&GroupName=ppe&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 
       // Add CategoryId if specified
       if (categoryId) {
