@@ -162,6 +162,34 @@ export function SharedAssetFields({
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fiscalYear">Fiscal Year</Label>
+              <Select
+                value={formData.fiscalYear ? formData.fiscalYear.toString() : ''}
+                onValueChange={(value) => handleInputChange('fiscalYear', value ? parseInt(value) : 0)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select fiscal year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(() => {
+                    const currentYear = new Date().getFullYear();
+                    const years = [];
+                    // Generate years from 10 years ago to current year (latest)
+                    for (let year = currentYear - 10; year <= currentYear; year++) {
+                      years.push(year);
+                    }
+                    // Reverse to show current year first (latest)
+                    return years.reverse().map(year => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ));
+                  })()}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -274,7 +302,7 @@ export function SharedAssetFields({
               <Input
                 id="dateAcquired"
                 type="date"
-                value={formData.dateAcquired}
+                value={formData.dateAcquired ? new Date(formData.dateAcquired).toISOString().split('T')[0] : ''}
                 onChange={(e) => handleInputChange('dateAcquired', e.target.value)}
                 required
               />

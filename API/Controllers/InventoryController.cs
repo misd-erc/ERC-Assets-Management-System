@@ -174,6 +174,7 @@ namespace API.Controllers
 
                 IEnumerable<TblPTALegend?> ppeLegends = await _getTools.PTA.GetTblPTALegends(context).ToListAsync();
 
+
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
                     string searchLower = model.SearchString.ToLower();
@@ -235,7 +236,12 @@ namespace API.Controllers
                 if (model.GroupBy == null || string.IsNullOrEmpty(model.GroupBy)) { 
                     IEnumerable<TblPTA?> ptas = await _getTools.PTA.GetTblPTAsByGroup(model.GroupName!, context).Where(x => x.Group == model.GroupName).ToListAsync();
 
-                    if(model.CategoryId != null && model.CategoryId != 0)
+                    if (model.FiscalYear.HasValue)
+                    {
+                        ptas = ptas.Where(x => x.FiscalYear == model.FiscalYear.Value);
+                    }
+
+                    if (model.CategoryId != null && model.CategoryId != 0)
                         ptas = ptas.Where(x => x.CategoryId == model.CategoryId);
 
                     if (!string.IsNullOrWhiteSpace(model.SearchString))
@@ -252,7 +258,8 @@ namespace API.Controllers
                             x.UnitValue.ToString().Contains(searchLower) ||
                             (x.DateAcquired?.ToString("yyyy-MM-dd") ?? "").Contains(searchLower) ||
                             (model.GroupName == TblPTA.PPE &&
-                             (x.EstimatedUsefulLife?.ToString() ?? "").Contains(searchLower))
+                             (x.EstimatedUsefulLife?.ToString() ?? "").Contains(searchLower)) ||
+                             x.FiscalYear.ToString().Contains(searchLower)
                         );
                     }
 
@@ -302,6 +309,7 @@ namespace API.Controllers
                                 UnitValue = x.UnitValue,
                                 DateAcquired = x.DateAcquired,
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
+                                FiscalYear = x.FiscalYear,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
                                 Movements = await movements.ToListAsync(),
                                 IsActive = x.IsActive,
@@ -327,6 +335,7 @@ namespace API.Controllers
                                 UnitValue = x.UnitValue,
                                 DateAcquired = x.DateAcquired,
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
+                                FiscalYear = x.FiscalYear,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
                                 Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
                                 IsActive = x.IsActive,
@@ -726,6 +735,9 @@ namespace API.Controllers
                 }
                 #endregion
 
+
+
+
                 else
                 {
                     return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Invalid Group By Input"));
@@ -769,6 +781,7 @@ namespace API.Controllers
                     UnitValue = pta.UnitValue,
                     DateAcquired = pta.DateAcquired,
                     EstimatedUsefulLife = pta.EstimatedUsefulLife,
+                    FiscalYear = pta.FiscalYear,
                     Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(pta.Id, context).ToListAsync(),
                     Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(pta.Id, context).ToListAsync(),
                     IsActive = pta.IsActive,
@@ -871,7 +884,8 @@ namespace API.Controllers
                         UnitOfMeasurement = item.UnitOfMeasurement,
                         UnitValue = item.UnitValue,
                         DateAcquired = item.DateAssigned,
-                        EstimatedUsefulLife = item.EstimatedUsefulLife
+                        EstimatedUsefulLife = item.EstimatedUsefulLife,
+                        FiscalYear = item.FiscalYear
                     };
 
                     ppeId = await _editTools.PTA.EditTblPTAAsync(newPTA, model.ActionBySystemUserId, context, true);
@@ -1013,6 +1027,7 @@ namespace API.Controllers
                     UnitOfMeasurement = model.UnitOfMeasurement,
                     UnitValue = model.UnitValue,
                     DateAcquired = model.DateAcquired,
+                    FiscalYear = model.FiscalYear,
                     IsActive = model.IsActive
                 };
 

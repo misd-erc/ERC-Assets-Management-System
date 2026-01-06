@@ -27,6 +27,7 @@ namespace PortalTools.Services
         #region Required Columns
         private static readonly HashSet<string> RequiredStaticColumns = new(StringComparer.OrdinalIgnoreCase)
         {
+
             "Property Number",
             "Category",
             "Legend/Sub-Category",
@@ -38,7 +39,8 @@ namespace PortalTools.Services
             "Unit of Measurement",
             "Unit Value (PHP)",
             "Date Acquired (YYYY-MM-DD)",
-            "Estimated Useful Life (Years)"
+            "Estimated Useful Life (Years)",
+            "Fiscal Year (YYYY)"
         };
 
         private static readonly string[] RequiredMovementColumns = new[]
@@ -136,15 +138,15 @@ namespace PortalTools.Services
                     "Please use the official template.");
             }
 
-            // 2. Only validate movement columns IF they exist (i.e., file has more than 11 columns)
-            if (headerRow.Length <= 11)
+            // 2. Only validate movement columns IF they exist (i.e., file has more than 12 columns)
+            if (headerRow.Length <= 12)
             {
                 // No movement columns at all → this is perfectly valid
                 return;
             }
 
             // 3. There are extra columns → check if at least one complete, correct movement block exists
-            int movementStart = 11;
+            int movementStart = 12;
             bool hasValidMovementBlock = false;
 
             while (movementStart + 5 < headerRow.Length)
@@ -221,12 +223,14 @@ namespace PortalTools.Services
                 var dateAcquired = Get(map, "Date Acquired (YYYY-MM-DD)", "date_acquired", "Date Acquired");
                 item.DateAssigned = TryParseDate(dateAcquired);
 
+                item.FiscalYear = ParseLong(Get(map, "Fiscal Year (YYYY)", "fiscal_year", "Fiscal Year")) ?? 0;
+
                 var partsStr = Get(map, "Parts/Accessories", "parts", "accessories");
                 item.Parts = string.IsNullOrWhiteSpace(partsStr) ? null : ParsePtaParts(partsStr);
 
                 // Parse movement blocks (only if columns exist)
                 var movements = new List<PTAAnnualCount>();
-                int col = 11;
+                int col = 12;
 
                 while (col + 5 < dataRow.Length)
                 {
