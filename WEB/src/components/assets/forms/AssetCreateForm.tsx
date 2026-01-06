@@ -37,6 +37,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
     unitValue: 0,
     dateAcquired: '',
     estimatedUsefulLife: 5,
+    fiscalYear: 0,
+    condition: 'Working',
     movements: [],
   });
 
@@ -167,6 +169,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
     const submitData: Omit<Asset, 'id'> = {
       ...formData,
       group,
+      // Keep asset.condition in sync with current holder's condition
+      condition: accountabilityEntries[0]?.condition || formData.condition || 'Working',
       movements: accountabilityEntries,
     };
 

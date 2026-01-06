@@ -239,6 +239,7 @@ export const ppeApi = {
     unitValue: number;
     dateAcquired: string;
     estimatedUsefulLife: number;
+    fiscalYear?: number;
     movements: any[];
     actionBySystemUserId: string;
     sessionKey: string;
@@ -273,6 +274,7 @@ export const ppeApi = {
     unitValue: number;
     dateAcquired: string;
     estimatedUsefulLife: number;
+    fiscalYear?: number;
     movements: any[];
     actionBySystemUserId: string;
     sessionKey: string;

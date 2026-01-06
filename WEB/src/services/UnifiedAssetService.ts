@@ -56,6 +56,9 @@ export class UnifiedAssetService {
       actualOfficeId: mv.actualOfficeId || mv.office?.id || 0,
       actualDivisionId: mv.actualDivisionId || mv.division?.id || 0,
       condition: mv.condition || 'Working',
+      isActive: mv.isActive !== undefined ? mv.isActive : true,
+      isDeleted: mv.isDeleted !== undefined ? mv.isDeleted : false,
+      createdAt: mv.createdAt || new Date().toISOString(),
     }));
 
     // Extract categoryId and category name
@@ -94,6 +97,7 @@ export class UnifiedAssetService {
       legendId,
       category,
       legend,
+      condition: unifiedMovements[0]?.condition || 'Working',
       description: apiItem.description || '',
       brand: apiItem.brand || '',
       model: apiItem.model || '',
@@ -110,6 +114,7 @@ export class UnifiedAssetService {
       dateAcquired: apiItem.dateAcquired || '',
       movements: unifiedMovements,
       estimatedUsefulLife: apiItem.estimatedUsefulLife || 5,
+      fiscalYear: apiItem.fiscalYear || 0,
     };
   }
 
@@ -421,6 +426,7 @@ export class UnifiedAssetService {
         unitValue: data.unitValue,
         dateAcquired: data.dateAcquired,
         estimatedUsefulLife: data.estimatedUsefulLife ?? 0,
+        fiscalYear: data.fiscalYear ?? 0,
         group: data.group,
         movements: normalizedMovements,
         actionBySystemUserId,
@@ -473,6 +479,7 @@ export class UnifiedAssetService {
         legendId: data.legendId || 0,
         category: data.category,
         legend: data.legend,
+        condition: data.condition || data.movements?.[0]?.condition || 'Working',
         description: data.description,
         brand: data.brand,
         model: data.model,
@@ -483,6 +490,7 @@ export class UnifiedAssetService {
         dateAcquired: data.dateAcquired,
         movements: data.movements,
         estimatedUsefulLife: data.estimatedUsefulLife,
+        fiscalYear: data.fiscalYear || 0,
       };
 
       return createdAsset;
@@ -526,6 +534,7 @@ export class UnifiedAssetService {
         unitValue: data.unitValue || currentAsset.unitValue,
         dateAcquired: data.dateAcquired || currentAsset.dateAcquired,
         estimatedUsefulLife: data.estimatedUsefulLife ?? currentAsset.estimatedUsefulLife ?? 0,
+        fiscalYear: data.fiscalYear ?? currentAsset.fiscalYear ?? 0,
         movements: [], // Movements handled separately via editMovement API
         group: group,
         actionBySystemUserId,

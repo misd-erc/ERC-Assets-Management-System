@@ -9,6 +9,8 @@ export interface PTAData {
   description: string;
   unitOfMeasurement: string;
   unitValue: number;
+  dateAcquired?: string;
+  fiscalYear?: number;
   movements: Array<{
     id: number;
     ptaId: number;
@@ -31,12 +33,10 @@ export class PTAService {
 
       const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
-      // Set StartDate to Jan 1 and EndDate to Dec 31 of the selected year
-      const startDate = `${year}-01-01`;
-      const endDate = `${year}-12-31`;
+      const pageSize = 1000;
 
-      // Build URL with new API parameters
-      let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?StartDate=${startDate}&EndDate=${endDate}&GroupName=ppe&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+      // Build URL with FiscalYear parameter
+      let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&FiscalYear=${year}&GroupName=ppe&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 
       // Add CategoryId if specified
       if (categoryId) {
@@ -72,12 +72,10 @@ export class PTAService {
 
       const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
-      // Set StartDate to Jan 1 and EndDate to Dec 31 of the selected year
-      const startDate = `${year}-01-01`;
-      const endDate = `${year}-12-31`;
+      const pageSize = 1000;
 
-      // Build URL with new API parameters for SE assets
-      const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?StartDate=${startDate}&EndDate=${endDate}&GroupName=se&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+      // Build URL with FiscalYear parameter for SE assets
+      const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&FiscalYear=${year}&GroupName=se&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -115,12 +113,12 @@ export class PTAService {
 
     const categoryId = categoryMapping[ptaItem.category] || 0;
 
-    // Use the latest movement's dateAssigned as dateAcquired
-    const latestMovement = ptaItem.movements
+    // Prefer explicit dateAcquired from API, otherwise fall back to latest movement
+    const latestMovement = (ptaItem.movements || [])
       .filter(m => m.dateAssigned)
       .sort((a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
 
-    const dateAcquired = latestMovement?.dateAssigned || '';
+    const dateAcquired = ptaItem.dateAcquired || latestMovement?.dateAssigned || '';
 
     return {
       id: ptaItem.id,
@@ -138,7 +136,9 @@ export class PTAService {
       unitOfMeasurement: ptaItem.unitOfMeasurement,
       unitValue: ptaItem.unitValue,
       dateAcquired,
-      estimatedUsefulLife: 5, // Default
+      estimatedUsefulLife: 5,
+      fiscalYear: ptaItem.fiscalYear ?? 0,
+      condition: latestMovement?.condition || '',
       movements: ptaItem.movements.map(m => ({
         id: m.id,
         ptaId: m.ptaId,
