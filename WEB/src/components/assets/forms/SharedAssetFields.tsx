@@ -302,7 +302,7 @@ export function SharedAssetFields({
               <Input
                 id="dateAcquired"
                 type="date"
-                value={formData.dateAcquired}
+                value={formData.dateAcquired ? new Date(formData.dateAcquired).toISOString().split('T')[0] : ''}
                 onChange={(e) => handleInputChange('dateAcquired', e.target.value)}
                 required
               />
