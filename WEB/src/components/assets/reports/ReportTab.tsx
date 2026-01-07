@@ -27,6 +27,7 @@ import { EmployeeSelectModal } from './EmployeeSelectModal';
 import { RPCPPEFilterModal } from './RPCPPEFilterModal';
 import { PARGenerator } from './PARGenerator';
 import { ICSGenerator } from './ICSGenerator';
+import { PALGenerator } from './PALGenerator';
 import { RPCPPEPdfGenerator } from './RPCPPEExcelGenerator';
 import { SESPIExcelGenerator, SESPIFilterModal } from './SESPIGenerator';
 import { PTRGenerationModal } from './PTRGenerationModal';
@@ -36,7 +37,7 @@ import { toast } from 'sonner';
 export function ReportTab() {
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<NormalizedEmployee | null>(null);
-  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | 'RPCPPE' | null>(null);
+  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | 'RPCPPE' | 'PAL' | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [rpcppeYear, setRpcppeYear] = useState<number | null>(null);
@@ -49,6 +50,7 @@ export function ReportTab() {
   const [showSESPI, setShowSESPI] = useState(false);
   const [showPTR, setShowPTR] = useState(false);
   const [showITR, setShowITR] = useState(false);
+  const [showPAL, setShowPAL] = useState(false);
 
   useEffect(() => {
     getEmployees(1, 1000).then(res => {
@@ -67,6 +69,8 @@ export function ReportTab() {
     const url =
       selectedReport === 'ICS'
         ? await ICSGenerator.generateICSPreview(emp)
+        : selectedReport === 'PAL'
+        ? await PALGenerator.generatePALPreview(emp)
         : await PARGenerator.generatePARPreview(emp);
 
     setPreviewUrl(url);
@@ -95,9 +99,13 @@ export function ReportTab() {
         toast.error('RPCPPE generation failed');
       }
     } else if (selectedEmployee) {
-      selectedReport === 'ICS'
-        ? await ICSGenerator.generateICS(selectedEmployee)
-        : await PARGenerator.generatePAR(selectedEmployee);
+      if (selectedReport === 'ICS') {
+        await ICSGenerator.generateICS(selectedEmployee);
+      } else if (selectedReport === 'PAL') {
+        await PALGenerator.generatePAL(selectedEmployee);
+      } else {
+        await PARGenerator.generatePAR(selectedEmployee);
+      }
     }
 
     setShowPreview(false);
@@ -197,6 +205,13 @@ export function ReportTab() {
       icon: TrendingUp,
       bgColor: 'bg-teal-600',
       action: () => setShowITR(true)
+    },
+    {
+      title: 'Property Accountability List (PAL)',
+      subtitle: 'Accountable Assets per Employee',
+      icon: FileSearch,
+      bgColor: 'bg-indigo-600',
+      action: () => { setSelectedReport('PAL'); setShowEmployeeModal(true); }
     },
   ];
 
