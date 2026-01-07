@@ -40,9 +40,10 @@ export const createInventoryCategory = async (payload: Omit<EditCategoryRequest,
   return data.data || data; // Handle both wrapped and direct responses
 };
 
-export const editInventoryCategory = async (payload: EditCategoryRequest): Promise<InventoryCategory> => {
+export const editInventoryCategory = async (payload: EditCategoryRequest): Promise<InventoryCategory | null> => {
   const { data } = await axiosInstance.post('/Inventory/pta/category/edit', payload);
-  return data.data || data; // Handle both wrapped and direct responses
+  // API might return success=true with no data, or it might return the updated category
+  return (data.data as InventoryCategory) || (data as InventoryCategory) || null;
 };
 
 export const deleteInventoryCategory = async (id: number, actionBySystemUserId: number, sessionKey: string): Promise<void> => {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { Asset } from '@/types/asset/UnifiedAsset';
+import { getCategories } from '@/api/inventoryApi';
 
 const styles = StyleSheet.create({
   page: {
@@ -55,18 +56,25 @@ const styles = StyleSheet.create({
 });
 
 export class RPCPPEPdfGenerator {
-  static getCategoryName(categoryId?: number): string | undefined {
-    const categoryNames: { [key: number]: string } = {
-      1: 'Information and Communication Technology Equipment',
-      2: 'Communication Equipment',
-      3: 'Medical Equipment',
-      4: 'Office Equipment',
-      5: 'Furniture and Fixtures',
-      6: 'Books and Reference Materials',
-      7: 'Other PPE',
-    };
+  // Cache para sa categories
+  private static categoryCache: { id: number; name: string }[] | null = null;
 
-    return categoryId ? categoryNames[categoryId] : undefined;
+  static async getCategoryName(categoryId?: number): Promise<string | undefined> {
+    if (!categoryId) return undefined;
+
+    // Load categories from API if not cached
+    if (!this.categoryCache) {
+      try {
+        this.categoryCache = await getCategories();
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        this.categoryCache = [];
+      }
+    }
+
+    // Find category by ID from the fetched list
+    const category = this.categoryCache.find(cat => cat.id === categoryId);
+    return category?.name;
   }
 
   static getAccountCode(categoryName?: string): string {
@@ -86,7 +94,7 @@ export class RPCPPEPdfGenerator {
   static async generate(assets: Asset[], year: number, categoryId?: number) {
     if (!assets?.length) return;
 
-    const categoryName = this.getCategoryName(categoryId);
+    const categoryName = await this.getCategoryName(categoryId);
     const accountCode = this.getAccountCode(categoryName);
 
     // Calculate total amount
@@ -193,8 +201,19 @@ export class RPCPPEPdfGenerator {
     a.click();
   }
 
-  static async generatePreview(assets: Asset[], year: number, categoryName?: string): Promise<string> {
+  static async generatePreview(assets: Asset[], year: number, categoryIdOrName?: string | number): Promise<string> {
     if (!assets?.length) return '';
+
+    // If categoryIdOrName is a number or numeric string, fetch the category name
+    let categoryName: string | undefined = undefined;
+    if (categoryIdOrName) {
+      const categoryId = typeof categoryIdOrName === 'string' ? parseInt(categoryIdOrName, 10) : categoryIdOrName;
+      if (!isNaN(categoryId)) {
+        categoryName = await this.getCategoryName(categoryId);
+      } else if (typeof categoryIdOrName === 'string') {
+        categoryName = categoryIdOrName;
+      }
+    }
 
     const accountCode = this.getAccountCode(categoryName);
 
