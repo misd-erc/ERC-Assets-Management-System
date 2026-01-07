@@ -129,8 +129,9 @@ export class CategoryService {
         sessionKey: sessionKey,
       };
 
-      const inventoryCategory = await categoriesApi.editInventoryCategory(requestData);
-      return this.mapInventoryToCategory(inventoryCategory);
+      await categoriesApi.editInventoryCategory(requestData);
+      // After successful update, fetch the updated category by ID
+      return await this.getById(id);
     } catch (error) {
       console.error('Error updating category:', error);
       throw error;
