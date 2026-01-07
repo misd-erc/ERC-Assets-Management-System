@@ -197,7 +197,7 @@ const ICSDocument = ({
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Issued by:</Text>
 
-          <Text style={styles.sigName}>CHERRYLYNN S. GONSALES</Text>
+          <Text style={styles.sigName}>CHERRY LYNN S. GONZALES</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>
             Signature over Printed Name of Supply and Property Custodian

@@ -313,7 +313,7 @@ export class SESPIExcelGenerator {
                 I hereby certify the correctness of the information above.
               </Text>
               <Text style={styles.sigText}> </Text>
-              <Text style={styles.sigName}>CHERRYLYNN S. GONSALES</Text>
+              <Text style={styles.sigName}>CHERRY LYNN S. GONZALES</Text>
               <View style={styles.sigLine} />
               <Text style={styles.sigText}>SUPPLY OFFICER</Text>
             </View>
