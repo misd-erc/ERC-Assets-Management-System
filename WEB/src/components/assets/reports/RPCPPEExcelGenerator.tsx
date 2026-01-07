@@ -56,8 +56,8 @@ const styles = StyleSheet.create({
 });
 
 export class RPCPPEPdfGenerator {
-  // Cache para sa categories
-  private static categoryCache: { id: number; name: string }[] | null = null;
+  // Cache para sa categories with generalCode
+  private static categoryCache: { id: number; name: string; generalCode?: string }[] | null = null;
 
   static async getCategoryName(categoryId?: number): Promise<string | undefined> {
     if (!categoryId) return undefined;
@@ -77,25 +77,29 @@ export class RPCPPEPdfGenerator {
     return category?.name;
   }
 
-  static getAccountCode(categoryName?: string): string {
-    const accountCodes: { [key: string]: string } = {
-      'Office Equipment': '10605020 - Office Equipment',
-      'Information and Communication Technology Equipment': '10605030 - Information and Communication Technology Equipment',
-      'Communication Equipment': '10605070 - Communication Equipment',
-      'Technical and Scientific Equipment': '10605140 - Technical and Scientific Equipment',
-      'Motor Vehicles': '10606010 - Motor Vehicles',
-      'Furniture and Fixtures': '10607010 - Furniture and Fixtures',
-      'Sports Equipment': '10605130 - Sports Equipment',
-    };
+  static async getAccountCode(categoryId?: number): Promise<string> {
+    if (!categoryId) return '';
 
-    return accountCodes[categoryName || ''] || '10605030 - Information and Communication Technology Equipment';
+    // Load categories from API if not cached
+    if (!this.categoryCache) {
+      try {
+        this.categoryCache = await getCategories();
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        this.categoryCache = [];
+      }
+    }
+
+    // Find category by ID and return generalCode
+    const category = this.categoryCache.find(cat => cat.id === categoryId);
+    return category?.generalCode || '';
   }
 
   static async generate(assets: Asset[], year: number, categoryId?: number) {
     if (!assets?.length) return;
 
     const categoryName = await this.getCategoryName(categoryId);
-    const accountCode = this.getAccountCode(categoryName);
+    const accountCode = await this.getAccountCode(categoryId);
 
     // Calculate total amount
     const totalAmount = assets.reduce((sum, asset) => sum + (asset.unitValue || 0), 0);
@@ -109,7 +113,7 @@ export class RPCPPEPdfGenerator {
               REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT
             </Text>
             <Text style={styles.subtitle}>
-              {categoryName ? `Account Code ${accountCode}` : 'All Categories'}
+              {categoryName ? `Account Code ${accountCode} - ${categoryName}` : 'All Categories'}
             </Text>
             <Text style={styles.subtitle}>As of December 31, {year}</Text>
           </View>
@@ -205,17 +209,24 @@ export class RPCPPEPdfGenerator {
     if (!assets?.length) return '';
 
     // If categoryIdOrName is a number or numeric string, fetch the category name
+    let categoryId: number | undefined = undefined;
     let categoryName: string | undefined = undefined;
     if (categoryIdOrName) {
-      const categoryId = typeof categoryIdOrName === 'string' ? parseInt(categoryIdOrName, 10) : categoryIdOrName;
-      if (!isNaN(categoryId)) {
+      if (typeof categoryIdOrName === 'number') {
+        categoryId = categoryIdOrName;
         categoryName = await this.getCategoryName(categoryId);
-      } else if (typeof categoryIdOrName === 'string') {
-        categoryName = categoryIdOrName;
+      } else {
+        const parsedId = parseInt(categoryIdOrName, 10);
+        if (!isNaN(parsedId)) {
+          categoryId = parsedId;
+          categoryName = await this.getCategoryName(categoryId);
+        } else {
+          categoryName = categoryIdOrName;
+        }
       }
     }
 
-    const accountCode = this.getAccountCode(categoryName);
+    const accountCode = await this.getAccountCode(categoryId);
 
     // Calculate total amount
     const totalAmount = assets.reduce((sum, asset) => sum + (asset.unitValue || 0), 0);
@@ -229,7 +240,7 @@ export class RPCPPEPdfGenerator {
               REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT
             </Text>
             <Text style={styles.subtitle}>
-              {categoryName ? `Account Code ${accountCode}` : 'All Categories'}
+              {categoryName ? `Account Code ${accountCode} - ${categoryName}` : 'All Categories'}
             </Text>
             <Text style={styles.subtitle}>As of December 31, {year}</Text>
           </View>
