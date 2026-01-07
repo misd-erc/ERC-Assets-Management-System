@@ -10,11 +10,11 @@ interface ApiResponse<T> {
 
 /* ------------------------------- GET ------------------------------- */
 
-export const getCategories = async (): Promise<{ id: number; name: string }[]> => {
+export const getCategories = async (): Promise<{ id: number; name: string; generalCode?: string }[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
-    const response = await axiosInstance.get<ApiResponse<{ items: { id: number; name: string; isActive: boolean; isDeleted: boolean; createdAt: string }[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>>('/Inventory/pta/category/all', {
+    const response = await axiosInstance.get<ApiResponse<{ items: { id: number; name: string; generalCode?: string; isActive: boolean; isDeleted: boolean; createdAt: string }[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>>('/Inventory/pta/category/all', {
       params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
     });
 
@@ -23,7 +23,7 @@ export const getCategories = async (): Promise<{ id: number; name: string }[]> =
       return [];
     }
 
-    return response.data.data?.items?.map(item => ({ id: item.id, name: item.name })) || [];
+    return response.data.data?.items?.map(item => ({ id: item.id, name: item.name, generalCode: item.generalCode })) || [];
   } catch (error) {
     console.error('Error fetching categories:', error);
     return [];
