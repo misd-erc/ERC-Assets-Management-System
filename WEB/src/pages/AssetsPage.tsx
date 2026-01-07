@@ -126,6 +126,7 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
   try {
     //
     // FIXED BASE HEADERS FROM PPE TEMPLATE (ROW 2)
+    // Updated to include Fiscal Year column
     //
     const baseHeaders = [
       "Property Number",
@@ -139,7 +140,8 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
       "Unit of Measurement",
       "Unit Value (PHP)",
       "Date Acquired (YYYY-MM-DD)",
-      "Estimated Useful Life (Years)"
+      "Estimated Useful Life (Years)",
+      "Fiscal Year (YYYY)"
     ];
 
     //
