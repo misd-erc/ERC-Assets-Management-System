@@ -89,6 +89,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                 TblPTA? ptaModel = await _getTools.PTA.GetTblPTAAsync(id, context);
                 await context.TblPTAParts.Where(x => x.PTAId == id).ExecuteSoftDeleteAsync(context);
                 await context.TblPTAMovements.Where(x => x.PTAId == id).ExecuteSoftDeleteAsync(context);
+                await context.TblPTAs.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
                 await AuditTrailTool.LogActivityAsync(_options, $"Deleted a PTA - {ptaModel.Group}", actionBy: actionBySystemUserId,
                     linkedAuditTrailId: AuditTrailTool.TrackChanges(context, ptaModel, null, nameof(TblPTA), actionBySystemUserId, "Delete"));
 
