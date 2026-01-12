@@ -259,7 +259,7 @@ namespace API.Controllers
                             (x.DateAcquired?.ToString("yyyy-MM-dd") ?? "").Contains(searchLower) ||
                             (model.GroupName == TblPTA.PPE &&
                              (x.EstimatedUsefulLife?.ToString() ?? "").Contains(searchLower)) ||
-                             x.FiscalDate.ToString().Contains(searchLower)
+                             (x.FiscalDate?.ToString("yyyy-MM-dd") ?? "") .Contains(searchLower)
                         );
                     }
 
