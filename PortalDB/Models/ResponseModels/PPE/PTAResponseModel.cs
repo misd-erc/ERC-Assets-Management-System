@@ -23,7 +23,7 @@ namespace PortalDB.Models.ResponseModels.PTA
         public DateTime? DateAcquired { get; set; }
         public List<PTAMovementResponseModel>? Movements { get; set; }
         public long? EstimatedUsefulLife { get; set; }
-        public long? FiscalYear { get; set; }
+        public DateTime? FiscalDate { get; set; }
         public bool IsActive { get; set; }
         public bool IsDeleted { get; set; }
         public DateTime? CreatedAt { get; set; }

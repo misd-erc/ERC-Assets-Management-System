@@ -17,7 +17,7 @@ namespace PortalDB.Models.ViewModels.PTA
         public string? UnitOfMeasurement { get; set; }
         public string? UnitValue { get; set; }
         public DateTime? DateAcquired { get; set; }
-        public string? FiscalYear { get; set; }
+        public DateTime? FiscalDate { get; set; }
         public List<PTAMovementExcelViewModel>? Movements { get; set; }
 
 

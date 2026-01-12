@@ -21,6 +21,6 @@ namespace PortalDB.Models.ParserModels.PTA
         public DateTime? DateAssigned { get; set; }
         public List<PTAAnnualCount>? AnnualCount { get; set; }
         public long? EstimatedUsefulLife { get; set; }
-        public long? FiscalYear { get; set; }
+        public DateTime? FiscalDate { get; set; }
     }
 }

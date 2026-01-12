@@ -40,7 +40,7 @@ namespace PortalTools.Services
             "Unit Value (PHP)",
             "Date Acquired (YYYY-MM-DD)",
             "Estimated Useful Life (Years)",
-            "Fiscal Year (YYYY)"
+            "Fiscal Date (YYYY-MM-DD)"
         };
 
         private static readonly string[] RequiredMovementColumns = new[]
@@ -223,7 +223,8 @@ namespace PortalTools.Services
                 var dateAcquired = Get(map, "Date Acquired (YYYY-MM-DD)", "date_acquired", "Date Acquired");
                 item.DateAssigned = TryParseDate(dateAcquired);
 
-                item.FiscalYear = ParseLong(Get(map, "Fiscal Year (YYYY)", "fiscal_year", "Fiscal Year")) ?? 0;
+                var discalDate = Get(map, "Fiscal Date (YYYY-mm-dd)", "fiscal_date", "Fiscal Date");
+                item.FiscalDate = TryParseDate(discalDate);
 
                 var partsStr = Get(map, "Parts/Accessories", "parts", "accessories");
                 item.Parts = string.IsNullOrWhiteSpace(partsStr) ? null : ParsePtaParts(partsStr);
