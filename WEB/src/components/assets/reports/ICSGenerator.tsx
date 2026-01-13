@@ -127,11 +127,13 @@ const ICSDocument = ({
   employeeName,
   position,
   office,
+  icsNumber,
 }: {
   rows: ICSRow[];
   employeeName: string;
   position: string;
   office: string;
+  icsNumber?: string;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -139,12 +141,13 @@ const ICSDocument = ({
       {/* HEADER */}
       <View style={styles.headerRow}>
         <Image src={logoSrc} style={styles.logo} />
-
         <View style={styles.headerTitleBlock}>
           <Text style={styles.headerTitle}>INVENTORY CUSTODIAN SLIP</Text>
+          {icsNumber && (
+            <Text style={{ fontSize: 10, marginTop: 4 }}>ICS No.: {icsNumber}</Text>
+          )}
         </View>
       </View>
-
       <View style={styles.blueRule} />
 
       {/* TABLE */}
@@ -217,14 +220,22 @@ const ICSDocument = ({
 );
 
 export class ICSGenerator {
-  static async generateICSPreview(item: Asset, movement: UnifiedMovement | null): Promise<string> {
+  // Helper to generate ICS number in format YYYY-MM-SEQ
+  static generateICSNumber(seq = 1) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const seqStr = String(seq).padStart(3, '0');
+    return `${year}-${month}-${seqStr}`;
+  }
+
+  static async generateICSPreview(item: Asset, movement: UnifiedMovement | null, icsNumber?: string): Promise<string> {
     if (!item) {
       alert('No item selected. Cannot generate ICS preview.');
       return '';
     }
 
     const rows: ICSRow[] = [];
-    
     // Build employee name from movement data if available
     let employeeName = 'N/A';
     let position = 'N/A';
@@ -252,15 +263,17 @@ export class ICSGenerator {
       value: item.unitValue ?? null,
     });
 
+    // Use provided ICS number or auto-generate
+    const number = icsNumber || ICSGenerator.generateICSNumber();
     const blob = await pdf(
       <ICSDocument
         rows={rows}
         employeeName={employeeName}
         position={position}
         office={office}
+        icsNumber={number}
       />
     ).toBlob();
-
     return URL.createObjectURL(blob);
   }
 

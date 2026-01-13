@@ -35,6 +35,7 @@ import { SESPIExcelGenerator, SESPIFilterModal } from './SESPIGenerator';
 import { PTRGenerationModal } from './PTRGenerationModal';
 import { ITRGenerationModal } from './ITRGenerationModal';
 import { toast } from 'sonner';
+import { NumberInputModal } from './NumberInputModal';
 
 export function ReportTab() {
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
@@ -59,6 +60,8 @@ export function ReportTab() {
   const [showPTR, setShowPTR] = useState(false);
   const [showITR, setShowITR] = useState(false);
   const [showPAL, setShowPAL] = useState(false);
+  const [showNumberModal, setShowNumberModal] = useState(false);
+  const [customNumber, setCustomNumber] = useState('');
 
   useEffect(() => {
     getEmployees(1, 1000).then(res => {
@@ -122,21 +125,36 @@ export function ReportTab() {
     setShowItemMovementsModal(true);
   };
 
+  // Show number modal after movement selection
   const handleMovementSelect = (item: Asset, movement: UnifiedMovement | null) => {
     setSelectedItem(item);
     setSelectedMovement(movement);
     setShowItemMovementsModal(false);
-    setShowPreview(true);
-    generateItemPreview(item, movement);
+    // Auto-generate number
+    const autoNumber = selectedReport === 'ICS'
+      ? ICSGenerator.generateICSNumber()
+      : PARGenerator.generatePARNumber();
+    setCustomNumber(autoNumber);
+    setShowNumberModal(true);
   };
 
-  const generateItemPreview = async (item: Asset, movement: UnifiedMovement | null) => {
+  // After number is confirmed, generate preview
+  const handleNumberConfirm = (number: string) => {
+    setCustomNumber(number);
+    setShowNumberModal(false);
+    setShowPreview(true);
+    generateItemPreview(selectedItem, selectedMovement, number);
+  };
+
+  // Update preview generator to accept number
+  const generateItemPreview = async (item: Asset | null, movement: UnifiedMovement | null, number?: string) => {
     setLoadingPreview(true);
     try {
+      if (!item) throw new Error('No item selected');
       const url =
         selectedReport === 'ICS'
-          ? await ICSGenerator.generateICSPreview(item, movement)
-          : await PARGenerator.generatePARPreview(item, movement);
+          ? await ICSGenerator.generateICSPreview(item, movement, number)
+          : await PARGenerator.generatePARPreview(item, movement, number);
       setPreviewUrl(url);
     } catch (error) {
       console.error('Preview generation failed:', error);
@@ -404,6 +422,14 @@ export function ReportTab() {
         isOpen={showSESPI}
         onClose={() => setShowSESPI(false)}
         onGenerate={handleSESPIGenerate}
+      />
+
+      <NumberInputModal
+        isOpen={showNumberModal}
+        onClose={() => setShowNumberModal(false)}
+        onConfirm={handleNumberConfirm}
+        defaultNumber={customNumber}
+        label={selectedReport === 'ICS' ? 'ICS Number' : 'PAR Number'}
       />
     </div>
   );

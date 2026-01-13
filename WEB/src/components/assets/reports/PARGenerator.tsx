@@ -155,11 +155,13 @@ const PARDocument = ({
   employeeName,
   position,
   office,
+  parNumber,
 }: {
   rows: PARRow[];
   employeeName: string;
   position: string;
   office: string;
+  parNumber?: string;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -185,7 +187,7 @@ const PARDocument = ({
         </View>
 
         <View style={styles.metaRight}>
-          <Text style={styles.metaLabel}>PAR No.: ______________</Text>
+          <Text style={styles.metaLabel}>PAR No.: {parNumber || '______________'}</Text>
         </View>
       </View>
 
@@ -257,14 +259,22 @@ const PARDocument = ({
 );
 
 export class PARGenerator {
-  static async generatePARPreview(item: Asset, movement: UnifiedMovement | null): Promise<string> {
+  // Helper to generate PAR number in format YYYY-MM-SEQ
+  static generatePARNumber(seq = 1) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const seqStr = String(seq).padStart(3, '0');
+    return `${year}-${month}-${seqStr}`;
+  }
+
+  static async generatePARPreview(item: Asset, movement: UnifiedMovement | null, parNumber?: string): Promise<string> {
     if (!item) {
       alert('No item selected. Cannot generate PAR preview.');
       return '';
     }
 
     const rows: PARRow[] = [];
-    
     // Build employee name from movement data if available
     let employeeName = 'N/A';
     let position = 'N/A';
@@ -293,15 +303,17 @@ export class PARGenerator {
       amount: item.unitValue ?? null,
     });
 
+    // Use provided PAR number or auto-generate
+    const number = parNumber || PARGenerator.generatePARNumber();
     const blob = await pdf(
       <PARDocument
         rows={rows}
         employeeName={employeeName}
         position={position}
         office={office}
+        parNumber={number}
       />
     ).toBlob();
-
     return URL.createObjectURL(blob);
   }
 
