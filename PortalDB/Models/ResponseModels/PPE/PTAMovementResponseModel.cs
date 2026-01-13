@@ -13,7 +13,8 @@ namespace PortalDB.Models.ResponseModels.PTA
         public long? Id { get; set; }
         public long? PTAId { get; set; }
         public DateTime? DateAssigned { get; set; }
-        public string ParItrNumber { get; set; } = string.Empty;
+        public string PtrItrNumber { get; set; } = string.Empty;
+        public string ParIcsNumber { get; set; } = string.Empty;
         public long? PlantillaEmployeeId { get; set; }
         public long? NonPlantillaEmployeeId { get; set; }
         public string PlantillaEmployeeIdOriginal { get; set; } = string.Empty;

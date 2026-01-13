@@ -124,13 +124,22 @@ namespace PortalDB.Entities.ASSET.PTA
             set => DateAssignedEncrypted = string.IsNullOrEmpty(value.ToString()) ? null : EncryptionHelper.Encrypt(value.ToString());
         }
 
-        [Column("PTAMovementPARITRNumber")]
-        public string? PARITRNumberEncrypted { get; set; }
+        [Column("PTAMovementPTRITRNumber")]
+        public string? PTRITRNumberEncrypted { get; set; }
         [NotMapped]
-        public string? PARITRNumber
+        public string? PTRITRNumber
         {
-            get => string.IsNullOrEmpty(PARITRNumberEncrypted) ? null : EncryptionHelper.Decrypt(PARITRNumberEncrypted);
-            set => PARITRNumberEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+            get => string.IsNullOrEmpty(PTRITRNumberEncrypted) ? null : EncryptionHelper.Decrypt(PTRITRNumberEncrypted);
+            set => PTRITRNumberEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+        }
+
+        [Column("PTAMovementPARICSNumber")]
+        public string? PARICSNumberEncrypted { get; set; }
+        [NotMapped]
+        public string? PARICSNumber
+        {
+            get => string.IsNullOrEmpty(PARICSNumberEncrypted) ? null : EncryptionHelper.Decrypt(PARICSNumberEncrypted);
+            set => PARICSNumberEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
         [Column("PlantillaEmployeeId")]
