@@ -150,7 +150,8 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
     // MOVEMENT BLOCK HEADERS (6 COLUMNS, REPEATABLE)
     //
     const movementBlock = [
-      "PAR/ITR Number",
+      "PTR/ITR Number",
+      "PAR/ICS Number",
       "Plantilla Employee ID",
       "Non-Plantilla Employee ID",
       "Office/Division",
