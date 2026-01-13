@@ -158,9 +158,9 @@ export function ItemMovementsModal({
                             <div className="text-xs text-slate-600 dark:text-slate-400">
                               Employee ID: {employeeId}
                             </div>
-                            {movement.parItrNumber && (
+                            {movement.ptrItrNumber && (
                               <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                                PAR/ITR: {movement.parItrNumber}
+                                PTR/ITR: {movement.ptrItrNumber}
                               </div>
                             )}
                           </div>

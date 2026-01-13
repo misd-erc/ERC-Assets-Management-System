@@ -55,7 +55,8 @@ export interface UnifiedMovement {
   id: number | null;
   ptaId: number;
   dateAssigned: string;
-  parItrNumber: string;
+  ptrItrNumber: string;
+  parIcsNumber: string;
   plantillaEmployeeId: number | null;
   nonPlantillaEmployeeId: number | null;
   plantillaEmployeeIdOriginal?: string | null;

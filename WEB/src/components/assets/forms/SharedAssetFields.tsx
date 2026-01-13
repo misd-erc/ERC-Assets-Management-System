@@ -369,7 +369,7 @@ export function SharedAssetFields({
                   )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-1">
                     <Label htmlFor={`dateAssigned-${index}`}>Date Assigned *</Label>
                     <Input
                       id={`dateAssigned-${index}`}
@@ -379,97 +379,109 @@ export function SharedAssetFields({
                       required
                     />
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor={`parItrNumber-${index}`}>PAR/ITR Number *</Label>
-                    <Input
-                      id={`parItrNumber-${index}`}
-                      value={entry.parItrNumber}
-                      onChange={(e) => handleAccountabilityEntryChange(index, 'parItrNumber', e.target.value)}
-                      required
-                    />
+                  <div className="grid grid-cols-2 gap-4 md:col-span-1">
+                    <div className="space-y-2">
+                      <Label htmlFor={`ptrItrNumber-${index}`}>PTR/ITR Number *</Label>
+                      <Input
+                        id={`ptrItrNumber-${index}`}
+                        value={entry.ptrItrNumber}
+                        onChange={(e) => handleAccountabilityEntryChange(index, 'ptrItrNumber', e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`parIcsNumber-${index}`}>PAR/ICS Number *</Label>
+                      <Input
+                        id={`parIcsNumber-${index}`}
+                        value={entry.parIcsNumber}
+                        onChange={(e) => handleAccountabilityEntryChange(index, 'parIcsNumber', e.target.value)}
+                        required
+                      />
+                    </div>
                   </div>
-
-                  <div className="flex flex-col gap-2">
-                    <Label>Accountable Employee (Plantilla) *</Label>
-                    <ReactSelect
-                      options={plantillaEmployeeOptions}
-                      value={plantillaEmployeeOptions.find(option =>
-                        option.value === String(entry.plantillaEmployeeId)
-                      ) || null}
-                      onChange={(selected) => {
-                        if (selected) {
-                          handlePlantillaEmployeeSelect(index, parseInt(selected.value));
-                        } else {
-                          handlePlantillaEmployeeSelect(index, 0);
-                        }
-                      }}
-                      placeholder="Select plantilla employee"
-                      isClearable
-                    />
-                    <Label>Sub Accountable Employee (Non-Plantilla) *</Label>
-                    <ReactSelect
-                      options={nonPlantillaEmployeeOptions}
-                      value={nonPlantillaEmployeeOptions.find(option =>
-                        option.value === String(entry.nonPlantillaEmployeeId)
-                      ) || null}
-                      onChange={(selected) => {
-                        if (selected) {
-                          handleNonPlantillaEmployeeSelect(index, parseInt(selected.value));
-                        } else {
-                          handleNonPlantillaEmployeeSelect(index, 0);
-                        }
-                      }}
-                      placeholder="Select non-plantilla employee"
-                      isClearable
-                    />
+                  <div className="grid grid-cols-2 gap-4 md:col-span-2">
+                    <div className="flex flex-col gap-2">
+                      <Label>Accountable Employee (Plantilla) *</Label>
+                      <ReactSelect
+                        options={plantillaEmployeeOptions}
+                        value={plantillaEmployeeOptions.find(option =>
+                          option.value === String(entry.plantillaEmployeeId)
+                        ) || null}
+                        onChange={(selected) => {
+                          if (selected) {
+                            handlePlantillaEmployeeSelect(index, parseInt(selected.value));
+                          } else {
+                            handlePlantillaEmployeeSelect(index, 0);
+                          }
+                        }}
+                        placeholder="Select plantilla employee"
+                        isClearable
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label>Sub Accountable Employee (Non-Plantilla) *</Label>
+                      <ReactSelect
+                        options={nonPlantillaEmployeeOptions}
+                        value={nonPlantillaEmployeeOptions.find(option =>
+                          option.value === String(entry.nonPlantillaEmployeeId)
+                        ) || null}
+                        onChange={(selected) => {
+                          if (selected) {
+                            handleNonPlantillaEmployeeSelect(index, parseInt(selected.value));
+                          } else {
+                            handleNonPlantillaEmployeeSelect(index, 0);
+                          }
+                        }}
+                        placeholder="Select non-plantilla employee"
+                        isClearable
+                      />
+                    </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor={`actualOffice-${index}`}>Office *</Label>
-                    <Select
-                      value={entry.actualOfficeId?.toString() ?? ''}
-                      onValueChange={(value) => {
-                        handleAccountabilityEntryChange(index, 'actualOfficeId', parseInt(value));
-                      }}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select office" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {offices.map(office => (
-                          <SelectItem key={office.id} value={office.id.toString()}>
-                            {office.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-4 md:col-span-2">
+                    <div className="space-y-2">
+                      <Label htmlFor={`actualOffice-${index}`}>Office *</Label>
+                      <Select
+                        value={entry.actualOfficeId?.toString() ?? ''}
+                        onValueChange={(value) => {
+                          handleAccountabilityEntryChange(index, 'actualOfficeId', parseInt(value));
+                        }}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select office" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {offices.map(office => (
+                            <SelectItem key={office.id} value={office.id.toString()}>
+                              {office.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`actualDivision-${index}`}>Division *</Label>
+                      <Select
+                        value={entry.actualDivisionId?.toString() ?? ''}
+                        onValueChange={(value) => {
+                          handleAccountabilityEntryChange(index, 'actualDivisionId', parseInt(value));
+                        }}
+                        required
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select division" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {divisions.map(division => (
+                            <SelectItem key={division.id} value={division.id.toString()}>
+                              {division.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor={`actualDivision-${index}`}>Division *</Label>
-                    <Select
-                      value={entry.actualDivisionId?.toString() ?? ''}
-                      onValueChange={(value) => {
-                        handleAccountabilityEntryChange(index, 'actualDivisionId', parseInt(value));
-                      }}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select division" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {divisions.map(division => (
-                          <SelectItem key={division.id} value={division.id.toString()}>
-                            {division.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-2">
                     <Label htmlFor={`condition-${index}`}>Condition *</Label>
                     <Select
                       value={entry.condition}

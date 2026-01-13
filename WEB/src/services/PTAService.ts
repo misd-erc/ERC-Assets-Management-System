@@ -15,7 +15,8 @@ export interface PTAData {
     id: number;
     ptaId: number;
     dateAssigned: string;
-    parItrNumber: string;
+    ptrItrNumber: string;
+    parIcsNumber: string;
     plantillaEmployeeId: number | null;
     nonPlantillaEmployeeId: number | null;
     actualOfficeId: number | null;
@@ -143,7 +144,8 @@ export class PTAService {
         id: m.id,
         ptaId: m.ptaId,
         dateAssigned: m.dateAssigned,
-        parItrNumber: m.parItrNumber,
+        ptrItrNumber: m.ptrItrNumber || '',
+        parIcsNumber: m.parIcsNumber || '',
         plantillaEmployeeId: m.plantillaEmployeeId,
         nonPlantillaEmployeeId: m.nonPlantillaEmployeeId,
         actualOfficeId: m.actualOfficeId || undefined,

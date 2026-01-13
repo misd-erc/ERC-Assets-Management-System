@@ -5,6 +5,8 @@ export interface Movement {
   ppeId: number;
   dateAssigned: string;
   parItrNumber: string | null;
+  ptrItrNumber?: string | null;
+  parIcsNumber?: string | null;
   plantillaEmployeeId: string | null;
   nonPlantillaEmployeeId: string | null;
   plantillaEmployeeIdOriginal: string | null;

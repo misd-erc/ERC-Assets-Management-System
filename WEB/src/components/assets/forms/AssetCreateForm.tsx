@@ -94,7 +94,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
       id: 0,
       ptaId: 0,
       dateAssigned: new Date().toISOString(),
-      parItrNumber: '',
+      ptrItrNumber: '',
+      parIcsNumber: '',
       plantillaEmployeeId: 0,
       nonPlantillaEmployeeId: 0,
       actualOfficeId: 0,
@@ -143,8 +144,12 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
         return;
       }
       
-      if (!entry.parItrNumber?.trim()) {
-        toast.error(`PAR/ITR Number is required for ${entryLabel}`);
+      if (!entry.ptrItrNumber?.trim()) {
+        toast.error(`PTR/ITR Number is required for ${entryLabel}`);
+        return;
+      }
+      if (!entry.parIcsNumber?.trim()) {
+        toast.error(`PAR/ICS Number is required for ${entryLabel}`);
         return;
       }
       
@@ -220,7 +225,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
         id: 0,
         ptaId: 0,
         dateAssigned: new Date().toISOString(),
-        parItrNumber: '',
+        ptrItrNumber: '',
+        parIcsNumber: '',
         plantillaEmployeeId: 0,
         nonPlantillaEmployeeId: 0,
         actualOfficeId: 0,

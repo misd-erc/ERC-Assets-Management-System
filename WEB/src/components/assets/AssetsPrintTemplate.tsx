@@ -282,7 +282,7 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
                 {ppeAsset.movements.map((movement, index) => (
                   <tr key={movement.id} style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: index % 2 === 0 ? '#fff' : '#f9fafb' }}>
                     <td style={{ padding: '10px' }}>{formatDate(movement.dateAssigned)}</td>
-                    <td style={{ padding: '10px' }}>{movement.parItrNumber || '-'}</td>
+                    <td style={{ padding: '10px' }}>{movement.ptrItrNumber || '-'}</td>
                     <td style={{ padding: '10px' }}>{movement.plantillaEmployeeIdOriginal || movement.nonPlantillaEmployeeIdOriginal || '-'}</td>
                     <td style={{ padding: '10px' }}>{movement.employee?.[0]?.division?.name || '-'}</td>
                     <td style={{ padding: '10px', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>
@@ -520,7 +520,7 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
                 {asset.movements.map((movement, index) => (
                   <tr key={movement.id} style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: index % 2 === 0 ? '#fff' : '#f9fafb' }}>
                     <td style={{ padding: '10px' }}>{formatDate(movement.dateAssigned)}</td>
-                    <td style={{ padding: '10px' }}>{movement.parItrNumber || '-'}</td>
+                    <td style={{ padding: '10px' }}>{movement.ptrItrNumber || '-'}</td>
                     <td style={{ padding: '10px' }}>
                       {movement.plantillaEmployeeId
                         ? getEmployeeName(movement.plantillaEmployeeId)
