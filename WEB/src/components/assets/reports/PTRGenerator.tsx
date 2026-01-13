@@ -374,15 +374,15 @@ const PTRDocument = ({
 /* -------------------------------- GENERATOR -------------------------------- */
 
 export class PTRGenerator {
-  static async generatePTRPreview(
+  static async generatePTRPreviewMultiple(
     fromEmployee: NormalizedEmployee,
     toEmployee: NormalizedEmployee,
+    assets: Asset[],
     transferDate: string,
-    selectedAssets: Asset[],
     transferType: TransferType
   ): Promise<string> {
     const ptrNumber = this.generatePTRNumber();
-    const rows = this.buildRows(selectedAssets);
+    const rows = this.buildRows(assets);
 
     const blob = await pdf(
       <PTRDocument
@@ -398,18 +398,56 @@ export class PTRGenerator {
     return URL.createObjectURL(blob);
   }
 
-  static async generatePTR(
-    fromEmployee: NormalizedEmployee,
+  static async generatePTRPreview(
+    item: Asset,
+    movement: any,
     toEmployee: NormalizedEmployee,
     transferDate: string,
-    selectedAssets: Asset[],
+    transferType: TransferType
+  ): Promise<string> {
+    const ptrNumber = this.generatePTRNumber();
+    const rows = this.buildRows([item]);
+
+    // Extract fromEmployee from movement
+    const employee = Array.isArray(movement?.employee) ? movement?.employee[0] : movement?.employee;
+    const fromEmployee: NormalizedEmployee = {
+      id: movement?.plantillaEmployeeId || movement?.nonPlantillaEmployeeId || 0,
+      firstName: employee?.firstName || '',
+      middleName: employee?.middleName || '',
+      lastName: employee?.lastName || '',
+      suffixName: employee?.suffixName || '',
+      employeeIdOriginal: movement?.plantillaEmployeeIdOriginal || movement?.nonPlantillaEmployeeIdOriginal || '',
+      employmentTypeId: 0,
+      label: `${employee?.lastName || ''}, ${employee?.firstName || ''}`,
+    };
+
+    const blob = await pdf(
+      <PTRDocument
+        rows={rows}
+        ptrNumber={ptrNumber}
+        transferDate={transferDate}
+        fromEmployee={fromEmployee}
+        toEmployee={toEmployee}
+        transferType={transferType}
+      />
+    ).toBlob();
+
+    return URL.createObjectURL(blob);
+  }
+
+  static async generatePTRMultiple(
+    fromEmployee: NormalizedEmployee,
+    toEmployee: NormalizedEmployee,
+    assets: Asset[],
+    transferDate: string,
     transferType: TransferType
   ) {
     const ptrNumber = this.generatePTRNumber();
-    const rows = this.buildRows(selectedAssets);
+    const rows = this.buildRows(assets);
 
-    for (const asset of selectedAssets) {
-      const latestMovement = asset.movements
+    // Update all asset movements
+    for (const item of assets) {
+      const latestMovement = item.movements
         ?.filter(m => m.isActive)
         .sort(
           (a, b) =>
@@ -417,10 +455,10 @@ export class PTRGenerator {
             new Date(a.dateAssigned).getTime()
         )[0];
 
-      if (asset.group === "PPE") {
+      if (item.group === "PPE") {
         await ppeApi.editMovement({
           id: latestMovement?.id || 0,
-          ptaId: asset.id,
+          ptaId: item.id,
           dateAssigned: transferDate,
           parItrNumber: ptrNumber,
           plantillaEmployeeId: toEmployee.id,
@@ -431,12 +469,12 @@ export class PTRGenerator {
           isActive: true,
           actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
           sessionKey: localStorage.getItem("sessionToken") || "",
-          model: asset.model || "",
+          model: item.model || "",
         });
       } else {
         await seApi.editMovement({
           id: latestMovement?.id || 0,
-          ptaId: asset.id,
+          ptaId: item.id,
           dateAssigned: transferDate,
           parItrNumber: ptrNumber,
           plantillaEmployeeId: toEmployee.id.toString(),
@@ -447,9 +485,93 @@ export class PTRGenerator {
           isActive: true,
           actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
           sessionKey: localStorage.getItem("sessionToken") || "",
-          model: asset.model || "",
+          model: item.model || "",
         });
       }
+    }
+
+    const blob = await pdf(
+      <PTRDocument
+        rows={rows}
+        ptrNumber={ptrNumber}
+        transferDate={transferDate}
+        fromEmployee={fromEmployee}
+        toEmployee={toEmployee}
+        transferType={transferType}
+      />
+    ).toBlob();
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${ptrNumber}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  static async generatePTR(
+    item: Asset,
+    movement: any,
+    toEmployee: NormalizedEmployee,
+    transferDate: string,
+    transferType: TransferType
+  ) {
+    const ptrNumber = this.generatePTRNumber();
+    const rows = this.buildRows([item]);
+
+    // Extract fromEmployee from movement
+    const employee = Array.isArray(movement?.employee) ? movement?.employee[0] : movement?.employee;
+    const fromEmployee: NormalizedEmployee = {
+      id: movement?.plantillaEmployeeId || movement?.nonPlantillaEmployeeId || 0,
+      firstName: employee?.firstName || '',
+      middleName: employee?.middleName || '',
+      lastName: employee?.lastName || '',
+      suffixName: employee?.suffixName || '',
+      employeeIdOriginal: movement?.plantillaEmployeeIdOriginal || movement?.nonPlantillaEmployeeIdOriginal || '',
+      employmentTypeId: 0,
+      label: `${employee?.lastName || ''}, ${employee?.firstName || ''}`,
+    };
+
+    const latestMovement = item.movements
+      ?.filter(m => m.isActive)
+      .sort(
+        (a, b) =>
+          new Date(b.dateAssigned).getTime() -
+          new Date(a.dateAssigned).getTime()
+      )[0];
+
+    if (item.group === "PPE") {
+      await ppeApi.editMovement({
+        id: latestMovement?.id || 0,
+        ptaId: item.id,
+        dateAssigned: transferDate,
+        parItrNumber: ptrNumber,
+        plantillaEmployeeId: toEmployee.id,
+        nonPlantillaEmployeeId: 0,
+        condition: latestMovement?.condition ?? "Good",
+        actualOfficeId: latestMovement?.actualOfficeId || 0,
+        actualDivisionId: latestMovement?.actualDivisionId || 0,
+        isActive: true,
+        actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
+        sessionKey: localStorage.getItem("sessionToken") || "",
+        model: item.model || "",
+      });
+    } else {
+      await seApi.editMovement({
+        id: latestMovement?.id || 0,
+        ptaId: item.id,
+        dateAssigned: transferDate,
+        parItrNumber: ptrNumber,
+        plantillaEmployeeId: toEmployee.id.toString(),
+        nonPlantillaEmployeeId: null,
+        condition: latestMovement?.condition ?? "Good",
+        actualOfficeId: latestMovement?.actualOfficeId || 0,
+        actualDivisionId: latestMovement?.actualDivisionId || 0,
+        isActive: true,
+        actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
+        sessionKey: localStorage.getItem("sessionToken") || "",
+        model: item.model || "",
+      });
     }
 
     const blob = await pdf(

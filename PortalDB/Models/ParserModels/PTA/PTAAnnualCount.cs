@@ -9,7 +9,8 @@ namespace PortalDB.Models.ParserModels.PTA
     public class PTAAnnualCount
     {
         public DateTime? DateAssigned { get; set; }
-        public string ParItrNumber { get; set; } = string.Empty;
+        public string PtrItrNumber { get; set; } = string.Empty;
+        public string ParIcsNumber { get; set; } = string.Empty;
         public string PlantillaEmployeeId { get; set; } = string.Empty;
         public string NonPlantillaEmployeeId { get; set; } = string.Empty;
         public string ActualOfficeAndDivision { get; set; } = string.Empty;

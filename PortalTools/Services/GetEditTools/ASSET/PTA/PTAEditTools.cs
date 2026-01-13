@@ -62,7 +62,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                             .SetProperty(x => x.UnitValueEncrypted, model.UnitValueEncrypted)
                             .SetProperty(x => x.DateAcquiredEncrypted, model.DateAcquiredEncrypted)
                             .SetProperty(x => x.EstimatedUsefulLifeEncrypted, model.Group == TblPTA.PPE ? model.EstimatedUsefulLifeEncrypted : null)
-                            .SetProperty(x => x.FiscalYear, model.FiscalYear)
+                            .SetProperty(x => x.FiscalDate, model.FiscalDate)
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 
@@ -195,7 +195,8 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                         .ExecuteUpdateAsync(u => u
                             .SetProperty(x => x.PTAId, model.PTAId)
                             .SetProperty(x => x.DateAssignedEncrypted, model.DateAssignedEncrypted)
-                            .SetProperty(x => x.PARITRNumberEncrypted, model.PARITRNumberEncrypted)
+                            .SetProperty(x => x.PTRITRNumberEncrypted, model.PTRITRNumberEncrypted)
+                            .SetProperty(x => x.PARICSNumberEncrypted, model.PARICSNumberEncrypted)
                             .SetProperty(x => x.PlantillaEmployeeId, model.PlantillaEmployeeId)
                             .SetProperty(x => x.NonPlantillaEmployeeId, model.NonPlantillaEmployeeId)
                             .SetProperty(x => x.PlantillaEmployeeIdOriginalEncrypted, model.PlantillaEmployeeIdOriginalEncrypted)

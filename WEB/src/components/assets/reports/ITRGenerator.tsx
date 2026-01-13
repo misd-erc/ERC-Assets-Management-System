@@ -374,14 +374,27 @@ const ITRDocument = ({
 
 export class ITRGenerator {
   static async generateITRPreview(
-    fromEmployee: NormalizedEmployee,
+    item: Asset,
+    movement: any,
     toEmployee: NormalizedEmployee,
     transferDate: string,
-    selectedAssets: Asset[],
     transferType: TransferType
   ): Promise<string> {
     const itrNumber = this.generateITRNumber();
-    const rows = this.buildRows(selectedAssets);
+    const rows = this.buildRows([item]);
+
+    // Extract fromEmployee from movement
+    const employee = Array.isArray(movement?.employee) ? movement?.employee[0] : movement?.employee;
+    const fromEmployee: NormalizedEmployee = {
+      id: movement?.plantillaEmployeeId || movement?.nonPlantillaEmployeeId || 0,
+      firstName: employee?.firstName || '',
+      middleName: employee?.middleName || '',
+      lastName: employee?.lastName || '',
+      suffixName: employee?.suffixName || '',
+      employeeIdOriginal: movement?.plantillaEmployeeIdOriginal || movement?.nonPlantillaEmployeeIdOriginal || '',
+      employmentTypeId: 0,
+      label: `${employee?.lastName || ''}, ${employee?.firstName || ''}`,
+    };
 
     const blob = await pdf(
       <ITRDocument
@@ -398,40 +411,51 @@ export class ITRGenerator {
   }
 
   static async generateITR(
-    fromEmployee: NormalizedEmployee,
+    item: Asset,
+    movement: any,
     toEmployee: NormalizedEmployee,
     transferDate: string,
-    selectedAssets: Asset[],
     transferType: TransferType
   ) {
     const itrNumber = this.generateITRNumber();
-    const rows = this.buildRows(selectedAssets);
+    const rows = this.buildRows([item]);
 
-    for (const asset of selectedAssets) {
-      const latestMovement = asset.movements
-        ?.filter(m => m.isActive)
-        .sort(
-          (a, b) =>
-            new Date(b.dateAssigned).getTime() -
-            new Date(a.dateAssigned).getTime()
-        )[0];
+    // Extract fromEmployee from movement
+    const employee = Array.isArray(movement?.employee) ? movement?.employee[0] : movement?.employee;
+    const fromEmployee: NormalizedEmployee = {
+      id: movement?.plantillaEmployeeId || movement?.nonPlantillaEmployeeId || 0,
+      firstName: employee?.firstName || '',
+      middleName: employee?.middleName || '',
+      lastName: employee?.lastName || '',
+      suffixName: employee?.suffixName || '',
+      employeeIdOriginal: movement?.plantillaEmployeeIdOriginal || movement?.nonPlantillaEmployeeIdOriginal || '',
+      employmentTypeId: 0,
+      label: `${employee?.lastName || ''}, ${employee?.firstName || ''}`,
+    };
 
-      await seApi.editMovement({
-        id: latestMovement?.id || 0,
-        ptaId: asset.id,
-        dateAssigned: transferDate,
-        parItrNumber: itrNumber,
-        plantillaEmployeeId: toEmployee.id.toString(),
-        nonPlantillaEmployeeId: null,
-        condition: latestMovement?.condition ?? "Good",
-        actualOfficeId: latestMovement?.actualOfficeId || 0,
+    const latestMovement = item.movements
+      ?.filter(m => m.isActive)
+      .sort(
+        (a, b) =>
+          new Date(b.dateAssigned).getTime() -
+          new Date(a.dateAssigned).getTime()
+      )[0];
+
+    await seApi.editMovement({
+      id: latestMovement?.id || 0,
+      ptaId: item.id,
+      dateAssigned: transferDate,
+      parItrNumber: itrNumber,
+      plantillaEmployeeId: toEmployee.id.toString(),
+      nonPlantillaEmployeeId: null,
+      condition: latestMovement?.condition ?? "Good",
+      actualOfficeId: latestMovement?.actualOfficeId || 0,
         actualDivisionId: latestMovement?.actualDivisionId || 0,
         isActive: true,
         actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
         sessionKey: localStorage.getItem("sessionToken") || "",
-        model: asset.model || "",
+        model: item.model || "",
       });
-    }
 
     const blob = await pdf(
       <ITRDocument

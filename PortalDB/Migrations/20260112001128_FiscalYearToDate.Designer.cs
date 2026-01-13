@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260112001128_FiscalYearToDate")]
+    partial class FiscalYearToDate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -206,17 +209,13 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("NonPlantillaEmployeeIdOriginal");
 
-                    b.Property<string>("PARICSNumberEncrypted")
+                    b.Property<string>("PARITRNumberEncrypted")
                         .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAMovementPARICSNumber");
+                        .HasColumnName("PTAMovementPARITRNumber");
 
                     b.Property<long?>("PTAId")
                         .HasColumnType("bigint")
                         .HasColumnName("PTAId");
-
-                    b.Property<string>("PTRITRNumberEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAMovementPTRITRNumber");
 
                     b.Property<long?>("PlantillaEmployeeId")
                         .HasColumnType("bigint")
@@ -398,13 +397,9 @@ namespace PortalDB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("NonPlantillaSystemUserId");
 
-                    b.Property<string>("PARICSNumberEncrypted")
+                    b.Property<string>("PARITRNumberEncrypted")
                         .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAMovementPARICSNumber");
-
-                    b.Property<string>("PTRITRNumberEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAMovementPTRITRNumber");
+                        .HasColumnName("PTAMovementPARITRNumber");
 
                     b.Property<long?>("PlantillaDivisionId")
                         .HasColumnType("bigint")

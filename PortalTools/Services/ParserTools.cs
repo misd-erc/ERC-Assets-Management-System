@@ -40,12 +40,13 @@ namespace PortalTools.Services
             "Unit Value (PHP)",
             "Date Acquired (YYYY-MM-DD)",
             "Estimated Useful Life (Years)",
-            "Fiscal Year (YYYY)"
+            "Fiscal Date (YYYY-MM-DD)"
         };
 
         private static readonly string[] RequiredMovementColumns = new[]
         {
-            "PAR/ITR Number",
+            "PTR/ITR Number",
+            "PAR/ICS Number",
             "Plantilla Employee ID",
             "Non-Plantilla Employee ID",
             "Office/Division",
@@ -149,10 +150,10 @@ namespace PortalTools.Services
             int movementStart = 12;
             bool hasValidMovementBlock = false;
 
-            while (movementStart + 5 < headerRow.Length)
+            while (movementStart + 6 < headerRow.Length)
             {
                 var block = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                for (int i = 0; i < 6; i++)
+                for (int i = 0; i < 7; i++)
                 {
                     var header = headerRow[movementStart + i].Trim();
                     if (!string.IsNullOrWhiteSpace(header))
@@ -166,7 +167,7 @@ namespace PortalTools.Services
                     break;
                 }
 
-                movementStart += 6;
+                movementStart += 7;
             }
 
             if (!hasValidMovementBlock)
@@ -223,7 +224,8 @@ namespace PortalTools.Services
                 var dateAcquired = Get(map, "Date Acquired (YYYY-MM-DD)", "date_acquired", "Date Acquired");
                 item.DateAssigned = TryParseDate(dateAcquired);
 
-                item.FiscalYear = ParseLong(Get(map, "Fiscal Year (YYYY)", "fiscal_year", "Fiscal Year")) ?? 0;
+                var discalDate = Get(map, "Fiscal Date (YYYY-mm-dd)", "fiscal_date", "Fiscal Date");
+                item.FiscalDate = TryParseDate(discalDate);
 
                 var partsStr = Get(map, "Parts/Accessories", "parts", "accessories");
                 item.Parts = string.IsNullOrWhiteSpace(partsStr) ? null : ParsePtaParts(partsStr);
@@ -232,26 +234,27 @@ namespace PortalTools.Services
                 var movements = new List<PTAAnnualCount>();
                 int col = 12;
 
-                while (col + 5 < dataRow.Length)
+                while (col + 6 < dataRow.Length)
                 {
                     var dateCell = dataRow[col].Trim();
                     if (string.IsNullOrWhiteSpace(dateCell))
                     {
-                        col += 6;
+                        col += 7;
                         continue;
                     }
 
                     var movement = new PTAAnnualCount
                     {
                         DateAssigned = TryParseDate(dateCell),
-                        ParItrNumber = GetCell(dataRow, col + 1),
-                        PlantillaEmployeeId = GetCell(dataRow, col + 2),
-                        NonPlantillaEmployeeId = GetCell(dataRow, col + 3),
-                        ActualOfficeAndDivision = GetCell(dataRow, col + 4),
-                        Condition = GetCell(dataRow, col + 5)
+                        PtrItrNumber = GetCell(dataRow, col + 1),
+                        ParIcsNumber = GetCell(dataRow, col + 2),
+                        PlantillaEmployeeId = GetCell(dataRow, col + 3),
+                        NonPlantillaEmployeeId = GetCell(dataRow, col + 4),
+                        ActualOfficeAndDivision = GetCell(dataRow, col + 5),
+                        Condition = GetCell(dataRow, col + 6)
                     };
                     movements.Add(movement);
-                    col += 6;
+                    col += 7;
                 }
 
                 item.AnnualCount = movements.Count > 0 ? movements : null;

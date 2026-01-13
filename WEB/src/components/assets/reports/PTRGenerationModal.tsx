@@ -33,14 +33,14 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
   const [toEmployee, setToEmployee] = useState<NormalizedEmployee | null>(null);
   const [transferDate, setTransferDate] = useState<Date>(new Date());
   const [transferType, setTransferType] = useState<'DONATION' | 'REASSIGNMENT' | 'RELOCATE' | 'OTHERS'>('REASSIGNMENT');
-  const [availableAssets, setAvailableAssets] = useState<Asset[]>([]);
-  const [selectedAssets, setSelectedAssets] = useState<Asset[]>([]);
-  const [loadingAssets, setLoadingAssets] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const [fromSearch, setFromSearch] = useState('');
+  const [availableAssets, setAvailableAssets] = useState<Asset[]>([]);
+  const [selectedAssets, setSelectedAssets] = useState<Asset[]>([]);
+  const [loadingAssets, setLoadingAssets] = useState(false);
   const [toSearch, setToSearch] = useState('');
+  const [fromSearch, setFromSearch] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -53,33 +53,36 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
     setFromEmployee(null);
     setToEmployee(null);
     setTransferDate(new Date());
-    setAvailableAssets([]);
-    setSelectedAssets([]);
+    setTransferType('REASSIGNMENT');
     setPreviewUrl('');
     setShowPreview(false);
+    setAvailableAssets([]);
+    setSelectedAssets([]);
+    setFromSearch('');
+    setToSearch('');
   };
 
   const handleFromEmployeeSelect = async (emp: NormalizedEmployee) => {
     setFromEmployee(emp);
+    setFromSearch('');
+    
+    // Load assets for this employee
     setLoadingAssets(true);
-
     try {
-      // Fetch PPE assets
-      const ppeAssets = await getEmployeeAssets(emp.id, 'PPE');
-      // Fetch SE assets
-      const seAssets = await getEmployeeAssets(emp.id, 'SE');
-      setAvailableAssets([...ppeAssets, ...seAssets]);
+      const assets = await getEmployeeAssets(emp.id, 'PPE');
+      setAvailableAssets(assets);
     } catch (error) {
-      console.error('Failed to fetch assets:', error);
-      setAvailableAssets([]);
+      console.error('Failed to load employee assets:', error);
+    } finally {
+      setLoadingAssets(false);
     }
-
-    setLoadingAssets(false);
+    
     setCurrentStep('to');
   };
 
   const handleToEmployeeSelect = (emp: NormalizedEmployee) => {
     setToEmployee(emp);
+    setToSearch('');
     setCurrentStep('date');
   };
 
@@ -92,19 +95,16 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
 
   const handleAssetToggle = (asset: Asset, checked: boolean) => {
     if (checked) {
-      setSelectedAssets(prev => [...prev, asset]);
+      setSelectedAssets([...selectedAssets, asset]);
     } else {
-      setSelectedAssets(prev => prev.filter(a => a.id !== asset.id));
+      setSelectedAssets(selectedAssets.filter(a => a.id !== asset.id));
     }
   };
 
   const handleAssetsNext = () => {
-    if (selectedAssets.length === 0) {
-      alert('Please select at least one asset');
-      return;
+    if (selectedAssets.length > 0) {
+      generatePreview();
     }
-    setCurrentStep('preview');
-    generatePreview();
   };
 
   const generatePreview = async () => {
@@ -112,29 +112,32 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
 
     setLoadingPreview(true);
     try {
-      const url = await PTRGenerator.generatePTRPreview(
+      const url = await PTRGenerator.generatePTRPreviewMultiple(
         fromEmployee,
         toEmployee,
-        transferDate.toISOString().slice(0, 10),
         selectedAssets,
+        transferDate.toISOString().slice(0, 10),
         transferType
       );
       setPreviewUrl(url);
+      setCurrentStep('preview');
+      setShowPreview(true);
     } catch (error) {
       console.error('Failed to generate preview:', error);
+    } finally {
+      setLoadingPreview(false);
     }
-    setLoadingPreview(false);
   };
 
   const handleConfirm = async () => {
     if (!fromEmployee || !toEmployee) return;
 
     try {
-      await PTRGenerator.generatePTR(
+      await PTRGenerator.generatePTRMultiple(
         fromEmployee,
         toEmployee,
-        transferDate.toISOString().slice(0, 10),
         selectedAssets,
+        transferDate.toISOString().slice(0, 10),
         transferType
       );
       onClose();
@@ -143,7 +146,45 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
     }
   };
 
-  const canProceedFromTo = fromEmployee && toEmployee && fromEmployee.id !== toEmployee.id;
+  const getStepNumber = (step: Step) => {
+    const steps: Step[] = ['from', 'to', 'date', 'transferType', 'assets', 'preview'];
+    return steps.indexOf(step) + 1;
+  };
+
+  const canGoNext = () => {
+    switch (currentStep) {
+      case 'from': return !!fromEmployee;
+      case 'to': return !!toEmployee;
+      case 'date': return !!transferDate;
+      case 'transferType': return !!transferType;
+      case 'assets': return selectedAssets.length > 0;
+      case 'preview': return !!previewUrl;
+      default: return false;
+    }
+  };
+
+  const handleNext = () => {
+    if (!canGoNext()) return;
+
+    switch (currentStep) {
+      case 'from': setCurrentStep('to'); break;
+      case 'to': setCurrentStep('date'); break;
+      case 'date': setCurrentStep('transferType'); break;
+      case 'transferType': setCurrentStep('assets'); break;
+      case 'assets': handleAssetsNext(); break;
+      case 'preview': setShowPreview(true); break;
+    }
+  };
+
+  const handleBack = () => {
+    switch (currentStep) {
+      case 'to': setCurrentStep('from'); break;
+      case 'date': setCurrentStep('to'); break;
+      case 'transferType': setCurrentStep('date'); break;
+      case 'assets': setCurrentStep('transferType'); break;
+      case 'preview': setCurrentStep('assets'); break;
+    }
+  };
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -151,6 +192,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         const filteredFromEmployees = employees.filter(emp =>
           emp.label.toLowerCase().includes(fromSearch.toLowerCase())
         );
+
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Select FROM Employee</h3>
@@ -169,11 +211,13 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
                   key={emp.id}
                   onClick={() => handleFromEmployeeSelect(emp)}
                   className="p-3 text-left border rounded hover:bg-gray-50"
+                  disabled={loadingAssets}
                 >
                   {emp.label}
                 </button>
               ))}
             </div>
+            {loadingAssets && <div className="text-sm text-gray-500">Loading assets...</div>}
           </div>
         );
 
@@ -181,10 +225,13 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         const filteredToEmployees = employees
           .filter(emp => emp.id !== fromEmployee?.id)
           .filter(emp => emp.label.toLowerCase().includes(toSearch.toLowerCase()));
+
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Select TO Employee</h3>
-            <p className="text-sm text-gray-600">From: {fromEmployee?.label}</p>
+            <p className="text-sm text-gray-600">
+              From: {fromEmployee?.label}
+            </p>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -213,7 +260,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Select Transfer Date</h3>
             <p className="text-sm text-gray-600">
-              From: {fromEmployee?.label} → To: {toEmployee?.label}
+              {fromEmployee?.label} → {toEmployee?.label}
             </p>
             <Popover>
               <PopoverTrigger asChild>
@@ -245,7 +292,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Select Transfer Type</h3>
             <p className="text-sm text-gray-600">
-              From: {fromEmployee?.label} → To: {toEmployee?.label} on {format(transferDate, "PPP")}
+              {fromEmployee?.label} → {toEmployee?.label} on {format(transferDate, "PPP")}
             </p>
             <div className="space-y-2">
               {[
@@ -276,20 +323,19 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
       case 'assets':
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Select Assets to Transfer</h3>
+            <h3 className="text-lg font-semibold">Select Items to Transfer</h3>
             <p className="text-sm text-gray-600">
-              From: {fromEmployee?.label} → To: {toEmployee?.label} on {format(transferDate, "PPP")}
+              {fromEmployee?.label} has {availableAssets.length} item(s) available
             </p>
-            {loadingAssets ? (
-              <div>Loading assets...</div>
-            ) : availableAssets.length === 0 ? (
-              <div>No assets found for this employee</div>
+            {availableAssets.length === 0 ? (
+              <div className="p-4 text-center text-gray-500 border rounded-lg">
+                No items available for this employee
+              </div>
             ) : (
               <div className="space-y-2">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2 p-2 border-b mb-2">
                   <Checkbox
-                    id="select-all-assets"
-                    checked={selectedAssets.length === availableAssets.length && availableAssets.length > 0}
+                    checked={selectedAssets.length === availableAssets.length}
                     onCheckedChange={(checked) => {
                       if (checked) {
                         setSelectedAssets(availableAssets);
@@ -298,29 +344,27 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
                       }
                     }}
                   />
-                  <label
-                    htmlFor="select-all-assets"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Select All
-                  </label>
+                  <span className="text-sm font-medium">
+                    Select All ({selectedAssets.length}/{availableAssets.length})
+                  </span>
                 </div>
-                <div className="max-h-60 overflow-y-auto space-y-2">
+                <div className="max-h-60 overflow-y-auto space-y-1">
                   {availableAssets.map(asset => (
-                    <div key={asset.id} className="flex items-center space-x-2">
+                    <div key={asset.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
                       <Checkbox
-                        id={`asset-${asset.id}`}
                         checked={selectedAssets.some(a => a.id === asset.id)}
                         onCheckedChange={(checked) =>
                           handleAssetToggle(asset, checked as boolean)
                         }
                       />
-                      <label
-                        htmlFor={`asset-${asset.id}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {asset.propertyNumber} - {asset.description}
-                      </label>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {asset.propertyNumber}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {asset.description}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -333,63 +377,28 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Preview PTR</h3>
-            <p className="text-sm text-gray-600">
-              Transferring {selectedAssets.length} asset(s) from {fromEmployee?.label} to {toEmployee?.label}
-            </p>
+            <div className="space-y-2 text-sm bg-slate-50 p-4 rounded-lg">
+              <p>
+                <strong>From:</strong> {fromEmployee?.label}
+              </p>
+              <p>
+                <strong>To:</strong> {toEmployee?.label}
+              </p>
+              <p>
+                <strong>Date:</strong> {format(transferDate, "PPP")}
+              </p>
+              <p>
+                <strong>Type:</strong> {transferType}
+              </p>
+              <p>
+                <strong>Items:</strong> {selectedAssets.length} item(s)
+              </p>
+            </div>
             {loadingPreview ? (
-              <div>Generating preview...</div>
-            ) : (
-              <ReportPreviewModal
-                isOpen={showPreview}
-                pdfUrl={previewUrl}
-                reportType="PTR"
-                isLoading={false}
-                onClose={() => setShowPreview(false)}
-                onConfirm={handleConfirm}
-              />
-            )}
+              <div className="text-sm text-gray-500">Generating preview...</div>
+            ) : null}
           </div>
         );
-    }
-  };
-
-  const getStepNumber = (step: Step) => {
-    const steps: Step[] = ['from', 'to', 'date', 'transferType', 'assets', 'preview'];
-    return steps.indexOf(step) + 1;
-  };
-
-  const canGoNext = () => {
-    switch (currentStep) {
-      case 'from': return !!fromEmployee;
-      case 'to': return canProceedFromTo;
-      case 'date': return !!transferDate;
-      case 'transferType': return !!transferType;
-      case 'assets': return selectedAssets.length > 0;
-      case 'preview': return !!previewUrl;
-      default: return false;
-    }
-  };
-
-  const handleNext = () => {
-    if (!canGoNext()) return;
-
-    switch (currentStep) {
-      case 'from': setCurrentStep('to'); break;
-      case 'to': setCurrentStep('date'); break;
-      case 'date': setCurrentStep('transferType'); break;
-      case 'transferType': setCurrentStep('assets'); break;
-      case 'assets': handleAssetsNext(); break;
-      case 'preview': setShowPreview(true); break;
-    }
-  };
-
-  const handleBack = () => {
-    switch (currentStep) {
-      case 'to': setCurrentStep('from'); break;
-      case 'date': setCurrentStep('to'); break;
-      case 'transferType': setCurrentStep('date'); break;
-      case 'assets': setCurrentStep('transferType'); break;
-      case 'preview': setCurrentStep('assets'); break;
     }
   };
 

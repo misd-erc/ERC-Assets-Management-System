@@ -73,7 +73,7 @@ export const moduleConfig: Record<string, any> = {
     title: "System Settings",
     group: "Administration",
     icon: Settings,
-    implemented: false,
+    implemented: true,
   },
 
   AL: {
@@ -93,4 +93,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["UM", "RM", "OM", "AL"];
+export const adminOverrideModules = ["UM", "RM", "OM", "AL", "SYSSET"];

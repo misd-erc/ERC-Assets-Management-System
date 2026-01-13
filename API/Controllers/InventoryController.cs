@@ -236,9 +236,9 @@ namespace API.Controllers
                 if (model.GroupBy == null || string.IsNullOrEmpty(model.GroupBy)) { 
                     IEnumerable<TblPTA?> ptas = await _getTools.PTA.GetTblPTAsByGroup(model.GroupName!, context).Where(x => x.Group == model.GroupName).ToListAsync();
 
-                    if (model.FiscalYear.HasValue)
+                    if (model.FiscalDate.HasValue)
                     {
-                        ptas = ptas.Where(x => x.FiscalYear == model.FiscalYear.Value);
+                        ptas = ptas.Where(x => x.FiscalDate == model.FiscalDate.Value);
                     }
 
                     if (model.CategoryId != null && model.CategoryId != 0)
@@ -259,7 +259,7 @@ namespace API.Controllers
                             (x.DateAcquired?.ToString("yyyy-MM-dd") ?? "").Contains(searchLower) ||
                             (model.GroupName == TblPTA.PPE &&
                              (x.EstimatedUsefulLife?.ToString() ?? "").Contains(searchLower)) ||
-                             x.FiscalYear.ToString().Contains(searchLower)
+                             (x.FiscalDate?.ToString("yyyy-MM-dd") ?? "") .Contains(searchLower)
                         );
                     }
 
@@ -287,9 +287,8 @@ namespace API.Controllers
                         {
                             var movements = _getTools.PTA
                                 .GetTblPTAMovementsByPTAId(x.Id, context)
-                                .Where(m => m.NonPlantillaEmployeeId != null && m.NonPlantillaEmployeeId != 0
-                                    ? m.NonPlantillaEmployeeId == model.EmployeeId.Value
-                                    : m.PlantillaEmployeeId == model.EmployeeId.Value);
+                                .Where(m => (m.NonPlantillaEmployeeId != null && m.NonPlantillaEmployeeId != 0 && m.NonPlantillaEmployeeId == model.EmployeeId.Value) 
+                                || (m.PlantillaEmployeeId != null && m.PlantillaEmployeeId != 0 && m.PlantillaEmployeeId == model.EmployeeId.Value));
 
                             if(!movements.Any())
                                 continue;
@@ -309,7 +308,7 @@ namespace API.Controllers
                                 UnitValue = x.UnitValue,
                                 DateAcquired = x.DateAcquired,
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
-                                FiscalYear = x.FiscalYear,
+                                FiscalDate = x.FiscalDate,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
                                 Movements = await movements.ToListAsync(),
                                 IsActive = x.IsActive,
@@ -335,7 +334,7 @@ namespace API.Controllers
                                 UnitValue = x.UnitValue,
                                 DateAcquired = x.DateAcquired,
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
-                                FiscalYear = x.FiscalYear,
+                                FiscalDate = x.FiscalDate,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
                                 Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
                                 IsActive = x.IsActive,
@@ -781,7 +780,7 @@ namespace API.Controllers
                     UnitValue = pta.UnitValue,
                     DateAcquired = pta.DateAcquired,
                     EstimatedUsefulLife = pta.EstimatedUsefulLife,
-                    FiscalYear = pta.FiscalYear,
+                    FiscalDate = pta.FiscalDate,
                     Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(pta.Id, context).ToListAsync(),
                     Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(pta.Id, context).ToListAsync(),
                     IsActive = pta.IsActive,
@@ -885,7 +884,7 @@ namespace API.Controllers
                         UnitValue = item.UnitValue,
                         DateAcquired = item.DateAssigned,
                         EstimatedUsefulLife = item.EstimatedUsefulLife,
-                        FiscalYear = item.FiscalYear
+                        FiscalDate = item.FiscalDate
                     };
 
                     ppeId = await _editTools.PTA.EditTblPTAAsync(newPTA, model.ActionBySystemUserId, context, true);
@@ -969,7 +968,8 @@ namespace API.Controllers
                         {
                             PTAId = ppeId,
                             DateAssigned = movement.DateAssigned,
-                            PARITRNumber = movement.ParItrNumber,
+                            PTRITRNumber = movement.PtrItrNumber,
+                            PARICSNumber = movement.ParIcsNumber,
                             PlantillaEmployeeId = plantillaEmployeeId,
                             NonPlantillaEmployeeId = nonPlantillaEmployeeId,
                             PlantillaEmployeeIdOriginal = movement.PlantillaEmployeeId,
@@ -1027,7 +1027,7 @@ namespace API.Controllers
                     UnitOfMeasurement = model.UnitOfMeasurement,
                     UnitValue = model.UnitValue,
                     DateAcquired = model.DateAcquired,
-                    FiscalYear = model.FiscalYear,
+                    FiscalDate = model.FiscalDate,
                     IsActive = model.IsActive
                 };
 
@@ -1102,7 +1102,8 @@ namespace API.Controllers
                     Id = model.Id,
                     PTAId = model.PTAId,
                     DateAssigned = model.DateAssigned,
-                    PARITRNumber = model.ParItrNumber,
+                    PTRITRNumber = model.PtrItrNumber,
+                    PARICSNumber = model.ParIcsNumber,
                     PlantillaEmployeeId = model.PlantillaEmployeeId,
                     NonPlantillaEmployeeId = model.NonPlantillaEmployeeId,
                     ActualOfficeId = model.ActualOfficeId,
