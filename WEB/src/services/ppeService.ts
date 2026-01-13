@@ -47,7 +47,7 @@ export class PPEService {
       parItrNumber: latestMovement?.parItrNumber || '',
       plantillaEmployeeId: latestMovement?.plantillaEmployeeIdOriginal || '',
       nonPlantillaEmployeeId: latestMovement?.nonPlantillaEmployeeIdOriginal || '',
-      actualDivision: latestMovement?.division?.name || '',
+      actualDivision: latestMovement?.employee?.[0]?.division?.name || '',
       condition: (latestMovement?.condition as any) || 'Working',
       dateEncoded: apiItem.createdAt || '',
       movements: Array.isArray(apiItem.movements) ? apiItem.movements : [],
@@ -57,7 +57,7 @@ export class PPEService {
         parItrNumber: mv.parItrNumber || '',
         plantillaEmployeeId: mv.plantillaEmployeeIdOriginal || '',
         nonPlantillaEmployeeId: mv.nonPlantillaEmployeeIdOriginal || '',
-        actualDivision: mv.division?.name || '',
+        actualDivision: mv.employee?.[0]?.division?.name || '',
         condition: mv.condition || 'Working',
         remarks: '',
       })) : []

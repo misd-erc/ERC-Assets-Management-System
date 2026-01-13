@@ -13,7 +13,7 @@ export class UnifiedAssetService {
       id: mode === 'create' ? 0 : (entry.id ?? 0),
       ptaId: mode === 'create' ? 0 : (assetId || entry.ptaId || 0),
       dateAssigned: entry.dateAssigned ?? new Date().toISOString(),
-      parItrNumber: entry.parItrNumber ?? '',
+      ptrItrNumber: entry.ptrItrNumber ?? '',
       plantillaEmployeeId: entry.plantillaEmployeeId ?? 0,
       nonPlantillaEmployeeId: entry.nonPlantillaEmployeeId ?? 0,
       actualOfficeId: entry.actualOfficeId ?? null,
@@ -50,11 +50,14 @@ export class UnifiedAssetService {
       id: mv.id,
       ptaId: mv.ptaId || 0,
       dateAssigned: mv.dateAssigned || mv.createdAt || '',
-      parItrNumber: mv.parItrNumber || '',
+      ptrItrNumber: mv.ptrItrNumber || '',
       plantillaEmployeeId: mv.plantillaEmployeeId || null,
       nonPlantillaEmployeeId: mv.nonPlantillaEmployeeId || null,
-      actualOfficeId: mv.actualOfficeId || mv.office?.id || 0,
-      actualDivisionId: mv.actualDivisionId || mv.division?.id || 0,
+      plantillaEmployeeIdOriginal: mv.plantillaEmployeeIdOriginal || undefined,
+      nonPlantillaEmployeeIdOriginal: mv.nonPlantillaEmployeeIdOriginal || undefined,
+      employee: mv.employee,
+      actualOfficeId: mv.actualOfficeId || mv.employee?.[0]?.office?.id || 0,
+      actualDivisionId: mv.actualDivisionId || mv.employee?.[0]?.division?.id || 0,
       condition: mv.condition || 'Working',
       isActive: mv.isActive !== undefined ? mv.isActive : true,
       isDeleted: mv.isDeleted !== undefined ? mv.isDeleted : false,
@@ -114,7 +117,7 @@ export class UnifiedAssetService {
       dateAcquired: apiItem.dateAcquired || '',
       movements: unifiedMovements,
       estimatedUsefulLife: apiItem.estimatedUsefulLife || 5,
-      fiscalYear: apiItem.fiscalYear || 0,
+      fiscalDate: apiItem.fiscalDate || new Date().toISOString().split('T')[0],
     };
   }
 
@@ -426,7 +429,7 @@ export class UnifiedAssetService {
         unitValue: data.unitValue,
         dateAcquired: data.dateAcquired,
         estimatedUsefulLife: data.estimatedUsefulLife ?? 0,
-        fiscalYear: data.fiscalYear ?? 0,
+        fiscalDate: data.fiscalDate ?? new Date().toISOString().split('T')[0],
         group: data.group,
         movements: normalizedMovements,
         actionBySystemUserId,
@@ -490,7 +493,7 @@ export class UnifiedAssetService {
         dateAcquired: data.dateAcquired,
         movements: data.movements,
         estimatedUsefulLife: data.estimatedUsefulLife,
-        fiscalYear: data.fiscalYear || 0,
+        fiscalDate: data.fiscalDate || new Date().toISOString().split('T')[0],
       };
 
       return createdAsset;
@@ -534,7 +537,7 @@ export class UnifiedAssetService {
         unitValue: data.unitValue || currentAsset.unitValue,
         dateAcquired: data.dateAcquired || currentAsset.dateAcquired,
         estimatedUsefulLife: data.estimatedUsefulLife ?? currentAsset.estimatedUsefulLife ?? 0,
-        fiscalYear: data.fiscalYear ?? currentAsset.fiscalYear ?? 0,
+        fiscalDate: data.fiscalDate ?? currentAsset.fiscalDate ?? new Date().toISOString().split('T')[0],
         movements: [], // Movements handled separately via editMovement API
         group: group,
         actionBySystemUserId,

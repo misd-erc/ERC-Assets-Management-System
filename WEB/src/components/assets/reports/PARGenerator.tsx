@@ -9,7 +9,7 @@ import {
   StyleSheet,
   Image,
 } from "@react-pdf/renderer";
-import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
+import { Asset, NormalizedEmployee, UnifiedMovement } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById, getEmployees } from "@/api/user-management/userApi";
 import { UnifiedAssetService } from "@/services/UnifiedAssetService";
 import { getEmployeeAssets } from "@/api/inventoryApi";
@@ -155,11 +155,13 @@ const PARDocument = ({
   employeeName,
   position,
   office,
+  parNumber,
 }: {
   rows: PARRow[];
   employeeName: string;
   position: string;
   office: string;
+  parNumber?: string;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -185,7 +187,7 @@ const PARDocument = ({
         </View>
 
         <View style={styles.metaRight}>
-          <Text style={styles.metaLabel}>PAR No.: ______________</Text>
+          <Text style={styles.metaLabel}>PAR No.: {parNumber || '______________'}</Text>
         </View>
       </View>
 
@@ -257,80 +259,99 @@ const PARDocument = ({
 );
 
 export class PARGenerator {
-  static async generatePARPreview(employee: NormalizedEmployee): Promise<string> {
-    const assets = await getEmployeeAssets(employee.id, 'PPE');
-    if (!assets.length) {
-      alert('No PPE assets found for this employee. Cannot generate PAR preview.');
+  // Helper to generate PAR number in format YYYY-MM-SEQ
+  static generatePARNumber(seq = 1) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const seqStr = String(seq).padStart(3, '0');
+    return `${year}-${month}-${seqStr}`;
+  }
+
+  static async generatePARPreview(item: Asset, movement: UnifiedMovement | null, parNumber?: string): Promise<string> {
+    if (!item) {
+      alert('No item selected. Cannot generate PAR preview.');
       return '';
     }
 
     const rows: PARRow[] = [];
-    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
-
-    // Fetch employee details to get position and office
-    const empResp = await getEmployeeById(employee.id);
+    // Build employee name from movement data if available
+    let employeeName = 'N/A';
     let position = 'N/A';
     let office = 'N/A';
-    if (empResp.success && empResp.data.length > 0) {
-      const empData = empResp.data[0];
-      position = empData.position?.name || 'N/A';
-      office = empData.office?.name || 'N/A';
+
+    if (movement) {
+      // Try to get employee details from movement
+      const employeeId = movement.plantillaEmployeeId || movement.nonPlantillaEmployeeId;
+      if (employeeId) {
+        const empResp = await getEmployeeById(employeeId);
+        if (empResp.success && empResp.data.length > 0) {
+          const empData = empResp.data[0];
+          employeeName = `${empData.lastName}, ${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          position = empData.position?.name || 'N/A';
+          office = empData.office?.name || 'N/A';
+        }
+      }
     }
 
-    for (const asset of assets) {
-      rows.push({
-        qty: 1,
-        unit: asset.unitOfMeasurement ?? "Unit",
-        description: asset.description ?? "",
-        propertyNo: asset.propertyNumber ?? "",
-        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-        amount: asset.unitValue ?? null,
-      });
-    }
+    rows.push({
+      qty: 1,
+      unit: item.unitOfMeasurement ?? "Unit",
+      description: item.description ?? "",
+      propertyNo: item.propertyNumber ?? "",
+      dateAcquired: item.dateAcquired?.slice(0, 10) ?? "",
+      amount: item.unitValue ?? null,
+    });
 
+    // Use provided PAR number or auto-generate
+    const number = parNumber || PARGenerator.generatePARNumber();
     const blob = await pdf(
       <PARDocument
         rows={rows}
         employeeName={employeeName}
         position={position}
         office={office}
+        parNumber={number}
       />
     ).toBlob();
-
     return URL.createObjectURL(blob);
   }
 
-  static async generatePAR(employee: NormalizedEmployee) {
-    const assets = await getEmployeeAssets(employee.id, 'PPE');
-    if (!assets.length) {
-      alert('No PPE assets found for this employee. Cannot generate PAR report.');
+  static async generatePAR(item: Asset, movement: UnifiedMovement | null) {
+    if (!item) {
+      alert('No item selected. Cannot generate PAR report.');
       return;
     }
-    if (!employee) throw new Error('Employee must be selected.');
 
     const rows: PARRow[] = [];
-    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
-
-    // Fetch employee details to get position and office
-    const empResp = await getEmployeeById(employee.id);
+    
+    // Build employee name from movement data if available
+    let employeeName = 'N/A';
     let position = 'N/A';
     let office = 'N/A';
-    if (empResp.success && empResp.data.length > 0) {
-      const empData = empResp.data[0];
-      position = empData.position?.name || 'N/A';
-      office = empData.office?.name || 'N/A';
+
+    if (movement) {
+      // Try to get employee details from movement
+      const employeeId = movement.plantillaEmployeeId || movement.nonPlantillaEmployeeId;
+      if (employeeId) {
+        const empResp = await getEmployeeById(employeeId);
+        if (empResp.success && empResp.data.length > 0) {
+          const empData = empResp.data[0];
+          employeeName = `${empData.lastName}, ${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          position = empData.position?.name || 'N/A';
+          office = empData.office?.name || 'N/A';
+        }
+      }
     }
 
-    for (const asset of assets) {
-      rows.push({
-        qty: 1,
-        unit: asset.unitOfMeasurement ?? "Unit",
-        description: asset.description ?? "",
-        propertyNo: asset.propertyNumber ?? "",
-        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-        amount: asset.unitValue ?? null,
-      });
-    }
+    rows.push({
+      qty: 1,
+      unit: item.unitOfMeasurement ?? "Unit",
+      description: item.description ?? "",
+      propertyNo: item.propertyNumber ?? "",
+      dateAcquired: item.dateAcquired?.slice(0, 10) ?? "",
+      amount: item.unitValue ?? null,
+    });
 
     const blob = await pdf(
       <PARDocument

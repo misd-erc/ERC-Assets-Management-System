@@ -12,6 +12,7 @@ import OfficeManagement from "@/pages/OfficeManagement";
 import AuditLogs from "@/pages/AuditLogs";
 import CategoryManagementPage from "@/pages/CategoryManagementPage";
 import { MyProfile } from "@/components/profile/MyProfile";
+import { SystemSettingsPage } from "@/pages/SystemSettingsPage";
 import UCPage from "@/pages/UC";
 
 export default function MainLayout() {
@@ -39,6 +40,9 @@ export default function MainLayout() {
 
       case "category-management":
         return <CategoryManagementPage />;
+
+      case "system-settings":
+        return <SystemSettingsPage />;
 
       case "profile":
         return <MyProfile />;
