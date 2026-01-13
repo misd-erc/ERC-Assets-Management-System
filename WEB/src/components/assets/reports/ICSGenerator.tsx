@@ -9,7 +9,7 @@ import {
   Image,
   StyleSheet,
 } from "@react-pdf/renderer";
-import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
+import { Asset, NormalizedEmployee, UnifiedMovement } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById, getEmployees } from "@/api/user-management/userApi";
 import { UnifiedAssetService } from "@/services/UnifiedAssetService";
 import { getEmployeeAssets } from "@/api/inventoryApi";
@@ -217,35 +217,40 @@ const ICSDocument = ({
 );
 
 export class ICSGenerator {
-  static async generateICSPreview(employee: NormalizedEmployee): Promise<string> {
-    const assets = await getEmployeeAssets(employee.id, 'SE');
-    if (!assets.length) {
-      alert('No SE assets found for this employee. Cannot generate ICS preview.');
+  static async generateICSPreview(item: Asset, movement: UnifiedMovement | null): Promise<string> {
+    if (!item) {
+      alert('No item selected. Cannot generate ICS preview.');
       return '';
     }
 
     const rows: ICSRow[] = [];
-    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
-
-    // Fetch employee details to get position and office
-    const empResp = await getEmployeeById(employee.id);
+    
+    // Build employee name from movement data if available
+    let employeeName = 'N/A';
     let position = 'N/A';
     let office = 'N/A';
-    if (empResp.success && empResp.data.length > 0) {
-      const empData = empResp.data[0];
-      position = empData.position?.name || 'N/A';
-      office = empData.office?.name || 'N/A';
+
+    if (movement) {
+      // Try to get employee details from movement
+      const employeeId = movement.plantillaEmployeeId || movement.nonPlantillaEmployeeId;
+      if (employeeId) {
+        const empResp = await getEmployeeById(employeeId);
+        if (empResp.success && empResp.data.length > 0) {
+          const empData = empResp.data[0];
+          employeeName = `${empData.lastName}, ${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          position = empData.position?.name || 'N/A';
+          office = empData.office?.name || 'N/A';
+        }
+      }
     }
 
-    for (const asset of assets) {
-      rows.push({
-        qty: 1,
-        unit: asset.unitOfMeasurement ?? "Unit",
-        description: asset.description ?? "",
-        propertyNo: asset.propertyNumber ?? "",
-        value: asset.unitValue ?? null,
-      });
-    }
+    rows.push({
+      qty: 1,
+      unit: item.unitOfMeasurement ?? "Unit",
+      description: item.description ?? "",
+      propertyNo: item.propertyNumber ?? "",
+      value: item.unitValue ?? null,
+    });
 
     const blob = await pdf(
       <ICSDocument
@@ -259,36 +264,40 @@ export class ICSGenerator {
     return URL.createObjectURL(blob);
   }
 
-  static async generateICS(employee: NormalizedEmployee) {
-    const assets = await getEmployeeAssets(employee.id, 'SE');
-    if (!assets.length) {
-      alert('No SE assets found for this employee. Cannot generate ICS report.');
+  static async generateICS(item: Asset, movement: UnifiedMovement | null) {
+    if (!item) {
+      alert('No item selected. Cannot generate ICS report.');
       return;
     }
-    if (!employee) throw new Error('Employee must be selected.');
 
     const rows: ICSRow[] = [];
-    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
-
-    // Fetch employee details to get position and office
-    const empResp = await getEmployeeById(employee.id);
+    
+    // Build employee name from movement data if available
+    let employeeName = 'N/A';
     let position = 'N/A';
     let office = 'N/A';
-    if (empResp.success && empResp.data.length > 0) {
-      const empData = empResp.data[0];
-      position = empData.position?.name || 'N/A';
-      office = empData.office?.name || 'N/A';
+
+    if (movement) {
+      // Try to get employee details from movement
+      const employeeId = movement.plantillaEmployeeId || movement.nonPlantillaEmployeeId;
+      if (employeeId) {
+        const empResp = await getEmployeeById(employeeId);
+        if (empResp.success && empResp.data.length > 0) {
+          const empData = empResp.data[0];
+          employeeName = `${empData.lastName}, ${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          position = empData.position?.name || 'N/A';
+          office = empData.office?.name || 'N/A';
+        }
+      }
     }
 
-    for (const asset of assets) {
-      rows.push({
-        qty: 1,
-        unit: asset.unitOfMeasurement ?? "Unit",
-        description: asset.description ?? "",
-        propertyNo: asset.propertyNumber ?? "",
-        value: asset.unitValue ?? null,
-      });
-    }
+    rows.push({
+      qty: 1,
+      unit: item.unitOfMeasurement ?? "Unit",
+      description: item.description ?? "",
+      propertyNo: item.propertyNumber ?? "",
+      value: item.unitValue ?? null,
+    });
 
     const blob = await pdf(
       <ICSDocument

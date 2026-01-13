@@ -18,12 +18,14 @@ import {
 
 import { getEmployees } from '@/api/user-management/userApi';
 import { normalizeEmployee } from '@/utils/employeeUtils';
-import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
+import { NormalizedEmployee, Asset, UnifiedMovement } from '@/types/asset/UnifiedAsset';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { PTAService } from '@/services/PTAService';
 
 import { ReportPreviewModal } from './ReportPreviewModal';
 import { EmployeeSelectModal } from './EmployeeSelectModal';
+import { ItemSelectModal } from './ItemSelectModal';
+import { ItemMovementsModal } from './ItemMovementsModal';
 import { RPCPPEFilterModal } from './RPCPPEFilterModal';
 import { PARGenerator } from './PARGenerator';
 import { ICSGenerator } from './ICSGenerator';
@@ -44,7 +46,13 @@ export function ReportTab() {
   const [rpcppeCategoryId, setRpcppeCategoryId] = useState<number | undefined>(undefined);
   const [sespiYear, setSespiYear] = useState<number | null>(null);
 
+  // Item-centric flow states
+  const [selectedItem, setSelectedItem] = useState<Asset | null>(null);
+  const [selectedMovement, setSelectedMovement] = useState<UnifiedMovement | null>(null);
+
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+  const [showItemSelectModal, setShowItemSelectModal] = useState(false);
+  const [showItemMovementsModal, setShowItemMovementsModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showRPCPPE, setShowRPCPPE] = useState(false);
   const [showSESPI, setShowSESPI] = useState(false);
@@ -60,21 +68,49 @@ export function ReportTab() {
     });
   }, []);
 
+  // OLD FLOW - For PAL and other employee-based reports
   const handleEmployeeSelect = async (emp: NormalizedEmployee) => {
     setSelectedEmployee(emp);
     setShowEmployeeModal(false);
+
+    if (selectedReport === 'PAL') {
+      setShowPreview(true);
+      setLoadingPreview(true);
+      const url = await PALGenerator.generatePALPreview(emp);
+      setPreviewUrl(url);
+      setLoadingPreview(false);
+    }
+  };
+
+  // NEW FLOW - For item-based PAR/ICS reports
+  const handleItemSelect = (item: Asset) => {
+    setSelectedItem(item);
+    setShowItemSelectModal(false);
+    setShowItemMovementsModal(true);
+  };
+
+  const handleMovementSelect = (item: Asset, movement: UnifiedMovement | null) => {
+    setSelectedItem(item);
+    setSelectedMovement(movement);
+    setShowItemMovementsModal(false);
     setShowPreview(true);
+    generateItemPreview(item, movement);
+  };
+
+  const generateItemPreview = async (item: Asset, movement: UnifiedMovement | null) => {
     setLoadingPreview(true);
-
-    const url =
-      selectedReport === 'ICS'
-        ? await ICSGenerator.generateICSPreview(emp)
-        : selectedReport === 'PAL'
-        ? await PALGenerator.generatePALPreview(emp)
-        : await PARGenerator.generatePARPreview(emp);
-
-    setPreviewUrl(url);
-    setLoadingPreview(false);
+    try {
+      const url =
+        selectedReport === 'ICS'
+          ? await ICSGenerator.generateICSPreview(item, movement)
+          : await PARGenerator.generatePARPreview(item, movement);
+      setPreviewUrl(url);
+    } catch (error) {
+      console.error('Preview generation failed:', error);
+      toast.error('Failed to generate preview');
+    } finally {
+      setLoadingPreview(false);
+    }
   };
 
   const handlePreviewConfirm = async () => {
@@ -98,13 +134,23 @@ export function ReportTab() {
         console.error('RPCPPE generation failed:', error);
         toast.error('RPCPPE generation failed');
       }
+    } else if (selectedReport === 'PAR') {
+      // New item-based flow
+      if (selectedItem) {
+        await PARGenerator.generatePAR(selectedItem, selectedMovement);
+        toast.success('PAR PDF generated');
+      }
+    } else if (selectedReport === 'ICS') {
+      // New item-based flow
+      if (selectedItem) {
+        await ICSGenerator.generateICS(selectedItem, selectedMovement);
+        toast.success('ICS PDF generated');
+      }
     } else if (selectedEmployee) {
-      if (selectedReport === 'ICS') {
-        await ICSGenerator.generateICS(selectedEmployee);
-      } else if (selectedReport === 'PAL') {
+      // Old PAL flow
+      if (selectedReport === 'PAL') {
         await PALGenerator.generatePAL(selectedEmployee);
-      } else {
-        await PARGenerator.generatePAR(selectedEmployee);
+        toast.success('PAL PDF generated');
       }
     }
 
@@ -176,7 +222,7 @@ export function ReportTab() {
       subtitle: 'Property Acknowledgement',
       icon: FileCheck,
       bgColor: 'bg-green-600',
-      action: () => { setSelectedReport('PAR'); setShowEmployeeModal(true); }
+      action: () => { setSelectedReport('PAR'); setShowItemSelectModal(true); }
     },
     {
       title: 'PTR',
@@ -197,7 +243,7 @@ export function ReportTab() {
       subtitle: 'Inventory Custodian Slip',
       icon: ClipboardList,
       bgColor: 'bg-red-600',
-      action: () => { setSelectedReport('ICS'); setShowEmployeeModal(true); }
+      action: () => { setSelectedReport('ICS'); setShowItemSelectModal(true); }
     },
     {
       title: 'ITR',
@@ -264,6 +310,21 @@ export function ReportTab() {
         employees={employees}
         onClose={() => setShowEmployeeModal(false)}
         onSelect={handleEmployeeSelect}
+      />
+
+      <ItemSelectModal
+        isOpen={showItemSelectModal}
+        onClose={() => setShowItemSelectModal(false)}
+        onSelect={handleItemSelect}
+        groupType={selectedReport === 'ICS' ? 'SE' : 'PPE'}
+        title={`Select ${selectedReport === 'ICS' ? 'SE' : 'PPE'} Item`}
+      />
+
+      <ItemMovementsModal
+        isOpen={showItemMovementsModal}
+        onClose={() => setShowItemMovementsModal(false)}
+        item={selectedItem}
+        onConfirm={handleMovementSelect}
       />
 
       <ReportPreviewModal
