@@ -60,9 +60,32 @@ export interface UnifiedMovement {
   nonPlantillaEmployeeId: number | null;
   plantillaEmployeeIdOriginal?: string | null;
   nonPlantillaEmployeeIdOriginal?: string | null;
-  employee?: ApiEmployee | null;
-  office?: Office | null;
-  division?: Division | null;
+  employee?: Array<{
+    id: number;
+    firstName: string;
+    middleName: string | null;
+    lastName: string;
+    suffixName?: string | null;
+    employeeIdOriginal?: string | null;
+    employmentType?: { id: number; name: string } | null;
+    office: {
+      id: number;
+      name: string;
+      acronym: string;
+      isActive: boolean;
+      isDeleted: boolean;
+      createdAt: string;
+    } | null;
+    division: {
+      id: number;
+      officeId: number;
+      name: string;
+      acronym: string;
+      isActive: boolean;
+      isDeleted: boolean;
+      createdAt: string;
+    } | null;
+  }>;
   actualOfficeId?: number;
   actualDivisionId?: number;
   condition: string;

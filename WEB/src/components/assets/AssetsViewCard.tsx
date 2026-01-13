@@ -281,7 +281,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
                       <TableCell>{movement.parItrNumber || '-'}</TableCell>
                       <TableCell>{movement.plantillaEmployeeIdOriginal || movement.nonPlantillaEmployeeIdOriginal || '-'}</TableCell>
-                      <TableCell>{movement.division?.name || '-'}</TableCell>
+                      <TableCell>{movement.employee?.[0]?.division?.name || '-'}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getConditionIcon(movement.condition || '')}

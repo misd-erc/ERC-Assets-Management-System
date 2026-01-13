@@ -9,23 +9,32 @@ export interface Movement {
   nonPlantillaEmployeeId: string | null;
   plantillaEmployeeIdOriginal: string | null;
   nonPlantillaEmployeeIdOriginal: string | null;
-  office: {
+  employee?: Array<{
     id: number;
-    name: string;
-    acronym: string;
-    isActive: boolean;
-    isDeleted: boolean;
-    createdAt: string;
-  } | null;
-  division: {
-    id: number;
-    officeId: number;
-    name: string;
-    acronym: string;
-    isActive: boolean;
-    isDeleted: boolean;
-    createdAt: string;
-  } | null;
+    firstName: string;
+    middleName: string | null;
+    lastName: string;
+    suffixName?: string | null;
+    employeeIdOriginal?: string | null;
+    employmentType?: { id: number; name: string } | null;
+    office: {
+      id: number;
+      name: string;
+      acronym: string;
+      isActive: boolean;
+      isDeleted: boolean;
+      createdAt: string;
+    } | null;
+    division: {
+      id: number;
+      officeId: number;
+      name: string;
+      acronym: string;
+      isActive: boolean;
+      isDeleted: boolean;
+      createdAt: string;
+    } | null;
+  }>;
   condition: string | null;
   isActive: boolean;
   isDeleted: boolean;
