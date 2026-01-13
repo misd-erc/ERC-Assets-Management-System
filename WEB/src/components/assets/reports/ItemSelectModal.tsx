@@ -35,6 +35,11 @@ export function ItemSelectModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isSelectingItem, setIsSelectingItem] = useState(false);
 
+  // Debug: Log when isOpen changes
+  React.useEffect(() => {
+    console.log('[ItemSelectModal] isOpen changed:', isOpen);
+  }, [isOpen]);
+
   // Load items when modal opens
   useEffect(() => {
     if (isOpen && items.length === 0) {
@@ -141,8 +146,14 @@ export function ItemSelectModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+    <>
+      {isOpen ? (
+        <Dialog open={isOpen} onOpenChange={(open) => {
+          if (!open) {
+            onClose();
+          }
+        }}>
+          <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -209,5 +220,7 @@ export function ItemSelectModal({
         </div>
       </DialogContent>
     </Dialog>
+      ) : null}
+    </>
   );
 }

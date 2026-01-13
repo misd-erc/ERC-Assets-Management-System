@@ -66,7 +66,40 @@ export function ReportTab() {
         setEmployees(res.data.items.map(normalizeEmployee));
       }
     });
+    
+    // Reset modal states when component mounts
+    setShowItemSelectModal(false);
+    setShowItemMovementsModal(false);
+    setShowPreview(false);
+    setShowEmployeeModal(false);
+    setShowRPCPPE(false);
+    setShowSESPI(false);
+    setShowPTR(false);
+    setShowITR(false);
+    setShowPAL(false);
+    setSelectedReport(null);
+    setSelectedItem(null);
+    setSelectedMovement(null);
+
+    // Cleanup on unmount
+    return () => {
+      setShowItemSelectModal(false);
+      setShowItemMovementsModal(false);
+      setShowPreview(false);
+      setSelectedReport(null);
+      setSelectedItem(null);
+      setSelectedMovement(null);
+    };
   }, []);
+
+  // Safety effect: close item select modal if selectedReport becomes null
+  useEffect(() => {
+    console.log('[ReportTab] showItemSelectModal/selectedReport state:', { showItemSelectModal, selectedReport });
+    if (selectedReport === null && showItemSelectModal) {
+      console.log('[ReportTab] Safety: Closing ItemSelectModal because selectedReport is null');
+      setShowItemSelectModal(false);
+    }
+  }, [selectedReport, showItemSelectModal]);
 
   // OLD FLOW - For PAL and other employee-based reports
   const handleEmployeeSelect = async (emp: NormalizedEmployee) => {
@@ -312,17 +345,30 @@ export function ReportTab() {
         onSelect={handleEmployeeSelect}
       />
 
-      <ItemSelectModal
-        isOpen={showItemSelectModal}
-        onClose={() => setShowItemSelectModal(false)}
-        onSelect={handleItemSelect}
-        groupType={selectedReport === 'ICS' ? 'SE' : 'PPE'}
-        title={`Select ${selectedReport === 'ICS' ? 'SE' : 'PPE'} Item`}
-      />
+      {showItemSelectModal === true && selectedReport !== null && (
+        <ItemSelectModal
+          key={`item-select-modal-${selectedReport}`}
+          isOpen={true}
+          onClose={() => {
+            console.log('[ReportTab] ItemSelectModal onClose called');
+            setShowItemSelectModal(false);
+            setSelectedReport(null);
+          }}
+          onSelect={handleItemSelect}
+          groupType={selectedReport === 'ICS' ? 'SE' : 'PPE'}
+          title={`Select ${selectedReport === 'ICS' ? 'SE' : 'PPE'} Item`}
+        />
+      )}
 
       <ItemMovementsModal
         isOpen={showItemMovementsModal}
-        onClose={() => setShowItemMovementsModal(false)}
+        onClose={() => {
+          setShowItemMovementsModal(false);
+          setSelectedItem(null);
+          setSelectedMovement(null);
+          setShowItemSelectModal(false);
+          setSelectedReport(null);
+        }}
         item={selectedItem}
         onConfirm={handleMovementSelect}
       />

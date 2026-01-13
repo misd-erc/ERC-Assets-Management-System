@@ -14,10 +14,12 @@ import { CalendarIcon, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
-import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
+import { NormalizedEmployee, Asset, UnifiedMovement } from '@/types/asset/UnifiedAsset';
 import { getEmployeeAssets } from '@/api/inventoryApi';
 import { ITRGenerator } from './ITRGenerator';
 import { ReportPreviewModal } from './ReportPreviewModal';
+import { ItemSelectModal } from './ItemSelectModal';
+import { ItemMovementsModal } from './ItemMovementsModal';
 
 interface ITRGenerationModalProps {
   isOpen: boolean;
@@ -25,22 +27,21 @@ interface ITRGenerationModalProps {
   employees: NormalizedEmployee[];
 }
 
-type Step = 'from' | 'to' | 'date' | 'transferType' | 'assets' | 'preview';
+type Step = 'selectItem' | 'selectMovement' | 'to' | 'date' | 'transferType' | 'preview';
 
 export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGenerationModalProps) {
-  const [currentStep, setCurrentStep] = useState<Step>('from');
-  const [fromEmployee, setFromEmployee] = useState<NormalizedEmployee | null>(null);
+  const [currentStep, setCurrentStep] = useState<Step>('selectItem');
+  const [selectedItem, setSelectedItem] = useState<Asset | null>(null);
+  const [selectedMovement, setSelectedMovement] = useState<UnifiedMovement | null>(null);
   const [toEmployee, setToEmployee] = useState<NormalizedEmployee | null>(null);
   const [transferDate, setTransferDate] = useState<Date>(new Date());
   const [transferType, setTransferType] = useState<'DONATION' | 'REASSIGNMENT' | 'RELOCATE' | 'OTHERS'>('REASSIGNMENT');
-  const [availableAssets, setAvailableAssets] = useState<Asset[]>([]);
-  const [selectedAssets, setSelectedAssets] = useState<Asset[]>([]);
-  const [loadingAssets, setLoadingAssets] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const [fromSearch, setFromSearch] = useState('');
   const [toSearch, setToSearch] = useState('');
+  const [showItemSelectModal, setShowItemSelectModal] = useState(false);
+  const [showItemMovementsModal, setShowItemMovementsModal] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -49,30 +50,27 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
   }, [isOpen]);
 
   const resetModal = () => {
-    setCurrentStep('from');
-    setFromEmployee(null);
+    setCurrentStep('selectItem');
+    setSelectedItem(null);
+    setSelectedMovement(null);
     setToEmployee(null);
     setTransferDate(new Date());
-    setAvailableAssets([]);
-    setSelectedAssets([]);
     setPreviewUrl('');
     setShowPreview(false);
+    setShowItemSelectModal(false);
+    setShowItemMovementsModal(false);
   };
 
-  const handleFromEmployeeSelect = async (emp: NormalizedEmployee) => {
-    setFromEmployee(emp);
-    setLoadingAssets(true);
+  const handleItemSelect = (item: Asset) => {
+    setSelectedItem(item);
+    setShowItemSelectModal(false);
+    setShowItemMovementsModal(true);
+  };
 
-    try {
-      // Fetch SE assets
-      const seAssets = await getEmployeeAssets(emp.id, 'SE');
-      setAvailableAssets(seAssets);
-    } catch (error) {
-      console.error('Failed to fetch assets:', error);
-      setAvailableAssets([]);
-    }
-
-    setLoadingAssets(false);
+  const handleMovementSelect = (item: Asset, movement: UnifiedMovement | null) => {
+    setSelectedItem(item);
+    setSelectedMovement(movement);
+    setShowItemMovementsModal(false);
     setCurrentStep('to');
   };
 
@@ -88,36 +86,20 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
     }
   };
 
-  const handleAssetToggle = (asset: Asset, checked: boolean) => {
-    if (checked) {
-      setSelectedAssets(prev => [...prev, asset]);
-    } else {
-      setSelectedAssets(prev => prev.filter(a => a.id !== asset.id));
-    }
-  };
-
-  const handleAssetsNext = () => {
-    if (selectedAssets.length === 0) {
-      alert('Please select at least one asset');
-      return;
-    }
-    setCurrentStep('preview');
-    generatePreview();
-  };
-
   const generatePreview = async () => {
-    if (!fromEmployee || !toEmployee) return;
+    if (!selectedItem || !toEmployee) return;
 
     setLoadingPreview(true);
     try {
       const url = await ITRGenerator.generateITRPreview(
-        fromEmployee,
+        selectedItem,
+        selectedMovement,
         toEmployee,
         transferDate.toISOString().slice(0, 10),
-        selectedAssets,
         transferType
       );
       setPreviewUrl(url);
+      setCurrentStep('preview');
     } catch (error) {
       console.error('Failed to generate preview:', error);
     }
@@ -125,14 +107,14 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
   };
 
   const handleConfirm = async () => {
-    if (!fromEmployee || !toEmployee) return;
+    if (!selectedItem || !toEmployee) return;
 
     try {
       await ITRGenerator.generateITR(
-        fromEmployee,
+        selectedItem,
+        selectedMovement,
         toEmployee,
         transferDate.toISOString().slice(0, 10),
-        selectedAssets,
         transferType
       );
       onClose();
@@ -141,48 +123,60 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
     }
   };
 
-  const canProceedFromTo = fromEmployee && toEmployee && fromEmployee.id !== toEmployee.id;
+  const canProceedToEmployee = toEmployee && selectedItem && toEmployee.id !== (selectedMovement?.plantillaEmployeeId || selectedMovement?.nonPlantillaEmployeeId);
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 'from':
-        const filteredFromEmployees = employees.filter(emp =>
-          emp.label.toLowerCase().includes(fromSearch.toLowerCase())
-        );
+      case 'selectItem':
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Select FROM Employee</h3>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search employees..."
-                value={fromSearch}
-                onChange={(e) => setFromSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-              {filteredFromEmployees.map(emp => (
-                <button
-                  key={emp.id}
-                  onClick={() => handleFromEmployeeSelect(emp)}
-                  className="p-3 text-left border rounded hover:bg-gray-50"
-                >
-                  {emp.label}
-                </button>
-              ))}
-            </div>
+            <h3 className="text-lg font-semibold">Select SE Item to Transfer</h3>
+            <Button
+              onClick={() => setShowItemSelectModal(true)}
+              className="w-full"
+            >
+              {selectedItem ? `${selectedItem.propertyNumber} (Selected)` : 'Click to Select Item'}
+            </Button>
+            {selectedItem && (
+              <div className="p-3 border rounded-lg bg-slate-50">
+                <p className="text-sm"><strong>Item:</strong> {selectedItem.propertyNumber}</p>
+                <p className="text-sm"><strong>Description:</strong> {selectedItem.description}</p>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'selectMovement':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Select Item Movement</h3>
+            <p className="text-sm text-gray-600">Item: {selectedItem?.propertyNumber}</p>
+            <Button
+              onClick={() => setShowItemMovementsModal(true)}
+              className="w-full"
+            >
+              {selectedMovement ? 'Movement Selected' : 'Click to Select Movement'}
+            </Button>
           </div>
         );
 
       case 'to':
         const filteredToEmployees = employees
-          .filter(emp => emp.id !== fromEmployee?.id)
+          .filter(emp => emp.id !== (selectedMovement?.plantillaEmployeeId || selectedMovement?.nonPlantillaEmployeeId))
           .filter(emp => emp.label.toLowerCase().includes(toSearch.toLowerCase()));
+        
+        const fromEmployeeName = selectedMovement?.employee 
+          ? (Array.isArray(selectedMovement.employee) 
+              ? selectedMovement.employee[0] 
+              : selectedMovement.employee)
+          : null;
+        
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Select TO Employee</h3>
-            <p className="text-sm text-gray-600">From: {fromEmployee?.label}</p>
+            <p className="text-sm text-gray-600">
+              From: {fromEmployeeName ? `${fromEmployeeName.lastName}, ${fromEmployeeName.firstName}` : 'N/A'}
+            </p>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -211,7 +205,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Select Transfer Date</h3>
             <p className="text-sm text-gray-600">
-              From: {fromEmployee?.label} → To: {toEmployee?.label}
+              To: {toEmployee?.label}
             </p>
             <Popover>
               <PopoverTrigger asChild>
@@ -243,7 +237,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Select Transfer Type</h3>
             <p className="text-sm text-gray-600">
-              From: {fromEmployee?.label} → To: {toEmployee?.label} on {format(transferDate, "PPP")}
+              From: {selectedMovement ? 'Selected' : 'N/A'} → To: {toEmployee?.label}
             </p>
             <div className="space-y-2">
               {[
@@ -271,98 +265,33 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
           </div>
         );
 
-      case 'assets':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Select Assets to Transfer</h3>
-            <p className="text-sm text-gray-600">
-              From: {fromEmployee?.label} → To: {toEmployee?.label} on {format(transferDate, "PPP")}
-            </p>
-            {loadingAssets ? (
-              <div>Loading assets...</div>
-            ) : availableAssets.length === 0 ? (
-              <div>No assets found for this employee</div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="select-all-assets"
-                    checked={selectedAssets.length === availableAssets.length && availableAssets.length > 0}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedAssets(availableAssets);
-                      } else {
-                        setSelectedAssets([]);
-                      }
-                    }}
-                  />
-                  <label
-                    htmlFor="select-all-assets"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Select All
-                  </label>
-                </div>
-                <div className="max-h-60 overflow-y-auto space-y-2">
-                  {availableAssets.map(asset => (
-                    <div key={asset.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`asset-${asset.id}`}
-                        checked={selectedAssets.some(a => a.id === asset.id)}
-                        onCheckedChange={(checked) =>
-                          handleAssetToggle(asset, checked as boolean)
-                        }
-                      />
-                      <label
-                        htmlFor={`asset-${asset.id}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {asset.propertyNumber} - {asset.description}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-
       case 'preview':
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Preview ITR</h3>
             <p className="text-sm text-gray-600">
-              Transferring {selectedAssets.length} asset(s) from {fromEmployee?.label} to {toEmployee?.label}
+              Transferring {selectedItem?.propertyNumber} to {toEmployee?.label}
             </p>
             {loadingPreview ? (
               <div>Generating preview...</div>
-            ) : (
-              <ReportPreviewModal
-                isOpen={showPreview}
-                pdfUrl={previewUrl}
-                reportType="ITR"
-                isLoading={false}
-                onClose={() => setShowPreview(false)}
-                onConfirm={handleConfirm}
-              />
-            )}
+            ) : null}
           </div>
         );
     }
   };
 
   const getStepNumber = (step: Step) => {
-    const steps: Step[] = ['from', 'to', 'date', 'transferType', 'assets', 'preview'];
+    const steps: Step[] = ['selectItem', 'selectMovement', 'to', 'date', 'transferType', 'preview'];
     return steps.indexOf(step) + 1;
   };
 
   const canGoNext = () => {
     switch (currentStep) {
-      case 'from': return !!fromEmployee;
-      case 'to': return canProceedFromTo;
+      case 'selectItem': return !!selectedItem;
+      case 'selectMovement': return !!selectedMovement;
+      case 'to': return canProceedToEmployee;
       case 'date': return !!transferDate;
       case 'transferType': return !!transferType;
-      case 'assets': return selectedAssets.length > 0;
       case 'preview': return !!previewUrl;
       default: return false;
     }
@@ -372,22 +301,22 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
     if (!canGoNext()) return;
 
     switch (currentStep) {
-      case 'from': setCurrentStep('to'); break;
+      case 'selectItem': setCurrentStep('selectMovement'); break;
+      case 'selectMovement': setCurrentStep('to'); break;
       case 'to': setCurrentStep('date'); break;
       case 'date': setCurrentStep('transferType'); break;
-      case 'transferType': setCurrentStep('assets'); break;
-      case 'assets': handleAssetsNext(); break;
+      case 'transferType': generatePreview(); break;
       case 'preview': setShowPreview(true); break;
     }
   };
 
   const handleBack = () => {
     switch (currentStep) {
-      case 'to': setCurrentStep('from'); break;
+      case 'selectMovement': setCurrentStep('selectItem'); break;
+      case 'to': setCurrentStep('selectMovement'); break;
       case 'date': setCurrentStep('to'); break;
       case 'transferType': setCurrentStep('date'); break;
-      case 'assets': setCurrentStep('transferType'); break;
-      case 'preview': setCurrentStep('assets'); break;
+      case 'preview': setCurrentStep('transferType'); break;
     }
   };
 
@@ -409,7 +338,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
             <Button
               variant="outline"
               onClick={handleBack}
-              disabled={currentStep === 'from'}
+              disabled={currentStep === 'selectItem'}
             >
               <ChevronLeft className="w-4 h-4 mr-2" />
               Back
@@ -425,6 +354,20 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
           </div>
         </DialogContent>
       </Dialog>
+
+      <ItemSelectModal
+        isOpen={currentStep === 'selectItem' && isOpen}
+        onSelect={handleItemSelect}
+        onClose={() => {}}
+        groupType="SE"
+      />
+
+      <ItemMovementsModal
+        isOpen={currentStep === 'selectMovement'}
+        item={selectedItem}
+        onConfirm={handleMovementSelect}
+        onClose={() => {}}
+      />
 
       <ReportPreviewModal
         isOpen={showPreview}
