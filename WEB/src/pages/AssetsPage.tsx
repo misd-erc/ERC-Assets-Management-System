@@ -6,13 +6,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Upload, Download, Plus, FileText } from 'lucide-react';
+import { Upload, Download, Plus, FileText, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 import { AssetsTable } from '@/components/assets/AssetsTable';
 import { AssetsFilters } from '@/components/assets/AssetsFilters';
 import { AssetCreateForm } from '@/components/assets/forms/AssetCreateForm';
 import { AssetEditForm } from '@/components/assets/forms/AssetEditForm';
 import { AssetsViewCard } from '@/components/assets/AssetsViewCard';
+import { AssetsPrintTemplate } from '@/components/assets/AssetsPrintTemplate';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { Asset } from '@/types/asset/UnifiedAsset';
 import { ExcelExportService } from '@/utils/excelExport';
@@ -44,6 +45,7 @@ export function AssetsPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
 
   // Selected asset
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -537,18 +539,35 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
             <DialogTitle>Asset Details</DialogTitle>
           </DialogHeader>
           {selectedAsset && (
-            <AssetsViewCard
-              asset={selectedAsset}
-              onEdit={() => {
-                setViewDialogOpen(false);
-                handleEdit(selectedAsset);
-              }}
-              onClose={() => {
-                setViewDialogOpen(false);
-                setSelectedAsset(null);
-              }}
-            />
+            <>
+              <div className="flex justify-end mb-4">
+                <Button variant="outline" className="gap-2" onClick={() => setPrintDialogOpen(true)}>
+                  <Printer className="size-4" />
+                  Print
+                </Button>
+              </div>
+              <AssetsViewCard
+                asset={selectedAsset}
+                onEdit={() => {
+                  setViewDialogOpen(false);
+                  handleEdit(selectedAsset);
+                }}
+                onClose={() => {
+                  setViewDialogOpen(false);
+                  setSelectedAsset(null);
+                }}
+              />
+            </>
           )}
+
+      {/* Print Dialog */}
+      {selectedAsset && (
+        <AssetsPrintTemplate
+          asset={selectedAsset}
+          open={printDialogOpen}
+          onOpenChange={setPrintDialogOpen}
+        />
+      )}
         </DialogContent>
       </Dialog>
 
