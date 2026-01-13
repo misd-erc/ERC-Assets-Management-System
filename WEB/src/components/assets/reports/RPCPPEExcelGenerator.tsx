@@ -136,8 +136,8 @@ export class RPCPPEPdfGenerator {
                 'DATE ACQUIRED',
                 'QUANTITY (PER PROPERTY CARD)',
                 'QUANTITY (PER PHYSICAL COUNT)',
-                'SHORT/OVER QUANTITY',
-                'SHORT/OVER VALUE',
+                'SHORTAGE/OVERAGE (QUANTITY)',
+                'SHORTAGE/OVERAGE (VALUE)',
                 'REMARKS',
               ].map((h, i) => (
                 <Text key={i} style={[styles.th, { width: this.colWidth(i) }]}>
