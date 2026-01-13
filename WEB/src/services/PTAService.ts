@@ -27,7 +27,7 @@ export interface PTAData {
 }
 
 export class PTAService {
-  static async getAllForRPCPPE(year: number, categoryId?: number): Promise<Asset[]> {
+  static async getAllForRPCPPE(Date: Date, categoryId?: number): Promise<Asset[]> {
     try {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
@@ -35,9 +35,9 @@ export class PTAService {
       const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
       const pageSize = 1000;
-
+      const fiscalDate = Date.toISOString().split('T')[0];
       // Build URL with FiscalYear parameter
-      let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&FiscalYear=${year}&GroupName=ppe&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+      let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&FiscalDate=${fiscalDate}&GroupName=ppe&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 
       // Add CategoryId if specified
       if (categoryId) {
@@ -66,7 +66,7 @@ export class PTAService {
     }
   }
 
-  static async getAllForSE(year: number): Promise<Asset[]> {
+  static async getAllForSE(Date: Date): Promise<Asset[]> {
     try {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
@@ -74,9 +74,9 @@ export class PTAService {
       const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
       const pageSize = 1000;
-
-      // Build URL with FiscalYear parameter for SE assets
-      const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&FiscalYear=${year}&GroupName=se&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+      const fiscalDate = Date.toISOString().split('T')[0];
+      // Build URL with FiscalDate parameter for SE assets
+      const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&FiscalDate=${fiscalDate}&GroupName=se&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 
       const response = await fetch(url, {
         method: 'GET',

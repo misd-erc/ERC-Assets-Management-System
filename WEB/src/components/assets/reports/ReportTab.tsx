@@ -172,7 +172,7 @@ export function ReportTab() {
       toast.success('Register SPI PDF generated');
     } else if (selectedReport === 'RPCPPE') {
       try {
-        const assets = await PTAService.getAllForRPCPPE(rpcppeDate!.getFullYear(), rpcppeCategoryId);
+        const assets = await PTAService.getAllForRPCPPE(rpcppeDate!, rpcppeCategoryId);
 
         if (!assets.length) {
           toast.error('No assets found for selected criteria');
@@ -210,7 +210,7 @@ export function ReportTab() {
 
   const handleRPCPPEGenerate = async (asOfDate: Date, categoryId?: number) => {
     try {
-      const assets = await PTAService.getAllForRPCPPE(asOfDate.getFullYear(), categoryId);
+      const assets = await PTAService.getAllForRPCPPE(asOfDate, categoryId);
 
       if (!assets.length) {
         toast.error('No assets found for selected criteria');

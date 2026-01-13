@@ -180,7 +180,7 @@ export class SESPIExcelGenerator {
   }
 
   static async generateSESPIPreview(asOfDate: Date): Promise<string> {
-    const seAssets = await PTAService.getAllForSE(asOfDate.getFullYear());
+    const seAssets = await PTAService.getAllForSE(asOfDate);
 
     const doc = this.buildDocument(seAssets);
     const blob = await pdf(doc).toBlob();
@@ -188,7 +188,7 @@ export class SESPIExcelGenerator {
   }
 
   static async generate(asOfDate: Date) {
-    const seAssets = await PTAService.getAllForSE(asOfDate.getFullYear());
+    const seAssets = await PTAService.getAllForSE(asOfDate);
 
     const doc = this.buildDocument(seAssets);
     const blob = await pdf(doc).toBlob();
