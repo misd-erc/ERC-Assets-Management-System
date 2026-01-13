@@ -42,9 +42,9 @@ export function ReportTab() {
   const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | 'RPCPPE' | 'PAL' | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const [rpcppeYear, setRpcppeYear] = useState<number | null>(null);
+  const [rpcppeDate, setRpcppeDate] = useState<Date | null>(null);
   const [rpcppeCategoryId, setRpcppeCategoryId] = useState<number | undefined>(undefined);
-  const [sespiYear, setSespiYear] = useState<number | null>(null);
+  const [sespiDate, setSespiDate] = useState<Date | null>(null);
 
   // Item-centric flow states
   const [selectedItem, setSelectedItem] = useState<Asset | null>(null);
@@ -150,18 +150,18 @@ export function ReportTab() {
     if (!selectedReport) return;
 
     if (selectedReport === 'SESPI') {
-      await SESPIExcelGenerator.generate(sespiYear!);
+      await SESPIExcelGenerator.generate(sespiDate!);
       toast.success('Register SPI PDF generated');
     } else if (selectedReport === 'RPCPPE') {
       try {
-        const assets = await PTAService.getAllForRPCPPE(rpcppeYear!, rpcppeCategoryId);
+        const assets = await PTAService.getAllForRPCPPE(rpcppeDate!.getFullYear(), rpcppeCategoryId);
 
         if (!assets.length) {
           toast.error('No assets found for selected criteria');
           return;
         }
 
-        await RPCPPEPdfGenerator.generate(assets, rpcppeYear!, rpcppeCategoryId);
+        await RPCPPEPdfGenerator.generate(assets, rpcppeDate!, rpcppeCategoryId);
         toast.success('RPCPPE PDF generated');
       } catch (error) {
         console.error('RPCPPE generation failed:', error);
@@ -190,9 +190,9 @@ export function ReportTab() {
     setShowPreview(false);
   };
 
-  const handleRPCPPEGenerate = async (year: number, categoryId?: number) => {
+  const handleRPCPPEGenerate = async (asOfDate: Date, categoryId?: number) => {
     try {
-      const assets = await PTAService.getAllForRPCPPE(year, categoryId);
+      const assets = await PTAService.getAllForRPCPPE(asOfDate.getFullYear(), categoryId);
 
       if (!assets.length) {
         toast.error('No assets found for selected criteria');
@@ -201,12 +201,12 @@ export function ReportTab() {
 
       // Generate preview
       setLoadingPreview(true);
-      const url = await RPCPPEPdfGenerator.generatePreview(assets, year, categoryId?.toString());
+      const url = await RPCPPEPdfGenerator.generatePreview(assets, asOfDate, categoryId?.toString());
       setPreviewUrl(url);
       setLoadingPreview(false);
 
       // Store parameters for download
-      setRpcppeYear(year);
+      setRpcppeDate(asOfDate);
       setRpcppeCategoryId(categoryId);
 
       // Show preview modal
@@ -220,16 +220,16 @@ export function ReportTab() {
     setShowRPCPPE(false);
   };
 
-  const handleSESPIGenerate = async (year: number) => {
+  const handleSESPIGenerate = async (asOfDate: Date) => {
     try {
       // Generate preview
       setLoadingPreview(true);
-      const url = await SESPIExcelGenerator.generateSESPIPreview(year);
+      const url = await SESPIExcelGenerator.generateSESPIPreview(asOfDate);
       setPreviewUrl(url);
       setLoadingPreview(false);
 
       // Store parameters for download
-      setSespiYear(year);
+      setSespiDate(asOfDate);
       setSelectedReport('SESPI');
 
       // Show preview modal

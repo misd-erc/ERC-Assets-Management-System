@@ -95,7 +95,7 @@ export class RPCPPEPdfGenerator {
     return category?.generalCode || '';
   }
 
-  static async generate(assets: Asset[], year: number, categoryId?: number) {
+  static async generate(assets: Asset[], asOfDate: Date, categoryId?: number) {
     if (!assets?.length) return;
 
     const categoryName = await this.getCategoryName(categoryId);
@@ -103,6 +103,13 @@ export class RPCPPEPdfGenerator {
 
     // Calculate total amount
     const totalAmount = assets.reduce((sum, asset) => sum + (asset.unitValue || 0), 0);
+
+    // Format the date for display
+    const displayDateStr = asOfDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
 
     const doc = (
       <Document>
@@ -115,7 +122,7 @@ export class RPCPPEPdfGenerator {
             <Text style={styles.subtitle}>
               {categoryName ? `Account Code ${accountCode} - ${categoryName}` : 'All Categories'}
             </Text>
-            <Text style={styles.subtitle}>As of December 31, {year}</Text>
+            <Text style={styles.subtitle}>As of {displayDateStr}</Text>
           </View>
 
           <Text style={styles.info}>Fund Cluster: Regular Agency Fund</Text>
@@ -201,11 +208,12 @@ export class RPCPPEPdfGenerator {
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = categoryName ? `RPCPPE_${year}_Category_${categoryName.replace(/\s+/g, '_')}.pdf` : `RPCPPE_${year}_All_Categories.pdf`;
+    const filenameDateStr = asOfDate.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+    a.download = categoryName ? `RPCPPE_${filenameDateStr}_Category_${categoryName.replace(/\s+/g, '_')}.pdf` : `RPCPPE_${filenameDateStr}_All_Categories.pdf`;
     a.click();
   }
 
-  static async generatePreview(assets: Asset[], year: number, categoryIdOrName?: string | number): Promise<string> {
+  static async generatePreview(assets: Asset[], asOfDate: Date, categoryIdOrName?: string | number): Promise<string> {
     if (!assets?.length) return '';
 
     // If categoryIdOrName is a number or numeric string, fetch the category name
@@ -231,6 +239,13 @@ export class RPCPPEPdfGenerator {
     // Calculate total amount
     const totalAmount = assets.reduce((sum, asset) => sum + (asset.unitValue || 0), 0);
 
+    // Format the date for display
+    const displayDateStr = asOfDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
     const doc = (
       <Document>
         <Page size="LEGAL" orientation="landscape" style={styles.page}>
@@ -242,7 +257,7 @@ export class RPCPPEPdfGenerator {
             <Text style={styles.subtitle}>
               {categoryName ? `Account Code ${accountCode} - ${categoryName}` : 'All Categories'}
             </Text>
-            <Text style={styles.subtitle}>As of December 31, {year}</Text>
+            <Text style={styles.subtitle}>As of {displayDateStr}</Text>
           </View>
 
           <Text style={styles.info}>Fund Cluster: Regular Agency Fund</Text>

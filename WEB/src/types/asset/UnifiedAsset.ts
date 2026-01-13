@@ -92,7 +92,7 @@ export interface Asset {
   unitValue: number;
   dateAcquired: string;
   estimatedUsefulLife: number;
-  fiscalYear: number;
+  fiscalDate: string;
   movements: UnifiedMovement[];
 }
 

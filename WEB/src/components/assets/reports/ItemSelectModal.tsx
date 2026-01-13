@@ -118,7 +118,7 @@ export function ItemSelectModal({
             dateAcquired: apiItem.dateAcquired || '',
             movements: apiItem.movements || [],
             estimatedUsefulLife: apiItem.estimatedUsefulLife || 5,
-            fiscalYear: apiItem.fiscalYear || 0,
+            fiscalDate: apiItem.fiscalDate || new Date().toISOString().split('T')[0],
           };
           
           onSelect(detailedItem);

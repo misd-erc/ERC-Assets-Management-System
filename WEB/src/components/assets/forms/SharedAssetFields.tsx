@@ -5,10 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Package, DollarSign, User, Plus, X } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Package, DollarSign, User, Plus, X, CalendarIcon } from 'lucide-react';
 import ReactSelect from 'react-select';
 import { Asset, UnifiedMovement, NormalizedEmployee, Part } from '@/types/asset/UnifiedAsset';
 import { VwOffice, VwDivision } from '@/types/office';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface SharedAssetFieldsProps {
   mode: 'create' | 'edit';
@@ -164,31 +168,36 @@ export function SharedAssetFields({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="fiscalYear">Fiscal Year</Label>
-              <Select
-                value={formData.fiscalYear ? formData.fiscalYear.toString() : ''}
-                onValueChange={(value) => handleInputChange('fiscalYear', value ? parseInt(value) : 0)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select fiscal year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(() => {
-                    const currentYear = new Date().getFullYear();
-                    const years = [];
-                    // Generate years from 10 years ago to current year (latest)
-                    for (let year = currentYear - 10; year <= currentYear; year++) {
-                      years.push(year);
+              <Label htmlFor="fiscalDate">Fiscal Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.fiscalDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.fiscalDate ? format(new Date(formData.fiscalDate), "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.fiscalDate ? new Date(formData.fiscalDate) : new Date()}
+                    onSelect={(date) => {
+                      if (date) {
+                        handleInputChange('fiscalDate', date.toISOString().split('T')[0]);
+                      }
+                    }}
+                    disabled={(date) =>
+                      date > new Date() || date < new Date("1900-01-01")
                     }
-                    // Reverse to show current year first (latest)
-                    return years.reverse().map(year => (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}
-                      </SelectItem>
-                    ));
-                  })()}
-                </SelectContent>
-              </Select>
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </CardContent>

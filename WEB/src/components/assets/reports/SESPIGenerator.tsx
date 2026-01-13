@@ -5,7 +5,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
@@ -121,21 +121,18 @@ const styles = StyleSheet.create({
 interface SESPIFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerate: (year: number) => void;
+  onGenerate: (date: Date) => void;
 }
 
 export function SESPIFilterModal({ isOpen, onClose, onGenerate }: SESPIFilterModalProps) {
-  const [year, setYear] = useState('');
-
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
+  const [asOfDate, setAsOfDate] = useState('');
 
   const handleGenerate = () => {
-    if (!year) {
-      toast.error('Please select a year');
+    if (!asOfDate) {
+      toast.error('Please select a date');
       return;
     }
-    onGenerate(Number(year));
+    onGenerate(new Date(asOfDate));
   };
 
   return (
@@ -147,19 +144,13 @@ export function SESPIFilterModal({ isOpen, onClose, onGenerate }: SESPIFilterMod
 
         <div className="space-y-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">Year</Label>
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select year" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map(y => (
-                  <SelectItem key={y} value={y.toString()}>
-                    {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-right">As of Date</Label>
+            <Input 
+              type="date" 
+              value={asOfDate} 
+              onChange={(e) => setAsOfDate(e.target.value)}
+              className="col-span-3"
+            />
           </div>
         </div>
 
@@ -188,16 +179,16 @@ export class SESPIExcelGenerator {
     return TABLE_WIDTH * cols[i];
   }
 
-  static async generateSESPIPreview(year: number): Promise<string> {
-    const seAssets = await PTAService.getAllForSE(year);
+  static async generateSESPIPreview(asOfDate: Date): Promise<string> {
+    const seAssets = await PTAService.getAllForSE(asOfDate.getFullYear());
 
     const doc = this.buildDocument(seAssets);
     const blob = await pdf(doc).toBlob();
     return URL.createObjectURL(blob);
   }
 
-  static async generate(year: number) {
-    const seAssets = await PTAService.getAllForSE(year);
+  static async generate(asOfDate: Date) {
+    const seAssets = await PTAService.getAllForSE(asOfDate.getFullYear());
 
     const doc = this.buildDocument(seAssets);
     const blob = await pdf(doc).toBlob();

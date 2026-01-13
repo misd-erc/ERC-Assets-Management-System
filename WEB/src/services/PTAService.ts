@@ -137,7 +137,7 @@ export class PTAService {
       unitValue: ptaItem.unitValue,
       dateAcquired,
       estimatedUsefulLife: 5,
-      fiscalYear: ptaItem.fiscalYear ?? 0,
+      fiscalDate: new Date().toISOString(),
       condition: latestMovement?.condition || '',
       movements: ptaItem.movements.map(m => ({
         id: m.id,
