@@ -19,8 +19,8 @@ const logoSrc =
     ? `${window.location.origin}/images/erc-logo.png`
     : "/mnt/data/erc-logo.png";
 
-// Auto-date
-const today = new Date().toISOString().slice(0, 10);
+// Auto-date (long format)
+const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 const styles = StyleSheet.create({
   page: {
@@ -99,13 +99,17 @@ const styles = StyleSheet.create({
   // SIGNATURE SECTION
   sigRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 0,
     marginTop: 25,
   },
 
   sigBlock: {
-    width: "45%",
+    flex: 1,
     textAlign: "center",
+    borderWidth: 1,
+    borderColor: "#000",
+    padding: 8,
+    marginHorizontal: -1,
   },
 
   sigTitle: { fontSize: 10, marginBottom: 8 },
@@ -183,7 +187,7 @@ const PARDocument = ({
           <Text style={styles.metaLabel}>
             Entity Name: ENERGY REGULATORY COMMISSION
           </Text>
-          <Text style={{ marginTop: 4 }}>Fund Cluster: _______________________</Text>
+          <Text style={{ marginTop: 4 }}>Fund Cluster: Regular Agency Fund</Text>
         </View>
 
         <View style={styles.metaRight}>
@@ -221,37 +225,21 @@ const PARDocument = ({
         {/* RECEIVED BY */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Received by:</Text>
-
           <Text style={styles.sigName}>{employeeName}</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature over Printed Name of End User</Text>
-
           <Text style={styles.sigTopText}>{position} - {office}</Text>
-          <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Position/Office</Text>
-
           <Text style={styles.sigTopText}>{today}</Text>
-          <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Date</Text>
         </View>
 
         {/* ISSUED BY */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Issued by:</Text>
-
           <Text style={styles.sigName}>CHERRY LYNN S. GONZALES</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>
-            Signature over Printed Name of Supply and Property Custodian
-          </Text>
-
+          <Text style={styles.sigLabel}>Signature over Printed Name of Supply and Property Custodian</Text>
           <Text style={styles.sigTopText}>Administrative Officer V – FAS, GSD</Text>
-          <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Position/Office</Text>
-
           <Text style={styles.sigTopText}>{today}</Text>
-          <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Date</Text>
         </View>
       </View>
     </Page>

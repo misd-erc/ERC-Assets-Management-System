@@ -206,6 +206,10 @@ export function ReportTab() {
     }
 
     setShowPreview(false);
+    setSelectedReport(null);
+    setSelectedItem(null);
+    setSelectedMovement(null);
+    setCustomNumber('');
   };
 
   const handleRPCPPEGenerate = async (asOfDate: Date, categoryId?: number) => {
@@ -370,7 +374,6 @@ export function ReportTab() {
           onClose={() => {
             console.log('[ReportTab] ItemSelectModal onClose called');
             setShowItemSelectModal(false);
-            setSelectedReport(null);
           }}
           onSelect={handleItemSelect}
           groupType={selectedReport === 'ICS' ? 'SE' : 'PPE'}
@@ -385,7 +388,6 @@ export function ReportTab() {
           setSelectedItem(null);
           setSelectedMovement(null);
           setShowItemSelectModal(false);
-          setSelectedReport(null);
         }}
         item={selectedItem}
         onConfirm={handleMovementSelect}

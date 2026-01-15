@@ -18,8 +18,8 @@ const logoSrc =
     ? `${window.location.origin}/images/erc-logo.png`
     : "/mnt/data/erc-logo.png";
 
-// Auto-date
-const today = new Date().toISOString().slice(0, 10);
+// Auto-date (long format)
+const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 const styles = StyleSheet.create({
   page: {
