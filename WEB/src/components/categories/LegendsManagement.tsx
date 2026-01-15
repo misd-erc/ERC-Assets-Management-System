@@ -267,12 +267,12 @@ export function LegendsManagement() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="generalCode">General Code *</Label>
+              <Label htmlFor="generalCode">Account Code *</Label>
               <Input
                 id="generalCode"
                 value={formData.generalCode || ''}
                 onChange={(e) => updateFormData({ generalCode: e.target.value })}
-                placeholder="Enter general code"
+                placeholder="Enter account code"
                 required
                 disabled={isLoading}
               />
