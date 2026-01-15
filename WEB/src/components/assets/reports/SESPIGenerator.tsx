@@ -85,11 +85,16 @@ const styles = StyleSheet.create({
   signature: {
     marginTop: 20,
     flexDirection: 'row',
+    gap: 0,
   },
 
   sigBlock: {
     flex: 1,
     textAlign: 'center',
+    borderWidth: 1,
+    borderColor: '#000',
+    padding: 8,
+    marginHorizontal: -1,
   },
 
   sigLine: {
