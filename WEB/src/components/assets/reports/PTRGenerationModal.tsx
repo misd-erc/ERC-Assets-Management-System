@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
-import { getEmployeeAssets } from '@/api/inventoryApi';
+import { getEmployeeAssets } from '@/api/asset/inventoryApi';
 import { PTRGenerator } from './PTRGenerator';
 import { ReportPreviewModal } from './ReportPreviewModal';
 
@@ -112,11 +112,12 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
 
     setLoadingPreview(true);
     try {
+      const dateStr = format(transferDate, 'yyyy-MM-dd');
       const url = await PTRGenerator.generatePTRPreviewMultiple(
         fromEmployee,
         toEmployee,
         selectedAssets,
-        transferDate.toISOString().slice(0, 10),
+        dateStr,
         transferType
       );
       setPreviewUrl(url);
@@ -133,11 +134,12 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
     if (!fromEmployee || !toEmployee) return;
 
     try {
+      const dateStr = format(transferDate, 'PPP');
       await PTRGenerator.generatePTRMultiple(
         fromEmployee,
         toEmployee,
         selectedAssets,
-        transferDate.toISOString().slice(0, 10),
+        dateStr,
         transferType
       );
       onClose();
@@ -406,35 +408,36 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              Generate PTR - Step {getStepNumber(currentStep)} of 6
-            </DialogTitle>
-          </DialogHeader>
+            <DialogHeader>
+              <DialogTitle>
+                Generate PTR - Step {getStepNumber(currentStep)} of 6
+              </DialogTitle>
+            </DialogHeader>
 
-          <div className="py-4">
-            {renderStepContent()}
-          </div>
+            {/* Make the main step area scrollable so long lists don't push the footer off-screen */}
+            <div className="py-4 max-h-[60vh] overflow-y-auto">
+              {renderStepContent()}
+            </div>
 
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              disabled={currentStep === 'from'}
-            >
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                disabled={currentStep === 'from'}
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
 
-            <Button
-              onClick={handleNext}
-              disabled={!canGoNext()}
-            >
-              {currentStep === 'preview' ? 'Generate PTR' : 'Next'}
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
-        </DialogContent>
+              <Button
+                onClick={handleNext}
+                disabled={!canGoNext()}
+              >
+                {currentStep === 'preview' ? 'Generate PTR' : 'Next'}
+                <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </DialogContent>
       </Dialog>
 
       <ReportPreviewModal

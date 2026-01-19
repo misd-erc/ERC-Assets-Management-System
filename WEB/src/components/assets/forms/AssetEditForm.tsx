@@ -8,7 +8,7 @@ import { getDivisions } from '@/api/office-management/divisionApi';
 import { VwOffice, VwDivision } from '@/types/office';
 import { useAuthStore } from '@/store/auth';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { getCategories, getLegends } from '@/api/inventoryApi';
+import { getCategories, getLegends } from '@/api/asset/inventoryApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { SharedAssetFields } from '@/components/assets/forms/SharedAssetFields';

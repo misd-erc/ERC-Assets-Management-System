@@ -1,4 +1,4 @@
-import { seApi } from '@/api/se';
+import { seApi } from '@/api/asset/se';
 import { SEAsset, SEMovementHistory, RRSPEntry } from '@/types/supply/se';
 import { normalizeMovement } from '@/utils/normalizer';
 
@@ -155,8 +155,8 @@ export class SEService {
 
       const apiData = {
         propertyNumber: data.se_property_number,
-        category: parseInt(data.category) || 0,
-        legend: parseInt(data.legend) || 0,
+         category: data.category ? String(data.category) : '',
+         legend: data.legend ? String(data.legend) : '',
         description: data.description,
         brand: data.brand || '',
         model: data.model || '',
@@ -173,7 +173,11 @@ export class SEService {
       };
 
       // Create the main SE asset
-      const apiResponse = await seApi.create(apiData);
+      const apiResponse = await seApi.create(
+        apiData,
+        actionBySystemUserId,
+        sessionKey
+      );
 
       // Since the API response doesn't include the created asset ID,
       // we need to search for the asset by propertyNumber to get the ID
@@ -201,7 +205,11 @@ export class SEService {
             condition: block.condition || 'Working',
           }, data.model || '', ptaId);
           normalizedMovement.isActive = block.label === 'Current Holder';
-          await seApi.editMovement(normalizedMovement);
+          await seApi.editMovement({
+            ...normalizedMovement,
+            actionBySystemUserId,
+            sessionKey,
+          });
         }
       }
 
@@ -220,8 +228,8 @@ export class SEService {
       const apiData = {
         id,
         propertyNumber: data.se_property_number || '',
-        category: parseInt(data.category || '0') || 0,
-        legend: parseInt(data.legend || '0') || 0,
+         category: data.category ? String(data.category) : '',
+         legend: data.legend ? String(data.legend) : '',
         description: data.description || '',
         brand: data.brand || '',
         model: data.model || '',
@@ -236,7 +244,12 @@ export class SEService {
         sessionKey,
       };
 
-      const apiResponse = await seApi.update(apiData);
+      const apiResponse = await seApi.update(
+        id,
+        apiData,
+        actionBySystemUserId,
+        sessionKey
+      );
       return this.mapApiSeToSeAsset(apiResponse);
     } catch (error) {
       console.error('Error updating SE asset:', error);

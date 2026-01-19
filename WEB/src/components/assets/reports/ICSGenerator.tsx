@@ -12,15 +12,17 @@ import {
 import { Asset, NormalizedEmployee, UnifiedMovement } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById, getEmployees } from "@/api/user-management/userApi";
 import { UnifiedAssetService } from "@/services/UnifiedAssetService";
-import { getEmployeeAssets } from "@/api/inventoryApi";
+import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 
 const logoSrc =
   typeof window !== "undefined"
     ? `${window.location.origin}/images/erc-logo.png`
     : "/mnt/data/erc-logo.png";
 
-// Auto insert today's date
-const today = new Date().toISOString().slice(0, 10);
+// (Removed remote font registration to avoid fetch failures.)
+
+// Auto insert today's date (long format)
+const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 const styles = StyleSheet.create({
   page: {
@@ -53,6 +55,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  info: {
+    marginBottom: 6,
+  },
+
   table: {
     marginTop: 12,
     borderWidth: 0.8,
@@ -83,13 +89,17 @@ const styles = StyleSheet.create({
   // SIGNATURES
   sigRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 0,
     marginTop: 24,
   },
 
   sigBlock: {
-    width: "45%",
+    flex: 1,
     textAlign: "center",
+    borderWidth: 1,
+    borderColor: "#000",
+    padding: 8,
+    marginHorizontal: -1,
   },
 
   sigTitle: {
@@ -150,6 +160,8 @@ const ICSDocument = ({
       </View>
       <View style={styles.blueRule} />
 
+      <Text style={styles.info}>Fund Cluster: Regular Agency Fund</Text>
+
       {/* TABLE */}
       <View style={styles.table}>
         <View style={styles.tableHeader}>
@@ -167,10 +179,12 @@ const ICSDocument = ({
             <Text style={[styles.cell, styles.colDesc]}>{r.description}</Text>
             <Text style={[styles.cell, styles.colProp]}>{r.propertyNo}</Text>
             <Text style={[styles.cell, styles.colValue]}>
-              {r.value?.toLocaleString("en-PH", {
-                style: "currency",
-                currency: "PHP",
-              })}
+              {r.value != null
+                ? r.value.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                : ""}
             </Text>
           </View>
         ))}
@@ -182,37 +196,21 @@ const ICSDocument = ({
         {/* RECEIVED BY */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Received by:</Text>
-
           <Text style={styles.sigName}>{employeeName}</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature over Printed Name of End User</Text>
-
           <Text style={styles.sigTopText}>{position} - {office}</Text>
-          <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Position/Office</Text>
-
           <Text style={styles.sigTopText}>{today}</Text>
-          <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Date</Text>
         </View>
 
         {/* ISSUED BY */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Issued by:</Text>
-
           <Text style={styles.sigName}>CHERRY LYNN S. GONZALES</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>
-            Signature over Printed Name of Supply and Property Custodian
-          </Text>
-
+          <Text style={styles.sigLabel}>Signature over Printed Name of Supply and Property Custodian</Text>
           <Text style={styles.sigTopText}>Administrative Officer V – FAS, GSD</Text>
-          <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Position/Office</Text>
-
           <Text style={styles.sigTopText}>{today}</Text>
-          <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Date</Text>
         </View>
       </View>
     </Page>

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Search, Filter, X } from 'lucide-react';
 import { getDivisions } from '@/api/office-management/divisionApi';
 import { getOffices } from '@/api/office-management/officeApi';
-import { getCategories, getConditions } from '@/api/inventoryApi';
+import { getCategories, getConditions } from '@/api/asset/inventoryApi';
 import { VwDivision, Office } from '@/types/office';
 
 interface AssetsFiltersProps {

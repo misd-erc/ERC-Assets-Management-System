@@ -10,8 +10,8 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
-import { ppeApi } from "@/api/ppe";
-import { seApi } from "@/api/se";
+import { ppeApi } from "@/api/asset/ppe";
+import { seApi } from "@/api/asset/se";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -149,13 +149,17 @@ const styles = StyleSheet.create({
 
   sigRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 0,
     marginTop: 25,
   },
 
   sigBlock: {
-    width: "30%",
+    flex: 1,
     textAlign: "center",
+    borderWidth: 1,
+    borderColor: "#000",
+    padding: 8,
+    marginHorizontal: -1,
   },
 
   sigTitle: { fontSize: 10, marginBottom: 6 },
@@ -177,6 +181,13 @@ const styles = StyleSheet.create({
 
   sigDesignation: { fontSize: 8 },
 });
+
+/* -------------------------------- DATE HELPERS ------------------------------- */
+function formatLongDate(date?: string | Date) {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
 
 /* -------------------------------- HELPERS -------------------------------- */
 
@@ -219,6 +230,9 @@ const PTRDocument = ({
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
+      {/* APPENDIX */}
+      <Text style={{ position: "absolute", right: 20, top: 10, fontSize: 8, fontStyle: "italic" }}>Appendix 76</Text>
+
       {/* HEADER */}
       <View style={styles.headerContainer}>
         <Image src={logoSrc} style={styles.logo} />
@@ -247,7 +261,7 @@ const PTRDocument = ({
 
         <View style={styles.metaRight}>
           <Text style={styles.metaLabel}>PTR No.: {ptrNumber}</Text>
-          <Text style={{ marginTop: 4 }}>Date: {transferDate}</Text>
+          <Text style={{ marginTop: 4 }}>Date: {formatLongDate(transferDate)}</Text>
         </View>
       </View>
 
@@ -340,7 +354,7 @@ const PTRDocument = ({
           <Text style={styles.sigDesignation}>
             {APPROVED_BY.designation}
           </Text>
-          <Text style={styles.sigDesignation}>{transferDate}</Text>
+          <Text style={styles.sigDesignation}>{formatLongDate(transferDate)}</Text>
         </View>
 
         <View style={styles.sigBlock}>
@@ -351,7 +365,7 @@ const PTRDocument = ({
           <Text style={styles.sigDesignation}>
             {RELEASED_BY.designation}
           </Text>
-          <Text style={styles.sigDesignation}>{transferDate}</Text>
+          <Text style={styles.sigDesignation}>{formatLongDate(transferDate)}</Text>
         </View>
 
         <View style={styles.sigBlock}>
@@ -364,7 +378,7 @@ const PTRDocument = ({
           <Text style={styles.sigDesignation}>
             Accountable Officer
           </Text>
-          <Text style={styles.sigDesignation}>{transferDate}</Text>
+          <Text style={styles.sigDesignation}>{formatLongDate(transferDate)}</Text>
         </View>
       </View>
     </Page>

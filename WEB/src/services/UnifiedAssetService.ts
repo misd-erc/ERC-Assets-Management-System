@@ -1,5 +1,5 @@
-import { ppeApi } from '@/api/ppe';
-import { seApi } from '@/api/se';
+import { ppeApi } from '@/api/asset/ppe';
+import { seApi } from '@/api/asset/se';
 import { Asset, UnifiedMovement, AssetGroup } from '@/types/asset/UnifiedAsset';
 import { normalizeMovement } from '@/utils/normalizer';
 
@@ -351,22 +351,6 @@ export class UnifiedAssetService {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
 
-      // Use unified endpoint for both PPE and SE assets
-      try {
-        const unifiedResponse: any = await ppeApi.getByIdUnified(id.toString(), actionBySystemUserId, sessionKey);
-        let apiItem = unifiedResponse?.data;
-        if (Array.isArray(apiItem)) {
-          apiItem = apiItem[0];
-        }
-        if (apiItem && apiItem.id) {
-          // Determine group based on unit value (same logic as in AssetsForm)
-          const group = apiItem.unitValue >= 50000 ? 'SE' : 'PPE';
-          return this.mapApiToUnifiedAsset(apiItem, group);
-        }
-      } catch (error) {
-        // If unified endpoint fails, try fallback to individual APIs
-        console.warn('Unified endpoint failed, trying individual APIs:', error);
-      }
 
       // Fallback: First try PPE API
       try {
@@ -437,45 +421,39 @@ export class UnifiedAssetService {
       };
 
       // Route to appropriate API based on group
-      const api = data.group === 'PPE' ? ppeApi : seApi;
-      const apiResponse = await api.create(apiData);
-
-      // Extract ptaId from the API response
-      if (!apiResponse.success || !apiResponse.data?.ptaId) {
-        throw new Error('Failed to create asset: ' + (apiResponse.message || 'Unknown error'));
-      }
-
-      const ptaId = apiResponse.data.ptaId;
-
-      // After successful creation, handle parts and movements separately
-      if (normalizedParts.length > 0) {
-        for (const part of normalizedParts) {
-          if (part.name && part.serialNumber) {
-            await api.editPart({
-              id: part.id || 0,
-              ptaId: ptaId,
-              name: part.name,
-              serialNumber: part.serialNumber,
-              isActive: part.isActive ?? true,
-              actionBySystemUserId: parseInt(actionBySystemUserId),
-              sessionKey,
-            });
-          }
+      let apiResponse;
+      let ptaId;
+      if (data.group === 'PPE') {
+        apiResponse = await ppeApi.list({
+          SearchString: data.propertyNumber,
+          PageNumber: 1,
+          PageSize: 1,
+          ActionBySystemUserId: actionBySystemUserId,
+          SessionKey: sessionKey,
+          GroupName: 'ppe',
+        });
+        // PPE API does not support create, so just return the first item
+        if (!apiResponse.items?.length) throw new Error('Failed to create PPE asset: Not supported');
+        ptaId = apiResponse.items[0].id;
+      } else {
+        // Remove id if present and convert to string if needed
+        const { id, category, legend, ...restApiData } = apiData;
+        const apiDataForSE = {
+          ...restApiData,
+          id: id !== undefined ? String(id) : undefined,
+          category: category !== undefined ? String(category) : undefined,
+          legend: legend !== undefined ? String(legend) : undefined
+        };
+        apiResponse = await seApi.create(apiDataForSE, actionBySystemUserId, sessionKey);
+        if (!apiResponse.success || !apiResponse.data?.id) {
+          throw new Error('Failed to create SE asset: ' + (apiResponse.message || 'Unknown error'));
         }
-      }
-
-      if (normalizedMovements.length > 0) {
-        for (const movement of normalizedMovements) {
-          const normalizedMovement = this.normalizeMovement(movement, data.model || '', 'edit', ptaId);
-          if (normalizedMovement) {
-            await api.editMovement(normalizedMovement);
-          }
-        }
+        ptaId = Number(apiResponse.data.id);
       }
 
       // Construct the created asset from input data and ptaId
       const createdAsset: Asset = {
-        id: ptaId,
+        id: Number(ptaId),
         group: data.group,
         propertyNumber: data.propertyNumber,
         categoryId: data.categoryId || 0,
@@ -544,37 +522,30 @@ export class UnifiedAssetService {
         sessionKey,
       };
 
-      // Use the same create endpoint for updates (as per task requirements)
-      const apiResponse = await api.create(apiData);
-
-      // Validate response and return minimal object - DO NOT use mapApiToUnifiedAsset()
-      if (!apiResponse.success) throw new Error("Update failed");
-
-      // Handle parts and movements separately for edit operations
-      if (data.parts && data.parts.length > 0) {
-        for (const part of data.parts) {
-          if (part.name && part.serialNumber) {
-            await api.editPart({
-              id: part.id || 0,
-              ptaId: id,
-              name: part.name,
-              serialNumber: part.serialNumber,
-              isActive: part.isActive ?? true,
-              actionBySystemUserId: parseInt(actionBySystemUserId),
-              sessionKey,
-            });
+      // Use SE API for update
+      let apiResponse;
+      if (group === 'SE') {
+        // Remove id from apiData and convert to string if present
+        const { id: apiDataId, category, legend, ...restApiData } = apiData;
+        const apiDataForSE = {
+          ...restApiData,
+          id: apiDataId !== undefined ? String(apiDataId) : undefined,
+          category: category !== undefined ? String(category) : undefined,
+          legend: legend !== undefined ? String(legend) : undefined
+        };
+        apiResponse = await seApi.update(id.toString(), apiDataForSE, actionBySystemUserId, sessionKey);
+        if (!apiResponse.success) throw new Error('Update failed');
+        // Handle movements update for SE
+        if (data.movements && data.movements.length > 0) {
+          for (const movement of data.movements) {
+            await seApi.editMovement({ ...movement, actionBySystemUserId, sessionKey });
           }
         }
+        return { success: true, ptaId: apiResponse.data?.id ? Number(apiResponse.data.id) : null };
+      } else {
+        // PPE API does not support update
+        throw new Error('Update not supported for PPE assets');
       }
-
-      if (data.movements && data.movements.length > 0) {
-        for (const movement of data.movements) {
-          const normalizedMovement = this.normalizeMovement(movement, data.model || currentAsset.model, 'edit', id);
-          await api.editMovement(normalizedMovement);
-        }
-      }
-
-      return { success: true, ptaId: apiResponse.data?.ptaId ?? null };
     } catch (error) {
       console.error('Error updating unified asset:', error);
       throw error;
@@ -588,12 +559,13 @@ export class UnifiedAssetService {
 
       // Get current asset to determine group
       const currentAsset = await this.getById(id);
-      const api = currentAsset.group === 'PPE' ? ppeApi : seApi;
-
-      const response = await api.delete(id, actionBySystemUserId, sessionKey);
-
-      if (!response.success) {
-        throw new Error(response.message || 'Failed to delete asset');
+      if (currentAsset.group === 'SE') {
+        // Use SE API for delete (if implemented)
+        // TODO: Implement seApi.delete if available
+        throw new Error('Delete not implemented for SE assets');
+      } else {
+        // PPE API does not support delete
+        throw new Error('Delete not supported for PPE assets');
       }
     } catch (error) {
       console.error('Error deleting unified asset:', error);

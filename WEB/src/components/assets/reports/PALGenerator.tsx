@@ -11,15 +11,15 @@ import {
 } from "@react-pdf/renderer";
 import { NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById } from "@/api/user-management/userApi";
-import { getEmployeeAssets } from "@/api/inventoryApi";
+import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 
 const logoSrc =
   typeof window !== "undefined"
     ? `${window.location.origin}/images/erc-logo.png`
     : "/mnt/data/erc-logo.png";
 
-// Auto-date
-const today = new Date().toISOString().slice(0, 10);
+// Auto-date (long format)
+const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 const styles = StyleSheet.create({
   page: {
@@ -209,7 +209,7 @@ export class PALGenerator {
     // Process all assets (PPE and SE) in one list
     let itemNumber = 1;
     
-    ppeAssets.forEach((asset) => {
+    ppeAssets.forEach((asset: any) => {
       allRows.push({
         no: itemNumber++,
         description: asset.description ?? "",
@@ -219,7 +219,7 @@ export class PALGenerator {
       });
     });
 
-    seAssets.forEach((asset) => {
+    seAssets.forEach((asset: any) => {
       allRows.push({
         no: itemNumber++,
         description: asset.description ?? "",
@@ -274,7 +274,7 @@ export class PALGenerator {
     // Process all assets (PPE and SE) in one list
     let itemNumber = 1;
     
-    ppeAssets.forEach((asset) => {
+    ppeAssets.forEach((asset: any) => {
       allRows.push({
         no: itemNumber++,
         description: asset.description ?? "",
@@ -284,7 +284,7 @@ export class PALGenerator {
       });
     });
 
-    seAssets.forEach((asset) => {
+    seAssets.forEach((asset: any) => {
       allRows.push({
         no: itemNumber++,
         description: asset.description ?? "",

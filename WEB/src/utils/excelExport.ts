@@ -1,8 +1,8 @@
 import * as XLSX from 'xlsx';
 import { PPEAsset } from '@/types/asset/PPEAsset';
 import { SEAsset } from '@/types/supply/se';
-import { ppeApi } from '@/api/ppe';
-import { seApi } from '@/api/se';
+import { ppeApi } from '@/api/asset/ppe';
+import { seApi } from '@/api/asset/se';
 
 export interface ExportOptions {
   startDate?: string;
