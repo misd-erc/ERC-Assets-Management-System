@@ -1,7 +1,7 @@
 import React from 'react';
 import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { Asset } from '@/types/asset/UnifiedAsset';
-import { getCategories } from '@/api/inventoryApi';
+import { getCategories } from '@/api/asset/inventoryApi';
 
 const styles = StyleSheet.create({
   page: {
@@ -73,7 +73,7 @@ export class RPCPPEPdfGenerator {
     }
 
     // Find category by ID from the fetched list
-    const category = this.categoryCache.find(cat => cat.id === categoryId);
+    const category = this.categoryCache?.find(cat => cat.id === categoryId);
     return category?.name;
   }
 
@@ -91,7 +91,7 @@ export class RPCPPEPdfGenerator {
     }
 
     // Find category by ID and return generalCode
-    const category = this.categoryCache.find(cat => cat.id === categoryId);
+    const category = this.categoryCache?.find(cat => cat.id === categoryId);
     return category?.generalCode || '';
   }
 

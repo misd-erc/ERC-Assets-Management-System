@@ -12,7 +12,7 @@ import {
 import { Asset, NormalizedEmployee, UnifiedMovement } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById, getEmployees } from "@/api/user-management/userApi";
 import { UnifiedAssetService } from "@/services/UnifiedAssetService";
-import { getEmployeeAssets } from "@/api/inventoryApi";
+import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 
 const logoSrc =
   typeof window !== "undefined"

@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
-import { getEmployeeAssets } from '@/api/inventoryApi';
+import { getEmployeeAssets } from '@/api/asset/inventoryApi';
 import { ITRGenerator } from './ITRGenerator';
 import { ReportPreviewModal } from './ReportPreviewModal';
 

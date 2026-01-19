@@ -10,7 +10,7 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
-import { seApi } from "@/api/se";
+import { seApi } from "@/api/asset/se";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
