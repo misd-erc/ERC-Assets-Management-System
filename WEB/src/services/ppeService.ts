@@ -1,4 +1,4 @@
-﻿import { ppeApi } from '@/api/ppe';
+﻿import { ppeApi } from '@/api/asset/ppe';
 import { PPEAsset, Movement } from '@/types/asset/PPEAsset';
 import { normalizeMovement } from '@/utils/normalizer';
 

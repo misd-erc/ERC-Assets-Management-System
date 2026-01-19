@@ -10,8 +10,8 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
-import { ppeApi } from "@/api/ppe";
-import { seApi } from "@/api/se";
+import { ppeApi } from "@/api/asset/ppe";
+import { seApi } from "@/api/asset/se";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -230,6 +230,9 @@ const PTRDocument = ({
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
+      {/* APPENDIX */}
+      <Text style={{ position: "absolute", right: 20, top: 10, fontSize: 8, fontStyle: "italic" }}>Appendix 76</Text>
+
       {/* HEADER */}
       <View style={styles.headerContainer}>
         <Image src={logoSrc} style={styles.logo} />

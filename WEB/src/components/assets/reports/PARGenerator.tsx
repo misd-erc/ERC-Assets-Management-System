@@ -12,7 +12,7 @@ import {
 import { Asset, NormalizedEmployee, UnifiedMovement } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById, getEmployees } from "@/api/user-management/userApi";
 import { UnifiedAssetService } from "@/services/UnifiedAssetService";
-import { getEmployeeAssets } from "@/api/inventoryApi";
+import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     marginHorizontal: -1,
   },
 
-  sigTitle: { fontSize: 10, marginBottom: 8 },
+  sigTitle: { fontSize: 10, marginBottom: 8, textAlign: "left" },
 
   sigName: { fontSize: 10, textAlign: "center" },
 
@@ -175,7 +175,7 @@ const PARDocument = ({
       <View style={styles.headerContainer}>
         <Image src={logoSrc} style={styles.logo} />
         <View style={styles.titleBlock}>
-          <Text style={styles.headerTitle}>PROPERTY ACKNOWLEDGMENT RECEIPT</Text>
+          <Text style={styles.headerTitle}>PROPERTY ACKNOWLEDGEMENT RECEIPT</Text>
         </View>
       </View>
 
