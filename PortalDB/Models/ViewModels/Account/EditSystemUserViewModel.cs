@@ -15,7 +15,7 @@ namespace PortalDB.Models.ViewModels.Account
         public long? DivisionId { get; set; }
         public long? EmploymentTypeId { get; set; }
         public long? PositionId { get; set; }
-        public bool IsActive { get; set; }
+        public bool IsActive { get; set; } = true;
         public long ActionBySystemUserId { get; set; }
 
     }

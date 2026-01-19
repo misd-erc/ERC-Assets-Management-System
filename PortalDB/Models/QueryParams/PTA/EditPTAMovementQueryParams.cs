@@ -21,7 +21,7 @@ namespace PortalDB.Models.QueryParams.PTA
         [Required] public string Condition { get; set; } = string.Empty;
         [Required] public long ActualOfficeId { get; set; }
         [Required] public long ActualDivisionId { get; set; }
-        [Required] public bool IsActive { get; set; }
+        [Required] public bool IsActive { get; set; } = true;
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;
     }

@@ -12,7 +12,7 @@ namespace PortalDB.Models.QueryParams.Office
     {
         [Required] public long EmploymentTypeId { get; set; }
         [Required] public string Name { get; set; } = string.Empty;
-        [Required] public bool IsActive { get; set; }
+        [Required] public bool IsActive { get; set; } = true;
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;
     }

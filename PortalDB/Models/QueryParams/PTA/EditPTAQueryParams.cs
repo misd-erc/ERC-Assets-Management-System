@@ -25,7 +25,7 @@ namespace PortalDB.Models.QueryParams.PTA
         [Required] public DateTime DateAcquired { get; set; }
         public long EstimatedUsefulLife { get; set; }
         [Required] public DateTime FiscalDate { get; set; }
-        [Required] public bool IsActive { get; set; }
+        [Required] public bool IsActive { get; set; } = true;
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;
     }
