@@ -9,7 +9,7 @@ import {
   Image,
   StyleSheet,
 } from "@react-pdf/renderer";
-import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
+import { Asset, NormalizedEmployee, UnifiedMovement } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById, getEmployees } from "@/api/user-management/userApi";
 import { UnifiedAssetService } from "@/services/UnifiedAssetService";
 import { getEmployeeAssets } from "@/api/inventoryApi";
@@ -19,8 +19,10 @@ const logoSrc =
     ? `${window.location.origin}/images/erc-logo.png`
     : "/mnt/data/erc-logo.png";
 
-// Auto insert today's date
-const today = new Date().toISOString().slice(0, 10);
+// (Removed remote font registration to avoid fetch failures.)
+
+// Auto insert today's date (long format)
+const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 const styles = StyleSheet.create({
   page: {
@@ -53,6 +55,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  info: {
+    marginBottom: 6,
+  },
+
   table: {
     marginTop: 12,
     borderWidth: 0.8,
@@ -83,13 +89,17 @@ const styles = StyleSheet.create({
   // SIGNATURES
   sigRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 0,
     marginTop: 24,
   },
 
   sigBlock: {
-    width: "45%",
+    flex: 1,
     textAlign: "center",
+    borderWidth: 1,
+    borderColor: "#000",
+    padding: 8,
+    marginHorizontal: -1,
   },
 
   sigTitle: {
@@ -127,11 +137,13 @@ const ICSDocument = ({
   employeeName,
   position,
   office,
+  icsNumber,
 }: {
   rows: ICSRow[];
   employeeName: string;
   position: string;
   office: string;
+  icsNumber?: string;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -139,13 +151,16 @@ const ICSDocument = ({
       {/* HEADER */}
       <View style={styles.headerRow}>
         <Image src={logoSrc} style={styles.logo} />
-
         <View style={styles.headerTitleBlock}>
           <Text style={styles.headerTitle}>INVENTORY CUSTODIAN SLIP</Text>
+          {icsNumber && (
+            <Text style={{ fontSize: 10, marginTop: 4 }}>ICS No.: {icsNumber}</Text>
+          )}
         </View>
       </View>
-
       <View style={styles.blueRule} />
+
+      <Text style={styles.info}>Fund Cluster: Regular Agency Fund</Text>
 
       {/* TABLE */}
       <View style={styles.table}>
@@ -164,10 +179,12 @@ const ICSDocument = ({
             <Text style={[styles.cell, styles.colDesc]}>{r.description}</Text>
             <Text style={[styles.cell, styles.colProp]}>{r.propertyNo}</Text>
             <Text style={[styles.cell, styles.colValue]}>
-              {r.value?.toLocaleString("en-PH", {
-                style: "currency",
-                currency: "PHP",
-              })}
+              {r.value != null
+                ? r.value.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                : ""}
             </Text>
           </View>
         ))}
@@ -179,37 +196,21 @@ const ICSDocument = ({
         {/* RECEIVED BY */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Received by:</Text>
-
           <Text style={styles.sigName}>{employeeName}</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature over Printed Name of End User</Text>
-
           <Text style={styles.sigTopText}>{position} - {office}</Text>
-          <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Position/Office</Text>
-
           <Text style={styles.sigTopText}>{today}</Text>
-          <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Date</Text>
         </View>
 
         {/* ISSUED BY */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Issued by:</Text>
-
           <Text style={styles.sigName}>CHERRY LYNN S. GONZALES</Text>
           <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>
-            Signature over Printed Name of Supply and Property Custodian
-          </Text>
-
+          <Text style={styles.sigLabel}>Signature over Printed Name of Supply and Property Custodian</Text>
           <Text style={styles.sigTopText}>Administrative Officer V – FAS, GSD</Text>
-          <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Position/Office</Text>
-
           <Text style={styles.sigTopText}>{today}</Text>
-          <View style={styles.sigLine} />
-          <Text style={styles.sigLabel}>Date</Text>
         </View>
       </View>
     </Page>
@@ -217,78 +218,97 @@ const ICSDocument = ({
 );
 
 export class ICSGenerator {
-  static async generateICSPreview(employee: NormalizedEmployee): Promise<string> {
-    const assets = await getEmployeeAssets(employee.id, 'SE');
-    if (!assets.length) {
-      alert('No SE assets found for this employee. Cannot generate ICS preview.');
+  // Helper to generate ICS number in format YYYY-MM-SEQ
+  static generateICSNumber(seq = 1) {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const seqStr = String(seq).padStart(3, '0');
+    return `${year}-${month}-${seqStr}`;
+  }
+
+  static async generateICSPreview(item: Asset, movement: UnifiedMovement | null, icsNumber?: string): Promise<string> {
+    if (!item) {
+      alert('No item selected. Cannot generate ICS preview.');
       return '';
     }
 
     const rows: ICSRow[] = [];
-    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
-
-    // Fetch employee details to get position and office
-    const empResp = await getEmployeeById(employee.id);
+    // Build employee name from movement data if available
+    let employeeName = 'N/A';
     let position = 'N/A';
     let office = 'N/A';
-    if (empResp.success && empResp.data.length > 0) {
-      const empData = empResp.data[0];
-      position = empData.position?.name || 'N/A';
-      office = empData.office?.name || 'N/A';
+
+    if (movement) {
+      // Try to get employee details from movement
+      const employeeId = movement.plantillaEmployeeId || movement.nonPlantillaEmployeeId;
+      if (employeeId) {
+        const empResp = await getEmployeeById(employeeId);
+        if (empResp.success && empResp.data.length > 0) {
+          const empData = empResp.data[0];
+          employeeName = `${empData.lastName}, ${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          position = empData.position?.name || 'N/A';
+          office = empData.office?.name || 'N/A';
+        }
+      }
     }
 
-    for (const asset of assets) {
-      rows.push({
-        qty: 1,
-        unit: asset.unitOfMeasurement ?? "Unit",
-        description: asset.description ?? "",
-        propertyNo: asset.propertyNumber ?? "",
-        value: asset.unitValue ?? null,
-      });
-    }
+    rows.push({
+      qty: 1,
+      unit: item.unitOfMeasurement ?? "Unit",
+      description: item.description ?? "",
+      propertyNo: item.propertyNumber ?? "",
+      value: item.unitValue ?? null,
+    });
 
+    // Use provided ICS number or auto-generate
+    const number = icsNumber || ICSGenerator.generateICSNumber();
     const blob = await pdf(
       <ICSDocument
         rows={rows}
         employeeName={employeeName}
         position={position}
         office={office}
+        icsNumber={number}
       />
     ).toBlob();
-
     return URL.createObjectURL(blob);
   }
 
-  static async generateICS(employee: NormalizedEmployee) {
-    const assets = await getEmployeeAssets(employee.id, 'SE');
-    if (!assets.length) {
-      alert('No SE assets found for this employee. Cannot generate ICS report.');
+  static async generateICS(item: Asset, movement: UnifiedMovement | null) {
+    if (!item) {
+      alert('No item selected. Cannot generate ICS report.');
       return;
     }
-    if (!employee) throw new Error('Employee must be selected.');
 
     const rows: ICSRow[] = [];
-    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
-
-    // Fetch employee details to get position and office
-    const empResp = await getEmployeeById(employee.id);
+    
+    // Build employee name from movement data if available
+    let employeeName = 'N/A';
     let position = 'N/A';
     let office = 'N/A';
-    if (empResp.success && empResp.data.length > 0) {
-      const empData = empResp.data[0];
-      position = empData.position?.name || 'N/A';
-      office = empData.office?.name || 'N/A';
+
+    if (movement) {
+      // Try to get employee details from movement
+      const employeeId = movement.plantillaEmployeeId || movement.nonPlantillaEmployeeId;
+      if (employeeId) {
+        const empResp = await getEmployeeById(employeeId);
+        if (empResp.success && empResp.data.length > 0) {
+          const empData = empResp.data[0];
+          employeeName = `${empData.lastName}, ${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          position = empData.position?.name || 'N/A';
+          office = empData.office?.name || 'N/A';
+        }
+      }
     }
 
-    for (const asset of assets) {
-      rows.push({
-        qty: 1,
-        unit: asset.unitOfMeasurement ?? "Unit",
-        description: asset.description ?? "",
-        propertyNo: asset.propertyNumber ?? "",
-        value: asset.unitValue ?? null,
-      });
-    }
+    rows.push({
+      qty: 1,
+      unit: item.unitOfMeasurement ?? "Unit",
+      description: item.description ?? "",
+      propertyNo: item.propertyNumber ?? "",
+      value: item.unitValue ?? null,
+    });
 
     const blob = await pdf(
       <ICSDocument

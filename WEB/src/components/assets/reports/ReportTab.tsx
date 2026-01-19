@@ -18,12 +18,14 @@ import {
 
 import { getEmployees } from '@/api/user-management/userApi';
 import { normalizeEmployee } from '@/utils/employeeUtils';
-import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
+import { NormalizedEmployee, Asset, UnifiedMovement } from '@/types/asset/UnifiedAsset';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { PTAService } from '@/services/PTAService';
 
 import { ReportPreviewModal } from './ReportPreviewModal';
 import { EmployeeSelectModal } from './EmployeeSelectModal';
+import { ItemSelectModal } from './ItemSelectModal';
+import { ItemMovementsModal } from './ItemMovementsModal';
 import { RPCPPEFilterModal } from './RPCPPEFilterModal';
 import { PARGenerator } from './PARGenerator';
 import { ICSGenerator } from './ICSGenerator';
@@ -33,6 +35,7 @@ import { SESPIExcelGenerator, SESPIFilterModal } from './SESPIGenerator';
 import { PTRGenerationModal } from './PTRGenerationModal';
 import { ITRGenerationModal } from './ITRGenerationModal';
 import { toast } from 'sonner';
+import { NumberInputModal } from './NumberInputModal';
 
 export function ReportTab() {
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
@@ -40,17 +43,25 @@ export function ReportTab() {
   const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | 'RPCPPE' | 'PAL' | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const [rpcppeYear, setRpcppeYear] = useState<number | null>(null);
+  const [rpcppeDate, setRpcppeDate] = useState<Date | null>(null);
   const [rpcppeCategoryId, setRpcppeCategoryId] = useState<number | undefined>(undefined);
-  const [sespiYear, setSespiYear] = useState<number | null>(null);
+  const [sespiDate, setSespiDate] = useState<Date | null>(null);
+
+  // Item-centric flow states
+  const [selectedItem, setSelectedItem] = useState<Asset | null>(null);
+  const [selectedMovement, setSelectedMovement] = useState<UnifiedMovement | null>(null);
 
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+  const [showItemSelectModal, setShowItemSelectModal] = useState(false);
+  const [showItemMovementsModal, setShowItemMovementsModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showRPCPPE, setShowRPCPPE] = useState(false);
   const [showSESPI, setShowSESPI] = useState(false);
   const [showPTR, setShowPTR] = useState(false);
   const [showITR, setShowITR] = useState(false);
   const [showPAL, setShowPAL] = useState(false);
+  const [showNumberModal, setShowNumberModal] = useState(false);
+  const [customNumber, setCustomNumber] = useState('');
 
   useEffect(() => {
     getEmployees(1, 1000).then(res => {
@@ -58,62 +69,152 @@ export function ReportTab() {
         setEmployees(res.data.items.map(normalizeEmployee));
       }
     });
+    
+    // Reset modal states when component mounts
+    setShowItemSelectModal(false);
+    setShowItemMovementsModal(false);
+    setShowPreview(false);
+    setShowEmployeeModal(false);
+    setShowRPCPPE(false);
+    setShowSESPI(false);
+    setShowPTR(false);
+    setShowITR(false);
+    setShowPAL(false);
+    setSelectedReport(null);
+    setSelectedItem(null);
+    setSelectedMovement(null);
+
+    // Cleanup on unmount
+    return () => {
+      setShowItemSelectModal(false);
+      setShowItemMovementsModal(false);
+      setShowPreview(false);
+      setSelectedReport(null);
+      setSelectedItem(null);
+      setSelectedMovement(null);
+    };
   }, []);
 
+  // Safety effect: close item select modal if selectedReport becomes null
+  useEffect(() => {
+    console.log('[ReportTab] showItemSelectModal/selectedReport state:', { showItemSelectModal, selectedReport });
+    if (selectedReport === null && showItemSelectModal) {
+      console.log('[ReportTab] Safety: Closing ItemSelectModal because selectedReport is null');
+      setShowItemSelectModal(false);
+    }
+  }, [selectedReport, showItemSelectModal]);
+
+  // OLD FLOW - For PAL and other employee-based reports
   const handleEmployeeSelect = async (emp: NormalizedEmployee) => {
     setSelectedEmployee(emp);
     setShowEmployeeModal(false);
+
+    if (selectedReport === 'PAL') {
+      setShowPreview(true);
+      setLoadingPreview(true);
+      const url = await PALGenerator.generatePALPreview(emp);
+      setPreviewUrl(url);
+      setLoadingPreview(false);
+    }
+  };
+
+  // NEW FLOW - For item-based PAR/ICS reports
+  const handleItemSelect = (item: Asset) => {
+    setSelectedItem(item);
+    setShowItemSelectModal(false);
+    setShowItemMovementsModal(true);
+  };
+
+  // Show number modal after movement selection
+  const handleMovementSelect = (item: Asset, movement: UnifiedMovement | null) => {
+    setSelectedItem(item);
+    setSelectedMovement(movement);
+    setShowItemMovementsModal(false);
+    // Auto-generate number
+    const autoNumber = selectedReport === 'ICS'
+      ? ICSGenerator.generateICSNumber()
+      : PARGenerator.generatePARNumber();
+    setCustomNumber(autoNumber);
+    setShowNumberModal(true);
+  };
+
+  // After number is confirmed, generate preview
+  const handleNumberConfirm = (number: string) => {
+    setCustomNumber(number);
+    setShowNumberModal(false);
     setShowPreview(true);
+    generateItemPreview(selectedItem, selectedMovement, number);
+  };
+
+  // Update preview generator to accept number
+  const generateItemPreview = async (item: Asset | null, movement: UnifiedMovement | null, number?: string) => {
     setLoadingPreview(true);
-
-    const url =
-      selectedReport === 'ICS'
-        ? await ICSGenerator.generateICSPreview(emp)
-        : selectedReport === 'PAL'
-        ? await PALGenerator.generatePALPreview(emp)
-        : await PARGenerator.generatePARPreview(emp);
-
-    setPreviewUrl(url);
-    setLoadingPreview(false);
+    try {
+      if (!item) throw new Error('No item selected');
+      const url =
+        selectedReport === 'ICS'
+          ? await ICSGenerator.generateICSPreview(item, movement, number)
+          : await PARGenerator.generatePARPreview(item, movement, number);
+      setPreviewUrl(url);
+    } catch (error) {
+      console.error('Preview generation failed:', error);
+      toast.error('Failed to generate preview');
+    } finally {
+      setLoadingPreview(false);
+    }
   };
 
   const handlePreviewConfirm = async () => {
     if (!selectedReport) return;
 
     if (selectedReport === 'SESPI') {
-      await SESPIExcelGenerator.generate(sespiYear!);
+      await SESPIExcelGenerator.generate(sespiDate!);
       toast.success('Register SPI PDF generated');
     } else if (selectedReport === 'RPCPPE') {
       try {
-        const assets = await PTAService.getAllForRPCPPE(rpcppeYear!, rpcppeCategoryId);
+        const assets = await PTAService.getAllForRPCPPE(rpcppeDate!, rpcppeCategoryId);
 
         if (!assets.length) {
           toast.error('No assets found for selected criteria');
           return;
         }
 
-        await RPCPPEPdfGenerator.generate(assets, rpcppeYear!, rpcppeCategoryId);
+        await RPCPPEPdfGenerator.generate(assets, rpcppeDate!, rpcppeCategoryId);
         toast.success('RPCPPE PDF generated');
       } catch (error) {
         console.error('RPCPPE generation failed:', error);
         toast.error('RPCPPE generation failed');
       }
+    } else if (selectedReport === 'PAR') {
+      // New item-based flow
+      if (selectedItem) {
+        await PARGenerator.generatePAR(selectedItem, selectedMovement);
+        toast.success('PAR PDF generated');
+      }
+    } else if (selectedReport === 'ICS') {
+      // New item-based flow
+      if (selectedItem) {
+        await ICSGenerator.generateICS(selectedItem, selectedMovement);
+        toast.success('ICS PDF generated');
+      }
     } else if (selectedEmployee) {
-      if (selectedReport === 'ICS') {
-        await ICSGenerator.generateICS(selectedEmployee);
-      } else if (selectedReport === 'PAL') {
+      // Old PAL flow
+      if (selectedReport === 'PAL') {
         await PALGenerator.generatePAL(selectedEmployee);
-      } else {
-        await PARGenerator.generatePAR(selectedEmployee);
+        toast.success('PAL PDF generated');
       }
     }
 
     setShowPreview(false);
+    setSelectedReport(null);
+    setSelectedItem(null);
+    setSelectedMovement(null);
+    setCustomNumber('');
   };
 
-  const handleRPCPPEGenerate = async (year: number, categoryId?: number) => {
+  const handleRPCPPEGenerate = async (asOfDate: Date, categoryId?: number) => {
     try {
-      const assets = await PTAService.getAllForRPCPPE(year, categoryId);
+      const assets = await PTAService.getAllForRPCPPE(asOfDate, categoryId);
 
       if (!assets.length) {
         toast.error('No assets found for selected criteria');
@@ -122,12 +223,12 @@ export function ReportTab() {
 
       // Generate preview
       setLoadingPreview(true);
-      const url = await RPCPPEPdfGenerator.generatePreview(assets, year, categoryId?.toString());
+      const url = await RPCPPEPdfGenerator.generatePreview(assets, asOfDate, categoryId?.toString());
       setPreviewUrl(url);
       setLoadingPreview(false);
 
       // Store parameters for download
-      setRpcppeYear(year);
+      setRpcppeDate(asOfDate);
       setRpcppeCategoryId(categoryId);
 
       // Show preview modal
@@ -141,16 +242,16 @@ export function ReportTab() {
     setShowRPCPPE(false);
   };
 
-  const handleSESPIGenerate = async (year: number) => {
+  const handleSESPIGenerate = async (asOfDate: Date) => {
     try {
       // Generate preview
       setLoadingPreview(true);
-      const url = await SESPIExcelGenerator.generateSESPIPreview(year);
+      const url = await SESPIExcelGenerator.generateSESPIPreview(asOfDate);
       setPreviewUrl(url);
       setLoadingPreview(false);
 
       // Store parameters for download
-      setSespiYear(year);
+      setSespiDate(asOfDate);
       setSelectedReport('SESPI');
 
       // Show preview modal
@@ -176,7 +277,7 @@ export function ReportTab() {
       subtitle: 'Property Acknowledgement',
       icon: FileCheck,
       bgColor: 'bg-green-600',
-      action: () => { setSelectedReport('PAR'); setShowEmployeeModal(true); }
+      action: () => { setSelectedReport('PAR'); setShowItemSelectModal(true); }
     },
     {
       title: 'PTR',
@@ -197,7 +298,7 @@ export function ReportTab() {
       subtitle: 'Inventory Custodian Slip',
       icon: ClipboardList,
       bgColor: 'bg-red-600',
-      action: () => { setSelectedReport('ICS'); setShowEmployeeModal(true); }
+      action: () => { setSelectedReport('ICS'); setShowItemSelectModal(true); }
     },
     {
       title: 'ITR',
@@ -266,6 +367,32 @@ export function ReportTab() {
         onSelect={handleEmployeeSelect}
       />
 
+      {showItemSelectModal === true && selectedReport !== null && (
+        <ItemSelectModal
+          key={`item-select-modal-${selectedReport}`}
+          isOpen={true}
+          onClose={() => {
+            console.log('[ReportTab] ItemSelectModal onClose called');
+            setShowItemSelectModal(false);
+          }}
+          onSelect={handleItemSelect}
+          groupType={selectedReport === 'ICS' ? 'SE' : 'PPE'}
+          title={`Select ${selectedReport === 'ICS' ? 'SE' : 'PPE'} Item`}
+        />
+      )}
+
+      <ItemMovementsModal
+        isOpen={showItemMovementsModal}
+        onClose={() => {
+          setShowItemMovementsModal(false);
+          setSelectedItem(null);
+          setSelectedMovement(null);
+          setShowItemSelectModal(false);
+        }}
+        item={selectedItem}
+        onConfirm={handleMovementSelect}
+      />
+
       <ReportPreviewModal
         isOpen={showPreview}
         pdfUrl={previewUrl}
@@ -297,6 +424,14 @@ export function ReportTab() {
         isOpen={showSESPI}
         onClose={() => setShowSESPI(false)}
         onGenerate={handleSESPIGenerate}
+      />
+
+      <NumberInputModal
+        isOpen={showNumberModal}
+        onClose={() => setShowNumberModal(false)}
+        onConfirm={handleNumberConfirm}
+        defaultNumber={customNumber}
+        label={selectedReport === 'ICS' ? 'ICS Number' : 'PAR Number'}
       />
     </div>
   );

@@ -148,13 +148,17 @@ const styles = StyleSheet.create({
 
   sigRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    gap: 0,
     marginTop: 25,
   },
 
   sigBlock: {
-    width: "30%",
+    flex: 1,
     textAlign: "center",
+    borderWidth: 1,
+    borderColor: "#000",
+    padding: 8,
+    marginHorizontal: -1,
   },
 
   sigTitle: { fontSize: 10, marginBottom: 6 },
@@ -176,6 +180,13 @@ const styles = StyleSheet.create({
 
   sigDesignation: { fontSize: 8 },
 });
+
+/* -------------------------------- DATE HELPERS ------------------------------- */
+function formatLongDate(date?: string | Date) {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
 
 /* -------------------------------- HELPERS -------------------------------- */
 
@@ -246,7 +257,7 @@ const ITRDocument = ({
 
         <View style={styles.metaRight}>
           <Text style={styles.metaLabel}>ITR No.: {itrNumber}</Text>
-          <Text style={{ marginTop: 4 }}>Date: {transferDate}</Text>
+          <Text style={{ marginTop: 4 }}>Date: {formatLongDate(transferDate)}</Text>
         </View>
       </View>
 
@@ -339,7 +350,7 @@ const ITRDocument = ({
           <Text style={styles.sigDesignation}>
             {APPROVED_BY.designation}
           </Text>
-          <Text style={styles.sigDesignation}>{transferDate}</Text>
+          <Text style={styles.sigDesignation}>{formatLongDate(transferDate)}</Text>
         </View>
 
         <View style={styles.sigBlock}>
@@ -350,7 +361,7 @@ const ITRDocument = ({
           <Text style={styles.sigDesignation}>
             {RELEASED_BY.designation}
           </Text>
-          <Text style={styles.sigDesignation}>{transferDate}</Text>
+          <Text style={styles.sigDesignation}>{formatLongDate(transferDate)}</Text>
         </View>
 
         <View style={styles.sigBlock}>
@@ -363,7 +374,7 @@ const ITRDocument = ({
           <Text style={styles.sigDesignation}>
             Accountable Officer
           </Text>
-          <Text style={styles.sigDesignation}>{transferDate}</Text>
+          <Text style={styles.sigDesignation}>{formatLongDate(transferDate)}</Text>
         </View>
       </View>
     </Page>
@@ -374,14 +385,27 @@ const ITRDocument = ({
 
 export class ITRGenerator {
   static async generateITRPreview(
-    fromEmployee: NormalizedEmployee,
+    item: Asset,
+    movement: any,
     toEmployee: NormalizedEmployee,
     transferDate: string,
-    selectedAssets: Asset[],
     transferType: TransferType
   ): Promise<string> {
     const itrNumber = this.generateITRNumber();
-    const rows = this.buildRows(selectedAssets);
+    const rows = this.buildRows([item]);
+
+    // Extract fromEmployee from movement
+    const employee = Array.isArray(movement?.employee) ? movement?.employee[0] : movement?.employee;
+    const fromEmployee: NormalizedEmployee = {
+      id: movement?.plantillaEmployeeId || movement?.nonPlantillaEmployeeId || 0,
+      firstName: employee?.firstName || '',
+      middleName: employee?.middleName || '',
+      lastName: employee?.lastName || '',
+      suffixName: employee?.suffixName || '',
+      employeeIdOriginal: movement?.plantillaEmployeeIdOriginal || movement?.nonPlantillaEmployeeIdOriginal || '',
+      employmentTypeId: 0,
+      label: `${employee?.lastName || ''}, ${employee?.firstName || ''}`,
+    };
 
     const blob = await pdf(
       <ITRDocument
@@ -398,40 +422,51 @@ export class ITRGenerator {
   }
 
   static async generateITR(
-    fromEmployee: NormalizedEmployee,
+    item: Asset,
+    movement: any,
     toEmployee: NormalizedEmployee,
     transferDate: string,
-    selectedAssets: Asset[],
     transferType: TransferType
   ) {
     const itrNumber = this.generateITRNumber();
-    const rows = this.buildRows(selectedAssets);
+    const rows = this.buildRows([item]);
 
-    for (const asset of selectedAssets) {
-      const latestMovement = asset.movements
-        ?.filter(m => m.isActive)
-        .sort(
-          (a, b) =>
-            new Date(b.dateAssigned).getTime() -
-            new Date(a.dateAssigned).getTime()
-        )[0];
+    // Extract fromEmployee from movement
+    const employee = Array.isArray(movement?.employee) ? movement?.employee[0] : movement?.employee;
+    const fromEmployee: NormalizedEmployee = {
+      id: movement?.plantillaEmployeeId || movement?.nonPlantillaEmployeeId || 0,
+      firstName: employee?.firstName || '',
+      middleName: employee?.middleName || '',
+      lastName: employee?.lastName || '',
+      suffixName: employee?.suffixName || '',
+      employeeIdOriginal: movement?.plantillaEmployeeIdOriginal || movement?.nonPlantillaEmployeeIdOriginal || '',
+      employmentTypeId: 0,
+      label: `${employee?.lastName || ''}, ${employee?.firstName || ''}`,
+    };
 
-      await seApi.editMovement({
-        id: latestMovement?.id || 0,
-        ptaId: asset.id,
-        dateAssigned: transferDate,
-        parItrNumber: itrNumber,
-        plantillaEmployeeId: toEmployee.id.toString(),
-        nonPlantillaEmployeeId: null,
-        condition: latestMovement?.condition ?? "Good",
-        actualOfficeId: latestMovement?.actualOfficeId || 0,
+    const latestMovement = item.movements
+      ?.filter(m => m.isActive)
+      .sort(
+        (a, b) =>
+          new Date(b.dateAssigned).getTime() -
+          new Date(a.dateAssigned).getTime()
+      )[0];
+
+    await seApi.editMovement({
+      id: latestMovement?.id || 0,
+      ptaId: item.id,
+      dateAssigned: transferDate,
+      parItrNumber: itrNumber,
+      plantillaEmployeeId: toEmployee.id.toString(),
+      nonPlantillaEmployeeId: null,
+      condition: latestMovement?.condition ?? "Good",
+      actualOfficeId: latestMovement?.actualOfficeId || 0,
         actualDivisionId: latestMovement?.actualDivisionId || 0,
         isActive: true,
         actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
         sessionKey: localStorage.getItem("sessionToken") || "",
-        model: asset.model || "",
+        model: item.model || "",
       });
-    }
 
     const blob = await pdf(
       <ITRDocument

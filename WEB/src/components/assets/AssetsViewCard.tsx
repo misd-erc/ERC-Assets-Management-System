@@ -279,9 +279,9 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   {ppeAsset.movements.map((movement) => (
                     <TableRow key={movement.id}>
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
-                      <TableCell>{movement.parItrNumber || '-'}</TableCell>
+                      <TableCell>{movement.ptrItrNumber || '-'}</TableCell>
                       <TableCell>{movement.plantillaEmployeeIdOriginal || movement.nonPlantillaEmployeeIdOriginal || '-'}</TableCell>
-                      <TableCell>{movement.division?.name || '-'}</TableCell>
+                      <TableCell>{movement.employee?.[0]?.division?.name || '-'}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getConditionIcon(movement.condition || '')}
@@ -509,7 +509,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   {asset.movements.map((movement) => (
                     <TableRow key={movement.id}>
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
-                      <TableCell>{movement.parItrNumber || '-'}</TableCell>
+                      <TableCell>{movement.ptrItrNumber || '-'}</TableCell>
                       <TableCell>
                         {movement.plantillaEmployeeId
                           ? getEmployeeName(movement.plantillaEmployeeId)

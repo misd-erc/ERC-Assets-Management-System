@@ -55,7 +55,7 @@ export class SEService {
         itr_rrsp_number: mv.parItrNumber || '',
         plantilla_employee_id: mv.plantillaEmployeeIdOriginal || '',
         non_plantilla_employee_id: mv.nonPlantillaEmployeeIdOriginal || '',
-        division_section: mv.division?.name || '',
+        division_section: mv.employee?.[0]?.division?.name || '',
         condition: mv.condition || 'Working',
         date_issued_returned: mv.dateAssigned || mv.createdAt || '',
         remarks: '',

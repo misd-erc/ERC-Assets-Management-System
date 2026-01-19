@@ -4,6 +4,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getCategories } from '@/api/inventoryApi';
 import { toast } from 'sonner';
@@ -11,16 +12,13 @@ import { toast } from 'sonner';
 interface RPCPPEFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerate: (year: number, categoryId?: number) => void;
+  onGenerate: (date: Date, categoryId?: number) => void;
 }
 
 export function RPCPPEFilterModal({ isOpen, onClose, onGenerate }: RPCPPEFilterModalProps) {
-  const [year, setYear] = useState('');
+  const [asOfDate, setAsOfDate] = useState('');
   const [categoryId, setCategoryId] = useState<string>('all');
   const [categories, setCategories] = useState<any[]>([]);
-
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 10 }, (_, i) => currentYear - i);
 
   useEffect(() => {
     if (isOpen) {
@@ -31,12 +29,12 @@ export function RPCPPEFilterModal({ isOpen, onClose, onGenerate }: RPCPPEFilterM
   }, [isOpen]);
 
   const handleGenerate = () => {
-    if (!year) {
-      toast.error('Please select a year');
+    if (!asOfDate) {
+      toast.error('Please select a date');
       return;
     }
     const selectedCategoryId = categoryId === 'all' ? undefined : Number(categoryId);
-    onGenerate(Number(year), selectedCategoryId);
+    onGenerate(new Date(asOfDate), selectedCategoryId);
   };
 
   return (
@@ -48,19 +46,13 @@ export function RPCPPEFilterModal({ isOpen, onClose, onGenerate }: RPCPPEFilterM
 
         <div className="space-y-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">Year</Label>
-            <Select value={year} onValueChange={setYear}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select year" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map(y => (
-                  <SelectItem key={y} value={y.toString()}>
-                    {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-right">As of Date</Label>
+            <Input 
+              type="date" 
+              value={asOfDate} 
+              onChange={(e) => setAsOfDate(e.target.value)}
+              className="col-span-3"
+            />
           </div>
 
           <div className="grid grid-cols-4 items-center gap-4">

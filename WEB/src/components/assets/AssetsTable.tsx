@@ -76,8 +76,8 @@ export function AssetsTable({
       const latestMovement = asset.movements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
 
       // First try to use the embedded employee object from the movement
-      if (latestMovement.employee) {
-        const emp = latestMovement.employee;
+      if (latestMovement.employee && Array.isArray(latestMovement.employee) && latestMovement.employee.length > 0) {
+        const emp = latestMovement.employee[0];
         const firstName = emp.firstName ?? "";
         const middleName = emp.middleName ?? "";
         const lastName = emp.lastName ?? "";
