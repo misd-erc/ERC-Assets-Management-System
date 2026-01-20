@@ -25,15 +25,17 @@ export class PPEService {
 
     return {
       id: apiItem.id.toString(),
+      group: apiItem.group || 'PPE',
       propertyNumber: apiItem.propertyNumber || '',
       category: apiItem.category ? {
         id: apiItem.category.id,
-        name: apiItem.category.name
+        name: apiItem.category.name,
+        generalCode: apiItem.category.generalCode || '',
+        isActive: apiItem.category.isActive !== undefined ? apiItem.category.isActive : true,
+        isDeleted: apiItem.category.isDeleted !== undefined ? apiItem.category.isDeleted : false,
+        createdAt: apiItem.category.createdAt || new Date().toISOString(),
       } : null,
-      legend: apiItem.legend ? {
-        id: apiItem.legend.id || '',
-        name: apiItem.legend.name || ''
-      } : null,
+      legend: apiItem.legend ? (typeof apiItem.legend === 'string' ? apiItem.legend : apiItem.legend.name || '') : null,
       description: apiItem.description || '',
       brand: apiItem.brand || '',
       model: apiItem.model || '',
@@ -43,24 +45,22 @@ export class PPEService {
       unitValue: apiItem.unitValue || 0,
       dateAcquired: apiItem.dateAcquired || '',
       estimatedUsefulLife: apiItem.estimatedUsefulLife || 0,
-      date: '',
-      parItrNumber: latestMovement?.parItrNumber || '',
-      plantillaEmployeeId: latestMovement?.plantillaEmployeeIdOriginal || '',
-      nonPlantillaEmployeeId: latestMovement?.nonPlantillaEmployeeIdOriginal || '',
-      actualDivision: latestMovement?.employee?.[0]?.division?.name || '',
-      condition: (latestMovement?.condition as any) || 'Working',
-      dateEncoded: apiItem.createdAt || '',
+      fiscalDate: apiItem.fiscalDate || new Date().toISOString().split('T')[0],
       movements: Array.isArray(apiItem.movements) ? apiItem.movements : [],
       history: Array.isArray(apiItem.movements) ? apiItem.movements.map((mv: any) => ({
         id: mv.id.toString(),
         date: mv.dateAssigned || mv.createdAt || '',
-        parItrNumber: mv.parItrNumber || '',
-        plantillaEmployeeId: mv.plantillaEmployeeIdOriginal || '',
-        nonPlantillaEmployeeId: mv.nonPlantillaEmployeeIdOriginal || '',
-        actualDivision: mv.employee?.[0]?.division?.name || '',
+        par_itr_number: mv.ptrItrNumber || '',
+        plantilla_employee_id: mv.plantillaEmployeeIdOriginal || '',
+        non_plantilla_employee_id: mv.nonPlantillaEmployeeIdOriginal || '',
+        actual_division: mv.employee?.[0]?.division?.name || '',
         condition: mv.condition || 'Working',
         remarks: '',
-      })) : []
+      })) : [],
+      dateEncoded: apiItem.createdAt || '',
+      isActive: apiItem.isActive !== undefined ? apiItem.isActive : true,
+      isDeleted: apiItem.isDeleted !== undefined ? apiItem.isDeleted : false,
+      createdAt: apiItem.createdAt || new Date().toISOString(),
     };
   }
 
@@ -143,7 +143,7 @@ export class PPEService {
       const apiData = {
         propertyNumber: data.propertyNumber,
         category: typeof data.category === 'object' && data.category ? data.category.name : data.category || '',
-        legend: typeof data.legend === 'object' && data.legend ? data.legend.name : data.legend || '',
+        legend: typeof data.legend === 'string' ? data.legend : '',
         description: data.description,
         brand: data.brand || '',
         model: data.model || '',
@@ -171,7 +171,7 @@ export class PPEService {
         throw new Error('Failed to retrieve created PPE asset ID');
       }
 
-      const ptaId = parseInt(createdAsset.id);
+      const ptaId = typeof createdAsset.id === 'string' ? parseInt(createdAsset.id) : createdAsset.id;
 
       // After successful creation, handle parts and movements
       // Create parts
@@ -209,7 +209,7 @@ export class PPEService {
         id,
         propertyNumber: data.propertyNumber || '',
         category: typeof data.category === 'object' && data.category ? data.category.name : data.category || '',
-        legend: typeof data.legend === 'object' && data.legend ? data.legend.name : data.legend || '',
+        legend: typeof data.legend === 'string' ? data.legend : '',
         description: data.description || '',
         brand: data.brand || '',
         model: data.model || '',
@@ -234,7 +234,8 @@ export class PPEService {
 
   static async delete(id: string): Promise<void> {
     try {
-      this.mockAssets = this.mockAssets.filter(asset => asset.id !== id);
+      const idNumber = typeof id === 'string' ? parseInt(id) : id;
+      this.mockAssets = this.mockAssets.filter(asset => asset.id !== idNumber);
     } catch (error) {
       console.error('Error deleting PPE asset:', error);
       throw error;

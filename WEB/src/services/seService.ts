@@ -1,125 +1,32 @@
 import { seApi } from '@/api/asset/se';
-import { SEAsset, SEMovementHistory, RRSPEntry } from '@/types/supply/se';
-import { normalizeMovement } from '@/utils/normalizer';
-
-type AccountabilityBlock = {
-  id: string;
-  itr_rrsp_number: string;
-  plantilla_employee_id: string;
-  non_plantilla_employee_id: string;
-  division_section: string;
-  condition: string;
-  date_issued_returned: string;
-  remarks: string;
-  label: string;
-  type: string;
-};
+import { SEAsset } from '@/types/supply/se';
 
 export class SEService {
-  // Mocked data for testing and to prevent errors
-  private static mockAssets: SEAsset[] = [];
-
-  private static mapApiSeToSeAsset(apiItem: any): SEAsset {
-    if (!apiItem || !apiItem.id) {
-      console.error('Invalid apiItem passed to mapApiSeToSeAsset:', apiItem);
-      throw new Error('apiItem or apiItem.id is undefined');
-    }
-
-    // Filter to only active and not deleted movements
-    const activeMovements = (apiItem.movements || []).filter((mv: any) => mv.isActive && !mv.isDeleted);
-
-    const latestMovement: any = activeMovements.length > 0
-      ? activeMovements.slice().sort((a: any, b: any) => {
-        const dateA = new Date(a.dateAssigned || a.createdAt).getTime();
-        const dateB = new Date(b.dateAssigned || b.createdAt).getTime();
-        return dateB - dateA;
-      })[0]
-      : null;
-
-    return {
-      id: apiItem.id.toString(),
-      se_property_number: apiItem.propertyNumber || '',
-      category: apiItem.category ? apiItem.category.name : '',
-      legend: apiItem.legend ? apiItem.legend.name : '',
-      description: apiItem.description || '',
-      brand: apiItem.brand || '',
-      model: apiItem.model || '',
-      serial_number: apiItem.serialNumber || '',
-      parts_accessories: Array.isArray(apiItem.parts) ? apiItem.parts : [],
-      unit_of_measurement: apiItem.unitOfMeasurement || '',
-      unit_value: apiItem.unitValue || 0,
-      date_acquired: apiItem.dateAcquired || '',
-      warranty_status: 'Unknown', // Assuming default
-      accountabilityBlocks: Array.isArray(apiItem.movements) ? apiItem.movements.map((mv: any) => ({
-        id: mv.id.toString(),
-        itr_rrsp_number: mv.parItrNumber || '',
-        plantilla_employee_id: mv.plantillaEmployeeIdOriginal || '',
-        non_plantilla_employee_id: mv.nonPlantillaEmployeeIdOriginal || '',
-        division_section: mv.employee?.[0]?.division?.name || '',
-        condition: mv.condition || 'Working',
-        date_issued_returned: mv.dateAssigned || mv.createdAt || '',
-        remarks: '',
-        label: mv.isActive ? 'Current Holder' : 'Previous Holder',
-        type: 'ITR', // Assuming default
-      })) : [],
-      movementHistory: Array.isArray(apiItem.movements) ? apiItem.movements.map((mv: any) => ({
-        id: mv.id.toString(),
-        type: 'Issuance', // Assuming default
-        date: mv.dateAssigned || mv.createdAt || '',
-        from_employee: '',
-        to_employee: mv.plantillaEmployeeIdOriginal || mv.nonPlantillaEmployeeIdOriginal || '',
-        condition: mv.condition || 'Working',
-        remarks: '',
-        documentNumber: mv.parItrNumber || '',
-      })) : [],
-      rrspHistory: [], // Assuming empty for now
-      dateEncoded: apiItem.createdAt || '',
-      status: latestMovement ? 'Active' : 'Returned', // Assuming based on latest movement
-    };
-  }
-
   static async getAll(filters?: {
-    category?: string;
-    condition?: string;
-    division?: string;
     search?: string;
-    startDate?: string;
-    endDate?: string;
+    PageNumber?: number;
+    PageSize?: number;
+    StartDate?: string;
+    EndDate?: string;
+    EmployeeId?: number;
   }): Promise<{ items: SEAsset[]; totalCount: number }> {
     try {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
 
-      // Call API with pagination parameters hardcoded here for example,
-      // ideally you'd pass them from SEList or elsewhere
-      const pageNumber = 1;
-      const pageSize = 5;
-
-      // Compose SearchString from search or filters, adapt as needed
-      let searchString = '';
-      if (filters) {
-        if (filters.search) {
-          searchString = filters.search;
-        } else if (filters.category) {
-          searchString = filters.category;
-        }
-      }
-
       const response = await seApi.list({
-        SearchString: searchString,
-        PageNumber: pageNumber,
-        PageSize: pageSize,
-        StartDate: filters?.startDate,
-        EndDate: filters?.endDate,
+        SearchString: filters?.search || '',
+        PageNumber: filters?.PageNumber || 1,
+        PageSize: filters?.PageSize || 10,
+        StartDate: filters?.StartDate,
+        EndDate: filters?.EndDate,
+        EmployeeId: filters?.EmployeeId,
         ActionBySystemUserId: actionBySystemUserId,
         SessionKey: sessionKey,
-        GroupName: 'se',
+        GroupName: 'SE',
       });
 
-      // Map the API response items to SEAsset interface
-      const mappedItems = (response.items || []).map(item => this.mapApiSeToSeAsset(item));
-
-      return { items: mappedItems, totalCount: response.totalCount };
+      return response;
     } catch (error) {
       console.error('Error fetching SE assets:', error);
       throw error;
@@ -130,90 +37,52 @@ export class SEService {
     try {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
-      const response: any = await seApi.getById(id, actionBySystemUserId, sessionKey);
+      
+      const response = await seApi.getById(id, actionBySystemUserId, sessionKey);
 
-      let apiItem = response?.data;
-      if (Array.isArray(apiItem)) {
-        apiItem = apiItem[0];
-      }
-      if (!apiItem || !apiItem.id) {
+      if (!response || !response.id) {
         throw new Error('No SE asset found in response data or invalid data format');
       }
 
-      // map to SEAsset interface to ensure correct typing
-      return this.mapApiSeToSeAsset(apiItem);
+      return response;
     } catch (error) {
       console.error('Error fetching SE asset:', error);
       throw error;
     }
   }
 
-  static async create(data: Omit<SEAsset, 'id' | 'dateEncoded'>): Promise<SEAsset> {
+  static async create(data: Partial<SEAsset>): Promise<SEAsset> {
     try {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
 
-      const apiData = {
-        propertyNumber: data.se_property_number,
-         category: data.category ? String(data.category) : '',
-         legend: data.legend ? String(data.legend) : '',
+      const apiData: Partial<SEAsset> = {
+        propertyNumber: data.propertyNumber,
+        category: data.category,
+        legend: data.legend,
         description: data.description,
-        brand: data.brand || '',
-        model: data.model || '',
-        serialNumber: data.serial_number || '',
-        parts: [], // SE doesn't use parts
-        unitOfMeasurement: data.unit_of_measurement,
-        unitValue: data.unit_value,
-        dateAcquired: data.date_acquired,
-        estimatedUsefulLife: 0, // Assuming default
-        group: 'SE',
-        movements: data.accountabilityBlocks || [],
-        actionBySystemUserId,
-        sessionKey,
+        brand: data.brand,
+        model: data.model,
+        serialNumber: data.serialNumber,
+        parts: data.parts || [],
+        unitOfMeasurement: data.unitOfMeasurement,
+        unitValue: data.unitValue,
+        dateAcquired: data.dateAcquired,
+        estimatedUsefulLife: data.estimatedUsefulLife || 0,
+        movements: data.movements || [],
       };
 
-      // Create the main SE asset
       const apiResponse = await seApi.create(
         apiData,
         actionBySystemUserId,
         sessionKey
       );
 
-      // Since the API response doesn't include the created asset ID,
-      // we need to search for the asset by propertyNumber to get the ID
-      const searchResults = await this.getAll({ search: data.se_property_number });
-      const createdAsset = searchResults.items.find(asset => asset.se_property_number === data.se_property_number);
-
-      if (!createdAsset || !createdAsset.id) {
-        throw new Error('Failed to retrieve created SE asset ID');
+      if (!apiResponse.success || !apiResponse.data) {
+        throw new Error('Failed to create SE asset: ' + (apiResponse.message || 'Unknown error'));
       }
 
-      const ptaId = parseInt(createdAsset.id);
-
-      // After successful creation, handle movements
-      // Create movements
-      if (data.accountabilityBlocks && data.accountabilityBlocks.length > 0) {
-        for (const block of data.accountabilityBlocks as any[]) {
-          const normalizedMovement = normalizeMovement({
-            id: block.id || '0',
-            dateAssigned: block.date_issued_returned,
-            parItrNumber: block.itr_rrsp_number || '',
-            plantillaEmployeeId: block.plantillaEmployeeId || block.plantilla_employee_id,
-            nonPlantillaEmployeeId: block.nonPlantillaEmployeeId || block.non_plantilla_employee_id,
-            officeId: '0', // Assuming default
-            divisionId: '0', // Assuming default
-            condition: block.condition || 'Working',
-          }, data.model || '', ptaId);
-          normalizedMovement.isActive = block.label === 'Current Holder';
-          await seApi.editMovement({
-            ...normalizedMovement,
-            actionBySystemUserId,
-            sessionKey,
-          });
-        }
-      }
-
-      return createdAsset;
+      return apiResponse.data;
     } catch (error) {
       console.error('Error creating SE asset:', error);
       throw error;
@@ -225,23 +94,20 @@ export class SEService {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
 
-      const apiData = {
-        id,
-        propertyNumber: data.se_property_number || '',
-         category: data.category ? String(data.category) : '',
-         legend: data.legend ? String(data.legend) : '',
-        description: data.description || '',
-        brand: data.brand || '',
-        model: data.model || '',
-        serialNumber: data.serial_number || '',
-        parts: [], // SE doesn't use parts
-        unitOfMeasurement: data.unit_of_measurement || '',
-        unitValue: data.unit_value || 0,
-        dateAcquired: data.date_acquired || '',
-        estimatedUsefulLife: 0, // Assuming default
-        movements: data.accountabilityBlocks || [],
-        actionBySystemUserId,
-        sessionKey,
+      const apiData: Partial<SEAsset> = {
+        propertyNumber: data.propertyNumber,
+        category: data.category,
+        legend: data.legend,
+        description: data.description,
+        brand: data.brand,
+        model: data.model,
+        serialNumber: data.serialNumber,
+        parts: data.parts || [],
+        unitOfMeasurement: data.unitOfMeasurement,
+        unitValue: data.unitValue,
+        dateAcquired: data.dateAcquired,
+        estimatedUsefulLife: data.estimatedUsefulLife || 0,
+        movements: data.movements || [],
       };
 
       const apiResponse = await seApi.update(
@@ -250,7 +116,12 @@ export class SEService {
         actionBySystemUserId,
         sessionKey
       );
-      return this.mapApiSeToSeAsset(apiResponse);
+
+      if (!apiResponse.success || !apiResponse.data) {
+        throw new Error('Failed to update SE asset: ' + (apiResponse.message || 'Unknown error'));
+      }
+
+      return apiResponse.data;
     } catch (error) {
       console.error('Error updating SE asset:', error);
       throw error;
@@ -259,45 +130,11 @@ export class SEService {
 
   static async delete(id: string): Promise<void> {
     try {
-      this.mockAssets = this.mockAssets.filter(asset => asset.id !== id);
+      console.warn('Delete operation not supported for SE assets via this service');
+      // SE assets may have a different delete mechanism through the API
+      // Or they may not support direct deletion
     } catch (error) {
       console.error('Error deleting SE asset:', error);
-      throw error;
-    }
-  }
-
-  static async search(query: string): Promise<SEAsset[]> {
-    try {
-      const lowerQuery = query.toLowerCase();
-      return this.mockAssets.filter(asset =>
-        asset.se_property_number.toLowerCase().includes(lowerQuery) ||
-        asset.description.toLowerCase().includes(lowerQuery) ||
-        (asset.brand && asset.brand.toLowerCase().includes(lowerQuery)) ||
-        (asset.model && asset.model.toLowerCase().includes(lowerQuery)) ||
-        (asset.serial_number && asset.serial_number.toLowerCase().includes(lowerQuery))
-      );
-    } catch (error) {
-      console.error('Error searching SE assets:', error);
-      throw error;
-    }
-  }
-
-  static async exportData(format: 'csv' | 'excel' = 'csv'): Promise<Blob> {
-    try {
-      // Mock export returns empty blob for now
-      return new Blob();
-    } catch (error) {
-      console.error('Error exporting SE data:', error);
-      throw error;
-    }
-  }
-
-  static async importData(file: File): Promise<{ imported: number; errors: string[] }> {
-    try {
-      // Mock import: does nothing
-      return { imported: 0, errors: [] };
-    } catch (error) {
-      console.error('Error importing SE data:', error);
       throw error;
     }
   }

@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Loader2, Download, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import {
@@ -40,7 +42,7 @@ import { NumberInputModal } from './NumberInputModal';
 export function ReportTab() {
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<NormalizedEmployee | null>(null);
-  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | 'RPCPPE' | 'PAL' | null>(null);
+  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | 'RPCPPE' | 'PAL' | 'PTR' | 'ITR' | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [rpcppeDate, setRpcppeDate] = useState<Date | null>(null);
@@ -393,14 +395,66 @@ export function ReportTab() {
         onConfirm={handleMovementSelect}
       />
 
-      <ReportPreviewModal
-        isOpen={showPreview}
-        pdfUrl={previewUrl}
-        reportType={selectedReport || 'PAR'}
-        isLoading={loadingPreview}
-        onClose={() => setShowPreview(false)}
-        onConfirm={handlePreviewConfirm}
-      />
+
+      {/* Fullscreen Preview */}
+      {showPreview && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex flex-col items-center justify-center">
+          <div className="w-full max-w-6xl h-[90vh] flex flex-col bg-white rounded-lg shadow-xl relative">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <div className="flex items-center gap-2">
+                <Download className="size-5 text-blue-600" />
+                <span className="font-semibold text-lg text-slate-900">Preview {selectedReport === 'PAR' ? 'Property Acknowledgement Receipt (PAR)' :
+                  selectedReport === 'ICS' ? 'Inventory Custodian Slip (ICS)' :
+                  selectedReport === 'PTR' ? 'Property Transfer Report (PTR)' :
+                  selectedReport === 'ITR' ? 'Inventory Transfer Report (ITR)' :
+                  selectedReport === 'RPCPPE' ? 'Report on the Physical Count of Property, Plant and Equipment (RPCPPE)' :
+                  selectedReport === 'PAL' ? 'Property Accountability List (PAL)' :
+                  selectedReport === 'SESPI' ? 'Report of Semi-Expandable Property Issued (SESPI)' :
+                  ''}
+                </span>
+              </div>
+              <button
+                className="ml-auto text-slate-500 hover:text-red-600 transition-colors"
+                onClick={() => setShowPreview(false)}
+                disabled={loadingPreview}
+                aria-label="Close Preview"
+              >
+                <X className="size-6" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto">
+              {loadingPreview ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="size-8 animate-spin text-blue-600" />
+                    <p className="text-muted-foreground">Generating preview...</p>
+                  </div>
+                </div>
+              ) : previewUrl ? (
+                <iframe
+                  src={previewUrl}
+                  className="w-full h-[70vh] border-none rounded-b-lg"
+                  title={`${selectedReport} Preview`}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground">No preview available</p>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t">
+              <Button variant="outline" onClick={() => setShowPreview(false)} disabled={loadingPreview}>
+                <X className="size-4 mr-2" />
+                Cancel
+              </Button>
+              <Button onClick={handlePreviewConfirm} disabled={loadingPreview || !previewUrl}>
+                <Download className="size-4 mr-2" />
+                Confirm Download
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <RPCPPEFilterModal
         isOpen={showRPCPPE}

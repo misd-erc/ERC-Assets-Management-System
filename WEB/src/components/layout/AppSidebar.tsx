@@ -110,10 +110,35 @@ export function AppSidebar({ activeModule, onModuleChange }: any) {
       grouped[config.group].push(item);
     });
 
-    return Object.entries(grouped).map(([group, items]) => ({
-      title: group,
-      items,
-    }));
+    // Sidebar group order
+    const groupOrder = [
+      'Overview',
+      'Core Operations',
+      'Asset Management',
+      'Reports & Approvals',
+      'Administration',
+    ];
+
+    // Always put Dashboard at the top
+    let dashboardGroup: NavigationGroup | undefined;
+    let otherGroups: NavigationGroup[] = [];
+
+    Object.entries(grouped).forEach(([group, items]) => {
+      if (group === 'Overview') {
+        dashboardGroup = { title: group, items };
+      } else {
+        otherGroups.push({ title: group, items });
+      }
+    });
+
+    // Sort other groups by groupOrder
+    otherGroups.sort((a, b) => {
+      const idxA = groupOrder.indexOf(a.title);
+      const idxB = groupOrder.indexOf(b.title);
+      return idxA - idxB;
+    });
+
+    return dashboardGroup ? [dashboardGroup, ...otherGroups] : otherGroups;
   }, [acronyms]);
 
   // ----------------------
