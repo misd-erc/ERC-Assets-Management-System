@@ -200,7 +200,7 @@ export function AssetsTable({
                     <TableCell className="max-w-xs truncate" title={asset.description}>
                       {asset.description}
                     </TableCell>
-                    <TableCell>{asset.category}</TableCell>
+                    <TableCell>{asset.category?.name}</TableCell>
                     <TableCell>{formatCurrency(asset.unitValue)}</TableCell>
                     <TableCell>
                       <Badge variant={getConditionBadgeVariant(latestMovement?.condition || 'Working')}>

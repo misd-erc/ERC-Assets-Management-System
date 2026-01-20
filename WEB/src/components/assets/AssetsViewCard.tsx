@@ -269,8 +269,10 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date Assigned</TableHead>
-                    <TableHead>PAR/ITR Number</TableHead>
-                    <TableHead>Employee ID</TableHead>
+                    <TableHead>PAR/ICS No.</TableHead>
+                    <TableHead>PTR/ITR No.</TableHead>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Service/Office</TableHead>
                     <TableHead>Division</TableHead>
                     <TableHead>Condition</TableHead>
                   </TableRow>
@@ -279,8 +281,20 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   {ppeAsset.movements.map((movement) => (
                     <TableRow key={movement.id}>
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
+                      <TableCell>{movement.parIcsNumber || '-'}</TableCell>
                       <TableCell>{movement.ptrItrNumber || '-'}</TableCell>
-                      <TableCell>{movement.plantillaEmployeeIdOriginal || movement.nonPlantillaEmployeeIdOriginal || '-'}</TableCell>
+                      <TableCell>
+                        {movement.plantillaEmployeeId
+                          ? getEmployeeName(movement.plantillaEmployeeId)
+                          : movement.nonPlantillaEmployeeId
+                          ? getEmployeeName(movement.nonPlantillaEmployeeId)
+                          : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {movement.employee?.[0]?.office?.id
+                          ? getOfficeName(movement.employee[0].office.id)
+                          : '-'}
+                      </TableCell>
                       <TableCell>{movement.employee?.[0]?.division?.name || '-'}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -347,7 +361,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
         <Card>
           <CardContent className="pt-6">
             <div className="text-sm text-slate-500">
-              <p>Encoded on: {formatDate(ppeAsset.dateEncoded)}</p>
+              <p>Encoded on: {formatDate(ppeAsset.dateEncoded || '')}</p>
             </div>
           </CardContent>
         </Card>
@@ -392,12 +406,12 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
 
                 <div>
                   <Label className="text-sm font-medium text-slate-600">Category</Label>
-                  <p className="text-slate-900">{asset.category || '-'}</p>
+                  <p className="text-slate-900">{typeof asset.category === 'object' && asset.category ? asset.category.name : asset.category || '-'}</p>
                 </div>
 
                 <div>
                   <Label className="text-sm font-medium text-slate-600">Legend</Label>
-                  <p className="text-slate-900">{asset.legend || '-'}</p>
+                  <p className="text-slate-900">{typeof asset.legend === 'object' && asset.legend ? asset.legend.name : asset.legend || '-'}</p>
                 </div>
 
                 <div>

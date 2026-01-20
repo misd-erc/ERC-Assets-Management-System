@@ -1,22 +1,83 @@
 export interface SEAsset {
-  id: string;
-  se_property_number: string;
-  category: string;
-  legend: string;
+  id: number;
+  group: string;
+  propertyNumber: string;
+  category: {
+    id: number;
+    name: string;
+    generalCode: string;
+    isActive: boolean;
+    isDeleted: boolean;
+    createdAt: string;
+  };
+  legend: string | null;
   description: string;
-  brand: string;
-  model: string;
-  serial_number: string;
-  parts_accessories: string;
-  unit_of_measurement: string;
-  unit_value: number;
-  date_acquired: string;
-  warranty_status: 'In Warranty' | 'Expired' | 'Unknown';
-  accountabilityBlocks: SEAccountabilityBlock[];
-  movementHistory: SEMovementHistory[];
-  rrspHistory: RRSPEntry[];
-  dateEncoded: string;
-  status: 'Active' | 'Returned' | 'Lost' | 'Unserviceable';
+  brand: string | null;
+  model: string | null;
+  serialNumber: string | null;
+  parts: any[];
+  unitOfMeasurement: string;
+  unitValue: number;
+  dateAcquired: string;
+  movements: Array<{
+    id: number;
+    ptaId: number;
+    dateAssigned: string;
+    ptrItrNumber: string;
+    parIcsNumber: string;
+    plantillaEmployeeId: number | null;
+    nonPlantillaEmployeeId: number | null;
+    plantillaEmployeeIdOriginal: string;
+    nonPlantillaEmployeeIdOriginal: string;
+    employee: Array<{
+      id: number;
+      systemUser: any;
+      firstName: string;
+      middleName: string | null;
+      lastName: string;
+      suffixName: string | null;
+      employeeIdOriginal: string;
+      office: {
+        id: number;
+        name: string;
+        acronym: string;
+        generalCode: string | null;
+        isActive: boolean;
+        isDeleted: boolean;
+        createdAt: string;
+      };
+      division: {
+        id: number;
+        officeId: number;
+        name: string;
+        acronym: string;
+        isActive: boolean;
+        isDeleted: boolean;
+        createdAt: string;
+      };
+      employmentType: {
+        id: number;
+        name: string;
+        isActive: boolean;
+        isDeleted: boolean;
+        createdAt: string;
+      };
+      position: any;
+      isActive: boolean;
+      createdAt: string;
+    }>;
+    office: any;
+    division: any;
+    condition: string;
+    isActive: boolean;
+    isDeleted: boolean;
+    createdAt: string;
+  }>;
+  estimatedUsefulLife: number;
+  fiscalDate: string;
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt: string;
 }
 
 export interface SEAccountabilityBlock {

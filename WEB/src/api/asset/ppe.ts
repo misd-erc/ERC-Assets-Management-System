@@ -95,11 +95,7 @@ export const ppeApi = {
 	): Promise<PPEAsset> => {
 		const url =
 			API_BASE_URL +
-			'/Inventory/ppe/all/' +
-			id +
-			'?ActionBySystemUserId=' +
-			actionBySystemUserId +
-			'&SessionKey=' + encodeURIComponent(sessionKey);
+			`/Inventory/pta/se-ppe/all/${id}?ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 		const response = await fetch(url, {
 			method: 'GET',
 			headers: { Accept: 'application/json' },
@@ -107,7 +103,8 @@ export const ppeApi = {
 		if (!response.ok) {
 			throw new Error('Failed to fetch PPE asset details');
 		}
-		return response.json();
+		const json = await response.json();
+		return json.data;
 	},
 
 	// Create PPE asset

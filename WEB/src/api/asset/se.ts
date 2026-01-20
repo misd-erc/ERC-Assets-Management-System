@@ -93,11 +93,7 @@ export const seApi = {
 	): Promise<SEAsset> => {
 		const url =
 			API_BASE_URL +
-			'/Inventory/se/all/' +
-			id +
-			'?ActionBySystemUserId=' +
-			actionBySystemUserId +
-			'&SessionKey=' + encodeURIComponent(sessionKey);
+			`/Inventory/pta/se-ppe/all/${id}?ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 		const response = await fetch(url, {
 			method: 'GET',
 			headers: { Accept: 'application/json' },
@@ -105,7 +101,8 @@ export const seApi = {
 		if (!response.ok) {
 			throw new Error('Failed to fetch SE asset details');
 		}
-		return response.json();
+		const json = await response.json();
+		return json.data;
 	},
 
 	// Create SE asset

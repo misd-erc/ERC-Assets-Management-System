@@ -9,15 +9,15 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Package, DollarSign, User, Plus, X, CalendarIcon } from 'lucide-react';
 import ReactSelect from 'react-select';
-import { Asset, UnifiedMovement, NormalizedEmployee, Part } from '@/types/asset/UnifiedAsset';
+import { FormAsset, UnifiedMovement, NormalizedEmployee, Part } from '@/types/asset/UnifiedAsset';
 import { VwOffice, VwDivision } from '@/types/office';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface SharedAssetFieldsProps {
   mode: 'create' | 'edit';
-  formData: Omit<Asset, 'id'>;
-  setFormData: React.Dispatch<React.SetStateAction<Omit<Asset, 'id'>>>;
+  formData: FormAsset;
+  setFormData: React.Dispatch<React.SetStateAction<FormAsset>>;
   accountabilityEntries: UnifiedMovement[];
   setAccountabilityEntries: React.Dispatch<React.SetStateAction<UnifiedMovement[]>>;
   handlePlantillaEmployeeSelect: (index: number, employeeId: number) => void;
@@ -131,7 +131,7 @@ export function SharedAssetFields({
               <Label htmlFor="serialNumber">Serial Number *</Label>
               <Input
                 id="serialNumber"
-                value={formData.serialNumber}
+                value={formData.serialNumber || ''}
                 onChange={(e) => handleInputChange('serialNumber', e.target.value)}
                 required
               />
@@ -151,7 +151,7 @@ export function SharedAssetFields({
               <Label htmlFor="brand">Brand *</Label>
               <Input
                 id="brand"
-                value={formData.brand}
+                value={formData.brand || ''}
                 onChange={(e) => handleInputChange('brand', e.target.value)}
                 required
               />
@@ -161,7 +161,7 @@ export function SharedAssetFields({
               <Label htmlFor="model">Model *</Label>
               <Input
                 id="model"
-                value={formData.model}
+                value={formData.model || ''}
                 onChange={(e) => handleInputChange('model', e.target.value)}
                 required
               />

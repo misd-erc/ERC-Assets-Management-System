@@ -75,8 +75,8 @@ export function ItemSelectModal({
     const filtered = items.filter(item =>
       item.propertyNumber.toLowerCase().includes(lowerTerm) ||
       item.description.toLowerCase().includes(lowerTerm) ||
-      item.serialNumber.toLowerCase().includes(lowerTerm) ||
-      item.category?.toLowerCase().includes(lowerTerm)
+      (item.serialNumber?.toLowerCase().includes(lowerTerm) || false) ||
+      (typeof item.category === 'object' && item.category ? item.category.name.toLowerCase().includes(lowerTerm) : false)
     );
     setFilteredItems(filtered);
   };
@@ -103,10 +103,15 @@ export function ItemSelectModal({
             id: apiItem.id,
             group: apiItem.group,
             propertyNumber: apiItem.propertyNumber || '',
-            categoryId: apiItem.category?.id || 0,
-            legendId: apiItem.legend?.id || 0,
-            category: apiItem.category?.name || '',
-            legend: apiItem.legend?.name || '',
+            category: apiItem.category || {
+              id: 0,
+              name: '',
+              generalCode: '',
+              isActive: true,
+              isDeleted: false,
+              createdAt: new Date().toISOString(),
+            },
+            legend: apiItem.legend || null,
             condition: apiItem.movements?.[0]?.condition || 'Good',
             description: apiItem.description || '',
             brand: apiItem.brand || '',
@@ -119,6 +124,9 @@ export function ItemSelectModal({
             movements: apiItem.movements || [],
             estimatedUsefulLife: apiItem.estimatedUsefulLife || 5,
             fiscalDate: apiItem.fiscalDate || new Date().toISOString().split('T')[0],
+            isActive: true,
+            isDeleted: false,
+            createdAt: apiItem.createdAt || new Date().toISOString(),
           };
           
           onSelect(detailedItem);
@@ -195,7 +203,7 @@ export function ItemSelectModal({
                         {item.propertyNumber}
                       </div>
                       <div className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
-                        {item.category}
+                        {typeof item.category === 'object' && item.category ? item.category.name : item.category}
                       </div>
                     </div>
                     <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
@@ -203,7 +211,7 @@ export function ItemSelectModal({
                     </div>
                     <div className="text-xs text-slate-500 dark:text-slate-500 flex justify-between">
                       <span>SN: {item.serialNumber || 'N/A'}</span>
-                      <span>Condition: {item.condition}</span>
+                      <span>Condition: {item.condition || 'N/A'}</span>
                     </div>
                   </div>
                 ))}

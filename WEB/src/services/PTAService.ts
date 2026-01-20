@@ -125,15 +125,20 @@ export class PTAService {
       id: ptaItem.id,
       group: ptaItem.group as 'PPE' | 'SE',
       propertyNumber: ptaItem.propertyNumber,
-      categoryId,
-      legendId: 0, // Not used in RPCPPE
-      category: ptaItem.category,
-      legend: ptaItem.legend,
+      category: typeof ptaItem.category === 'object' ? ptaItem.category : {
+        id: 0,
+        name: ptaItem.category || '',
+        generalCode: '',
+        isActive: true,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+      },
+      legend: typeof ptaItem.legend === 'object' ? ptaItem.legend : null,
       description: ptaItem.description,
-      brand: '', // Not in PTA data
-      model: '', // Not in PTA data
-      serialNumber: '', // Not in PTA data
-      parts: [], // Not used in RPCPPE
+      brand: '',
+      model: '',
+      serialNumber: null,
+      parts: [],
       unitOfMeasurement: ptaItem.unitOfMeasurement,
       unitValue: ptaItem.unitValue,
       dateAcquired,
@@ -153,8 +158,15 @@ export class PTAService {
         condition: m.condition,
         isActive: m.isActive,
         isDeleted: false,
+        office: undefined,
+        division: undefined,
         createdAt: m.dateAssigned,
+        plantillaEmployeeIdOriginal: '',
+        nonPlantillaEmployeeIdOriginal: '',
       })),
+      isActive: true,
+      isDeleted: false,
+      createdAt: new Date().toISOString(),
     };
   }
 }
