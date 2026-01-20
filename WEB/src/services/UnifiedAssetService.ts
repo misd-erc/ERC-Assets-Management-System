@@ -1,6 +1,7 @@
 import { ppeApi } from '@/api/asset/ppe';
 import { seApi } from '@/api/asset/se';
 import { Asset, UnifiedMovement, AssetGroup } from '@/types/asset/UnifiedAsset';
+import { SEAsset } from '@/types/supply/se';
 import { normalizeMovement } from '@/utils/normalizer';
 
 export class UnifiedAssetService {
@@ -14,10 +15,9 @@ export class UnifiedAssetService {
       ptaId: mode === 'create' ? 0 : (assetId || entry.ptaId || 0),
       dateAssigned: entry.dateAssigned ?? new Date().toISOString(),
       ptrItrNumber: entry.ptrItrNumber ?? '',
+      parIcsNumber: entry.parIcsNumber ?? '',
       plantillaEmployeeId: entry.plantillaEmployeeId ?? 0,
       nonPlantillaEmployeeId: entry.nonPlantillaEmployeeId ?? 0,
-      actualOfficeId: entry.actualOfficeId ?? null,
-      actualDivisionId: entry.actualDivisionId ?? null,
       isActive: true,
       condition: entry.condition ?? 'Working',
       actionBySystemUserId: parseInt(localStorage.getItem('systemUserId') || '0'),
@@ -45,69 +45,46 @@ export class UnifiedAssetService {
       throw new Error('apiItem or apiItem.id is undefined');
     }
 
-    // Map movements to unified format - handle new API structure with actualOfficeId/actualDivisionId
+    // Map movements to unified format - handle new API structure
     const unifiedMovements: UnifiedMovement[] = (apiItem.movements || []).map((mv: any) => ({
       id: mv.id,
-      ptaId: mv.ptaId || 0,
+      ptaId: mv.ptaId || apiItem.id || 0,
       dateAssigned: mv.dateAssigned || mv.createdAt || '',
       ptrItrNumber: mv.ptrItrNumber || '',
+      parIcsNumber: mv.parIcsNumber || '',
       plantillaEmployeeId: mv.plantillaEmployeeId || null,
       nonPlantillaEmployeeId: mv.nonPlantillaEmployeeId || null,
       plantillaEmployeeIdOriginal: mv.plantillaEmployeeIdOriginal || undefined,
       nonPlantillaEmployeeIdOriginal: mv.nonPlantillaEmployeeIdOriginal || undefined,
       employee: mv.employee,
-      actualOfficeId: mv.actualOfficeId || mv.employee?.[0]?.office?.id || 0,
-      actualDivisionId: mv.actualDivisionId || mv.employee?.[0]?.division?.id || 0,
+      office: mv.office,
+      division: mv.division,
       condition: mv.condition || 'Working',
       isActive: mv.isActive !== undefined ? mv.isActive : true,
       isDeleted: mv.isDeleted !== undefined ? mv.isDeleted : false,
       createdAt: mv.createdAt || new Date().toISOString(),
     }));
 
-    // Extract categoryId and category name
-    let categoryId = 0;
-    let category: string | undefined;
-    if (apiItem.category) {
-      if (typeof apiItem.category === 'object') {
-        categoryId = apiItem.category.id || 0;
-        category = apiItem.category.name;
-      } else if (typeof apiItem.category === 'string') {
-        category = apiItem.category;
-        // Try to find the category ID if we have a categories list, otherwise keep as 0
-        categoryId = 0;
-      } else if (typeof apiItem.category === 'number') {
-        categoryId = apiItem.category;
-      }
-    }
-
-    // Extract legendId and legend name
-    let legendId = 0;
-    let legend: string | undefined;
-    if (apiItem.legend) {
-      if (typeof apiItem.legend === 'object') {
-        legendId = apiItem.legend.id || 0;
-        legend = apiItem.legend.name;
-      } else if (typeof apiItem.legend === 'number') {
-        legendId = apiItem.legend;
-      }
-    }
-
     return {
       id: apiItem.id,
-      group,
+      group: apiItem.group || group,
       propertyNumber: apiItem.propertyNumber || '',
-      categoryId,
-      legendId,
-      category,
-      legend,
-      condition: unifiedMovements[0]?.condition || 'Working',
+      category: apiItem.category || {
+        id: 0,
+        name: 'Unknown',
+        generalCode: '',
+        isActive: true,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+      },
+      legend: apiItem.legend || null,
       description: apiItem.description || '',
-      brand: apiItem.brand || '',
-      model: apiItem.model || '',
-      serialNumber: apiItem.serialNumber || '',
+      brand: apiItem.brand || null,
+      model: apiItem.model || null,
+      serialNumber: apiItem.serialNumber || null,
       parts: Array.isArray(apiItem.parts) ? apiItem.parts.map((part: any) => ({
         id: part.id || null,
-        ptaId: part.ptaId || 0,
+        ptaId: part.ptaId || apiItem.id || 0,
         name: part.name || '',
         serialNumber: part.serialNumber || '',
         isActive: part.isActive !== undefined ? part.isActive : true
@@ -116,8 +93,11 @@ export class UnifiedAssetService {
       unitValue: apiItem.unitValue || 0,
       dateAcquired: apiItem.dateAcquired || '',
       movements: unifiedMovements,
-      estimatedUsefulLife: apiItem.estimatedUsefulLife || 5,
+      estimatedUsefulLife: apiItem.estimatedUsefulLife || 0,
       fiscalDate: apiItem.fiscalDate || new Date().toISOString().split('T')[0],
+      isActive: apiItem.isActive !== undefined ? apiItem.isActive : true,
+      isDeleted: apiItem.isDeleted !== undefined ? apiItem.isDeleted : false,
+      createdAt: apiItem.createdAt || new Date().toISOString(),
     };
   }
 
@@ -234,7 +214,7 @@ export class UnifiedAssetService {
         // Filter by category
         if (filters.category && filters.category !== 'all') {
           filteredItems = filteredItems.filter(asset =>
-            asset.category?.toLowerCase() === filters.category?.toLowerCase()
+            asset.category?.name?.toLowerCase() === filters.category?.toLowerCase()
           );
         }
 
@@ -252,7 +232,7 @@ export class UnifiedAssetService {
           const officeId = parseInt(filters.office);
           filteredItems = filteredItems.filter(asset =>
             asset.movements?.some(movement =>
-              movement.actualOfficeId === officeId
+              movement.employee?.[0]?.office?.id === officeId
             )
           );
         }
@@ -262,7 +242,7 @@ export class UnifiedAssetService {
           const divisionId = parseInt(filters.division);
           filteredItems = filteredItems.filter(asset =>
             asset.movements?.some(movement =>
-              movement.actualDivisionId === divisionId
+              movement.employee?.[0]?.division?.id === divisionId
             )
           );
         }
@@ -351,11 +331,10 @@ export class UnifiedAssetService {
       const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
       const sessionKey = localStorage.getItem('sessionToken') || '';
 
-
       // Fallback: First try PPE API
       try {
         const ppeResponse: any = await ppeApi.getById(id.toString(), actionBySystemUserId, sessionKey);
-        let apiItem = ppeResponse?.data;
+        let apiItem = ppeResponse;
         if (Array.isArray(apiItem)) {
           apiItem = apiItem[0];
         }
@@ -368,7 +347,7 @@ export class UnifiedAssetService {
 
       // Fallback: Try SE API
       const seResponse: any = await seApi.getById(id.toString(), actionBySystemUserId, sessionKey);
-      let apiItem = seResponse?.data;
+      let apiItem = seResponse;
       if (Array.isArray(apiItem)) {
         apiItem = apiItem[0];
       }
@@ -402,12 +381,12 @@ export class UnifiedAssetService {
       const apiData = {
         ...(data.id && { id: data.id }),
         propertyNumber: data.propertyNumber,
-        category: data.categoryId || 0,
-        legend: data.legendId || 0,
+        category: data.category,
+        legend: data.legend,
         description: data.description,
-        brand: data.brand || '',
-        model: data.model || '',
-        serialNumber: data.serialNumber || '',
+        brand: data.brand || null,
+        model: data.model || null,
+        serialNumber: data.serialNumber || null,
         parts: normalizedParts,
         unitOfMeasurement: data.unitOfMeasurement,
         unitValue: data.unitValue,
@@ -436,13 +415,21 @@ export class UnifiedAssetService {
         if (!apiResponse.items?.length) throw new Error('Failed to create PPE asset: Not supported');
         ptaId = apiResponse.items[0].id;
       } else {
-        // Remove id if present and convert to string if needed
-        const { id, category, legend, ...restApiData } = apiData;
-        const apiDataForSE = {
-          ...restApiData,
-          id: id !== undefined ? String(id) : undefined,
-          category: category !== undefined ? String(category) : undefined,
-          legend: legend !== undefined ? String(legend) : undefined
+        // SE asset - pass data directly since SEAsset interface matches the new API format
+        const apiDataForSE: Partial<SEAsset> = {
+          propertyNumber: apiData.propertyNumber,
+          category: apiData.category as any,
+          legend: typeof apiData.legend === 'object' && apiData.legend ? apiData.legend.name : apiData.legend,
+          description: apiData.description,
+          brand: apiData.brand,
+          model: apiData.model,
+          serialNumber: apiData.serialNumber,
+          parts: apiData.parts || [],
+          unitOfMeasurement: apiData.unitOfMeasurement,
+          unitValue: apiData.unitValue,
+          dateAcquired: apiData.dateAcquired,
+          estimatedUsefulLife: apiData.estimatedUsefulLife || 0,
+          movements: apiData.movements || [],
         };
         apiResponse = await seApi.create(apiDataForSE, actionBySystemUserId, sessionKey);
         if (!apiResponse.success || !apiResponse.data?.id) {
@@ -456,22 +443,22 @@ export class UnifiedAssetService {
         id: Number(ptaId),
         group: data.group,
         propertyNumber: data.propertyNumber,
-        categoryId: data.categoryId || 0,
-        legendId: data.legendId || 0,
-        category: data.category,
-        legend: data.legend,
-        condition: data.condition || data.movements?.[0]?.condition || 'Working',
+        category: data.category || { id: 0, name: 'Unknown', generalCode: '', isActive: true, isDeleted: false, createdAt: new Date().toISOString() },
+        legend: data.legend || null,
         description: data.description,
         brand: data.brand,
         model: data.model,
         serialNumber: data.serialNumber,
-        parts: data.parts,
+        parts: data.parts || [],
         unitOfMeasurement: data.unitOfMeasurement,
         unitValue: data.unitValue,
         dateAcquired: data.dateAcquired,
-        movements: data.movements,
-        estimatedUsefulLife: data.estimatedUsefulLife,
+        movements: data.movements || [],
+        estimatedUsefulLife: data.estimatedUsefulLife || 0,
         fiscalDate: data.fiscalDate || new Date().toISOString().split('T')[0],
+        isActive: true,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
       };
 
       return createdAsset;
@@ -495,17 +482,16 @@ export class UnifiedAssetService {
       const normalizedParts = (data.parts || currentAsset.parts || []).map(part =>
         this.normalizePart(part, 'edit', id)
       );
-
       // Normalize movements for edit mode
       const normalizedMovements = (data.movements || currentAsset.movements || []).map(movement =>
-        this.normalizeMovement(movement, data.model || currentAsset.model, 'edit', id)
+        this.normalizeMovement(movement, data.model || currentAsset.model || '', 'edit', id)
       );
 
       const apiData = {
         id: id,
         propertyNumber: data.propertyNumber || currentAsset.propertyNumber,
-        category: data.categoryId || currentAsset.categoryId || 0,
-        legend: data.legendId || currentAsset.legendId || 0,
+        category: data.category || currentAsset.category,
+        legend: data.legend || currentAsset.legend,
         description: data.description || currentAsset.description,
         brand: data.brand || currentAsset.brand,
         model: data.model || currentAsset.model,
@@ -525,13 +511,21 @@ export class UnifiedAssetService {
       // Use SE API for update
       let apiResponse;
       if (group === 'SE') {
-        // Remove id from apiData and convert to string if present
-        const { id: apiDataId, category, legend, ...restApiData } = apiData;
-        const apiDataForSE = {
-          ...restApiData,
-          id: apiDataId !== undefined ? String(apiDataId) : undefined,
-          category: category !== undefined ? String(category) : undefined,
-          legend: legend !== undefined ? String(legend) : undefined
+        // SE asset - pass data directly since SEAsset interface matches the new API format
+        const apiDataForSE: Partial<SEAsset> = {
+          propertyNumber: apiData.propertyNumber,
+          category: apiData.category as any,
+          legend: typeof apiData.legend === 'object' && apiData.legend ? apiData.legend.name : apiData.legend,
+          description: apiData.description,
+          brand: apiData.brand,
+          model: apiData.model,
+          serialNumber: apiData.serialNumber,
+          parts: apiData.parts || [],
+          unitOfMeasurement: apiData.unitOfMeasurement,
+          unitValue: apiData.unitValue,
+          dateAcquired: apiData.dateAcquired,
+          estimatedUsefulLife: apiData.estimatedUsefulLife || 0,
+          movements: apiData.movements || [],
         };
         apiResponse = await seApi.update(id.toString(), apiDataForSE, actionBySystemUserId, sessionKey);
         if (!apiResponse.success) throw new Error('Update failed');

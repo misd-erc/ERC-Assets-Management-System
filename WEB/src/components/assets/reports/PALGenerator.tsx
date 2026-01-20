@@ -189,7 +189,7 @@ export class PALGenerator {
 
     const allRows: PALRow[] = [];
 
-    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
+    const employeeName = `${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''} ${employee.lastName}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
 
     // Fetch employee details to get position and office
     const empResp = await getEmployeeById(employee.id);
@@ -254,7 +254,7 @@ export class PALGenerator {
 
     const allRows: PALRow[] = [];
 
-    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
+    const employeeName = `${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''} ${employee.lastName}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
 
     // Fetch employee details to get position and office
     const empResp = await getEmployeeById(employee.id);

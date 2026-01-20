@@ -143,11 +143,7 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="w-[95vw] !max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center justify-between w-full pr-4">
-              <DialogTitle className="flex items-center gap-2">
-                <FileText className="size-5" />
-                Print Preview - Asset {asset.propertyNumber}
-              </DialogTitle>
+            <div className="flex items-center justify-end w-full pr-4">
               <div className="flex gap-2">
                 <Button
                   onClick={handleExportPDF}
@@ -158,15 +154,26 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
                   <Download className="size-4" />
                   {isGenerating ? 'Generating...' : 'Export PDF'}
                 </Button>
-                <Button onClick={handlePrint} className="gap-2" variant="outline">
-                  <Printer className="size-4" />
-                  Print
-                </Button>
               </div>
             </div>
           </DialogHeader>
 
           <div ref={printRef} className="print-container bg-white" style={{ padding: '40px', fontFamily: 'Arial, sans-serif', color: '#000', lineHeight: '1.6' }}>
+            {/* ASSET HISTORY at the top */}
+            <h2
+              style={{
+                fontSize: '30px',
+                fontWeight: 'bold',
+                marginBottom: '10px',
+                color: '#000',
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                textAlign: 'center',
+                fontFamily: 'Arial, sans-serif',
+              }}
+            >
+              ASSET HISTORY
+            </h2>
         {/* Header */}
         <div style={{ borderBottom: '3px solid #1e40af', paddingBottom: '20px', marginBottom: '30px' }}>
           <h1 style={{ margin: '0 0 5px 0', fontSize: '28px', fontWeight: 'bold', color: '#1e40af' }}>
@@ -239,29 +246,6 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
           </div>
         )}
 
-        {/* Financial Information */}
-        <div style={{ marginBottom: '30px', pageBreakInside: 'avoid' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '15px', color: '#1e40af', borderBottom: '2px solid #e0e7ff', paddingBottom: '8px' }}>
-            FINANCIAL INFORMATION
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
-            <div style={{ backgroundColor: '#f0f9ff', padding: '15px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 'bold', color: '#0c4a6e', textTransform: 'uppercase' }}>Unit Value</p>
-              <p style={{ margin: '0', fontSize: '18px', fontWeight: 'bold', color: '#1e40af' }}>{formatCurrency(ppeAsset.unitValue)}</p>
-            </div>
-
-            <div style={{ backgroundColor: '#f0f9ff', padding: '15px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 'bold', color: '#0c4a6e', textTransform: 'uppercase' }}>Date Acquired</p>
-              <p style={{ margin: '0', fontSize: '14px', color: '#000' }}>{formatDate(ppeAsset.dateAcquired)}</p>
-            </div>
-
-            <div style={{ backgroundColor: '#f0f9ff', padding: '15px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 'bold', color: '#0c4a6e', textTransform: 'uppercase' }}>Useful Life</p>
-              <p style={{ margin: '0', fontSize: '14px', color: '#000' }}>{ppeAsset.estimatedUsefulLife} years</p>
-            </div>
-          </div>
-        </div>
-
         {/* Accountability Information */}
         {ppeAsset.movements && ppeAsset.movements.length > 0 && (
           <div style={{ marginBottom: '30px', pageBreakInside: 'avoid' }}>
@@ -272,8 +256,10 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
               <thead>
                 <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #d1d5db' }}>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>Date Assigned</th>
-                  <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>PAR/ITR</th>
+                  <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>PAR/ICS No.</th>
+                  <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>PTR/ITR No.</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>Employee</th>
+                  <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>Service/Office</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>Division</th>
                   <th style={{ padding: '10px', textAlign: 'center', fontWeight: 'bold', color: '#374151' }}>Condition</th>
                 </tr>
@@ -282,8 +268,20 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
                 {ppeAsset.movements.map((movement, index) => (
                   <tr key={movement.id} style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: index % 2 === 0 ? '#fff' : '#f9fafb' }}>
                     <td style={{ padding: '10px' }}>{formatDate(movement.dateAssigned)}</td>
+                    <td style={{ padding: '10px' }}>{movement.parIcsNumber || '-'}</td>
                     <td style={{ padding: '10px' }}>{movement.ptrItrNumber || '-'}</td>
-                    <td style={{ padding: '10px' }}>{movement.plantillaEmployeeIdOriginal || movement.nonPlantillaEmployeeIdOriginal || '-'}</td>
+                    <td style={{ padding: '10px' }}>
+                      {movement.plantillaEmployeeId
+                        ? getEmployeeName(movement.plantillaEmployeeId)
+                        : movement.nonPlantillaEmployeeId
+                        ? getEmployeeName(movement.nonPlantillaEmployeeId)
+                        : '-'}
+                    </td>
+                    <td style={{ padding: '10px' }}>
+                      {movement.employee?.[0]?.office?.id
+                        ? getOfficeName(movement.employee[0].office.id)
+                        : '-'}
+                    </td>
                     <td style={{ padding: '10px' }}>{movement.employee?.[0]?.division?.name || '-'}</td>
                     <td style={{ padding: '10px', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>
                       {getConditionLabel(movement.condition || '')}
@@ -296,56 +294,52 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
         )}
 
         {/* History */}
-        {ppeAsset.history && ppeAsset.history.length > 0 && (
-          <div style={{ marginBottom: '30px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '15px', color: '#1e40af', borderBottom: '2px solid #e0e7ff', paddingBottom: '8px' }}>
-              ACCOUNTABILITY HISTORY
-            </h2>
-            <div>
-              {ppeAsset.history.map((entry, index) => (
-                <div key={entry.id} style={{ marginBottom: '20px', paddingLeft: '15px', borderLeft: '3px solid #bfdbfe', pageBreakInside: 'avoid' }}>
-                  <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 'bold', color: '#1e40af' }}>
-                    {formatDate(entry.date)}
-                  </p>
-                  <table style={{ width: '100%', fontSize: '12px', marginTop: '8px' }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>PAR/ITR Number:</td>
-                        <td style={{ padding: '4px 0', color: '#000' }}>{entry.par_itr_number || '-'}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>Employee:</td>
-                        <td style={{ padding: '4px 0', color: '#000' }}>{entry.plantilla_employee_id || entry.non_plantilla_employee_id || '-'}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>Division:</td>
-                        <td style={{ padding: '4px 0', color: '#000' }}>
-                          {typeof entry.actual_division === 'object' && entry.actual_division !== null
-                            ? (entry.actual_division as any).name
-                            : entry.actual_division || '-'}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>Condition:</td>
-                        <td style={{ padding: '4px 0', color: '#000' }}>{entry.condition || '-'}</td>
-                      </tr>
-                      {entry.remarks && (
+          {ppeAsset.movements && ppeAsset.movements.length > 0 && (
+            <div style={{ marginBottom: '30px' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '15px', color: '#1e40af', borderBottom: '2px solid #e0e7ff', paddingBottom: '8px' }}>
+                ACCOUNTABILITY HISTORY
+              </h2>
+              <div>
+                {ppeAsset.movements.map((entry: any, index: number) => (
+                  <div key={entry.id} style={{ marginBottom: '20px', paddingLeft: '15px', borderLeft: '3px solid #bfdbfe', pageBreakInside: 'avoid' }}>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 'bold', color: '#1e40af' }}>
+                      {formatDate(entry.dateAssigned)}
+                    </p>
+                    <table style={{ width: '100%', fontSize: '12px', marginTop: '8px' }}>
+                      <tbody>
                         <tr>
-                          <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>Remarks:</td>
-                          <td style={{ padding: '4px 0', color: '#666', fontStyle: 'italic' }}>{entry.remarks}</td>
+                          <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>PTR/ITR Number:</td>
+                          <td style={{ padding: '4px 0', color: '#000' }}>{entry.ptrItrNumber || '-'}</td>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              ))}
+                         <tr>
+                          <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>PAR/ICS Number:</td>
+                          <td style={{ padding: '4px 0', color: '#000' }}>{entry.parIcsNumber || '-'}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>Employee:</td>
+                          <td style={{ padding: '4px 0', color: '#000' }}>{entry.employee?.[0]?.employeeIdOriginal || '-'}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>Division:</td>
+                          <td style={{ padding: '4px 0', color: '#000' }}>
+                            {entry.employee?.[0]?.division?.name || '-'}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>Condition:</td>
+                          <td style={{ padding: '4px 0', color: '#000' }}>{entry.condition || '-'}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Footer */}
         <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '2px solid #e5e7eb', fontSize: '11px', color: '#666' }}>
-          <p style={{ margin: '0' }}>Encoded on: {formatDate(ppeAsset.dateEncoded)}</p>
+          <p style={{ margin: '0' }}>Encoded on: {formatDate(ppeAsset.createdAt)}</p>
           <p style={{ margin: '5px 0 0 0' }}>Document generated for asset management records</p>
         </div>
 
@@ -427,10 +421,10 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
               <p style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#000' }}>{asset.propertyNumber}</p>
 
               <p style={{ margin: '0 0 5px 0', fontSize: '12px', fontWeight: 'bold', color: '#666', textTransform: 'uppercase' }}>Category</p>
-              <p style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#000' }}>{asset.category || '-'}</p>
+              <p style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#000' }}>{asset.category?.name || '-'}</p>
 
               <p style={{ margin: '0 0 5px 0', fontSize: '12px', fontWeight: 'bold', color: '#666', textTransform: 'uppercase' }}>Legend</p>
-              <p style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#000' }}>{asset.legend || '-'}</p>
+              <p style={{ margin: '0 0 15px 0', fontSize: '14px', color: '#000' }}>{typeof asset.legend === 'object' && asset.legend ? asset.legend.name : asset.legend || '-'}</p>
 
               <p style={{ margin: '0 0 5px 0', fontSize: '12px', fontWeight: 'bold', color: '#666', textTransform: 'uppercase' }}>Serial Number</p>
               <p style={{ margin: '0', fontSize: '14px', color: '#000' }}>{asset.serialNumber || '-'}</p>
@@ -528,8 +522,8 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
                         ? getEmployeeName(movement.nonPlantillaEmployeeId)
                         : '-'}
                     </td>
-                    <td style={{ padding: '10px' }}>{getOfficeName(movement.actualOfficeId ?? null)}</td>
-                    <td style={{ padding: '10px' }}>{getDivisionName(movement.actualDivisionId ?? null)}</td>
+                    <td style={{ padding: '10px' }}>{getOfficeName(movement.employee?.[0]?.office?.id ?? null)}</td>
+                    <td style={{ padding: '10px' }}>{getDivisionName(movement.employee?.[0]?.division?.id ?? null)}</td>
                     <td style={{ padding: '10px', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>
                       {getConditionLabel(movement.condition || '')}
                     </td>
