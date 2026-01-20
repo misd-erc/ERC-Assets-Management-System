@@ -275,7 +275,7 @@ export class PARGenerator {
         const empResp = await getEmployeeById(employeeId);
         if (empResp.success && empResp.data.length > 0) {
           const empData = empResp.data[0];
-          employeeName = `${empData.lastName}, ${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
           office = empData.office?.name || 'N/A';
         }
