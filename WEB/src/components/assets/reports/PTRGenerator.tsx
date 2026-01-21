@@ -161,15 +161,12 @@ const styles = StyleSheet.create({
   sigBlock: {
     flex: 1,
     textAlign: "center",
-    borderRightWidth: 0.8,
-    borderColor: "#000",
     padding: 8,
   },
 
   sigBlockLast: {
     flex: 1,
     textAlign: "center",
-    borderColor: "#000",
     padding: 8,
   },
 
@@ -428,6 +425,7 @@ const PTRDocument = ({
             </View>
             <Text style={styles.sigDateLabel}>DATE</Text>
           </View>
+          <Text style={{ fontSize: 8, fontWeight: "bold", marginTop: 8, textAlign: "left", alignSelf: "flex-start" }}>Sub-PAR :</Text>
         </View>
       </View>
     </Page>

@@ -160,15 +160,12 @@ const styles = StyleSheet.create({
   sigBlock: {
     flex: 1,
     textAlign: "center",
-    borderRightWidth: 0.8,
-    borderColor: "#000",
     padding: 8,
   },
 
   sigBlockLast: {
     flex: 1,
     textAlign: "center",
-    borderColor: "#000",
     padding: 8,
   },
 
@@ -424,6 +421,7 @@ const ITRDocument = ({
             </View>
             <Text style={styles.sigDateLabel}>DATE</Text>
           </View>
+          <Text style={{ fontSize: 8, fontWeight: "bold", marginTop: 8, textAlign: "left", alignSelf: "flex-start" }}>Sub-ICS :</Text>
         </View>
       </View>
     </Page>
@@ -567,3 +565,5 @@ export class ITRGenerator {
       .slice(-4)}`;
   }
 }
+
+export default ITRGenerator;
