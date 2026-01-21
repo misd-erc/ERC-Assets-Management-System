@@ -50,7 +50,7 @@ export async function fetchEmployeesDirectly(): Promise<Employee[]> {
     });
 
     const response = await fetch(
-      `${GRAPH_API_ENDPOINT}?$select=id,displayName,mail,jobTitle,employeeId`,
+      `${GRAPH_API_ENDPOINT}?$select=id,displayName,mail,jobTitle,employeeId,office,division`,
       {
         headers: {
           Authorization: `Bearer ${tokenResponse.accessToken}`,
@@ -98,7 +98,7 @@ export async function fetchEmployees(
     });
 
     const response = await fetch(
-      `${GRAPH_API_ENDPOINT}?$select=id,displayName,mail,jobTitle,employeeId`,
+      `${GRAPH_API_ENDPOINT}?$select=id,displayName,mail,jobTitle,employeeId,office,division`,
       {
         headers: {
           Authorization: `Bearer ${tokenResponse.accessToken}`,

@@ -264,6 +264,59 @@ export const getEmployeeById = async (employeeId: number): Promise<ApiResponse<A
   return response.data;
 };
 
+export interface EmployeeUpdatePayload {
+  employeeId: number;
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  suffixName: string | null;
+  employeeIdOriginal: string;
+  officeName: string | null;
+  divisionName: string | null;
+  employmentTypeName: string | null;
+  positionName: string | null;
+  isActive: boolean;
+}
+
+/**
+ * Batch update employees
+ * @param employees - Array of employee data to update
+ * @returns Promise with success message
+ */
+export const batchUpdateEmployees = async (employees: EmployeeUpdatePayload[]): Promise<ApiResponse<any>> => {
+  const systemUserId = localStorage.getItem('systemUserId') || '';
+  const sessionKey = localStorage.getItem('sessionToken') || '';
+
+  // Remove actionBySystemUserId and sessionKey from individual employees
+  const model = employees.map(emp => ({
+    employeeId: emp.employeeId,
+    firstName: emp.firstName,
+    middleName: emp.middleName,
+    lastName: emp.lastName,
+    suffixName: emp.suffixName,
+    employeeIdOriginal: emp.employeeIdOriginal,
+    officeName: emp.officeName,
+    divisionName: emp.divisionName,
+    employmentTypeName: emp.employmentTypeName,
+    positionName: emp.positionName,
+    isActive: emp.isActive
+  }));
+
+  // Create payload with actionBySystemUserId and sessionKey at top level
+  const payload = {
+    actionBySystemUserId: parseInt(systemUserId, 10),
+    sessionKey: sessionKey,
+    model
+  };
+
+  const response = await axiosInstance.post<ApiResponse<any>>(
+    '/Users/employees/edit',
+    payload
+  );
+
+  return response.data;
+};
+
 
 
 
