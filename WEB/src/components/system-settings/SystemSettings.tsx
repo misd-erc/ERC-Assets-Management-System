@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -10,8 +11,10 @@ import {
   Shield,
   Printer,
   Link,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
+import { fetchEmployeesDirectly } from '@/lib/graphApi';
 
 interface Integration {
   name: string;
@@ -20,6 +23,30 @@ interface Integration {
 }
 
 export function SystemSettings() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const handleUpdateEmployeeList = async () => {
+    setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const employeeList = await fetchEmployeesDirectly();
+      setEmployees(employeeList);
+      setSuccessMessage(`Successfully loaded ${employeeList.length} employees`);
+      console.log('Employees:', employeeList);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      setError(errorMessage);
+      console.error('Error fetching employees:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const integrations: Integration[] = [
     { name: 'Active Directory', status: 'Connected', type: 'Authentication' },
     { name: 'eNGAS', status: 'Connected', type: 'Budgeting' },
@@ -124,10 +151,73 @@ export function SystemSettings() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">External System Integrations</h3>
-                  <Button variant="outline" size="sm">
-                    Test All Connections
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      onClick={handleUpdateEmployeeList}
+                      disabled={isLoading}
+                      variant="default"
+                      size="sm"
+                      title="Update employee list from Microsoft Graph"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        'Update Employee List'
+                      )}
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Test All Connections
+                    </Button>
+                  </div>
                 </div>
+
+                {error && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-red-800">Error</p>
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  </div>
+                )}
+
+                {successMessage && (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm font-medium text-green-800">{successMessage}</p>
+                  </div>
+                )}
+
+                {employees.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium mb-4">Employee List ({employees.length})</h4>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-2 px-4 font-medium text-gray-700">Name</th>
+                            <th className="text-left py-2 px-4 font-medium text-gray-700">Email</th>
+                            <th className="text-left py-2 px-4 font-medium text-gray-700">Job Title</th>
+                            <th className="text-left py-2 px-4 font-medium text-gray-700">Employee ID</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {employees.map((employee) => (
+                            <tr key={employee.id} className="border-b hover:bg-gray-50">
+                              <td className="py-3 px-4">{employee.displayName}</td>
+                              <td className="py-3 px-4">{employee.mail || 'N/A'}</td>
+                              <td className="py-3 px-4">{employee.jobTitle || 'N/A'}</td>
+                              <td className="py-3 px-4">{employee.employeeId || 'N/A'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid gap-4">
                   {integrations.map((integration) => (
                     <div 
