@@ -6,6 +6,7 @@ using PortalDB.Services;
 using PortalTools.Composition;
 using PortalTools.Services;
 using PortalTools.Services.GetEditTools.ASSET.PTA;
+using PortalTools.Services.GetEditTools.ASSET.Supply;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
 using PortalTools.Services.GetEditTools.DBO.Office;
@@ -57,6 +58,8 @@ builder.Services.AddScoped<NotificationEditTools>();
 builder.Services.AddScoped<NotificationGetTools>();
 builder.Services.AddScoped<PTAEditTools>();
 builder.Services.AddScoped<PTAGetTools>();
+builder.Services.AddScoped<SupplyGetTools>();
+builder.Services.AddScoped<SupplyEditTools>();
 
 builder.Services.AddScoped<AuthTools>();
 builder.Services.AddScoped<ParserTools>();

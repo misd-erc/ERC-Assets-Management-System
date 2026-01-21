@@ -23,8 +23,8 @@ namespace PortalDB.Models.ResponseModels.Account
         public TblDivision? Division { get; set; }
         public TblEmploymentType? EmploymentType { get; set; }
         public TblPosition? Position { get; set; }
-        public bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 
 

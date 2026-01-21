@@ -16,7 +16,7 @@ namespace PortalDB.Models.QueryParams.Account
         [Required] public long EmploymentTypeId { get; set; }
         [Required] public long PositionId { get; set; }
         [Required] public long StatusId { get; set; }
-        [Required] public bool IsActive { get; set; }
+        [Required] public bool IsActive { get; set; } = true;
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;
     }

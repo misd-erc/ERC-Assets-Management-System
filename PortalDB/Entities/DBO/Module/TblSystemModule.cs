@@ -23,7 +23,7 @@ namespace PortalDB.Entities.DBO.Module
         public string? Acronym { get; set; } = string.Empty;
 
         [Column("SystemModuleIsActive")]
-        public bool IsActive { get; set; } = false;
+        public bool IsActive { get; set; } = true;
 
         [Column("SystemModuleIsDeleted")]
         public bool IsDeleted { get; set; } = false;
