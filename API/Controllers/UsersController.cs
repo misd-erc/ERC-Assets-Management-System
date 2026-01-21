@@ -10,6 +10,8 @@ using PortalCommon.Utilities;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Module;
 using PortalDB.Entities.DBO.Notification;
+using PortalDB.Entities.DBO.Office;
+using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Models.QueryParams.Account;
 using PortalDB.Models.QueryParams.OTP;
 using PortalDB.Models.QueryParams.Pagination;
@@ -882,6 +884,227 @@ namespace API.Controllers
                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
 
+        }
+
+        // POST api/users/employees/edit
+        [HttpPost("employees/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditEmployee([FromBody] EditEmployeeBatchQueryParams batchModel)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                if (batchModel?.Model == null || !batchModel.Model.Any())
+                {
+                    await transaction.RollbackAsync();
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.ValidationFailed("No employee records provided"));
+                }
+
+                var results = new List<object>();
+
+                foreach (var model in batchModel.Model)
+                {
+                    // Validate that EmployeeIdOriginal is not empty
+                    if (string.IsNullOrWhiteSpace(model.EmployeeIdOriginal))
+                    {
+                        results.Add(new { 
+                            error = true, 
+                            employeeIdOriginal = model.EmployeeIdOriginal, 
+                            message = "EmployeeIdOriginal is required" 
+                        });
+                        continue;
+                    }
+
+                    // Search for office by name (only if provided)
+                    TblOffice? office = null;
+                    if (!string.IsNullOrWhiteSpace(model.OfficeName))
+                    {
+                        office = await context.TblOffices
+                            .AsNoTracking()
+                            .Where(x => !x.IsDeleted && x.Name == model.OfficeName)
+                            .FirstOrDefaultAsync();
+
+                        if (office == null)
+                        {
+                            results.Add(new { 
+                                error = true, 
+                                employeeIdOriginal = model.EmployeeIdOriginal, 
+                                message = $"Office '{model.OfficeName}' not found" 
+                            });
+                            continue;
+                        }
+                    }
+
+                    // Search for division by name (only if provided)
+                    TblDivision? division = null;
+                    if (!string.IsNullOrWhiteSpace(model.DivisionName))
+                    {
+                        division = await context.TblDivisions
+                            .AsNoTracking()
+                            .Where(x => !x.IsDeleted && x.Name == model.DivisionName)
+                            .FirstOrDefaultAsync();
+
+                        if (division == null)
+                        {
+                            results.Add(new { 
+                                error = true, 
+                                employeeIdOriginal = model.EmployeeIdOriginal, 
+                                message = $"Division '{model.DivisionName}' not found" 
+                            });
+                            continue;
+                        }
+                    }
+
+                    // Search for employment type by name (if provided)
+                    TblEmploymentType? employmentType = null;
+                    if (!string.IsNullOrWhiteSpace(model.EmploymentTypeName))
+                    {
+                        employmentType = await context.TblEmploymentTypes
+                            .AsNoTracking()
+                            .Where(x => !x.IsDeleted && x.Name == model.EmploymentTypeName)
+                            .FirstOrDefaultAsync();
+
+                        if (employmentType == null)
+                        {
+                            results.Add(new { 
+                                error = true, 
+                                employeeIdOriginal = model.EmployeeIdOriginal, 
+                                message = $"Employment Type '{model.EmploymentTypeName}' not found" 
+                            });
+                            continue;
+                        }
+                    }
+
+                    // Search for position by name (if provided)
+                    TblPosition? position = null;
+                    if (!string.IsNullOrWhiteSpace(model.PositionName))
+                    {
+                        position = await context.TblPositions
+                            .AsNoTracking()
+                            .Where(x => !x.IsDeleted && x.Name == model.PositionName)
+                            .FirstOrDefaultAsync();
+
+                        if (position == null)
+                        {
+                            results.Add(new { 
+                                error = true, 
+                                employeeIdOriginal = model.EmployeeIdOriginal, 
+                                message = $"Position '{model.PositionName}' not found" 
+                            });
+                            continue;
+                        }
+                    }
+
+                    TblEmployee? existingEmployee = null;
+                    long employeeId = 0;
+                    bool isInsert = false;
+
+                    // Check if employee exists by EmployeeIdOriginal
+                    if (!string.IsNullOrWhiteSpace(model.EmployeeIdOriginal))
+                    {
+                        existingEmployee = await context.TblEmployees
+                            .Where(x => !x.IsDeleted && x.EmployeeIdOriginalEncrypted == EncryptionHelper.Encrypt(model.EmployeeIdOriginal))
+                            .FirstOrDefaultAsync();
+                    }
+
+                    if (existingEmployee != null)
+                    {
+                        // Update existing employee
+                        existingEmployee.FirstName = model.FirstName ?? existingEmployee.FirstName;
+                        existingEmployee.MiddleName = model.MiddleName ?? existingEmployee.MiddleName;
+                        existingEmployee.LastName = model.LastName ?? existingEmployee.LastName;
+                        existingEmployee.SuffixName = model.SuffixName ?? existingEmployee.SuffixName;
+                        existingEmployee.EmployeeIdOriginal = model.EmployeeIdOriginal ?? existingEmployee.EmployeeIdOriginal;
+                        
+                        if (office != null)
+                            existingEmployee.OfficeId = office.Id;
+                        if (division != null)
+                            existingEmployee.DivisionId = division.Id;
+                        
+                        existingEmployee.EmploymentTypeId = employmentType != null ? employmentType.Id : existingEmployee.EmploymentTypeId;
+                        existingEmployee.PositionId = position != null ? position.Id : existingEmployee.PositionId;
+                        existingEmployee.IsActive = model.IsActive;
+
+                        await context.TblEmployees.Where(x => x.Id == existingEmployee.Id)
+                            .ExecuteUpdateAsync(e => e
+                                .SetProperty(x => x.FirstNameEncrypted, existingEmployee.FirstNameEncrypted)
+                                .SetProperty(x => x.MiddleNameEncrypted, existingEmployee.MiddleNameEncrypted)
+                                .SetProperty(x => x.LastNameEncrypted, existingEmployee.LastNameEncrypted)
+                                .SetProperty(x => x.SuffixNameEncrypted, existingEmployee.SuffixNameEncrypted)
+                                .SetProperty(x => x.EmployeeIdOriginalEncrypted, existingEmployee.EmployeeIdOriginalEncrypted)
+                                .SetProperty(x => x.OfficeId, office != null ? office.Id : existingEmployee.OfficeId)
+                                .SetProperty(x => x.DivisionId, division != null ? division.Id : existingEmployee.DivisionId)
+                                .SetProperty(x => x.EmploymentTypeId, employmentType != null ? employmentType.Id : existingEmployee.EmploymentTypeId)
+                                .SetProperty(x => x.PositionId, position != null ? position.Id : existingEmployee.PositionId)
+                                .SetProperty(x => x.IsActive, model.IsActive));
+
+                        employeeId = existingEmployee.Id;
+                    }
+                    else
+                    {
+                        // Create new employee (only if office is provided)
+                        if (office == null)
+                        {
+                            results.Add(new { 
+                                error = true, 
+                                employeeIdOriginal = model.EmployeeIdOriginal, 
+                                message = "Office is required for new employee creation" 
+                            });
+                            continue;
+                        }
+
+                        var newEmployee = new TblEmployee
+                        {
+                            FirstName = model.FirstName,
+                            MiddleName = model.MiddleName,
+                            LastName = model.LastName,
+                            SuffixName = model.SuffixName,
+                            EmployeeIdOriginal = model.EmployeeIdOriginal,
+                            OfficeId = office.Id,
+                            DivisionId = division?.Id,
+                            EmploymentTypeId = employmentType?.Id,
+                            PositionId = position?.Id,
+                            IsActive = model.IsActive,
+                            CreatedAt = DateTime.UtcNow
+                        };
+
+                        await context.TblEmployees.AddAsync(newEmployee);
+                        await context.SaveChangesAsync();
+                        employeeId = newEmployee.Id;
+                        isInsert = true;
+                    }
+
+                    results.Add(new { 
+                        error = false, 
+                        employeeIdOriginal = model.EmployeeIdOriginal, 
+                        employeeId = employeeId,
+                        action = isInsert ? "created" : "updated",
+                        message = $"Employee record has been {(isInsert ? "created" : "updated")} successfully" 
+                    });
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Log activity
+                int successCount = results.Count(r => r.GetType().GetProperty("error")?.GetValue(r)?.Equals(false) ?? false);
+                await AuditTrailTool.LogActivityAsync(_options, $"Processed {successCount} employee records ({batchModel.Model.Count} total)", 
+                    actionBy: batchModel.ActionBySystemUserId);
+
+                return Ok(ApiResponse<object>.Ok(
+                    results,
+                    $"Batch processing completed: {successCount} successful, {results.Count - successCount} failed"
+                ));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
         }
 
         // POST api/users/otp/re-send
