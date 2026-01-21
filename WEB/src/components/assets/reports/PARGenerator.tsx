@@ -99,17 +99,27 @@ const styles = StyleSheet.create({
   // SIGNATURE SECTION
   sigRow: {
     flexDirection: "row",
-    gap: 0,
-    marginTop: 25,
+    borderTopWidth: 0.8,
+    borderBottomWidth: 0.8,
+    borderLeftWidth: 0.8,
+    borderRightWidth: 0.8,
+    borderColor: "#000",
+    minHeight: 100,
   },
 
   sigBlock: {
     flex: 1,
     textAlign: "center",
-    borderWidth: 1,
+    borderRightWidth: 0.8,
     borderColor: "#000",
     padding: 8,
-    marginHorizontal: -1,
+  },
+
+  sigBlockLast: {
+    flex: 1,
+    textAlign: "center",
+    borderColor: "#000",
+    padding: 8,
   },
 
   sigTitle: { fontSize: 10, marginBottom: 8, textAlign: "left" },
@@ -233,7 +243,7 @@ const PARDocument = ({
         </View>
 
         {/* ISSUED BY */}
-        <View style={styles.sigBlock}>
+        <View style={styles.sigBlockLast}>
           <Text style={styles.sigTitle}>Issued by:</Text>
           <Text style={styles.sigName}>CHERRY LYNN S. GONZALES</Text>
           <View style={styles.sigLine} />
