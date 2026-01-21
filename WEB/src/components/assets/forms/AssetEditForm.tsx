@@ -2,13 +2,13 @@
 import { Button } from '@/components/ui/button';
 import { Package, DollarSign, User, Plus, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Asset, UnifiedMovement, NormalizedEmployee, Part } from '@/types/asset/UnifiedAsset';
+import { Asset, UnifiedMovement, NormalizedEmployee, Part, FormAsset } from '@/types/asset/UnifiedAsset';
 import { getOffices } from '@/api/office-management/officeApi';
 import { getDivisions } from '@/api/office-management/divisionApi';
 import { VwOffice, VwDivision } from '@/types/office';
 import { useAuthStore } from '@/store/auth';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { getCategories, getLegends } from '@/api/inventoryApi';
+import { getCategories, getLegends } from '@/api/asset/inventoryApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { SharedAssetFields } from '@/components/assets/forms/SharedAssetFields';
@@ -25,11 +25,11 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
   const { systemUserId } = useAuthStore();
   const { userProfile } = useUserProfile();
 
-  const [formData, setFormData] = useState<Omit<Asset, 'id'>>({
+  const [formData, setFormData] = useState<FormAsset>({
     group: asset.group,
     propertyNumber: asset.propertyNumber || '',
-    categoryId: asset.categoryId || 0,
-    legendId: asset.legendId || 0,
+    categoryId: asset.category?.id || 0,
+    legendId: asset.legend?.id || 0,
     description: asset.description || '',
     brand: asset.brand || '',
     model: asset.model || '',
@@ -83,8 +83,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
       setFormData({
         group: asset.group,
         propertyNumber: asset.propertyNumber || '',
-        categoryId: asset.categoryId || 0,
-        legendId: asset.legendId || 0,
+        categoryId: asset.category?.id || 0,
+        legendId: asset.legend?.id || 0,
         description: asset.description || '',
         brand: asset.brand || '',
         model: asset.model || '',
@@ -161,23 +161,41 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         condition: movement.condition || 'Working',
       }));
 
-    const finalPayload = {
+    const finalPayload: Asset = {
       id: asset.id,
+      group: group as 'PPE' | 'SE',
       propertyNumber: formData.propertyNumber,
-      categoryId: formData.categoryId,
-      legendId: formData.legendId,
+      category: categories.find(c => c.id === formData.categoryId) ? {
+        id: formData.categoryId,
+        name: categories.find(c => c.id === formData.categoryId)?.name || '',
+        generalCode: '',
+        isActive: true,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+      } : asset.category,
+      legend: formData.legendId && legends.find(l => l.id === formData.legendId) ? {
+        id: formData.legendId,
+        name: legends.find(l => l.id === formData.legendId)?.name || '',
+        generalCode: '',
+        isActive: true,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+      } : null,
       description: formData.description,
-      brand: formData.brand,
-      model: formData.model,
-      serialNumber: formData.serialNumber,
+      brand: formData.brand || null,
+      model: formData.model || null,
+      serialNumber: formData.serialNumber || null,
+      parts: preparedParts,
       unitOfMeasurement: formData.unitOfMeasurement,
       unitValue: formData.unitValue,
       dateAcquired: formData.dateAcquired,
       estimatedUsefulLife: formData.estimatedUsefulLife,
       fiscalDate: formData.fiscalDate ?? new Date().toISOString().split('T')[0],
-      group: group as 'PPE' | 'SE',
-      parts: preparedParts,
       movements: preparedMovements,
+      condition: formData.condition,
+      isActive: asset.isActive,
+      isDeleted: asset.isDeleted,
+      createdAt: asset.createdAt,
     };
 
     try {

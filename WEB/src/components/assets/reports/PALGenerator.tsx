@@ -11,7 +11,7 @@ import {
 } from "@react-pdf/renderer";
 import { NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById } from "@/api/user-management/userApi";
-import { getEmployeeAssets } from "@/api/inventoryApi";
+import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -189,7 +189,7 @@ export class PALGenerator {
 
     const allRows: PALRow[] = [];
 
-    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
+    const employeeName = `${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''} ${employee.lastName}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
 
     // Fetch employee details to get position and office
     const empResp = await getEmployeeById(employee.id);
@@ -209,7 +209,7 @@ export class PALGenerator {
     // Process all assets (PPE and SE) in one list
     let itemNumber = 1;
     
-    ppeAssets.forEach((asset) => {
+    ppeAssets.forEach((asset: any) => {
       allRows.push({
         no: itemNumber++,
         description: asset.description ?? "",
@@ -219,7 +219,7 @@ export class PALGenerator {
       });
     });
 
-    seAssets.forEach((asset) => {
+    seAssets.forEach((asset: any) => {
       allRows.push({
         no: itemNumber++,
         description: asset.description ?? "",
@@ -254,7 +254,7 @@ export class PALGenerator {
 
     const allRows: PALRow[] = [];
 
-    const employeeName = `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
+    const employeeName = `${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''} ${employee.lastName}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
 
     // Fetch employee details to get position and office
     const empResp = await getEmployeeById(employee.id);
@@ -274,7 +274,7 @@ export class PALGenerator {
     // Process all assets (PPE and SE) in one list
     let itemNumber = 1;
     
-    ppeAssets.forEach((asset) => {
+    ppeAssets.forEach((asset: any) => {
       allRows.push({
         no: itemNumber++,
         description: asset.description ?? "",
@@ -284,7 +284,7 @@ export class PALGenerator {
       });
     });
 
-    seAssets.forEach((asset) => {
+    seAssets.forEach((asset: any) => {
       allRows.push({
         no: itemNumber++,
         description: asset.description ?? "",

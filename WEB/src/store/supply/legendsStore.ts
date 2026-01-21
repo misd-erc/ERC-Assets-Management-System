@@ -5,7 +5,8 @@ import {
   createLegend as apiCreateLegend,
   updateLegend as apiUpdateLegend,
   deleteLegend as apiDeleteLegend,
-} from '@/api/inventoryApi';
+} from '@/api/asset/inventoryApi';
+import { getAuthParams } from '@/utils/auth';
 import { toast } from 'sonner';
 
 /* =========================
@@ -232,11 +233,15 @@ export const useLegendsStore = create<LegendsState>()(
             return;
           }
 
-          const newLegend = await apiCreateLegend({
-            name: formData.name,
-            generalCode: formData.generalCode || undefined,
-            isActive: formData.isActive,
-          });
+          const { systemUserId, sessionKey } = getAuthParams();
+          const newLegend = await apiCreateLegend(
+            {
+              name: formData.name,
+              generalCode: formData.generalCode || undefined,
+            },
+            String(systemUserId),
+            sessionKey
+          );
 
           // Refetch legends from server to ensure list is up to date
           await get().fetchLegends();
@@ -279,11 +284,17 @@ export const useLegendsStore = create<LegendsState>()(
             return;
           }
 
-          const updatedLegend = await apiUpdateLegend(editingLegend.id, {
-            name: formData.name,
-            generalCode: formData.generalCode || undefined,
-            isActive: formData.isActive,
-          });
+          const { systemUserId, sessionKey } = getAuthParams();
+          const updatedLegend = await apiUpdateLegend(
+            editingLegend.id,
+            {
+              name: formData.name,
+              generalCode: formData.generalCode || undefined,
+              isActive: formData.isActive,
+            },
+            String(systemUserId),
+            sessionKey
+          );
 
           // Refetch legends from server to ensure list is up to date
           await get().fetchLegends();
@@ -321,7 +332,12 @@ export const useLegendsStore = create<LegendsState>()(
             return;
           }
 
-          await apiDeleteLegend(legendToDelete.id);
+          const { systemUserId, sessionKey } = getAuthParams();
+          await apiDeleteLegend(
+            legendToDelete.id,
+            String(systemUserId),
+            sessionKey
+          );
 
           set((state) => ({
             legends: state.legends.filter((legend) => legend.id !== legendToDelete.id),

@@ -86,7 +86,7 @@ export function ItemMovementsModal({
                   Category:
                 </span>
                 <p className="text-slate-900 dark:text-white mt-1">
-                  {item.category}
+                  {typeof item.category === 'object' && item.category ? item.category.name : item.category}
                 </p>
               </div>
               <div className="col-span-2">
@@ -110,7 +110,7 @@ export function ItemMovementsModal({
                   Current Condition:
                 </span>
                 <p className="text-slate-900 dark:text-white mt-1">
-                  {item.condition}
+                  {item.condition || 'N/A'}
                 </p>
               </div>
             </div>

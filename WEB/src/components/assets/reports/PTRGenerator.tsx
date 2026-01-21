@@ -10,8 +10,8 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
-import { ppeApi } from "@/api/ppe";
-import { seApi } from "@/api/se";
+import { ppeApi } from "@/api/asset/ppe";
+import { seApi } from "@/api/asset/se";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -230,6 +230,9 @@ const PTRDocument = ({
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
+      {/* APPENDIX */}
+      <Text style={{ position: "absolute", right: 20, top: 10, fontSize: 8, fontStyle: "italic" }}>Appendix 76</Text>
+
       {/* HEADER */}
       <View style={styles.headerContainer}>
         <Image src={logoSrc} style={styles.logo} />
@@ -247,12 +250,10 @@ const PTRDocument = ({
             Entity Name: ENERGY REGULATORY COMMISSION
           </Text>
           <Text style={{ marginTop: 4 }}>
-            From Accountable Officer: {fromEmployee.lastName},{" "}
-            {fromEmployee.firstName}
+            From Accountable Officer: {fromEmployee.firstName} {fromEmployee.middleName} {fromEmployee.lastName}
           </Text>
           <Text style={{ marginTop: 4 }}>
-            To Accountable Officer: {toEmployee.lastName},{" "}
-            {toEmployee.firstName}
+            To Accountable Officer: {toEmployee.firstName} {toEmployee.middleName} {toEmployee.lastName}
           </Text>
         </View>
 

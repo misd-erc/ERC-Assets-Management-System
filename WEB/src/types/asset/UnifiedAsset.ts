@@ -52,27 +52,31 @@ export interface Division {
 }
 
 export interface UnifiedMovement {
-  id: number | null;
+  id: number;
   ptaId: number;
   dateAssigned: string;
   ptrItrNumber: string;
   parIcsNumber: string;
   plantillaEmployeeId: number | null;
   nonPlantillaEmployeeId: number | null;
-  plantillaEmployeeIdOriginal?: string | null;
-  nonPlantillaEmployeeIdOriginal?: string | null;
+  plantillaEmployeeIdOriginal?: string;
+  nonPlantillaEmployeeIdOriginal?: string;
+  actualOfficeId?: number;
+  actualDivisionId?: number;
   employee?: Array<{
     id: number;
+    systemUser: any;
     firstName: string;
     middleName: string | null;
     lastName: string;
-    suffixName?: string | null;
-    employeeIdOriginal?: string | null;
-    employmentType?: { id: number; name: string } | null;
+    suffixName: string | null;
+    employeeIdOriginal: string;
+    employmentType?: { id: number; name: string; isActive: boolean; isDeleted: boolean; createdAt: string } | null;
     office: {
       id: number;
       name: string;
       acronym: string;
+      generalCode: string | null;
       isActive: boolean;
       isDeleted: boolean;
       createdAt: string;
@@ -86,9 +90,12 @@ export interface UnifiedMovement {
       isDeleted: boolean;
       createdAt: string;
     } | null;
+    position: any;
+    isActive: boolean;
+    createdAt: string;
   }>;
-  actualOfficeId?: number;
-  actualDivisionId?: number;
+  office?: any;
+  division?: any;
   condition: string;
   isActive: boolean;
   isDeleted: boolean;
@@ -99,25 +106,75 @@ export interface Asset {
   id: number;
   group: "PPE" | "SE";
   propertyNumber: string;
-
-  categoryId: number;   // number always
-  legendId: number;     // number always
-
-  category?: string;    // optional string from lookup
-  legend?: string;      // optional string from lookup
-
-  condition: string;
+  category: {
+    id: number;
+    name: string;
+    generalCode: string;
+    isActive: boolean;
+    isDeleted: boolean;
+    createdAt: string;
+  };
+  legend: {
+    id: number;
+    name: string;
+    generalCode: string;
+    isActive: boolean;
+    isDeleted: boolean;
+    createdAt: string;
+  } | null;
   description: string;
-  brand: string;
-  model: string;
-  serialNumber: string;
+  brand: string | null;
+  model: string | null;
+  serialNumber: string | null;
   parts: Part[];
   unitOfMeasurement: string;
   unitValue: number;
   dateAcquired: string;
+  movements: UnifiedMovement[];
   estimatedUsefulLife: number;
   fiscalDate: string;
+  condition?: string;
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt: string;
+}
+
+export interface FormAsset {
+  group: "PPE" | "SE";
+  propertyNumber: string;
+  categoryId: number;
+  legendId: number;
+  description: string;
+  brand: string | null;
+  model: string | null;
+  serialNumber: string | null;
+  parts: Part[];
+  unitOfMeasurement: string;
+  unitValue: number;
+  dateAcquired: string;
   movements: UnifiedMovement[];
+  estimatedUsefulLife: number;
+  fiscalDate: string;
+  condition?: string;
+  category?: {
+    id: number;
+    name: string;
+    generalCode: string;
+    isActive: boolean;
+    isDeleted: boolean;
+    createdAt: string;
+  };
+  legend?: {
+    id: number;
+    name: string;
+    generalCode: string;
+    isActive: boolean;
+    isDeleted: boolean;
+    createdAt: string;
+  } | null;
+  isActive?: boolean;
+  isDeleted?: boolean;
+  createdAt?: string;
 }
 
 export type AssetGroup = "PPE" | "SE";

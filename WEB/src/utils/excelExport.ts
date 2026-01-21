@@ -1,8 +1,8 @@
 import * as XLSX from 'xlsx';
 import { PPEAsset } from '@/types/asset/PPEAsset';
 import { SEAsset } from '@/types/supply/se';
-import { ppeApi } from '@/api/ppe';
-import { seApi } from '@/api/se';
+import { ppeApi } from '@/api/asset/ppe';
+import { seApi } from '@/api/asset/se';
 
 export interface ExportOptions {
   startDate?: string;
@@ -80,10 +80,12 @@ export class ExcelExportService {
   }
 
   private static mapPPEAssetToRow(asset: PPEAsset): Record<string, any> {
+    const latestMovement = asset.movements && asset.movements.length > 0 ? asset.movements[0] : null;
+    
     return {
       'Property Number': asset.propertyNumber,
-      'Category': typeof asset.category === 'object' && asset.category ? asset.category.name : asset.category,
-      'Legend': typeof asset.legend === 'object' && asset.legend ? asset.legend.name : asset.legend,
+      'Category': typeof asset.category === 'object' && asset.category ? asset.category.name : asset.category || '-',
+      'Legend': typeof asset.legend === 'string' ? asset.legend : '-',
       'Description': asset.description,
       'Brand': asset.brand,
       'Model': asset.model,
@@ -92,40 +94,39 @@ export class ExcelExportService {
       'Unit Value': asset.unitValue,
       'Date Acquired': asset.dateAcquired,
       'Estimated Useful Life': asset.estimatedUsefulLife,
-      'PAR/ITR Number': asset.parItrNumber,
-      'Plantilla Employee ID': asset.plantillaEmployeeId,
-      'Non-Plantilla Employee ID': asset.nonPlantillaEmployeeId,
-      'Actual Division': asset.actualDivision,
-      'Condition': asset.condition,
-      'Date Encoded': asset.dateEncoded,
+      'PTR/ITR Number': latestMovement?.ptrItrNumber || '',
+      'Plantilla Employee ID': latestMovement?.plantillaEmployeeIdOriginal || '',
+      'Non-Plantilla Employee ID': latestMovement?.nonPlantillaEmployeeIdOriginal || '',
+      'Actual Division': latestMovement?.employee?.[0]?.division?.name || '',
+      'Condition': latestMovement?.condition || asset.movements?.[0]?.condition || 'N/A',
+      'Date Encoded': asset.dateEncoded || asset.createdAt || '',
     };
   }
 
   private static mapSEAssetToRow(asset: SEAsset): Record<string, any> {
-    // Get current accountability block
-    const currentBlock = asset.accountabilityBlocks?.find(block => block.label === 'Current Holder');
+    // Get current movement (latest active one)
+    const currentMovement = asset.movements?.[0];
 
     return {
-      'Property Number': asset.se_property_number,
-      'Category': asset.category,
-      'Legend': asset.legend,
+      'Property Number': asset.propertyNumber,
+      'Category': asset.category?.name || '',
+      'Legend': asset.legend || '',
       'Description': asset.description,
       'Brand': asset.brand,
       'Model': asset.model,
-      'Serial Number': asset.serial_number,
-      'Parts/Accessories': asset.parts_accessories,
-      'Unit of Measurement': asset.unit_of_measurement,
-      'Unit Value': asset.unit_value,
-      'Date Acquired': asset.date_acquired,
-      'Warranty Status': asset.warranty_status,
-      'ITR/RRSP Number': currentBlock?.itr_rrsp_number || '',
-      'Plantilla Employee ID': currentBlock?.plantilla_employee_id || '',
-      'Non-Plantilla Employee ID': currentBlock?.non_plantilla_employee_id || '',
-      'Division/Section': currentBlock?.division_section || '',
-      'Condition': currentBlock?.condition || '',
-      'Date Issued/Returned': currentBlock?.date_issued_returned || '',
-      'Status': asset.status,
-      'Date Encoded': asset.dateEncoded,
+      'Serial Number': asset.serialNumber,
+      'Parts': (asset.parts && asset.parts.length > 0) ? 'Yes' : 'No',
+      'Unit of Measurement': asset.unitOfMeasurement,
+      'Unit Value': asset.unitValue,
+      'Date Acquired': asset.dateAcquired,
+      'Estimated Useful Life': asset.estimatedUsefulLife || 'N/A',
+      'Employee ID': currentMovement?.employee?.[0]?.employeeIdOriginal || '',
+      'Employee Name': currentMovement?.employee?.[0] ? `${currentMovement.employee[0].lastName}, ${currentMovement.employee[0].firstName}` : '',
+      'Office': currentMovement?.employee?.[0]?.office?.name || '',
+      'Division': currentMovement?.employee?.[0]?.division?.name || '',
+      'Condition': currentMovement?.condition || '',
+      'Date Assigned': currentMovement?.dateAssigned || '',
+      'Is Active': asset.isActive ? 'Yes' : 'No',
     };
   }
 

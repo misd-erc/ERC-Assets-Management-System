@@ -12,7 +12,7 @@ import {
 import { Asset, NormalizedEmployee, UnifiedMovement } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById, getEmployees } from "@/api/user-management/userApi";
 import { UnifiedAssetService } from "@/services/UnifiedAssetService";
-import { getEmployeeAssets } from "@/api/inventoryApi";
+import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -246,7 +246,7 @@ export class ICSGenerator {
         const empResp = await getEmployeeById(employeeId);
         if (empResp.success && empResp.data.length > 0) {
           const empData = empResp.data[0];
-          employeeName = `${empData.lastName}, ${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
           office = empData.office?.name || 'N/A';
         }

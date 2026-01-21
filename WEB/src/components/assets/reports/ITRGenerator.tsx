@@ -10,7 +10,7 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
-import { seApi } from "@/api/se";
+import { seApi } from "@/api/asset/se";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -246,12 +246,10 @@ const ITRDocument = ({
             Entity Name: ENERGY REGULATORY COMMISSION
           </Text>
           <Text style={{ marginTop: 4 }}>
-            From Accountable Officer: {fromEmployee.lastName},{" "}
-            {fromEmployee.firstName}
+            From Accountable Officer: {fromEmployee.firstName} {fromEmployee.middleName} {fromEmployee.lastName}
           </Text>
           <Text style={{ marginTop: 4 }}>
-            To Accountable Officer: {toEmployee.lastName},{" "}
-            {toEmployee.firstName}
+            To Accountable Officer: {toEmployee.firstName} {toEmployee.middleName} {toEmployee.lastName}
           </Text>
         </View>
 

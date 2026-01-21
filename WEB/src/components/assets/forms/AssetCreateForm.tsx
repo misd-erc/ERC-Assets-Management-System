@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Package, DollarSign, User, Plus, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Asset, UnifiedMovement, NormalizedEmployee, Part } from '@/types/asset/UnifiedAsset';
+import { Asset, UnifiedMovement, NormalizedEmployee, Part, FormAsset } from '@/types/asset/UnifiedAsset';
 import { getOffices } from '@/api/office-management/officeApi';
 import { getDivisions } from '@/api/office-management/divisionApi';
 import { VwOffice, VwDivision } from '@/types/office';
 import { useAuthStore } from '@/store/auth';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { getCategories, getLegends } from '@/api/inventoryApi';
+import { getCategories, getLegends } from '@/api/asset/inventoryApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { SharedAssetFields } from '@/components/assets/forms/SharedAssetFields';
@@ -23,7 +23,7 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
   const { systemUserId } = useAuthStore();
   const { userProfile } = useUserProfile();
 
-  const [formData, setFormData] = useState<Omit<Asset, 'id'>>({
+  const [formData, setFormData] = useState<FormAsset>({
     group: 'PPE',
     propertyNumber: '',
     categoryId: 0,
@@ -171,12 +171,51 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
     // Determine group based on unit value
     const group = formData.unitValue <= 49999 ? 'SE' : 'PPE';
 
+    // Convert category and legend IDs to objects
+    const selectedCategory = categories.find(c => c.id === formData.categoryId);
+    const selectedLegend = legends.find(l => l.id === formData.legendId);
+
     const submitData: Omit<Asset, 'id'> = {
-      ...formData,
       group,
-      // Keep asset.condition in sync with current holder's condition
+      propertyNumber: formData.propertyNumber,
+      category: selectedCategory ? {
+        id: selectedCategory.id,
+        name: selectedCategory.name,
+        generalCode: '',
+        isActive: true,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+      } : {
+        id: 0,
+        name: '',
+        generalCode: '',
+        isActive: true,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+      },
+      legend: selectedLegend ? {
+        id: selectedLegend.id,
+        name: selectedLegend.name,
+        generalCode: '',
+        isActive: true,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+      } : null,
+      description: formData.description,
+      brand: formData.brand || null,
+      model: formData.model || null,
+      serialNumber: formData.serialNumber || null,
+      parts: formData.parts,
+      unitOfMeasurement: formData.unitOfMeasurement,
+      unitValue: formData.unitValue,
+      dateAcquired: formData.dateAcquired,
+      estimatedUsefulLife: formData.estimatedUsefulLife,
+      fiscalDate: formData.fiscalDate,
       condition: accountabilityEntries[0]?.condition || formData.condition || 'Working',
       movements: accountabilityEntries,
+      isActive: true,
+      isDeleted: false,
+      createdAt: new Date().toISOString(),
     };
 
     onSubmit(submitData);

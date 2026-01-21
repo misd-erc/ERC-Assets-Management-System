@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
-import { getEmployeeAssets } from '@/api/inventoryApi';
+import { getEmployeeAssets } from '@/api/asset/inventoryApi';
 import { ITRGenerator } from './ITRGenerator';
 import { ReportPreviewModal } from './ReportPreviewModal';
 
@@ -399,47 +399,93 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              Generate ITR - Step {getStepNumber(currentStep)} of 6
-            </DialogTitle>
-          </DialogHeader>
+      {/* Hide the dialog when preview is open */}
+      {!showPreview && (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                Generate ITR - Step {getStepNumber(currentStep)} of 6
+              </DialogTitle>
+            </DialogHeader>
 
-          <div className="py-4">
-            {renderStepContent()}
+            <div className="py-4">
+              {renderStepContent()}
+            </div>
+
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                disabled={currentStep === 'from'}
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+
+              <Button
+                onClick={handleNext}
+                disabled={!canGoNext()}
+              >
+                {currentStep === 'preview' ? 'Generate ITR' : 'Next'}
+                <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Fullscreen Preview for ITR */}
+      {showPreview && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex flex-col items-center justify-center">
+          <div className="w-full max-w-6xl h-[90vh] flex flex-col bg-white rounded-lg shadow-xl relative">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <div className="flex items-center gap-2">
+                <ChevronRight className="size-5 text-teal-600" />
+                <span className="font-semibold text-lg text-slate-900">Preview Inventory Transfer Report (ITR)</span>
+              </div>
+              <button
+                className="ml-auto text-slate-500 hover:text-red-600 transition-colors"
+                onClick={() => setShowPreview(false)}
+                disabled={loadingPreview}
+                aria-label="Close Preview"
+              >
+                <ChevronLeft className="size-6" />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto">
+              {loadingPreview ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="flex flex-col items-center gap-4">
+                    <ChevronRight className="size-8 animate-spin text-teal-600" />
+                    <p className="text-muted-foreground">Generating preview...</p>
+                  </div>
+                </div>
+              ) : previewUrl ? (
+                <iframe
+                  src={previewUrl}
+                  className="w-full h-[70vh] border-none rounded-b-lg"
+                  title="ITR Preview"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground">No preview available</p>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2 px-6 py-4 border-t">
+              <Button variant="outline" onClick={() => setShowPreview(false)} disabled={loadingPreview}>
+                <ChevronLeft className="size-4 mr-2" />
+                Cancel
+              </Button>
+              <Button onClick={handleConfirm} disabled={loadingPreview || !previewUrl}>
+                <ChevronRight className="size-4 mr-2" />
+                Confirm Download
+              </Button>
+            </div>
           </div>
-
-          <div className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={handleBack}
-              disabled={currentStep === 'from'}
-            >
-              <ChevronLeft className="w-4 h-4 mr-2" />
-              Back
-            </Button>
-
-            <Button
-              onClick={handleNext}
-              disabled={!canGoNext()}
-            >
-              {currentStep === 'preview' ? 'Generate ITR' : 'Next'}
-              <ChevronRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <ReportPreviewModal
-        isOpen={showPreview}
-        pdfUrl={previewUrl}
-        reportType="ITR"
-        isLoading={loadingPreview}
-        onClose={() => setShowPreview(false)}
-        onConfirm={handleConfirm}
-      />
+        </div>
+      )}
     </>
   );
 }
