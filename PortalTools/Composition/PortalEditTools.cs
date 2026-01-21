@@ -1,4 +1,5 @@
 ﻿using PortalTools.Services.GetEditTools.ASSET.PTA;
+using PortalTools.Services.GetEditTools.ASSET.Supply;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
 using PortalTools.Services.GetEditTools.DBO.Office;
@@ -16,7 +17,8 @@ public class PortalEditTools : IPortalEditTools
         OfficeEditTools office,
         LogEditTools log,
         NotificationEditTools notification,
-        PTAEditTools pta
+        PTAEditTools pta,
+        SupplyEditTools supply
     )
     {
         Account = account;
@@ -24,6 +26,7 @@ public class PortalEditTools : IPortalEditTools
         Log = log;
         Notification = notification;
         PTA = pta;
+        Supply = supply;
     }
 
     public AccountEditTools Account { get; }
@@ -31,4 +34,5 @@ public class PortalEditTools : IPortalEditTools
     public LogEditTools Log { get; }
     public NotificationEditTools Notification { get; }
     public PTAEditTools PTA { get; }
+    public SupplyEditTools Supply { get; }
 }

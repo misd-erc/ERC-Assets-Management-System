@@ -13,6 +13,7 @@ using PortalDB.Entities.DBO.Notification;
 using PortalDB.Entities.DBO.Module;
 using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Seeds.DBO.Module;
+using PortalDB.Entities.ASSET.Supply;
 
 namespace PortalDB.Services
 {
@@ -63,6 +64,7 @@ namespace PortalDB.Services
         public DbSet<TblPTALegend> TblPTALegends { get; set; }
         public DbSet<TblPTAMovement> TblPTAMovements { get; set; }
         public DbSet<TblPTAPart> TblPTAParts { get; set; }
+        public DbSet<TblSupplyVendor> TblSupplyVendors { get; set; }
         #endregion
         #endregion
 
