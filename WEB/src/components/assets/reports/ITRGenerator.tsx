@@ -148,24 +148,45 @@ const styles = StyleSheet.create({
 
   sigRow: {
     flexDirection: "row",
-    gap: 0,
-    marginTop: 25,
+    borderTopWidth: 0.8,
+    borderBottomWidth: 0.8,
+    borderLeftWidth: 0.8,
+    borderRightWidth: 0.8,
+    borderColor: "#000",
+    minHeight: 100,
+    marginTop: 0,
   },
 
   sigBlock: {
     flex: 1,
     textAlign: "center",
-    borderWidth: 1,
+    borderRightWidth: 0.8,
     borderColor: "#000",
     padding: 8,
-    marginHorizontal: -1,
   },
 
-  sigTitle: { fontSize: 10, marginBottom: 6 },
+  sigBlockLast: {
+    flex: 1,
+    textAlign: "center",
+    borderColor: "#000",
+    padding: 8,
+  },
+
+  sigTitle: { fontSize: 10, marginBottom: 8, textAlign: "left" },
+
+  sigName: { fontSize: 10, textAlign: "center", marginBottom: 0, marginTop: -2 },
 
   sigNameAboveLine: {
     fontSize: 10,
+    marginBottom: 0,
+    textAlign: "center",
+    marginTop: 25,
+  },
+
+  sigTopText: {
+    fontSize: 9,
     marginBottom: 2,
+    marginTop: 8,
     textAlign: "center",
   },
 
@@ -174,9 +195,24 @@ const styles = StyleSheet.create({
     borderColor: "#000",
     height: 18,
     marginBottom: 4,
+    marginTop: -8,
   },
 
-  sigLabel: { fontSize: 8, marginBottom: 4 },
+  sigLabel: { fontSize: 8, marginBottom: 6, textAlign: "center", marginTop: -2 },
+
+  sigDateRow: {
+    marginTop: 8,
+  },
+
+  sigDateLabel: { fontSize: 8, textAlign: "center", marginTop: 2 },
+
+  sigDateLine: {
+    borderBottomWidth: 1,
+    borderColor: "#000",
+    height: 10,
+  },
+
+  sigDateValue: { fontSize: 8 },
 
   sigDesignation: { fontSize: 8 },
 });
@@ -345,10 +381,15 @@ const ITRDocument = ({
           <Text style={styles.sigNameAboveLine}>{APPROVED_BY.name}</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
-          <Text style={styles.sigDesignation}>
-            {APPROVED_BY.designation}
-          </Text>
-          <Text style={styles.sigDesignation}>{formatLongDate(transferDate)}</Text>
+          <Text style={[styles.sigTopText, { marginBottom: 4, marginTop: 6 }]}>{APPROVED_BY.designation}</Text>
+          <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 2 }]} />
+          <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 2 }]}>Position/Office</Text>
+          <View>
+            <View style={styles.sigDateRow}>
+              <View style={styles.sigDateLine} />
+            </View>
+            <Text style={styles.sigDateLabel}>DATE</Text>
+          </View>
         </View>
 
         <View style={styles.sigBlock}>
@@ -356,23 +397,33 @@ const ITRDocument = ({
           <Text style={styles.sigNameAboveLine}>{RELEASED_BY.name}</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
-          <Text style={styles.sigDesignation}>
-            {RELEASED_BY.designation}
-          </Text>
-          <Text style={styles.sigDesignation}>{formatLongDate(transferDate)}</Text>
+          <Text style={[styles.sigTopText, { marginBottom: 4, marginTop: 6 }]}>{RELEASED_BY.designation}</Text>
+          <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 2 }]} />
+          <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 2 }]}>Position/Office</Text>
+          <View>
+            <View style={styles.sigDateRow}>
+              <View style={styles.sigDateLine} />
+            </View>
+            <Text style={styles.sigDateLabel}>DATE</Text>
+          </View>
         </View>
 
-        <View style={styles.sigBlock}>
+        <View style={styles.sigBlockLast}>
           <Text style={styles.sigTitle}>Received by:</Text>
           <Text style={styles.sigNameAboveLine}>
             {toEmployee.lastName}, {toEmployee.firstName}
           </Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
-          <Text style={styles.sigDesignation}>
-            Accountable Officer
-          </Text>
-          <Text style={styles.sigDesignation}>{formatLongDate(transferDate)}</Text>
+          <Text style={[styles.sigTopText, { marginBottom: 4, marginTop: 6 }]}>Accountable Officer</Text>
+          <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 2 }]} />
+          <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 2 }]}>Position/Office</Text>
+          <View>
+            <View style={styles.sigDateRow}>
+              <View style={styles.sigDateLine} />
+            </View>
+            <Text style={styles.sigDateLabel}>DATE</Text>
+          </View>
         </View>
       </View>
     </Page>

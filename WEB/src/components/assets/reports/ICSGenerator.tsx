@@ -34,9 +34,10 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 0,
   },
 
-  logo: { width: 55, height: 55 },
+  logo: { width: 40, height: 40 },
 
   headerTitleBlock: {
     flex: 1,
@@ -44,15 +45,16 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "bold",
+    marginTop: 0,
   },
 
   blueRule: {
-    height: 4,
+    height: 2,
     backgroundColor: "#0A62C6",
-    marginTop: 8,
-    marginBottom: 10,
+    marginTop: 2,
+    marginBottom: 4,
   },
 
   info: {
@@ -61,6 +63,7 @@ const styles = StyleSheet.create({
 
   table: {
     marginTop: 12,
+    marginBottom: 0,
     borderWidth: 0.8,
     borderColor: "#000",
   },
@@ -89,39 +92,64 @@ const styles = StyleSheet.create({
   // SIGNATURES
   sigRow: {
     flexDirection: "row",
-    gap: 0,
-    marginTop: 24,
+    borderTopWidth: 0.8,
+    borderBottomWidth: 0.8,
+    borderLeftWidth: 0.8,
+    borderRightWidth: 0.8,
+    borderColor: "#000",
+    minHeight: 100,
+    marginTop: 0,
   },
 
   sigBlock: {
     flex: 1,
     textAlign: "center",
-    borderWidth: 1,
+    borderRightWidth: 0.8,
     borderColor: "#000",
     padding: 8,
-    marginHorizontal: -1,
   },
 
-  sigTitle: {
-    fontSize: 11,
-    marginBottom: 8,
+  sigBlockLast: {
+    flex: 1,
+    textAlign: "center",
+    borderColor: "#000",
+    padding: 8,
   },
 
-  sigName: { fontSize: 10 },
+  sigTitle: { fontSize: 10, marginBottom: 8, textAlign: "left" },
+
+  sigName: { fontSize: 10, textAlign: "center", marginBottom: 0, marginTop: -2 },
 
   sigTopText: {
     fontSize: 9,
-    marginTop: 8,
     marginBottom: 2,
+    marginTop: 8,
+    textAlign: "center",
   },
 
   sigLine: {
     borderBottomWidth: 1,
+    borderColor: "#000",
     height: 18,
     marginBottom: 4,
+    marginTop: -8,
   },
 
-  sigLabel: { fontSize: 8, marginBottom: 6 },
+  sigLabel: { fontSize: 8, marginBottom: 6, textAlign: "center", marginTop: -2 },
+
+  sigDateRow: {
+    marginTop: 8,
+  },
+
+  sigDateLine: {
+    borderBottomWidth: 1,
+    borderColor: "#000",
+    height: 10,
+  },
+
+  sigDateValue: { fontSize: 8 },
+
+  sigDateLabel: { fontSize: 8, textAlign: "center", marginTop: 2 },
 });
 
 interface ICSRow {
@@ -196,22 +224,41 @@ const ICSDocument = ({
         {/* RECEIVED BY */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Received by:</Text>
-          <Text style={styles.sigName}>{employeeName}</Text>
+          <Text style={[styles.sigName, { marginTop: 25, marginBottom: -8 }]}>{employeeName}</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature over Printed Name of End User</Text>
-          <Text style={styles.sigTopText}>{position} - {office}</Text>
-          <Text style={styles.sigTopText}>{today}</Text>
+          <Text style={[styles.sigTopText, { marginBottom: 0, marginTop: 6 }]}>{position} - {office}</Text>
+          <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 6 }]} />
+          <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 4 }]}>Position/Office</Text>
+          <View>
+            <View style={styles.sigDateRow}>
+              <View style={styles.sigDateLine} />
+            </View>
+            <Text style={styles.sigDateLabel}>DATE</Text>
+          </View>
         </View>
 
         {/* ISSUED BY */}
-        <View style={styles.sigBlock}>
+        <View style={styles.sigBlockLast}>
           <Text style={styles.sigTitle}>Issued by:</Text>
-          <Text style={styles.sigName}>CHERRY LYNN S. GONZALES</Text>
+          <Text style={[styles.sigName, { marginTop: 25, marginBottom: -8 }]}>CHERRY LYNN S. GONZALES</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature over Printed Name of Supply and Property Custodian</Text>
-          <Text style={styles.sigTopText}>Administrative Officer V – FAS, GSD</Text>
-          <Text style={styles.sigTopText}>{today}</Text>
+          <Text style={[styles.sigTopText, { marginBottom: 0, marginTop: 6 }]}>Administrative Officer V – FAS, GSD</Text>
+          <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 6 }]} />
+          <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 0 }]}>Position/Office</Text>
+          <View>
+            <View style={styles.sigDateRow}>
+              <View style={styles.sigDateLine} />
+            </View>
+            <Text style={styles.sigDateLabel}>DATE</Text>
+          </View>
         </View>
+      </View>
+
+      {/* SUB-ICS */}
+      <View style={{ flexDirection: "row", marginTop: 8 }}>
+        <Text style={{ fontSize: 8, fontWeight: "bold" }}>Sub-ICS :</Text>
       </View>
     </Page>
   </Document>
