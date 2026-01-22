@@ -8,6 +8,8 @@ import {
   Settings,
   FileSearch,
   Tag,
+  Archive,
+  FileText,
 } from "lucide-react";
 
 // CONFIG MAP FOR KNOWN MODULES
@@ -83,9 +85,25 @@ export const moduleConfig: Record<string, any> = {
     icon: FileSearch,
     implemented: true,
   },
+
+  SM: {
+    id: "supply-management",
+    title: "Supply Management",
+    group: "Asset Management",
+    icon: Archive,  
+    implemented: true, 
+  },
+
+  CM: {
+    id: "contract-management",
+    title: "Contract Management",
+    group: "Asset Management",
+    icon: FileText,  
+    implemented: true, 
+  },
+
 };
 
-// FALLBACK FOR UNKNOWN MODULES
 export const fallbackModule = {
   group: "Other Modules",
   icon: Package,
@@ -93,4 +111,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["UM", "RM", "OM", "AL", "SYSSET"];
+export const adminOverrideModules = ["DB", "SM", "CM", "UM", "RM", "OM", "AL", "SYSSET"];

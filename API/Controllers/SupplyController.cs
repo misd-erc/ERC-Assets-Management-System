@@ -150,7 +150,7 @@ namespace API.Controllers
 
         #region DELETE
         // DELETE api/supply/vendor/delete
-        [HttpDelete("pta/movement/delete/{supplyVendorId}")]
+        [HttpDelete("vendor/delete/{supplyVendorId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
         public async Task<IActionResult> DeleteSupplyVendor([FromQuery] SoloQueryParams model, [FromRoute] long supplyVendorId)
