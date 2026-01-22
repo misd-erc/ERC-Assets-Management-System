@@ -49,7 +49,8 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
 
                     await context.TblSupplyVendors.Where(u => u.Id == model.Id)
                         .ExecuteUpdateAsync(u => u
-                            .SetProperty(x => x.NameEncrypted, model.NameEncrypted));
+                            .SetProperty(x => x.NameEncrypted, model.NameEncrypted)
+                            .SetProperty(x => x.IsActive, model.IsActive));
                 }
 
                 return isInsert ? model.Id : existingSupplyVendor.Id;
