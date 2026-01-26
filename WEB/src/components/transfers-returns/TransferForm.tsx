@@ -174,6 +174,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           dateAssigned: new Date().toISOString(),
           ptrItrNumber: transferNumber,
           parIcsNumber: item?.parIcsNumber || '',
+          status: 'T',
           plantillaEmployeeId: plantillaId,
           nonPlantillaEmployeeId: nonPlantillaId,
           condition: item?.condition || 'Good',
