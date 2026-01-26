@@ -1102,7 +1102,9 @@ namespace API.Controllers
                     ActualOfficeId = model.ActualOfficeId,
                     ActualDivisionId = model.ActualDivisionId,
                     Remarks = model.Condition,
-                    IsActive = model.IsActive
+                    IsActive = model.IsActive,
+                    Status = model.Status
+
                 };
 
                 long ptaMovementId = await _editTools.PTA.EditTblPTAMovementAsync(ptaMovement, model.ActionBySystemUserId, context);

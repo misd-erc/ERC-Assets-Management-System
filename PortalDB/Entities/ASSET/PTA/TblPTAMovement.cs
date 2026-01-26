@@ -95,6 +95,9 @@ namespace PortalDB.Entities.ASSET.PTA
 
         [Column("PTAMovementCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+            [Column("PTAMovementStatus")]
+            public string? Status { get; set; }
 
 
     }

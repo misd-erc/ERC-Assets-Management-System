@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260126164424_AddStatusToPTAMovement")]
+    partial class AddStatusToPTAMovement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -482,154 +485,6 @@ namespace PortalDB.Migrations
                         });
 
                     b.ToView("vwPTAs", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyCategory", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyCategoryId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SupplyCategoryCreatedAt");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyCategoryIsActive");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyCategoryIsDeleted");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyCategoryName");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblSupplyCategories", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyItem", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyItemId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<long?>("CategoryId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyCategoryId");
-
-                    b.Property<string>("CodeEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyItemCode");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SupplyItemCreatedAt");
-
-                    b.Property<int?>("CurrentStock")
-                        .HasColumnType("int")
-                        .HasColumnName("SupplyItemCurrentStock");
-
-                    b.Property<string>("DescriptionEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyItemDescription");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyItemIsActive");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyItemIsDeleted");
-
-                    b.Property<int?>("ReorderPoint")
-                        .HasColumnType("int")
-                        .HasColumnName("SupplyItemReorderPoint");
-
-                    b.Property<long?>("StorageLocationId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyStorageLocationId");
-
-                    b.Property<long?>("UnitCost")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyItemUnitCost");
-
-                    b.Property<long?>("VendorId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyVendorId");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblSupplyItems", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyStorageLocation", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyStorageLocationId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SupplyStorageLocationCreatedAt");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyStorageLocationIsActive");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyStorageLocationIsDeleted");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyStorageLocationName");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblSupplyStorageLocations", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyUnit", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyUnitId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SupplyUnitCreatedAt");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyUnitIsActive");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyUnitIsDeleted");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyUnitName");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblSupplyUnits", "asset");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyVendor", b =>
