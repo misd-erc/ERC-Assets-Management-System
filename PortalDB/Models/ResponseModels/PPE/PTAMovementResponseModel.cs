@@ -19,10 +19,18 @@ namespace PortalDB.Models.ResponseModels.PTA
         public long? NonPlantillaEmployeeId { get; set; }
         public string PlantillaEmployeeIdOriginal { get; set; } = string.Empty;
         public string NonPlantillaEmployeeIdOriginal { get; set; } = string.Empty;
+        
+        // Separated from/to employees for clarity
+        public EmployeeResponseModel? FromEmployee { get; set; }
+        public EmployeeResponseModel? ToEmployee { get; set; }
+        
+        // Keep for backward compatibility
         public List<EmployeeResponseModel>? Employee { get; set; }
+        
         public TblOffice? Office { get; set; }
         public TblDivision? Division { get; set; }
         public string Condition { get; set; } = string.Empty;
+        public bool IsCurrent { get; set; }
         public bool IsActive { get; set; }
         public bool IsDeleted { get; set; }
         public DateTime? CreatedAt { get; set; }

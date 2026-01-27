@@ -119,6 +119,47 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     setSelectedItems(itemIds);
   };
 
+  // Check if employee is the current holder based on most recent dateAssigned in movements
+  const isCurrentHolder = (item: any, employeeId: number | undefined): boolean => {
+    if (!employeeId) return false;
+    
+    // If item has movements array, find the most recent one by dateAssigned
+    if (item.movements && Array.isArray(item.movements) && item.movements.length > 0) {
+      const sortedMovements = [...item.movements].sort((a, b) => {
+        const dateA = new Date(a.dateAssigned).getTime();
+        const dateB = new Date(b.dateAssigned).getTime();
+        return dateB - dateA; // Most recent first
+      });
+      
+      const latestMovement = sortedMovements[0];
+      // Check if the latest movement has this employee as the holder
+      const isPlantilla = latestMovement.plantillaEmployeeId === employeeId;
+      const isNonPlantilla = latestMovement.nonPlantillaEmployeeId === employeeId;
+      return isPlantilla || isNonPlantilla;
+    }
+    
+    // If no movements, assume employee loaded from getAssetsByEmployee is the holder
+    return true;
+  };
+
+  // Check if item has been transferred out (has a toEmployee assigned)
+  const hasBeenTransferredOut = (item: any): boolean => {
+    if (!item.movements || !Array.isArray(item.movements) || item.movements.length === 0) {
+      return false;
+    }
+    
+    // Get the most recent movement
+    const sortedMovements = [...item.movements].sort((a, b) => {
+      const dateA = new Date(a.dateAssigned).getTime();
+      const dateB = new Date(b.dateAssigned).getTime();
+      return dateB - dateA; // Most recent first
+    });
+    
+    const latestMovement = sortedMovements[0];
+    // Check if the latest movement has a toEmployee assigned
+    return !!latestMovement.toEmployee;
+  };
+
   // Navigate to next step
   const handleNextStep = () => {
     if (currentStep === 'from-employee') {
@@ -240,6 +281,33 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     return true;
   });
 
+  // Filter employees who are current holders for Step 3 (To Employee)
+  const getCurrentHolderEmployees = (type: 'plantilla' | 'nonplantilla') => {
+    const currentEmployeeId = fromEmployee?.id;
+    if (!currentEmployeeId) {
+      return type === 'plantilla' ? plantillaEmployees : nonPlantillaEmployees;
+    }
+
+    // Get all employees who currently hold any items of the selected group
+    const allEmployeeIds = new Set<number>();
+    selectedItems.forEach(itemId => {
+      const item = employeeItems.find(i => String(i.id) === itemId);
+      if (item && item.currentHolderId) {
+        allEmployeeIds.add(item.currentHolderId);
+      }
+    });
+
+    // Filter to only show employees who have items (current holders)
+    // Also exclude the from employee
+    const filteredList = (type === 'plantilla' ? plantillaEmployees : nonPlantillaEmployees)
+      .filter(e => e.id !== currentEmployeeId);
+
+    return filteredList;
+  };
+
+  const plantillaEmployeesForStep3 = getCurrentHolderEmployees('plantilla');
+  const nonPlantillaEmployeesForStep3 = getCurrentHolderEmployees('nonplantilla');
+
   const getStepNumber = () => {
     if (currentStep === 'from-employee') return 1;
     if (currentStep === 'select-items') return 2;
@@ -352,7 +420,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Select Items to Transfer</h3>
                   <p className="text-sm text-gray-600">
-                    {fromEmployee?.firstName} {fromEmployee?.lastName} has {employeeItems.length} item(s) available
+                    {fromEmployee?.firstName} {fromEmployee?.lastName} currently holds {employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length} item(s)
                   </p>
                   
                   {itemsLoading ? (
@@ -360,29 +428,32 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                       <Loader2 className="w-5 h-5 animate-spin mr-2" />
                       <span className="text-sm">Loading items...</span>
                     </div>
-                  ) : employeeItems.length === 0 ? (
+                  ) : employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length === 0 ? (
                     <div className="p-4 text-center text-gray-500 border rounded-lg">
-                      No items available for this employee
+                      No items currently held by this employee
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 p-2 border-b mb-2">
                         <Checkbox
-                          checked={selectedItems.length === employeeItems.length && employeeItems.length > 0}
+                          checked={selectedItems.length === employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length && employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length > 0}
                           onCheckedChange={(checked) => {
+                            const availableItems = employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id));
                             if (checked) {
-                              setSelectedItems(employeeItems.map(i => String(i.id)));
+                              setSelectedItems(availableItems.map(i => String(i.id)));
                             } else {
                               setSelectedItems([]);
                             }
                           }}
                         />
                         <span className="text-sm font-medium">
-                          Select All ({selectedItems.length}/{employeeItems.length})
+                          Select All ({selectedItems.length}/{employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length})
                         </span>
                       </div>
                       <div className="space-y-1">
-                        {employeeItems.map(item => (
+                        {employeeItems
+                          .filter(item => isCurrentHolder(item, fromEmployee?.id))
+                          .map(item => (
                           <div key={item.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
                             <Checkbox
                               checked={selectedItems.includes(String(item.id))}
@@ -418,7 +489,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                     <div className="space-y-2">
                       <Label>Plantilla Employee</Label>
                       <EmployeeSelector
-                        employees={plantillaEmployees}
+                        employees={plantillaEmployeesForStep3}
                         value={toPlantillaEmployee?.id || null}
                         onSelect={(empId) => {
                           if (!empId) {
@@ -442,7 +513,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                     <div className="space-y-2">
                       <Label>Non-Plantilla Employee</Label>
                       <EmployeeSelector
-                        employees={nonPlantillaEmployees}
+                        employees={nonPlantillaEmployeesForStep3}
                         value={toNonPlantillaEmployee?.id || null}
                         onSelect={(empId) => {
                           if (!empId) {

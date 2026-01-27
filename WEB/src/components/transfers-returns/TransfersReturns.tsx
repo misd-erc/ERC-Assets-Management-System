@@ -4,6 +4,7 @@ import { Button } from '../ui/button';
 import { Plus, ArrowRightLeft, RefreshCw, CheckCircle, Clock, Package } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { TransferForm } from './TransferForm';
+import { MovementsList } from './MovementsList';
 
 export function TransfersReturns() {
   const [ptrDialogOpen, setPtrDialogOpen] = useState(false);
@@ -122,6 +123,7 @@ export function TransfersReturns() {
                   </Button>
                 </div>
               </div>
+              <MovementsList transferType="PTR" />
             </TabsContent>
 
             {/* ITR Tab */}
@@ -142,6 +144,7 @@ export function TransfersReturns() {
                   </Button>
                 </div>
               </div>
+              <MovementsList transferType="ITR" />
             </TabsContent>
 
             {/* RRPE Tab */}
