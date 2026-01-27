@@ -134,13 +134,13 @@ const styles = StyleSheet.create({
   },
 });
 
-interface SESPIFilterModalProps {
+interface SEPropertyReportFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onGenerate: (date: Date) => void;
 }
 
-export function SESPIFilterModal({ isOpen, onClose, onGenerate }: SESPIFilterModalProps) {
+export function SEPropertyReportFilterModal({ isOpen, onClose, onGenerate }: SEPropertyReportFilterModalProps) {
   const [asOfDate, setAsOfDate] = useState('');
 
   const handleGenerate = () => {
@@ -155,7 +155,7 @@ export function SESPIFilterModal({ isOpen, onClose, onGenerate }: SESPIFilterMod
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Generate SESPI Report</DialogTitle>
+          <DialogTitle>Generate SE Property Report</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -179,7 +179,7 @@ export function SESPIFilterModal({ isOpen, onClose, onGenerate }: SESPIFilterMod
   );
 }
 
-export class SESPIExcelGenerator {
+export class SEPropertyReportGenerator {
   /** COLUMN WIDTHS — MUST TOTAL 100% */
   private static colWidth(i: number) {
     const cols = [
@@ -195,7 +195,7 @@ export class SESPIExcelGenerator {
     return TABLE_WIDTH * cols[i];
   }
 
-  static async generateSESPIPreview(asOfDate: Date): Promise<string> {
+  static async generatePreview(asOfDate: Date): Promise<string> {
     const seAssets = await PTAService.getAllForSE(asOfDate);
 
     const doc = this.buildDocument(seAssets);
@@ -249,7 +249,7 @@ export class SESPIExcelGenerator {
           <View style={styles.header}>
             <Text style={styles.annex}>Annex A.7</Text>
             <View style={styles.headerContent}>
-              <Text style={styles.title}>Registry SPI Semi-Expandable Property</Text>
+              <Text style={styles.title}>Report of Semi-Expandable Property Issued</Text>
             </View>
           </View>
 

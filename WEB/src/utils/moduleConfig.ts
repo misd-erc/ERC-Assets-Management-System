@@ -8,6 +8,7 @@ import {
   Settings,
   FileSearch,
   Tag,
+  ArrowRightLeft,
   Archive,
   FileText,
 } from "lucide-react";
@@ -84,6 +85,28 @@ export const moduleConfig: Record<string, any> = {
     group: "Administration",
     icon: FileSearch,
     implemented: true,
+  },
+
+  TR: {
+    id: "transfers-returns",
+    title: "Transfers & Returns",
+    group: "Asset Management",
+    icon: ArrowRightLeft,
+    implemented: true,
+    roleAccess: {
+      id: 9,
+      module: {
+        id: 7,
+        name: "Transfers & Returns",
+        acronym: "TR",
+        isActive: false,
+        isDeleted: false,
+        createdAt: "2025-12-18T10:05:42.7400252"
+      },
+      isActive: true,
+      isDeleted: false,
+      createdAt: "2026-01-22T16:36:33.5689528"
+    }
   },
 
   SM: {

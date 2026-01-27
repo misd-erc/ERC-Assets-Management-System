@@ -307,7 +307,7 @@ namespace API.Controllers
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
                                 FiscalDate = x.FiscalDate,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                                Movements = await movements.ToListAsync(),
+                                Movements = (await movements.ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                                 IsActive = x.IsActive,
                                 CreatedAt = x.CreatedAt
                             };
@@ -333,7 +333,7 @@ namespace API.Controllers
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
                                 FiscalDate = x.FiscalDate,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                                Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
+                                Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                                 IsActive = x.IsActive,
                                 CreatedAt = x.CreatedAt
                             };
@@ -478,7 +478,7 @@ namespace API.Controllers
                                 DateAcquired = x.DateAcquired,
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                                Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
+                                Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                                 IsActive = x.IsActive,
                                 CreatedAt = x.CreatedAt
                             };
@@ -593,7 +593,7 @@ namespace API.Controllers
                                 DateAcquired = x.DateAcquired,
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                                Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
+                                Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                                 IsActive = x.IsActive,
                                 CreatedAt = x.CreatedAt
                             };
@@ -699,7 +699,7 @@ namespace API.Controllers
                                 DateAcquired = x.DateAcquired,
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                                Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync(),
+                                Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                                 IsActive = x.IsActive,
                                 CreatedAt = x.CreatedAt
                             };
@@ -778,7 +778,7 @@ namespace API.Controllers
                     EstimatedUsefulLife = pta.EstimatedUsefulLife,
                     FiscalDate = pta.FiscalDate,
                     Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(pta.Id, context).ToListAsync(),
-                    Movements = await _getTools.PTA.GetTblPTAMovementsByPTAId(pta.Id, context).ToListAsync(),
+                    Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(pta.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                     IsActive = pta.IsActive,
                     CreatedAt = pta.CreatedAt
                 };
@@ -1079,6 +1079,375 @@ namespace API.Controllers
             }
         }
 
+        // GET api/inventory/pta/movement/list
+        [HttpGet("pta/movement/list")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetPTAMovements([FromQuery] PTAMovementListQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                IQueryable<TblPTAMovement> movements = _getTools.PTA.GetTblPTAMovements(context);
+
+                // Filter by PTA ID if provided
+                if (model.PTAId.HasValue && model.PTAId.Value != 0)
+                {
+                    movements = movements.Where(x => x.PTAId == model.PTAId.Value);
+                }
+
+                // Apply date range filters
+                if (model.StartDate.HasValue)
+                    movements = movements.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    movements = movements.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                // Load all movements and apply in-memory filters for encrypted fields
+                var allMovements = await movements
+                    .ToListAsync();
+                
+                allMovements = allMovements
+                    .OrderByDescending(x => x.DateAssigned)
+                    .ThenByDescending(x => x.CreatedAt)
+                    .ToList();
+
+                // Apply PTR/ITR Filter on in-memory data (since it's encrypted)
+                if (!string.IsNullOrWhiteSpace(model.PtrItrFilter))
+                {
+                    string filterValue = model.PtrItrFilter.Trim();
+                    
+                    if (filterValue.ToUpper() == "PTR")
+                    {
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().StartsWith("PTR")).ToList();
+                    }
+                    else if (filterValue.ToUpper() == "ITR")
+                    {
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().StartsWith("ITR")).ToList();
+                    }
+                    else
+                    {
+                        // Search for specific PTR/ITR number
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().Contains(filterValue.ToUpper())).ToList();
+                    }
+                }
+
+                // Apply PAR/ICS Filter on in-memory data (since it's encrypted)
+                if (!string.IsNullOrWhiteSpace(model.ParIcsFilter))
+                {
+                    string filterValue = model.ParIcsFilter.Trim();
+                    
+                    if (filterValue.ToUpper() == "PAR")
+                    {
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.PARICSNumber) && x.PARICSNumber.ToUpper().StartsWith("PAR")).ToList();
+                    }
+                    else if (filterValue.ToUpper() == "ICS")
+                    {
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.PARICSNumber) && x.PARICSNumber.ToUpper().StartsWith("ICS")).ToList();
+                    }
+                    else
+                    {
+                        // Search for specific PAR/ICS number
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.PARICSNumber) && x.PARICSNumber.ToUpper().Contains(filterValue.ToUpper())).ToList();
+                    }
+                }
+
+                // Calculate total count after filters
+                int totalCount = allMovements.Count();
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                // Apply pagination
+                var movementList = allMovements
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                // Enrich the movement list with employee details and PTA items
+                // Get ALL movements for each PTA to find previous holders (not just paginated ones)
+                var ptaIdsInPage = movementList
+                    .Where(x => x.PTAId.HasValue)
+                    .Select(x => x.PTAId.Value)
+                    .Distinct()
+                    .ToList();
+
+                var allMovementsForPtas = await _getTools.PTA.GetTblPTAMovements(context)
+                    .Where(x => ptaIdsInPage.Contains(x.PTAId.Value))
+                    .ToListAsync();
+
+                var movementsByPta = allMovementsForPtas
+                    .OrderBy(x => x.DateAssigned)
+                    .GroupBy(x => x.PTAId.Value)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                var enrichedMovements = new List<PTAMovementDetailResponseModel>();
+
+                foreach (var movement in movementList)
+                {
+                    var enrichedMovement = new PTAMovementDetailResponseModel
+                    {
+                        Id = movement.Id,
+                        PTAId = movement.PTAId,
+                        DateAssigned = movement.DateAssigned,
+                        PTRITRNumber = movement.PTRITRNumber,
+                        PARICSNumber = movement.PARICSNumber,
+                        Remarks = movement.Remarks,
+                        Status = movement.Status,
+                        IsActive = movement.IsActive,
+                        IsCurrent = movement.IsCurrent,
+                        IsDeleted = movement.IsDeleted,
+                        CreatedAt = movement.CreatedAt,
+                        Employee = new List<EmployeeMovementInfoModel>()
+                    };
+
+                    // Get the movement history for this asset to find the previous holder
+                    TblPTAMovement previousMovement = null;
+                    if (movement.PTAId.HasValue && movementsByPta.TryGetValue(movement.PTAId.Value, out var assetMovements))
+                    {
+                        var currentIndex = assetMovements.FindIndex(m => m.Id == movement.Id);
+                        if (currentIndex > 0)
+                        {
+                            previousMovement = assetMovements[currentIndex - 1];
+                        }
+                    }
+
+                    // Add FROM employee (Previous holder from previous movement)
+                    if (previousMovement != null)
+                    {
+                        long? previousHolderId = previousMovement.NonPlantillaEmployeeId ?? previousMovement.PlantillaEmployeeId;
+                        if (previousHolderId.HasValue)
+                        {
+                            var previousEmp = await _getTools.Account.GetTblEmployeeAsync(previousHolderId.Value, context);
+                            if (previousEmp != null)
+                            {
+                                var previousSystemUser = previousEmp.SystemUserId.HasValue ? 
+                                    await _getTools.Account.GetTblSystemUserAsync(previousEmp.SystemUserId.Value, context) : null;
+                                var previousPosition = (previousSystemUser?.PositionId ?? 0) > 0 ? 
+                                    await _getTools.Office.GetTblPositionAsync(previousSystemUser!.PositionId ?? 0, context) : null;
+                                    
+                                enrichedMovement.Employee.Add(new EmployeeMovementInfoModel
+                                {
+                                    Id = previousEmp.Id,
+                                    FullName = $"{previousEmp.FirstName} {previousEmp.MiddleName} {previousEmp.LastName}".Trim(),
+                                    EmployeeIdOriginal = previousMovement.NonPlantillaEmployeeIdOriginal ?? previousMovement.PlantillaEmployeeIdOriginal,
+                                    EmployeeType = previousMovement.NonPlantillaEmployeeId.HasValue ? "Non-Plantilla" : "Plantilla",
+                                    Position = previousPosition,
+                                    Office = previousMovement.ActualOfficeId.HasValue ? 
+                                        await _getTools.Office.GetTblOfficeAsync(previousMovement.ActualOfficeId.Value, context) : null,
+                                    Division = previousMovement.ActualDivisionId.HasValue ? 
+                                        await _getTools.Office.GetTblDivisionAsync(previousMovement.ActualDivisionId.Value, context) : null
+                                });
+                            }
+                        }
+                    }
+
+                    // Add TO employee (Current recipient - typically NonPlantilla, or Plantilla if no NonPlantilla)
+                    long? currentHolderId = movement.NonPlantillaEmployeeId ?? movement.PlantillaEmployeeId;
+                    if (currentHolderId.HasValue)
+                    {
+                        var currentEmp = await _getTools.Account.GetTblEmployeeAsync(currentHolderId.Value, context);
+                        if (currentEmp != null)
+                        {
+                            var currentSystemUser = currentEmp.SystemUserId.HasValue ? 
+                                await _getTools.Account.GetTblSystemUserAsync(currentEmp.SystemUserId.Value, context) : null;
+                            var currentPosition = (currentSystemUser?.PositionId ?? 0) > 0 ? 
+                                await _getTools.Office.GetTblPositionAsync(currentSystemUser!.PositionId ?? 0, context) : null;
+                                
+                            enrichedMovement.Employee.Add(new EmployeeMovementInfoModel
+                            {
+                                Id = currentEmp.Id,
+                                FullName = $"{currentEmp.FirstName} {currentEmp.MiddleName} {currentEmp.LastName}".Trim(),
+                                EmployeeIdOriginal = movement.NonPlantillaEmployeeIdOriginal ?? movement.PlantillaEmployeeIdOriginal,
+                                EmployeeType = movement.NonPlantillaEmployeeId.HasValue ? "Non-Plantilla" : "Plantilla",
+                                Position = currentPosition,
+                                Office = movement.ActualOfficeId.HasValue ? 
+                                    await _getTools.Office.GetTblOfficeAsync(movement.ActualOfficeId.Value, context) : null,
+                                Division = movement.ActualDivisionId.HasValue ? 
+                                    await _getTools.Office.GetTblDivisionAsync(movement.ActualDivisionId.Value, context) : null
+                            });
+                        }
+                    }
+
+                    // Get Office and Division
+                    if (movement.ActualOfficeId.HasValue)
+                        enrichedMovement.Office = await _getTools.Office.GetTblOfficeAsync(movement.ActualOfficeId.Value, context);
+
+                    if (movement.ActualDivisionId.HasValue)
+                        enrichedMovement.Division = await _getTools.Office.GetTblDivisionAsync(movement.ActualDivisionId.Value, context);
+
+                    // Get the PTA item details
+                    var pta = await _getTools.PTA.GetTblPTAAsync(movement.PTAId, context);
+                    if (pta != null)
+                    {
+                        var category = await _getTools.PTA.GetTblPTACategoryAsync(pta.CategoryId, context);
+                        enrichedMovement.Items = new List<PTAMovementItemModel>
+                        {
+                            new PTAMovementItemModel
+                            {
+                                Id = pta.Id,
+                                PropertyNumber = pta.PropertyNumber,
+                                Description = pta.Description,
+                                Brand = pta.Brand,
+                                Model = pta.Model,
+                                SerialNumber = pta.SerialNumber,
+                                Category = category?.Name,
+                                UnitOfMeasurement = pta.UnitOfMeasurement,
+                                UnitValue = pta.UnitValue,
+                                DateAcquired = pta.DateAcquired,
+                                Group = pta.Group
+                            }
+                        };
+                    }
+
+                    enrichedMovements.Add(enrichedMovement);
+                }
+
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed PTA Movements with filters", actionBy: model.ActionBySystemUserId);
+
+                return Ok(ApiResponse<PTAMovementDetailResponseModel>.OkPaginated(
+                    enrichedMovements,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "PTA Movements have been retrieved"
+                ));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // GET api/inventory/pta/movement/transfer-details
+        [HttpGet("pta/movement/transfer-details")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetPTATransferDetails([FromQuery] string transferNumber, [FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(transferNumber))
+                {
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Transfer number (PTR/ITR) is required"));
+                }
+
+                // Get all movements for the specific PTR/ITR number
+                var allMovements = await _getTools.PTA.GetTblPTAMovements(context)
+                    .Where(x => !x.IsDeleted && x.PTRITRNumber != null && x.PTRITRNumber.ToUpper().Contains(transferNumber.ToUpper()))
+                    .ToListAsync();
+
+                if (!allMovements.Any())
+                {
+                    return Ok(ApiResponse<object>.Ok(new
+                    {
+                        transferNumber = transferNumber,
+                        transferType = transferNumber.ToUpper().StartsWith("PTR") ? "PTR" : "ITR",
+                        movements = new List<object>(),
+                        totalItems = 0,
+                        totalMovements = 0
+                    }, "No movements found for this transfer number"));
+                }
+
+                // Get unique PTA IDs from all movements
+                var ptaIds = allMovements.Select(m => m.PTAId).Distinct().ToList();
+
+                // Fetch all PTAs with their details
+                var ptas = await context.TblPTAs
+                    .AsNoTracking()
+                    .Where(p => ptaIds.Contains(p.Id) && !p.IsDeleted)
+                    .ToListAsync();
+
+                // Build detailed response with movements and their items
+                var enrichedMovements = new List<object>();
+
+                foreach (var movement in allMovements.OrderByDescending(x => x.CreatedAt))
+                {
+                    var ptaMovementDetail = _getTools.PTA.GetTblPTAMovementsByPTAId(movement.PTAId, context)
+                        .Where(m => m.Id == movement.Id)
+                        .FirstOrDefault();
+
+                    if (ptaMovementDetail == null)
+                        continue;
+
+                    // Get the PTA item for this movement
+                    var pta = ptas.FirstOrDefault(p => p.Id == movement.PTAId);
+
+                    var ptaResponseModel = new PTAResponseModel();
+                    if (pta != null)
+                    {
+                        ptaResponseModel = new PTAResponseModel
+                        {
+                            Id = pta.Id,
+                            Group = pta.Group,
+                            PropertyNumber = pta.PropertyNumber,
+                            Category = await _getTools.PTA.GetTblPTACategoryAsync(pta.CategoryId, context),
+                            Legend = await _getTools.PTA.GetTblPTALegendAsync(pta.LegendId, context),
+                            Description = pta.Description,
+                            Brand = pta.Brand,
+                            Model = pta.Model,
+                            SerialNumber = pta.SerialNumber,
+                            UnitOfMeasurement = pta.UnitOfMeasurement,
+                            UnitValue = pta.UnitValue,
+                            DateAcquired = pta.DateAcquired,
+                            EstimatedUsefulLife = pta.EstimatedUsefulLife,
+                            FiscalDate = pta.FiscalDate,
+                            IsActive = pta.IsActive,
+                            CreatedAt = pta.CreatedAt
+                        };
+                    }
+
+                    enrichedMovements.Add(new
+                    {
+                        movementId = ptaMovementDetail.Id,
+                        ptaId = ptaMovementDetail.PTAId,
+                        dateAssigned = ptaMovementDetail.DateAssigned,
+                        ptritrNumber = ptaMovementDetail.PtrItrNumber,
+                        paricsNumber = ptaMovementDetail.ParIcsNumber,
+                        fromEmployee = ptaMovementDetail.FromEmployee,
+                        toEmployee = ptaMovementDetail.ToEmployee,
+                        office = ptaMovementDetail.Office,
+                        division = ptaMovementDetail.Division,
+                        condition = ptaMovementDetail.Condition,
+                        remarks = movement.Remarks,
+                        status = movement.Status,
+                        isActive = ptaMovementDetail.IsActive,
+                        items = new List<object> { new { ptaResponseModel.Id, ptaResponseModel.PropertyNumber, ptaResponseModel.Description, ptaResponseModel.Brand, ptaResponseModel.Model, ptaResponseModel.SerialNumber, ptaResponseModel.Category, ptaResponseModel.UnitOfMeasurement, ptaResponseModel.UnitValue, ptaResponseModel.DateAcquired, ptaResponseModel.Group } },
+                        createdAt = ptaMovementDetail.CreatedAt
+                    });
+                }
+
+                var response = new
+                {
+                    transferNumber = transferNumber,
+                    transferType = transferNumber.ToUpper().StartsWith("PTR") ? "PTR" : "ITR",
+                    movements = enrichedMovements,
+                    totalItems = ptas.Count,
+                    totalMovements = allMovements.Count,
+                    totalValue = ptas.Sum(p => p.UnitValue)
+                };
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed transfer details for {transferNumber}", actionBy: model.ActionBySystemUserId);
+
+                return Ok(ApiResponse<object>.Ok(response, $"Transfer details for {transferNumber} have been retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // POST api/inventory/pta/movement/edit
         [HttpPost("pta/movement/edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1102,7 +1471,9 @@ namespace API.Controllers
                     ActualOfficeId = model.ActualOfficeId,
                     ActualDivisionId = model.ActualDivisionId,
                     Remarks = model.Condition,
-                    IsActive = model.IsActive
+                    IsActive = model.IsActive,
+                    Status = model.Status
+
                 };
 
                 long ptaMovementId = await _editTools.PTA.EditTblPTAMovementAsync(ptaMovement, model.ActionBySystemUserId, context);

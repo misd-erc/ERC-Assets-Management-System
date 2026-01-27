@@ -16,6 +16,7 @@ import { SystemSettingsPage } from "@/pages/SystemSettingsPage";
 import SupplyManagement from "@/pages/SupplyManagement";
 import UCPage from "@/pages/UC";
 import ContractManagement from "@/pages/ContractManagement";
+import TransfersReturnsPage from "@/pages/TransfersReturnsPage";
 
 export default function MainLayout() {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -54,6 +55,9 @@ export default function MainLayout() {
 
       case "profile":
         return <MyProfile />;
+
+      case "transfers-returns":
+        return <TransfersReturnsPage />;
 
       default:
         return <UCPage />;

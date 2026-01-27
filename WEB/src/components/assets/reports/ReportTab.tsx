@@ -34,6 +34,7 @@ import { ICSGenerator } from './ICSGenerator';
 import { PALGenerator } from './PALGenerator';
 import { RPCPPEPdfGenerator } from './RPCPPEExcelGenerator';
 import { SESPIExcelGenerator, SESPIFilterModal } from './SESPIGenerator';
+import { SEPropertyReportGenerator, SEPropertyReportFilterModal } from './SEPropertyReportGenerator';
 import { PTRGenerationModal } from './PTRGenerationModal';
 import { ITRGenerationModal } from './ITRGenerationModal';
 import { toast } from 'sonner';
@@ -42,7 +43,7 @@ import { NumberInputModal } from './NumberInputModal';
 export function ReportTab() {
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<NormalizedEmployee | null>(null);
-  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | 'RPCPPE' | 'PAL' | 'PTR' | 'ITR' | null>(null);
+  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | 'SESPI-REPORT' | 'RPCPPE' | 'PAL' | 'PTR' | 'ITR' | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [rpcppeDate, setRpcppeDate] = useState<Date | null>(null);
@@ -59,6 +60,7 @@ export function ReportTab() {
   const [showPreview, setShowPreview] = useState(false);
   const [showRPCPPE, setShowRPCPPE] = useState(false);
   const [showSESPI, setShowSESPI] = useState(false);
+  const [showSEPropertyReport, setShowSEPropertyReport] = useState(false);
   const [showPTR, setShowPTR] = useState(false);
   const [showITR, setShowITR] = useState(false);
   const [showPAL, setShowPAL] = useState(false);
@@ -79,6 +81,7 @@ export function ReportTab() {
     setShowEmployeeModal(false);
     setShowRPCPPE(false);
     setShowSESPI(false);
+    setShowSEPropertyReport(false);
     setShowPTR(false);
     setShowITR(false);
     setShowPAL(false);
@@ -172,6 +175,9 @@ export function ReportTab() {
     if (selectedReport === 'SESPI') {
       await SESPIExcelGenerator.generate(sespiDate!);
       toast.success('Register SPI PDF generated');
+    } else if (selectedReport === 'SESPI-REPORT') {
+      await SEPropertyReportGenerator.generate(sespiDate!);
+      toast.success('Report of Semi-Expandable Property Issued PDF generated');
     } else if (selectedReport === 'RPCPPE') {
       try {
         const assets = await PTAService.getAllForRPCPPE(rpcppeDate!, rpcppeCategoryId);
@@ -266,6 +272,24 @@ export function ReportTab() {
     setShowSESPI(false);
   };
 
+  const handleSEPropertyReportGenerate = async (asOfDate: Date) => {
+    try {
+      setLoadingPreview(true);
+      const url = await SEPropertyReportGenerator.generatePreview(asOfDate);
+      setPreviewUrl(url);
+      setLoadingPreview(false);
+
+      setSespiDate(asOfDate);
+      setSelectedReport('SESPI-REPORT');
+      setShowPreview(true);
+    } catch (error) {
+      console.error('SE Property Report preview generation failed:', error);
+      toast.error('SE Property Report preview generation failed');
+    }
+
+    setShowSEPropertyReport(false);
+  };
+
   const reports = [
     {
       title: 'RPCPPE',
@@ -294,6 +318,20 @@ export function ReportTab() {
       icon: BookOpen,
       bgColor: 'bg-purple-600',
       action: () => setShowSESPI(true)
+    },
+    {
+      title: 'SE Property Issued',
+      subtitle: 'Report of Semi-Expandable Property Issued',
+      icon: FileBarChart,
+      bgColor: 'bg-pink-600',
+      action: () => setShowSEPropertyReport(true)
+    },
+    {
+      title: 'SE Property Issued',
+      subtitle: 'Report of Semi-Expandable Property Issued',
+      icon: FileBarChart,
+      bgColor: 'bg-pink-600',
+      action: () => setShowSEPropertyReport(true)
     },
     {
       title: 'ICS',
@@ -409,7 +447,8 @@ export function ReportTab() {
                   selectedReport === 'ITR' ? 'Inventory Transfer Report (ITR)' :
                   selectedReport === 'RPCPPE' ? 'Report on the Physical Count of Property, Plant and Equipment (RPCPPE)' :
                   selectedReport === 'PAL' ? 'Property Accountability List (PAL)' :
-                  selectedReport === 'SESPI' ? 'Report of Semi-Expandable Property Issued (SESPI)' :
+                  selectedReport === 'SESPI' ? 'Registry SPI Semi-Expandable Property (SESPI)' :
+                  selectedReport === 'SESPI-REPORT' ? 'Report of Semi-Expandable Property Issued' :
                   ''}
                 </span>
               </div>
@@ -478,6 +517,24 @@ export function ReportTab() {
         isOpen={showSESPI}
         onClose={() => setShowSESPI(false)}
         onGenerate={handleSESPIGenerate}
+      />
+
+      <SEPropertyReportFilterModal
+        isOpen={showSEPropertyReport}
+        onClose={() => setShowSEPropertyReport(false)}
+        onGenerate={handleSEPropertyReportGenerate}
+      />
+
+      <SEPropertyReportFilterModal
+        isOpen={showSEPropertyReport}
+        onClose={() => setShowSEPropertyReport(false)}
+        onGenerate={handleSEPropertyReportGenerate}
+      />
+
+      <SEPropertyReportFilterModal
+        isOpen={showSEPropertyReport}
+        onClose={() => setShowSEPropertyReport(false)}
+        onGenerate={handleSEPropertyReportGenerate}
       />
 
       <NumberInputModal
