@@ -7,3 +7,10 @@ export interface Contract {
   endDate: Date;
   value: number;
 }
+
+export interface Vendor {
+  id: number;
+  name: string;
+  isActive: boolean;
+  createdAt?: string;
+}

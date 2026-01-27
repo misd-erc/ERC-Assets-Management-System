@@ -13,7 +13,10 @@ import AuditLogs from "@/pages/AuditLogs";
 import CategoryManagementPage from "@/pages/CategoryManagementPage";
 import { MyProfile } from "@/components/profile/MyProfile";
 import { SystemSettingsPage } from "@/pages/SystemSettingsPage";
+import SupplyManagement from "@/pages/SupplyManagement";
 import UCPage from "@/pages/UC";
+import ContractManagement from "@/pages/ContractManagement";
+import TransfersReturnsPage from "@/pages/TransfersReturnsPage";
 
 export default function MainLayout() {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -25,6 +28,12 @@ export default function MainLayout() {
 
       case "ppe-se":
         return <PPESEPage />;
+
+      case "supply-management":
+        return <SupplyManagement />;
+
+      case "contract-management":
+        return <ContractManagement />;
 
       case "users-roles":
         return <UserManagement />;
@@ -46,6 +55,9 @@ export default function MainLayout() {
 
       case "profile":
         return <MyProfile />;
+
+      case "transfers-returns":
+        return <TransfersReturnsPage />;
 
       default:
         return <UCPage />;

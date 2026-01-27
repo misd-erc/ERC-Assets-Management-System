@@ -40,7 +40,6 @@ namespace API.Controllers
         }
 
         #region GET
-        // GET api/supply/vendor/all
         [HttpGet("vendor/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -110,10 +109,297 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+
+        [HttpGet("category/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSupplyCategories([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblSupplyCategory>? supplyCategories = await _getTools.Supply.GetTblSupplyCategories(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyCategories = supplyCategories.Where(x =>
+                        (x.Name ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    supplyCategories = supplyCategories.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    supplyCategories = supplyCategories.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = supplyCategories.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var supplyCategoriesList = supplyCategories
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var supplyCategoriesResponses = new List<SupplyCategoryResponseModel>();
+
+                foreach (var x in supplyCategoriesList)
+                {
+                    var supplyCategoryModel = new SupplyCategoryResponseModel
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    supplyCategoriesResponses.Add(supplyCategoryModel);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply Categories", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<SupplyCategoryResponseModel>.OkPaginated(
+                    supplyCategoriesResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Supply Categories have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("storage-location/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSupplyStorageLocations([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblSupplyStorageLocation>? supplyStorageLocations = await _getTools.Supply.GetTblSupplyStorageLocations(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyStorageLocations = supplyStorageLocations.Where(x =>
+                        (x.Name ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    supplyStorageLocations = supplyStorageLocations.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    supplyStorageLocations = supplyStorageLocations.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = supplyStorageLocations.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var supplyStorageLocationsList = supplyStorageLocations
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var supplyStorageLocationsResponses = new List<SupplyStorageLocationResponseModel>();
+
+                foreach (var x in supplyStorageLocationsList)
+                {
+                    var supplyStorageLocationModel = new SupplyStorageLocationResponseModel
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    supplyStorageLocationsResponses.Add(supplyStorageLocationModel);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply Storage Locations", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<SupplyStorageLocationResponseModel>.OkPaginated(
+                    supplyStorageLocationsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Supply Storage Locations have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("unit/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSupplyUnits([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblSupplyUnit>? supplyUnits = await _getTools.Supply.GetTblSupplyUnits(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyUnits = supplyUnits.Where(x =>
+                        (x.Name ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    supplyUnits = supplyUnits.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    supplyUnits = supplyUnits.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = supplyUnits.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var supplyUnitsList = supplyUnits
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var supplyUnitsResponses = new List<SupplyUnitResponseModel>();
+
+                foreach (var x in supplyUnitsList)
+                {
+                    var supplyUnitModel = new SupplyUnitResponseModel
+                    {
+                        Id = x.Id,
+                        Name = x.Name,
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    supplyUnitsResponses.Add(supplyUnitModel);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply Units", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<SupplyUnitResponseModel>.OkPaginated(
+                    supplyUnitsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Supply Units have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("item/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSupplyItems([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblSupplyItem>? supplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyItems = supplyItems.Where(x =>
+                        (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    supplyItems = supplyItems.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    supplyItems = supplyItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = supplyItems.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var supplyItemsList = supplyItems
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var supplyItemsResponses = new List<SupplyItemResponseModel>();
+
+                foreach (var x in supplyItemsList)
+                {
+                    var supplyUnitModel = new SupplyItemResponseModel
+                    {
+                        Id = x.Id,
+                        Code = x.Code,
+                        Category = await _getTools.Supply.GetTblSupplyCategoryAsync(x.CategoryId, context),
+                        Description = x.Description,
+                        CurrentStock = x.CurrentStock,
+                        UnitCost = x.UnitCost,
+                        ReorderPoint = x.ReorderPoint,
+                        StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(x.StorageLocationId, context),
+                        Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(x.VendorId, context),
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    supplyItemsResponses.Add(supplyUnitModel);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply Items", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<SupplyItemResponseModel>.OkPaginated(
+                    supplyItemsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Supply Items have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         #endregion
 
         #region POST
-        // POST api/supply/vendor/edit
         [HttpPost("vendor/edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -146,11 +432,109 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+
+        [HttpPost("category/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditSupplyCategory([FromBody] EditSupplyCategoryQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblSupplyCategory supplyCategory = new()
+                {
+                    Id = model.Id,
+                    Name = model.Name,
+                    IsActive = model.IsActive
+                };
+
+                long supplyCategoryId = await _editTools.Supply.EditTblSupplyCategoryAsync(supplyCategory, model.ActionBySystemUserId, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { SupplyCategoryId = supplyCategoryId }, $"Supply Category has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("storage-location/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditSupplyStorageLocation([FromBody] EditSupplyStorageLocationQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblSupplyStorageLocation supplyStorageLocation = new()
+                {
+                    Id = model.Id,
+                    Name = model.Name,
+                    IsActive = model.IsActive
+                };
+
+                long supplyStorageLocationId = await _editTools.Supply.EditTblSupplyStorageLocationAsync(supplyStorageLocation, model.ActionBySystemUserId, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { SupplyStorageLocationId = supplyStorageLocationId }, $"Supply Storage Location has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("unit/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditSupplyUnit([FromBody] EditSupplyUnitQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblSupplyUnit supplyUnit = new()
+                {
+                    Id = model.Id,
+                    Name = model.Name,
+                    IsActive = model.IsActive
+                };
+
+                long supplyUnitId = await _editTools.Supply.EditTblSupplyUnitAsync(supplyUnit, model.ActionBySystemUserId, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { SupplyUnitId = supplyUnitId }, $"Supply Unit has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         #endregion
 
         #region DELETE
-        // DELETE api/supply/vendor/delete
-        [HttpDelete("pta/movement/delete/{supplyVendorId}")]
+        [HttpDelete("vendor/delete/{supplyVendorId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
         public async Task<IActionResult> DeleteSupplyVendor([FromQuery] SoloQueryParams model, [FromRoute] long supplyVendorId)
@@ -169,6 +553,122 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok($"Supply Vendor has been deleted"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpDelete("category/delete/{supplyCategoryId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteSupplyCategory([FromQuery] SoloQueryParams model, [FromRoute] long supplyCategoryId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _editTools.Supply.DeleteTblSupplyCategoryAsync(supplyCategoryId, model.ActionBySystemUserId, context);
+
+                if (!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this Supply Category, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Supply Category has been deleted"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpDelete("item/delete/{supplyItemId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteSupplyItem([FromQuery] SoloQueryParams model, [FromRoute] long supplyItemId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _editTools.Supply.DeleteTblSupplyItemAsync(supplyItemId, model.ActionBySystemUserId, context);
+
+                if (!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this Supply Item, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Supply Item has been deleted"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpDelete("storage-location/delete/{supplyStorageLocationId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteSupplyStorageLocation([FromQuery] SoloQueryParams model, [FromRoute] long supplyStorageLocationId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _editTools.Supply.DeleteTblSupplyStorageLocationAsync(supplyStorageLocationId, model.ActionBySystemUserId, context);
+
+                if (!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this Supply Storage Location, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Supply Storage Location has been deleted"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpDelete("unit/delete/{supplyUnitId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteSupplyUnit([FromQuery] SoloQueryParams model, [FromRoute] long supplyUnitId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _editTools.Supply.DeleteTblSupplyUnitAsync(supplyUnitId, model.ActionBySystemUserId, context);
+
+                if (!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this Supply Unit, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Supply Unit has been deleted"));
 
             }
             catch (Exception ex)

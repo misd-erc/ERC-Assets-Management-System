@@ -16,8 +16,10 @@ export const SupplyManagement: React.FC = () => {
     <div className="p-6 pt-20 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Supply Management</h1>
-          <p className="text-gray-600">Manage inventory, track supplies, and handle RIS requests</p>
+          <h1 className="text-2xl font-semibold text-gray-900">Supply Management</h1>
+          <p className="text-muted-foreground">
+            Manage inventory, track supplies, and handle RIS requests
+          </p>
         </div>
       </div>
 

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260122122956_NewSupplyTbls")]
+    partial class NewSupplyTbls
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -194,10 +197,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("PTAMovementIsActive");
 
-                    b.Property<bool>("IsCurrent")
-                        .HasColumnType("bit")
-                        .HasColumnName("PTAMovementIsCurrent");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit")
                         .HasColumnName("PTAMovementIsDeleted");
@@ -233,10 +232,6 @@ namespace PortalDB.Migrations
                     b.Property<string>("RemarksEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("PTAMovementRemarks");
-
-                    b.Property<string>("Status")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAMovementStatus");
 
                     b.HasKey("Id");
 
