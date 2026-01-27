@@ -61,7 +61,6 @@ namespace API.Controllers
 
         #region GET
 
-        // GET api/inventory/pta/category/all
         [HttpGet("pta/category/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -160,7 +159,6 @@ namespace API.Controllers
             }
         }
 
-        // GET api/inventory/pta/legend/all
         [HttpGet("pta/legend/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -220,7 +218,6 @@ namespace API.Controllers
             }
         }
 
-        // GET api/inventory/pta/se-ppe/all
         [HttpGet("pta/se-ppe/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -751,7 +748,6 @@ namespace API.Controllers
             }
         }
 
-        // GET api/inventory/pta/se-ppe/all
         [HttpGet("pta/se-ppe/all/{ptaId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1001,7 +997,6 @@ namespace API.Controllers
             }
         }
 
-        // POST api/inventory/pta/se-ppe/edit
         [HttpPost("pta/se-ppe/edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1049,7 +1044,6 @@ namespace API.Controllers
             }
         }
 
-        // POST api/inventory/pta/part/edit
         [HttpPost("pta/part/edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1085,7 +1079,6 @@ namespace API.Controllers
             }
         }
 
-        // POST api/inventory/pta/movement/edit
         [HttpPost("pta/movement/edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1127,7 +1120,6 @@ namespace API.Controllers
             }
         }
 
-        // POST api/inventory/pta/category/edit
         [HttpPost("pta/category/edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1162,7 +1154,6 @@ namespace API.Controllers
             }
         }
 
-        // POST api/inventory/pta/legend/edit
         [HttpPost("pta/legend/edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1198,7 +1189,6 @@ namespace API.Controllers
         #endregion
 
         #region DELETE
-        // DELETE api/inventory/pta/delete
         [HttpDelete("pta/delete/{ptaId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1228,7 +1218,6 @@ namespace API.Controllers
             }
         }
 
-        // DELETE api/inventory/pta/part/delete
         [HttpDelete("pta/part/delete/{ptaPartId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1258,7 +1247,6 @@ namespace API.Controllers
             }
         }
 
-        // DELETE api/inventory/pta/movement/delete
         [HttpDelete("pta/movement/delete/{ptaPartId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1288,7 +1276,6 @@ namespace API.Controllers
             }
         }
 
-        // DELETE api/inventory/pta/category/delete
         [HttpDelete("pta/category/delete/{ptaCategoryId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1318,7 +1305,6 @@ namespace API.Controllers
             }
         }
 
-        // DELETE api/inventory/pta/legend/delete
         [HttpDelete("pta/legend/delete/{ptaLegendId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
