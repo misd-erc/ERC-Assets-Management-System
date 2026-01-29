@@ -1,4 +1,5 @@
-﻿using PortalDB.Entities.ASSET.Supply;
+﻿using PortalDB.Entities.ASSET.PTA;
+using PortalDB.Entities.ASSET.Supply;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -11,7 +12,7 @@ namespace PortalDB.Models.ResponseModels.Supply
 
         public long Id { get; set; }
         public string Code { get; set; } = string.Empty;
-        public TblSupplyCategory? Category { get; set; }
+        public TblPTACategory? Category { get; set; }
         public string Description { get; set; } = string.Empty;
         public int? CurrentStock { get; set; }
         public long? UnitCost { get; set; }

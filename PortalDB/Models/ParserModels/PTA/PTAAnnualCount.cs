@@ -15,5 +15,6 @@ namespace PortalDB.Models.ParserModels.PTA
         public string NonPlantillaEmployeeId { get; set; } = string.Empty;
         public string ActualOfficeAndDivision { get; set; } = string.Empty;
         public string Condition { get; set; } = string.Empty;
+        public string? Status { get; set; }
     }
 }

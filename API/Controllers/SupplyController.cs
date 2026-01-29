@@ -110,76 +110,6 @@ namespace API.Controllers
             }
         }
 
-        [HttpGet("category/all")]
-        [ValidateSessionToken]
-        [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllSupplyCategories([FromQuery] PaginationGenericQueryParams model)
-        {
-            await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
-
-            try
-            {
-
-                IEnumerable<TblSupplyCategory>? supplyCategories = await _getTools.Supply.GetTblSupplyCategories(context).ToListAsync();
-
-                if (!string.IsNullOrWhiteSpace(model.SearchString))
-                {
-                    string searchLower = model.SearchString.ToLower();
-                    supplyCategories = supplyCategories.Where(x =>
-                        (x.Name ?? "").ToLowerInvariant().Contains(searchLower));
-                }
-
-                if (model.StartDate.HasValue)
-                    supplyCategories = supplyCategories.Where(x => x.CreatedAt >= model.StartDate.Value);
-
-                if (model.EndDate.HasValue)
-                    supplyCategories = supplyCategories.Where(x => x.CreatedAt <= model.EndDate.Value);
-
-                int totalCount = supplyCategories.Count();
-
-                int skip = (model.PageNumber - 1) * model.PageSize;
-
-                var supplyCategoriesList = supplyCategories
-                    .OrderByDescending(x => x.CreatedAt)
-                    .Skip(skip)
-                    .Take(model.PageSize)
-                    .ToList();
-
-                var supplyCategoriesResponses = new List<SupplyCategoryResponseModel>();
-
-                foreach (var x in supplyCategoriesList)
-                {
-                    var supplyCategoryModel = new SupplyCategoryResponseModel
-                    {
-                        Id = x.Id,
-                        Name = x.Name,
-                        IsActive = x.IsActive,
-                        CreatedAt = x.CreatedAt
-                    };
-                    supplyCategoriesResponses.Add(supplyCategoryModel);
-                }
-
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply Categories", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<SupplyCategoryResponseModel>.OkPaginated(
-                    supplyCategoriesResponses,
-                    model.PageNumber,
-                    model.PageSize,
-                    totalCount,
-                    "Supply Categories have been retrieved"
-                ));
-
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
-                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-            }
-        }
-
         [HttpGet("storage-location/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -365,7 +295,7 @@ namespace API.Controllers
                     {
                         Id = x.Id,
                         Code = x.Code,
-                        Category = await _getTools.Supply.GetTblSupplyCategoryAsync(x.CategoryId, context),
+                        Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
                         Description = x.Description,
                         CurrentStock = x.CurrentStock,
                         UnitCost = x.UnitCost,
@@ -423,39 +353,6 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok(new { SupplyVendorId = supplyVendorId }, $"Supply Vendor has been {(model.Id == 0 ? "added" : "updated")}"));
-
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
-                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-            }
-        }
-
-        [HttpPost("category/edit")]
-        [ValidateSessionToken]
-        [ValidateModelRequiredFields]
-        public async Task<IActionResult> EditSupplyCategory([FromBody] EditSupplyCategoryQueryParams model)
-        {
-            await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
-
-            try
-            {
-
-                TblSupplyCategory supplyCategory = new()
-                {
-                    Id = model.Id,
-                    Name = model.Name,
-                    IsActive = model.IsActive
-                };
-
-                long supplyCategoryId = await _editTools.Supply.EditTblSupplyCategoryAsync(supplyCategory, model.ActionBySystemUserId, context);
-
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(new { SupplyCategoryId = supplyCategoryId }, $"Supply Category has been {(model.Id == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
@@ -531,6 +428,46 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+
+        [HttpPost("item/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditSupplyItem([FromBody] EditSupplyItemQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblSupplyItem supplyItem = new()
+                {
+                    Id = model.Id,
+                    Code = model.Code,
+                    CategoryId = model.CategoryId,
+                    Description = model.Description,
+                    CurrentStock = model.CurrentStock,
+                    UnitCost = model.UnitCost,
+                    ReorderPoint = model.ReorderPoint,
+                    StorageLocationId = model.StorageLocationId,
+                    VendorId = model.VendorId,
+                    IsActive = model.IsActive
+                };
+
+                long supplyItemId = await _editTools.Supply.EditTblSupplyItemAsync(supplyItem, model.ActionBySystemUserId, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { SupplyItemId = supplyItemId }, $"Supply Item has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         #endregion
 
         #region DELETE
@@ -553,35 +490,6 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok($"Supply Vendor has been deleted"));
-
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
-                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-            }
-        }
-
-        [HttpDelete("category/delete/{supplyCategoryId}")]
-        [ValidateSessionToken]
-        [ValidateModelRequiredFields]
-        public async Task<IActionResult> DeleteSupplyCategory([FromQuery] SoloQueryParams model, [FromRoute] long supplyCategoryId)
-        {
-            await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
-
-            try
-            {
-
-                bool isDeleted = await _editTools.Supply.DeleteTblSupplyCategoryAsync(supplyCategoryId, model.ActionBySystemUserId, context);
-
-                if (!isDeleted)
-                    return Ok(ApiResponse<object>.Ok($"Unable to delete this Supply Category, try again later"));
-
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok($"Supply Category has been deleted"));
 
             }
             catch (Exception ex)

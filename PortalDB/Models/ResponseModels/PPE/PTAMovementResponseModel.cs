@@ -20,10 +20,6 @@ namespace PortalDB.Models.ResponseModels.PTA
         public string PlantillaEmployeeIdOriginal { get; set; } = string.Empty;
         public string NonPlantillaEmployeeIdOriginal { get; set; } = string.Empty;
         
-        // Separated from/to employees for clarity
-        public EmployeeResponseModel? FromEmployee { get; set; }
-        public EmployeeResponseModel? ToEmployee { get; set; }
-        
         // Keep for backward compatibility
         public List<EmployeeResponseModel>? Employee { get; set; }
         

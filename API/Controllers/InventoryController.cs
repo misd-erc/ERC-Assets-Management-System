@@ -897,7 +897,12 @@ namespace API.Controllers
                         await _editTools.PTA.EditTblPTAPartAsync(newPart, model.ActionBySystemUserId, context, true);
                     }
 
-                    foreach (PTAAnnualCount movement in item?.AnnualCount ?? Enumerable.Empty<PTAAnnualCount>())
+                    // Collect all movements for this item to determine which is current
+                    var movementsForItem = item?.AnnualCount ?? Enumerable.Empty<PTAAnnualCount>();
+                    var movementList = new List<(PTAAnnualCount movement, TblPTAMovement tbpMovement)>();
+
+                    // First pass: prepare all movements
+                    foreach (PTAAnnualCount movement in movementsForItem)
                     {
 
                         long? officeId = null;
@@ -960,6 +965,17 @@ namespace API.Controllers
                             }
                         }
 
+                        // Determine movement status: use from Excel if provided, otherwise default to New
+                        string movementStatus = !string.IsNullOrWhiteSpace(movement.Status) 
+                            ? movement.Status 
+                            : PortalCommon.Constants.PTAMovementConstants.NEW;
+
+                        // Skip movements with no employee assigned
+                        if (plantillaEmployeeId == null && nonPlantillaEmployeeId == null)
+                        {
+                            continue;
+                        }
+
                         TblPTAMovement newMovement = new()
                         {
                             PTAId = ppeId,
@@ -972,10 +988,34 @@ namespace API.Controllers
                             NonPlantillaEmployeeIdOriginal = movement.NonPlantillaEmployeeId,
                             ActualOfficeId = officeId,
                             ActualDivisionId = divisionId,
-                            Remarks = movement.Condition
+                            Remarks = movement.Condition,
+                            Status = movementStatus,
+                            IsCurrent = false // Will be set correctly based on DateAssigned
                         };
 
-                        await _editTools.PTA.EditTblPTAMovementAsync(newMovement, model.ActionBySystemUserId, context, true);
+                        movementList.Add((movement, newMovement));
+                    }
+
+                    // Second pass: determine which movement is current
+                    if (movementList.Any())
+                    {
+                        // Sort movements by DateAssigned in DESCENDING order (latest first)
+                        var sortedMovements = movementList
+                            .OrderByDescending(m => m.tbpMovement.DateAssigned ?? DateTime.MinValue)
+                            .ToList();
+
+                        // Mark the first (latest) as current, all others as not current
+                        for (int i = 0; i < sortedMovements.Count; i++)
+                        {
+                            // Only the first movement (latest) is current
+                            sortedMovements[i].tbpMovement.IsCurrent = (i == 0);
+                        }
+
+                        // Save all valid movements
+                        foreach (var (movement, tbpMovement) in sortedMovements)
+                        {
+                            await _editTools.PTA.EditTblPTAMovementAsync(tbpMovement, model.ActionBySystemUserId, context, true);
+                        }
                     }
 
                 }
@@ -989,11 +1029,15 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
-
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
-                return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request. Please check the template format."));
-
+                
+                // Return more specific error message
+                string errorMessage = ex.Message ?? "An error occurred while processing your request. Please check the template format.";
+                if (ex.InnerException != null)
+                    errorMessage = ex.InnerException.Message ?? errorMessage;
+                
+                return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, errorMessage));
             }
         }
 
@@ -1410,8 +1454,6 @@ namespace API.Controllers
                         dateAssigned = ptaMovementDetail.DateAssigned,
                         ptritrNumber = ptaMovementDetail.PtrItrNumber,
                         paricsNumber = ptaMovementDetail.ParIcsNumber,
-                        fromEmployee = ptaMovementDetail.FromEmployee,
-                        toEmployee = ptaMovementDetail.ToEmployee,
                         office = ptaMovementDetail.Office,
                         division = ptaMovementDetail.Division,
                         condition = ptaMovementDetail.Condition,
@@ -1472,7 +1514,8 @@ namespace API.Controllers
                     ActualDivisionId = model.ActualDivisionId,
                     Remarks = model.Condition,
                     IsActive = model.IsActive,
-                    Status = model.Status
+                    Status = model.Status,
+                    IsCurrent = model.IsCurrent
 
                 };
 

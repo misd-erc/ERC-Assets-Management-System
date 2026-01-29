@@ -156,7 +156,8 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
       "Non-Plantilla Employee ID",
       "Office/Division",
       "Condition",
-      "Date Assigned (YYYY-MM-DD)"
+      "Date Assigned (YYYY-MM-DD)",
+      "Status"
     ];
 
     //
