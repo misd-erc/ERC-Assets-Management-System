@@ -153,7 +153,8 @@ namespace PortalTools.Services
             while (movementStart + 6 < headerRow.Length)
             {
                 var block = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                for (int i = 0; i < 7; i++)
+                // Check 8 columns to account for optional Status column
+                for (int i = 0; i < 8 && (movementStart + i) < headerRow.Length; i++)
                 {
                     var header = headerRow[movementStart + i].Trim();
                     if (!string.IsNullOrWhiteSpace(header))
@@ -167,14 +168,14 @@ namespace PortalTools.Services
                     break;
                 }
 
-                movementStart += 7;
+                movementStart += 8; // Increment by 8 to account for optional Status
             }
 
             if (!hasValidMovementBlock)
             {
                 throw new InvalidDataException(
                     "Invalid PTA template: Movement columns detected but incorrectly formatted. " +
-                    $"Expected complete blocks of: {string.Join(" | ", RequiredMovementColumns)}. " +
+                    $"Expected complete blocks of: {string.Join(" | ", RequiredMovementColumns)} [+ optional Status]. " +
                     "Either remove movement columns entirely or ensure they follow the official template exactly.");
             }
         }
@@ -251,10 +252,11 @@ namespace PortalTools.Services
                         PlantillaEmployeeId = GetCell(dataRow, col + 3),
                         NonPlantillaEmployeeId = GetCell(dataRow, col + 4),
                         ActualOfficeAndDivision = GetCell(dataRow, col + 5),
-                        Condition = GetCell(dataRow, col + 6)
+                        Condition = GetCell(dataRow, col + 6),
+                        Status = GetCell(dataRow, col + 7) // Optional Status column
                     };
                     movements.Add(movement);
-                    col += 7;
+                    col += 8; // Increment by 8 to account for optional Status column
                 }
 
                 item.AnnualCount = movements.Count > 0 ? movements : null;

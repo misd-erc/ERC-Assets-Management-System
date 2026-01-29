@@ -91,7 +91,7 @@ namespace PortalDB.Entities.ASSET.PTA
         public bool IsActive { get; set; } = true;
 
         [Column("PTAMovementIsCurrent")]
-        public bool IsCurrent { get; set; } = false;
+        public bool IsCurrent { get; set; }
 
         [Column("PTAMovementIsDeleted")]
         public bool IsDeleted { get; set; } = false;

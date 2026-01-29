@@ -66,56 +66,6 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                         PlantillaEmployeeIdOriginal = temp.movement.PlantillaEmployeeIdOriginal ?? string.Empty,
                         NonPlantillaEmployeeIdOriginal = temp.movement.NonPlantillaEmployeeIdOriginal ?? string.Empty,
                         
-                        // FROM Employee (Plantilla Employee - previous holder)
-                        FromEmployee = temp.movement.PlantillaEmployeeId != null && temp.movement.PlantillaEmployeeId != 0
-                            ? context.TblEmployees
-                                .Where(e => e.Id == temp.movement.PlantillaEmployeeId)
-                                .Select(e => new EmployeeResponseModel
-                                {
-                                    Id = e.Id,
-                                    SystemUser = e.SystemUserId.HasValue
-                                        ? context.TblSystemUsers.FirstOrDefault(u => u.Id == e.SystemUserId.Value)
-                                        : null,
-                                    FirstName = e.FirstName,
-                                    MiddleName = e.MiddleName,
-                                    LastName = e.LastName,
-                                    SuffixName = e.SuffixName,
-                                    EmployeeIdOriginal = e.EmployeeIdOriginal,
-                                    Office = e.OfficeId.HasValue ? context.TblOffices.FirstOrDefault(o => o.Id == e.OfficeId) : null,
-                                    Division = e.DivisionId.HasValue ? context.TblDivisions.FirstOrDefault(d => d.Id == e.DivisionId) : null,
-                                    EmploymentType = e.EmploymentTypeId.HasValue ? context.TblEmploymentTypes.FirstOrDefault(et => et.Id == e.EmploymentTypeId) : null,
-                                    Position = e.PositionId.HasValue ? context.TblPositions.FirstOrDefault(p => p.Id == e.PositionId) : null,
-                                    IsActive = e.IsActive,
-                                    CreatedAt = e.CreatedAt
-                                })
-                                .FirstOrDefault()
-                            : null,
-                        
-                        // TO Employee (Non-Plantilla Employee - current holder/recipient)
-                        ToEmployee = temp.movement.NonPlantillaEmployeeId != null && temp.movement.NonPlantillaEmployeeId != 0
-                            ? context.TblEmployees
-                                .Where(e => e.Id == temp.movement.NonPlantillaEmployeeId)
-                                .Select(e => new EmployeeResponseModel
-                                {
-                                    Id = e.Id,
-                                    SystemUser = e.SystemUserId.HasValue
-                                        ? context.TblSystemUsers.FirstOrDefault(u => u.Id == e.SystemUserId.Value)
-                                        : null,
-                                    FirstName = e.FirstName,
-                                    MiddleName = e.MiddleName,
-                                    LastName = e.LastName,
-                                    SuffixName = e.SuffixName,
-                                    EmployeeIdOriginal = e.EmployeeIdOriginal,
-                                    Office = e.OfficeId.HasValue ? context.TblOffices.FirstOrDefault(o => o.Id == e.OfficeId) : null,
-                                    Division = e.DivisionId.HasValue ? context.TblDivisions.FirstOrDefault(d => d.Id == e.DivisionId) : null,
-                                    EmploymentType = e.EmploymentTypeId.HasValue ? context.TblEmploymentTypes.FirstOrDefault(et => et.Id == e.EmploymentTypeId) : null,
-                                    Position = e.PositionId.HasValue ? context.TblPositions.FirstOrDefault(p => p.Id == e.PositionId) : null,
-                                    IsActive = e.IsActive,
-                                    CreatedAt = e.CreatedAt
-                                })
-                                .FirstOrDefault()
-                            : null,
-                        
                         // Backward compatibility - include both employees
                         Employee = context.TblEmployees
                                 .Where(e => (temp.movement.NonPlantillaEmployeeId != null && e.Id == temp.movement.NonPlantillaEmployeeId) || (temp.movement.PlantillaEmployeeId != null && e.Id == temp.movement.PlantillaEmployeeId))
@@ -189,6 +139,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                         Division = actualDivision,
 
                         Condition = temp.movement.Remarks ?? string.Empty,
+                        IsCurrent = temp.movement.IsCurrent,
                         IsActive = temp.movement.IsActive,
                         IsDeleted = temp.movement.IsDeleted,
                         CreatedAt = temp.movement.CreatedAt

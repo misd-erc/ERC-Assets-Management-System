@@ -119,11 +119,11 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     setSelectedItems(itemIds);
   };
 
-  // Check if employee is the current holder based on most recent dateAssigned in movements
+  // Check if item is currently held by employee based on IsCurrent flag
   const isCurrentHolder = (item: any, employeeId: number | undefined): boolean => {
     if (!employeeId) return false;
     
-    // If item has movements array, find the most recent one by dateAssigned
+    // If item has movements array, find the most recent one and check isCurrent flag
     if (item.movements && Array.isArray(item.movements) && item.movements.length > 0) {
       const sortedMovements = [...item.movements].sort((a, b) => {
         const dateA = new Date(a.dateAssigned).getTime();
@@ -132,14 +132,16 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       });
       
       const latestMovement = sortedMovements[0];
-      // Check if the latest movement has this employee as the holder
-      const isPlantilla = latestMovement.plantillaEmployeeId === employeeId;
-      const isNonPlantilla = latestMovement.nonPlantillaEmployeeId === employeeId;
-      return isPlantilla || isNonPlantilla;
+      // Check if the latest movement has isCurrent flag set to true
+      if (latestMovement.isCurrent === true) {
+        // Also verify the employee is the holder
+        const isPlantilla = latestMovement.plantillaEmployeeId === employeeId;
+        const isNonPlantilla = latestMovement.nonPlantillaEmployeeId === employeeId;
+        return isPlantilla || isNonPlantilla;
+      }
     }
     
-    // If no movements, assume employee loaded from getAssetsByEmployee is the holder
-    return true;
+    return false;
   };
 
   // Check if item has been transferred out (has a toEmployee assigned)
@@ -207,8 +209,6 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       // Create movement records for each selected item
       const movements = selectedItems.map(itemId => {
         const item = employeeItems.find(i => String(i.id) === itemId);
-        const plantillaId = toPlantillaEmployee?.id || 0;
-        const nonPlantillaId = toNonPlantillaEmployee?.id || 0;
         return {
           id: 0,
           ptaId: parseInt(itemId),
@@ -216,17 +216,42 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           ptrItrNumber: transferNumber,
           parIcsNumber: item?.parIcsNumber || '',
           status: 'T',
-          plantillaEmployeeId: plantillaId,
-          nonPlantillaEmployeeId: nonPlantillaId,
+          plantillaEmployeeId: toPlantillaEmployee?.id || null,
+          nonPlantillaEmployeeId: toNonPlantillaEmployee?.id || null,
           condition: item?.condition || 'Good',
           actualOfficeId: recipient?.office?.id || 0,
           actualDivisionId: recipient?.division?.id || 0,
           isActive: true,
-          model: item?.model || '',
+          isCurrent: true, // New movement is current
         };
       });
 
-      // Submit all movements
+      // Get the previous movements to mark as not current
+      const previousMovements = selectedItems.map(itemId => {
+        const item = employeeItems.find(i => String(i.id) === itemId);
+        if (item?.movements && Array.isArray(item.movements) && item.movements.length > 0) {
+          const sortedMovements = [...item.movements].sort((a, b) => {
+            const dateA = new Date(a.dateAssigned).getTime();
+            const dateB = new Date(b.dateAssigned).getTime();
+            return dateB - dateA;
+          });
+          const latestMovement = sortedMovements[0];
+          return {
+            ...latestMovement,
+            plantillaEmployeeId: latestMovement.plantillaEmployeeId || null,
+            nonPlantillaEmployeeId: latestMovement.nonPlantillaEmployeeId || null,
+            isCurrent: false, // Mark previous as not current
+          };
+        }
+        return null;
+      }).filter(m => m !== null);
+
+      // Submit all previous movements updates
+      for (const movement of previousMovements) {
+        await editMovement(movement);
+      }
+
+      // Submit all new movements
       for (const movement of movements) {
         await editMovement(movement);
       }
