@@ -179,8 +179,17 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
 
                 if (isInsert)
                 {
-                    await context.TblPTAMovements.AddAsync(model);
-                    await context.SaveChangesAsync();
+                    // Store the IsCurrent value before adding, as it might get overridden
+                    bool isCurrent = model.IsCurrent;
+                    
+                    var addedEntity = await context.TblPTAMovements.AddAsync(model);
+                    
+                    // Ensure IsCurrent is set correctly on the tracked entity
+                    addedEntity.Entity.IsCurrent = isCurrent;
+                    
+                    // Only save immediately if not in batch mode
+                    if (!isBatch)
+                        await context.SaveChangesAsync();
                 }
                 else
                 {
@@ -204,6 +213,8 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                             .SetProperty(x => x.ActualOfficeId, model.ActualOfficeId)
                             .SetProperty(x => x.ActualDivisionId, model.ActualDivisionId)
                             .SetProperty(x => x.RemarksEncrypted, model.RemarksEncrypted)
+                            .SetProperty(x => x.Status, model.Status)
+                            .SetProperty(x => x.IsCurrent, model.IsCurrent)
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 

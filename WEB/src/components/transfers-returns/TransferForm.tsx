@@ -119,11 +119,11 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     setSelectedItems(itemIds);
   };
 
-  // Check if employee is the current holder based on most recent dateAssigned in movements
+  // Check if item is currently held by employee based on IsCurrent flag
   const isCurrentHolder = (item: any, employeeId: number | undefined): boolean => {
     if (!employeeId) return false;
     
-    // If item has movements array, find the most recent one by dateAssigned
+    // If item has movements array, find the most recent one and check isCurrent flag
     if (item.movements && Array.isArray(item.movements) && item.movements.length > 0) {
       const sortedMovements = [...item.movements].sort((a, b) => {
         const dateA = new Date(a.dateAssigned).getTime();
@@ -132,14 +132,16 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       });
       
       const latestMovement = sortedMovements[0];
-      // Check if the latest movement has this employee as the holder
-      const isPlantilla = latestMovement.plantillaEmployeeId === employeeId;
-      const isNonPlantilla = latestMovement.nonPlantillaEmployeeId === employeeId;
-      return isPlantilla || isNonPlantilla;
+      // Check if the latest movement has isCurrent flag set to true
+      if (latestMovement.isCurrent === true) {
+        // Also verify the employee is the holder
+        const isPlantilla = latestMovement.plantillaEmployeeId === employeeId;
+        const isNonPlantilla = latestMovement.nonPlantillaEmployeeId === employeeId;
+        return isPlantilla || isNonPlantilla;
+      }
     }
     
-    // If no movements, assume employee loaded from getAssetsByEmployee is the holder
-    return true;
+    return false;
   };
 
   // Check if item has been transferred out (has a toEmployee assigned)
@@ -207,8 +209,6 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       // Create movement records for each selected item
       const movements = selectedItems.map(itemId => {
         const item = employeeItems.find(i => String(i.id) === itemId);
-        const plantillaId = toPlantillaEmployee?.id || 0;
-        const nonPlantillaId = toNonPlantillaEmployee?.id || 0;
         return {
           id: 0,
           ptaId: parseInt(itemId),
@@ -216,17 +216,42 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           ptrItrNumber: transferNumber,
           parIcsNumber: item?.parIcsNumber || '',
           status: 'T',
-          plantillaEmployeeId: plantillaId,
-          nonPlantillaEmployeeId: nonPlantillaId,
+          plantillaEmployeeId: toPlantillaEmployee?.id || null,
+          nonPlantillaEmployeeId: toNonPlantillaEmployee?.id || null,
           condition: item?.condition || 'Good',
           actualOfficeId: recipient?.office?.id || 0,
           actualDivisionId: recipient?.division?.id || 0,
           isActive: true,
-          model: item?.model || '',
+          isCurrent: true, // New movement is current
         };
       });
 
-      // Submit all movements
+      // Get the previous movements to mark as not current
+      const previousMovements = selectedItems.map(itemId => {
+        const item = employeeItems.find(i => String(i.id) === itemId);
+        if (item?.movements && Array.isArray(item.movements) && item.movements.length > 0) {
+          const sortedMovements = [...item.movements].sort((a, b) => {
+            const dateA = new Date(a.dateAssigned).getTime();
+            const dateB = new Date(b.dateAssigned).getTime();
+            return dateB - dateA;
+          });
+          const latestMovement = sortedMovements[0];
+          return {
+            ...latestMovement,
+            plantillaEmployeeId: latestMovement.plantillaEmployeeId || null,
+            nonPlantillaEmployeeId: latestMovement.nonPlantillaEmployeeId || null,
+            isCurrent: false, // Mark previous as not current
+          };
+        }
+        return null;
+      }).filter(m => m !== null);
+
+      // Submit all previous movements updates
+      for (const movement of previousMovements) {
+        await editMovement(movement);
+      }
+
+      // Submit all new movements
       for (const movement of movements) {
         await editMovement(movement);
       }
@@ -343,36 +368,51 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>{transferLabel} - Step {getStepNumber()} of 3</DialogTitle>
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="pb-6 border-b">
+          <DialogTitle className="text-2xl font-bold">{transferLabel}</DialogTitle>
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-sm text-gray-600">Step {getStepNumber()} of 3</p>
+            <div className="flex gap-1">
+              {[1, 2, 3].map(step => (
+                <div
+                  key={step}
+                  className={`h-1 w-12 rounded-full transition-colors ${
+                    step <= getStepNumber() ? 'bg-blue-600' : 'bg-gray-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
         </DialogHeader>
 
         {success ? (
-          <div className="py-8">
-            <div className="flex items-start gap-3 p-4 bg-green-50 border border-green-200 rounded">
-              <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-medium text-green-900">Success</p>
-                <p className="text-sm text-green-700">{transferType} has been created successfully for {selectedItems.length} item(s)</p>
+          <div className="py-12 px-6">
+            <div className="flex flex-col items-center justify-center gap-4">
+              <CheckCircle className="w-16 h-16 text-green-600" />
+              <div className="text-center space-y-2">
+                <p className="font-bold text-2xl text-green-900">Success!</p>
+                <p className="text-lg text-green-700">{transferType} has been created successfully</p>
+                <p className="text-sm text-green-600">for {selectedItems.length} item(s)</p>
               </div>
             </div>
           </div>
         ) : error ? (
           <>
-            <div className="py-4 max-h-[60vh] overflow-y-auto">
-              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded">
-                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-red-900">Error</p>
-                  <p className="text-sm text-red-700">{error}</p>
+            <div className="py-8 px-6 max-h-[70vh] overflow-y-auto">
+              <div className="flex items-start gap-4 p-6 bg-red-50 border-2 border-red-200 rounded-lg">
+                <AlertCircle className="w-8 h-8 text-red-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-bold text-red-900 text-lg">Error Occurred</p>
+                  <p className="text-red-700 mt-2 whitespace-pre-wrap">{error}</p>
                 </div>
               </div>
             </div>
-            <div className="flex justify-between pt-4 border-t">
+            <div className="flex justify-between pt-6 border-t">
               <Button
                 variant="outline"
                 onClick={() => setError(null)}
+                className="px-6 py-2"
               >
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Go Back
@@ -380,34 +420,39 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
             </div>
           </>
         ) : dataLoading ? (
-          <div className="py-8 flex items-center justify-center">
+          <div className="py-16 flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-              <p className="text-muted-foreground">Loading...</p>
+              <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+              <p className="text-lg text-muted-foreground">Loading data...</p>
             </div>
           </div>
         ) : (
           <>
             {/* Step 1: From Employee */}
             {currentStep === 'from-employee' && (
-              <div className="py-4 max-h-[60vh] overflow-y-auto">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Select FROM Employee</h3>
-                  <p className="text-sm text-gray-600">Choose the employee who currently holds the items</p>
-                  <EmployeeSelector
-                    employees={employees}
-                    value={fromEmployee?.id || null}
-                    onSelect={(empId) => {
-                      const emp = employees.find(e => e.id === empId);
-                      setFromEmployee(emp || null);
-                    }}
-                    placeholder="Search for employee..."
-                  />
+              <div className="py-8 px-6 max-h-[70vh] overflow-y-auto">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-bold text-gray-900">Select FROM Employee</h3>
+                    <p className="text-base text-gray-600">Choose the employee who currently holds the items</p>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <Label className="text-base font-semibold text-gray-700 mb-3 block">Employee Name</Label>
+                    <EmployeeSelector
+                      employees={employees}
+                      value={fromEmployee?.id || null}
+                      onSelect={(empId) => {
+                        const emp = employees.find(e => e.id === empId);
+                        setFromEmployee(emp || null);
+                      }}
+                      placeholder="Search for employee..."
+                    />
+                  </div>
                   {fromEmployee && (
-                    <div className="p-3 bg-blue-50 border border-blue-200 rounded space-y-1">
-                      <p className="text-sm"><strong>Selected:</strong> {fromEmployee.firstName} {fromEmployee.lastName}</p>
-                      {fromEmployee.officeName && <p className="text-sm text-gray-600"><strong>Office:</strong> {fromEmployee.officeName}</p>}
-                      {fromEmployee.divisionName && <p className="text-sm text-gray-600"><strong>Division:</strong> {fromEmployee.divisionName}</p>}
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-6 space-y-3">
+                      <p className="text-lg"><strong className="text-blue-900">Selected:</strong> <span className="text-blue-800">{fromEmployee.firstName} {fromEmployee.lastName}</span></p>
+                      {fromEmployee.officeName && <p className="text-base text-blue-800"><strong>Office:</strong> {fromEmployee.officeName}</p>}
+                      {fromEmployee.divisionName && <p className="text-base text-blue-800"><strong>Division:</strong> {fromEmployee.divisionName}</p>}
                     </div>
                   )}
                 </div>
@@ -416,45 +461,50 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
 
             {/* Step 2: Select Items */}
             {currentStep === 'select-items' && (
-              <div className="py-4 max-h-[60vh] overflow-y-auto">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Select Items to Transfer</h3>
-                  <p className="text-sm text-gray-600">
-                    {fromEmployee?.firstName} {fromEmployee?.lastName} currently holds {employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length} item(s)
-                  </p>
+              <div className="py-8 px-6 max-h-[70vh] overflow-y-auto">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-bold text-gray-900">Select Items to Transfer</h3>
+                    <p className="text-base text-gray-600">
+                      {fromEmployee?.firstName} {fromEmployee?.lastName} currently holds <span className="font-bold text-blue-600">{employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length}</span> item(s)
+                    </p>
+                  </div>
                   
                   {itemsLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                      <span className="text-sm">Loading items...</span>
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-8 h-8 animate-spin mr-3 text-blue-600" />
+                      <span className="text-lg">Loading items...</span>
                     </div>
                   ) : employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length === 0 ? (
-                    <div className="p-4 text-center text-gray-500 border rounded-lg">
-                      No items currently held by this employee
+                    <div className="p-8 text-center text-gray-600 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+                      <p className="text-lg font-semibold">No items currently held by this employee</p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 p-2 border-b mb-2">
-                        <Checkbox
-                          checked={selectedItems.length === employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length && employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length > 0}
-                          onCheckedChange={(checked) => {
-                            const availableItems = employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id));
-                            if (checked) {
-                              setSelectedItems(availableItems.map(i => String(i.id)));
-                            } else {
-                              setSelectedItems([]);
-                            }
-                          }}
-                        />
-                        <span className="text-sm font-medium">
-                          Select All ({selectedItems.length}/{employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length})
-                        </span>
+                    <div className="space-y-4">
+                      <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={selectedItems.length === employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length && employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length > 0}
+                            onCheckedChange={(checked) => {
+                              const availableItems = employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id));
+                              if (checked) {
+                                setSelectedItems(availableItems.map(i => String(i.id)));
+                              } else {
+                                setSelectedItems([]);
+                              }
+                            }}
+                            className="w-5 h-5"
+                          />
+                          <span className="font-semibold text-gray-700 text-base">
+                            Select All ({selectedItems.length}/{employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length})
+                          </span>
+                        </div>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-2 max-h-[50vh] overflow-y-auto border border-gray-200 rounded-lg">
                         {employeeItems
                           .filter(item => isCurrentHolder(item, fromEmployee?.id))
                           .map(item => (
-                          <div key={item.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
+                          <div key={item.id} className="flex items-start gap-3 p-4 hover:bg-blue-50 transition-colors border-b last:border-0">
                             <Checkbox
                               checked={selectedItems.includes(String(item.id))}
                               onCheckedChange={(checked) => {
@@ -464,10 +514,12 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                                   setSelectedItems(selectedItems.filter(id => id !== String(item.id)));
                                 }
                               }}
+                              className="w-5 h-5 mt-1"
                             />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{item.propertyNumber}</p>
-                              <p className="text-xs text-gray-500 truncate">{item.description}</p>
+                              <p className="font-semibold text-gray-900">{item.propertyNumber}</p>
+                              <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                              {item.serialNumber && <p className="text-xs text-gray-500 mt-1"><strong>SN:</strong> {item.serialNumber}</p>}
                             </div>
                           </div>
                         ))}
@@ -480,68 +532,84 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
 
             {/* Step 3: To Employee */}
             {currentStep === 'to-employee' && (
-              <div className="py-4 max-h-[60vh] overflow-y-auto">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Select TO Employees</h3>
-                  <p className="text-sm text-gray-600">Choose the plantilla and/or non-plantilla employee who will receive the items</p>
+              <div className="py-8 px-6 max-h-[70vh] overflow-y-auto">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-bold text-gray-900">Select TO Employees</h3>
+                    <p className="text-base text-gray-600">Choose the plantilla and/or non-plantilla employee who will receive the items</p>
+                  </div>
 
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label>Plantilla Employee</Label>
-                      <EmployeeSelector
-                        employees={plantillaEmployeesForStep3}
-                        value={toPlantillaEmployee?.id || null}
-                        onSelect={(empId) => {
-                          if (!empId) {
-                            setToPlantillaEmployee(null);
-                            return;
-                          }
-                          const emp = employees.find(e => e.id === empId);
-                          setToPlantillaEmployee(emp || null);
-                        }}
-                        placeholder="Search plantilla employee..."
-                      />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-6">
+                        <Label className="text-base font-bold text-amber-900 mb-3 block">👤 Plantilla Employee</Label>
+                        <EmployeeSelector
+                          employees={plantillaEmployeesForStep3}
+                          value={toPlantillaEmployee?.id || null}
+                          onSelect={(empId) => {
+                            if (!empId) {
+                              setToPlantillaEmployee(null);
+                              return;
+                            }
+                            const emp = employees.find(e => e.id === empId);
+                            setToPlantillaEmployee(emp || null);
+                          }}
+                          placeholder="Search plantilla employee..."
+                        />
+                      </div>
                       {toPlantillaEmployee && (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded space-y-1">
-                          <p className="text-sm"><strong>Selected:</strong> {toPlantillaEmployee.firstName} {toPlantillaEmployee.lastName}</p>
-                          {toPlantillaEmployee.officeName && <p className="text-sm text-gray-600"><strong>Office:</strong> {toPlantillaEmployee.officeName}</p>}
-                          {toPlantillaEmployee.divisionName && <p className="text-sm text-gray-600"><strong>Division:</strong> {toPlantillaEmployee.divisionName}</p>}
+                        <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300 rounded-lg p-4 space-y-2">
+                          <p className="font-semibold text-amber-900">{toPlantillaEmployee.firstName} {toPlantillaEmployee.lastName}</p>
+                          {toPlantillaEmployee.officeName && <p className="text-sm text-amber-800"><strong>Office:</strong> {toPlantillaEmployee.officeName}</p>}
+                          {toPlantillaEmployee.divisionName && <p className="text-sm text-amber-800"><strong>Division:</strong> {toPlantillaEmployee.divisionName}</p>}
                         </div>
                       )}
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Non-Plantilla Employee</Label>
-                      <EmployeeSelector
-                        employees={nonPlantillaEmployeesForStep3}
-                        value={toNonPlantillaEmployee?.id || null}
-                        onSelect={(empId) => {
-                          if (!empId) {
-                            setToNonPlantillaEmployee(null);
-                            return;
-                          }
-                          const emp = employees.find(e => e.id === empId);
-                          setToNonPlantillaEmployee(emp || null);
-                        }}
-                        placeholder="Search non-plantilla employee..."
-                      />
+                    <div className="space-y-4">
+                      <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
+                        <Label className="text-base font-bold text-purple-900 mb-3 block">👤 Non-Plantilla Employee</Label>
+                        <EmployeeSelector
+                          employees={nonPlantillaEmployeesForStep3}
+                          value={toNonPlantillaEmployee?.id || null}
+                          onSelect={(empId) => {
+                            if (!empId) {
+                              setToNonPlantillaEmployee(null);
+                              return;
+                            }
+                            const emp = employees.find(e => e.id === empId);
+                            setToNonPlantillaEmployee(emp || null);
+                          }}
+                          placeholder="Search non-plantilla employee..."
+                        />
+                      </div>
                       {toNonPlantillaEmployee && (
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded space-y-1">
-                          <p className="text-sm"><strong>Selected:</strong> {toNonPlantillaEmployee.firstName} {toNonPlantillaEmployee.lastName}</p>
-                          {toNonPlantillaEmployee.officeName && <p className="text-sm text-gray-600"><strong>Office:</strong> {toNonPlantillaEmployee.officeName}</p>}
-                          {toNonPlantillaEmployee.divisionName && <p className="text-sm text-gray-600"><strong>Division:</strong> {toNonPlantillaEmployee.divisionName}</p>}
+                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-4 space-y-2">
+                          <p className="font-semibold text-purple-900">{toNonPlantillaEmployee.firstName} {toNonPlantillaEmployee.lastName}</p>
+                          {toNonPlantillaEmployee.officeName && <p className="text-sm text-purple-800"><strong>Office:</strong> {toNonPlantillaEmployee.officeName}</p>}
+                          {toNonPlantillaEmployee.divisionName && <p className="text-sm text-purple-800"><strong>Division:</strong> {toNonPlantillaEmployee.divisionName}</p>}
                         </div>
                       )}
                     </div>
                   </div>
 
                   {selectedItems.length > 0 && (
-                    <div className="p-3 bg-slate-50 rounded-lg space-y-2 text-sm">
-                      <p><strong>From:</strong> {fromEmployee?.firstName} {fromEmployee?.lastName}</p>
-                      <p><strong>To (Plantilla):</strong> {toPlantillaEmployee?.firstName || '-'} {toPlantillaEmployee?.lastName || ''}</p>
-                      <p><strong>To (Non-Plantilla):</strong> {toNonPlantillaEmployee?.firstName || '-'} {toNonPlantillaEmployee?.lastName || ''}</p>
-                      <p><strong>Items:</strong> {selectedItems.length} item(s)</p>
-                      <p><strong>Type:</strong> {transferLabel}</p>
+                    <div className="bg-slate-50 border-2 border-slate-300 rounded-lg p-6 space-y-3">
+                      <h4 className="font-bold text-slate-900 text-lg">Transfer Summary</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white border border-slate-200 rounded p-4">
+                          <p className="text-xs text-gray-500 uppercase font-semibold">From</p>
+                          <p className="text-lg font-bold text-slate-900 mt-1">{fromEmployee?.firstName} {fromEmployee?.lastName}</p>
+                        </div>
+                        <div className="bg-white border border-slate-200 rounded p-4">
+                          <p className="text-xs text-gray-500 uppercase font-semibold">Items</p>
+                          <p className="text-lg font-bold text-blue-600 mt-1">{selectedItems.length} item(s)</p>
+                        </div>
+                      </div>
+                      <div className="bg-white border border-slate-200 rounded p-4">
+                        <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Transfer Type</p>
+                        <p className="text-base font-semibold text-slate-900 px-3 py-1 bg-blue-100 inline-block rounded">{transferLabel}</p>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -549,29 +617,31 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between pt-4 border-t">
+            <div className="flex justify-between pt-6 px-6 border-t gap-4">
               <Button
                 variant="outline"
                 onClick={handleBack}
                 disabled={currentStep === 'from-employee' || loading}
+                className="px-8 py-6 text-base font-semibold"
               >
-                <ChevronLeft className="w-4 h-4 mr-2" />
+                <ChevronLeft className="w-5 h-5 mr-2" />
                 Back
               </Button>
 
               <Button
                 onClick={handleNext}
                 disabled={!canGoNext() || loading || itemsLoading}
+                className="px-8 py-6 text-base font-semibold bg-blue-600 hover:bg-blue-700"
               >
                 {currentStep === 'to-employee' ? (
                   <>
-                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    {loading && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
                     Complete Transfer
                   </>
                 ) : (
                   <>
                     Next
-                    <ChevronRight className="w-4 h-4 ml-2" />
+                    <ChevronRight className="w-5 h-5 ml-2" />
                   </>
                 )}
               </Button>

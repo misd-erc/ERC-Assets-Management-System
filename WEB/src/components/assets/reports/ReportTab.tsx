@@ -327,13 +327,6 @@ export function ReportTab() {
       action: () => setShowSEPropertyReport(true)
     },
     {
-      title: 'SE Property Issued',
-      subtitle: 'Report of Semi-Expandable Property Issued',
-      icon: FileBarChart,
-      bgColor: 'bg-pink-600',
-      action: () => setShowSEPropertyReport(true)
-    },
-    {
       title: 'ICS',
       subtitle: 'Inventory Custodian Slip',
       icon: ClipboardList,
