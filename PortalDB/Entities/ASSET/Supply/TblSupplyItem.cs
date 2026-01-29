@@ -36,6 +36,9 @@ namespace PortalDB.Entities.ASSET.Supply
             set => DescriptionEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
+        [Column("SupplyItemUnitId")]
+        public long? MeasurementUnitId { get; set; }
+
         [Column("SupplyItemCurrentStock")]
         public int? CurrentStock { get; set; }
 

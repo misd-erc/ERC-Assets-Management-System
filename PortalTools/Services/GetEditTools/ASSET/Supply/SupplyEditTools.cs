@@ -170,6 +170,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                             .SetProperty(x => x.CodeEncrypted, model.CodeEncrypted)
                             .SetProperty(x => x.CategoryId, model.CategoryId)
                             .SetProperty(x => x.DescriptionEncrypted, model.DescriptionEncrypted)
+                            .SetProperty(x => x.MeasurementUnitId, model.MeasurementUnitId)
                             .SetProperty(x => x.CurrentStock, model.CurrentStock)
                             .SetProperty(x => x.UnitCost, model.UnitCost)
                             .SetProperty(x => x.ReorderPoint, model.ReorderPoint)
