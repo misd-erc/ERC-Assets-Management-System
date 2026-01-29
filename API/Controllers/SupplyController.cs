@@ -428,6 +428,46 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+
+        [HttpPost("item/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditSupplyItem([FromBody] EditSupplyItemQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblSupplyItem supplyItem = new()
+                {
+                    Id = model.Id,
+                    Code = model.Code,
+                    CategoryId = model.CategoryId,
+                    Description = model.Description,
+                    CurrentStock = model.CurrentStock,
+                    UnitCost = model.UnitCost,
+                    ReorderPoint = model.ReorderPoint,
+                    StorageLocationId = model.StorageLocationId,
+                    VendorId = model.VendorId,
+                    IsActive = model.IsActive
+                };
+
+                long supplyItemId = await _editTools.Supply.EditTblSupplyItemAsync(supplyItem, model.ActionBySystemUserId, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { SupplyItemId = supplyItemId }, $"Supply Item has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         #endregion
 
         #region DELETE
