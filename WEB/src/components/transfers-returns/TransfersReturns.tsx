@@ -193,45 +193,70 @@ export function TransfersReturns() {
       {/* Workflow Guide Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Transfer Workflow Guide</CardTitle>
+          <CardTitle className="text-2xl">Transfer Workflow Guide</CardTitle>
+          <CardDescription>Follow these 3 simple steps to complete a transfer</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-semibold mb-3 flex items-center">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-sm mr-2">1</span>
-                Select Transfer Type
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Choose between PTR for PPE assets or ITR for SE assets
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="relative">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center mb-4 shadow-lg">
+                  <span className="text-3xl font-bold">1</span>
+                </div>
+                <h4 className="font-bold text-lg text-center mb-3 text-gray-900">Select FROM Employee</h4>
+                <p className="text-sm text-gray-600 text-center leading-relaxed">
+                  Choose the employee who currently holds the assets you want to transfer. Only employees with items will be available.
+                </p>
+              </div>
+              {/* Arrow to next step */}
+              <div className="hidden md:flex absolute -right-6 top-8 text-blue-400">
+                <ArrowRightLeft className="w-6 h-6 rotate-0" />
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 text-white flex items-center justify-center mb-4 shadow-lg">
+                  <span className="text-3xl font-bold">2</span>
+                </div>
+                <h4 className="font-bold text-lg text-center mb-3 text-gray-900">Select Items to Transfer</h4>
+                <p className="text-sm text-gray-600 text-center leading-relaxed">
+                  Select one or multiple items from the employee's current inventory. Use "Select All" for convenience or pick individual items.
+                </p>
+              </div>
+              {/* Arrow to next step */}
+              <div className="hidden md:flex absolute -right-6 top-8 text-purple-400">
+                <ArrowRightLeft className="w-6 h-6 rotate-0" />
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-green-600 text-white flex items-center justify-center mb-4 shadow-lg">
+                <span className="text-3xl font-bold">3</span>
+              </div>
+              <h4 className="font-bold text-lg text-center mb-3 text-gray-900">Select TO Employee(s)</h4>
+              <p className="text-sm text-gray-600 text-center leading-relaxed">
+                Choose the plantilla and/or non-plantilla employee who will receive the items. Complete the transfer to finalize the record.
               </p>
             </div>
-            <div>
-              <h4 className="font-semibold mb-3 flex items-center">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-sm mr-2">2</span>
-                Select Asset
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Choose the asset to transfer from the available inventory
-              </p>
+          </div>
+
+          {/* Additional Info */}
+          <div className="mt-10 pt-8 border-t border-gray-200 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded">
+              <h5 className="font-semibold text-blue-900 mb-2">📋 Transfer Types</h5>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• <strong>PTR (Property Transfer Record)</strong> - For PPE assets</li>
+                <li>• <strong>ITR (Inventory Transfer Record)</strong> - For SE assets</li>
+              </ul>
             </div>
-            <div>
-              <h4 className="font-semibold mb-3 flex items-center">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-sm mr-2">3</span>
-                Assign Employee
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Select the plantilla or non-plantilla employee receiving the asset
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-3 flex items-center">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-sm mr-2">4</span>
-                Confirm Location
-              </h4>
-              <p className="text-sm text-muted-foreground">
-                Set the office and division where the asset will be located
-              </p>
+            <div className="bg-green-50 border-l-4 border-green-600 p-4 rounded">
+              <h5 className="font-semibold text-green-900 mb-2">✓ What Happens Next</h5>
+              <ul className="text-sm text-green-800 space-y-1">
+                <li>• Transfer record is created with unique number</li>
+                <li>• Previous holder's status marked as inactive</li>
+                <li>• New holder becomes current holder</li>
+              </ul>
             </div>
           </div>
         </CardContent>
