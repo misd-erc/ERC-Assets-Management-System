@@ -1,399 +1,260 @@
-import { useEffect, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { DataTable } from '@/components/common/DataTable';
-import { useLegendsStore } from '@/store/supply/legendsStore';
-import { Search, Plus, FolderOpen, Edit, Trash2 } from 'lucide-react';
+import { Search, Plus, Edit, Trash2 } from 'lucide-react';
+import { getLegends, createLegend, updateLegend, deleteLegend, Legend } from '@/api/categories/categoriesApi';
+import { toast } from 'sonner';
 
 export function LegendsManagement() {
-  const {
-    legends,
-    stats,
-    isLoading,
-    error,
-    searchTerm,
-    setSearchTerm,
-    showAddDialog,
-    showEditDialog,
-    showDeleteDialog,
-    legendToDelete,
-    formData,
-    openAddDialog,
-    openEditDialog,
-    openDeleteDialog,
-    closeDialogs,
-    updateFormData,
-    createLegend,
-    updateLegend,
-    deleteLegend,
-    fetchLegends,
-    fetchStats,
-  } = useLegendsStore();
+  const [legends, setLegends] = useState<Legend[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ name: '', generalCode: '', isActive: true });
 
+  // Fetch legends on mount
   useEffect(() => {
     fetchLegends();
-    fetchStats();
-  }, [fetchLegends, fetchStats]);
+  }, []);
 
-  const filteredLegends = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return legends;
-    return legends.filter(l =>
-      (l.name || '').toLowerCase().includes(term) ||
-      String(l.id).includes(term)
-    );
-  }, [legends, searchTerm]);
-
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await createLegend();
+  const fetchLegends = async () => {
+    setLoading(true);
+    const data = await getLegends();
+    setLegends(data);
+    setLoading(false);
   };
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await updateLegend();
+  const filtered = legends.filter(l =>
+    (l.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(l.id).includes(searchTerm)
+  );
+
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      toast.error('Please enter a legend name');
+      return;
+    }
+    if (!formData.generalCode.trim()) {
+      toast.error('Please enter a general code');
+      return;
+    }
+
+    setLoading(true);
+    let result;
+
+    if (editingId) {
+      result = await updateLegend(editingId, formData.name, formData.generalCode, formData.isActive);
+      if (result) {
+        toast.success('Legend updated successfully');
+      } else {
+        toast.error('Failed to update legend');
+      }
+    } else {
+      result = await createLegend(formData.name, formData.generalCode);
+      if (result) {
+        toast.success('Legend created successfully');
+      } else {
+        toast.error('Failed to create legend');
+      }
+    }
+
+    setLoading(false);
+    if (result) {
+      await fetchLegends();
+      setFormData({ name: '', generalCode: '', isActive: true });
+      setEditingId(null);
+      setIsOpen(false);
+    }
   };
 
-  const handleDelete = async () => {
-    await deleteLegend();
+  const handleEdit = (legend: Legend) => {
+    setEditingId(legend.id);
+    setFormData({
+      name: legend.name,
+      generalCode: legend.generalCode,
+      isActive: legend.isActive
+    });
+    setIsOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    setLoading(true);
+    const result = await deleteLegend(id);
+    setLoading(false);
+
+    if (result) {
+      toast.success('Legend deleted successfully');
+      await fetchLegends();
+    } else {
+      toast.error('Failed to delete legend');
+    }
   };
 
   const columns = [
-    {
-      key: 'id',
-      label: 'ID',
-      sortable: true,
-      render: (value: number) => (
-        <span className="font-mono text-sm text-slate-700">{value}</span>
-      ),
-    },
-    {
-      key: 'name',
-      label: 'Name',
-      sortable: true,
-      render: (value: string) => (
-        <span className="font-medium text-slate-900">{value}</span>
-      ),
-    },
-    {
-      key: 'isActive',
-      label: 'Status',
-      sortable: true,
-      render: (value: boolean | undefined) => (
-        <Badge className={`${value ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>
-          {value ? 'Active' : 'Inactive'}
-        </Badge>
-      ),
-    },
-    {
-      key: 'createdAt',
-      label: 'Created Date',
-      sortable: true,
-      render: (value: string | undefined) => (
-        <span className="text-sm text-slate-600">
-          {value ? new Date(value).toLocaleDateString() : '-'}
-        </span>
-      ),
-    },
+    { key: 'id', label: 'ID' },
+    { key: 'name', label: 'Legend Name' },
+    { key: 'generalCode', label: 'General Code' },
+    { key: 'isActive', label: 'Status', render: (v: boolean) => v ? 'Active' : 'Inactive' },
     {
       key: 'actions',
       label: 'Actions',
-      render: (_: any, row: any) => (
-        <div className="flex items-center space-x-1">
+      render: (_: any, row: Legend) => (
+        <div className="flex gap-2">
           <Button
             size="sm"
-            variant="ghost"
-            onClick={() => openEditDialog(row)}
-            className="h-8 w-8 p-0 hover:bg-orange-50"
+            variant="outline"
+            onClick={() => handleEdit(row)}
           >
-            <Edit className="w-4 h-4 text-orange-600" />
+            <Edit className="w-4 h-4" />
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => openDeleteDialog(row)}
-            className="h-8 w-8 p-0 hover:bg-red-50"
-          >
-            <Trash2 className="w-4 h-4 text-red-600" />
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="outline" className="text-red-600">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogTitle>Delete Legend</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{row.name}"? This action cannot be undone.
+              </AlertDialogDescription>
+              <div className="flex justify-end gap-2">
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => handleDelete(row.id)}
+                  className="bg-red-600"
+                >
+                  Delete
+                </AlertDialogAction>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
-      ),
-    },
+      )
+    }
   ];
 
-
   return (
-    <div className="p-6 pt-20 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Legend Management</h1>
-          <p className="text-slate-600">
-            Manage and organize legends used across assets and supplies
-          </p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <Input
+            placeholder="Search legends..."
+            className="pl-9"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-        <Button onClick={openAddDialog} className="bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Legend
-        </Button>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={() => {
+              setEditingId(null);
+              setFormData({ name: '', generalCode: '', isActive: true });
+            }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Legend
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-xl">
+                {editingId ? 'Edit Legend' : 'Add New Legend'}
+              </DialogTitle>
+              <DialogDescription className="text-sm text-slate-500">
+                {editingId ? 'Update the legend details below' : 'Enter the details for your new legend'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-5 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-sm font-medium text-slate-700">
+                  Legend Name <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., Legend Name"
+                  className="h-9"
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="generalCode" className="text-sm font-medium text-slate-700">
+                  General Code <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="generalCode"
+                  value={formData.generalCode}
+                  onChange={(e) => setFormData({ ...formData, generalCode: e.target.value })}
+                  placeholder="e.g., LGD001"
+                  maxLength={5}
+                  className="h-9 uppercase"
+                  disabled={loading}
+                />
+                <p className="text-xs text-slate-500">Max 5 characters</p>
+              </div>
+              <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-md">
+                <input
+                  type="checkbox"
+                  id="active"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="w-4 h-4 rounded cursor-pointer"
+                  disabled={loading}
+                />
+                <Label htmlFor="active" className="cursor-pointer text-sm font-medium text-slate-700 mb-0">
+                  Active
+                </Label>
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsOpen(false)}
+                  disabled={loading}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSave}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {loading ? 'Processing...' : editingId ? 'Update Legend' : 'Add Legend'}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Total Legends</p>
-                <p className="text-3xl font-bold text-slate-900 mt-1">{stats?.totalLegends || 0}</p>
-                <p className="text-xs text-slate-500 mt-1">All legends</p>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <FolderOpen className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Active Legends</p>
-                <p className="text-3xl font-bold text-slate-900 mt-1">{stats?.activeLegends || 0}</p>
-                <p className="text-xs text-slate-500 mt-1">Currently in use</p>
-              </div>
-              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-                <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Created This Month</p>
-                <p className="text-3xl font-bold text-slate-900 mt-1">{stats?.createdThisMonth || 0}</p>
-                <p className="text-xs text-slate-500 mt-1">New this month</p>
-              </div>
-              <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
-                <Plus className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="border rounded-lg overflow-hidden">
+        <DataTable
+          data={filtered}
+          columns={columns}
+          emptyMessage="No legends found."
+        />
       </div>
-
-      <Card className="shadow-sm">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl text-slate-900">Legends</CardTitle>
-              <CardDescription className="text-slate-600">
-                Browse and manage legends with general codes and status
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-              <Input
-                placeholder="Search legends by name or id..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 border-slate-200 focus:border-blue-500"
-              />
-
-            </div>
-          </div>
-
-          <div className="border border-slate-200 rounded-lg overflow-hidden">
-            {isLoading ? (
-              <div className="p-6 text-sm text-slate-600">Loading legends...</div>
-            ) : error ? (
-              <div className="p-6 text-sm text-red-600">{error}</div>
-            ) : (
-              <DataTable
-                data={filteredLegends}
-                columns={columns as any}
-                title="legends"
-                emptyMessage="No legends found. Adjust your search or add your first legend."
-              />
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Add Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={closeDialogs}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add New Legend</DialogTitle>
-            <DialogDescription>
-              Enter the details for the new legend.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Legend Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => updateFormData({ name: e.target.value })}
-                placeholder="Enter legend name"
-                required
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="generalCode">Account Code *</Label>
-              <Input
-                id="generalCode"
-                value={formData.generalCode || ''}
-                onChange={(e) => updateFormData({ generalCode: e.target.value })}
-                placeholder="Enter account code"
-                required
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.isActive ? 'active' : 'inactive'}
-                onValueChange={(value: 'active' | 'inactive') => updateFormData({ isActive: value === 'active' })}
-                disabled={isLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeDialogs} disabled={isLoading}>
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
-                Save Legend
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={closeDialogs}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Legend</DialogTitle>
-            <DialogDescription>
-              Update the details for the selected legend.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="edit-name">Legend Name *</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => updateFormData({ name: e.target.value })}
-                placeholder="Enter legend name"
-                required
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-generalCode">General Code *</Label>
-              <Input
-                id="edit-generalCode"
-                value={formData.generalCode || ''}
-                onChange={(e) => updateFormData({ generalCode: e.target.value })}
-                placeholder="Enter general code"
-                required
-                disabled={isLoading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="edit-status">Status</Label>
-              <Select
-                value={formData.isActive ? 'active' : 'inactive'}
-                onValueChange={(value: 'active' | 'inactive') => updateFormData({ isActive: value === 'active' })}
-                disabled={isLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={closeDialogs} disabled={isLoading}>
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
-                Update Legend
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={closeDialogs}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Legend</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{legendToDelete?.name}"? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={isLoading}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

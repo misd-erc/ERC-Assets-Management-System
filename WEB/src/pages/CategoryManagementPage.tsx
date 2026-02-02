@@ -6,7 +6,21 @@ export default function CategoryManagementPage() {
   const [activeTab, setActiveTab] = useState('categories');
 
   return (
-    <div className="pt-20">
+    <div className="p-6 pt-20 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {activeTab === 'categories' ? 'Category Management' : 'Legends Management'}
+          </h1>
+          <p className="text-gray-600 mt-1">
+            {activeTab === 'categories' 
+              ? 'Manage categories for your assets' 
+              : 'Manage legends and folder paths'}
+          </p>
+        </div>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="categories">Categories</TabsTrigger>

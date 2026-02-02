@@ -1,6 +1,5 @@
 ﻿import { Asset } from '@/types/asset';
-import { SupplyItem } from '@/types/supply/supply';
-import { RISRequest } from '@/types/supply/ris';
+import { SupplyItem, RISRequest } from '@/types/supply';
 import { Contract } from '@/types/contract';
 
 export interface DataStore {

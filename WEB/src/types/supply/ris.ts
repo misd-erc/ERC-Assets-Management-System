@@ -16,12 +16,12 @@ export interface RISRequest {
   risNumber: string;
   requester: string;
   department: string;
-  dateRequested: string; // ISO
+  dateRequested: string;
   items: RISItem[];
   status: RISStatus;
   totalEstimatedValue?: number;
   remarks?: string;
   approvedBy?: string;
-  approvedDate?: string; // ISO
+  approvedDate?: string;
   rejectionReason?: string;
 }

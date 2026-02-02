@@ -15,4 +15,3 @@ export interface SupplyItem {
   totalValue?: number;
   lastRestocked?: string;
 }
-
