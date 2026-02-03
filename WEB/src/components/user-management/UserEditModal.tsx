@@ -9,31 +9,120 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { User, SystemRole, SystemRoleSimple } from '@/types/user';
-import { Office, Division, EmploymentType, Position, VwDivision } from '@/types';
-import { useAuthStore } from '@/store/auth';
+import { User, SystemRoleSimple } from '@/types/user';
+import { Office, VwDivision, EmploymentType, Position } from '@/types';
 import {
   editUser,
   getUsersDetails
 } from '@/api/user-management/userApi';
 import { getSystemRoles } from '@/api/roles/rolesApi';
-import { getOffices,
+import { 
+  getOffices,
   getDivisions,
   getEmploymentTypes,
   getPositions
- } from '@/api';
-import { UserDetails } from '@/types/user';
+} from '@/api';
 
+// --- Imports for Searchable Dropdown ---
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
+// --- Reusable Searchable Select Component ---
+interface SearchableSelectProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: { id: number | string; name: string | undefined }[]; // Flexible ID and Name type
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+const SearchableSelect = ({ value, onChange, options, placeholder = "Select...", disabled = false }: SearchableSelectProps) => {
+  const [open, setOpen] = useState(false);
+
+  // Helper to safely convert IDs to string for comparison
+  const normalizeId = (id: number | string) => id?.toString();
+
+  const selectedLabel = value
+    ? options.find((item) => normalizeId(item.id) === value)?.name
+    : placeholder;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled}
+          className={cn(
+            "w-full justify-between font-normal",
+            !value && "text-muted-foreground"
+          )}
+        >
+          {selectedLabel || placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <Command className="[&_[cmdk-input-wrapper]]:border-0">
+          <CommandInput 
+            placeholder={`Search ${placeholder.toLowerCase()}...`} 
+            className="border-0 outline-none focus:outline-none focus:ring-0 ring-0" 
+          />
+          <CommandList>
+            <CommandEmpty>No result found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((item) => {
+                const itemId = normalizeId(item.id);
+                return (
+                  <CommandItem
+                    key={itemId}
+                    value={item.name || ""}
+                    onSelect={() => {
+                      onChange(itemId);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === itemId ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {item.name}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+// --- Constants ---
+const STATUS_OPTIONS = [
+  { id: '1', name: 'Active' },
+  { id: '2', name: 'Inactive' },
+  { id: '3', name: 'Suspended' }
+];
 
 interface UserEditModalProps {
   open: boolean;
@@ -53,9 +142,11 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const [employmentTypes, setEmploymentTypes] = useState<EmploymentType[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [roles, setRoles] = useState<SystemRoleSimple[]>([]);
+  
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loadingUserDetails, setLoadingUserDetails] = useState(false);
+  
   const [formData, setFormData] = useState({
     officeId: '',
     divisionId: '',
@@ -67,7 +158,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   });
 
   const prefillForm = async (user: User) => {
-    if (roles.length === 0) return; // Wait for roles to load
+    if (roles.length === 0) return; 
 
     setLoadingUserDetails(true);
 
@@ -87,7 +178,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     } catch (error) {
       console.error('Failed to fetch user details:', error);
       toast.error('Failed to load user details');
-      // Fallback to selectedUser data
+      
       const role = roles.find(r => r.roleName === user.systemRole?.[0]?.roleName);
       setFormData({
         officeId: user.office?.id?.toString() || '',
@@ -103,7 +194,6 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     }
   };
 
-  // Fetch dropdown data when modal opens
   useEffect(() => {
     if (open) {
       fetchDropdownData();
@@ -132,7 +222,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
       setDivisions(divisionsData);
       setEmploymentTypes(employmentTypesData);
       setPositions(positionsData);
-      // Convert API roles to frontend SystemRoleSimple format
+      
       const systemRoles: SystemRoleSimple[] = rolesData.map(apiRole => ({
         id: apiRole.id,
         roleName: apiRole.roleName,
@@ -158,8 +248,6 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     try {
       setSaving(true);
       const token = localStorage.getItem('systemUserId') || '';
-
-      const statusId = formData.isActive ? '0' : '1'; // 0 for Active, 1 for Inactive
 
       const payload = {
         systemUserId: selectedUser.id,
@@ -191,9 +279,12 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     }
   };
 
+  // Helper to adapt role data for the select
+  const roleOptions = roles.map(r => ({ id: r.id, name: r.roleName }));
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Edit User</DialogTitle>
           <DialogDescription>
@@ -207,126 +298,67 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+            
             <div className="space-y-2">
               <Label htmlFor="office">Office</Label>
-              <Select
+              <SearchableSelect
                 value={formData.officeId}
-                onValueChange={(value) => setFormData({ ...formData, officeId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select office" />
-                </SelectTrigger>
-                <SelectContent>
-                  {offices.map((office) => (
-                    <SelectItem key={office.id} value={office.id.toString()}>
-                      {office.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => setFormData({ ...formData, officeId: value })}
+                options={offices}
+                placeholder="Select office"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="division">Division</Label>
-              <Select
+              <SearchableSelect
                 value={formData.divisionId}
-                onValueChange={(value) => setFormData({ ...formData, divisionId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select division" />
-                </SelectTrigger>
-                <SelectContent>
-                  {divisions.map((division) => (
-                    <SelectItem key={division.id} value={division.id.toString()}>
-                      {division.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => setFormData({ ...formData, divisionId: value })}
+                options={divisions}
+                placeholder="Select division"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="employmentType">Employment Type</Label>
-              <Select
-                value={formData.employmentTypeId || undefined}
-                onValueChange={(value) => setFormData({ ...formData, employmentTypeId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select employment type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employmentTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.id.toString()}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={formData.employmentTypeId}
+                onChange={(value) => setFormData({ ...formData, employmentTypeId: value })}
+                options={employmentTypes}
+                placeholder="Select employment type"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="position">Position</Label>
-              <Select
-                value={formData.positionId || undefined}
-                onValueChange={(value) => setFormData({ ...formData, positionId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select position" />
-                </SelectTrigger>
-                <SelectContent>
-                  {positions.map((position) => (
-                    <SelectItem key={position.id} value={position.id.toString()}>
-                      {position.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={formData.positionId}
+                onChange={(value) => setFormData({ ...formData, positionId: value })}
+                options={positions}
+                placeholder="Select position"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select
+              <SearchableSelect
                 value={formData.roleId}
-                onValueChange={(value) => setFormData({ ...formData, roleId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.id.toString()}>
-                      {role.roleName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => setFormData({ ...formData, roleId: value })}
+                options={roleOptions}
+                placeholder="Select role"
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.statusId || undefined}
-                onValueChange={(value) => setFormData({ ...formData, statusId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Active</SelectItem>
-                  <SelectItem value="2">Inactive</SelectItem>
-                  <SelectItem value="3">Suspended</SelectItem>
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={formData.statusId}
+                onChange={(value) => setFormData({ ...formData, statusId: value })}
+                options={STATUS_OPTIONS}
+                placeholder="Select status"
+              />
             </div>
 
-            {/* <div className="flex items-center space-x-2 md:col-span-2">
-              <Switch
-                id="isActive"
-                checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-              />
-              <Label htmlFor="isActive">{formData.isActive ? 'Active' : 'Inactive'}</Label>
-            </div> */}
           </div>
         )}
 
@@ -342,9 +374,3 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     </Dialog>
   );
 };
-
-
-
-
-
-
