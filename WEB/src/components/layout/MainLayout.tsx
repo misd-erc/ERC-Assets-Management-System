@@ -16,6 +16,7 @@ import { SystemSettingsPage } from "@/pages/SystemSettingsPage";
 import UCPage from "@/pages/UC";
 import ContractManagement from "@/pages/ContractManagement";
 import TransfersReturnsPage from "@/pages/TransfersReturnsPage";
+import { SupplyManagement } from "@/pages/SupplyManagement";
 
 export default function MainLayout() {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -27,6 +28,9 @@ export default function MainLayout() {
 
       case "ppe-se":
         return <PPESEPage />;
+
+      case "supply-management":
+        return <SupplyManagement />;
 
       case "contract-management":
         return <ContractManagement />;

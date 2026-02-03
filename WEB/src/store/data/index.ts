@@ -22,34 +22,32 @@ export const useDataStore = create<DataStore>((set) => ({
 
   supplies: [
     {
-      id: '1',
-      stockNumber: 'STK-001',
-      itemCode: 'ITM-001',
+      id: 1,
+      code: 'ITM-001',
       description: 'Bond Paper',
-      category: 'Office Supplies',
-      unit: 'Ream',
+      categoryId: 1,
+      measurementUnitId: 2,
       currentStock: 100,
       reorderPoint: 20,
       unitCost: 150,
-      location: 'Storage Room A',
-      supplier: 'PaperOne Supplier',
-      totalValue: 150 * 100,
-      lastRestocked: new Date().toISOString(),
+      storageLocationId: 2,
+      vendorId: 1,
+      isActive: true,
+      createdAt: new Date().toISOString()
     },
     {
-      id: '2',
-      stockNumber: 'STK-002',
-      itemCode: 'ITM-002',
-      description: 'Printer Ink',
-      category: 'Office Supplies',
-      unit: 'Bottle',
-      currentStock: 50,
-      reorderPoint: 10,
-      unitCost: 200,
-      location: 'Storage Room A',
-      supplier: 'Inktec Supplies',
-      totalValue: 50 * 200,
-      lastRestocked: new Date().toISOString(),
+      id: 2,
+      code: 'ITM-001',
+      description: 'Bond Paper',
+      categoryId: 1,
+      measurementUnitId: 2,
+      currentStock: 100,
+      reorderPoint: 20,
+      unitCost: 150,
+      storageLocationId: 2,
+      vendorId: 1,
+      isActive: true,
+      createdAt: new Date().toISOString()
     },
   ],
 
@@ -126,11 +124,11 @@ export const useDataStore = create<DataStore>((set) => ({
 
   // ---------- Supply Actions ----------
   addSupply: (supply: Omit<SupplyItem, 'id'>) => {
-    const newSupply = { ...supply, id: Date.now().toString() };
+    const newSupply = { ...supply, id: Date.now() };
     set((state) => ({ supplies: [...state.supplies, newSupply] }));
   },
 
-  updateSupply: (id: string, updates: Partial<SupplyItem>) => {
+  updateSupply: (id: number, updates: Partial<SupplyItem>) => {
     set((state) => ({
       supplies: state.supplies.map((supply) =>
         supply.id === id ? { ...supply, ...updates } : supply
@@ -138,7 +136,7 @@ export const useDataStore = create<DataStore>((set) => ({
     }));
   },
 
-  removeSupply: (id: string) => {
+  removeSupply: (id: number) => {
     set((state) => ({
       supplies: state.supplies.filter((supply) => supply.id !== id),
     }));
@@ -164,6 +162,3 @@ export const useDataStore = create<DataStore>((set) => ({
     }));
   },
 }));
-
-
-

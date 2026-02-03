@@ -114,7 +114,7 @@ export const moduleConfig: Record<string, any> = {
     title: "Supply Management",
     group: "Asset Management",
     icon: Archive,  
-    implemented: false, 
+    implemented: true, 
   },
 
   CM: {
@@ -134,4 +134,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["DB", "CM", "UM", "RM", "OM", "AL", "SYSSET"];
+export const adminOverrideModules = ["DB", "SM", "CM", "UM", "RM", "OM", "AL", "SYSSET"];
