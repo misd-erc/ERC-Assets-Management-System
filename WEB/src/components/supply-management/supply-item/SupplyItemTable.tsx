@@ -68,6 +68,7 @@ export const SupplyItemTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                 <TableHead>Unit</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Location</TableHead>
+                <TableHead>Vendor</TableHead>
                 <TableHead>Current Stock</TableHead>
                 <TableHead>Unit Cost</TableHead>
                 <TableHead>Status</TableHead>
@@ -86,6 +87,7 @@ export const SupplyItemTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                     <TableCell>{item.measurementUnit?.name}</TableCell>
                     <TableCell>{item.category?.name}</TableCell>
                     <TableCell>{item.storageLocation?.name}</TableCell>
+                    <TableCell>{item.vendor?.name}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <span>{item.currentStock} {item.measurementUnit?.name}</span>

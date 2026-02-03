@@ -7,9 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useSupplyItem, useSupplyUnit, useSupplyStorageLocation } from '@/hooks';
+// 1. Add useVendor to imports
+import { useSupplyItem, useSupplyUnit, useSupplyStorageLocation, useVendor } from '@/hooks';
 import { SupplyItem, VwSupplyItem } from '@/types';
-// 1. Import the API function
 import { getCategories } from '@/api/asset/inventoryApi';
 
 interface Props {
@@ -23,9 +23,10 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
   const { addSupplyItem, updateSupplyItem } = useSupplyItem();
   const { units, fetchSupplyUnits } = useSupplyUnit();
   const { storagelocations, fetchSupplyStorageLocations } = useSupplyStorageLocation();
+  // 2. Destructure vendor data and fetcher
+  const { vendors, fetchVendors } = useVendor();
   
   const [loading, setLoading] = useState(false);
-  // 2. Add state for categories
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
 
   const [form, setForm] = useState<Partial<SupplyItem>>({
@@ -38,10 +39,10 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
     unitCost: 0,
     reorderPoint: 0,
     storageLocationId: 0,
+    vendorId: 0, // 3. Initialize vendorId
     isActive: true
   });
 
-  // 3. Add the fetch function
   const fetchCategoriesData = async () => {
     try {
       const data = await getCategories();
@@ -51,11 +52,11 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
     }
   };
 
-  // Load dropdown data on mount
   useEffect(() => {
     fetchSupplyUnits();
     fetchSupplyStorageLocations();
-    fetchCategoriesData(); // Call the category fetcher
+    fetchCategoriesData();
+    fetchVendors(); // 4. Fetch vendors on mount
   }, []);
 
   useEffect(() => {
@@ -69,6 +70,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
         unitCost: supplyItem.unitCost,
         reorderPoint: supplyItem.reorderPoint,
         storageLocationId: supplyItem.storageLocation?.id,
+        vendorId: supplyItem.vendor?.id, // 5. Map existing vendorId
         isActive: supplyItem.isActive
       });
     } else {
@@ -81,6 +83,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
         unitCost: 0,
         reorderPoint: 0,
         storageLocationId: 0,
+        vendorId: 0,
         isActive: true
       });
     }
@@ -93,7 +96,6 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
       if (mode === 'add') {
         await addSupplyItem(form);
       } else if (supplyItem) {
-        // Ensure we pass the ID from the selected item
         await updateSupplyItem(supplyItem.id, form);
       }
       onOpenChange(false);
@@ -158,7 +160,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
             </div>
           </div>
 
-          {/* 4. Category and Storage Location in one row */}
+          {/* Updated Row: Category and Vendor */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Category</Label>
@@ -174,6 +176,21 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
             </div>
 
             <div className="space-y-2">
+              <Label>Vendor</Label>
+              <Select 
+                value={form.vendorId?.toString()} 
+                onValueChange={v => setForm({...form, vendorId: Number(v)})}
+              >
+                <SelectTrigger><SelectValue placeholder="Select Vendor" /></SelectTrigger>
+                <SelectContent>
+                   {vendors.map(v => <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label>Storage Location</Label>
                <Select 
                   value={form.storageLocationId?.toString()} 
@@ -185,11 +202,11 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
                   </SelectContent>
                 </Select>
             </div>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch checked={form.isActive} onCheckedChange={c => setForm({...form, isActive: c})} />
-            <Label>Active Status</Label>
+            
+            <div className="flex items-center space-x-2 pt-8">
+                <Switch checked={form.isActive} onCheckedChange={c => setForm({...form, isActive: c})} />
+                <Label>Active Status</Label>
+            </div>
           </div>
 
           <DialogFooter>
