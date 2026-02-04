@@ -39,6 +39,16 @@ export function AssetsPage() {
   const [divisionFilter, setDivisionFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [appliedFilters, setAppliedFilters] = useState({
+    searchTerm: '',
+    categoryFilter: 'all',
+    conditionFilter: 'all',
+    officeFilter: 'all',
+    divisionFilter: 'all',
+    startDate: '',
+    endDate: '',
+  });
 
   // Dialog states
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -62,19 +72,19 @@ export function AssetsPage() {
 
   useEffect(() => {
     loadAssets();
-  }, [currentPage, pageSize, searchTerm, categoryFilter, conditionFilter, officeFilter, divisionFilter, startDate, endDate, activeTab]);
+  }, [currentPage, pageSize, appliedFilters, activeTab]);
 
   const loadAssets = async () => {
     try {
       setLoading(true);
       const filters: any = {
-        search: searchTerm || undefined,
-        category: categoryFilter !== 'all' ? categoryFilter : undefined,
-        condition: conditionFilter !== 'all' ? conditionFilter : undefined,
-        office: officeFilter !== 'all' ? officeFilter : undefined,
-        division: divisionFilter !== 'all' ? divisionFilter : undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        search: appliedFilters.searchTerm || undefined,
+        category: appliedFilters.categoryFilter !== 'all' ? appliedFilters.categoryFilter : undefined,
+        condition: appliedFilters.conditionFilter !== 'all' ? appliedFilters.conditionFilter : undefined,
+        office: appliedFilters.officeFilter !== 'all' ? appliedFilters.officeFilter : undefined,
+        division: appliedFilters.divisionFilter !== 'all' ? appliedFilters.divisionFilter : undefined,
+        startDate: appliedFilters.startDate || undefined,
+        endDate: appliedFilters.endDate || undefined,
         group: activeTab !== 'all' ? activeTab : undefined,
         PageNumber: currentPage,
         PageSize: pageSize,
@@ -127,10 +137,9 @@ export function AssetsPage() {
 const validateBatchUploadFile = async (file: File): Promise<boolean> => {
   try {
     //
-    // FIXED BASE HEADERS FROM PPE TEMPLATE (ROW 2)
-    // Updated to include Fiscal Date column
+    // ASSET DETAILS HEADERS (13 COLUMNS)
     //
-    const baseHeaders = [
+    const assetHeaders = [
       "Property Number",
       "Category",
       "Legend/Sub-Category",
@@ -147,12 +156,25 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
     ];
 
     //
-    // MOVEMENT BLOCK HEADERS (6 COLUMNS, REPEATABLE)
+    // FIRST MOVEMENT BLOCK HEADERS (8 COLUMNS)
     //
-    const movementBlock = [
+    const movementBlock1 = [
       "PTR/ITR Number",
       "PAR/ICS Number",
       "Plantilla Employee ID",
+      "Non-Plantilla Employee ID",
+      "Office/Division",
+      "Condition",
+      "Date Assigned (YYYY-MM-DD)",
+      "Status"
+    ];
+
+    //
+    // SECOND MOVEMENT BLOCK HEADERS (7 COLUMNS - NO PLANTILLA ID)
+    //
+    const movementBlock2 = [
+      "PTR/ITR Number",
+      "PAR/ICS Number",
       "Non-Plantilla Employee ID",
       "Office/Division",
       "Condition",
@@ -177,59 +199,81 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
     const headers: string[] = [];
     for (let col = range.s.c; col <= range.e.c; col++) {
       const cell = worksheet[XLSX.utils.encode_cell({ r: HEADER_ROW, c: col })];
-      headers.push(cell?.v?.toString().trim() || "");
+      const headerText = cell?.v?.toString().trim() || "";
+      headers.push(headerText);
     }
 
+    console.log(`Total columns found: ${headers.length}`);
+    console.log(`Headers:`, headers);
+
     //
-    // VALIDATE BASE COLUMNS EXACTLY
+    // VALIDATE ASSET HEADERS EXACTLY
     //
-    for (let i = 0; i < baseHeaders.length; i++) {
-      if (headers[i] !== baseHeaders[i]) {
+    for (let i = 0; i < assetHeaders.length; i++) {
+      if (headers[i] !== assetHeaders[i]) {
         console.log(
-          `Base header mismatch at column ${i + 1}: "${headers[i]}" != "${baseHeaders[i]}"`
+          `Asset header mismatch at column ${i + 1}: "${headers[i]}" != "${assetHeaders[i]}"`
         );
         return false;
       }
     }
 
     //
-    // GET REMAINING HEADERS (MOVEMENT COLUMNS)
+    // VALIDATE MOVEMENT BLOCKS - FLEXIBLE APPROACH
+    // Allow 1 or 2 movement blocks
     //
-    const remaining = headers.slice(baseHeaders.length);
-    const blockSize = movementBlock.length;
+    const startIndex = assetHeaders.length;
+    const remaining = headers.slice(startIndex);
 
-    //
-    // VALIDATE COLUMN COUNT IS MULTIPLE OF MOVEMENT BLOCK SIZE
-    //
-    if (remaining.length % blockSize !== 0) {
-      console.log(
-        `Invalid movement block column count (${remaining.length}), expected multiples of ${blockSize}`
-      );
-      return false;
+    if (remaining.length === 0) {
+      // No movement blocks - still valid, just assets
+      console.log("Valid: Asset-only template (no movement blocks)");
+      return true;
     }
 
-    //
-    // VALIDATE EACH MOVEMENT BLOCK
-    //
-    const blockCount = remaining.length / blockSize;
-    for (let b = 0; b < blockCount; b++) {
-      for (let i = 0; i < blockSize; i++) {
-        const actual = remaining[b * blockSize + i];
-        const expected = movementBlock[i];
-
-        if (actual !== expected) {
+    if (remaining.length === movementBlock1.length) {
+      // One movement block - check if it matches block 1
+      for (let i = 0; i < movementBlock1.length; i++) {
+        if (remaining[i] !== movementBlock1[i]) {
           console.log(
-            `Movement block ${b + 1} header mismatch at column ${i + 1}: "${actual}" != "${expected}"`
+            `Movement block mismatch at column ${startIndex + i + 1}: "${remaining[i]}" != "${movementBlock1[i]}"`
           );
           return false;
         }
       }
+      console.log("Valid: One movement block found");
+      return true;
     }
 
-    //
-    // TEMPLATE IS VALID
-    //
-    return true;
+    if (remaining.length === movementBlock1.length + movementBlock2.length) {
+      // Two movement blocks - validate both
+      for (let i = 0; i < movementBlock1.length; i++) {
+        if (remaining[i] !== movementBlock1[i]) {
+          console.log(
+            `Movement block 1 mismatch at column ${startIndex + i + 1}: "${remaining[i]}" != "${movementBlock1[i]}"`
+          );
+          return false;
+        }
+      }
+
+      for (let i = 0; i < movementBlock2.length; i++) {
+        const actualCol = remaining[movementBlock1.length + i];
+        const expectedCol = movementBlock2[i];
+        if (actualCol !== expectedCol) {
+          console.log(
+            `Movement block 2 mismatch at column ${startIndex + movementBlock1.length + i + 1}: "${actualCol}" != "${expectedCol}"`
+          );
+          return false;
+        }
+      }
+      console.log("Valid: Two movement blocks found");
+      return true;
+    }
+
+    console.log(
+      `Invalid column count: Expected 13 or ${13 + movementBlock1.length} or ${13 + movementBlock1.length + movementBlock2.length}, got ${headers.length}`
+    );
+    return false;
   } catch (error) {
     console.error("Error validating file:", error);
     return false;
@@ -261,16 +305,51 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
       const result = await UnifiedAssetService.batchUpload(uploadFile, actionBySystemUserId, sessionKey);
 
       if (result.success) {
-        toast.success(result.data);
+        // Format the batch upload summary
+        const summaryData = result.data as any;
+        const summary = typeof summaryData === 'object' ? summaryData : { assets: { inserted: 0, updated: 0 }, movements: { inserted: 0, updated: 0 }, failed: 0 };
+        const totalProcessed = (summary.assets?.inserted || 0) + (summary.assets?.updated || 0);
+        const totalMovements = (summary.movements?.inserted || 0) + (summary.movements?.updated || 0);
+        const failed = summary.failed || 0;
+
+        if (failed > 0) {
+          toast.error(
+            `Upload completed with issues:\n` +
+            `✓ ${totalProcessed} assets (${summary.assets?.inserted || 0} new, ${summary.assets?.updated || 0} updated)\n` +
+            `✓ ${totalMovements} movements (${summary.movements?.inserted || 0} new, ${summary.movements?.updated || 0} updated)\n` +
+            `✗ ${failed} records failed`
+          );
+        } else if (totalProcessed > 0 || totalMovements > 0) {
+          toast.success(
+            `Upload completed successfully:\n` +
+            `✓ ${totalProcessed} assets (${summary.assets?.inserted || 0} new, ${summary.assets?.updated || 0} updated)\n` +
+            `✓ ${totalMovements} movements (${summary.movements?.inserted || 0} new, ${summary.movements?.updated || 0} updated)`
+          );
+        } else {
+          toast.warning('No records were processed from the file');
+        }
       } else {
         toast.error(result.message || 'Failed to upload file');
       }
 
+      // Reset the file input element to allow selecting the same file again
+      const fileInput = document.getElementById('batch-upload') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
+      
       setUploadFile(null);
+      setUploadConfirmDialogOpen(false);
       loadAssets();
     } catch (error) {
       console.error('Error during batch upload:', error);
       toast.error('Failed to upload file');
+      
+      // Reset the file input on error as well
+      const fileInput = document.getElementById('batch-upload') as HTMLInputElement;
+      if (fileInput) {
+        fileInput.value = '';
+      }
     }
   };
 
@@ -292,6 +371,30 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
     setDivisionFilter('all');
     setStartDate('');
     setEndDate('');
+    setAppliedFilters({
+      searchTerm: '',
+      categoryFilter: 'all',
+      conditionFilter: 'all',
+      officeFilter: 'all',
+      divisionFilter: 'all',
+      startDate: '',
+      endDate: '',
+    });
+    setCurrentPage(1);
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({
+      searchTerm,
+      categoryFilter,
+      conditionFilter,
+      officeFilter,
+      divisionFilter,
+      startDate,
+      endDate,
+    });
+    setCurrentPage(1);
+    setShowFilters(false);
   };
 
   const handleViewDetails = async (asset: Asset) => {
@@ -367,6 +470,14 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
         </div>
 
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowFilters(!showFilters)} 
+            className="gap-2"
+          >
+            {showFilters ? '✕ Hide Filters' : '⊕ Show Filters'}
+          </Button>
+
           <Button variant="outline" onClick={() => setExportModalOpen(true)} className="gap-2">
             <Download className="size-4" />
             Export To Excel ({activeTab === 'all' ? 'ALL' : activeTab})
@@ -419,25 +530,37 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
 
 
         <TabsContent value="PPE" className="space-y-6">
-          {/* Filters */}
-          <AssetsFilters
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            categoryFilter={categoryFilter}
-            onCategoryFilterChange={setCategoryFilter}
-            conditionFilter={conditionFilter}
-            onConditionFilterChange={setConditionFilter}
-            officeFilter={officeFilter}
-            onOfficeFilterChange={setOfficeFilter}
-            divisionFilter={divisionFilter}
-            onDivisionFilterChange={setDivisionFilter}
-            startDate={startDate}
-            onStartDateChange={setStartDate}
-            endDate={endDate}
-            onEndDateChange={setEndDate}
-            onClearFilters={handleClearFilters}
-            totalResults={totalCount}
-          />
+          {/* Filters - Collapsible */}
+          {showFilters && (
+            <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+              <AssetsFilters
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                categoryFilter={categoryFilter}
+                onCategoryFilterChange={setCategoryFilter}
+                conditionFilter={conditionFilter}
+                onConditionFilterChange={setConditionFilter}
+                officeFilter={officeFilter}
+                onOfficeFilterChange={setOfficeFilter}
+                divisionFilter={divisionFilter}
+                onDivisionFilterChange={setDivisionFilter}
+                startDate={startDate}
+                onStartDateChange={setStartDate}
+                endDate={endDate}
+                onEndDateChange={setEndDate}
+                onClearFilters={handleClearFilters}
+                totalResults={totalCount}
+              />
+              <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
+                <Button onClick={handleApplyFilters} className="gap-2">
+                  Apply Filters
+                </Button>
+                <Button variant="outline" onClick={handleClearFilters}>
+                  Clear All
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Table */}
           <AssetsTable
@@ -455,25 +578,37 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
         </TabsContent>
 
         <TabsContent value="SE" className="space-y-6">
-          {/* Filters */}
-          <AssetsFilters
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            categoryFilter={categoryFilter}
-            onCategoryFilterChange={setCategoryFilter}
-            conditionFilter={conditionFilter}
-            onConditionFilterChange={setConditionFilter}
-            officeFilter={officeFilter}
-            onOfficeFilterChange={setOfficeFilter}
-            divisionFilter={divisionFilter}
-            onDivisionFilterChange={setDivisionFilter}
-            startDate={startDate}
-            onStartDateChange={setStartDate}
-            endDate={endDate}
-            onEndDateChange={setEndDate}
-            onClearFilters={handleClearFilters}
-            totalResults={totalCount}
-          />
+          {/* Filters - Collapsible */}
+          {showFilters && (
+            <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+              <AssetsFilters
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                categoryFilter={categoryFilter}
+                onCategoryFilterChange={setCategoryFilter}
+                conditionFilter={conditionFilter}
+                onConditionFilterChange={setConditionFilter}
+                officeFilter={officeFilter}
+                onOfficeFilterChange={setOfficeFilter}
+                divisionFilter={divisionFilter}
+                onDivisionFilterChange={setDivisionFilter}
+                startDate={startDate}
+                onStartDateChange={setStartDate}
+                endDate={endDate}
+                onEndDateChange={setEndDate}
+                onClearFilters={handleClearFilters}
+                totalResults={totalCount}
+              />
+              <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
+                <Button onClick={handleApplyFilters} className="gap-2">
+                  Apply Filters
+                </Button>
+                <Button variant="outline" onClick={handleClearFilters}>
+                  Clear All
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Table */}
           <AssetsTable
