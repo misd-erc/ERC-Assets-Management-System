@@ -1,32 +1,24 @@
-﻿import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+﻿// src/components/contract-management/vendor/VendorDeleteModal.tsx
+import { 
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle 
 } from '@/components/ui/alert-dialog';
 import { useVendor } from '@/hooks';
-import { toast } from 'sonner';
+import { Vendor } from '@/types';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  vendorId?: number;
-  vendorName?: string;
+  vendor?: Vendor | null; // <--- CHANGED: Accept Object, not Number
 }
 
-export const VendorDeleteModal = ({ open, onOpenChange, vendorId, vendorName }: Props) => {
+export const VendorDeleteModal = ({ open, onOpenChange, vendor }: Props) => {
   const { deleteVendor } = useVendor();
 
   const handleDelete = async () => {
-    if (!vendorId) return;
-    try {
-      await deleteVendor(vendorId);
+    if (vendor) {
+      await deleteVendor(vendor.id); // <--- Access ID here
       onOpenChange(false);
-    } catch {
     }
   };
 
@@ -36,7 +28,7 @@ export const VendorDeleteModal = ({ open, onOpenChange, vendorId, vendorName }: 
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Vendor?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will permanently delete <strong>{vendorName}</strong>. This action cannot be undone.
+            This will permanently delete <strong>{vendor?.name}</strong>. This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -49,8 +41,3 @@ export const VendorDeleteModal = ({ open, onOpenChange, vendorId, vendorName }: 
     </AlertDialog>
   );
 };
-
-
-
-
-

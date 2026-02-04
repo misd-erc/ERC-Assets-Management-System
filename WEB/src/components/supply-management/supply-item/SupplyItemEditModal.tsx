@@ -34,9 +34,10 @@ interface SearchableSelectProps {
   onChange: (value: number) => void;
   options: { id: number; name: string }[];
   placeholder?: string;
+  disabled?: boolean;
 }
 
-const SearchableSelect = ({ value, onChange, options, placeholder = "Select..." }: SearchableSelectProps) => {
+const SearchableSelect = ({ value, onChange, options, placeholder = "Select...", disabled = false }: SearchableSelectProps) => {
   const [open, setOpen] = useState(false);
 
   return (
@@ -46,6 +47,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Select..." 
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           className={cn(
             "w-full justify-between font-normal",
             !value && "text-muted-foreground"
@@ -93,7 +95,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Select..." 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode: 'add' | 'edit';
+  mode: 'add' | 'edit' | 'view';
   supplyItem?: VwSupplyItem | null;
 }
 
@@ -104,7 +106,10 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
   const { vendors, fetchVendors } = useVendor();
   
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  // UPDATED: Added isActive to state type definition
+  const [categories, setCategories] = useState<{ id: number; name: string; isActive?: boolean }[]>([]);
+
+  const isViewMode = mode === 'view';
 
   const [form, setForm] = useState<Partial<SupplyItem>>({
     id: 0,
@@ -137,7 +142,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
   }, []);
 
   useEffect(() => {
-    if (mode === 'edit' && supplyItem) {
+    if ((mode === 'edit' || mode === 'view') && supplyItem) {
       setForm({
         code: supplyItem.code,
         description: supplyItem.description,
@@ -168,6 +173,11 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isViewMode) {
+        onOpenChange(false);
+        return;
+    }
+
     setLoading(true);
     try {
       if (mode === 'add') {
@@ -181,12 +191,27 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
     }
   };
 
+  // --- Helper to filter active options ---
+  // Returns options that are either Active OR match the current selected ID (so we don't break existing data)
+  const getFilteredOptions = (items: any[], currentId: number) => {
+    if (!items) return [];
+    return items.filter(item => item.isActive === true || item.id === currentId);
+  };
+
+  const getTitle = () => {
+      if (mode === 'add') return 'Add Supply Item';
+      if (mode === 'edit') return 'Edit Supply Item';
+      return 'View Supply Item Details';
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>{mode === 'add' ? 'Add Supply Item' : 'Edit Supply Item'}</DialogTitle>
-          <DialogDescription>Enter details for the supply item.</DialogDescription>
+          <DialogTitle>{getTitle()}</DialogTitle>
+          <DialogDescription>
+            {isViewMode ? 'View details for this supply item.' : 'Enter details for the supply item.'}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -197,6 +222,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
                 onChange={e => setForm({...form, code: e.target.value})} 
                 placeholder="e.g. ITM-001"
                 required 
+                disabled={isViewMode}
               />
             </div>
              <div className="space-y-2">
@@ -204,8 +230,9 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
               <SearchableSelect
                 value={form.measurementUnitId || 0}
                 onChange={(val) => setForm({...form, measurementUnitId: val})}
-                options={units}
+                options={getFilteredOptions(units, form.measurementUnitId || 0)} // Filtered
                 placeholder="Select Unit"
+                disabled={isViewMode}
               />
             </div>
           </div>
@@ -216,33 +243,34 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
               value={form.description} 
               onChange={e => setForm({...form, description: e.target.value})} 
               required 
+              disabled={isViewMode}
             />
           </div>
 
           <div className="grid grid-cols-3 gap-4">
              <div className="space-y-2">
               <Label>Current Stock</Label>
-              <Input type="number" value={form.currentStock} onChange={e => setForm({...form, currentStock: Number(e.target.value)})} />
+              <Input type="number" value={form.currentStock} onChange={e => setForm({...form, currentStock: Number(e.target.value)})} disabled={isViewMode} />
             </div>
             <div className="space-y-2">
               <Label>Unit Cost</Label>
-              <Input type="number" step="0.01" value={form.unitCost} onChange={e => setForm({...form, unitCost: Number(e.target.value)})} />
+              <Input type="number" step="0.01" value={form.unitCost} onChange={e => setForm({...form, unitCost: Number(e.target.value)})} disabled={isViewMode} />
             </div>
             <div className="space-y-2">
               <Label>Reorder Point</Label>
-              <Input type="number" value={form.reorderPoint} onChange={e => setForm({...form, reorderPoint: Number(e.target.value)})} />
+              <Input type="number" value={form.reorderPoint} onChange={e => setForm({...form, reorderPoint: Number(e.target.value)})} disabled={isViewMode} />
             </div>
           </div>
 
-          {/* Updated Row: Category and Vendor */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Category</Label>
               <SearchableSelect
                 value={form.categoryId || 0}
                 onChange={(val) => setForm({...form, categoryId: val})}
-                options={categories}
+                options={getFilteredOptions(categories, form.categoryId || 0)} // Filtered
                 placeholder="Select Category"
+                disabled={isViewMode}
               />
             </div>
 
@@ -251,8 +279,9 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
               <SearchableSelect
                 value={form.vendorId || 0}
                 onChange={(val) => setForm({...form, vendorId: val})}
-                options={vendors}
+                options={getFilteredOptions(vendors, form.vendorId || 0)} // Filtered
                 placeholder="Select Vendor"
+                disabled={isViewMode}
               />
             </div>
           </div>
@@ -263,20 +292,31 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
               <SearchableSelect
                 value={form.storageLocationId || 0}
                 onChange={(val) => setForm({...form, storageLocationId: val})}
-                options={storagelocations}
+                options={getFilteredOptions(storagelocations, form.storageLocationId || 0)} // Filtered
                 placeholder="Select Location"
+                disabled={isViewMode}
               />
             </div>
             
             <div className="flex items-center space-x-2 pt-8">
-                <Switch checked={form.isActive} onCheckedChange={c => setForm({...form, isActive: c})} />
+                <Switch 
+                  checked={form.isActive} 
+                  onCheckedChange={c => setForm({...form, isActive: c})} 
+                  disabled={isViewMode}
+                />
                 <Label>Active Status</Label>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
+            {isViewMode ? (
+                <Button type="button" onClick={() => onOpenChange(false)}>Close</Button>
+            ) : (
+                <>
+                    <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
+                </>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

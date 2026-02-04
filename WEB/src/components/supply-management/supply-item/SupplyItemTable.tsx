@@ -19,19 +19,16 @@ import { formatCurrency } from '@/utils/formatters';
 interface Props {
   data: VwSupplyItem[];
   onAdd: () => void;
+  onView: (item: VwSupplyItem) => void; // <--- Added onView Prop
   onEdit: (item: VwSupplyItem) => void;
   onDelete: (item: VwSupplyItem) => void;
 }
 
 const PAGE_SIZE = 10;
 
-export const SupplyItemTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
+export const SupplyItemTable = ({ data, onAdd, onView, onEdit, onDelete }: Props) => {
   const [page, setPage] = useState(1);
 
-  // Filter Logic (can also use the store's search query if implemented there)
-  // assuming 'data' passed here is already filtered or we filter here:
-  // For now, let's assume the parent handles filtering or we do basic client-side:
-  
   const totalPages = Math.ceil(data.length / PAGE_SIZE);
   const paginatedData = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -108,9 +105,15 @@ export const SupplyItemTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                           {/* --- VIEW ACTION --- */}
+                           <DropdownMenuItem onClick={() => onView(item)}>
+                            <Eye className="w-4 h-4 mr-2" /> View
+                          </DropdownMenuItem>
+                          
                           <DropdownMenuItem onClick={() => onEdit(item)}>
                             <Edit className="w-4 h-4 mr-2" /> Edit
                           </DropdownMenuItem>
+                          
                           <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600">
                             <Trash2 className="w-4 h-4 mr-2" /> Delete
                           </DropdownMenuItem>
@@ -122,7 +125,7 @@ export const SupplyItemTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
               })}
               {data.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
+                  <TableCell colSpan={10} className="h-24 text-center">
                     No items found.
                   </TableCell>
                 </TableRow>

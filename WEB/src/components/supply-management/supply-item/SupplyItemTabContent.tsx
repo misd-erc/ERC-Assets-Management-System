@@ -1,10 +1,10 @@
 // src/components/supply-management/supply-item/SupplyItemTabContent.tsx
 import { useState, useEffect } from 'react';
 import { useSupplyItem } from '@/hooks';
-import { SupplyItemTable } from '..';
-import { SupplyItemEditModal } from '..';
-import { SupplyItemDeleteModal } from '..';
-import { SupplyItem, VwSupplyItem } from '@/types';
+import { SupplyItemTable } from './SupplyItemTable';
+import { SupplyItemEditModal } from './SupplyItemEditModal';
+import { SupplyItemDeleteModal } from './SupplyItemDeleteModal';
+import { VwSupplyItem } from '@/types';
 
 export const SupplyItemTabContent = () => {
   const { vwSupplies, loading, fetchSupplyItems } = useSupplyItem();
@@ -12,7 +12,7 @@ export const SupplyItemTabContent = () => {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<VwSupplyItem | null>(null);
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add'); // <--- Updated Type
 
   useEffect(() => {
     fetchSupplyItems();
@@ -30,6 +30,12 @@ export const SupplyItemTabContent = () => {
     setIsEditOpen(true);
   };
 
+  const handleView = (item: VwSupplyItem) => {
+    setSelectedItem(item);
+    setModalMode('view');
+    setIsEditOpen(true);
+  };
+
   const handleDelete = (item: VwSupplyItem) => {
     setSelectedItem(item);
     setIsDeleteOpen(true);
@@ -44,10 +50,11 @@ export const SupplyItemTabContent = () => {
       <SupplyItemTable 
         data={vwSupplies} 
         onAdd={handleAdd} 
+        onView={handleView}  // <--- Pass View Handler
         onEdit={handleEdit} 
         onDelete={handleDelete} 
       />
-
+      
       <SupplyItemEditModal 
         open={isEditOpen} 
         onOpenChange={setIsEditOpen} 

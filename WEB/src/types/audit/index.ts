@@ -43,5 +43,3 @@ export interface ActivityResponse {
   };
 }
 
-// Audit Stats interfaces
-

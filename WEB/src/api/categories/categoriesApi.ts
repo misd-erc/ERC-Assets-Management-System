@@ -28,7 +28,7 @@ export const getCategories = async (): Promise<Category[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
-    const response = await axiosInstance.get<ApiResponse<{ items: Category[] }>>('/Inventory//all', {
+    const response = await axiosInstance.get<ApiResponse<{ items: Category[] }>>('/Inventory/pta/category/all', {
       params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
     });
 
