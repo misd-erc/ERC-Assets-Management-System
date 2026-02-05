@@ -359,17 +359,98 @@ export const validateTransferNumber = (ptrItrNumber: string): boolean => {
   return pattern.test(ptrItrNumber) && ptrItrNumber.length > 0;
 };
 
+// Track the last generated sequence to prevent duplicates
+let lastGeneratedSequence: { [key: string]: number } = {};
+
 /**
  * Generate PTR/ITR number based on type and current date
+ * Calls the backend API endpoint to get the next sequence number
  * @param transferType - 'PTR' for Property Transfer Record or 'ITR' for Inventory Transfer Record
- * @returns Generated PTR/ITR number
+ * @returns Promise resolving to generated PTR/ITR number in format: PTR-yyyy-mm-001
  */
-export const generateTransferNumber = (transferType: 'PTR' | 'ITR'): string => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const timestamp = Math.random().toString(36).substr(2, 5).toUpperCase();
+export const generateTransferNumber = async (transferType: 'PTR' | 'ITR'): Promise<string> => {
+  try {
+    // Call the dedicated backend endpoint to get the next number
+    const { systemUserId, sessionKey } = getAuthParams();
+    const response = await axiosInstance.get('/inventory/pta/movement/next-number', {
+      params: {
+        transferType: transferType,
+        ActionBySystemUserId: systemUserId,
+        SessionKey: sessionKey,
+      },
+    });
 
-  return `${transferType}-${year}${month}${day}-${timestamp}`;
+    if (response.data?.success && response.data?.data?.transferNumber) {
+      const nextNumber = response.data.data.transferNumber;
+      console.log(`Generated ${transferType} number from backend: ${nextNumber}`);
+      return nextNumber;
+    } else {
+      throw new Error(response.data?.message || 'Failed to generate transfer number from backend');
+    }
+  } catch (error) {
+    console.error('Error generating transfer number from backend, falling back to local generation:', error);
+    
+    // Fallback to local generation if backend call fails
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const yearMonth = `${year}-${month}`;
+      const key = `${transferType}-${yearMonth}`;
+
+      // Call the movement list endpoint to get ALL movements for this type and month
+      const { systemUserId, sessionKey } = getAuthParams();
+      const fallbackResponse = await axiosInstance.get('/inventory/pta/movement/list', {
+        params: {
+          pageNumber: 1,
+          pageSize: 10000, // Get all records for this month
+          ptrItrFilter: transferType.toUpperCase(),
+          ActionBySystemUserId: systemUserId,
+          SessionKey: sessionKey,
+        },
+      });
+
+      // Extract movements from response
+      const movements = fallbackResponse.data?.data?.items || [];
+      
+      // Filter for current month and year, extract sequence numbers
+      const currentMonthSequences: number[] = movements
+        .map((m: any) => {
+          const ptrItrNumber = m.ptrItrNumber || m.PTRITRNumber || m.transferNumber || '';
+          // Check if this movement belongs to current year-month
+          if (!ptrItrNumber.includes(yearMonth)) {
+            return null;
+          }
+          // Extract sequence number from format: PTR-yyyy-mm-001
+          const parts = ptrItrNumber.split('-');
+          const sequence = parseInt(parts[parts.length - 1], 10);
+          return (!isNaN(sequence) && sequence > 0) ? sequence : null;
+        })
+        .filter((seq: number | null) => seq !== null) as number[];
+
+      // Find the highest sequence number from API
+      const maxApiSequence = currentMonthSequences.length > 0 
+        ? Math.max(...currentMonthSequences)
+        : 0;
+      
+      // For additional safety, also check the in-memory tracking
+      const maxTrackedSequence = lastGeneratedSequence[key] || 0;
+      const maxSequence = Math.max(maxApiSequence, maxTrackedSequence);
+      
+      const nextSequence = maxSequence + 1;
+
+      // Store this sequence to ensure the next call gets a higher number (in-memory protection)
+      lastGeneratedSequence[key] = nextSequence;
+
+      // Generate the new number in format: PTR-yyyy-mm-001
+      const generatedNumber = `${transferType}-${yearMonth}-${String(nextSequence).padStart(3, '0')}`;
+
+      console.log(`Fallback generated ${transferType} number: ${generatedNumber} (API max: ${maxApiSequence}, Tracked max: ${maxTrackedSequence}, Next: ${nextSequence})`);
+
+      return generatedNumber;
+    } catch (fallbackError) {
+      console.error('Error in fallback transfer number generation:', fallbackError);
+      throw fallbackError;
+    }
+  }
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -11,6 +11,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 
 interface MovementsListProps {
   transferType?: 'PTR' | 'ITR';
+}
+
+export interface MovementsListRef {
+  loadMovements: (search?: string, page?: number) => Promise<void>;
 }
 
 interface EmployeeInfo {
@@ -55,7 +59,8 @@ interface Movement {
   createdAt?: string;
 }
 
-export function MovementsList({ transferType }: MovementsListProps) {
+export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
+  function MovementsListComponent({ transferType }, ref) {
   const [searchInput, setSearchInput] = useState('');
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(false);
@@ -90,6 +95,11 @@ export function MovementsList({ transferType }: MovementsListProps) {
       setLoading(false);
     }
   };
+
+  // Expose loadMovements via ref
+  useImperativeHandle(ref, () => ({
+    loadMovements,
+  }));
 
   // Initial load
   useEffect(() => {
@@ -489,3 +499,4 @@ export function MovementsList({ transferType }: MovementsListProps) {
     </div>
   );
 }
+);

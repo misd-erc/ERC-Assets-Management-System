@@ -1,18 +1,27 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Plus, ArrowRightLeft, RefreshCw, CheckCircle, Clock, Package } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { TransferForm } from './TransferForm';
-import { MovementsList } from './MovementsList';
+import { MovementsList, MovementsListRef } from './MovementsList';
 
 export function TransfersReturns() {
   const [ptrDialogOpen, setPtrDialogOpen] = useState(false);
   const [itrDialogOpen, setItrDialogOpen] = useState(false);
+  const ptrMovementsRef = useRef<MovementsListRef>(null);
+  const itrMovementsRef = useRef<MovementsListRef>(null);
 
-  const handleTransferSuccess = () => {
-    // Refetch data or show success message
-    // This can be expanded to reload transfer lists
+  const handlePtrSuccess = () => {
+    // Reload PTR movements list after successful transfer
+    ptrMovementsRef.current?.loadMovements();
+    setPtrDialogOpen(false);
+  };
+
+  const handleItrSuccess = () => {
+    // Reload ITR movements list after successful transfer
+    itrMovementsRef.current?.loadMovements();
+    setItrDialogOpen(false);
   };
 
   return (
@@ -123,7 +132,7 @@ export function TransfersReturns() {
                   </Button>
                 </div>
               </div>
-              <MovementsList transferType="PTR" />
+              <MovementsList ref={ptrMovementsRef} transferType="PTR" />
             </TabsContent>
 
             {/* ITR Tab */}
@@ -144,7 +153,7 @@ export function TransfersReturns() {
                   </Button>
                 </div>
               </div>
-              <MovementsList transferType="ITR" />
+              <MovementsList ref={itrMovementsRef} transferType="ITR" />
             </TabsContent>
 
             {/* RRPE Tab */}
@@ -267,13 +276,13 @@ export function TransfersReturns() {
         isOpen={ptrDialogOpen}
         onClose={() => setPtrDialogOpen(false)}
         transferType="PTR"
-        onSuccess={handleTransferSuccess}
+        onSuccess={handlePtrSuccess}
       />
       <TransferForm
         isOpen={itrDialogOpen}
         onClose={() => setItrDialogOpen(false)}
         transferType="ITR"
-        onSuccess={handleTransferSuccess}
+        onSuccess={handleItrSuccess}
       />
     </div>
   );
