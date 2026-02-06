@@ -18,7 +18,8 @@ public class PortalEditTools : IPortalEditTools
         LogEditTools log,
         NotificationEditTools notification,
         PTAEditTools pta,
-        SupplyEditTools supply
+        SupplyEditTools supply,
+        DeliveryEditTools delivery
     )
     {
         Account = account;
@@ -27,6 +28,7 @@ public class PortalEditTools : IPortalEditTools
         Notification = notification;
         PTA = pta;
         Supply = supply;
+        Delivery = delivery;
     }
 
     public AccountEditTools Account { get; }
@@ -35,4 +37,5 @@ public class PortalEditTools : IPortalEditTools
     public NotificationEditTools Notification { get; }
     public PTAEditTools PTA { get; }
     public SupplyEditTools Supply { get; }
+    public DeliveryEditTools Delivery { get; }
 }

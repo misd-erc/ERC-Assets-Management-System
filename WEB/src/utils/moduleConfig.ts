@@ -11,6 +11,7 @@ import {
   ArrowRightLeft,
   Archive,
   FileText,
+  Truck,
 } from "lucide-react";
 
 // CONFIG MAP FOR KNOWN MODULES
@@ -125,6 +126,14 @@ export const moduleConfig: Record<string, any> = {
     implemented: true, 
   },
 
+  DRI: {
+    id: "delivery-receipt-items",
+    title: "Delivery & Receipt of Items",
+    group: "Asset Management",
+    icon: Package,  
+    implemented: true, 
+  },
+
 };
 
 export const fallbackModule = {
@@ -134,4 +143,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["DB", "PPESE", "SM", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET"];
+export const adminOverrideModules = ["DB", "PPESE", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET"];

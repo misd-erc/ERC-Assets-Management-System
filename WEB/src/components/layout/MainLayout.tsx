@@ -17,6 +17,7 @@ import UCPage from "@/pages/UC";
 import ContractManagement from "@/pages/ContractManagement";
 import TransfersReturnsPage from "@/pages/TransfersReturnsPage";
 import { SupplyManagement } from "@/pages/SupplyManagement";
+import DeliveryManagement from "@/pages/DeliveryManagement";
 
 export default function MainLayout() {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -31,6 +32,9 @@ export default function MainLayout() {
 
       case "supply-management":
         return <SupplyManagement />;
+
+      case "delivery-receipt-items":
+        return <DeliveryManagement />;
 
       case "contract-management":
         return <ContractManagement />;

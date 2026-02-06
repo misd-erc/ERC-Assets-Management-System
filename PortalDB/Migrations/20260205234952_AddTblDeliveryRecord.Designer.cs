@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260205234952_AddTblDeliveryRecord")]
+    partial class AddTblDeliveryRecord
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -540,64 +543,6 @@ namespace PortalDB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblDeliveryRecords", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblDeliveryRecordItem", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("DeliveryRecordItemId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<long?>("CategoryId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PTACategoryId");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("DeliveryRecordItemCreatedAt");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("DeliveryRecordItemIsActive");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("DeliveryRecordItemIsDeleted");
-
-                    b.Property<string>("ItemDescriptionEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("DeliveryRecordItemDescription");
-
-                    b.Property<long?>("ItemQuantity")
-                        .HasColumnType("bigint")
-                        .HasColumnName("DeliveryRecordItemQuantity");
-
-                    b.Property<string>("ItemSpecificationEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("DeliveryRecordItemSpecification");
-
-                    b.Property<long?>("ItemTypeId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("DeliveryRecordItemType");
-
-                    b.Property<long?>("RecordId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("DeliveryRecordId");
-
-                    b.Property<long?>("UnitCost")
-                        .HasColumnType("bigint")
-                        .HasColumnName("DeliveryRecordUnitCost");
-
-                    b.Property<long?>("UnitId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyUnitId");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblDeliveryRecordItems", "asset");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyItem", b =>

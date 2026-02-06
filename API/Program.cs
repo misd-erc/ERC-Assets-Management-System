@@ -60,6 +60,8 @@ builder.Services.AddScoped<PTAEditTools>();
 builder.Services.AddScoped<PTAGetTools>();
 builder.Services.AddScoped<SupplyGetTools>();
 builder.Services.AddScoped<SupplyEditTools>();
+builder.Services.AddScoped<DeliveryGetTools>();
+builder.Services.AddScoped<DeliveryEditTools>();
 
 builder.Services.AddScoped<AuthTools>();
 builder.Services.AddScoped<ParserTools>();

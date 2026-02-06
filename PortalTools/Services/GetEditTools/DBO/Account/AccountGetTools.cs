@@ -165,6 +165,6 @@ namespace PortalTools.Services.GetEditTools.DBO.Account
                 .FirstOrDefaultAsync();
         }
         public IQueryable<TblEmployee?> GetEmployees(PortalDbContext context) => context.TblEmployees.AsNoTracking().Where(x => !x.IsDeleted);
-        public async Task<TblEmployee?> GetTblEmployeeAsync(long id, PortalDbContext context) => await context.TblEmployees.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblEmployee?> GetTblEmployeeAsync(long? id, PortalDbContext context) => await context.TblEmployees.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
     }
 }

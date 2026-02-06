@@ -18,4 +18,5 @@ public interface IPortalEditTools
     NotificationEditTools Notification { get; }
     PTAEditTools PTA { get; }
     SupplyEditTools Supply { get; }
+    DeliveryEditTools Delivery { get; }
 }

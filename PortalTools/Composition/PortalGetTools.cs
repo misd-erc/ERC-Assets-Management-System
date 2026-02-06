@@ -17,7 +17,8 @@ public class PortalGetTools : IPortalGetTools
         StorageGetTools storage,
         NotificationGetTools notification,
         PTAGetTools pta,
-        SupplyGetTools supply
+        SupplyGetTools supply,
+        DeliveryGetTools delivery
     )
     {
         Account = account;
@@ -27,6 +28,7 @@ public class PortalGetTools : IPortalGetTools
         Notification = notification;
         PTA = pta;
         Supply = supply;
+        Delivery = delivery;
     }
 
     public AccountGetTools Account { get; }
@@ -36,5 +38,6 @@ public class PortalGetTools : IPortalGetTools
     public NotificationGetTools Notification { get; }
     public PTAGetTools PTA { get; }
     public SupplyGetTools Supply { get; }
+    public DeliveryGetTools Delivery { get; }
 
 }

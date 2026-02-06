@@ -110,4 +110,20 @@ export interface MSALAccountInfo {
   entraId?: string;
 }
 
+export interface Employee {
+  id: number;
+  systemUserId: number;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  suffixName: string;
+  employeeIdOriginal: string;
+  officeId: number;
+  divisionId: number;
+  positionId: number;
+  employmentTypeId: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
 
