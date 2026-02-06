@@ -5,7 +5,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 
 const ContractManagement = () => {
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
+    <div className="p-6 pt-20 space-y-8">
       <ContractGeneralHeader />
       <Tabs defaultValue="vendor" className="space-y-4">
         <ContractTabsList />

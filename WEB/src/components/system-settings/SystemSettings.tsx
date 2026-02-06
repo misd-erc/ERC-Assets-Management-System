@@ -153,7 +153,7 @@ export function SystemSettings() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">System Settings</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">System Settings</h1>
           <p className="text-muted-foreground">
             Configure system preferences, integrations, and security settings
           </p>

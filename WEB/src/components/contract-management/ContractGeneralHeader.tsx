@@ -11,7 +11,7 @@ export const ContractGeneralHeader = () => {
       {/* Title + Add Button */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Contract Management</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">Contract Management</h1>
           <p className="text-muted-foreground">
             Manage vendors and other contract-related entities
           </p>
