@@ -54,6 +54,46 @@ const enrichMovementData = async (movement: any): Promise<any> => {
 };
 
 /**
+ * Get movement statistics
+ * @returns Promise with statistics for PTR, ITR, and Returns
+ */
+export const getMovementStatistics = async (): Promise<{
+  activePTR: number;
+  activeITR: number;
+  activeReturnsPPE: number;
+  activeReturnsSE: number;
+  totalActive: number;
+}> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
+    const url = `${API_BASE_URL}/Inventory/pta/movement/statistics?ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch movement statistics: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error('Error fetching movement statistics:', error);
+    return {
+      activePTR: 0,
+      activeITR: 0,
+      activeReturnsPPE: 0,
+      activeReturnsSE: 0,
+      totalActive: 0,
+    };
+  }
+};
+
+/**
  * Get assets held by a specific employee
  * @param employeeId - Employee ID
  * @param groupName - 'PPE' or 'SE'
@@ -180,8 +220,8 @@ export const getMovementHistory = async (ptaId: number): Promise<TransferRecord[
 };
 
 /**
- * Get list of PTA movements with filters (PTR/ITR)
- * @param ptrItrFilter - Filter by "PTR", "ITR", or specific PTR/ITR number
+ * Get list of PTA movements with filters (PTR/ITR/RRPPE/RRSP)
+ * @param ptrItrFilter - Filter by "PTR", "ITR", or specific PTR/ITR number (or "RRPPE"/"RRSP" for returns)
  * @param parIcsFilter - Filter by "PAR", "ICS", or specific PAR/ICS number
  * @param ptaId - Optional PTA ID to filter by
  * @param pageNumber - Page number for pagination
@@ -201,8 +241,15 @@ export const getMovementsList = async (
 
     let url = `${API_BASE_URL}/Inventory/pta/movement/list?PageNumber=${pageNumber}&PageSize=${pageSize}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 
+    // Check if this is a return type filter (RRPPE/RRSP) or transfer type (PTR/ITR)
     if (ptrItrFilter) {
-      url += `&PtrItrFilter=${encodeURIComponent(ptrItrFilter)}`;
+      if (ptrItrFilter.toUpperCase() === 'RRPPE' || ptrItrFilter.toUpperCase() === 'RRSP') {
+        // Use RrppeRrspFilter for return records
+        url += `&RrppeRrspFilter=${encodeURIComponent(ptrItrFilter)}`;
+      } else {
+        // Use PtrItrFilter for transfer records
+        url += `&PtrItrFilter=${encodeURIComponent(ptrItrFilter)}`;
+      }
     }
 
     if (parIcsFilter) {
@@ -363,6 +410,124 @@ export const validateTransferNumber = (ptrItrNumber: string): boolean => {
 let lastGeneratedSequence: { [key: string]: number } = {};
 
 /**
+ * Get RRPPE movements (Return Record - PPE)
+ * @param rrppeNumber - Specific RRPPE number or "RRPPE" to get all RRPPE
+ * @param pageNumber - Page number for pagination
+ * @param pageSize - Page size for pagination
+ * @returns Promise with array of RRPPE movement records
+ */
+export const getRRPPEMovements = async (
+  rrppeNumber?: string,
+  pageNumber: number = 1,
+  pageSize: number = 100
+): Promise<any> => {
+  return getMovementsList(rrppeNumber || 'RRPPE', undefined, undefined, pageNumber, pageSize);
+};
+
+/**
+ * Get RRSP movements (Return Record - SE)
+ * @param rrspNumber - Specific RRSP number or "RRSP" to get all RRSP
+ * @param pageNumber - Page number for pagination
+ * @param pageSize - Page size for pagination
+ * @returns Promise with array of RRSP movement records
+ */
+export const getRRSPMovements = async (
+  rrspNumber?: string,
+  pageNumber: number = 1,
+  pageSize: number = 100
+): Promise<any> => {
+  return getMovementsList(rrspNumber || 'RRSP', undefined, undefined, pageNumber, pageSize);
+};
+
+/**
+ * Generate RRPPE/RRSP return number based on type and current date
+ * Calls the backend API endpoint to get the next sequence number
+ * @param returnType - 'RRPPE' for PPE returns or 'RRSP' for SE returns
+ * @returns Promise resolving to generated return number in format: RRPPE-yyyy-mm-001 or RRSP-yyyy-mm-001
+ */
+export const generateReturnNumber = async (returnType: 'RRPPE' | 'RRSP'): Promise<string> => {
+  try {
+    // Call the dedicated backend endpoint to get the next return number
+    const { systemUserId, sessionKey } = getAuthParams();
+    const response = await axiosInstance.get('/inventory/pta/movement/next-return-number', {
+      params: {
+        returnType: returnType,
+        ActionBySystemUserId: systemUserId,
+        SessionKey: sessionKey,
+      },
+    });
+
+    if (response.data?.success && response.data?.data?.returnNumber) {
+      const nextNumber = response.data.data.returnNumber;
+      console.log(`Generated ${returnType} number from backend: ${nextNumber}`);
+      return nextNumber;
+    } else {
+      throw new Error(response.data?.message || 'Failed to generate return number from backend');
+    }
+  } catch (error) {
+    console.error('Error generating return number from backend, falling back to local generation:', error);
+    
+    // Fallback to local generation if backend call fails
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const yearMonth = `${year}-${month}`;
+
+      // Call the movement list endpoint to get ALL movements for this return type and month
+      const { systemUserId, sessionKey } = getAuthParams();
+      const fallbackResponse = await axiosInstance.get('/inventory/pta/movement/list', {
+        params: {
+          pageNumber: 1,
+          pageSize: 10000, // Get all records for this month
+          ptrItrFilter: returnType.toUpperCase(),
+          ActionBySystemUserId: systemUserId,
+          SessionKey: sessionKey,
+        },
+      });
+
+      // Extract movements from response
+      const movements = fallbackResponse.data?.data?.items || [];
+      
+      // Filter for current month and year, extract sequence numbers
+      const currentMonthSequences: number[] = movements
+        .map((m: any) => {
+          const returnNumber = m.ptrItrNumber || m.PTRITRNumber || m.transferNumber || '';
+          // Check if this movement belongs to current year-month
+          if (!returnNumber.includes(yearMonth)) {
+            return null;
+          }
+          // Extract sequence number from format: RRPPE-yyyy-mm-001
+          const parts = returnNumber.split('-');
+          const sequence = parseInt(parts[parts.length - 1], 10);
+          return (!isNaN(sequence) && sequence > 0) ? sequence : null;
+        })
+        .filter((seq: number | null) => seq !== null) as number[];
+
+      // Find the highest sequence number from API
+      const maxSequence = currentMonthSequences.length > 0 
+        ? Math.max(...currentMonthSequences)
+        : 0;
+      
+      const nextSequence = maxSequence + 1;
+
+      // Generate the new number in format: RRPPE-yyyy-mm-001 or RRSP-yyyy-mm-001
+      const generatedNumber = `${returnType}-${yearMonth}-${String(nextSequence).padStart(3, '0')}`;
+
+      console.log(`Fallback generated ${returnType} number: ${generatedNumber}`);
+
+      return generatedNumber;
+    } catch (fallbackError) {
+      console.error('Error in fallback return number generation:', fallbackError);
+      throw fallbackError;
+    }
+  }
+};
+
+// Track the last generated sequence to prevent duplicates
+let lastGeneratedSequenceTransfer: { [key: string]: number } = {};
+
+/**
  * Generate PTR/ITR number based on type and current date
  * Calls the backend API endpoint to get the next sequence number
  * @param transferType - 'PTR' for Property Transfer Record or 'ITR' for Inventory Transfer Record
@@ -434,13 +599,13 @@ export const generateTransferNumber = async (transferType: 'PTR' | 'ITR'): Promi
         : 0;
       
       // For additional safety, also check the in-memory tracking
-      const maxTrackedSequence = lastGeneratedSequence[key] || 0;
+      const maxTrackedSequence = lastGeneratedSequenceTransfer[key] || 0;
       const maxSequence = Math.max(maxApiSequence, maxTrackedSequence);
       
       const nextSequence = maxSequence + 1;
 
       // Store this sequence to ensure the next call gets a higher number (in-memory protection)
-      lastGeneratedSequence[key] = nextSequence;
+      lastGeneratedSequenceTransfer[key] = nextSequence;
 
       // Generate the new number in format: PTR-yyyy-mm-001
       const generatedNumber = `${transferType}-${yearMonth}-${String(nextSequence).padStart(3, '0')}`;

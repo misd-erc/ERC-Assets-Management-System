@@ -253,6 +253,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           const latestMovement = sortedMovements[0];
           return {
             ...latestMovement,
+            status: latestMovement.status || 'T', // Preserve original status, default to 'T' for transfer
             plantillaEmployeeId: latestMovement.plantillaEmployeeId || null,
             nonPlantillaEmployeeId: latestMovement.nonPlantillaEmployeeId || null,
             isCurrent: false, // Mark previous as not current

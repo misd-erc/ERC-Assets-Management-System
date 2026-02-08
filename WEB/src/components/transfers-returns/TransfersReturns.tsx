@@ -1,27 +1,77 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Plus, ArrowRightLeft, RefreshCw, CheckCircle, Clock, Package } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { TransferForm } from './TransferForm';
+import { ReturnForm } from './ReturnForm';
 import { MovementsList, MovementsListRef } from './MovementsList';
+import { getMovementStatistics } from '@/api/asset/transferApi';
 
 export function TransfersReturns() {
   const [ptrDialogOpen, setPtrDialogOpen] = useState(false);
   const [itrDialogOpen, setItrDialogOpen] = useState(false);
+  const [rrppeDialogOpen, setRrppeDialogOpen] = useState(false);
+  const [rrspDialogOpen, setRrspDialogOpen] = useState(false);
   const ptrMovementsRef = useRef<MovementsListRef>(null);
   const itrMovementsRef = useRef<MovementsListRef>(null);
+  const rrppeMovementsRef = useRef<MovementsListRef>(null);
+  const rrspMovementsRef = useRef<MovementsListRef>(null);
+  
+  // Statistics state
+  const [statistics, setStatistics] = useState({
+    activePTR: 0,
+    activeITR: 0,
+    activeReturnsPPE: 0,
+    activeReturnsSE: 0,
+    totalActive: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Load statistics
+  const loadStatistics = async () => {
+    try {
+      setStatsLoading(true);
+      const stats = await getMovementStatistics();
+      setStatistics(stats);
+    } catch (error) {
+      console.error('Failed to load statistics:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  // Load statistics on mount
+  useEffect(() => {
+    loadStatistics();
+  }, []);
 
   const handlePtrSuccess = () => {
     // Reload PTR movements list after successful transfer
     ptrMovementsRef.current?.loadMovements();
+    loadStatistics();
     setPtrDialogOpen(false);
   };
 
   const handleItrSuccess = () => {
     // Reload ITR movements list after successful transfer
     itrMovementsRef.current?.loadMovements();
+    loadStatistics();
     setItrDialogOpen(false);
+  };
+
+  const handleRrppeSuccess = () => {
+    // Reload RRPPE movements list after successful return
+    rrppeMovementsRef.current?.loadMovements();
+    loadStatistics();
+    setRrppeDialogOpen(false);
+  };
+
+  const handleRrspSuccess = () => {
+    // Reload RRSP movements list after successful return
+    rrspMovementsRef.current?.loadMovements();
+    loadStatistics();
+    setRrspDialogOpen(false);
   };
 
   return (
@@ -33,20 +83,7 @@ export function TransfersReturns() {
             Manage property transfers (PTR/ITR) and returns (RRPE/RRSP)
           </p>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Process Return
-          </Button>
-          <Button onClick={() => setPtrDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            New PTR (PPE)
-          </Button>
-          <Button onClick={() => setItrDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            New ITR (SE)
-          </Button>
-        </div>
+       
       </div>
 
       {/* Statistics Cards */}
@@ -56,7 +93,9 @@ export function TransfersReturns() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Active PTR</p>
-                <p className="text-2xl mt-1">15</p>
+                <p className="text-2xl mt-1">
+                  {statsLoading ? '...' : statistics.activePTR}
+                </p>
               </div>
               <Package className="w-8 h-8 text-blue-600" />
             </div>
@@ -67,7 +106,9 @@ export function TransfersReturns() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Active ITR</p>
-                <p className="text-2xl mt-1">8</p>
+                <p className="text-2xl mt-1">
+                  {statsLoading ? '...' : statistics.activeITR}
+                </p>
               </div>
               <Package className="w-8 h-8 text-purple-600" />
             </div>
@@ -77,10 +118,12 @@ export function TransfersReturns() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Pending Returns</p>
-                <p className="text-2xl mt-1">12</p>
+                <p className="text-sm text-muted-foreground">Active Returns PPE</p>
+                <p className="text-2xl mt-1">
+                  {statsLoading ? '...' : statistics.activeReturnsPPE}
+                </p>
               </div>
-              <Clock className="w-8 h-8 text-amber-600" />
+              <RefreshCw className="w-8 h-8 text-amber-600" />
             </div>
           </CardContent>
         </Card>
@@ -88,10 +131,12 @@ export function TransfersReturns() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl mt-1">156</p>
+                <p className="text-sm text-muted-foreground">Active Returns SE</p>
+                <p className="text-2xl mt-1">
+                  {statsLoading ? '...' : statistics.activeReturnsSE}
+                </p>
               </div>
-              <CheckCircle className="w-8 h-8 text-green-600" />
+              <RefreshCw className="w-8 h-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -159,7 +204,7 @@ export function TransfersReturns() {
             {/* RRPE Tab */}
             <TabsContent value="rrpe" className="space-y-4">
               <div className="bg-amber-50 border border-amber-200 rounded p-4">
-                <h3 className="font-semibold text-amber-900 mb-2">Return Record - PPE (RRPE)</h3>
+                <h3 className="font-semibold text-amber-900 mb-2">Return Record - PPE (RRPPE)</h3>
                 <p className="text-sm text-amber-800 mb-4">
                   Process returns of Property, Plant & Equipment assets to central storage or for disposal.
                 </p>
@@ -168,12 +213,13 @@ export function TransfersReturns() {
                     <p className="text-sm text-amber-700">Pending Returns: <span className="font-semibold">7</span></p>
                     <p className="text-sm text-amber-700">This Month: <span className="font-semibold">2</span></p>
                   </div>
-                  <Button variant="outline">
+                  <Button onClick={() => setRrppeDialogOpen(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     Process Return
                   </Button>
                 </div>
               </div>
+              <MovementsList ref={rrppeMovementsRef} transferType="RRPPE" />
             </TabsContent>
 
             {/* RRSP Tab */}
@@ -188,12 +234,13 @@ export function TransfersReturns() {
                     <p className="text-sm text-green-700">Pending Returns: <span className="font-semibold">5</span></p>
                     <p className="text-sm text-green-700">This Month: <span className="font-semibold">1</span></p>
                   </div>
-                  <Button variant="outline">
+                  <Button onClick={() => setRrspDialogOpen(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     Process Return
                   </Button>
                 </div>
               </div>
+              <MovementsList ref={rrspMovementsRef} transferType="RRSP" />
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -283,6 +330,20 @@ export function TransfersReturns() {
         onClose={() => setItrDialogOpen(false)}
         transferType="ITR"
         onSuccess={handleItrSuccess}
+      />
+
+      {/* Return Form Dialogs */}
+      <ReturnForm
+        isOpen={rrppeDialogOpen}
+        onClose={() => setRrppeDialogOpen(false)}
+        returnType="RRPPE"
+        onSuccess={handleRrppeSuccess}
+      />
+      <ReturnForm
+        isOpen={rrspDialogOpen}
+        onClose={() => setRrspDialogOpen(false)}
+        returnType="RRSP"
+        onSuccess={handleRrspSuccess}
       />
     </div>
   );

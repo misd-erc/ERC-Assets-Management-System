@@ -1341,6 +1341,124 @@ namespace API.Controllers
             }
         }
 
+        // GET api/inventory/pta/movement/next-return-number
+        [HttpGet("pta/movement/next-return-number")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetNextReturnNumber([FromQuery] string returnType = "RRPPE", [FromQuery] SoloQueryParams model = null)
+        {
+            await using var context = new PortalDbContext(_options);
+
+            try
+            {
+                // Validate return type
+                if (string.IsNullOrWhiteSpace(returnType) || (!returnType.Equals("RRPPE", StringComparison.OrdinalIgnoreCase) && !returnType.Equals("RRSP", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.VALIDATION_FAILED, "Return type must be either 'RRPPE' or 'RRSP'"));
+                }
+
+                // Get current date
+                var now = DateTime.UtcNow;
+                var year = now.Year;
+                var month = now.Month.ToString("D2");
+                var yearMonth = $"{year}-{month}";
+
+                // Get all movements for the current month and type
+                var movements = await _getTools.PTA.GetTblPTAMovements(context).ToListAsync();
+
+                // Filter for current month and return type
+                var currentMonthMovements = movements
+                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && 
+                                x.RRPPERRSPNumber.ToUpper().StartsWith(returnType.ToUpper()) &&
+                                x.RRPPERRSPNumber.Contains(yearMonth))
+                    .ToList();
+
+                // Extract sequence numbers from the RRPPE/RRSP numbers (format: RRPPE-yyyy-mm-001)
+                var sequenceNumbers = currentMonthMovements
+                    .Select(x =>
+                    {
+                        var parts = x.RRPPERRSPNumber.Split('-');
+                        if (parts.Length >= 4 && int.TryParse(parts[3], out var sequence))
+                        {
+                            return sequence;
+                        }
+                        return 0;
+                    })
+                    .Where(x => x > 0)
+                    .ToList();
+
+                // Get the maximum sequence number, default to 0 if none found
+                var maxSequence = sequenceNumbers.Any() ? sequenceNumbers.Max() : 0;
+                var nextSequence = maxSequence + 1;
+
+                // Format the new return number
+                var nextNumber = $"{returnType.ToUpper()}-{yearMonth}-{nextSequence:D3}";
+
+                Console.WriteLine($"[NEXT_RETURN_NUMBER] Type: {returnType}, Year-Month: {yearMonth}, Max Sequence: {maxSequence}, Next: {nextNumber}");
+
+                return Ok(ApiResponse<object>.Ok(new { returnNumber = nextNumber, sequence = nextSequence }, "Next return number generated successfully"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating next return number: {ex.Message}");
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while generating the return number."));
+            }
+        }
+
+        // GET api/inventory/pta/movement/statistics
+        [HttpGet("pta/movement/statistics")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetPTAMovementStatistics([FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+
+            try
+            {
+                // Get all current movements
+                var allMovements = await _getTools.PTA.GetTblPTAMovements(context)
+                    .Where(x => x.IsCurrent == true && !x.IsDeleted)
+                    .ToListAsync();
+
+                // Count Active PTR (PTRITRNumber starts with "PTR")
+                var activePTR = allMovements
+                    .Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().StartsWith("PTR"))
+                    .Count();
+
+                // Count Active ITR (PTRITRNumber starts with "ITR")
+                var activeITR = allMovements
+                    .Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().StartsWith("ITR"))
+                    .Count();
+
+                // Count Active Returns PPE (RRPPERRSPNumber starts with "RRPPE")
+                var activeReturnsPPE = allMovements
+                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRPPE"))
+                    .Count();
+
+                // Count Active Returns SE (RRPPERRSPNumber starts with "RRSP")
+                var activeReturnsSE = allMovements
+                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRSP"))
+                    .Count();
+
+                var statistics = new
+                {
+                    activePTR = activePTR,
+                    activeITR = activeITR,
+                    activeReturnsPPE = activeReturnsPPE,
+                    activeReturnsSE = activeReturnsSE,
+                    totalActive = activePTR + activeITR + activeReturnsPPE + activeReturnsSE
+                };
+
+                return Ok(ApiResponse<object>.Ok(statistics, "Movement statistics retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving movement statistics: {ex.Message}");
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while retrieving statistics."));
+            }
+        }
+
         // GET api/inventory/pta/movement/list
         [HttpGet("pta/movement/list")]
         [ValidateSessionToken]
@@ -1371,7 +1489,9 @@ namespace API.Controllers
                 var allMovements = await movements
                     .ToListAsync();
                 
+                // Filter to only show current movements (IsCurrent == true)
                 allMovements = allMovements
+                    .Where(x => x.IsCurrent == true)
                     .OrderByDescending(x => x.DateAssigned)
                     .ThenByDescending(x => x.CreatedAt)
                     .ToList();
@@ -1393,6 +1513,26 @@ namespace API.Controllers
                     {
                         // Search for specific PTR/ITR number
                         allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().Contains(filterValue.ToUpper())).ToList();
+                    }
+                }
+
+                // Apply RRPPE/RRSP Filter on in-memory data (since it's encrypted)
+                if (!string.IsNullOrWhiteSpace(model.RrppeRrspFilter))
+                {
+                    string filterValue = model.RrppeRrspFilter.Trim();
+                    
+                    if (filterValue.ToUpper() == "RRPPE")
+                    {
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRPPE")).ToList();
+                    }
+                    else if (filterValue.ToUpper() == "RRSP")
+                    {
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRSP")).ToList();
+                    }
+                    else
+                    {
+                        // Search for specific RRPPE/RRSP number
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().Contains(filterValue.ToUpper())).ToList();
                     }
                 }
 
@@ -1453,6 +1593,7 @@ namespace API.Controllers
                         PTAId = movement.PTAId,
                         DateAssigned = movement.DateAssigned,
                         PTRITRNumber = movement.PTRITRNumber,
+                        RRPPERRSPNumber = movement.RRPPERRSPNumber,
                         PARICSNumber = movement.PARICSNumber,
                         Remarks = movement.Remarks,
                         Status = movement.Status,
@@ -1725,6 +1866,7 @@ namespace API.Controllers
                     PTAId = model.PTAId,
                     DateAssigned = model.DateAssigned,
                     PTRITRNumber = model.PtrItrNumber,
+                    RRPPERRSPNumber = model.RrppeRrspNumber,
                     PARICSNumber = model.ParIcsNumber,
                     PlantillaEmployeeId = model.PlantillaEmployeeId,
                     NonPlantillaEmployeeId = model.NonPlantillaEmployeeId,
