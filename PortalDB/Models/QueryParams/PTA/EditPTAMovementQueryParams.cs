@@ -16,6 +16,7 @@ namespace PortalDB.Models.QueryParams.PTA
         [Required] public DateTime DateAssigned { get; set; }
         public string PtrItrNumber { get; set; } = string.Empty;
         public string ParIcsNumber { get; set; } = string.Empty;
+        public string RrppeRrspNumber { get; set; } = string.Empty;
         public string? Status { get; set; }
         public long? PlantillaEmployeeId { get; set; }
         public long? NonPlantillaEmployeeId { get; set; }

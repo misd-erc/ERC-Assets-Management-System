@@ -508,7 +508,7 @@ export class UnifiedAssetService {
         sessionKey,
       };
 
-      // Use SE API for update
+      // Use appropriate API for update
       let apiResponse;
       if (group === 'SE') {
         // SE asset - pass data directly since SEAsset interface matches the new API format
@@ -537,8 +537,34 @@ export class UnifiedAssetService {
         }
         return { success: true, ptaId: apiResponse.data?.id ? Number(apiResponse.data.id) : null };
       } else {
-        // PPE API does not support update
-        throw new Error('Update not supported for PPE assets');
+        // PPE asset - use PPE API for update
+        const apiDataForPPE = {
+          id: id.toString(),
+          propertyNumber: apiData.propertyNumber,
+          category: apiData.category,
+          legend: typeof apiData.legend === 'object' && apiData.legend ? apiData.legend.name : apiData.legend,
+          description: apiData.description,
+          brand: apiData.brand,
+          model: apiData.model,
+          serialNumber: apiData.serialNumber,
+          parts: apiData.parts || [],
+          unitOfMeasurement: apiData.unitOfMeasurement,
+          unitValue: apiData.unitValue,
+          dateAcquired: apiData.dateAcquired,
+          estimatedUsefulLife: apiData.estimatedUsefulLife || 0,
+          movements: apiData.movements || [],
+          actionBySystemUserId,
+          sessionKey,
+        };
+        apiResponse = await ppeApi.update(apiDataForPPE);
+        if (!apiResponse.success) throw new Error('Update failed');
+        // Handle movements update for PPE
+        if (data.movements && data.movements.length > 0) {
+          for (const movement of data.movements) {
+            await ppeApi.editMovement({ ...movement, actionBySystemUserId, sessionKey });
+          }
+        }
+        return { success: true, ptaId: apiResponse.data?.id ? Number(apiResponse.data.id) : null };
       }
     } catch (error) {
       console.error('Error updating unified asset:', error);

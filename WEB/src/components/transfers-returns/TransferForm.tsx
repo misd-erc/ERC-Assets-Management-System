@@ -55,6 +55,21 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
 
   const groupName = transferType === 'PTR' ? 'PPE' : 'SE';
 
+  // Reset form state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentStep('from-employee');
+      setFromEmployee(null);
+      setToPlantillaEmployee(null);
+      setToNonPlantillaEmployee(null);
+      setSelectedItems([]);
+      setError(null);
+      setSuccess(false);
+      setLoading(false);
+      setItemsLoading(false);
+    }
+  }, [isOpen]);
+
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
@@ -203,8 +218,8 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       setLoading(true);
       setError(null);
 
-      // Generate transfer number
-      const transferNumber = generateTransferNumber(transferType);
+      // Generate transfer number (async call to backend)
+      const transferNumber = await generateTransferNumber(transferType);
 
       // Create movement records for each selected item
       const movements = selectedItems.map(itemId => {
@@ -238,6 +253,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           const latestMovement = sortedMovements[0];
           return {
             ...latestMovement,
+            status: latestMovement.status || 'T', // Preserve original status, default to 'T' for transfer
             plantillaEmployeeId: latestMovement.plantillaEmployeeId || null,
             nonPlantillaEmployeeId: latestMovement.nonPlantillaEmployeeId || null,
             isCurrent: false, // Mark previous as not current
@@ -262,7 +278,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       // Reset form
       setTimeout(() => {
         onClose();
-        onSuccess?.();
+        onSuccess?.(); // This will trigger API call to refresh the movement list
       }, 1500);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save transfer record';
