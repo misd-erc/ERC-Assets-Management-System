@@ -39,6 +39,15 @@ namespace PortalDB.Entities.ASSET.PTA
             set => PTRITRNumberEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
+        [Column("PTAMovementRRPPERRSPNumber")]
+        public string? RRPPERRSPNumberEncrypted { get; set; }
+        [NotMapped]
+        public string? RRPPERRSPNumber
+        {
+            get => string.IsNullOrEmpty(RRPPERRSPNumberEncrypted) ? null : EncryptionHelper.Decrypt(RRPPERRSPNumberEncrypted);
+            set => RRPPERRSPNumberEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+        }
+
         [Column("PTAMovementPARICSNumber")]
         public string? PARICSNumberEncrypted { get; set; }
         [NotMapped]

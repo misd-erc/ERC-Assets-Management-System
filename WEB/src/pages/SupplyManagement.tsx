@@ -1,77 +1,62 @@
-﻿import React, { useState } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { SummaryCards } from '@/components/supplies/SummaryCards';
-import { SupplyTable } from '@/components/supplies/SupplyTable';
-import { CategoriesView } from '@/components/categories/CategoriesView';
-import { StockCardsView } from '@/components/supplies/StockCardsView';
-import { ServiceAllocationsView } from '@/components/supplies/ServiceAllocationsView';
-import { RISRequestsView } from '@/components/supplies/RISRequestsView';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, FileText, BarChart3, ClipboardList, Users } from 'lucide-react';
+import { useState } from 'react';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 
-export const SupplyManagement: React.FC = () => {
-  const [tab, setTab] = useState('overview');
+// Clean imports thanks to the index.ts file
+import { 
+  SupplyGeneralHeader, 
+  SupplyTabsList, 
+  SupplyItemTabContent,
+  SupplyUnitTabContent,
+  SupplyStorageTabContent
+} from '@/components/supply-management';
+
+export const SupplyManagement = () => {
+  const [activeTab, setActiveTab] = useState('inventory');
 
   return (
-    <div className="p-6 pt-20 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Supply Management</h1>
-          <p className="text-muted-foreground">
-            Manage inventory, track supplies, and handle RIS requests
-          </p>
-        </div>
-      </div>
+    <div className="p-6 pt-20 space-y-8">
+      <SupplyGeneralHeader />
 
-      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="overview" className="flex items-center gap-2"><BarChart3 className="w-4 h-4" />Overview</TabsTrigger>
-          <TabsTrigger value="inventory" className="flex items-center gap-2"><Package className="w-4 h-4" />Inventory</TabsTrigger>
-          <TabsTrigger value="categories" className="flex items-center gap-2"><FileText className="w-4 h-4" />Categories</TabsTrigger>
-          <TabsTrigger value="stockcards" className="flex items-center gap-2"><ClipboardList className="w-4 h-4" />Stock Cards</TabsTrigger>
-          <TabsTrigger value="allocations" className="flex items-center gap-2"><Users className="w-4 h-4" />Service Allocations</TabsTrigger>
-          <TabsTrigger value="ris" className="flex items-center gap-2"><FileText className="w-4 h-4" />RIS Requests</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <SupplyTabsList />
 
-        <TabsContent value="overview">
-          <SummaryCards />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader><CardTitle>Recent Activity</CardTitle></CardHeader>
-              <div className="p-4 text-slate-600">Recent activities will appear here</div>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle>Low Stock Alerts</CardTitle></CardHeader>
-              <div className="p-4 text-slate-600">Low stock alerts will appear here</div>
-            </Card>
-          </div>
-        </TabsContent>
-
+        {/* --- INVENTORY ITEMS --- */}
         <TabsContent value="inventory">
-          <SupplyTable />
+          <SupplyItemTabContent />
         </TabsContent>
 
-        <TabsContent value="categories">
-          <CategoriesView />
+        {/* --- UNITS --- */}
+        <TabsContent value="units">
+          <SupplyUnitTabContent />
         </TabsContent>
 
-        <TabsContent value="stockcards">
-          <StockCardsView />
+         {/* --- STORAGE LOCATIONS --- */}
+         <TabsContent value="storage">
+          <SupplyStorageTabContent />
         </TabsContent>
 
-        <TabsContent value="allocations">
-          <ServiceAllocationsView />
+        {/* --- PLACEHOLDERS FOR FUTURE MODULES --- */}
+        {/* <TabsContent value="categories">
+           <div className="p-12 text-center text-muted-foreground border rounded-lg bg-slate-50">
+             Category Module Coming Soon
+           </div>
+        </TabsContent> */}
+        <TabsContent value="ris-requests">
+           <div className="p-12 text-center text-muted-foreground border rounded-lg bg-slate-50">
+             RIS Module Coming Soon
+           </div>
         </TabsContent>
-
-        <TabsContent value="ris">
-          <RISRequestsView />
+         <TabsContent value="stock-cards">
+           <div className="p-12 text-center text-muted-foreground border rounded-lg bg-slate-50">
+             Stock Cards Module Coming Soon
+           </div>
+        </TabsContent>
+         <TabsContent value="allocations">
+           <div className="p-12 text-center text-muted-foreground border rounded-lg bg-slate-50">
+             Allocations Module Coming Soon
+           </div>
         </TabsContent>
       </Tabs>
     </div>
   );
 };
-
-export default SupplyManagement;
-
-
-

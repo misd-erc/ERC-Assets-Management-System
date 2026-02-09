@@ -1,178 +1,90 @@
-﻿// src/components/office/DivisionEditModal.tsx
+﻿// src/components/contract-management/vendor/VendorEditModal.tsx
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { useState, useEffect } from 'react';
-import { Vendor} from '@/types';
-import { toast } from 'sonner';
-import { getVendors } from '@/api'; 
 import { useVendor } from '@/hooks';
+import { Vendor } from '@/types';
 
 interface Props {
   open: boolean;
+  onOpenChange: (open: boolean) => void;
   mode: 'add' | 'edit';
   vendor?: Vendor | null;
-  onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Helper â€“ client-side filter (shadcn/ui does not have filterOption) */
-/* ------------------------------------------------------------------ */
-const useSearchableSelect = (items: Vendor[], search: string) => {
-  return items.filter((vendor) =>
-    vendor.name.toLowerCase().includes(search.toLowerCase())
-  );
-};
-
-export const VendorEditModal = ({
-  open,
-  mode,
-  vendor,
-  onOpenChange,
-  onSuccess,
-}: Props) => {
+export const VendorEditModal = ({ open, onOpenChange, mode, vendor }: Props) => {
   const { addVendor, updateVendor } = useVendor();
-
-  /* ------------------- STATE ------------------- */
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [search, setSearch] = useState('');               // <--- search input
+  const [loading, setLoading] = useState(false);
+  
+  // Simplified state: Only Name and IsActive
   const [form, setForm] = useState<Partial<Vendor>>({
     name: '',
-    isActive: true,
+    isActive: true
   });
-  const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  /* ------------------- FETCH OFFICES ------------------- */
-  useEffect(() => {
-    if (open) {
-      const load = async () => {
-        try {
-          setLoading(true);
-          const data = await getVendors();
-          setVendors(data);
-        } catch {
-          toast.error('Failed to load vendors');
-        } finally {
-          setLoading(false);
-        }
-      };
-      load();
-    } else {
-      setSearch('');   // reset search when modal closes
-    }
-  }, [open]);
-
-  /* ------------------- PRE-FILL FORM ------------------- */
   useEffect(() => {
     if (mode === 'edit' && vendor) {
       setForm({
-        id: vendor.id,
         name: vendor.name,
-        isActive: vendor.isActive,
+        isActive: vendor.isActive
       });
     } else {
-      setForm({ name: '', isActive: true });
+      setForm({
+        name: '',
+        isActive: true
+      });
     }
   }, [mode, vendor, open]);
 
-  /* ------------------- FILTERED OFFICES ------------------- */
-  const filteredOffices = useSearchableSelect(vendors, search);
-
-  /* ------------------- SUBMIT ------------------- */
-  const submit = async () => {
-    if (!form.name?.trim()) {
-      toast.error('Name is required');
-      return;
-    }
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
     try {
-      setSaving(true);
-      const payload = {
-        id: form.id,
-        name: form.name,
-        isActive: form.isActive ?? true,
-      };
-
       if (mode === 'add') {
-        await addVendor(payload);
-      } else if (vendor?.id) {
-        await updateVendor(vendor.id, payload);
+        await addVendor(form);
+      } else if (vendor) {
+        await updateVendor(vendor.id, form);
       }
-
-      //toast.success(mode === 'add' ? 'Vendor added' : 'Vendor updated');
-      onSuccess();
       onOpenChange(false);
-    } catch {
-      toast.error('Failed to save vendor');
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  /* ------------------- RENDER ------------------- */
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>{mode === 'add' ? 'Add Vendor' : 'Edit Vendor'}</DialogTitle>
         </DialogHeader>
-
-        {loading ? (
-          <div className="py-8 text-center">
-            <p className="text-gray-500">Loading vendors...</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Vendor Name</Label>
+            <Input 
+              value={form.name} 
+              onChange={e => setForm({...form, name: e.target.value})} 
+              placeholder="e.g. Acme Corp"
+              required 
+            />
           </div>
-        ) : (
-          <div className="grid gap-4 py-4">
-            {/* Name */}
-            <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={form.name ?? ''}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="e.g. Water General Company"
-                disabled={saving}
-              />
-            </div>
-
-            {/* Active toggle */}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="isActive"
-                checked={form.isActive ?? true}
-                onCheckedChange={(c) => setForm({ ...form, isActive: c })}
-                disabled={saving}
-              />
-              <Label htmlFor="isActive" className="cursor-pointer">
-                {form.isActive ? 'Active' : 'Inactive'}
-              </Label>
-            </div>
+          
+          <div className="flex items-center space-x-2 pt-2">
+            <Switch 
+              checked={form.isActive} 
+              onCheckedChange={c => setForm({...form, isActive: c})} 
+            />
+            <Label>Active Status</Label>
           </div>
-        )}
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={saving}
-          >
-            Cancel
-          </Button>
-
-          <Button onClick={submit} disabled={saving || loading}>
-            {saving ? 'Saving...' : mode === 'add' ? 'Add' : 'Save Changes'}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
 };
-
-
-
-
-

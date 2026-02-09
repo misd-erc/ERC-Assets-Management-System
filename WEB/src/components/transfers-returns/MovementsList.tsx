@@ -1,16 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Loader2, Search, Eye, User, Package } from 'lucide-react';
 import { toast } from 'sonner';
-import { getMovementsList, getPTRMovements, getITRMovements } from '@/api/asset/transferApi';
+import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements } from '@/api/asset/transferApi';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
 interface MovementsListProps {
-  transferType?: 'PTR' | 'ITR';
+  transferType?: 'PTR' | 'ITR' | 'RRPPE' | 'RRSP';
+}
+
+export interface MovementsListRef {
+  loadMovements: (search?: string, page?: number) => Promise<void>;
 }
 
 interface EmployeeInfo {
@@ -43,6 +47,7 @@ interface Movement {
   ptaId?: number;
   dateAssigned?: string;
   ptritrNumber?: string;
+  rrpperrspNumber?: string;
   paricsNumber?: string;
   employee?: EmployeeInfo[];
   office?: any;
@@ -55,7 +60,8 @@ interface Movement {
   createdAt?: string;
 }
 
-export function MovementsList({ transferType }: MovementsListProps) {
+export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
+  function MovementsListComponent({ transferType }, ref) {
   const [searchInput, setSearchInput] = useState('');
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,6 +81,10 @@ export function MovementsList({ transferType }: MovementsListProps) {
         result = await getPTRMovements(search, page, pageSize);
       } else if (transferType === 'ITR') {
         result = await getITRMovements(search, page, pageSize);
+      } else if (transferType === 'RRPPE') {
+        result = await getRRPPEMovements(search, page, pageSize);
+      } else if (transferType === 'RRSP') {
+        result = await getRRSPMovements(search, page, pageSize);
       } else {
         result = await getMovementsList(search, undefined, undefined, page, pageSize);
       }
@@ -90,6 +100,11 @@ export function MovementsList({ transferType }: MovementsListProps) {
       setLoading(false);
     }
   };
+
+  // Expose loadMovements via ref
+  useImperativeHandle(ref, () => ({
+    loadMovements,
+  }));
 
   // Initial load
   useEffect(() => {
@@ -197,6 +212,7 @@ export function MovementsList({ transferType }: MovementsListProps) {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Transfer Number</TableHead>
+                      <TableHead>Return Number</TableHead>
                       <TableHead>PAR/ICS Number</TableHead>
                       <TableHead>From Employee</TableHead>
                       <TableHead>To Employee</TableHead>
@@ -209,7 +225,10 @@ export function MovementsList({ transferType }: MovementsListProps) {
                     {movements.map((movement, idx) => (
                       <TableRow key={idx}>
                         <TableCell className="font-semibold">
-                          {movement.ptritrNumber || 'N/A'}
+                          { movement.ptritrNumber || 'N/A'}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {movement.rrpperrspNumber || 'N/A'}
                         </TableCell>
                         <TableCell>{movement.paricsNumber || 'N/A'}</TableCell>
                         <TableCell>
@@ -489,3 +508,4 @@ export function MovementsList({ transferType }: MovementsListProps) {
     </div>
   );
 }
+);

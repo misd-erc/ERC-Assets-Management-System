@@ -12,3 +12,7 @@ export * from '@/api/office-management/positionApi';
 export * from '@/api/roles/rolesApi';
 
 export * from '@/api/contract-management/vendorApi';
+
+export * from '@/api/supply-management/itemApi';
+export * from '@/api/supply-management/storageLocationApi';
+export * from '@/api/supply-management/unitApi';

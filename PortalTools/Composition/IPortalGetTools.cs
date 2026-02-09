@@ -17,4 +17,5 @@ public interface IPortalGetTools
     NotificationGetTools Notification { get; }
     PTAGetTools PTA { get; }
     SupplyGetTools Supply { get; }
+    DeliveryGetTools Delivery { get; }
 }

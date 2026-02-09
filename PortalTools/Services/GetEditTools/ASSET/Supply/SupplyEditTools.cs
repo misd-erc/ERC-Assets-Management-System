@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PortalDB.Entities.ASSET.Delivery;
 using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Entities.ASSET.Supply;
 using PortalDB.Services;
@@ -81,7 +82,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                 throw;
             }
         }
-        public async Task<long> EditTblSupplyCategoryAsync(TblSupplyCategory model, long actionBySystemUserId, PortalDbContext context)
+        public async Task<long> EditTblSupplyCategoryAsync(TblPTACategory model, long actionBySystemUserId, PortalDbContext context)
         {
             if (model == null)
                 return 0;
@@ -90,11 +91,11 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
             {
 
                 bool isInsert = model.Id == 0;
-                TblSupplyCategory? existingSupplyCategory = null;
+                TblPTACategory? existingSupplyCategory = null;
 
                 if (isInsert)
                 {
-                    await context.TblSupplyCategories.AddAsync(model);
+                    await context.TblPTACategories.AddAsync(model);
                     await context.SaveChangesAsync();
                 }
                 else
@@ -106,7 +107,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
 
                     model.Id = existingSupplyCategory.Id;
 
-                    await context.TblSupplyCategories.Where(u => u.Id == model.Id)
+                    await context.TblPTACategories.Where(u => u.Id == model.Id)
                         .ExecuteUpdateAsync(u => u
                             .SetProperty(x => x.Name, model.Name)
                             .SetProperty(x => x.IsActive, model.IsActive));
@@ -127,10 +128,10 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
 
             try
             {
-                TblSupplyCategory? supplyCategoryModel = await _getTools.Supply.GetTblSupplyCategoryAsync(id, context);
-                await context.TblSupplyCategories.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+                TblPTACategory? supplyCategoryModel = await _getTools.Supply.GetTblSupplyCategoryAsync(id, context);
+                await context.TblPTACategories.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
                 await AuditTrailTool.LogActivityAsync(_options, $"Deleted a Supply Category", actionBy: actionBySystemUserId,
-                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, supplyCategoryModel, null, nameof(TblSupplyCategory), actionBySystemUserId, "Delete"));
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, supplyCategoryModel, null, nameof(TblPTACategory), actionBySystemUserId, "Delete"));
 
                 return true;
             }
@@ -328,3 +329,4 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
 
     }
 }
+

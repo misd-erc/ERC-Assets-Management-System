@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { PPEAsset } from '@/types/asset/PPEAsset';
-import { SEAsset } from '@/types/supply/se';
+import { SEAsset } from '@/types/supply';
 import { ppeApi } from '@/api/asset/ppe';
 import { seApi } from '@/api/asset/se';
 
@@ -109,7 +109,7 @@ export class ExcelExportService {
 
     return {
       'Property Number': asset.propertyNumber,
-      'Category': asset.category?.name || '',
+      'Category': typeof asset.category === 'object' && asset.category ? (asset.category as any).name : asset.category || '',
       'Legend': asset.legend || '',
       'Description': asset.description,
       'Brand': asset.brand,

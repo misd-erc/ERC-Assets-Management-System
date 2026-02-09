@@ -1,0 +1,89 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { formatCurrency } from '@/utils/formatters';
+import { formatDate } from '@/utils/dateUtils';
+import { VwDeliveryRecord } from '@/types/delivery/delivery';
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  record: VwDeliveryRecord | null;
+}
+
+export const DeliveryRecordViewModal = ({ open, onOpenChange, record }: Props) => {
+  if (!record) return null;
+
+  const totalValue = record.items.reduce((acc, item) => acc + (item.itemQuantity * item.unitCost), 0);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Delivery Details</DialogTitle>
+          <DialogDescription>Reference: {record.drNumber}</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Header Info */}
+          <div className="grid grid-cols-2 gap-4 border-b pb-4">
+             <div>
+                <Label className="text-muted-foreground text-xs">Vendor</Label>
+                <div className="font-medium">{record.vendor?.name}</div>
+             </div>
+             <div>
+                <Label className="text-muted-foreground text-xs">PO Number</Label>
+                <div className="font-medium">{record.poNumber}</div>
+             </div>
+             <div>
+                <Label className="text-muted-foreground text-xs">Date</Label>
+                <div className="font-medium">{formatDate(record.deliveryDate)}</div>
+             </div>
+             <div>
+                <Label className="text-muted-foreground text-xs">Status</Label>
+                <div><Badge>{record.isReceived ? 'Received' : 'Pending'}</Badge></div>
+             </div>
+          </div>
+
+          {/* Items List */}
+          <div>
+            <h3 className="font-semibold mb-3">Items</h3>
+            <div className="space-y-2">
+                {record.items.map((item) => (
+                    <div key={item.id} className="flex justify-between items-center p-3 border rounded-lg bg-slate-50/50">
+                        <div>
+                            <div className="font-medium flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">{item.itemTypeId === 1 ? 'Supply' : 'Asset'}</Badge>
+                                {item.itemDescription}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                                {item.itemQuantity} {item.measurementUnit?.name} @ {formatCurrency(item.unitCost)}
+                            </div>
+                        </div>
+                        <div className="font-semibold">
+                            {formatCurrency(item.itemQuantity * item.unitCost)}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="flex justify-end mt-4 pt-4 border-t">
+                <span className="font-bold text-lg text-green-700">Total: {formatCurrency(totalValue)}</span>
+            </div>
+          </div>
+          
+          {record.remarks && (
+            <div className="bg-slate-50 p-3 rounded text-sm">
+                <Label className="text-xs text-muted-foreground">Remarks</Label>
+                <p>{record.remarks}</p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button onClick={() => onOpenChange(false)}>Close</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

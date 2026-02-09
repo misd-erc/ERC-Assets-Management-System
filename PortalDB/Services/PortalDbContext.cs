@@ -14,6 +14,7 @@ using PortalDB.Entities.DBO.Module;
 using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Seeds.DBO.Module;
 using PortalDB.Entities.ASSET.Supply;
+using PortalDB.Entities.ASSET.Delivery;
 
 namespace PortalDB.Services
 {
@@ -64,12 +65,17 @@ namespace PortalDB.Services
         public DbSet<TblPTALegend> TblPTALegends { get; set; }
         public DbSet<TblPTAMovement> TblPTAMovements { get; set; }
         public DbSet<TblPTAPart> TblPTAParts { get; set; }
+
+        #endregion
+        #region Supply
         public DbSet<TblSupplyVendor> TblSupplyVendors { get; set; }
-        public DbSet<TblSupplyCategory> TblSupplyCategories { get; set; }
         public DbSet<TblSupplyItem> TblSupplyItems { get; set; }
         public DbSet<TblSupplyStorageLocation> TblSupplyStorageLocations { get; set; }
         public DbSet<TblSupplyUnit> TblSupplyUnits { get; set; }
-
+        #endregion
+        #region Delivery
+        public DbSet<TblDeliveryRecord> TblDeliveryRecords { get; set; }
+        public DbSet<TblDeliveryRecordItem> TblDeliveryRecordItems { get; set; }
         #endregion
         #endregion
 

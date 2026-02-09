@@ -1,18 +1,47 @@
-export type UnitType = 'Piece' | 'Box' | 'Ream' | 'Pack' | 'Bottle' | 'Kilogram' | 'Liter';
+import { Category } from "@/api/categories/categoriesApi";
+import { Vendor } from "../contract";
 
 export interface SupplyItem {
-  id: string;
-  stockNumber: string;
-  itemCode: string;
+  id: number;
+  code: string;
+  categoryId: number;
   description: string;
-  category: string;
-  unit: string;
+  measurementUnitId: number;
   currentStock: number;
-  reorderPoint: number;
   unitCost: number;
-  location: string;
-  supplier: string;
-  totalValue?: number;
-  lastRestocked?: string;
+  reorderPoint: number;
+  storageLocationId: number;
+  vendorId: number;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface VwSupplyItem {
+  id: number;
+  code: string;
+  category: Category | null;
+  description: string;
+  measurementUnit: SupplyUnit | null;
+  currentStock: number;
+  unitCost: number;
+  reorderPoint: number;
+  storageLocation: SupplyStorageLocation | null;
+  vendor: Vendor | null;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface SupplyStorageLocation {
+  id: number;
+  name: string;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface SupplyUnit {
+  id: number;
+  name: string;
+  isActive: boolean;
+  createdAt?: string;
 }
 

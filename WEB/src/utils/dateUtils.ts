@@ -3,6 +3,26 @@
  */
 
 /**
+ * Formats a date string or object into "MMM DD, YYYY" (e.g., "Jan 01, 2024")
+ * @param date - The date to format
+ * @returns Formatted date string
+ */
+export const formatDate = (date: string | Date | undefined | null): string => {
+  if (!date) return '-';
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch {
+    return '-';
+  }
+};
+
+/**
  * Converts a date string to a relative time format (e.g., "2 hours ago")
  * @param dateStr - The date string in ISO format (UTC)
  * @returns Relative time string

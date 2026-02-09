@@ -12,6 +12,7 @@ namespace PortalDB.Models.ResponseModels.PTA
         public long? PTAId { get; set; }
         public DateTime? DateAssigned { get; set; }
         public string? PTRITRNumber { get; set; }
+        public string? RRPPERRSPNumber { get; set; }
         public string? PARICSNumber { get; set; }
         
         // Employee array: [0] = From Employee (previous holder), [1] = To Employee (current holder)

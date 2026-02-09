@@ -87,7 +87,6 @@ export const editDivision = async (payload: Division): Promise<{ message: string
   const response = await axiosInstance.post<ApiResponse<any>>('/Office/division/edit', requestPayload);
 
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save division');
-  // toast.success(payload.id ? 'Division updated' : 'Division created');
   return { message: response.data.message ?? 'Success' };
 };
 

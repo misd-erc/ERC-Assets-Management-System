@@ -5,21 +5,17 @@ using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
 using PortalDB.Entities.ASSET.PTA;
-using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Models.ParserModels.PTA;
-using PortalDB.Models.ParserModels.PTA;
 using PortalDB.Models.QueryParams.Office;
 using PortalDB.Models.QueryParams.Pagination;
-using PortalDB.Models.QueryParams.PTA;
 using PortalDB.Models.QueryParams.PTA;
 using PortalDB.Models.QueryParams.Universal;
 using PortalDB.Models.ResponseModels.Account;
 using PortalDB.Models.ResponseModels.Office;
 using PortalDB.Models.ResponseModels.PPE;
-using PortalDB.Models.ResponseModels.PTA;
 using PortalDB.Models.ResponseModels.PTA;
 using PortalDB.Models.Responses;
 using PortalDB.Models.ViewModels.PTA;
@@ -823,209 +819,367 @@ namespace API.Controllers
                 if (!items.Any())
                     return Ok(new List<PTAItem>());
 
+                int insertedAssetCount = 0;
+                int updatedAssetCount = 0;
+                int insertedMovementCount = 0;
+                int updatedMovementCount = 0;
+                int failedCount = 0;
+
+                Console.WriteLine($"[BATCH_UPLOAD] Starting batch upload with {items.Count()} items");
+
                 foreach(PTAItem item in items)
                 {
-                    long ppeId = 0;
-                    long categoryId = 0;
-                    long legendId = 0;
-
-                    if (!string.IsNullOrWhiteSpace(item.Category))
+                    try
                     {
-                        var category = await _getTools.PTA.GetTblPTACategoryByNameAsync(item.Category.Trim(), context);
+                        Console.WriteLine($"[BATCH_UPLOAD] Processing item: {item?.PropertyNumber ?? "Unknown"}");
+                        
+                        long ppeId = 0;
+                        long categoryId = 0;
+                        long legendId = 0;
+                        bool isAssetUpsertInsert = false;
 
-                        if (category != null)
+                        if (!string.IsNullOrWhiteSpace(item.Category))
                         {
-                            categoryId = category.Id;
+                            var category = await _getTools.PTA.GetTblPTACategoryByNameAsync(item.Category.Trim(), context);
+
+                            if (category != null)
+                            {
+                                categoryId = category.Id;
+                            }
+                            else
+                            {
+                                TblPTACategory newCategory = new()
+                                {
+                                    Name = item.Category,
+                                    IsActive = true
+                                };
+                                categoryId = await _editTools.PTA.EditTblPTACategoryAsync(newCategory, model.ActionBySystemUserId, context, true);
+                            }
+                        }
+                        if (!string.IsNullOrWhiteSpace(item.Legend))
+                        {
+                            var legend = await _getTools.PTA.GetTblPTALegendByNameAsync(item.Legend.Trim(), context);
+
+                            if (legend != null)
+                            {
+                                legendId = legend.Id;
+                            }
+                            else
+                            {
+                                TblPTALegend newLegend = new()
+                                {
+                                    Name = item.Legend,
+                                    IsActive = true
+                                };
+                                legendId = await _editTools.PTA.EditTblPTALegendAsync(newLegend, model.ActionBySystemUserId, context, true);
+                            }
+                        }
+
+                        // UPSERT LOGIC FOR ASSET: Check if Property Number exists
+                        // Load all assets of this group first, then filter in memory
+                        var allPTAsOfGroup = await _getTools.PTA.GetTblPTAsByGroup(item.UnitValue <= 49999.99 ? TblPTA.SE : TblPTA.PPE, context)
+                            .ToListAsync();
+                        
+                        TblPTA? existingPTA = allPTAsOfGroup
+                            .FirstOrDefault(x => x.PropertyNumber == item.PropertyNumber);
+
+                        if (existingPTA != null)
+                        {
+                            // UPDATE existing asset
+                            Console.WriteLine($"[BATCH_UPLOAD] Updating existing asset: {item.PropertyNumber}");
+                            existingPTA.Group = item.UnitValue <= 49999.99 ? TblPTA.SE : TblPTA.PPE;
+                            existingPTA.CategoryId = categoryId;
+                            existingPTA.LegendId = legendId;
+                            existingPTA.Description = item.Description;
+                            existingPTA.Brand = item.Brand;
+                            existingPTA.Model = item.Model;
+                            existingPTA.SerialNumber = item.SerialNumber;
+                            existingPTA.UnitOfMeasurement = item.UnitOfMeasurement;
+                            existingPTA.UnitValue = item.UnitValue;
+                            existingPTA.DateAcquired = item.DateAssigned;
+                            existingPTA.FiscalDate = item.FiscalDate;
+
+                            if (existingPTA.Group == TblPTA.PPE)
+                                existingPTA.EstimatedUsefulLife = item.EstimatedUsefulLife;
+
+                            ppeId = await _editTools.PTA.EditTblPTAAsync(existingPTA, model.ActionBySystemUserId, context, true);
+                            updatedAssetCount++;
+                            isAssetUpsertInsert = false;
+                            Console.WriteLine($"[BATCH_UPLOAD] Asset updated successfully with ID: {ppeId}");
                         }
                         else
                         {
-                            TblPTACategory newCategory = new()
+                            // INSERT new asset
+                            Console.WriteLine($"[BATCH_UPLOAD] Inserting new asset: {item.PropertyNumber}");
+                            TblPTA newPTA = new()
                             {
-                                Name = item.Category,
-                                IsActive = true
+                                Group = item.UnitValue <= 49999.99 ? TblPTA.SE : TblPTA.PPE,
+                                PropertyNumber = item.PropertyNumber,
+                                CategoryId = categoryId,
+                                LegendId = legendId,
+                                Description = item.Description,
+                                Brand = item.Brand,
+                                Model = item.Model,
+                                SerialNumber = item.SerialNumber,
+                                UnitOfMeasurement = item.UnitOfMeasurement,
+                                UnitValue = item.UnitValue,
+                                DateAcquired = item.DateAssigned,
+                                EstimatedUsefulLife = item.EstimatedUsefulLife,
+                                FiscalDate = item.FiscalDate
                             };
-                            categoryId = await _editTools.PTA.EditTblPTACategoryAsync(newCategory, model.ActionBySystemUserId, context, true);
-                        }
-                    }
-                    if (!string.IsNullOrWhiteSpace(item.Legend))
-                    {
-                        var legend = await _getTools.PTA.GetTblPTALegendByNameAsync(item.Legend.Trim(), context);
 
-                        if (legend != null)
-                        {
-                            legendId = legend.Id;
-                        }
-                        else
-                        {
-                            TblPTALegend newLegend = new()
+                            ppeId = await _editTools.PTA.EditTblPTAAsync(newPTA, model.ActionBySystemUserId, context, true);
+                            Console.WriteLine($"[BATCH_UPLOAD] Asset inserted successfully with ID: {ppeId}");
+                            
+                            if (ppeId == 0)
                             {
-                                Name = item.Legend,
-                                IsActive = true
+                                Console.WriteLine($"[BATCH_UPLOAD] WARNING: Asset insertion returned ID 0 for {item.PropertyNumber}");
+                                failedCount++;
+                                continue;
+                            }
+                            
+                            insertedAssetCount++;
+                            isAssetUpsertInsert = true;
+                        }
+
+                        // Handle parts - only insert new parts, don't update existing
+                        foreach (PTAPart part in item?.Parts ?? Enumerable.Empty<PTAPart>())
+                        {
+                            TblPTAPart newPart = new()
+                            {
+                                PTAId = ppeId,
+                                Name = part.PartName,
+                                SerialNumber = part.PartSerialNumber
                             };
-                            legendId = await _editTools.PTA.EditTblPTALegendAsync(newLegend, model.ActionBySystemUserId, context, true);
-                        }
-                    }
 
-                    TblPTA newPTA = new()
-                    {
-                        Group = item.UnitValue <= 49999.99 ? TblPTA.SE : TblPTA.PPE,
-                        PropertyNumber = item.PropertyNumber,
-                        CategoryId = categoryId,
-                        LegendId = legendId,
-                        Description = item.Description,
-                        Brand = item.Brand,
-                        Model = item.Model,
-                        SerialNumber = item.SerialNumber,
-                        UnitOfMeasurement = item.UnitOfMeasurement,
-                        UnitValue = item.UnitValue,
-                        DateAcquired = item.DateAssigned,
-                        EstimatedUsefulLife = item.EstimatedUsefulLife,
-                        FiscalDate = item.FiscalDate
-                    };
-
-                    ppeId = await _editTools.PTA.EditTblPTAAsync(newPTA, model.ActionBySystemUserId, context, true);
-
-                    foreach (PTAPart part in item?.Parts ?? Enumerable.Empty<PTAPart>())
-                    {
-                        TblPTAPart newPart = new()
-                        {
-                            PTAId = ppeId,
-                            Name = part.PartName,
-                            SerialNumber = part.PartSerialNumber
-                        };
-
-                        await _editTools.PTA.EditTblPTAPartAsync(newPart, model.ActionBySystemUserId, context, true);
-                    }
-
-                    // Collect all movements for this item to determine which is current
-                    var movementsForItem = item?.AnnualCount ?? Enumerable.Empty<PTAAnnualCount>();
-                    var movementList = new List<(PTAAnnualCount movement, TblPTAMovement tbpMovement)>();
-
-                    // First pass: prepare all movements
-                    foreach (PTAAnnualCount movement in movementsForItem)
-                    {
-
-                        long? officeId = null;
-                        long? divisionId = null;
-                        long? plantillaEmployeeId = null;
-                        long? nonPlantillaEmployeeId = null;
-
-                        if (!string.IsNullOrWhiteSpace(movement.ActualOfficeAndDivision))
-                        {
-                            var parts = movement.ActualOfficeAndDivision.Split(new[] { '/' }, 2, StringSplitOptions.RemoveEmptyEntries)
-                                                                        .Select(p => p.Trim())
-                                                                        .Where(p => !string.IsNullOrEmpty(p))
-                                                                        .ToArray();
-
-                            if (parts.Length >= 1)
-                            {
-                                var office = await _getTools.Office.GetTblOfficeByAcronymAsync(parts[0], context);
-                                officeId = office?.Id;
-                            }
-
-                            if (parts.Length >= 2)
-                            {
-                                var division = await _getTools.Office.GetVwDivisionByAcronymAsync(parts[1], context);
-                                divisionId = division?.Id;
-                            }
+                            await _editTools.PTA.EditTblPTAPartAsync(newPart, model.ActionBySystemUserId, context, true);
                         }
 
-                        if (!string.IsNullOrEmpty(movement.PlantillaEmployeeId))
-                        {
-                            TblEmployee? plantillaEmployee = await _getTools.Account.GetEmployeeByEmployeeIdAsync(movement.PlantillaEmployeeId, context);
-                            plantillaEmployeeId = plantillaEmployee?.Id;
+                        // Collect all movements for this item to determine which is current
+                        var movementsForItem = item?.AnnualCount ?? Enumerable.Empty<PTAAnnualCount>();
+                        Console.WriteLine($"[BATCH_UPLOAD] Found {movementsForItem.Count()} movements for asset {item.PropertyNumber}");
+                        
+                        var movementList = new List<(PTAAnnualCount movement, TblPTAMovement tbpMovement, bool isInsert)>();
 
-                            //If actual office/division and non plantilla are nulled, get from the plantilla details
-                            if(plantillaEmployee != null && string.IsNullOrEmpty(movement.NonPlantillaEmployeeId) && string.IsNullOrWhiteSpace(movement.ActualOfficeAndDivision))
+                        // First pass: prepare all movements
+                        foreach (PTAAnnualCount movement in movementsForItem)
+                        {
+
+                            long? officeId = null;
+                            long? divisionId = null;
+                            long? plantillaEmployeeId = null;
+                            long? nonPlantillaEmployeeId = null;
+
+                            if (!string.IsNullOrWhiteSpace(movement.ActualOfficeAndDivision))
                             {
-                                if(plantillaEmployee.SystemUserId != null)
+                                var parts = movement.ActualOfficeAndDivision.Split(new[] { '/' }, 2, StringSplitOptions.RemoveEmptyEntries)
+                                                                            .Select(p => p.Trim())
+                                                                            .Where(p => !string.IsNullOrEmpty(p))
+                                                                            .ToArray();
+
+                                if (parts.Length >= 1)
                                 {
-                                    TblSystemUser? systemUserInfo = await _getTools.Account.GetTblSystemUserAsync(plantillaEmployee.SystemUserId.Value, context);
-                                    divisionId = systemUserInfo.DivisionId;
-                                    officeId = systemUserInfo.OfficeId;
+                                    var office = await _getTools.Office.GetTblOfficeByAcronymAsync(parts[0], context);
+                                    officeId = office?.Id;
+                                }
+
+                                if (parts.Length >= 2)
+                                {
+                                    var division = await _getTools.Office.GetVwDivisionByAcronymAsync(parts[1], context);
+                                    divisionId = division?.Id;
                                 }
                             }
-                        }
 
-                        if (!string.IsNullOrEmpty(movement.NonPlantillaEmployeeId))
-                        {
-                            TblEmployee? nonPlantillaEmployee = await _getTools.Account.GetEmployeeByEmployeeIdAsync(movement.NonPlantillaEmployeeId, context);
-                            nonPlantillaEmployeeId = nonPlantillaEmployee?.Id;
-
-                            //If actual office/division are nulled, get from the non plantilla details
-                            if (nonPlantillaEmployee != null && string.IsNullOrWhiteSpace(movement.ActualOfficeAndDivision))
+                            if (!string.IsNullOrEmpty(movement.PlantillaEmployeeId))
                             {
-                                if (nonPlantillaEmployee.SystemUserId != null)
+                                TblEmployee? plantillaEmployee = await _getTools.Account.GetEmployeeByEmployeeIdAsync(movement.PlantillaEmployeeId, context);
+                                plantillaEmployeeId = plantillaEmployee?.Id;
+
+                                //If actual office/division and non plantilla are nulled, get from the plantilla details
+                                if(plantillaEmployee != null && string.IsNullOrEmpty(movement.NonPlantillaEmployeeId) && string.IsNullOrWhiteSpace(movement.ActualOfficeAndDivision))
                                 {
-                                    TblSystemUser? systemUserInfo = await _getTools.Account.GetTblSystemUserAsync(nonPlantillaEmployee.SystemUserId.Value, context);
-                                    divisionId = systemUserInfo.DivisionId;
-                                    officeId = systemUserInfo.OfficeId;
+                                    if(plantillaEmployee.SystemUserId != null)
+                                    {
+                                        TblSystemUser? systemUserInfo = await _getTools.Account.GetTblSystemUserAsync(plantillaEmployee.SystemUserId.Value, context);
+                                        divisionId = systemUserInfo.DivisionId;
+                                        officeId = systemUserInfo.OfficeId;
+                                    }
                                 }
-                                
+                            }
+
+                            if (!string.IsNullOrEmpty(movement.NonPlantillaEmployeeId))
+                            {
+                                TblEmployee? nonPlantillaEmployee = await _getTools.Account.GetEmployeeByEmployeeIdAsync(movement.NonPlantillaEmployeeId, context);
+                                nonPlantillaEmployeeId = nonPlantillaEmployee?.Id;
+
+                                //If actual office/division are nulled, get from the non plantilla details
+                                if (nonPlantillaEmployee != null && string.IsNullOrWhiteSpace(movement.ActualOfficeAndDivision))
+                                {
+                                    if (nonPlantillaEmployee.SystemUserId != null)
+                                    {
+                                        TblSystemUser? systemUserInfo = await _getTools.Account.GetTblSystemUserAsync(nonPlantillaEmployee.SystemUserId.Value, context);
+                                        divisionId = systemUserInfo.DivisionId;
+                                        officeId = systemUserInfo.OfficeId;
+                                    }
+                                    
+                                }
+                            }
+
+                            // Determine movement status: use from Excel if provided, otherwise default to New
+                            string movementStatus = !string.IsNullOrWhiteSpace(movement.Status) 
+                                ? movement.Status 
+                                : PortalCommon.Constants.PTAMovementConstants.NEW;
+
+                            // Skip movements with no employee assigned
+                            if (plantillaEmployeeId == null && nonPlantillaEmployeeId == null)
+                            {
+                                Console.WriteLine($"[BATCH_UPLOAD] Skipping movement for {item.PropertyNumber}: No employee assigned");
+                                continue;
+                            }
+
+                            // UPSERT LOGIC FOR MOVEMENT: Check if movement exists using composite key
+                            // Load all movements for this PTA first, then filter in memory
+                            var allMovementsForPTA = await context.Set<TblPTAMovement>()
+                                .Where(m => m.PTAId == ppeId)
+                                .ToListAsync();
+                            
+                            var existingMovement = allMovementsForPTA
+                                .FirstOrDefault(m => 
+                                    m.DateAssigned == movement.DateAssigned &&
+                                    (
+                                        (m.PlantillaEmployeeId == plantillaEmployeeId && plantillaEmployeeId.HasValue) ||
+                                        (m.NonPlantillaEmployeeId == nonPlantillaEmployeeId && nonPlantillaEmployeeId.HasValue)
+                                    ));
+
+                            if (existingMovement != null)
+                            {
+                                // UPDATE existing movement
+                                Console.WriteLine($"[BATCH_UPLOAD] Updating existing movement for asset {item.PropertyNumber}");
+                                existingMovement.PTRITRNumber = movement.PtrItrNumber;
+                                existingMovement.PARICSNumber = movement.ParIcsNumber;
+                                existingMovement.ActualOfficeId = officeId;
+                                existingMovement.ActualDivisionId = divisionId;
+                                existingMovement.Remarks = movement.Condition;
+                                existingMovement.Status = movementStatus;
+                                existingMovement.IsCurrent = false;
+
+                                TblPTAMovement tbpMovement = new()
+                                {
+                                    Id = existingMovement.Id,
+                                    PTAId = existingMovement.PTAId,
+                                    DateAssigned = existingMovement.DateAssigned,
+                                    PTRITRNumber = existingMovement.PTRITRNumber,
+                                    PARICSNumber = existingMovement.PARICSNumber,
+                                    PlantillaEmployeeId = existingMovement.PlantillaEmployeeId,
+                                    NonPlantillaEmployeeId = existingMovement.NonPlantillaEmployeeId,
+                                    PlantillaEmployeeIdOriginal = existingMovement.PlantillaEmployeeIdOriginal,
+                                    NonPlantillaEmployeeIdOriginal = existingMovement.NonPlantillaEmployeeIdOriginal,
+                                    ActualOfficeId = existingMovement.ActualOfficeId,
+                                    ActualDivisionId = existingMovement.ActualDivisionId,
+                                    Remarks = existingMovement.Remarks,
+                                    Status = existingMovement.Status,
+                                    IsCurrent = false
+                                };
+
+                                movementList.Add((movement, tbpMovement, false)); // false = update
+                                updatedMovementCount++;
+                            }
+                            else
+                            {
+                                // INSERT new movement
+                                Console.WriteLine($"[BATCH_UPLOAD] Inserting new movement for asset {item.PropertyNumber}");
+                                TblPTAMovement newMovement = new()
+                                {
+                                    PTAId = ppeId,
+                                    DateAssigned = movement.DateAssigned,
+                                    PTRITRNumber = movement.PtrItrNumber,
+                                    PARICSNumber = movement.ParIcsNumber,
+                                    PlantillaEmployeeId = plantillaEmployeeId,
+                                    NonPlantillaEmployeeId = nonPlantillaEmployeeId,
+                                    PlantillaEmployeeIdOriginal = movement.PlantillaEmployeeId,
+                                    NonPlantillaEmployeeIdOriginal = movement.NonPlantillaEmployeeId,
+                                    ActualOfficeId = officeId,
+                                    ActualDivisionId = divisionId,
+                                    Remarks = movement.Condition,
+                                    Status = movementStatus,
+                                    IsCurrent = false // Will be set correctly based on DateAssigned
+                                };
+
+                                movementList.Add((movement, newMovement, true)); // true = insert
+                                insertedMovementCount++;
                             }
                         }
 
-                        // Determine movement status: use from Excel if provided, otherwise default to New
-                        string movementStatus = !string.IsNullOrWhiteSpace(movement.Status) 
-                            ? movement.Status 
-                            : PortalCommon.Constants.PTAMovementConstants.NEW;
-
-                        // Skip movements with no employee assigned
-                        if (plantillaEmployeeId == null && nonPlantillaEmployeeId == null)
+                        // Second pass: determine which movement is current
+                        if (movementList.Any())
                         {
-                            continue;
+                            // Sort movements by DateAssigned in DESCENDING order (latest first)
+                            var sortedMovements = movementList
+                                .OrderByDescending(m => m.tbpMovement.DateAssigned ?? DateTime.MinValue)
+                                .ToList();
+
+                            // Mark the first (latest) as current, all others as not current
+                            for (int i = 0; i < sortedMovements.Count; i++)
+                            {
+                                // Only the first movement (latest) is current
+                                sortedMovements[i].tbpMovement.IsCurrent = (i == 0);
+                            }
+
+                            // Save all valid movements
+                            foreach (var (movement, tbpMovement, isInsert) in sortedMovements)
+                            {
+                                await _editTools.PTA.EditTblPTAMovementAsync(tbpMovement, model.ActionBySystemUserId, context, true);
+                            }
                         }
-
-                        TblPTAMovement newMovement = new()
-                        {
-                            PTAId = ppeId,
-                            DateAssigned = movement.DateAssigned,
-                            PTRITRNumber = movement.PtrItrNumber,
-                            PARICSNumber = movement.ParIcsNumber,
-                            PlantillaEmployeeId = plantillaEmployeeId,
-                            NonPlantillaEmployeeId = nonPlantillaEmployeeId,
-                            PlantillaEmployeeIdOriginal = movement.PlantillaEmployeeId,
-                            NonPlantillaEmployeeIdOriginal = movement.NonPlantillaEmployeeId,
-                            ActualOfficeId = officeId,
-                            ActualDivisionId = divisionId,
-                            Remarks = movement.Condition,
-                            Status = movementStatus,
-                            IsCurrent = false // Will be set correctly based on DateAssigned
-                        };
-
-                        movementList.Add((movement, newMovement));
+                        
+                        Console.WriteLine($"[BATCH_UPLOAD] Successfully processed item: {item.PropertyNumber}");
                     }
-
-                    // Second pass: determine which movement is current
-                    if (movementList.Any())
+                    catch (Exception itemEx)
                     {
-                        // Sort movements by DateAssigned in DESCENDING order (latest first)
-                        var sortedMovements = movementList
-                            .OrderByDescending(m => m.tbpMovement.DateAssigned ?? DateTime.MinValue)
-                            .ToList();
-
-                        // Mark the first (latest) as current, all others as not current
-                        for (int i = 0; i < sortedMovements.Count; i++)
+                        failedCount++;
+                        Console.WriteLine($"[BATCH_UPLOAD] ERROR processing item {item?.PropertyNumber ?? "Unknown"}: {itemEx.Message}");
+                        Console.WriteLine($"[BATCH_UPLOAD] Stack Trace: {itemEx.StackTrace}");
+                        
+                        // Log error with minimal source string to avoid column truncation
+                        try
                         {
-                            // Only the first movement (latest) is current
-                            sortedMovements[i].tbpMovement.IsCurrent = (i == 0);
+                            await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), itemEx, "BatchUpload-Item");
                         }
-
-                        // Save all valid movements
-                        foreach (var (movement, tbpMovement) in sortedMovements)
+                        catch
                         {
-                            await _editTools.PTA.EditTblPTAMovementAsync(tbpMovement, model.ActionBySystemUserId, context, true);
+                            // If error logging itself fails, just log to console
+                            Console.WriteLine($"[BATCH_UPLOAD] Could not log error to database: {itemEx.InnerException?.Message}");
                         }
+                        
+                        // Continue processing other items even if one fails
+                        continue;
                     }
-
                 }
 
-                await AuditTrailTool.LogActivityAsync(_options, $"Performed batch upload PTA (PPE/SE) with a total of {items.Count()} PTA items", actionBy: model.ActionBySystemUserId);
+                Console.WriteLine($"[BATCH_UPLOAD] Batch complete - Assets: {insertedAssetCount} inserted, {updatedAssetCount} updated | Movements: {insertedMovementCount} inserted, {updatedMovementCount} updated | Failed: {failedCount}");
+
+                await AuditTrailTool.LogActivityAsync(_options, $"Performed batch upload PTA (PPE/SE) with UPSERT logic - Total items: {items.Count()}, Inserted assets: {insertedAssetCount}, Updated assets: {updatedAssetCount}, Inserted movements: {insertedMovementCount}, Updated movements: {updatedMovementCount}, Failed: {failedCount}", actionBy: model.ActionBySystemUserId);
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return Ok(ApiResponse<object>.Ok($"{items.Count()} PTA items has been successfully migrated to the database"));
+                var resultSummary = new
+                {
+                    TotalRecords = items.Count(),
+                    Assets = new
+                    {
+                        Inserted = insertedAssetCount,
+                        Updated = updatedAssetCount
+                    },
+                    Movements = new
+                    {
+                        Inserted = insertedMovementCount,
+                        Updated = updatedMovementCount
+                    },
+                    Failed = failedCount
+                };
+
+                return Ok(ApiResponse<object>.Ok(resultSummary, $"Batch upload completed: {insertedAssetCount + updatedAssetCount} assets processed, {insertedMovementCount + updatedMovementCount} movements processed"));
             }
             catch (Exception ex)
             {
@@ -1123,6 +1277,188 @@ namespace API.Controllers
             }
         }
 
+        // GET api/inventory/pta/movement/next-number
+        [HttpGet("pta/movement/next-number")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetNextTransferNumber([FromQuery] string transferType = "PTR", [FromQuery] SoloQueryParams model = null)
+        {
+            await using var context = new PortalDbContext(_options);
+
+            try
+            {
+                // Validate transfer type
+                if (string.IsNullOrWhiteSpace(transferType) || (!transferType.Equals("PTR", StringComparison.OrdinalIgnoreCase) && !transferType.Equals("ITR", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.VALIDATION_FAILED, "Transfer type must be either 'PTR' or 'ITR'"));
+                }
+
+                // Get current date
+                var now = DateTime.UtcNow;
+                var year = now.Year;
+                var month = now.Month.ToString("D2");
+                var yearMonth = $"{year}-{month}";
+
+                // Get all movements for the current month and type
+                var movements = await _getTools.PTA.GetTblPTAMovements(context).ToListAsync();
+
+                // Filter for current month and transfer type
+                var currentMonthMovements = movements
+                    .Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && 
+                                x.PTRITRNumber.ToUpper().StartsWith(transferType.ToUpper()) &&
+                                x.PTRITRNumber.Contains(yearMonth))
+                    .ToList();
+
+                // Extract sequence numbers from the PTR/ITR numbers (format: PTR-yyyy-mm-001)
+                var sequenceNumbers = currentMonthMovements
+                    .Select(x =>
+                    {
+                        var parts = x.PTRITRNumber.Split('-');
+                        if (parts.Length >= 4 && int.TryParse(parts[3], out var sequence))
+                        {
+                            return sequence;
+                        }
+                        return 0;
+                    })
+                    .Where(x => x > 0)
+                    .ToList();
+
+                // Get the maximum sequence number, default to 0 if none found
+                var maxSequence = sequenceNumbers.Any() ? sequenceNumbers.Max() : 0;
+                var nextSequence = maxSequence + 1;
+
+                // Format the new transfer number
+                var nextNumber = $"{transferType.ToUpper()}-{yearMonth}-{nextSequence:D3}";
+
+                Console.WriteLine($"[NEXT_NUMBER] Type: {transferType}, Year-Month: {yearMonth}, Max Sequence: {maxSequence}, Next: {nextNumber}");
+
+                return Ok(ApiResponse<object>.Ok(new { transferNumber = nextNumber, sequence = nextSequence }, "Next transfer number generated successfully"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating next transfer number: {ex.Message}");
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while generating the transfer number."));
+            }
+        }
+
+        // GET api/inventory/pta/movement/next-return-number
+        [HttpGet("pta/movement/next-return-number")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetNextReturnNumber([FromQuery] string returnType = "RRPPE", [FromQuery] SoloQueryParams model = null)
+        {
+            await using var context = new PortalDbContext(_options);
+
+            try
+            {
+                // Validate return type
+                if (string.IsNullOrWhiteSpace(returnType) || (!returnType.Equals("RRPPE", StringComparison.OrdinalIgnoreCase) && !returnType.Equals("RRSP", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.VALIDATION_FAILED, "Return type must be either 'RRPPE' or 'RRSP'"));
+                }
+
+                // Get current date
+                var now = DateTime.UtcNow;
+                var year = now.Year;
+                var month = now.Month.ToString("D2");
+                var yearMonth = $"{year}-{month}";
+
+                // Get all movements for the current month and type
+                var movements = await _getTools.PTA.GetTblPTAMovements(context).ToListAsync();
+
+                // Filter for current month and return type
+                var currentMonthMovements = movements
+                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && 
+                                x.RRPPERRSPNumber.ToUpper().StartsWith(returnType.ToUpper()) &&
+                                x.RRPPERRSPNumber.Contains(yearMonth))
+                    .ToList();
+
+                // Extract sequence numbers from the RRPPE/RRSP numbers (format: RRPPE-yyyy-mm-001)
+                var sequenceNumbers = currentMonthMovements
+                    .Select(x =>
+                    {
+                        var parts = x.RRPPERRSPNumber.Split('-');
+                        if (parts.Length >= 4 && int.TryParse(parts[3], out var sequence))
+                        {
+                            return sequence;
+                        }
+                        return 0;
+                    })
+                    .Where(x => x > 0)
+                    .ToList();
+
+                // Get the maximum sequence number, default to 0 if none found
+                var maxSequence = sequenceNumbers.Any() ? sequenceNumbers.Max() : 0;
+                var nextSequence = maxSequence + 1;
+
+                // Format the new return number
+                var nextNumber = $"{returnType.ToUpper()}-{yearMonth}-{nextSequence:D3}";
+
+                Console.WriteLine($"[NEXT_RETURN_NUMBER] Type: {returnType}, Year-Month: {yearMonth}, Max Sequence: {maxSequence}, Next: {nextNumber}");
+
+                return Ok(ApiResponse<object>.Ok(new { returnNumber = nextNumber, sequence = nextSequence }, "Next return number generated successfully"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating next return number: {ex.Message}");
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while generating the return number."));
+            }
+        }
+
+        // GET api/inventory/pta/movement/statistics
+        [HttpGet("pta/movement/statistics")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetPTAMovementStatistics([FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+
+            try
+            {
+                // Get all current movements
+                var allMovements = await _getTools.PTA.GetTblPTAMovements(context)
+                    .Where(x => x.IsCurrent == true && !x.IsDeleted)
+                    .ToListAsync();
+
+                // Count Active PTR (PTRITRNumber starts with "PTR")
+                var activePTR = allMovements
+                    .Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().StartsWith("PTR"))
+                    .Count();
+
+                // Count Active ITR (PTRITRNumber starts with "ITR")
+                var activeITR = allMovements
+                    .Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().StartsWith("ITR"))
+                    .Count();
+
+                // Count Active Returns PPE (RRPPERRSPNumber starts with "RRPPE")
+                var activeReturnsPPE = allMovements
+                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRPPE"))
+                    .Count();
+
+                // Count Active Returns SE (RRPPERRSPNumber starts with "RRSP")
+                var activeReturnsSE = allMovements
+                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRSP"))
+                    .Count();
+
+                var statistics = new
+                {
+                    activePTR = activePTR,
+                    activeITR = activeITR,
+                    activeReturnsPPE = activeReturnsPPE,
+                    activeReturnsSE = activeReturnsSE,
+                    totalActive = activePTR + activeITR + activeReturnsPPE + activeReturnsSE
+                };
+
+                return Ok(ApiResponse<object>.Ok(statistics, "Movement statistics retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving movement statistics: {ex.Message}");
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while retrieving statistics."));
+            }
+        }
+
         // GET api/inventory/pta/movement/list
         [HttpGet("pta/movement/list")]
         [ValidateSessionToken]
@@ -1153,7 +1489,9 @@ namespace API.Controllers
                 var allMovements = await movements
                     .ToListAsync();
                 
+                // Filter to only show current movements (IsCurrent == true)
                 allMovements = allMovements
+                    .Where(x => x.IsCurrent == true)
                     .OrderByDescending(x => x.DateAssigned)
                     .ThenByDescending(x => x.CreatedAt)
                     .ToList();
@@ -1175,6 +1513,26 @@ namespace API.Controllers
                     {
                         // Search for specific PTR/ITR number
                         allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().Contains(filterValue.ToUpper())).ToList();
+                    }
+                }
+
+                // Apply RRPPE/RRSP Filter on in-memory data (since it's encrypted)
+                if (!string.IsNullOrWhiteSpace(model.RrppeRrspFilter))
+                {
+                    string filterValue = model.RrppeRrspFilter.Trim();
+                    
+                    if (filterValue.ToUpper() == "RRPPE")
+                    {
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRPPE")).ToList();
+                    }
+                    else if (filterValue.ToUpper() == "RRSP")
+                    {
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRSP")).ToList();
+                    }
+                    else
+                    {
+                        // Search for specific RRPPE/RRSP number
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().Contains(filterValue.ToUpper())).ToList();
                     }
                 }
 
@@ -1235,6 +1593,7 @@ namespace API.Controllers
                         PTAId = movement.PTAId,
                         DateAssigned = movement.DateAssigned,
                         PTRITRNumber = movement.PTRITRNumber,
+                        RRPPERRSPNumber = movement.RRPPERRSPNumber,
                         PARICSNumber = movement.PARICSNumber,
                         Remarks = movement.Remarks,
                         Status = movement.Status,
@@ -1507,6 +1866,7 @@ namespace API.Controllers
                     PTAId = model.PTAId,
                     DateAssigned = model.DateAssigned,
                     PTRITRNumber = model.PtrItrNumber,
+                    RRPPERRSPNumber = model.RrppeRrspNumber,
                     PARICSNumber = model.ParIcsNumber,
                     PlantillaEmployeeId = model.PlantillaEmployeeId,
                     NonPlantillaEmployeeId = model.NonPlantillaEmployeeId,
