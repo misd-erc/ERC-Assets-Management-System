@@ -74,37 +74,55 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
       // Group by ITR number
       const grouped = response.items?.reduce((acc: any, item: any) => {
         const itrNum = item.ptritrNumber;
-        console.log('Processing item:', item.ptritrNumber, item);
         if (!itrNum || !itrNum.startsWith('ITR')) return acc;
-        
-        if (!acc[itrNum]) {
-          acc[itrNum] = {
-            itrNumber: itrNum,
-            fromEmployee: item.employee?.[0] ? 
-              `${item.employee[0].fullName}` : 'Unknown',
-            toEmployee: item.employee?.[1] ? 
-              `${item.employee[1].fullName}` : 'Unknown',
-            itemCount: item.items?.length || 0,
-            dateAssigned: item.dateAssigned,
-            transferType: item.transferType || 'N/A'
-          };
-          
-          // Store full details for this ITR number
-          detailsMap.set(itrNum, {
-            transferNumber: itrNum,
-            transferType: item.transferType || 'TRANSFER',
-            fromEmployeeId: item.employee?.[0]?.id,
-            fromEmployeeName: item.employee?.[0]?.fullName || 'Unknown',
-            fromEmployee: item.employee?.[0],
-            toEmployeeId: item.employee?.[1]?.id,
-            toEmployeeName: item.employee?.[1]?.fullName || 'Unknown',
-            toEmployee: item.employee?.[1],
-            items: item.items || [],
-            dateAssigned: item.dateAssigned,
-            remarks: item.remarks,
-            status: item.status
+
+        const existing = acc[itrNum];
+        const existingDetails = detailsMap.get(itrNum);
+
+        const mergeItems = (base: any[], incoming: any[]) => {
+          const merged = [...(base || [])];
+          (incoming || []).forEach(it => {
+            const found = merged.find(m => (m.id != null && m.id === it.id) || (m.propertyNumber && m.propertyNumber === it.propertyNumber));
+            if (!found) merged.push(it);
           });
-        }
+          return merged;
+        };
+
+        const mergedItems = mergeItems(existingDetails?.items || item.items || [], item.items || []);
+
+        const baseRecord = existing || {
+          itrNumber: itrNum,
+          fromEmployee: item.employee?.[0] ? `${item.employee[0].fullName}` : 'Unknown',
+          toEmployee: item.employee?.[1] ? `${item.employee[1].fullName}` : 'Unknown',
+          itemCount: 0,
+          dateAssigned: item.dateAssigned,
+          transferType: item.transferType || 'N/A'
+        };
+
+        const updatedRecord = {
+          ...baseRecord,
+          itemCount: mergedItems.length,
+          dateAssigned: baseRecord.dateAssigned || item.dateAssigned,
+          transferType: baseRecord.transferType || item.transferType || 'N/A'
+        };
+
+        acc[itrNum] = updatedRecord;
+
+        detailsMap.set(itrNum, {
+          transferNumber: itrNum,
+          transferType: updatedRecord.transferType || 'TRANSFER',
+          fromEmployeeId: item.employee?.[0]?.id ?? existingDetails?.fromEmployeeId,
+          fromEmployeeName: item.employee?.[0]?.fullName || existingDetails?.fromEmployeeName || 'Unknown',
+          fromEmployee: item.employee?.[0] || existingDetails?.fromEmployee,
+          toEmployeeId: item.employee?.[1]?.id ?? existingDetails?.toEmployeeId,
+          toEmployeeName: item.employee?.[1]?.fullName || existingDetails?.toEmployeeName || 'Unknown',
+          toEmployee: item.employee?.[1] || existingDetails?.toEmployee,
+          items: mergedItems,
+          dateAssigned: updatedRecord.dateAssigned,
+          remarks: item.remarks || existingDetails?.remarks,
+          status: item.status || existingDetails?.status
+        });
+
         return acc;
       }, {});
 
@@ -158,12 +176,10 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         label: itrDetails.toEmployeeName
       };
 
-      // For ITR, we need to use generateITRPreviewMultiple (we should create this similar to PTR)
-      // For now, use the existing single item method with the first item
-      const url = await ITRGenerator.generateITRPreview(
-        itrDetails.items[0],
-        { employee: [fromEmp] },
+      const url = await ITRGenerator.generateITRPreviewMultiple(
+        fromEmp,
         toEmp,
+        itrDetails.items,
         itrDetails.dateAssigned,
         itrDetails.transferType || 'REASSIGNMENT'
       );

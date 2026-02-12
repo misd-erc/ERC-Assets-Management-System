@@ -60,6 +60,48 @@ interface Movement {
   createdAt?: string;
 }
 
+// Merge movements that share the same transfer number so UI shows a single row per PTR/ITR
+const mergeMovementsByTransfer = (items: Movement[]): Movement[] => {
+  const map = new Map<string, Movement>();
+
+  items.forEach(item => {
+    const key = item.ptritrNumber || item.rrpperrspNumber || item.paricsNumber || String(item.movementId ?? item.id ?? Math.random());
+    const existing = map.get(key);
+
+    if (!existing) {
+      map.set(key, {
+        ...item,
+        items: item.items ? [...item.items] : [],
+        employee: item.employee ? [...item.employee] : [],
+      });
+      return;
+    }
+
+    // Merge items (unique by id if present)
+    const mergedItems = [...(existing.items || [])];
+    (item.items || []).forEach(it => {
+      const already = mergedItems.find(m => m.id === it.id);
+      if (!already) mergedItems.push(it);
+    });
+
+    // Merge employees (unique by id)
+    const mergedEmployees = [...(existing.employee || [])];
+    (item.employee || []).forEach(emp => {
+      const already = mergedEmployees.find(m => m.id === emp.id);
+      if (!already) mergedEmployees.push(emp);
+    });
+
+    map.set(key, {
+      ...existing,
+      ...item,
+      items: mergedItems,
+      employee: mergedEmployees,
+    });
+  });
+
+  return Array.from(map.values());
+};
+
 export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   function MovementsListComponent({ transferType }, ref) {
   const [searchInput, setSearchInput] = useState('');
@@ -89,8 +131,9 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
         result = await getMovementsList(search, undefined, undefined, page, pageSize);
       }
 
-      setMovements(result.items || []);
-      setTotalCount(result.totalCount || 0);
+      const mergedItems = mergeMovementsByTransfer(result.items || []);
+      setMovements(mergedItems);
+      setTotalCount(mergedItems.length);
       setPageNumber(page);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load movements';
