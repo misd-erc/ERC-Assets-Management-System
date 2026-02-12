@@ -7,17 +7,13 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Checkbox } from '@/components/ui/checkbox';
-import { CalendarIcon, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, FileText, Users, Package } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
-import { getEmployeeAssets } from '@/api/asset/inventoryApi';
+import { getPTRMovements, getTransferDetailsByNumber } from '@/api/asset/transferApi';
 import { PTRGenerator } from './PTRGenerator';
-import { ReportPreviewModal } from './ReportPreviewModal';
 
 interface PTRGenerationModalProps {
   isOpen: boolean;
@@ -25,103 +21,151 @@ interface PTRGenerationModalProps {
   employees: NormalizedEmployee[];
 }
 
-type Step = 'from' | 'to' | 'date' | 'transferType' | 'assets' | 'preview';
+type Step = 'list' | 'details';
+
+interface PTRRecord {
+  ptrNumber: string;
+  fromEmployee: string;
+  toEmployee: string;
+  itemCount: number;
+  dateAssigned: string;
+  transferType: string;
+}
 
 export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGenerationModalProps) {
-  const [currentStep, setCurrentStep] = useState<Step>('from');
-  const [fromEmployee, setFromEmployee] = useState<NormalizedEmployee | null>(null);
-  const [toEmployee, setToEmployee] = useState<NormalizedEmployee | null>(null);
-  const [transferDate, setTransferDate] = useState<Date>(new Date());
-  const [transferType, setTransferType] = useState<'DONATION' | 'REASSIGNMENT' | 'RELOCATE' | 'OTHERS'>('REASSIGNMENT');
+  const [currentStep, setCurrentStep] = useState<Step>('list');
+  const [ptrRecords, setPtrRecords] = useState<PTRRecord[]>([]);
+  const [ptrDetailsMap, setPtrDetailsMap] = useState<Map<string, any>>(new Map());
+  const [selectedPTR, setSelectedPTR] = useState<string | null>(null);
+  const [ptrDetails, setPtrDetails] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const [availableAssets, setAvailableAssets] = useState<Asset[]>([]);
-  const [selectedAssets, setSelectedAssets] = useState<Asset[]>([]);
-  const [loadingAssets, setLoadingAssets] = useState(false);
-  const [toSearch, setToSearch] = useState('');
-  const [fromSearch, setFromSearch] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       resetModal();
+      loadPTRRecords();
     }
   }, [isOpen]);
 
   const resetModal = () => {
-    setCurrentStep('from');
-    setFromEmployee(null);
-    setToEmployee(null);
-    setTransferDate(new Date());
-    setTransferType('REASSIGNMENT');
+    setCurrentStep('list');
+    setSelectedPTR(null);
+    setPtrDetails(null);
+    setSearchQuery('');
     setPreviewUrl('');
     setShowPreview(false);
-    setAvailableAssets([]);
-    setSelectedAssets([]);
-    setFromSearch('');
-    setToSearch('');
   };
 
-  const handleFromEmployeeSelect = async (emp: NormalizedEmployee) => {
-    setFromEmployee(emp);
-    setFromSearch('');
-    
-    // Load assets for this employee
-    setLoadingAssets(true);
+  const loadPTRRecords = async () => {
+    setLoading(true);
     try {
-      const assets = await getEmployeeAssets(emp.id, 'PPE');
-      setAvailableAssets(assets);
+      const response = await getPTRMovements(undefined, 1, 1000);
+      console.log('PTR API Response:', response);
+      console.log('PTR Items:', response.items);
+      
+      // Create a map to store full details by PTR number
+      const detailsMap = new Map();
+      
+      // Group by PTR number
+      const grouped = response.items?.reduce((acc: any, item: any) => {
+        const ptrNum = item.ptritrNumber;
+        console.log('Processing item:', item.ptritrNumber, item);
+        if (!ptrNum || !ptrNum.startsWith('PTR')) return acc;
+        
+        if (!acc[ptrNum]) {
+          acc[ptrNum] = {
+            ptrNumber: ptrNum,
+            fromEmployee: item.employee?.[0] ? 
+              `${item.employee[0].fullName}` : 'Unknown',
+            toEmployee: item.employee?.[1] ? 
+              `${item.employee[1].fullName}` : 'Unknown',
+            itemCount: item.items?.length || 0,
+            dateAssigned: item.dateAssigned,
+            transferType: item.transferType || 'N/A'
+          };
+          
+          // Store full details for this PTR number
+          detailsMap.set(ptrNum, {
+            transferNumber: ptrNum,
+            transferType: item.transferType || 'TRANSFER',
+            fromEmployeeId: item.employee?.[0]?.id,
+            fromEmployeeName: item.employee?.[0]?.fullName || 'Unknown',
+            fromEmployee: item.employee?.[0],
+            toEmployeeId: item.employee?.[1]?.id,
+            toEmployeeName: item.employee?.[1]?.fullName || 'Unknown',
+            toEmployee: item.employee?.[1],
+            items: item.items || [],
+            dateAssigned: item.dateAssigned,
+            remarks: item.remarks,
+            status: item.status
+          });
+        }
+        return acc;
+      }, {});
+
+      console.log('Grouped PTR records:', grouped);
+      const records = Object.values(grouped || {}) as PTRRecord[];
+      console.log('Final PTR records array:', records);
+      setPtrRecords(records);
+      setPtrDetailsMap(detailsMap);
     } catch (error) {
-      console.error('Failed to load employee assets:', error);
+      console.error('Failed to load PTR records:', error);
     } finally {
-      setLoadingAssets(false);
+      setLoading(false);
     }
+  };
+
+  const handleSelectPTR = async (ptrNumber: string) => {
+    setSelectedPTR(ptrNumber);
     
-    setCurrentStep('to');
-  };
-
-  const handleToEmployeeSelect = (emp: NormalizedEmployee) => {
-    setToEmployee(emp);
-    setToSearch('');
-    setCurrentStep('date');
-  };
-
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      setTransferDate(date);
-      setCurrentStep('transferType');
-    }
-  };
-
-  const handleAssetToggle = (asset: Asset, checked: boolean) => {
-    if (checked) {
-      setSelectedAssets([...selectedAssets, asset]);
-    } else {
-      setSelectedAssets(selectedAssets.filter(a => a.id !== asset.id));
-    }
-  };
-
-  const handleAssetsNext = () => {
-    if (selectedAssets.length > 0) {
-      generatePreview();
+    // Use the details we already loaded instead of making another API call
+    const details = ptrDetailsMap.get(ptrNumber);
+    if (details) {
+      setPtrDetails(details);
+      setCurrentStep('details');
     }
   };
 
   const generatePreview = async () => {
-    if (!fromEmployee || !toEmployee) return;
+    if (!ptrDetails) return;
 
     setLoadingPreview(true);
     try {
-      const dateStr = format(transferDate, 'yyyy-MM-dd');
+      const fromEmp: NormalizedEmployee = {
+        id: ptrDetails.fromEmployeeId,
+        firstName: ptrDetails.fromEmployee?.firstName || '',
+        middleName: ptrDetails.fromEmployee?.middleName || '',
+        lastName: ptrDetails.fromEmployee?.lastName || '',
+        suffixName: ptrDetails.fromEmployee?.suffixName || '',
+        employeeIdOriginal: '',
+        employmentTypeId: 0,
+        label: ptrDetails.fromEmployeeName
+      };
+
+      const toEmp: NormalizedEmployee = {
+        id: ptrDetails.toEmployeeId,
+        firstName: ptrDetails.toEmployee?.firstName || '',
+        middleName: ptrDetails.toEmployee?.middleName || '',
+        lastName: ptrDetails.toEmployee?.lastName || '',
+        suffixName: ptrDetails.toEmployee?.suffixName || '',
+        employeeIdOriginal: '',
+        employmentTypeId: 0,
+        label: ptrDetails.toEmployeeName
+      };
+
       const url = await PTRGenerator.generatePTRPreviewMultiple(
-        fromEmployee,
-        toEmployee,
-        selectedAssets,
-        dateStr,
-        transferType
+        fromEmp,
+        toEmp,
+        ptrDetails.items,
+        ptrDetails.dateAssigned,
+        ptrDetails.transferType || 'REASSIGNMENT'
       );
       setPreviewUrl(url);
-      setCurrentStep('preview');
       setShowPreview(true);
     } catch (error) {
       console.error('Failed to generate preview:', error);
@@ -130,275 +174,196 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
     }
   };
 
-  const handleConfirm = async () => {
-    if (!fromEmployee || !toEmployee) return;
+  const handleDownload = async () => {
+    if (!ptrDetails) return;
 
     try {
-      const dateStr = format(transferDate, 'PPP');
-      await PTRGenerator.generatePTRMultiple(
-        fromEmployee,
-        toEmployee,
-        selectedAssets,
-        dateStr,
-        transferType
+      const fromEmp: NormalizedEmployee = {
+        id: ptrDetails.fromEmployeeId,
+        firstName: ptrDetails.fromEmployee?.firstName || '',
+        middleName: ptrDetails.fromEmployee?.middleName || '',
+        lastName: ptrDetails.fromEmployee?.lastName || '',
+        suffixName: ptrDetails.fromEmployee?.suffixName || '',
+        employeeIdOriginal: '',
+        employmentTypeId: 0,
+        label: ptrDetails.fromEmployeeName
+      };
+
+      const toEmp: NormalizedEmployee = {
+        id: ptrDetails.toEmployeeId,
+        firstName: ptrDetails.toEmployee?.firstName || '',
+        middleName: ptrDetails.toEmployee?.middleName || '',
+        lastName: ptrDetails.toEmployee?.lastName || '',
+        suffixName: ptrDetails.toEmployee?.suffixName || '',
+        employeeIdOriginal: '',
+        employmentTypeId: 0,
+        label: ptrDetails.toEmployeeName
+      };
+
+      // Download directly (generatePTRMultiple already saves the file)
+      await PTRGenerator.generatePTRPreviewMultiple(
+        fromEmp,
+        toEmp,
+        ptrDetails.items,
+        ptrDetails.dateAssigned,
+        ptrDetails.transferType || 'REASSIGNMENT'
       );
+      
+      const blob = await fetch(previewUrl).then(r => r.blob());
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${selectedPTR}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      setShowPreview(false);
       onClose();
     } catch (error) {
-      console.error('Failed to generate PTR:', error);
-    }
-  };
-
-  const getStepNumber = (step: Step) => {
-    const steps: Step[] = ['from', 'to', 'date', 'transferType', 'assets', 'preview'];
-    return steps.indexOf(step) + 1;
-  };
-
-  const canGoNext = () => {
-    switch (currentStep) {
-      case 'from': return !!fromEmployee;
-      case 'to': return !!toEmployee;
-      case 'date': return !!transferDate;
-      case 'transferType': return !!transferType;
-      case 'assets': return selectedAssets.length > 0;
-      case 'preview': return !!previewUrl;
-      default: return false;
-    }
-  };
-
-  const handleNext = () => {
-    if (!canGoNext()) return;
-
-    switch (currentStep) {
-      case 'from': setCurrentStep('to'); break;
-      case 'to': setCurrentStep('date'); break;
-      case 'date': setCurrentStep('transferType'); break;
-      case 'transferType': setCurrentStep('assets'); break;
-      case 'assets': handleAssetsNext(); break;
-      case 'preview': setShowPreview(true); break;
+      console.error('Failed to download PTR:', error);
     }
   };
 
   const handleBack = () => {
-    switch (currentStep) {
-      case 'to': setCurrentStep('from'); break;
-      case 'date': setCurrentStep('to'); break;
-      case 'transferType': setCurrentStep('date'); break;
-      case 'assets': setCurrentStep('transferType'); break;
-      case 'preview': setCurrentStep('assets'); break;
+    if (currentStep === 'details') {
+      setCurrentStep('list');
+      setSelectedPTR(null);
+      setPtrDetails(null);
     }
   };
 
+  const filteredPTRs = ptrRecords.filter(ptr =>
+    ptr.ptrNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    ptr.fromEmployee.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    ptr.toEmployee.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const renderStepContent = () => {
     switch (currentStep) {
-      case 'from':
-        const filteredFromEmployees = employees.filter(emp =>
-          emp.label.toLowerCase().includes(fromSearch.toLowerCase())
-        );
-
+      case 'list':
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Select FROM Employee</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Property Transfer Records (PTR)</h3>
+              <span className="text-sm text-gray-500">{filteredPTRs.length} record(s)</span>
+            </div>
+            
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search employees..."
-                value={fromSearch}
-                onChange={(e) => setFromSearch(e.target.value)}
+                placeholder="Search PTR number, from/to employee..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-              {filteredFromEmployees.map(emp => (
-                <button
-                  key={emp.id}
-                  onClick={() => handleFromEmployeeSelect(emp)}
-                  className="p-3 text-left border rounded hover:bg-gray-50"
-                  disabled={loadingAssets}
-                >
-                  {emp.label}
-                </button>
-              ))}
-            </div>
-            {loadingAssets && <div className="text-sm text-gray-500">Loading assets...</div>}
-          </div>
-        );
 
-      case 'to':
-        const filteredToEmployees = employees
-          .filter(emp => emp.id !== fromEmployee?.id)
-          .filter(emp => emp.label.toLowerCase().includes(toSearch.toLowerCase()));
-
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Select TO Employee</h3>
-            <p className="text-sm text-gray-600">
-              From: {fromEmployee?.label}
-            </p>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search employees..."
-                value={toSearch}
-                onChange={(e) => setToSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-              {filteredToEmployees.map(emp => (
-                <button
-                  key={emp.id}
-                  onClick={() => handleToEmployeeSelect(emp)}
-                  className="p-3 text-left border rounded hover:bg-gray-50"
-                >
-                  {emp.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'date':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Select Transfer Date</h3>
-            <p className="text-sm text-gray-600">
-              {fromEmployee?.label} → {toEmployee?.label}
-            </p>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !transferDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {transferDate ? format(transferDate, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={transferDate}
-                  onSelect={handleDateSelect}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-        );
-
-      case 'transferType':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Select Transfer Type</h3>
-            <p className="text-sm text-gray-600">
-              {fromEmployee?.label} → {toEmployee?.label} on {format(transferDate, "PPP")}
-            </p>
-            <div className="space-y-2">
-              {[
-                { value: 'DONATION', label: 'Donation' },
-                { value: 'REASSIGNMENT', label: 'Reassignment' },
-                { value: 'RELOCATE', label: 'Relocate' },
-                { value: 'OTHERS', label: 'Others' },
-              ].map((type) => (
-                <div key={type.value} className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id={type.value}
-                    name="transferType"
-                    value={type.value}
-                    checked={transferType === type.value}
-                    onChange={(e) => setTransferType(e.target.value as typeof transferType)}
-                    className="w-4 h-4"
-                  />
-                  <label htmlFor={type.value} className="text-sm font-medium">
-                    {type.label}
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'assets':
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Select Items to Transfer</h3>
-            <p className="text-sm text-gray-600">
-              {fromEmployee?.label} has {availableAssets.length} item(s) available
-            </p>
-            {availableAssets.length === 0 ? (
-              <div className="p-4 text-center text-gray-500 border rounded-lg">
-                No items available for this employee
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">Loading PTR records...</div>
+            ) : filteredPTRs.length === 0 ? (
+              <div className="text-center py-8 text-gray-500 border rounded-lg">
+                No PTR records found
               </div>
             ) : (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 p-2 border-b mb-2">
-                  <Checkbox
-                    checked={selectedAssets.length === availableAssets.length}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedAssets(availableAssets);
-                      } else {
-                        setSelectedAssets([]);
-                      }
-                    }}
-                  />
-                  <span className="text-sm font-medium">
-                    Select All ({selectedAssets.length}/{availableAssets.length})
-                  </span>
-                </div>
-                <div className="max-h-60 overflow-y-auto space-y-1">
-                  {availableAssets.map(asset => (
-                    <div key={asset.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded">
-                      <Checkbox
-                        checked={selectedAssets.some(a => a.id === asset.id)}
-                        onCheckedChange={(checked) =>
-                          handleAssetToggle(asset, checked as boolean)
-                        }
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {asset.propertyNumber}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {asset.description}
-                        </p>
+              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                {filteredPTRs.map((ptr) => (
+                  <button
+                    key={ptr.ptrNumber}
+                    onClick={() => handleSelectPTR(ptr.ptrNumber)}
+                    className="w-full p-4 text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300 transition-colors"
+                    disabled={loadingDetails}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-orange-600" />
+                          <span className="font-semibold text-sm">{ptr.ptrNumber}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <Users className="w-3 h-3" />
+                          <span>{ptr.fromEmployee}</span>
+                          <ChevronRight className="w-3 h-3" />
+                          <span>{ptr.toEmployee}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Package className="w-3 h-3" />
+                            <span>{ptr.itemCount} item(s)</span>
+                          </div>
+                          <span>{format(new Date(ptr.dateAssigned), 'MMM dd, yyyy')}</span>
+                        </div>
                       </div>
+                      
+                      <ChevronRight className="w-5 h-5 text-gray-400 mt-1" />
                     </div>
-                  ))}
-                </div>
+                  </button>
+                ))}
               </div>
             )}
           </div>
         );
 
-      case 'preview':
+      case 'details':
+        if (!ptrDetails) {
+          return (
+            <div className="text-center py-8 text-gray-500">Loading PTR details...</div>
+          );
+        }
+
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Preview PTR</h3>
-            <div className="space-y-2 text-sm bg-slate-50 p-4 rounded-lg">
-              <p>
-                <strong>From:</strong> {fromEmployee?.label}
-              </p>
-              <p>
-                <strong>To:</strong> {toEmployee?.label}
-              </p>
-              <p>
-                <strong>Date:</strong> {format(transferDate, "PPP")}
-              </p>
-              <p>
-                <strong>Type:</strong> {transferType}
-              </p>
-              <p>
-                <strong>Items:</strong> {selectedAssets.length} item(s)
-              </p>
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-orange-600" />
+              <h3 className="text-lg font-semibold">{selectedPTR}</h3>
             </div>
-            {loadingPreview ? (
-              <div className="text-sm text-gray-500">Generating preview...</div>
-            ) : null}
+
+            <div className="bg-slate-50 p-4 rounded-lg space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-500">FROM</label>
+                <p className="text-sm font-semibold">{ptrDetails.fromEmployeeName}</p>
+              </div>
+              
+              <div className="flex items-center justify-center">
+                <ChevronRight className="w-5 h-5 text-orange-600" />
+              </div>
+              
+              <div>
+                <label className="text-xs font-medium text-gray-500">TO</label>
+                <p className="text-sm font-semibold">{ptrDetails.toEmployeeName}</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Date</label>
+                  <p className="text-sm">{format(new Date(ptrDetails.dateAssigned), 'MMM dd, yyyy')}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Type</label>
+                  <p className="text-sm">{ptrDetails.transferType || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Items ({ptrDetails.items?.length || 0})
+              </label>
+              <div className="max-h-[30vh] overflow-y-auto space-y-2">
+                {ptrDetails.items?.map((item: any, idx: number) => (
+                  <div key={idx} className="p-3 border rounded-lg bg-white">
+                    <p className="text-sm font-medium">{item.propertyNumber}</p>
+                    <p className="text-xs text-gray-600">{item.description}</p>
+                    <div className="flex gap-3 mt-1 text-xs text-gray-500">
+                      <span>₱{item.unitValue?.toLocaleString() || '0'}</span>
+                      <span>•</span>
+                      <span>{item.condition || 'Good'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         );
     }
@@ -409,37 +374,39 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
       {/* Hide the dialog when preview is open */}
       {!showPreview && (
         <Dialog open={isOpen} onOpenChange={onClose}>
-          <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>
-                  Generate PTR - Step {getStepNumber(currentStep)} of 6
-                </DialogTitle>
-              </DialogHeader>
+          <DialogContent className="max-w-3xl max-h-[85vh]">
+            <DialogHeader>
+              <DialogTitle>
+                {currentStep === 'list' ? 'Select PTR Record' : `PTR Details - ${selectedPTR}`}
+              </DialogTitle>
+            </DialogHeader>
 
-              {/* Make the main step area scrollable so long lists don't push the footer off-screen */}
-              <div className="py-4 max-h-[60vh] overflow-y-auto">
-                {renderStepContent()}
-              </div>
+            <div className="py-4">
+              {renderStepContent()}
+            </div>
 
-              <div className="flex justify-between">
+            <div className="flex justify-between gap-2 pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                disabled={currentStep === 'list' || loadingDetails}
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+
+              {currentStep === 'details' && (
                 <Button
-                  variant="outline"
-                  onClick={handleBack}
-                  disabled={currentStep === 'from'}
+                  onClick={generatePreview}
+                  disabled={!ptrDetails || loadingPreview}
+                  className="bg-orange-600 hover:bg-orange-700"
                 >
-                  <ChevronLeft className="w-4 h-4 mr-2" />
-                  Back
+                  <FileText className="w-4 h-4 mr-2" />
+                  Generate Report
                 </Button>
-
-                <Button
-                  onClick={handleNext}
-                  disabled={!canGoNext()}
-                >
-                  {currentStep === 'preview' ? 'Generate PTR' : 'Next'}
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </DialogContent>
+              )}
+            </div>
+          </DialogContent>
         </Dialog>
       )}
 
@@ -449,8 +416,8 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
           <div className="w-full max-w-6xl h-[90vh] flex flex-col bg-white rounded-lg shadow-xl relative">
             <div className="flex items-center justify-between px-6 py-4 border-b">
               <div className="flex items-center gap-2">
-                <ChevronRight className="size-5 text-orange-600" />
-                <span className="font-semibold text-lg text-slate-900">Preview Property Transfer Report (PTR)</span>
+                <FileText className="size-5 text-orange-600" />
+                <span className="font-semibold text-lg text-slate-900">Preview Report - {selectedPTR}</span>
               </div>
               <button
                 className="ml-auto text-slate-500 hover:text-red-600 transition-colors"
@@ -472,7 +439,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
               ) : previewUrl ? (
                 <iframe
                   src={previewUrl}
-                  className="w-full h-[70vh] border-none rounded-b-lg"
+                  className="w-full h-full border-none"
                   title="PTR Preview"
                 />
               ) : (
@@ -486,9 +453,9 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
                 <ChevronLeft className="size-4 mr-2" />
                 Cancel
               </Button>
-              <Button onClick={handleConfirm} disabled={loadingPreview || !previewUrl}>
-                <ChevronRight className="size-4 mr-2" />
-                Confirm Download
+              <Button onClick={handleDownload} disabled={loadingPreview || !previewUrl} className="bg-orange-600 hover:bg-orange-700">
+                <FileText className="size-4 mr-2" />
+                Download PDF
               </Button>
             </div>
           </div>
