@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements } from '@/api/asset/transferApi';
 import { PTRGenerator } from '@/components/assets/reports/PTRGenerator';
 import { ITRGenerator } from '@/components/assets/reports/ITRGenerator';
+import { ReturnReceiptGenerator } from '@/components/assets/reports/ReturnReceiptGenerator';
 import { type NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
@@ -50,6 +51,7 @@ interface Movement {
   ptaId?: number;
   dateAssigned?: string;
   ptritrNumber?: string;
+  rrppeRrspNumber?: string;
   rrpperrspNumber?: string;
   paricsNumber?: string;
   employee?: EmployeeInfo[];
@@ -68,7 +70,12 @@ const mergeMovementsByTransfer = (items: Movement[]): Movement[] => {
   const map = new Map<string, Movement>();
 
   items.forEach(item => {
-    const key = item.ptritrNumber || item.rrpperrspNumber || item.paricsNumber || String(item.movementId ?? item.id ?? Math.random());
+    const key =
+      item.ptritrNumber ||
+      item.rrppeRrspNumber ||
+      item.rrpperrspNumber ||
+      item.paricsNumber ||
+      String(item.movementId ?? item.id ?? Math.random());
     const existing = map.get(key);
 
     if (!existing) {
@@ -189,12 +196,20 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
 
   const handleGenerateReport = async (movement: Movement) => {
     if (!movement) return;
-    const prefix = (movement.ptritrNumber || '').toUpperCase();
+    const transferNumber =
+      movement.ptritrNumber ||
+      movement.rrppeRrspNumber ||
+      movement.rrpperrspNumber ||
+      '';
+    const prefix = transferNumber.toUpperCase();
     const items = movement.items || [];
     const fromEmp = buildEmployee(movement.employee?.[0]);
     const toEmp = buildEmployee(movement.employee?.[1]);
     const transferDate = movement.dateAssigned || new Date().toISOString();
     const transferType = (movement.status || 'REASSIGNMENT') as any;
+
+    const returnedByName = movement.employee?.[0]?.fullName || fromEmp.label || 'Unknown';
+    const returnedByPosition = (movement.employee?.[0] as any)?.position?.name || movement.employee?.[0]?.employeeType || '';
 
     try {
       setGenerating(true);
@@ -204,7 +219,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
         const dlUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = dlUrl;
-        a.download = `${movement.ptritrNumber || 'PTR-report'}.pdf`;
+        a.download = `${transferNumber || 'PTR-report'}.pdf`;
         a.click();
         URL.revokeObjectURL(dlUrl);
       } else if (prefix.startsWith('ITR')) {
@@ -213,11 +228,27 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
         const dlUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = dlUrl;
-        a.download = `${movement.ptritrNumber || 'ITR-report'}.pdf`;
+        a.download = `${transferNumber || 'ITR-report'}.pdf`;
+        a.click();
+        URL.revokeObjectURL(dlUrl);
+      } else if (prefix.startsWith('RRPPE') || prefix.startsWith('RRSP')) {
+        const url = await ReturnReceiptGenerator.generateReturnPreview(
+          prefix.startsWith('RRPPE') ? 'RRPPE' : 'RRSP',
+          items as any,
+          transferNumber,
+          transferDate,
+          returnedByName,
+          returnedByPosition
+        );
+        const blob = await fetch(url).then(r => r.blob());
+        const dlUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = dlUrl;
+        a.download = `${transferNumber || 'return-report'}.pdf`;
         a.click();
         URL.revokeObjectURL(dlUrl);
       } else {
-        toast.error('Report generation is available for PTR/ITR only.');
+        toast.error('Report generation is available for PTR/ITR/RRPPE/RRSP only.');
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to generate report';
@@ -329,7 +360,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
                           { movement.ptritrNumber || 'N/A'}
                         </TableCell>
                         <TableCell className="font-semibold">
-                          {movement.rrpperrspNumber || 'N/A'}
+                          {movement.rrppeRrspNumber || movement.rrpperrspNumber || 'N/A'}
                         </TableCell>
                         <TableCell>{movement.paricsNumber || 'N/A'}</TableCell>
                         <TableCell>
