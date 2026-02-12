@@ -6,6 +6,9 @@ import { Badge } from '../ui/badge';
 import { Loader2, Search, Eye, User, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements } from '@/api/asset/transferApi';
+import { PTRGenerator } from '@/components/assets/reports/PTRGenerator';
+import { ITRGenerator } from '@/components/assets/reports/ITRGenerator';
+import { type NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
@@ -109,6 +112,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   const [loading, setLoading] = useState(false);
   const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [pageNumber, setPageNumber] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 10;
@@ -167,6 +171,60 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   const handleViewDetails = (movement: Movement) => {
     setSelectedMovement(movement);
     setDetailsDialogOpen(true);
+  };
+
+  const buildEmployee = (emp?: EmployeeInfo): NormalizedEmployee => {
+    const nameParts = (emp?.fullName || '').split(' ');
+    return {
+      id: emp?.id || 0,
+      firstName: nameParts.slice(0, -1).join(' ') || emp?.fullName || '',
+      middleName: '',
+      lastName: nameParts.slice(-1).join(' ') || '',
+      suffixName: '',
+      employeeIdOriginal: emp?.employeeIdOriginal || '',
+      employmentTypeId: 0,
+      label: emp?.fullName || '',
+    };
+  };
+
+  const handleGenerateReport = async (movement: Movement) => {
+    if (!movement) return;
+    const prefix = (movement.ptritrNumber || '').toUpperCase();
+    const items = movement.items || [];
+    const fromEmp = buildEmployee(movement.employee?.[0]);
+    const toEmp = buildEmployee(movement.employee?.[1]);
+    const transferDate = movement.dateAssigned || new Date().toISOString();
+    const transferType = (movement.status || 'REASSIGNMENT') as any;
+
+    try {
+      setGenerating(true);
+      if (prefix.startsWith('PTR')) {
+        const url = await PTRGenerator.generatePTRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType);
+        const blob = await fetch(url).then(r => r.blob());
+        const dlUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = dlUrl;
+        a.download = `${movement.ptritrNumber || 'PTR-report'}.pdf`;
+        a.click();
+        URL.revokeObjectURL(dlUrl);
+      } else if (prefix.startsWith('ITR')) {
+        const url = await ITRGenerator.generateITRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType);
+        const blob = await fetch(url).then(r => r.blob());
+        const dlUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = dlUrl;
+        a.download = `${movement.ptritrNumber || 'ITR-report'}.pdf`;
+        a.click();
+        URL.revokeObjectURL(dlUrl);
+      } else {
+        toast.error('Report generation is available for PTR/ITR only.');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to generate report';
+      toast.error(message);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const getStatusBadgeColor = (status?: string) => {
@@ -251,17 +309,17 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
           ) : (
             <>
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="text-sm md:text-base">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Transfer Number</TableHead>
-                      <TableHead>Return Number</TableHead>
-                      <TableHead>PAR/ICS Number</TableHead>
-                      <TableHead>From Employee</TableHead>
-                      <TableHead>To Employee</TableHead>
-                      <TableHead>Date Assigned</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="text-sm md:text-base">Transfer Number</TableHead>
+                      <TableHead className="text-sm md:text-base">Return Number</TableHead>
+                      <TableHead className="text-sm md:text-base">PAR/ICS Number</TableHead>
+                      <TableHead className="text-sm md:text-base">From Employee</TableHead>
+                      <TableHead className="text-sm md:text-base">To Employee</TableHead>
+                      <TableHead className="text-sm md:text-base">Date Assigned</TableHead>
+                      <TableHead className="text-sm md:text-base">Status</TableHead>
+                      <TableHead className="text-sm md:text-base">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -357,18 +415,29 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
 
       {/* Details Dialog */}
       <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-[1200px] max-w-[95vw] max-h-[95vh] overflow-y-auto text-base">
           <DialogHeader>
-            <DialogTitle>Movement Details</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl">Movement Details</DialogTitle>
+            <DialogDescription className="text-sm md:text-base">
               Transfer Number: {selectedMovement?.ptritrNumber || 'N/A'}
             </DialogDescription>
+            {selectedMovement && (
+              <div className="mt-2">
+                <Button
+                  size="sm"
+                  onClick={() => handleGenerateReport(selectedMovement)}
+                  disabled={generating}
+                >
+                  {generating ? 'Generating…' : 'Generate Report'}
+                </Button>
+              </div>
+            )}
           </DialogHeader>
 
           {selectedMovement ? (
             <div className="space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded p-4">
-                <p className="text-sm">
+              <div className="bg-blue-50 border border-blue-200 rounded p-4 text-base">
+                <p>
                   <span className="font-semibold">Total Items:</span>{' '}
                   {selectedMovement.items?.length || 0}
                 </p>
@@ -435,19 +504,19 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
               )}
 
               {/* Transfer Information */}
-              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded text-base">
                 <div>
-                  <p className="text-xs text-muted-foreground font-semibold">PAR/ICS Number</p>
+                  <p className="text-sm text-muted-foreground font-semibold">PAR/ICS Number</p>
                   <p className="font-semibold">{selectedMovement.paricsNumber || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground font-semibold">Status</p>
+                  <p className="text-sm text-muted-foreground font-semibold">Status</p>
                   <Badge className={getStatusBadgeColor(selectedMovement.status)}>
                     {selectedMovement.status || 'Active'}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground font-semibold">Date Assigned</p>
+                  <p className="text-sm text-muted-foreground font-semibold">Date Assigned</p>
                   <p className="font-semibold">
                     {selectedMovement.dateAssigned
                       ? new Date(selectedMovement.dateAssigned).toLocaleDateString()
@@ -456,7 +525,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
                 </div>
                 {(selectedMovement.remarks || selectedMovement.condition) && (
                   <div>
-                    <p className="text-xs text-muted-foreground font-semibold">Condition/Remarks</p>
+                    <p className="text-sm text-muted-foreground font-semibold">Condition/Remarks</p>
                     <p className="font-semibold">{selectedMovement.condition || selectedMovement.remarks || 'N/A'}</p>
                   </div>
                 )}

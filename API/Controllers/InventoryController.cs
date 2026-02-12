@@ -1420,24 +1420,32 @@ namespace API.Controllers
                     .Where(x => x.IsCurrent == true && !x.IsDeleted)
                     .ToListAsync();
 
-                // Count Active PTR (PTRITRNumber starts with "PTR")
+                // Count unique Active PTR (PTRITRNumber starts with "PTR")
                 var activePTR = allMovements
                     .Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().StartsWith("PTR"))
+                    .Select(x => x.PTRITRNumber.ToUpper())
+                    .Distinct()
                     .Count();
 
-                // Count Active ITR (PTRITRNumber starts with "ITR")
+                // Count unique Active ITR (PTRITRNumber starts with "ITR")
                 var activeITR = allMovements
                     .Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().StartsWith("ITR"))
+                    .Select(x => x.PTRITRNumber.ToUpper())
+                    .Distinct()
                     .Count();
 
-                // Count Active Returns PPE (RRPPERRSPNumber starts with "RRPPE")
+                // Count unique Active Returns PPE (RRPPERRSPNumber starts with "RRPPE")
                 var activeReturnsPPE = allMovements
                     .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRPPE"))
+                    .Select(x => x.RRPPERRSPNumber.ToUpper())
+                    .Distinct()
                     .Count();
 
-                // Count Active Returns SE (RRPPERRSPNumber starts with "RRSP")
+                // Count unique Active Returns SE (RRPPERRSPNumber starts with "RRSP")
                 var activeReturnsSE = allMovements
                     .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRSP"))
+                    .Select(x => x.RRPPERRSPNumber.ToUpper())
+                    .Distinct()
                     .Count();
 
                 var statistics = new
