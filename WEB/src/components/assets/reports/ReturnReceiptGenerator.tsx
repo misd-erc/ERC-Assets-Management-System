@@ -1,10 +1,15 @@
 import React from "react";
-import { pdf, Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
+import { pdf, Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 
 const RECEIVED_BY = {
   name: "CHERRY LYNN S. GONZALES",
   designation: "Administrative Officer V-FAS, GSD",
 };
+
+const logoSrc =
+  typeof window !== "undefined"
+    ? `${window.location.origin}/images/erc-logo.png`
+    : "/mnt/data/erc-logo.png";
 
 type ReturnType = "RRPPE" | "RRSP";
 
@@ -18,46 +23,60 @@ interface ReturnRow {
 
 const styles = StyleSheet.create({
   page: {
-    padding: 28,
+    padding: 20,
     fontSize: 9,
     fontFamily: "Helvetica",
   },
   annex: {
-    fontSize: 9,
-    textAlign: "right",
-    marginBottom: 6,
+    position: "absolute",
+    right: 20,
+    top: 10,
+    fontSize: 8,
+    fontStyle: "italic",
   },
-  title: {
-    fontSize: 13,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  table: {
-    borderWidth: 1,
-    borderColor: "#000",
-  },
-  row: {
+  headerContainer: {
     flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
   },
-  cell: {
-    borderRightWidth: 1,
+  logo: { width: 55, height: 55 },
+  titleBlock: { flex: 1, textAlign: "center" },
+  headerTitle: { fontSize: 14, fontWeight: "bold" },
+  blueRule: {
+    height: 4,
+    backgroundColor: "#0A62C6",
+    marginTop: 8,
+    marginBottom: 10,
+  },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  metaLeft: { flex: 1 },
+  metaRight: { width: 190 },
+  metaLabel: { fontSize: 9, fontWeight: "bold" },
+  metaText: { marginTop: 4 },
+  tableWrap: { marginTop: 8 },
+  table: { borderWidth: 0.8, borderColor: "#000" },
+  tableHeaderRow: {
+    flexDirection: "row",
+    backgroundColor: "#f5f5f5",
+    borderBottomWidth: 0.8,
     borderColor: "#000",
-    padding: 4,
-    fontSize: 9,
   },
-  cellLast: {
-    padding: 4,
-    fontSize: 9,
-  },
-  label: {
-    fontWeight: "bold",
+  tableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 0.5,
+    borderColor: "#ccc",
+    minHeight: 20,
+    alignItems: "center",
   },
   headerCell: {
     padding: 4,
     fontSize: 9,
     fontWeight: "bold",
-    borderRightWidth: 1,
+    borderRightWidth: 0.8,
     borderColor: "#000",
     textAlign: "center",
   },
@@ -67,22 +86,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
   },
-  tableHeaderRow: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: "#000",
-    backgroundColor: "#f5f5f5",
-  },
-  bodyRow: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#ccc",
-  },
   bodyCell: {
     padding: 4,
     fontSize: 9,
-    borderRightWidth: 1,
+    borderRightWidth: 0.5,
     borderColor: "#ccc",
     minHeight: 18,
   },
@@ -91,55 +98,42 @@ const styles = StyleSheet.create({
     fontSize: 9,
     minHeight: 18,
   },
-  signatures: {
+  sigRow: {
     flexDirection: "row",
-    marginTop: 18,
-    marginBottom: 12,
+    borderTopWidth: 0.8,
+    borderBottomWidth: 0.8,
+    borderLeftWidth: 0.8,
+    borderRightWidth: 0.8,
+    borderColor: "#000",
+    minHeight: 100,
+    marginTop: 6,
   },
   sigBlock: {
     flex: 1,
-    paddingRight: 12,
+    textAlign: "center",
+    padding: 10,
   },
-  sigBlockRight: {
+  sigBlockLast: {
     flex: 1,
-    paddingLeft: 12,
+    textAlign: "center",
+    padding: 10,
   },
-  sigTitle: {
-    fontSize: 10,
-    fontWeight: "bold",
-    marginBottom: 18,
-  },
-  sigNameLine: {
+  sigTitle: { fontSize: 10, marginBottom: 8, textAlign: "left" },
+  sigName: { fontSize: 10, textAlign: "center", marginBottom: 2 },
+  sigLine: {
     borderBottomWidth: 1,
     borderColor: "#000",
-    height: 18,
+    height: 16,
     marginBottom: 6,
+    marginTop: 0,
   },
-  sigNameText: {
-    fontSize: 9,
-    textAlign: "center",
-    marginTop: -14,
-  },
-  sigLabel: {
-    fontSize: 8,
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  sigDateLine: {
-    borderBottomWidth: 1,
-    borderColor: "#000",
-    height: 10,
-    marginTop: 10,
-  },
-  sigDateText: {
-    fontSize: 8,
-    textAlign: "center",
-    marginTop: 2,
-  },
+  sigLabel: { fontSize: 8, marginBottom: 10, textAlign: "center", marginTop: -4 },
+  sigDateLine: { borderBottomWidth: 1, borderColor: "#000", height: 10, marginTop: 2 },
+  sigDateLabel: { fontSize: 8, textAlign: "center", marginTop: 2 },
   subPar: {
     fontSize: 9,
     fontWeight: "bold",
-    marginTop: 8,
+    marginTop: 10,
   },
 });
 
@@ -183,75 +177,73 @@ const ReturnReceiptDocument = ({
     <Document>
       <Page size="A4" style={styles.page}>
         <Text style={styles.annex}>Annex A.6</Text>
-        <Text style={styles.title}>{title}</Text>
 
-        {/* Meta table */}
-        <View style={[styles.table, { marginBottom: 10 }]}>
-          <View style={styles.row}>
-            <View style={{ flex: 1, borderRightWidth: 1, borderColor: "#000" }}>
-              <Text style={{ ...styles.cell, paddingBottom: 2 }}>
-                <Text style={styles.label}>Entity Name:</Text> Energy Regulatory Commission
-              </Text>
-            </View>
-            <View style={{ width: 180 }}>
-              <Text style={{ ...styles.cell, paddingBottom: 2 }}>
-                <Text style={styles.label}>Date:</Text> {formatLongDate(dateAssigned)}
-              </Text>
-            </View>
-          </View>
-
-          <View style={{ borderTopWidth: 1, borderColor: "#000" }}>
-            <Text style={{ ...styles.cell, ...styles.label }}>
-              {returnType === "RRPPE" ? "RRPPE No.: " : "RRSP No.: "}{receiptNumber || ""}
-            </Text>
+        <View style={styles.headerContainer}>
+          <Image src={logoSrc} style={styles.logo} />
+          <View style={styles.titleBlock}>
+            <Text style={styles.headerTitle}>{title}</Text>
           </View>
         </View>
 
-        {/* Items table */}
-        <View style={styles.table}>
-          <View style={styles.tableHeaderRow}>
-            <Text style={[styles.headerCell, { width: "38%" }]}>Item Description</Text>
-            <Text style={[styles.headerCell, { width: "10%" }]}>Qty.</Text>
-            <Text style={[styles.headerCell, { width: "22%" }]}>Property Number</Text>
-            <Text style={[styles.headerCell, { width: "15%" }]}>End-user</Text>
-            <Text style={[styles.headerCellLast, { width: "15%" }]}>Remarks</Text>
-          </View>
+        <View style={styles.blueRule} />
 
-          {rows.length === 0 ? (
-            <View style={[styles.bodyRow, { minHeight: 40 }] }>
-              <Text style={[styles.bodyCell, { width: "100%", borderRightWidth: 0, textAlign: "center" }]}>No items</Text>
+        <View style={styles.metaRow}>
+          <View style={styles.metaLeft}>
+            <Text style={styles.metaLabel}>Entity Name: ENERGY REGULATORY COMMISSION</Text>
+            <Text style={styles.metaText}>Returned by: {returnedByName || ""}</Text>
+            <Text style={styles.metaText}>Received by: {RECEIVED_BY.name}</Text>
+          </View>
+          <View style={styles.metaRight}>
+            <Text style={styles.metaLabel}>{returnType === "RRPPE" ? "RRPPE No.: " : "RRSP No.: "}{receiptNumber || ""}</Text>
+            <Text style={styles.metaText}>Date: {formatLongDate(dateAssigned)}</Text>
+          </View>
+        </View>
+
+        <View style={styles.tableWrap}>
+          <View style={styles.table}>
+            <View style={styles.tableHeaderRow}>
+              <Text style={[styles.headerCell, { width: "40%" }]}>Item Description</Text>
+              <Text style={[styles.headerCell, { width: "10%" }]}>Qty.</Text>
+              <Text style={[styles.headerCell, { width: "22%" }]}>Property Number</Text>
+              <Text style={[styles.headerCell, { width: "14%" }]}>End-user</Text>
+              <Text style={[styles.headerCellLast, { width: "14%" }]}>Remarks</Text>
             </View>
-          ) : (
-            rows.map((r, idx) => (
-              <View key={idx} style={styles.bodyRow}>
-                <Text style={[styles.bodyCell, { width: "38%" }]}>{r.description}</Text>
-                <Text style={[styles.bodyCell, { width: "10%", textAlign: "center" }]}>{r.quantity}</Text>
-                <Text style={[styles.bodyCell, { width: "22%" }]}>{r.propertyNumber}</Text>
-                <Text style={[styles.bodyCell, { width: "15%" }]}>{r.endUser}</Text>
-                <Text style={[styles.bodyCellLast, { width: "15%" }]}>{r.remarks}</Text>
+
+            {rows.length === 0 ? (
+              <View style={[styles.tableRow, { minHeight: 40 }] }>
+                <Text style={[styles.bodyCell, { width: "100%", borderRightWidth: 0, textAlign: "center" }]}>No items</Text>
               </View>
-            ))
-          )}
+            ) : (
+              rows.map((r, idx) => (
+                <View key={idx} style={styles.tableRow}>
+                  <Text style={[styles.bodyCell, { width: "40%" }]}>{r.description}</Text>
+                  <Text style={[styles.bodyCell, { width: "10%", textAlign: "center" }]}>{r.quantity}</Text>
+                  <Text style={[styles.bodyCell, { width: "22%" }]}>{r.propertyNumber}</Text>
+                  <Text style={[styles.bodyCell, { width: "14%" }]}>{r.endUser}</Text>
+                  <Text style={[styles.bodyCellLast, { width: "14%" }]}>{r.remarks}</Text>
+                </View>
+              ))
+            )}
+          </View>
         </View>
 
-        {/* Signatures */}
-        <View style={styles.signatures}>
+        <View style={[styles.sigRow,{marginTop: -1}]}>
           <View style={styles.sigBlock}>
             <Text style={styles.sigTitle}>Returned by:</Text>
-            <View style={styles.sigNameLine} />
-            <Text style={styles.sigNameText}>{returnedByName || ""}</Text>
+            <Text style={[styles.sigName,{marginBottom: -10}]}>{returnedByName || ""}</Text>
+            <View style={[styles.sigLine,{marginBottom: 4}]} />
             <Text style={styles.sigLabel}>{returnedByPosition || "Position, Service-Division"}</Text>
             <View style={styles.sigDateLine} />
-            <Text style={styles.sigDateText}>Date</Text>
+            <Text style={styles.sigDateLabel}>Date</Text>
           </View>
 
-          <View style={styles.sigBlockRight}>
+          <View style={styles.sigBlockLast}>
             <Text style={styles.sigTitle}>Received by:</Text>
-            <View style={styles.sigNameLine} />
-            <Text style={styles.sigNameText}>{RECEIVED_BY.name}</Text>
+            <Text style={[styles.sigName,{marginBottom: -10}]}>{RECEIVED_BY.name}</Text>
+            <View style={[styles.sigLine,{marginBottom: 4}]} />
             <Text style={styles.sigLabel}>{RECEIVED_BY.designation}</Text>
             <View style={styles.sigDateLine} />
-            <Text style={styles.sigDateText}>Date</Text>
+            <Text style={styles.sigDateLabel}>Date</Text>
           </View>
         </View>
 
