@@ -12,6 +12,7 @@ import {
   Archive,
   FileText,
   Truck,
+  BarChart3,
 } from "lucide-react";
 
 // CONFIG MAP FOR KNOWN MODULES
@@ -127,6 +128,14 @@ export const moduleConfig: Record<string, any> = {
     implemented: true, 
   },
 
+  RC: {
+    id: "reports-center",
+    title: "Reports Center",
+    group: "Reports & Approvals",
+    icon: BarChart3,
+    implemented: true,
+  },
+
 };
 
 export const fallbackModule = {
@@ -136,4 +145,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["DB", "PPESE", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET"];
+export const adminOverrideModules = ["DB", "PPESE", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC"];

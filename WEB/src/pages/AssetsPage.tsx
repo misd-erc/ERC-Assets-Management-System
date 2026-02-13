@@ -521,10 +521,9 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="PPE">PPE Assets</TabsTrigger>
           <TabsTrigger value="SE">SE Assets</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
 
@@ -625,7 +624,7 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
           />
         </TabsContent>
 
-        <TabsContent value="reports" className="space-y-6">
+        <TabsContent value="reports-center" className="space-y-6">
           <ReportTab />
         </TabsContent>
       </Tabs>
