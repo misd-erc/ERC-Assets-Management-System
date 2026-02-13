@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Loader2, Download, X, Recycle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
@@ -70,6 +71,7 @@ export function ReportTab() {
   const [showPAL, setShowPAL] = useState(false);
   const [showNumberModal, setShowNumberModal] = useState(false);
   const [customNumber, setCustomNumber] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     getEmployees(1, 1000).then(res => {
@@ -312,7 +314,7 @@ export function ReportTab() {
     return <IconComp className="w-8 h-8 text-white" />;
   };
 
-  const reports: ReportCard[] = [
+  const reports: ReportCard[] = useMemo(() => ([
     {
       title: 'RPCPPE',
       subtitle: 'Physical Count of PPE',
@@ -383,7 +385,16 @@ export function ReportTab() {
       bgColor: 'bg-indigo-600',
       action: () => { setSelectedReport('PAL'); setShowEmployeeModal(true); }
     },
-  ];
+  ]), []);
+
+  const filteredReports = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return reports;
+    return reports.filter(r =>
+      r.title.toLowerCase().includes(q) ||
+      r.subtitle.toLowerCase().includes(q)
+    );
+  }, [reports, searchTerm]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6">
@@ -396,11 +407,18 @@ export function ReportTab() {
           <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
             Generate comprehensive reports for asset management
           </p>
+          <div className="max-w-xl mx-auto">
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search reports by name or description"
+            />
+          </div>
         </div>
 
         {/* Reports Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {reports.map((r, i) => (
+          {filteredReports.map((r, i) => (
             <Card
               key={i}
               onClick={r.action}
