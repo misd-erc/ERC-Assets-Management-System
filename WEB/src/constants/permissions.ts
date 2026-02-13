@@ -33,14 +33,13 @@ export const PERMISSION_CATEGORIES = {
     { id: '4', label: 'Category Management', description: 'Manage asset categories', icon: FolderOpen },
     { id: '5', label: 'Delivery & Receipt of Items', description: 'Handle deliveries and receipts', icon: Package },
     { id: '6', label: 'Supply Management', description: 'Manage supplies inventory', icon: Archive },
-    { id: '7', label: 'Transfers & Returns', description: 'Process transfers and returns', icon: ArrowRightLeft },
     { id: '8', label: 'Disposal of Properties', description: 'Handle asset disposals', icon: Trash2 },
     { id: '9', label: 'Contract Management', description: 'Manage contracts', icon: FileText }
   ],
   'Asset Management': [
     { id: '10', label: 'PPE & SE', description: 'Manage PPE and semi-expendables encoding', icon: Package },
-    { id: '11', label: 'PPE & Semi-Expendables', description: 'Manage property and equipment', icon: HardHat }
-  ],
+    { id: '7', label: 'Transfers & Returns', description: 'Process transfers and returns', icon: ArrowRightLeft },
+ ],
   'Reports & Approvals': [
     { id: '12', label: 'Reports Center', description: 'Generate and view reports', icon: BarChart3 },
     { id: '13', label: 'Approvals', description: 'Process approval workflows', icon: CheckCircle }

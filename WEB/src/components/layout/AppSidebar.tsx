@@ -15,12 +15,14 @@ import {
 } from "@/components/ui/sidebar";
 
 import { Badge } from "@/components/ui/badge";
-import { decrypt } from "@/utils/encryption";
+import { decrypt, encrypt } from "@/utils/encryption";
 import {
   moduleConfig,
   fallbackModule,
   adminOverrideModules,
 } from "@/utils/moduleConfig";
+
+import { getUserDetails } from "@/api/user-management/authApi";
 
 import { Building } from "lucide-react";
 
@@ -45,42 +47,54 @@ export function AppSidebar({ activeModule, onModuleChange }: any) {
   // LOAD USER DETAILS
   // ----------------------
   useEffect(() => {
-    const encrypted = localStorage.getItem("userDetails");
-    if (!encrypted) return;
+    let isActive = true;
 
-    try {
-      const decrypted = decrypt(encrypted);
-      setUserDetails(JSON.parse(decrypted));
-    } catch (err) {
-      console.error("Error decrypting user details:", err);
-    }
+    const loadUserDetails = async () => {
+      // Try local cache first
+      const encrypted = localStorage.getItem("userDetails");
+      if (encrypted) {
+        try {
+          const parsed = JSON.parse(decrypt(encrypted));
+          if (isActive) setUserDetails(parsed);
+          return;
+        } catch (err) {
+          console.warn("[Sidebar] Failed to decrypt cached user details, refetching", err);
+        }
+      }
+
+      // Fallback: fetch fresh details and cache them
+      try {
+        const fresh = await getUserDetails();
+        const encryptedFresh = encrypt(JSON.stringify(fresh));
+        localStorage.setItem("userDetails", encryptedFresh);
+        if (isActive) setUserDetails(fresh);
+      } catch (err) {
+        console.error("[Sidebar] Unable to load user details", err);
+      }
+    };
+
+    loadUserDetails();
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   // ----------------------
   // EXTRACT SCOPES (ACRONYM-BASED)
   // ----------------------
-  const { acronyms, isAdmin } = useMemo(() => {
-    if (!userDetails) return { acronyms: [], isAdmin: false };
+  const { acronyms } = useMemo(() => {
+    if (!userDetails) return { acronyms: [] };
 
     const list: string[] = [];
-    let adminFlag = false;
 
     userDetails.systemRole?.forEach((role: any) => {
-      if (role.roleName === "Administrator") adminFlag = true;
-
       role.scope?.forEach((s: any) => {
         if (s.module?.acronym) list.push(s.module.acronym);
       });
     });
 
-    // ADMIN OVERRIDE (forced modules)
-    if (adminFlag) {
-      adminOverrideModules.forEach((ac) => {
-        if (!list.includes(ac)) list.push(ac);
-      });
-    }
-
-    return { acronyms: list, isAdmin: adminFlag };
+    return { acronyms: list };
   }, [userDetails]);
 
   // ----------------------
