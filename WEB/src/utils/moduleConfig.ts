@@ -12,6 +12,7 @@ import {
   Archive,
   FileText,
   Truck,
+  BarChart3,
 } from "lucide-react";
 
 // CONFIG MAP FOR KNOWN MODULES
@@ -32,18 +33,11 @@ export const moduleConfig: Record<string, any> = {
     implemented: true,
   },
 
-  PPESEx: {
-    id: "ppe-semi-expendables",
-    title: "PPE & Semi-Expendables",
-    group: "Asset Management",
-    icon: HardHat,
-    implemented: false,
-  },
 
   CATM: {
     id: "category-management",
     title: "Category Management",
-    group: "Asset Management",
+    group: "Core Operations",
     icon: Tag,
     implemented: true,
   },
@@ -113,7 +107,7 @@ export const moduleConfig: Record<string, any> = {
   SM: {
     id: "supply-management",
     title: "Supply Management",
-    group: "Asset Management",
+    group: "Core Operations",
     icon: Archive,  
     implemented: true, 
   },
@@ -121,7 +115,7 @@ export const moduleConfig: Record<string, any> = {
   CM: {
     id: "contract-management",
     title: "Contract Management",
-    group: "Asset Management",
+    group: "Core Operations",
     icon: FileText,  
     implemented: true, 
   },
@@ -129,9 +123,17 @@ export const moduleConfig: Record<string, any> = {
   DRI: {
     id: "delivery-receipt-items",
     title: "Delivery & Receipt of Items",
-    group: "Asset Management",
+    group: "Core Operations",
     icon: Package,  
     implemented: true, 
+  },
+
+  RC: {
+    id: "reports-center",
+    title: "Reports Center",
+    group: "Reports & Approvals",
+    icon: BarChart3,
+    implemented: true,
   },
 
 };
@@ -143,4 +145,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["DB", "PPESE", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET"];
+export const adminOverrideModules = ["DB", "PPESE", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC"];

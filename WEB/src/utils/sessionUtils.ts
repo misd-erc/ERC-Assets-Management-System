@@ -84,13 +84,17 @@ export const isSessionError = (response: any): boolean => {
     return false;
   }
 
+  const message = typeof response.message === 'string' ? response.message.toLowerCase() : '';
+
   // Check for explicit session error indicators
   return (
     response.code === 'ERR_SERVER' ||
     response.code === 'ERR_UNAUTHORIZED' ||
     response.code === 'ERR_SESSION_EXPIRED' ||
-    response.message?.toLowerCase().includes('session expired') ||
-    response.message?.toLowerCase().includes('invalid token')
+    response.code === 'ERR_TOKEN_EXPIRED' ||
+    message.includes('session expired') ||
+    message.includes('token expired') ||
+    message.includes('invalid token')
   );
 };
 

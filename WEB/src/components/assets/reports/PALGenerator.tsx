@@ -209,7 +209,17 @@ export class PALGenerator {
     // Process all assets (PPE and SE) in one list
     let itemNumber = 1;
     
-    ppeAssets.forEach((asset: any) => {
+    const isCurrentForEmployee = (asset: any, empId: number) =>
+      asset.movements?.some((m: any) => {
+        const current = m.isCurrent === true || m.isCurrent === 1 || (typeof m.isCurrent === 'string' && m.isCurrent.toLowerCase() === 'true');
+        return current && (
+          m.plantillaEmployeeId === empId ||
+          m.nonPlantillaEmployeeId === empId ||
+          (Array.isArray(m.employee) && m.employee.some((e: any) => e.id === empId))
+        );
+      });
+
+    ppeAssets.filter((a: any) => isCurrentForEmployee(a, employee.id)).forEach((asset: any) => {
       allRows.push({
         no: itemNumber++,
         description: asset.description ?? "",
@@ -219,7 +229,7 @@ export class PALGenerator {
       });
     });
 
-    seAssets.forEach((asset: any) => {
+    seAssets.filter((a: any) => isCurrentForEmployee(a, employee.id)).forEach((asset: any) => {
       allRows.push({
         no: itemNumber++,
         description: asset.description ?? "",
@@ -274,7 +284,17 @@ export class PALGenerator {
     // Process all assets (PPE and SE) in one list
     let itemNumber = 1;
     
-    ppeAssets.forEach((asset: any) => {
+    const isCurrentForEmployee = (asset: any, empId: number) =>
+      asset.movements?.some((m: any) => {
+        const current = m.isCurrent === true || m.isCurrent === 1 || (typeof m.isCurrent === 'string' && m.isCurrent.toLowerCase() === 'true');
+        return current && (
+          m.plantillaEmployeeId === empId ||
+          m.nonPlantillaEmployeeId === empId ||
+          (Array.isArray(m.employee) && m.employee.some((e: any) => e.id === empId))
+        );
+      });
+
+    ppeAssets.filter((a: any) => isCurrentForEmployee(a, employee.id)).forEach((asset: any) => {
       allRows.push({
         no: itemNumber++,
         description: asset.description ?? "",
@@ -284,7 +304,7 @@ export class PALGenerator {
       });
     });
 
-    seAssets.forEach((asset: any) => {
+    seAssets.filter((a: any) => isCurrentForEmployee(a, employee.id)).forEach((asset: any) => {
       allRows.push({
         no: itemNumber++,
         description: asset.description ?? "",
