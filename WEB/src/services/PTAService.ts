@@ -35,9 +35,9 @@ export class PTAService {
       const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
       const pageSize = 1000;
-      const fiscalDate = Date.toISOString().split('T')[0];
-      // Build URL with FiscalYear parameter
-      let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&FiscalDate=${fiscalDate}&GroupName=ppe&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+      const asOfDate = Date.toISOString().split('T')[0];
+      // Build URL with AsOfDate parameter (filters assets acquired on or before this date)
+      let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&AsOfDate=${asOfDate}&GroupName=ppe&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 
       // Add CategoryId if specified
       if (categoryId) {
@@ -74,9 +74,9 @@ export class PTAService {
       const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
       const pageSize = 1000;
-      const fiscalDate = Date.toISOString().split('T')[0];
-      // Build URL with FiscalDate parameter for SE assets
-      const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&FiscalDate=${fiscalDate}&GroupName=se&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+      const asOfDate = Date.toISOString().split('T')[0];
+      // Build URL with AsOfDate parameter (filters assets acquired on or before this date) for SE assets
+      const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&AsOfDate=${asOfDate}&GroupName=se&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 
       const response = await fetch(url, {
         method: 'GET',

@@ -203,11 +203,9 @@ export function CategoryManagement() {
                   value={formData.generalCode}
                   onChange={(e) => setFormData({ ...formData, generalCode: e.target.value })}
                   placeholder="e.g., 10605130"
-                  maxLength={5}
                   className="h-9 uppercase"
                   disabled={loading}
                 />
-                <p className="text-xs text-slate-500">Max 5 characters</p>
               </div>
               <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-md">
                 <input
