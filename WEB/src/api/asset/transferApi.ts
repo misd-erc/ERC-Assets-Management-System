@@ -133,9 +133,9 @@ export const getAssetsForTransfer = async (groupName?: 'ppe' | 'se'): Promise<an
     const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
     const pageSize = 1000;
-    const fiscalDate = new Date().toISOString().split('T')[0];
+    const asOfDate = new Date().toISOString().split('T')[0];
 
-    let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&FiscalDate=${fiscalDate}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+    let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&AsOfDate=${asOfDate}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 
     if (groupName) {
       url += `&GroupName=${groupName}`;
