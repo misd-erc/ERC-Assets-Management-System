@@ -13,5 +13,11 @@ namespace PortalDB.Models.ResponseModels.Pagination
         public int PageSize { get; set; }
         public int TotalCount { get; set; }
         public int TotalPages { get; set; }
+        
+        /// <summary>
+        /// The "as of" date used for filtering results (if applicable)
+        /// Shows assets acquired on or before this date
+        /// </summary>
+        public DateTime? AsOfDate { get; set; }
     }
 }

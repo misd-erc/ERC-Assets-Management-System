@@ -229,9 +229,12 @@ namespace API.Controllers
                 if (model.GroupBy == null || string.IsNullOrEmpty(model.GroupBy)) { 
                     IEnumerable<TblPTA?> ptas = await _getTools.PTA.GetTblPTAsByGroup(model.GroupName!, context).Where(x => x.Group == model.GroupName).ToListAsync();
 
-                    if (model.FiscalDate.HasValue)
+                    // AS OF Filter: Include only assets acquired from January 1 of the selected year up to the specified "as of" date
+                    // This shows a snapshot of assets at a specific point in time, excluding records from previous years
+                    if (model.AsOfDate.HasValue)
                     {
-                        ptas = ptas.Where(x => x.FiscalDate == model.FiscalDate.Value);
+                        var yearStart = new DateTime(model.AsOfDate.Value.Year, 1, 1);
+                        ptas = ptas.Where(x => x.DateAcquired >= yearStart && x.DateAcquired <= model.AsOfDate.Value);
                     }
 
                     if (model.CategoryId != null && model.CategoryId != 0)
@@ -349,7 +352,8 @@ namespace API.Controllers
                         model.PageNumber,
                         model.PageSize,
                         totalCount,
-                        "PTAs have been retrieved"
+                        "PTAs have been retrieved",
+                        model.AsOfDate
                     ));
                 }
                 #endregion
@@ -387,6 +391,14 @@ namespace API.Controllers
 
                     if (model.EndDate.HasValue)
                         ptasQuery = ptasQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                    // AS OF Filter for Employee GroupBy: Include only assets acquired from January 1 of the selected year
+                    // Excludes records from previous years
+                    if (model.AsOfDate.HasValue)
+                    {
+                        var yearStart = new DateTime(model.AsOfDate.Value.Year, 1, 1);
+                        ptasQuery = ptasQuery.Where(x => x.DateAcquired >= yearStart && x.DateAcquired <= model.AsOfDate.Value);
+                    }
 
                     // Get distinct employees who have at least one PTA
                     var employeeGroups = ptasQuery
@@ -502,7 +514,8 @@ namespace API.Controllers
                         model.PageNumber,
                         model.PageSize,
                         totalCount,
-                        "PTAs grouped by employee retrieved successfully"
+                        "PTAs grouped by employee retrieved successfully",
+                        model.AsOfDate
                     ));
                 }
                 #endregion
@@ -540,6 +553,14 @@ namespace API.Controllers
 
                     if (model.EndDate.HasValue)
                         ptasQuery = ptasQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                    // AS OF Filter for Condition GroupBy: Include only assets acquired from January 1 of the selected year
+                    // Excludes records from previous years
+                    if (model.AsOfDate.HasValue)
+                    {
+                        var yearStart = new DateTime(model.AsOfDate.Value.Year, 1, 1);
+                        ptasQuery = ptasQuery.Where(x => x.DateAcquired >= yearStart && x.DateAcquired <= model.AsOfDate.Value);
+                    }
 
                     // Get distinct employees who have at least one PTA
                     var conditionGroups = ptasQuery
@@ -610,7 +631,8 @@ namespace API.Controllers
                         model.PageNumber,
                         model.PageSize,
                         totalCount,
-                        "PTAs grouped by condition retrieved successfully"
+                        "PTAs grouped by condition retrieved successfully",
+                        model.AsOfDate
                     ));
                 }
                 #endregion
@@ -648,6 +670,14 @@ namespace API.Controllers
 
                     if (model.EndDate.HasValue)
                         ptasQuery = ptasQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                    // AS OF Filter for Division GroupBy: Include only assets acquired from January 1 of the selected year
+                    // Excludes records from previous years
+                    if (model.AsOfDate.HasValue)
+                    {
+                        var yearStart = new DateTime(model.AsOfDate.Value.Year, 1, 1);
+                        ptasQuery = ptasQuery.Where(x => x.DateAcquired >= yearStart && x.DateAcquired <= model.AsOfDate.Value);
+                    }
 
                     // Get distinct employees who have at least one PTA
                     var divisionGroups = ptasQuery
@@ -722,7 +752,8 @@ namespace API.Controllers
                         model.PageNumber,
                         model.PageSize,
                         totalCount,
-                        "PTAs grouped by division retrieved successfully"
+                        "PTAs grouped by division retrieved successfully",
+                        model.AsOfDate
                     ));
                 }
                 #endregion

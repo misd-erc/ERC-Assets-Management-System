@@ -15,7 +15,10 @@ namespace PortalDB.Models.QueryParams.Pagination
 
         public DateTime? StartDate { get; set; }
 
-        public DateTime? FiscalDate { get; set; }
+        /// <summary>
+        /// "As of" date filter: Returns assets acquired on or before this date
+        /// </summary>
+        public DateTime? AsOfDate { get; set; }
         public DateTime? EndDate { get; set; }
         public long? CategoryId { get; set; }
         public long? EmployeeId { get; set; }

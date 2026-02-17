@@ -21,7 +21,8 @@ namespace PortalDB.Models.Responses
             int pageNumber,
             int pageSize,
             int totalCount,
-            string message = "Success")
+            string message = "Success",
+            DateTime? asOfDate = null)
         {
             int totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
             var paginatedResponse = new PaginatedResponseModel<T>
@@ -30,7 +31,8 @@ namespace PortalDB.Models.Responses
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 TotalCount = totalCount,
-                TotalPages = totalPages
+                TotalPages = totalPages,
+                AsOfDate = asOfDate
             };
 
             return new ApiResponse<PaginatedResponseModel<T>>
