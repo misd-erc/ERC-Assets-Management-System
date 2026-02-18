@@ -111,16 +111,16 @@ export const seApi = {
 		actionBySystemUserId: string,
 		sessionKey: string
 	): Promise<{ success: boolean; code?: string; message?: string; data?: SEAsset }> => {
-		const url = API_BASE_URL + '/Inventory/pta/se-ppe/create';
+		const url = API_BASE_URL + '/Inventory/pta/se-ppe/edit';
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify({ ...asset, ActionBySystemUserId: actionBySystemUserId, SessionKey: sessionKey }),
+			body: JSON.stringify({ ...asset, actionBySystemUserId, sessionKey }),
 		});
 		if (!response.ok) {
-			throw new Error('Failed to create SE asset');
+			throw new Error(`Failed to create SE asset: HTTP ${response.status} ${response.statusText}`);
 		}
 		return response.json();
 	},
@@ -138,7 +138,7 @@ export const seApi = {
 			headers: {
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify({ ...asset, ActionBySystemUserId: actionBySystemUserId, SessionKey: sessionKey }),
+			body: JSON.stringify({ ...asset, actionBySystemUserId, sessionKey }),
 		});
 		if (!response.ok) {
 			throw new Error('Failed to update SE asset');
@@ -146,20 +146,58 @@ export const seApi = {
 		return response.json();
 	},
 
-	// Edit SE asset movement
+	// Create or update part (shared PPE/SE)
+	editPart: async (
+		partData: any
+	): Promise<{ success: boolean; code?: string; message?: string; data?: any }> => {
+		const url = API_BASE_URL + '/Inventory/pta/part/edit';
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(partData),
+		});
+		if (!response.ok) {
+			throw new Error('Failed to save asset part');
+		}
+		return response.json();
+	},
+
+	// Create or update movement (shared PPE/SE)
 	editMovement: async (
 		movementData: any
 	): Promise<{ success: boolean; code?: string; message?: string; data?: any }> => {
-		const url = API_BASE_URL + `/Inventory/pta/se-ppe/movement/${movementData.id}`;
+		const url = API_BASE_URL + '/Inventory/pta/movement/edit';
 		const response = await fetch(url, {
-			method: 'PUT',
+			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(movementData),
 		});
 		if (!response.ok) {
-			throw new Error('Failed to edit SE asset movement');
+			throw new Error('Failed to save asset movement');
+		}
+		return response.json();
+	},
+
+	// Delete SE asset
+	delete: async (
+		id: number,
+		actionBySystemUserId?: string,
+		sessionKey?: string
+	): Promise<{ success: boolean; code?: string; message?: string; data?: any }> => {
+		const query = new URLSearchParams();
+		if (actionBySystemUserId) query.append('ActionBySystemUserId', actionBySystemUserId);
+		if (sessionKey) query.append('SessionKey', sessionKey);
+		const url = API_BASE_URL + `/Inventory/pta/delete/${id}${query.toString() ? '?' + query.toString() : ''}`;
+		const response = await fetch(url, {
+			method: 'DELETE',
+			headers: { Accept: 'application/json' },
+		});
+		if (!response.ok) {
+			throw new Error(`Failed to delete SE asset: HTTP ${response.status} ${response.statusText}`);
 		}
 		return response.json();
 	}

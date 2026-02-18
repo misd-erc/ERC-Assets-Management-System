@@ -5,12 +5,15 @@ export interface MovementEditPayload {
   dateAssigned: string;
   ptrItrNumber: string;
   parIcsNumber: string;
+  rrppeRrspNumber?: string;
+  status?: string;
   plantillaEmployeeId: number | null;
   nonPlantillaEmployeeId: number | null;
   condition: string;
   actualOfficeId: number | null;
   actualDivisionId: number | null;
   isActive: boolean;
+  isCurrent?: boolean;
   actionBySystemUserId: number;
   sessionKey: string;
   model?: string;

@@ -159,22 +159,83 @@ export class PPEService {
         sessionKey,
       };
 
-      // Create the main PPE asset
-      const apiResponse = await ppeApi.create(apiData);
+      let createdAsset: PPEAsset | undefined;
+      let ptaId: number | undefined;
 
-      // Since the API response doesn't include the created asset ID,
-      // we need to search for the asset by propertyNumber to get the ID
-      const searchResults = await this.getAll({ search: data.propertyNumber });
-      const createdAsset = searchResults.items.find(asset => asset.propertyNumber === data.propertyNumber);
+      try {
+        // Try normal POST create to /edit endpoint
+        const apiResponse = await ppeApi.create(apiData);
+        console.log('[PPE Create] API Response:', JSON.stringify(apiResponse));
+        
+        // Backend returns { success: bool, data: { ptaId: number }, message: string }
+        const responseData = apiResponse as any;
+        
+        // Try to extract ptaId from different possible locations
+        let ptaIdFromResponse = responseData?.data?.ptaId ||
+                                responseData?.data?.PTAId || 
+                                responseData?.PTAId || 
+                                responseData?.id ||
+                                responseData?.data?.id;
+        
+        console.log('[PPE Create] Extracted ptaId:', ptaIdFromResponse);
+        
+        if (!ptaIdFromResponse) {
+          throw new Error(`Failed to extract ptaId from response: ${JSON.stringify(responseData)}`);
+        }
+        ptaId = typeof ptaIdFromResponse === 'string' ? parseInt(ptaIdFromResponse) : ptaIdFromResponse;
+        
+        if (!ptaId) {
+          throw new Error('ptaId missing from create response');
+        }
 
-      if (!createdAsset || !createdAsset.id) {
-        throw new Error('Failed to retrieve created PPE asset ID');
+        // Build created asset locally to avoid fetch dependency on response shape
+        createdAsset = {
+          id: ptaId as any,
+          group: (data as any).group || 'PPE',
+          propertyNumber: data.propertyNumber,
+          category: typeof data.category === 'object' && data.category ? data.category : null,
+          legend: typeof data.legend === 'string' ? data.legend : '',
+          description: data.description,
+          brand: data.brand || '',
+          model: data.model || '',
+          serialNumber: data.serialNumber || '',
+          parts: data.parts || [],
+          unitOfMeasurement: data.unitOfMeasurement,
+          unitValue: data.unitValue,
+          dateAcquired: data.dateAcquired,
+          estimatedUsefulLife: data.estimatedUsefulLife || 0,
+          fiscalDate: (data as any).fiscalDate || new Date().toISOString().split('T')[0],
+          movements: data.movements || [],
+          history: [],
+          dateEncoded: new Date().toISOString(),
+          isActive: true,
+          isDeleted: false,
+          createdAt: new Date().toISOString(),
+        } as unknown as PPEAsset;
+      } catch (createError: any) {
+        // If the server rejects POST (e.g. 405) fall back to previous workaround
+        const errorMessage = createError?.message || '';
+        if (errorMessage.includes('405')) {
+          console.warn('PPE create endpoint returned 405, falling back to list-search workaround');
+          const searchResults = await this.getAll({ search: data.propertyNumber });
+          createdAsset = searchResults.items.find(asset => asset.propertyNumber === data.propertyNumber);
+          if (!createdAsset || !createdAsset.id) {
+            throw new Error('Failed to locate PPE asset after fallback search');
+          }
+          ptaId = typeof createdAsset.id === 'string' ? parseInt(createdAsset.id) : createdAsset.id;
+        } else {
+          // rethrow other errors
+          console.error('Error calling PPE create endpoint:', createError);
+          throw createError;
+        }
       }
 
-      const ptaId = typeof createdAsset.id === 'string' ? parseInt(createdAsset.id) : createdAsset.id;
+      // After successful creation or fallback, we have ptaId and createdAsset
+      if (ptaId === undefined || !createdAsset) {
+        throw new Error('Unable to determine new PPE asset ID');
+      }
 
       // After successful creation, handle parts and movements
-      // Create parts
       if (data.parts && data.parts.length > 0) {
         for (const part of data.parts as any[]) {
           if (part.name && part.serialNumber) {
@@ -190,8 +251,6 @@ export class PPEService {
           }
         }
       }
-
-
 
       return createdAsset;
     } catch (error) {
