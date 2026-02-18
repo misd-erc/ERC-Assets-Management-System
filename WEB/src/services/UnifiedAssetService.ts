@@ -4,38 +4,51 @@ import { Asset, UnifiedMovement, AssetGroup } from '@/types/asset/UnifiedAsset';
 import { SEAsset } from '@/types/supply/se';
 import { normalizeMovement } from '@/utils/normalizer';
 
+
 export class UnifiedAssetService {
   // Helper function to normalize movement payload for backend
   private static normalizeMovement(entry: UnifiedMovement, assetModel: string, mode: 'create' | 'edit', assetId?: number): any {
     // Null-safety: return null if entry is undefined/null
     if (!entry) return null;
 
+    const actionBySystemUserId = parseInt(localStorage.getItem('systemUserId') || '0');
+    const sessionKey = localStorage.getItem('sessionToken') || '';
+    const isCurrent = entry.isCurrent !== undefined ? entry.isCurrent : false;
+
     return {
       id: mode === 'create' ? 0 : (entry.id ?? 0),
-      ptaId: mode === 'create' ? 0 : (assetId || entry.ptaId || 0),
+      ptaId: mode === 'create' ? (assetId || 0) : (assetId || entry.ptaId || 0),
       dateAssigned: entry.dateAssigned ?? new Date().toISOString(),
       ptrItrNumber: entry.ptrItrNumber ?? '',
       parIcsNumber: entry.parIcsNumber ?? '',
+      rrppeRrspNumber: (entry as any).rrppeRrspNumber ?? '',
+      status: (entry as any).status ?? 'Current',
       plantillaEmployeeId: entry.plantillaEmployeeId ?? 0,
       nonPlantillaEmployeeId: entry.nonPlantillaEmployeeId ?? 0,
-      isActive: true,
       condition: entry.condition ?? 'Working',
-      actionBySystemUserId: parseInt(localStorage.getItem('systemUserId') || '0'),
-      sessionKey: localStorage.getItem('sessionToken') || '',
+      actualOfficeId: (entry as any).actualOfficeId ?? 0,
+      actualDivisionId: (entry as any).actualDivisionId ?? 0,
+      isActive: entry.isActive !== undefined ? entry.isActive : true,
+      isCurrent,
+      actionBySystemUserId,
+      sessionKey,
       model: assetModel || '',
     };
   }
 
   // Helper function to normalize part payload for backend
   private static normalizePart(part: any, mode: 'create' | 'edit', assetId?: number): any {
+    const actionBySystemUserId = parseInt(localStorage.getItem('systemUserId') || '0');
+    const sessionKey = localStorage.getItem('sessionToken') || '';
+
     return {
       id: mode === 'create' ? 0 : (part.id || 0),
-      ptaId: mode === 'create' ? 0 : (assetId || part.ptaId || 0),
+      ptaId: mode === 'create' ? (assetId || 0) : (assetId || part.ptaId || 0),
       name: part.name || '',
       serialNumber: part.serialNumber || '',
       isActive: part.isActive !== undefined ? part.isActive : true,
-      actionBySystemUserId: parseInt(localStorage.getItem('systemUserId') || '0'),
-      sessionKey: localStorage.getItem('sessionToken') || '',
+      actionBySystemUserId,
+      sessionKey,
     };
   }
   // Map API response to unified Asset model
@@ -364,78 +377,96 @@ export class UnifiedAssetService {
 
   static async create(data: Omit<Asset, 'id'> & { id?: number }): Promise<Asset> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const actionBySystemUserId = parseInt(localStorage.getItem('systemUserId') || '0');
       const sessionKey = localStorage.getItem('sessionToken') || '';
 
-      // Normalize parts for create mode
-      const normalizedParts = (data.parts || []).map(part =>
-        this.normalizePart(part, 'create')
-      );
+      const categoryId = (data as any).categoryId ?? (typeof data.category === 'object' && data.category ? (data.category as any).id : 0);
+      const legendId = (data as any).legendId ?? (typeof data.legend === 'object' && data.legend ? (data.legend as any).id : 0);
 
-      // Normalize movements for create mode - filter out null/undefined
-      const validMovements = (data.movements || []).filter(movement => movement != null);
-      const normalizedMovements = validMovements.map(movement =>
-        this.normalizeMovement(movement, data.model || '', 'create')
-      ).filter(movement => movement != null); // Filter out null results from normalizeMovement
+      // Base asset payload (SE/PPE share the same /se-ppe/edit endpoint)
+      const propertyNumber = (data.propertyNumber || '').trim();
 
-      const apiData = {
-        ...(data.id && { id: data.id }),
-        propertyNumber: data.propertyNumber,
-        category: data.category,
-        legend: data.legend,
+      const assetPayload = {
+        id: data.id ?? 0,
+        group: data.group,
+        propertyNumber,
+        categoryId,
+        legendId,
         description: data.description,
-        brand: data.brand || null,
-        model: data.model || null,
-        serialNumber: data.serialNumber || null,
-        parts: normalizedParts,
+        brand: data.brand ?? '',
+        model: data.model ?? '',
+        serialNumber: data.serialNumber ?? '',
         unitOfMeasurement: data.unitOfMeasurement,
         unitValue: data.unitValue,
         dateAcquired: data.dateAcquired,
         estimatedUsefulLife: data.estimatedUsefulLife ?? 0,
         fiscalDate: data.fiscalDate ?? new Date().toISOString().split('T')[0],
-        group: data.group,
-        movements: normalizedMovements,
+        isActive: true,
         actionBySystemUserId,
         sessionKey,
       };
 
-      // Route to appropriate API based on group
-      let apiResponse;
-      let ptaId;
-      if (data.group === 'PPE') {
-        apiResponse = await ppeApi.list({
-          SearchString: data.propertyNumber,
-          PageNumber: 1,
-          PageSize: 1,
-          ActionBySystemUserId: actionBySystemUserId,
-          SessionKey: sessionKey,
-          GroupName: 'ppe',
-        });
-        // PPE API does not support create, so just return the first item
-        if (!apiResponse.items?.length) throw new Error('Failed to create PPE asset: Not supported');
-        ptaId = apiResponse.items[0].id;
-      } else {
-        // SE asset - pass data directly since SEAsset interface matches the new API format
-        const apiDataForSE: Partial<SEAsset> = {
-          propertyNumber: apiData.propertyNumber,
-          category: apiData.category as any,
-          legend: typeof apiData.legend === 'object' && apiData.legend ? apiData.legend.name : apiData.legend,
-          description: apiData.description,
-          brand: apiData.brand,
-          model: apiData.model,
-          serialNumber: apiData.serialNumber,
-          parts: apiData.parts || [],
-          unitOfMeasurement: apiData.unitOfMeasurement,
-          unitValue: apiData.unitValue,
-          dateAcquired: apiData.dateAcquired,
-          estimatedUsefulLife: apiData.estimatedUsefulLife || 0,
-          movements: apiData.movements || [],
-        };
-        apiResponse = await seApi.create(apiDataForSE, actionBySystemUserId, sessionKey);
-        if (!apiResponse.success || !apiResponse.data?.id) {
-          throw new Error('Failed to create SE asset: ' + (apiResponse.message || 'Unknown error'));
+      // Create the asset first to get PTA Id
+      const apiResponse = await seApi.create(assetPayload as any, actionBySystemUserId.toString(), sessionKey);
+
+      let ptaId = Number(apiResponse.data?.id || (apiResponse.data as any)?.ptaId || (apiResponse.data as any)?.PTAId || 0);
+
+      if (!apiResponse.success || !ptaId) {
+        const message = (apiResponse && (apiResponse as any).message) ? (apiResponse as any).message : 'Unknown error';
+        const isDuplicate = message.toLowerCase().includes('has been added') || message.toLowerCase().includes('already exists');
+
+        if (isDuplicate) {
+          // Try to locate the newly created asset (or existing duplicate) by Property Number
+          try {
+            const listResponse = await seApi.list({
+              SearchString: propertyNumber,
+              PageNumber: 1,
+              PageSize: 5,
+              StartDate: undefined,
+              EndDate: undefined,
+              ActionBySystemUserId: actionBySystemUserId.toString(),
+              SessionKey: sessionKey,
+              GroupName: data.group.toLowerCase(),
+              EmployeeId: undefined,
+            });
+
+            const found = (listResponse.items || []).find(item => (item as any).propertyNumber === propertyNumber);
+            if (found && (found as any).id) {
+              ptaId = Number((found as any).id);
+            }
+          } catch (listError) {
+            console.warn('Fallback list lookup failed after duplicate message:', listError);
+          }
         }
-        ptaId = Number(apiResponse.data.id);
+
+        if (!ptaId) {
+          const friendlyMessage = isDuplicate
+            ? 'An asset with this Property Number already exists. Please use a unique Property Number.'
+            : message;
+          throw new Error('Failed to create asset: ' + friendlyMessage);
+        }
+      }
+
+      if (!ptaId) {
+        throw new Error('Failed to obtain PTA Id from create response');
+      }
+
+      // Create parts via dedicated endpoint
+      const partsToCreate = (data.parts || []).map(part => this.normalizePart(part, 'create', ptaId));
+      for (const part of partsToCreate) {
+        if (part.name || part.serialNumber) {
+          await seApi.editPart(part);
+        }
+      }
+
+      // Create movements via dedicated endpoint
+      const movementsToCreate = (data.movements || [])
+        .filter(mv => mv != null)
+        .map((movement, index) => this.normalizeMovement({ ...movement, isCurrent: index === 0 }, data.model || '', 'create', ptaId))
+        .filter(movement => movement != null);
+
+      for (const movement of movementsToCreate) {
+        await seApi.editMovement(movement);
       }
 
       // Construct the created asset from input data and ptaId
@@ -443,7 +474,7 @@ export class UnifiedAssetService {
         id: Number(ptaId),
         group: data.group,
         propertyNumber: data.propertyNumber,
-        category: data.category || { id: 0, name: 'Unknown', generalCode: '', isActive: true, isDeleted: false, createdAt: new Date().toISOString() },
+        category: data.category || { id: categoryId, name: '', generalCode: '', isActive: true, isDeleted: false, createdAt: new Date().toISOString() },
         legend: data.legend || null,
         description: data.description,
         brand: data.brand,
@@ -580,12 +611,11 @@ export class UnifiedAssetService {
       // Get current asset to determine group
       const currentAsset = await this.getById(id);
       if (currentAsset.group === 'SE') {
-        // Use SE API for delete (if implemented)
-        // TODO: Implement seApi.delete if available
-        throw new Error('Delete not implemented for SE assets');
+        // Use SE API for delete
+        await seApi.delete(id, actionBySystemUserId, sessionKey);
       } else {
-        // PPE API does not support delete
-        throw new Error('Delete not supported for PPE assets');
+        // Use PPE API for delete
+        await ppeApi.delete(id, actionBySystemUserId, sessionKey);
       }
     } catch (error) {
       console.error('Error deleting unified asset:', error);

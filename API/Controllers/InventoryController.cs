@@ -1308,6 +1308,51 @@ namespace API.Controllers
             }
         }
 
+
+        [HttpPost("pta/movement/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditPTAMovement([FromBody] EditPTAMovementQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblPTAMovement ptaMovement = new()
+                {
+                    Id = model.Id,
+                    PTAId = model.PTAId,
+                    DateAssigned = model.DateAssigned,
+                    PTRITRNumber = model.PtrItrNumber,
+                    RRPPERRSPNumber = model.RrppeRrspNumber,
+                    PARICSNumber = model.ParIcsNumber,
+                    PlantillaEmployeeId = model.PlantillaEmployeeId,
+                    NonPlantillaEmployeeId = model.NonPlantillaEmployeeId,
+                    ActualOfficeId = model.ActualOfficeId,
+                    ActualDivisionId = model.ActualDivisionId,
+                    Remarks = model.Condition,
+                    IsActive = model.IsActive,
+                    Status = model.Status,
+                    IsCurrent = model.IsCurrent
+
+                };
+
+                long ptaMovementId = await _editTools.PTA.EditTblPTAMovementAsync(ptaMovement, model.ActionBySystemUserId, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { PTAMovementId = ptaMovementId }, $"PTA Movement has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         // GET api/inventory/pta/movement/next-number
         [HttpGet("pta/movement/next-number")]
         [ValidateSessionToken]
@@ -1888,50 +1933,7 @@ namespace API.Controllers
         }
 
         // POST api/inventory/pta/movement/edit
-        [HttpPost("pta/movement/edit")]
-        [ValidateSessionToken]
-        [ValidateModelRequiredFields]
-        public async Task<IActionResult> EditPTAMovement([FromBody] EditPTAMovementQueryParams model)
-        {
-            await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
-
-            try
-            {
-
-                TblPTAMovement ptaMovement = new()
-                {
-                    Id = model.Id,
-                    PTAId = model.PTAId,
-                    DateAssigned = model.DateAssigned,
-                    PTRITRNumber = model.PtrItrNumber,
-                    RRPPERRSPNumber = model.RrppeRrspNumber,
-                    PARICSNumber = model.ParIcsNumber,
-                    PlantillaEmployeeId = model.PlantillaEmployeeId,
-                    NonPlantillaEmployeeId = model.NonPlantillaEmployeeId,
-                    ActualOfficeId = model.ActualOfficeId,
-                    ActualDivisionId = model.ActualDivisionId,
-                    Remarks = model.Condition,
-                    IsActive = model.IsActive,
-                    Status = model.Status,
-                    IsCurrent = model.IsCurrent
-
-                };
-
-                long ptaMovementId = await _editTools.PTA.EditTblPTAMovementAsync(ptaMovement, model.ActionBySystemUserId, context);
-
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(new { PTAMovementId = ptaMovementId }, $"PTA Movement has been {(model.Id == 0 ? "added" : "updated")}"));
-
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
-                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-            }
-        }
+        
 
         [HttpPost("pta/category/edit")]
         [ValidateSessionToken]

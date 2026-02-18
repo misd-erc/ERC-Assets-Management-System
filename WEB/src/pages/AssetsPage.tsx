@@ -108,9 +108,9 @@ export function AssetsPage() {
       toast.success('Asset added successfully');
       setAddDialogOpen(false);
       loadAssets();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding asset:', error);
-      toast.error('Failed to add asset');
+      toast.error('Failed to add asset: ' + (error?.message || '')); 
     }
   };
 
