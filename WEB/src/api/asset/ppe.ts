@@ -113,7 +113,7 @@ export const ppeApi = {
 		actionBySystemUserId?: string,
 		sessionKey?: string
 	): Promise<{ success: boolean; code?: string; message?: string; data?: PPEAsset }> => {
-		const url = API_BASE_URL + '/Inventory/pta/se-ppe/create';
+		const url = API_BASE_URL + '/Inventory/pta/se-ppe/edit';
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
@@ -122,7 +122,7 @@ export const ppeApi = {
 			body: JSON.stringify(asset),
 		});
 		if (!response.ok) {
-			throw new Error('Failed to create PPE asset');
+			throw new Error(`Failed to create PPE asset: HTTP ${response.status} ${response.statusText}`);
 		}
 		return response.json();
 	},
@@ -179,6 +179,26 @@ export const ppeApi = {
 		});
 		if (!response.ok) {
 			throw new Error('Failed to edit PPE asset movement');
+		}
+		return response.json();
+	},
+
+	// Delete PPE asset
+	delete: async (
+		id: number,
+		actionBySystemUserId?: string,
+		sessionKey?: string
+	): Promise<{ success: boolean; code?: string; message?: string; data?: any }> => {
+		const query = new URLSearchParams();
+		if (actionBySystemUserId) query.append('ActionBySystemUserId', actionBySystemUserId);
+		if (sessionKey) query.append('SessionKey', sessionKey);
+		const url = API_BASE_URL + `/Inventory/pta/delete/${id}${query.toString() ? '?' + query.toString() : ''}`;
+		const response = await fetch(url, {
+			method: 'DELETE',
+			headers: { Accept: 'application/json' },
+		});
+		if (!response.ok) {
+			throw new Error(`Failed to delete PPE asset: HTTP ${response.status} ${response.statusText}`);
 		}
 		return response.json();
 	}

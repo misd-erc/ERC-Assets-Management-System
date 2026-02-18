@@ -161,11 +161,6 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
         return;
       }
       
-      if (entry.nonPlantillaEmployeeId === 0) {
-        toast.error(`Sub Accountable Employee (Non-Plantilla) is required for ${entryLabel}`);
-        return;
-      }
-      
     }
 
     // Determine group based on unit value

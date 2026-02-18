@@ -57,12 +57,15 @@ export interface UnifiedMovement {
   dateAssigned: string;
   ptrItrNumber: string;
   parIcsNumber: string;
+  rrppeRrspNumber?: string;
+  status?: string;
   plantillaEmployeeId: number | null;
   nonPlantillaEmployeeId: number | null;
   plantillaEmployeeIdOriginal?: string;
   nonPlantillaEmployeeIdOriginal?: string;
   actualOfficeId?: number;
   actualDivisionId?: number;
+  isCurrent?: boolean;
   employee?: Array<{
     id: number;
     systemUser: any;

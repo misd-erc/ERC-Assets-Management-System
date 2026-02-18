@@ -81,6 +81,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  totalRow: {
+    flexDirection: "row",
+    borderTopWidth: 0.8,
+    borderColor: "#000",
+    minHeight: 18,
+    alignItems: "center",
+    backgroundColor: "#f7f7f7",
+  },
+
+  totalAmountText: {
+    textAlign: "right",
+    fontWeight: "bold",
+  },
+
   cell: { padding: 2, fontSize: 8 },
 
   colNo: { width: "8%" },
@@ -88,6 +102,7 @@ const styles = StyleSheet.create({
   colPropertyNo: { width: "20%" },
   colDateAcquired: { width: "14%" },
   colAmount: { width: "13%" },
+  colTotalLabel: { width: "79%", textAlign: "right", fontWeight: "bold" },
 });
 
 function currency(val?: number | null) {
@@ -112,6 +127,7 @@ interface PALRow {
 
 const PALDocument = ({
   allRows,
+  totalAmount,
   employeeName,
   position,
   office,
@@ -119,6 +135,7 @@ const PALDocument = ({
   employeeNumber,
 }: {
   allRows: PALRow[];
+  totalAmount: number;
   employeeName: string;
   position: string;
   office: string;
@@ -170,6 +187,13 @@ const PALDocument = ({
                 <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
               </View>
             ))}
+
+            {/* TOTAL ROW */}
+            <View style={styles.totalRow}>
+              <Text style={[styles.cell, styles.colNo]}> </Text>
+              <Text style={[styles.cell, styles.colTotalLabel]}>TOTAL:</Text>
+              <Text style={[styles.cell, styles.colAmount, styles.totalAmountText]}>{currency(totalAmount)}</Text>
+            </View>
           </View>
         </View>
       )}
@@ -239,9 +263,12 @@ export class PALGenerator {
       });
     });
 
+    const totalAmount = allRows.reduce((sum, row) => sum + (row.amount ?? 0), 0);
+
     const blob = await pdf(
       <PALDocument
         allRows={allRows}
+        totalAmount={totalAmount}
         employeeName={employeeName}
         position={position}
         office={office}
@@ -314,9 +341,12 @@ export class PALGenerator {
       });
     });
 
+    const totalAmount = allRows.reduce((sum, row) => sum + (row.amount ?? 0), 0);
+
     const blob = await pdf(
       <PALDocument
         allRows={allRows}
+        totalAmount={totalAmount}
         employeeName={employeeName}
         position={position}
         office={office}

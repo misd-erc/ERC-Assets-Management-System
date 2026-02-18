@@ -229,12 +229,10 @@ namespace API.Controllers
                 if (model.GroupBy == null || string.IsNullOrEmpty(model.GroupBy)) { 
                     IEnumerable<TblPTA?> ptas = await _getTools.PTA.GetTblPTAsByGroup(model.GroupName!, context).Where(x => x.Group == model.GroupName).ToListAsync();
 
-                    // AS OF Filter: Include only assets acquired from January 1 of the selected year up to the specified "as of" date
-                    // This shows a snapshot of assets at a specific point in time, excluding records from previous years
+                    // AS OF Filter: Include all assets acquired on or before the specified "as of" date
                     if (model.AsOfDate.HasValue)
                     {
-                        var yearStart = new DateTime(model.AsOfDate.Value.Year, 1, 1);
-                        ptas = ptas.Where(x => x.DateAcquired >= yearStart && x.DateAcquired <= model.AsOfDate.Value);
+                        ptas = ptas.Where(x => x.DateAcquired <= model.AsOfDate.Value);
                     }
 
                     if (model.CategoryId != null && model.CategoryId != 0)
@@ -270,7 +268,7 @@ namespace API.Controllers
                     int skip = (model.PageNumber - 1) * model.PageSize;
 
                     var ptasList = ptas
-                        .OrderByDescending(x => x.CreatedAt)
+                        .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt)
                         .Skip(skip)
                         .Take(model.PageSize)
                         .ToList();
@@ -392,24 +390,24 @@ namespace API.Controllers
                     if (model.EndDate.HasValue)
                         ptasQuery = ptasQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                    // AS OF Filter for Employee GroupBy: Include only assets acquired from January 1 of the selected year
-                    // Excludes records from previous years
+                    // AS OF Filter for Employee GroupBy: Include all assets acquired on or before the "as of" date
                     if (model.AsOfDate.HasValue)
                     {
-                        var yearStart = new DateTime(model.AsOfDate.Value.Year, 1, 1);
-                        ptasQuery = ptasQuery.Where(x => x.DateAcquired >= yearStart && x.DateAcquired <= model.AsOfDate.Value);
+                        ptasQuery = ptasQuery.Where(x => x.DateAcquired <= model.AsOfDate.Value);
                     }
 
-                    // Get distinct employees who have at least one PTA
+                    // Get distinct employees who have at least one PTA, ordered latest to oldest by DateAcquired (fallback to CreatedAt)
                     var employeeGroups = ptasQuery
                         .Where(x => x.NonPlantillaEmployeeId.HasValue || x.PlantillaEmployeeId.HasValue)
                         .GroupBy(x => x.NonPlantillaEmployeeId.HasValue ? x.NonPlantillaEmployeeId.Value : x.PlantillaEmployeeId.Value)
                         .Select(g => new
                         {
                             EmployeeId = g.Key,
-                            PTAIds = g.Select(p => p.Id).ToList()
+                            PTAIds = g.Select(p => p.Id).ToList(),
+                            LatestDateAcquired = g.Max(p => p.DateAcquired ?? p.CreatedAt)
                         })
-                        .AsEnumerable(); // Switch to client-side for complex grouping logic
+                        .AsEnumerable()
+                        .OrderByDescending(g => g.LatestDateAcquired); // Switch to client-side for complex grouping logic
 
                     int totalCount = employeeGroups.Count();
                     int skip = (model.PageNumber - 1) * model.PageSize;
@@ -464,6 +462,7 @@ namespace API.Controllers
                         // Get all PTAs for this employee (filtered already by search/date)
                         var employeePtaList = ptasQuery
                             .Where(x => (isPlantilla ? x.PlantillaEmployeeId : x.NonPlantillaEmployeeId) == employeeId)
+                            .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt)
                             .ToList();
 
                         var ptaResponseModels = new List<PTAResponseModel>();
@@ -554,23 +553,23 @@ namespace API.Controllers
                     if (model.EndDate.HasValue)
                         ptasQuery = ptasQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                    // AS OF Filter for Condition GroupBy: Include only assets acquired from January 1 of the selected year
-                    // Excludes records from previous years
+                    // AS OF Filter for Condition GroupBy: Include all assets acquired on or before the "as of" date
                     if (model.AsOfDate.HasValue)
                     {
-                        var yearStart = new DateTime(model.AsOfDate.Value.Year, 1, 1);
-                        ptasQuery = ptasQuery.Where(x => x.DateAcquired >= yearStart && x.DateAcquired <= model.AsOfDate.Value);
+                        ptasQuery = ptasQuery.Where(x => x.DateAcquired <= model.AsOfDate.Value);
                     }
 
-                    // Get distinct employees who have at least one PTA
+                    // Get distinct conditions ordered latest to oldest by DateAcquired (fallback to CreatedAt)
                     var conditionGroups = ptasQuery
                         .Where(x => x.RemarksEncrypted != null && x.RemarksEncrypted != "")
                         .ToList()
                         .GroupBy(x => x.Remarks.ToLower())
                         .Select(g => new
                         {
-                            Remarks = g.Key
+                            Remarks = g.Key,
+                            LatestDateAcquired = g.Max(p => p.DateAcquired ?? p.CreatedAt)
                         })
+                        .OrderByDescending(g => g.LatestDateAcquired)
                         .AsEnumerable(); // Switch to client-side for complex grouping logic
 
                     int totalCount = conditionGroups.Count();
@@ -587,8 +586,11 @@ namespace API.Controllers
                     {
                         string condition = group.Remarks;
 
-                        var conditionPtaList = ptasQuery.Where(x => x.RemarksEncrypted != null && x.RemarksEncrypted != "")
-                         .ToList().Where(x => x.Remarks.ToLower() == condition.ToLower());
+                        var conditionPtaList = ptasQuery
+                            .Where(x => x.RemarksEncrypted != null && x.RemarksEncrypted != "")
+                            .ToList()
+                            .Where(x => x.Remarks.ToLower() == condition.ToLower())
+                            .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt);
 
                         var ptaResponseModels = new List<PTAResponseModel>();
 
@@ -671,23 +673,23 @@ namespace API.Controllers
                     if (model.EndDate.HasValue)
                         ptasQuery = ptasQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                    // AS OF Filter for Division GroupBy: Include only assets acquired from January 1 of the selected year
-                    // Excludes records from previous years
+                    // AS OF Filter for Division GroupBy: Include all assets acquired on or before the "as of" date
                     if (model.AsOfDate.HasValue)
                     {
-                        var yearStart = new DateTime(model.AsOfDate.Value.Year, 1, 1);
-                        ptasQuery = ptasQuery.Where(x => x.DateAcquired >= yearStart && x.DateAcquired <= model.AsOfDate.Value);
+                        ptasQuery = ptasQuery.Where(x => x.DateAcquired <= model.AsOfDate.Value);
                     }
 
-                    // Get distinct employees who have at least one PTA
+                    // Get distinct divisions ordered latest to oldest by DateAcquired (fallback to CreatedAt)
                     var divisionGroups = ptasQuery
                         .Where(x => x.ActualDivisionId != null)
                         .GroupBy(x => x.ActualDivisionId)
                         .Select(g => new
                         {
-                            DivisionId = g.Key
+                            DivisionId = g.Key,
+                            LatestDateAcquired = g.Max(p => p.DateAcquired ?? p.CreatedAt)
                         })
-                        .AsEnumerable(); // Switch to client-side for complex grouping logic
+                        .AsEnumerable()
+                        .OrderByDescending(g => g.LatestDateAcquired); // Switch to client-side for complex grouping logic
 
                     int totalCount = divisionGroups.Count();
                     int skip = (model.PageNumber - 1) * model.PageSize;
@@ -703,7 +705,10 @@ namespace API.Controllers
                     {
                         long? divisionId = group.DivisionId;
 
-                        var divisionPtaList = ptasQuery.Where(x => x.ActualDivisionId == divisionId).ToList();
+                        var divisionPtaList = ptasQuery
+                            .Where(x => x.ActualDivisionId == divisionId)
+                            .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt)
+                            .ToList();
 
                         var ptaResponseModels = new List<PTAResponseModel>();
 
@@ -1308,6 +1313,51 @@ namespace API.Controllers
             }
         }
 
+
+        [HttpPost("pta/movement/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditPTAMovement([FromBody] EditPTAMovementQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblPTAMovement ptaMovement = new()
+                {
+                    Id = model.Id,
+                    PTAId = model.PTAId,
+                    DateAssigned = model.DateAssigned,
+                    PTRITRNumber = model.PtrItrNumber,
+                    RRPPERRSPNumber = model.RrppeRrspNumber,
+                    PARICSNumber = model.ParIcsNumber,
+                    PlantillaEmployeeId = model.PlantillaEmployeeId,
+                    NonPlantillaEmployeeId = model.NonPlantillaEmployeeId,
+                    ActualOfficeId = model.ActualOfficeId,
+                    ActualDivisionId = model.ActualDivisionId,
+                    Remarks = model.Condition,
+                    IsActive = model.IsActive,
+                    Status = model.Status,
+                    IsCurrent = model.IsCurrent
+
+                };
+
+                long ptaMovementId = await _editTools.PTA.EditTblPTAMovementAsync(ptaMovement, model.ActionBySystemUserId, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { PTAMovementId = ptaMovementId }, $"PTA Movement has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         // GET api/inventory/pta/movement/next-number
         [HttpGet("pta/movement/next-number")]
         [ValidateSessionToken]
@@ -1888,50 +1938,7 @@ namespace API.Controllers
         }
 
         // POST api/inventory/pta/movement/edit
-        [HttpPost("pta/movement/edit")]
-        [ValidateSessionToken]
-        [ValidateModelRequiredFields]
-        public async Task<IActionResult> EditPTAMovement([FromBody] EditPTAMovementQueryParams model)
-        {
-            await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
-
-            try
-            {
-
-                TblPTAMovement ptaMovement = new()
-                {
-                    Id = model.Id,
-                    PTAId = model.PTAId,
-                    DateAssigned = model.DateAssigned,
-                    PTRITRNumber = model.PtrItrNumber,
-                    RRPPERRSPNumber = model.RrppeRrspNumber,
-                    PARICSNumber = model.ParIcsNumber,
-                    PlantillaEmployeeId = model.PlantillaEmployeeId,
-                    NonPlantillaEmployeeId = model.NonPlantillaEmployeeId,
-                    ActualOfficeId = model.ActualOfficeId,
-                    ActualDivisionId = model.ActualDivisionId,
-                    Remarks = model.Condition,
-                    IsActive = model.IsActive,
-                    Status = model.Status,
-                    IsCurrent = model.IsCurrent
-
-                };
-
-                long ptaMovementId = await _editTools.PTA.EditTblPTAMovementAsync(ptaMovement, model.ActionBySystemUserId, context);
-
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(new { PTAMovementId = ptaMovementId }, $"PTA Movement has been {(model.Id == 0 ? "added" : "updated")}"));
-
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
-                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-            }
-        }
+        
 
         [HttpPost("pta/category/edit")]
         [ValidateSessionToken]
