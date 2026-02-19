@@ -528,6 +528,36 @@ export const generateReturnNumber = async (returnType: 'RRPPE' | 'RRSP'): Promis
 let lastGeneratedSequenceTransfer: { [key: string]: number } = {};
 
 /**
+ * Generate PAR/ICS number based on type and current date
+ * Calls the backend API endpoint to get the next sequence number
+ * @param parType - 'PAR' for PPE transfers, 'ICS' for SE transfers
+ * @returns Promise resolving to generated PAR/ICS number in format: PAR-yyyy-mm-001 or ICS-yyyy-mm-001
+ */
+export const generateParIcsNumber = async (parType: 'PAR' | 'ICS'): Promise<string> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const response = await axiosInstance.get('/Inventory/pta/movement/next-par-number', {
+      params: {
+        parType,
+        ActionBySystemUserId: systemUserId,
+        SessionKey: sessionKey,
+      },
+    });
+
+    if (response.data?.success && response.data?.data?.parNumber) {
+      const nextNumber = response.data.data.parNumber;
+      console.log(`Generated ${parType} number from backend: ${nextNumber}`);
+      return nextNumber;
+    }
+
+    throw new Error(response.data?.message || 'Failed to generate PAR/ICS number from backend');
+  } catch (error) {
+    console.error('Error generating PAR/ICS number:', error);
+    throw error;
+  }
+};
+
+/**
  * Generate PTR/ITR number based on type and current date
  * Calls the backend API endpoint to get the next sequence number
  * @param transferType - 'PTR' for Property Transfer Record or 'ITR' for Inventory Transfer Record

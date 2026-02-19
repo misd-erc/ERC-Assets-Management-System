@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import {
   editMovement,
   generateTransferNumber,
+  generateParIcsNumber,
   getAssetsByEmployee,
 } from '@/api/asset/transferApi';
 import { getEmployees } from '@/api/user-management/userApi';
@@ -218,8 +219,15 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       setLoading(true);
       setError(null);
 
-      // Generate transfer number (async call to backend)
-      const transferNumber = await generateTransferNumber(transferType);
+      // Generate transfer and PAR/ICS numbers (async calls to backend)
+      const [transferNumber, parIcsNumber] = await Promise.all([
+        generateTransferNumber(transferType),
+        generateParIcsNumber(transferType === 'PTR' ? 'PAR' : 'ICS'),
+      ]);
+
+      if (!parIcsNumber) {
+        throw new Error('Failed to generate PAR/ICS number');
+      }
 
       // Create movement records for each selected item
       const movements = selectedItems.map(itemId => {
@@ -229,7 +237,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           ptaId: parseInt(itemId),
           dateAssigned: new Date().toISOString(),
           ptrItrNumber: transferNumber,
-          parIcsNumber: item?.parIcsNumber || '',
+          parIcsNumber,
           status: 'T',
           plantillaEmployeeId: toPlantillaEmployee?.id || null,
           nonPlantillaEmployeeId: toNonPlantillaEmployee?.id || null,
