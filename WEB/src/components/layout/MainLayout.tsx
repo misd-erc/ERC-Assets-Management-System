@@ -20,6 +20,7 @@ import { SupplyManagement } from "@/pages/SupplyManagement";
 import DeliveryManagement from "@/pages/DeliveryManagement";
 import ReportsCenter from "@/pages/ReportsCenter";
 import PPEIssuancePage from "@/pages/PPEIssuancePage";
+import DisposalsPage from "@/pages/disposals/DisposalsPage";
 
 export default function MainLayout() {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -70,6 +71,9 @@ export default function MainLayout() {
 
       case "reports-center":
         return <ReportsCenter />;
+
+      case "disposals":
+        return <DisposalsPage />;
 
       default:
         return <UCPage />;

@@ -13,6 +13,7 @@ import {
   FileText,
   Truck,
   BarChart3,
+  Trash2,
 } from "lucide-react";
 
 // CONFIG MAP FOR KNOWN MODULES
@@ -144,6 +145,14 @@ export const moduleConfig: Record<string, any> = {
     implemented: true,
   },
 
+  DOP: {
+    id: "disposals",
+    title: "Disposal of Properties",
+    group: "Core Operations",
+    icon: Trash2,
+    implemented: true,
+  },
+
 };
 
 export const fallbackModule = {
@@ -153,4 +162,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC"];
+export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC", "DOP"];
