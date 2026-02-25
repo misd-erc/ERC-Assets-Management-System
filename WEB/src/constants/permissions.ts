@@ -38,6 +38,7 @@ export const PERMISSION_CATEGORIES = {
   ],
   'Asset Management': [
     { id: '10', label: 'PPE & SE', description: 'Manage PPE and semi-expendables encoding', icon: Package },
+    { id: '19', label: 'PPE/SE Issuance', description: 'Issue and renew PPE/SE with PAR/ICS tracking', icon: HardHat },
     { id: '7', label: 'Transfers & Returns', description: 'Process transfers and returns', icon: ArrowRightLeft },
  ],
   'Reports & Approvals': [
