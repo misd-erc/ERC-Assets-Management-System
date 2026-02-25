@@ -97,13 +97,20 @@ export function AppSidebar({ activeModule, onModuleChange }: any) {
     return { acronyms: list };
   }, [userDetails]);
 
+  const effectiveAcronyms = useMemo(() => {
+    const set = new Set(acronyms);
+    // Always surface PPE/SE Issuance while backend scopes are being rolled out
+    set.add("PPEISS");
+    return Array.from(set);
+  }, [acronyms]);
+
   // ----------------------
   // BUILD NAVIGATION GROUPS
   // ----------------------
   const navigationGroups: NavigationGroup[] = useMemo(() => {
     const grouped: Record<string, NavigationItem[]> = {};
 
-    acronyms.forEach((acronym) => {
+    effectiveAcronyms.forEach((acronym) => {
       const config = moduleConfig[acronym] || {
         ...fallbackModule,
         id: acronym.toLowerCase(),

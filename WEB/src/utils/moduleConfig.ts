@@ -33,6 +33,14 @@ export const moduleConfig: Record<string, any> = {
     implemented: true,
   },
 
+  PPEISS: {
+    id: "ppe-se-issuance",
+    title: "PPE/SE Issuance",
+    group: "Asset Management",
+    icon: HardHat,
+    implemented: true,
+  },
+
 
   CATM: {
     id: "category-management",
@@ -145,4 +153,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["DB", "PPESE", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC"];
+export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC"];
