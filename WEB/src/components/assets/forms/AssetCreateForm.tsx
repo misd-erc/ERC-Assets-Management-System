@@ -42,6 +42,7 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
     movements: [],
   });
 
+  const [showAccountabilitySection, setShowAccountabilitySection] = useState(false);
   const [accountabilityEntries, setAccountabilityEntries] = useState<UnifiedMovement[]>([]);
   const [offices, setOffices] = useState<VwOffice[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
@@ -134,33 +135,31 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
       return;
     }
 
-    // Validate Accountability Information required fields
-    for (let i = 0; i < accountabilityEntries.length; i++) {
-      const entry = accountabilityEntries[i];
-      const entryLabel = i === 0 ? 'Current Holder' : `Previous Holder ${i}`;
-      
-      if (!entry.dateAssigned) {
-        toast.error(`Date Assigned is required for ${entryLabel}`);
-        return;
+    // Validate Accountability Information required fields (only if section is shown)
+    if (showAccountabilitySection) {
+      for (let i = 0; i < accountabilityEntries.length; i++) {
+        const entry = accountabilityEntries[i];
+        const entryLabel = i === 0 ? 'Current Holder' : `Previous Holder ${i}`;
+
+        if (!entry.dateAssigned) {
+          toast.error(`Date Assigned is required for ${entryLabel}`);
+          return;
+        }
+
+        if (!entry.ptrItrNumber?.trim()) {
+          toast.error(`PTR/ITR Number is required for ${entryLabel}`);
+          return;
+        }
+        if (!entry.parIcsNumber?.trim()) {
+          toast.error(`PAR/ICS Number is required for ${entryLabel}`);
+          return;
+        }
+
+        if (entry.plantillaEmployeeId === 0) {
+          toast.error(`Accountable Employee (Plantilla) is required for ${entryLabel}`);
+          return;
+        }
       }
-      
-      if (!entry.ptrItrNumber?.trim()) {
-        toast.error(`PTR/ITR Number is required for ${entryLabel}`);
-        return;
-      }
-      if (!entry.parIcsNumber?.trim()) {
-        toast.error(`PAR/ICS Number is required for ${entryLabel}`);
-        return;
-      }
-      
-      // Validate PTR number format (PTR-YYYY-MM-DD-XXXX)
-    
-      
-      if (entry.plantillaEmployeeId === 0) {
-        toast.error(`Accountable Employee (Plantilla) is required for ${entryLabel}`);
-        return;
-      }
-      
     }
 
     // Determine group based on unit value
@@ -206,8 +205,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
       dateAcquired: formData.dateAcquired,
       estimatedUsefulLife: formData.estimatedUsefulLife,
       fiscalDate: formData.fiscalDate,
-      condition: accountabilityEntries[0]?.condition || formData.condition || 'Working',
-      movements: accountabilityEntries,
+      condition: showAccountabilitySection ? (accountabilityEntries[0]?.condition || formData.condition || 'Working') : (formData.condition || 'Working'),
+      movements: showAccountabilitySection ? accountabilityEntries : [],
       isActive: true,
       isDeleted: false,
       createdAt: new Date().toISOString(),
@@ -358,6 +357,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
         setFormData={setFormData}
         accountabilityEntries={accountabilityEntries}
         setAccountabilityEntries={setAccountabilityEntries}
+        showAccountabilitySection={showAccountabilitySection}
+        onToggleAccountabilitySection={() => setShowAccountabilitySection(prev => !prev)}
         handlePlantillaEmployeeSelect={handlePlantillaEmployeeSelect}
         handleNonPlantillaEmployeeSelect={handleNonPlantillaEmployeeSelect}
         employees={employees}

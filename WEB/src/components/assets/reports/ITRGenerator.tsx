@@ -436,9 +436,10 @@ export class ITRGenerator {
     toEmployee: NormalizedEmployee,
     items: any[],
     transferDate: string,
-    transferType: TransferType
+    transferType: TransferType,
+    existingNumber?: string
   ): Promise<string> {
-    const itrNumber = this.generateITRNumber();
+    const itrNumber = existingNumber || this.generateITRNumber();
     const rows = this.buildRowsFromItems(items);
 
     const blob = await pdf(

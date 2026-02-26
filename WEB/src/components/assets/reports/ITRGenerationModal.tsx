@@ -181,7 +181,8 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         toEmp,
         itrDetails.items,
         itrDetails.dateAssigned,
-        itrDetails.transferType || 'REASSIGNMENT'
+        itrDetails.transferType || 'REASSIGNMENT',
+        itrDetails.transferNumber
       );
       setPreviewUrl(url);
       setShowPreview(true);

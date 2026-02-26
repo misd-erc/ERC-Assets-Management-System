@@ -35,6 +35,8 @@ interface SharedAssetFieldsProps {
   handleRemoveAccountabilityEntry: (index: number) => void;
   handleAccountabilityEntryChange: (index: number, field: string, value: any) => void;
   getUnitOfMeasurementOptions: () => { value: string; label: string }[];
+  showAccountabilitySection?: boolean;
+  onToggleAccountabilitySection?: () => void;
 }
 
 export function SharedAssetFields({
@@ -58,6 +60,8 @@ export function SharedAssetFields({
   handleRemoveAccountabilityEntry,
   handleAccountabilityEntryChange,
   getUnitOfMeasurementOptions,
+  showAccountabilitySection,
+  onToggleAccountabilitySection,
 }: SharedAssetFieldsProps) {
   const plantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId === 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
   const nonPlantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId !== 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
@@ -339,16 +343,37 @@ export function SharedAssetFields({
               <User className="size-5 text-blue-600" />
               Accountability Information
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={handleAddAccountabilityEntry}>
-              <Plus className="size-4 mr-2" />
-              Add Entry
-            </Button>
+            <div className="flex items-center gap-2">
+              {onToggleAccountabilitySection && (
+                <Button
+                  type="button"
+                  variant={showAccountabilitySection ? 'destructive' : 'outline'}
+                  size="sm"
+                  onClick={onToggleAccountabilitySection}
+                >
+                  {showAccountabilitySection ? (
+                    <><X className="size-4 mr-1" /> Remove</>
+                  ) : (
+                    <><Plus className="size-4 mr-1" /> Add Accountability</>
+                  )}
+                </Button>
+              )}
+              {(showAccountabilitySection === undefined || showAccountabilitySection) && (
+                <Button type="button" variant="outline" size="sm" onClick={handleAddAccountabilityEntry}>
+                  <Plus className="size-4 mr-2" />
+                  Add Entry
+                </Button>
+              )}
+            </div>
           </CardTitle>
           <CardDescription>
-            Current assignment and responsibility details (multiple entries for movement history)
+            {!showAccountabilitySection
+              ? 'Optional — add accountability info only if the item already has an assigned holder.'
+              : 'Current assignment and responsibility details (multiple entries for movement history)'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        {(showAccountabilitySection === undefined || showAccountabilitySection) && (
+          <CardContent>
           <div className="space-y-6">
             {accountabilityEntries.map((entry, index) => (
               <div key={index} className="p-4 border rounded-lg bg-gray-50">
@@ -506,6 +531,7 @@ export function SharedAssetFields({
             ))}
           </div>
         </CardContent>
+        )}
       </Card>
     </>
   );
