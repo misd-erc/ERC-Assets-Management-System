@@ -14,6 +14,7 @@ import {
   Truck,
   BarChart3,
   Trash2,
+  QrCode,
 } from "lucide-react";
 
 // CONFIG MAP FOR KNOWN MODULES
@@ -42,6 +43,13 @@ export const moduleConfig: Record<string, any> = {
     implemented: true,
   },
 
+  ASSTAG: {
+    id: "asset-tagging",
+    title: "Asset Tagging",
+    group: "Asset Management",
+    icon: QrCode,
+    implemented: true,
+  },
 
   CATM: {
     id: "category-management",
@@ -162,4 +170,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC", "DOP"];
+export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "ASSTAG", "ATG", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC", "DOP"];
