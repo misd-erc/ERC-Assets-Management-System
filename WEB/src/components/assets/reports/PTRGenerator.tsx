@@ -440,9 +440,10 @@ export class PTRGenerator {
     toEmployee: NormalizedEmployee,
     assets: Asset[],
     transferDate: string,
-    transferType: TransferType
+    transferType: TransferType,
+    existingNumber?: string
   ): Promise<string> {
-    const ptrNumber = this.generatePTRNumber();
+    const ptrNumber = existingNumber || this.generatePTRNumber();
     const rows = this.buildRows(assets);
 
     const blob = await pdf(
