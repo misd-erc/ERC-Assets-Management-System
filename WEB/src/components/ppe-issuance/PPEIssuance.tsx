@@ -6,8 +6,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { HardHat, RefreshCcw, ShieldCheck, Users, RotateCcw } from 'lucide-react';
-import { createIssuance, generateParIcsNumber, getIssuanceStats, listIssuances, seedIssuances } from '@/api/asset/issuanceApi';
+import { createIssuance, getIssuanceStats, getNextParNumber, listIssuances, renewIssuance } from '@/api/asset/issuanceApi';
+import { listSePpeItems, PtaItem } from '@/api/asset/ptaMovementApi';
+import { getEmployees } from '@/api/user-management/userApi';
+import { getOffices } from '@/api/office-management/officeApi';
+import { getDivisions } from '@/api/office-management/divisionApi';
 import { IssuanceRecord, IssuanceStats, IssuanceType } from '@/types/issuance';
+import { NormalizedEmployee } from '@/types/asset/UnifiedAsset';
+import { VwOffice, VwDivision } from '@/types/office';
 import { toast } from 'sonner';
 import { PPEIssuanceForm } from './PPEIssuanceForm';
 import { PPEIssuanceRenewForm } from './PPEIssuanceRenewForm';
@@ -21,9 +27,12 @@ export interface IssuanceFormState {
   issuedDate: string;
   expiryDate: string;
   notes: string;
+  officeId: string;
+  divisionId: string;
 }
 
 export interface IssuanceItemFormState {
+  ptaId: number;
   itemName: string;
   itemGroup: 'PPE' | 'SE';
   parIcsNumber: string;
@@ -38,17 +47,24 @@ const defaultFormState = (): IssuanceFormState => ({
   issuedDate: new Date().toISOString().split('T')[0],
   expiryDate: '',
   notes: '',
+  officeId: '',
+  divisionId: '',
 });
 
-const defaultItemState = (itemGroup: 'PPE' | 'SE' = 'PPE'): IssuanceItemFormState => ({
+const defaultItemState = (): IssuanceItemFormState => ({
+  ptaId: 0,
   itemName: '',
-  itemGroup,
-  parIcsNumber: generateParIcsNumber(itemGroup),
+  itemGroup: 'PPE',
+  parIcsNumber: '',
 });
 
 export function PPEIssuance() {
   const [stats, setStats] = useState<IssuanceStats>({ totalActive: 0, totalNew: 0, totalRenew: 0 });
   const [records, setRecords] = useState<IssuanceRecord[]>([]);
+  const [sePpeItems, setSePpeItems] = useState<PtaItem[]>([]);
+  const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
+  const [offices, setOffices] = useState<VwOffice[]>([]);
+  const [divisions, setDivisions] = useState<VwDivision[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<IssuanceType | null>(null);
@@ -64,8 +80,9 @@ export function PPEIssuance() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    seedIssuances();
     refreshData();
+    fetchEmployees();
+    fetchOfficesAndDivisions();
   }, []);
 
   const refreshData = async () => {
@@ -82,7 +99,21 @@ export function PPEIssuance() {
     }
   };
 
-  const filteredActive = useMemo(() => records.filter((r) => r.status === 'ACTIVE'), [records]);
+  // All records from the API are already filtered (status NEW/RENEW, isCurrent=true)
+  const filteredActive = useMemo(() => records, [records]);
+
+  // ptaIds that already have an active current movement — cannot be re-issued as NEW
+  const issuedPtaIds = useMemo(() => new Set(records.map((r) => r.ptaId)), [records]);
+
+  // Items available for a NEW issuance: those without any current movement yet
+  const availableForNewIssuance = useMemo(
+    () => sePpeItems.filter((i) => !issuedPtaIds.has(i.id)),
+    [sePpeItems, issuedPtaIds]
+  );
+
+  // ptaIds already picked in the current form rows (for per-row dedup in the form)
+  const pickedPtaIds = useMemo(() => new Set(items.map((i) => i.ptaId).filter(Boolean)), [items]);
+
   const employeeOptions = useMemo(() => {
     const seen = new Set<number>();
     return records
@@ -98,23 +129,61 @@ export function PPEIssuance() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  function normalizeEmployee(e: any): NormalizedEmployee {
+    const firstName = e.firstName ?? '';
+    const middleName = e.middleName ?? '';
+    const lastName = e.lastName ?? '';
+    const suffixName = e.suffixName ?? '';
+    const employeeIdOriginal = e.employeeIdOriginal ?? '';
+    const employmentTypeId = e.employmentType?.id ?? 1;
+    const employmentTypeName = employmentTypeId === 1 ? 'Plantilla' : 'Non-Plantilla';
+    const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${employmentTypeName})`;
+    return { id: e.id, firstName, middleName, lastName, suffixName, employeeIdOriginal, employmentTypeId, label };
+  }
+
+  async function fetchEmployees() {
+    try {
+      const response = await getEmployees();
+      setEmployees(response.data.items.map(normalizeEmployee));
+    } catch (error) {
+      console.error('Failed to load employees', error);
+    }
+  }
+
+  async function fetchOfficesAndDivisions() {
+    try {
+      const [officesData, divisionsData] = await Promise.all([getOffices(), getDivisions()]);
+      setOffices(officesData);
+      setDivisions(divisionsData);
+    } catch (error) {
+      console.error('Failed to load offices/divisions', error);
+    }
+  }
+
   const handleItemChange = (index: number, field: keyof IssuanceItemFormState, value: string) => {
     setItems((prev) =>
       prev.map((item, itemIndex) => {
         if (index !== itemIndex) return item;
-
-        if (field === 'itemGroup') {
-          const typedValue = value as IssuanceItemFormState['itemGroup'];
-          return { ...item, itemGroup: typedValue, parIcsNumber: generateParIcsNumber(typedValue) };
-        }
-
         return { ...item, [field]: value } as IssuanceItemFormState;
       })
     );
   };
 
-  const addItemRow = () => {
-    setItems((prev) => [...prev, defaultItemState()]);
+  const handleItemSelect = (index: number, ptaId: number) => {
+    const selected = sePpeItems.find((i) => i.id === ptaId);
+    if (!selected) return;
+    setItems((prev) =>
+      prev.map((item, itemIndex) =>
+        itemIndex === index
+          ? { ...item, ptaId: selected.id, itemName: selected.description, itemGroup: selected.groupName }
+          : item
+      )
+    );
+  };
+
+  const addItemRow = async () => {
+    const parNumber = await getNextParNumber();
+    setItems((prev) => [...prev, { ...defaultItemState(), parIcsNumber: parNumber }]);
   };
 
   const removeItemRow = (index: number) => {
@@ -131,11 +200,17 @@ export function PPEIssuance() {
     });
   };
 
-  const openNewDialog = () => {
+  const openNewDialog = async () => {
     setDialogMode('NEW');
     setDialogOpen(true);
     setForm(defaultFormState());
-    setItems([defaultItemState()]);
+    // Always re-fetch so the list reflects the latest issued state
+    const [parNumber, freshItems] = await Promise.all([
+      getNextParNumber(),
+      listSePpeItems(),
+    ]);
+    setSePpeItems(freshItems);
+    setItems([{ ...defaultItemState(), parIcsNumber: parNumber }]);
   };
 
   const openRenewDialog = () => {
@@ -159,18 +234,19 @@ export function PPEIssuance() {
       return;
     }
 
-    const hasValidItems = items.some((item) => item.itemName.trim());
+    const hasValidItems = items.some((item) => item.ptaId > 0);
     if (!hasValidItems) {
-      toast.error('Add at least one item to issue');
+      toast.error('Pumili ng kahit isang item na ibibigay');
       return;
     }
 
     setSaving(true);
     try {
       const payloads = items
-        .filter((item) => item.itemName.trim())
+        .filter((item) => item.ptaId > 0)
         .map((item) =>
           createIssuance({
+            ptaId: item.ptaId,
             employeeId: Number(form.plantillaEmployeeId),
             employeeName: form.plantillaEmployeeName,
             subEmployeeId: form.nonPlantillaEmployeeId ? Number(form.nonPlantillaEmployeeId) : undefined,
@@ -182,6 +258,8 @@ export function PPEIssuance() {
             issuedDate: form.issuedDate,
             expiryDate: form.expiryDate || undefined,
             notes: form.notes || undefined,
+            actualOfficeId: Number(form.officeId) || 0,
+            actualDivisionId: Number(form.divisionId) || 0,
           })
         );
 
@@ -218,23 +296,9 @@ export function PPEIssuance() {
 
     setSaving(true);
     try {
-      const payloads = selectedRecords.map((record) =>
-        createIssuance({
-          employeeId: record.employeeId,
-          employeeName: record.employeeName,
-          subEmployeeId: record.subEmployeeId,
-          subEmployeeName: record.subEmployeeName,
-          itemName: record.itemName,
-          itemGroup: record.itemGroup,
-          parIcsNumber: record.parIcsNumber,
-          issuanceType: 'RENEW',
-          issuedDate: renewState.issuedDate,
-          expiryDate: renewState.expiryDate || undefined,
-          notes: renewState.notes || record.notes || undefined,
-        })
+      await Promise.all(
+        selectedRecords.map((record) => renewIssuance(record, renewState.issuedDate))
       );
-
-      await Promise.all(payloads);
       toast.success('Renewal recorded');
       setDialogOpen(false);
       setDialogMode(null);
@@ -332,9 +396,15 @@ export function PPEIssuance() {
           <PPEIssuanceForm
             form={form}
             items={items}
+            sePpeItems={availableForNewIssuance}
+            pickedPtaIds={pickedPtaIds}
+            employees={employees}
+            offices={offices}
+            divisions={divisions}
             saving={saving}
             onChange={handleChange}
             onItemChange={handleItemChange}
+            onItemSelect={handleItemSelect}
             onAddItem={addItemRow}
             onRemoveItem={removeItemRow}
             onSubmit={submitForm}

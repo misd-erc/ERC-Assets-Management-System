@@ -1,133 +1,107 @@
-import { IssuanceRecord, IssuanceStats, IssuanceType } from '@/types/issuance';
+import { IssuanceRecord, IssuanceStats } from '@/types/issuance';
+import { getAuthParams } from '@/utils/auth';
+import {
+  editMovement,
+  getNextParNumber as fetchNextParNumber,
+  listMovements,
+  PtaMovementRecord,
+} from './ptaMovementApi';
 
-const STORAGE_KEY = 'mockPpeSeIssuances';
+/* Re-export so existing imports keep working */
+export { fetchNextParNumber as getNextParNumber };
 
-export const generateParIcsNumber = (itemGroup: 'PPE' | 'SE') => {
-  const prefix = itemGroup === 'PPE' ? 'PAR' : 'ICS';
-  const now = new Date();
-  const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
-  const random = Math.floor(Math.random() * 9000) + 1000;
-  return `${prefix}-${datePart}-${random}`;
-};
+/** Map a raw movement record to the UI IssuanceRecord shape */
+const mapMovement = (m: PtaMovementRecord): IssuanceRecord => ({
+  id: m.id,
+  ptaId: m.ptaId,
+  employeeId: m.plantillaEmployeeId,
+  employeeName: m.plantillaEmployeeName || `Employee #${m.plantillaEmployeeId}`,
+  subEmployeeId: m.nonPlantillaEmployeeId || undefined,
+  subEmployeeName: m.nonPlantillaEmployeeName || undefined,
+  itemName: m.itemDescription || `Item #${m.ptaId}`,
+  itemGroup: m.groupName || 'PPE',
+  parIcsNumber: m.parIcsNumber,
+  ptrItrNumber: m.ptrItrNumber,
+  rrppeRrspNumber: m.rrppeRrspNumber,
+  issuanceType: m.status,
+  issuedDate: m.dateAssigned ? m.dateAssigned.split('T')[0] : '',
+  expiryDate: undefined,
+  status: m.isActive ? 'ACTIVE' : 'INACTIVE',
+  condition: m.condition,
+  actualOfficeId: m.actualOfficeId,
+  actualDivisionId: m.actualDivisionId,
+});
 
-const normalizeRecords = (records: IssuanceRecord[]): IssuanceRecord[] => {
-  let mutated = false;
-  const normalized = records.map((record) => {
-    if (record.parIcsNumber) return record;
-
-    mutated = true;
-    return {
-      ...record,
-      parIcsNumber: generateParIcsNumber(record.itemGroup),
-    };
-  });
-
-  if (mutated) {
-    writeStore(normalized);
-  }
-
-  return normalized;
-};
-
-const readStore = (): IssuanceRecord[] => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as IssuanceRecord[];
-    return normalizeRecords(parsed);
-  } catch (error) {
-    console.warn('[PPE/SE Issuance] Failed to read mock store', error);
-    return [];
-  }
-};
-
-const writeStore = (records: IssuanceRecord[]) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-  } catch (error) {
-    console.warn('[PPE/SE Issuance] Failed to persist mock store', error);
-  }
-};
+/* -------------------------------------------------------------------------- */
+/*  Public API functions                                                        */
+/* -------------------------------------------------------------------------- */
 
 export const getIssuanceStats = async (): Promise<IssuanceStats> => {
-  const records = readStore().filter((r) => r.status === 'ACTIVE');
-  const totalNew = records.filter((r) => r.issuanceType === 'NEW').length;
-  const totalRenew = records.filter((r) => r.issuanceType === 'RENEW').length;
-
-  return {
-    totalActive: records.length,
-    totalNew,
-    totalRenew,
-  };
+  const records = await listMovements();
+  const totalNew = records.filter((r) => r.status === 'NEW').length;
+  const totalRenew = records.filter((r) => r.status === 'RENEW').length;
+  return { totalActive: records.length, totalNew, totalRenew };
 };
 
 export const listIssuances = async (): Promise<IssuanceRecord[]> => {
-  return readStore();
+  const records = await listMovements();
+  return records.map(mapMovement);
 };
 
+/**
+ * Create a new PAR/ICS movement record (id = 0 → API creates it).
+ */
 export const createIssuance = async (
   payload: Omit<IssuanceRecord, 'id' | 'status'>
 ): Promise<IssuanceRecord> => {
-  const records = readStore();
-  const newRecord: IssuanceRecord = {
-    ...payload,
-    parIcsNumber: payload.parIcsNumber || generateParIcsNumber(payload.itemGroup),
-    id: records.length ? Math.max(...records.map((r) => r.id)) + 1 : 1,
-    status: 'ACTIVE',
-  };
-
-  records.push(newRecord);
-  writeStore(records);
-  return newRecord;
+  const { systemUserId, sessionKey } = getAuthParams();
+  await editMovement({
+    id: 0,
+    ptaId: payload.ptaId,
+    dateAssigned: payload.issuedDate
+      ? new Date(payload.issuedDate).toISOString()
+      : new Date().toISOString(),
+    ptrItrNumber: payload.ptrItrNumber || '',
+    parIcsNumber: payload.parIcsNumber,
+    rrppeRrspNumber: payload.rrppeRrspNumber || '',
+    status: payload.issuanceType,
+    plantillaEmployeeId: payload.employeeId,
+    nonPlantillaEmployeeId: payload.subEmployeeId || 0,
+    condition: payload.condition || 'Working',
+    actualOfficeId: payload.actualOfficeId || 0,
+    actualDivisionId: payload.actualDivisionId || 0,
+    isActive: true,
+    isCurrent: true,
+    actionBySystemUserId: systemUserId,
+    sessionKey,
+  });
+  return { ...payload, ptaId: payload.ptaId, id: 0, status: 'ACTIVE' };
 };
 
-export const closeIssuance = async (id: number): Promise<void> => {
-  const records = readStore();
-  const updated: IssuanceRecord[] = records.map((r) =>
-    r.id === id
-      ? {
-          ...r,
-          status: 'INACTIVE' as const,
-        }
-      : r
-  );
-  writeStore(updated);
-};
-
-export const seedIssuances = () => {
-  const existing = readStore();
-  if (existing.length > 0) return;
-
-  const today = new Date().toISOString().split('T')[0];
-
-  const seeded = [
-    {
-      id: 1,
-      employeeId: 101,
-      employeeName: 'Jane Santos',
-      itemName: 'Hard Hat',
-      itemGroup: 'PPE',
-      issuanceType: 'NEW',
-      issuedDate: today,
-      expiryDate: undefined,
-      status: 'ACTIVE',
-      notes: 'Initial issuance for new hire',
-      parIcsNumber: generateParIcsNumber('PPE'),
-    },
-    {
-      id: 2,
-      employeeId: 205,
-      employeeName: 'Carlos Reyes',
-      itemName: 'Laptop SE',
-      itemGroup: 'SE',
-      issuanceType: 'RENEW',
-      issuedDate: today,
-      expiryDate: undefined,
-      status: 'ACTIVE',
-      notes: 'Annual renewal',
-      parIcsNumber: generateParIcsNumber('SE'),
-    },
-  ] satisfies IssuanceRecord[];
-
-  writeStore(seeded);
+/**
+ * Renew an existing movement record by posting the same record with status = RENEW.
+ */
+export const renewIssuance = async (
+  existing: IssuanceRecord,
+  issuedDate: string
+): Promise<boolean> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+  return editMovement({
+    id: existing.id,
+    ptaId: existing.ptaId,
+    dateAssigned: new Date(issuedDate).toISOString(),
+    ptrItrNumber: existing.ptrItrNumber || '',
+    parIcsNumber: existing.parIcsNumber,
+    rrppeRrspNumber: existing.rrppeRrspNumber || '',
+    status: 'RENEW',
+    plantillaEmployeeId: existing.employeeId,
+    nonPlantillaEmployeeId: existing.subEmployeeId || 0,
+    condition: existing.condition || 'Working',
+    actualOfficeId: existing.actualOfficeId || 0,
+    actualDivisionId: existing.actualDivisionId || 0,
+    isActive: true,
+    isCurrent: true,
+    actionBySystemUserId: systemUserId,
+    sessionKey,
+  });
 };

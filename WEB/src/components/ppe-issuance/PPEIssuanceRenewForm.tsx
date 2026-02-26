@@ -133,14 +133,19 @@ export function PPEIssuanceRenewForm({
                 className={`rounded-md border p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 ${selected ? 'border-blue-500 bg-blue-50' : ''}`}
               >
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Badge>{record.parIcsNumber}</Badge>
                     <Badge variant="secondary">{record.itemGroup}</Badge>
                     <Badge variant="outline">{record.issuanceType}</Badge>
+                    {record.condition && (
+                      <Badge variant="outline" className="text-xs">{record.condition}</Badge>
+                    )}
                   </div>
                   <p className="font-semibold">{record.itemName}</p>
-                  <p className="text-xs text-muted-foreground">Issued: {record.issuedDate}</p>
-                  <p className="text-xs text-muted-foreground">Expiry: {record.expiryDate || '—'}</p>
+                  {record.ptrItrNumber && (
+                    <p className="text-xs text-muted-foreground">PTR/ITR: {record.ptrItrNumber}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">Date Assigned: {record.issuedDate}</p>
                 </div>
                 <Button
                   type="button"
