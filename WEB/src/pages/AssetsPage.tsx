@@ -108,9 +108,9 @@ export function AssetsPage() {
       toast.success('Asset added successfully');
       setAddDialogOpen(false);
       loadAssets();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding asset:', error);
-      toast.error('Failed to add asset');
+      toast.error('Failed to add asset: ' + (error?.message || '')); 
     }
   };
 
@@ -134,7 +134,13 @@ export function AssetsPage() {
     }
   };
 
-const validateBatchUploadFile = async (file: File): Promise<boolean> => {
+interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  details: string;
+}
+
+const validateBatchUploadFile = async (file: File): Promise<ValidationResult> => {
   try {
     //
     // ASSET DETAILS HEADERS (13 COLUMNS)
@@ -206,21 +212,32 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
     console.log(`Total columns found: ${headers.length}`);
     console.log(`Headers:`, headers);
 
+    const errors: string[] = [];
+
     //
     // VALIDATE ASSET HEADERS EXACTLY
     //
     for (let i = 0; i < assetHeaders.length; i++) {
       if (headers[i] !== assetHeaders[i]) {
-        console.log(
-          `Asset header mismatch at column ${i + 1}: "${headers[i]}" != "${assetHeaders[i]}"`
+        const columnLetter = String.fromCharCode(65 + i); // A, B, C, etc.
+        errors.push(
+          `Column ${columnLetter}${2} (Position ${i + 1}): Expected "${assetHeaders[i]}" but found "${headers[i] || '(empty)'}"`
         );
-        return false;
       }
+    }
+
+    // If asset headers don't match, return early with errors
+    if (errors.length > 0) {
+      return {
+        isValid: false,
+        errors,
+        details: `Asset section has ${errors.length} column mismatch(es)`
+      };
     }
 
     //
     // VALIDATE MOVEMENT BLOCKS - FLEXIBLE APPROACH
-    // Allow 1 or 2 movement blocks
+    // Allow any number of movement blocks (8 columns each)
     //
     const startIndex = assetHeaders.length;
     const remaining = headers.slice(startIndex);
@@ -228,55 +245,107 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
     if (remaining.length === 0) {
       // No movement blocks - still valid, just assets
       console.log("Valid: Asset-only template (no movement blocks)");
-      return true;
+      return {
+        isValid: true,
+        errors: [],
+        details: "Asset-only template (no movement blocks)"
+      };
     }
 
-    if (remaining.length === movementBlock1.length) {
-      // One movement block - check if it matches block 1
-      for (let i = 0; i < movementBlock1.length; i++) {
-        if (remaining[i] !== movementBlock1[i]) {
-          console.log(
-            `Movement block mismatch at column ${startIndex + i + 1}: "${remaining[i]}" != "${movementBlock1[i]}"`
-          );
-          return false;
+    // Validate that remaining columns are in groups of 8 (movement blocks)
+    // OR in groups of 7 (movement blocks without Plantilla Employee ID)
+    if (remaining.length % 8 === 0) {
+      // All blocks are 8 columns each
+      const blockCount = remaining.length / 8;
+      for (let block = 0; block < blockCount; block++) {
+        const blockStart = block * 8;
+        const expectedHeaders = block === 0 ? movementBlock1 : movementBlock1;
+        
+        for (let i = 0; i < 8; i++) {
+          if (remaining[blockStart + i] !== movementBlock1[i]) {
+            const colIndex = startIndex + blockStart + i;
+            let columnLetter = '';
+            if (colIndex < 26) {
+              columnLetter = String.fromCharCode(65 + colIndex);
+            } else {
+              columnLetter = String.fromCharCode(65 + Math.floor(colIndex / 26) - 1) + String.fromCharCode(65 + (colIndex % 26));
+            }
+            errors.push(
+              `Block ${block + 1}, Column ${columnLetter}${2} (Position ${colIndex + 1}): Expected "${movementBlock1[i]}" but found "${remaining[blockStart + i] || '(empty)'}"`
+            );
+          }
         }
       }
-      console.log("Valid: One movement block found");
-      return true;
+
+      if (errors.length > 0) {
+        return {
+          isValid: false,
+          errors,
+          details: `Movement blocks have ${errors.length} column mismatch(es)`
+        };
+      }
+
+      console.log(`Valid: ${blockCount} movement block(s) found`);
+      return {
+        isValid: true,
+        errors: [],
+        details: `Valid template with ${blockCount} movement block(s)`
+      };
     }
 
-    if (remaining.length === movementBlock1.length + movementBlock2.length) {
-      // Two movement blocks - validate both
-      for (let i = 0; i < movementBlock1.length; i++) {
-        if (remaining[i] !== movementBlock1[i]) {
-          console.log(
-            `Movement block 1 mismatch at column ${startIndex + i + 1}: "${remaining[i]}" != "${movementBlock1[i]}"`
-          );
-          return false;
+    // Check if it's blocks of 7 columns (without Plantilla ID)
+    if (remaining.length % 7 === 0) {
+      const blockCount = remaining.length / 7;
+      for (let block = 0; block < blockCount; block++) {
+        const blockStart = block * 7;
+        
+        for (let i = 0; i < 7; i++) {
+          if (remaining[blockStart + i] !== movementBlock2[i]) {
+            const colIndex = startIndex + blockStart + i;
+            let columnLetter = '';
+            if (colIndex < 26) {
+              columnLetter = String.fromCharCode(65 + colIndex);
+            } else {
+              columnLetter = String.fromCharCode(65 + Math.floor(colIndex / 26) - 1) + String.fromCharCode(65 + (colIndex % 26));
+            }
+            errors.push(
+              `Block ${block + 1}, Column ${columnLetter}${2} (Position ${colIndex + 1}): Expected "${movementBlock2[i]}" but found "${remaining[blockStart + i] || '(empty)'}"`
+            );
+          }
         }
       }
 
-      for (let i = 0; i < movementBlock2.length; i++) {
-        const actualCol = remaining[movementBlock1.length + i];
-        const expectedCol = movementBlock2[i];
-        if (actualCol !== expectedCol) {
-          console.log(
-            `Movement block 2 mismatch at column ${startIndex + movementBlock1.length + i + 1}: "${actualCol}" != "${expectedCol}"`
-          );
-          return false;
-        }
+      if (errors.length > 0) {
+        return {
+          isValid: false,
+          errors,
+          details: `Movement blocks have ${errors.length} column mismatch(es)`
+        };
       }
-      console.log("Valid: Two movement blocks found");
-      return true;
+
+      console.log(`Valid: ${blockCount} movement block(s) found (7-column format)`);
+      return {
+        isValid: true,
+        errors: [],
+        details: `Valid template with ${blockCount} movement block(s)`
+      };
     }
 
-    console.log(
-      `Invalid column count: Expected 13 or ${13 + movementBlock1.length} or ${13 + movementBlock1.length + movementBlock2.length}, got ${headers.length}`
-    );
-    return false;
+    // Invalid structure - columns don't form complete blocks
+    return {
+      isValid: false,
+      errors: [
+        `Invalid column structure: Got ${remaining.length} columns after asset details. Movement blocks must be 8 or 7 columns each.`
+      ],
+      details: `Cannot form complete movement block(s) with ${remaining.length} remaining columns`
+    };
   } catch (error) {
     console.error("Error validating file:", error);
-    return false;
+    return {
+      isValid: false,
+      errors: [(error as Error).message || "Error reading file"],
+      details: "Failed to read or parse the Excel file"
+    };
   }
 };
 
@@ -288,9 +357,22 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
 
     try {
       // Validate the file against the template
-      const isValid = await validateBatchUploadFile(uploadFile);
-      if (!isValid) {
-        toast.error('The uploaded file does not match the required template format. Please download the template and ensure your file follows the same structure.');
+      const validation = await validateBatchUploadFile(uploadFile);
+      if (!validation.isValid) {
+        // Build detailed error message
+        let errorMessage = 'Template Mismatch:\n\n';
+        errorMessage += validation.details + '\n\n';
+        
+        if (validation.errors.length > 0) {
+          errorMessage += 'Issues found:\n';
+          validation.errors.forEach((error, index) => {
+            errorMessage += `${index + 1}. ${error}\n`;
+          });
+        }
+        
+        errorMessage += '\nPlease download the template and ensure your file matches the exact structure.';
+        
+        toast.error(errorMessage);
         return;
       }
 
@@ -461,7 +543,7 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-semibold text-slate-900">
             Assets Management
           </h1>
           <p className="text-slate-600">
@@ -521,10 +603,9 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="PPE">PPE Assets</TabsTrigger>
           <TabsTrigger value="SE">SE Assets</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
         </TabsList>
 
 
@@ -625,7 +706,7 @@ const validateBatchUploadFile = async (file: File): Promise<boolean> => {
           />
         </TabsContent>
 
-        <TabsContent value="reports" className="space-y-6">
+        <TabsContent value="reports-center" className="space-y-6">
           <ReportTab />
         </TabsContent>
       </Tabs>

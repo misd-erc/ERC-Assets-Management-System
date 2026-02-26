@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import {
   editMovement,
   generateTransferNumber,
+  generateParIcsNumber,
   getAssetsByEmployee,
 } from '@/api/asset/transferApi';
 import { getEmployees } from '@/api/user-management/userApi';
@@ -54,6 +55,21 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
   const [itemsLoading, setItemsLoading] = useState(false);
 
   const groupName = transferType === 'PTR' ? 'PPE' : 'SE';
+
+  // Reset form state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentStep('from-employee');
+      setFromEmployee(null);
+      setToPlantillaEmployee(null);
+      setToNonPlantillaEmployee(null);
+      setSelectedItems([]);
+      setError(null);
+      setSuccess(false);
+      setLoading(false);
+      setItemsLoading(false);
+    }
+  }, [isOpen]);
 
   // Load initial data
   useEffect(() => {
@@ -203,8 +219,15 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       setLoading(true);
       setError(null);
 
-      // Generate transfer number
-      const transferNumber = generateTransferNumber(transferType);
+      // Generate transfer and PAR/ICS numbers (async calls to backend)
+      const [transferNumber, parIcsNumber] = await Promise.all([
+        generateTransferNumber(transferType),
+        generateParIcsNumber(transferType === 'PTR' ? 'PAR' : 'ICS'),
+      ]);
+
+      if (!parIcsNumber) {
+        throw new Error('Failed to generate PAR/ICS number');
+      }
 
       // Create movement records for each selected item
       const movements = selectedItems.map(itemId => {
@@ -214,7 +237,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           ptaId: parseInt(itemId),
           dateAssigned: new Date().toISOString(),
           ptrItrNumber: transferNumber,
-          parIcsNumber: item?.parIcsNumber || '',
+          parIcsNumber,
           status: 'T',
           plantillaEmployeeId: toPlantillaEmployee?.id || null,
           nonPlantillaEmployeeId: toNonPlantillaEmployee?.id || null,
@@ -238,6 +261,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           const latestMovement = sortedMovements[0];
           return {
             ...latestMovement,
+            status: latestMovement.status || 'T', // Preserve original status, default to 'T' for transfer
             plantillaEmployeeId: latestMovement.plantillaEmployeeId || null,
             nonPlantillaEmployeeId: latestMovement.nonPlantillaEmployeeId || null,
             isCurrent: false, // Mark previous as not current
@@ -262,7 +286,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       // Reset form
       setTimeout(() => {
         onClose();
-        onSuccess?.();
+        onSuccess?.(); // This will trigger API call to refresh the movement list
       }, 1500);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save transfer record';

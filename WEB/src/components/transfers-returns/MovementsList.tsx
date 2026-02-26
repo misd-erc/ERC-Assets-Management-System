@@ -1,16 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Loader2, Search, Eye, User, Package } from 'lucide-react';
 import { toast } from 'sonner';
-import { getMovementsList, getPTRMovements, getITRMovements } from '@/api/asset/transferApi';
+import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements } from '@/api/asset/transferApi';
+import { PTRGenerator } from '@/components/assets/reports/PTRGenerator';
+import { ITRGenerator } from '@/components/assets/reports/ITRGenerator';
+import { ReturnReceiptGenerator } from '@/components/assets/reports/ReturnReceiptGenerator';
+import { type NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
 interface MovementsListProps {
-  transferType?: 'PTR' | 'ITR';
+  transferType?: 'PTR' | 'ITR' | 'RRPPE' | 'RRSP';
+}
+
+export interface MovementsListRef {
+  loadMovements: (search?: string, page?: number) => Promise<void>;
 }
 
 interface EmployeeInfo {
@@ -43,6 +51,8 @@ interface Movement {
   ptaId?: number;
   dateAssigned?: string;
   ptritrNumber?: string;
+  rrppeRrspNumber?: string;
+  rrpperrspNumber?: string;
   paricsNumber?: string;
   employee?: EmployeeInfo[];
   office?: any;
@@ -55,12 +65,61 @@ interface Movement {
   createdAt?: string;
 }
 
-export function MovementsList({ transferType }: MovementsListProps) {
+// Merge movements that share the same transfer number so UI shows a single row per PTR/ITR
+const mergeMovementsByTransfer = (items: Movement[]): Movement[] => {
+  const map = new Map<string, Movement>();
+
+  items.forEach(item => {
+    const key =
+      item.ptritrNumber ||
+      item.rrppeRrspNumber ||
+      item.rrpperrspNumber ||
+      item.paricsNumber ||
+      String(item.movementId ?? item.id ?? Math.random());
+    const existing = map.get(key);
+
+    if (!existing) {
+      map.set(key, {
+        ...item,
+        items: item.items ? [...item.items] : [],
+        employee: item.employee ? [...item.employee] : [],
+      });
+      return;
+    }
+
+    // Merge items (unique by id if present)
+    const mergedItems = [...(existing.items || [])];
+    (item.items || []).forEach(it => {
+      const already = mergedItems.find(m => m.id === it.id);
+      if (!already) mergedItems.push(it);
+    });
+
+    // Merge employees (unique by id)
+    const mergedEmployees = [...(existing.employee || [])];
+    (item.employee || []).forEach(emp => {
+      const already = mergedEmployees.find(m => m.id === emp.id);
+      if (!already) mergedEmployees.push(emp);
+    });
+
+    map.set(key, {
+      ...existing,
+      ...item,
+      items: mergedItems,
+      employee: mergedEmployees,
+    });
+  });
+
+  return Array.from(map.values());
+};
+
+export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
+  function MovementsListComponent({ transferType }, ref) {
   const [searchInput, setSearchInput] = useState('');
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [pageNumber, setPageNumber] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 10;
@@ -75,12 +134,17 @@ export function MovementsList({ transferType }: MovementsListProps) {
         result = await getPTRMovements(search, page, pageSize);
       } else if (transferType === 'ITR') {
         result = await getITRMovements(search, page, pageSize);
+      } else if (transferType === 'RRPPE') {
+        result = await getRRPPEMovements(search, page, pageSize);
+      } else if (transferType === 'RRSP') {
+        result = await getRRSPMovements(search, page, pageSize);
       } else {
         result = await getMovementsList(search, undefined, undefined, page, pageSize);
       }
 
-      setMovements(result.items || []);
-      setTotalCount(result.totalCount || 0);
+      const mergedItems = mergeMovementsByTransfer(result.items || []);
+      setMovements(mergedItems);
+      setTotalCount(mergedItems.length);
       setPageNumber(page);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load movements';
@@ -90,6 +154,11 @@ export function MovementsList({ transferType }: MovementsListProps) {
       setLoading(false);
     }
   };
+
+  // Expose loadMovements via ref
+  useImperativeHandle(ref, () => ({
+    loadMovements,
+  }));
 
   // Initial load
   useEffect(() => {
@@ -109,6 +178,84 @@ export function MovementsList({ transferType }: MovementsListProps) {
   const handleViewDetails = (movement: Movement) => {
     setSelectedMovement(movement);
     setDetailsDialogOpen(true);
+  };
+
+  const buildEmployee = (emp?: EmployeeInfo): NormalizedEmployee => {
+    const nameParts = (emp?.fullName || '').split(' ');
+    return {
+      id: emp?.id || 0,
+      firstName: nameParts.slice(0, -1).join(' ') || emp?.fullName || '',
+      middleName: '',
+      lastName: nameParts.slice(-1).join(' ') || '',
+      suffixName: '',
+      employeeIdOriginal: emp?.employeeIdOriginal || '',
+      employmentTypeId: 0,
+      label: emp?.fullName || '',
+    };
+  };
+
+  const handleGenerateReport = async (movement: Movement) => {
+    if (!movement) return;
+    const transferNumber =
+      movement.ptritrNumber ||
+      movement.rrppeRrspNumber ||
+      movement.rrpperrspNumber ||
+      '';
+    const prefix = transferNumber.toUpperCase();
+    const items = movement.items || [];
+    const fromEmp = buildEmployee(movement.employee?.[0]);
+    const toEmp = buildEmployee(movement.employee?.[1]);
+    const transferDate = movement.dateAssigned || new Date().toISOString();
+    const transferType = (movement.status || 'REASSIGNMENT') as any;
+
+    const returnedByName = movement.employee?.[0]?.fullName || fromEmp.label || 'Unknown';
+    const returnedByPosition = (movement.employee?.[0] as any)?.position?.name || movement.employee?.[0]?.employeeType || '';
+
+    try {
+      setGenerating(true);
+      if (prefix.startsWith('PTR')) {
+        const url = await PTRGenerator.generatePTRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType);
+        const blob = await fetch(url).then(r => r.blob());
+        const dlUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = dlUrl;
+        a.download = `${transferNumber || 'PTR-report'}.pdf`;
+        a.click();
+        URL.revokeObjectURL(dlUrl);
+      } else if (prefix.startsWith('ITR')) {
+        const url = await ITRGenerator.generateITRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType);
+        const blob = await fetch(url).then(r => r.blob());
+        const dlUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = dlUrl;
+        a.download = `${transferNumber || 'ITR-report'}.pdf`;
+        a.click();
+        URL.revokeObjectURL(dlUrl);
+      } else if (prefix.startsWith('RRPPE') || prefix.startsWith('RRSP')) {
+        const url = await ReturnReceiptGenerator.generateReturnPreview(
+          prefix.startsWith('RRPPE') ? 'RRPPE' : 'RRSP',
+          items as any,
+          transferNumber,
+          transferDate,
+          returnedByName,
+          returnedByPosition
+        );
+        const blob = await fetch(url).then(r => r.blob());
+        const dlUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = dlUrl;
+        a.download = `${transferNumber || 'return-report'}.pdf`;
+        a.click();
+        URL.revokeObjectURL(dlUrl);
+      } else {
+        toast.error('Report generation is available for PTR/ITR/RRPPE/RRSP only.');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to generate report';
+      toast.error(message);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const getStatusBadgeColor = (status?: string) => {
@@ -193,23 +340,27 @@ export function MovementsList({ transferType }: MovementsListProps) {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <Table>
+                <Table className="text-sm md:text-base">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Transfer Number</TableHead>
-                      <TableHead>PAR/ICS Number</TableHead>
-                      <TableHead>From Employee</TableHead>
-                      <TableHead>To Employee</TableHead>
-                      <TableHead>Date Assigned</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="text-sm md:text-base">Transfer Number</TableHead>
+                      <TableHead className="text-sm md:text-base">Return Number</TableHead>
+                      <TableHead className="text-sm md:text-base">PAR/ICS Number</TableHead>
+                      <TableHead className="text-sm md:text-base">From Employee</TableHead>
+                      <TableHead className="text-sm md:text-base">To Employee</TableHead>
+                      <TableHead className="text-sm md:text-base">Date Assigned</TableHead>
+                      <TableHead className="text-sm md:text-base">Status</TableHead>
+                      <TableHead className="text-sm md:text-base">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {movements.map((movement, idx) => (
                       <TableRow key={idx}>
                         <TableCell className="font-semibold">
-                          {movement.ptritrNumber || 'N/A'}
+                          { movement.ptritrNumber || 'N/A'}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          {movement.rrppeRrspNumber || movement.rrpperrspNumber || 'N/A'}
                         </TableCell>
                         <TableCell>{movement.paricsNumber || 'N/A'}</TableCell>
                         <TableCell>
@@ -295,18 +446,29 @@ export function MovementsList({ transferType }: MovementsListProps) {
 
       {/* Details Dialog */}
       <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-[1200px] max-w-[95vw] max-h-[95vh] overflow-y-auto text-base">
           <DialogHeader>
-            <DialogTitle>Movement Details</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl">Movement Details</DialogTitle>
+            <DialogDescription className="text-sm md:text-base">
               Transfer Number: {selectedMovement?.ptritrNumber || 'N/A'}
             </DialogDescription>
+            {selectedMovement && (
+              <div className="mt-2">
+                <Button
+                  size="sm"
+                  onClick={() => handleGenerateReport(selectedMovement)}
+                  disabled={generating}
+                >
+                  {generating ? 'Generating…' : 'Generate Report'}
+                </Button>
+              </div>
+            )}
           </DialogHeader>
 
           {selectedMovement ? (
             <div className="space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded p-4">
-                <p className="text-sm">
+              <div className="bg-blue-50 border border-blue-200 rounded p-4 text-base">
+                <p>
                   <span className="font-semibold">Total Items:</span>{' '}
                   {selectedMovement.items?.length || 0}
                 </p>
@@ -373,19 +535,19 @@ export function MovementsList({ transferType }: MovementsListProps) {
               )}
 
               {/* Transfer Information */}
-              <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded text-base">
                 <div>
-                  <p className="text-xs text-muted-foreground font-semibold">PAR/ICS Number</p>
+                  <p className="text-sm text-muted-foreground font-semibold">PAR/ICS Number</p>
                   <p className="font-semibold">{selectedMovement.paricsNumber || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground font-semibold">Status</p>
+                  <p className="text-sm text-muted-foreground font-semibold">Status</p>
                   <Badge className={getStatusBadgeColor(selectedMovement.status)}>
                     {selectedMovement.status || 'Active'}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground font-semibold">Date Assigned</p>
+                  <p className="text-sm text-muted-foreground font-semibold">Date Assigned</p>
                   <p className="font-semibold">
                     {selectedMovement.dateAssigned
                       ? new Date(selectedMovement.dateAssigned).toLocaleDateString()
@@ -394,7 +556,7 @@ export function MovementsList({ transferType }: MovementsListProps) {
                 </div>
                 {(selectedMovement.remarks || selectedMovement.condition) && (
                   <div>
-                    <p className="text-xs text-muted-foreground font-semibold">Condition/Remarks</p>
+                    <p className="text-sm text-muted-foreground font-semibold">Condition/Remarks</p>
                     <p className="font-semibold">{selectedMovement.condition || selectedMovement.remarks || 'N/A'}</p>
                   </div>
                 )}
@@ -489,3 +651,4 @@ export function MovementsList({ transferType }: MovementsListProps) {
     </div>
   );
 }
+);

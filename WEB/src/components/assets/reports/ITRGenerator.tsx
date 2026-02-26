@@ -431,6 +431,30 @@ const ITRDocument = ({
 /* -------------------------------- GENERATOR -------------------------------- */
 
 export class ITRGenerator {
+  static async generateITRPreviewMultiple(
+    fromEmployee: NormalizedEmployee,
+    toEmployee: NormalizedEmployee,
+    items: any[],
+    transferDate: string,
+    transferType: TransferType
+  ): Promise<string> {
+    const itrNumber = this.generateITRNumber();
+    const rows = this.buildRowsFromItems(items);
+
+    const blob = await pdf(
+      <ITRDocument
+        rows={rows}
+        itrNumber={itrNumber}
+        transferDate={transferDate}
+        fromEmployee={fromEmployee}
+        toEmployee={toEmployee}
+        transferType={transferType}
+      />
+    ).toBlob();
+
+    return URL.createObjectURL(blob);
+  }
+
   static async generateITRPreview(
     item: Asset,
     movement: any,
@@ -552,6 +576,16 @@ export class ITRGenerator {
         condition: latestMovement?.condition ?? "Good",
       };
     });
+  }
+
+  private static buildRowsFromItems(items: any[]): ITRRow[] {
+    return (items || []).map(it => ({
+      dateAcquired: (it.dateAcquired || '').toString().slice(0, 10),
+      propertyNo: it.propertyNumber || '',
+      description: it.description || '',
+      amount: it.unitValue ?? null,
+      condition: it.condition || 'Good',
+    }));
   }
 
   private static generateITRNumber(): string {

@@ -23,6 +23,14 @@ namespace PortalDB.Models.QueryParams.PTA
         /// </summary>
         public string? ParIcsFilter { get; set; }
 
+        /// <summary>
+        /// Filter for RRPPE/RRSP Number. Can be:
+        /// - "RRPPE" to get all movements with RRPPE prefix (PPE returns)
+        /// - "RRSP" to get all movements with RRSP prefix (SE returns)
+        /// - Or a specific number/value to search for
+        /// </summary>
+        public string? RrppeRrspFilter { get; set; }
+
         public int PageNumber { get; set; } = 1;
 
         public int PageSize { get; set; } = 100;

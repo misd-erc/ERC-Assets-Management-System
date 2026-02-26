@@ -5,21 +5,17 @@ using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
 using PortalDB.Entities.ASSET.PTA;
-using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Models.ParserModels.PTA;
-using PortalDB.Models.ParserModels.PTA;
 using PortalDB.Models.QueryParams.Office;
 using PortalDB.Models.QueryParams.Pagination;
-using PortalDB.Models.QueryParams.PTA;
 using PortalDB.Models.QueryParams.PTA;
 using PortalDB.Models.QueryParams.Universal;
 using PortalDB.Models.ResponseModels.Account;
 using PortalDB.Models.ResponseModels.Office;
 using PortalDB.Models.ResponseModels.PPE;
-using PortalDB.Models.ResponseModels.PTA;
 using PortalDB.Models.ResponseModels.PTA;
 using PortalDB.Models.Responses;
 using PortalDB.Models.ViewModels.PTA;
@@ -233,9 +229,10 @@ namespace API.Controllers
                 if (model.GroupBy == null || string.IsNullOrEmpty(model.GroupBy)) { 
                     IEnumerable<TblPTA?> ptas = await _getTools.PTA.GetTblPTAsByGroup(model.GroupName!, context).Where(x => x.Group == model.GroupName).ToListAsync();
 
-                    if (model.FiscalDate.HasValue)
+                    // AS OF Filter: Include all assets acquired on or before the specified "as of" date
+                    if (model.AsOfDate.HasValue)
                     {
-                        ptas = ptas.Where(x => x.FiscalDate == model.FiscalDate.Value);
+                        ptas = ptas.Where(x => x.DateAcquired <= model.AsOfDate.Value);
                     }
 
                     if (model.CategoryId != null && model.CategoryId != 0)
@@ -271,7 +268,7 @@ namespace API.Controllers
                     int skip = (model.PageNumber - 1) * model.PageSize;
 
                     var ptasList = ptas
-                        .OrderByDescending(x => x.CreatedAt)
+                        .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt)
                         .Skip(skip)
                         .Take(model.PageSize)
                         .ToList();
@@ -353,7 +350,8 @@ namespace API.Controllers
                         model.PageNumber,
                         model.PageSize,
                         totalCount,
-                        "PTAs have been retrieved"
+                        "PTAs have been retrieved",
+                        model.AsOfDate
                     ));
                 }
                 #endregion
@@ -392,16 +390,24 @@ namespace API.Controllers
                     if (model.EndDate.HasValue)
                         ptasQuery = ptasQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                    // Get distinct employees who have at least one PTA
+                    // AS OF Filter for Employee GroupBy: Include all assets acquired on or before the "as of" date
+                    if (model.AsOfDate.HasValue)
+                    {
+                        ptasQuery = ptasQuery.Where(x => x.DateAcquired <= model.AsOfDate.Value);
+                    }
+
+                    // Get distinct employees who have at least one PTA, ordered latest to oldest by DateAcquired (fallback to CreatedAt)
                     var employeeGroups = ptasQuery
                         .Where(x => x.NonPlantillaEmployeeId.HasValue || x.PlantillaEmployeeId.HasValue)
                         .GroupBy(x => x.NonPlantillaEmployeeId.HasValue ? x.NonPlantillaEmployeeId.Value : x.PlantillaEmployeeId.Value)
                         .Select(g => new
                         {
                             EmployeeId = g.Key,
-                            PTAIds = g.Select(p => p.Id).ToList()
+                            PTAIds = g.Select(p => p.Id).ToList(),
+                            LatestDateAcquired = g.Max(p => p.DateAcquired ?? p.CreatedAt)
                         })
-                        .AsEnumerable(); // Switch to client-side for complex grouping logic
+                        .AsEnumerable()
+                        .OrderByDescending(g => g.LatestDateAcquired); // Switch to client-side for complex grouping logic
 
                     int totalCount = employeeGroups.Count();
                     int skip = (model.PageNumber - 1) * model.PageSize;
@@ -456,6 +462,7 @@ namespace API.Controllers
                         // Get all PTAs for this employee (filtered already by search/date)
                         var employeePtaList = ptasQuery
                             .Where(x => (isPlantilla ? x.PlantillaEmployeeId : x.NonPlantillaEmployeeId) == employeeId)
+                            .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt)
                             .ToList();
 
                         var ptaResponseModels = new List<PTAResponseModel>();
@@ -506,7 +513,8 @@ namespace API.Controllers
                         model.PageNumber,
                         model.PageSize,
                         totalCount,
-                        "PTAs grouped by employee retrieved successfully"
+                        "PTAs grouped by employee retrieved successfully",
+                        model.AsOfDate
                     ));
                 }
                 #endregion
@@ -545,15 +553,23 @@ namespace API.Controllers
                     if (model.EndDate.HasValue)
                         ptasQuery = ptasQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                    // Get distinct employees who have at least one PTA
+                    // AS OF Filter for Condition GroupBy: Include all assets acquired on or before the "as of" date
+                    if (model.AsOfDate.HasValue)
+                    {
+                        ptasQuery = ptasQuery.Where(x => x.DateAcquired <= model.AsOfDate.Value);
+                    }
+
+                    // Get distinct conditions ordered latest to oldest by DateAcquired (fallback to CreatedAt)
                     var conditionGroups = ptasQuery
                         .Where(x => x.RemarksEncrypted != null && x.RemarksEncrypted != "")
                         .ToList()
                         .GroupBy(x => x.Remarks.ToLower())
                         .Select(g => new
                         {
-                            Remarks = g.Key
+                            Remarks = g.Key,
+                            LatestDateAcquired = g.Max(p => p.DateAcquired ?? p.CreatedAt)
                         })
+                        .OrderByDescending(g => g.LatestDateAcquired)
                         .AsEnumerable(); // Switch to client-side for complex grouping logic
 
                     int totalCount = conditionGroups.Count();
@@ -570,8 +586,11 @@ namespace API.Controllers
                     {
                         string condition = group.Remarks;
 
-                        var conditionPtaList = ptasQuery.Where(x => x.RemarksEncrypted != null && x.RemarksEncrypted != "")
-                         .ToList().Where(x => x.Remarks.ToLower() == condition.ToLower());
+                        var conditionPtaList = ptasQuery
+                            .Where(x => x.RemarksEncrypted != null && x.RemarksEncrypted != "")
+                            .ToList()
+                            .Where(x => x.Remarks.ToLower() == condition.ToLower())
+                            .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt);
 
                         var ptaResponseModels = new List<PTAResponseModel>();
 
@@ -614,7 +633,8 @@ namespace API.Controllers
                         model.PageNumber,
                         model.PageSize,
                         totalCount,
-                        "PTAs grouped by condition retrieved successfully"
+                        "PTAs grouped by condition retrieved successfully",
+                        model.AsOfDate
                     ));
                 }
                 #endregion
@@ -653,15 +673,23 @@ namespace API.Controllers
                     if (model.EndDate.HasValue)
                         ptasQuery = ptasQuery.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                    // Get distinct employees who have at least one PTA
+                    // AS OF Filter for Division GroupBy: Include all assets acquired on or before the "as of" date
+                    if (model.AsOfDate.HasValue)
+                    {
+                        ptasQuery = ptasQuery.Where(x => x.DateAcquired <= model.AsOfDate.Value);
+                    }
+
+                    // Get distinct divisions ordered latest to oldest by DateAcquired (fallback to CreatedAt)
                     var divisionGroups = ptasQuery
                         .Where(x => x.ActualDivisionId != null)
                         .GroupBy(x => x.ActualDivisionId)
                         .Select(g => new
                         {
-                            DivisionId = g.Key
+                            DivisionId = g.Key,
+                            LatestDateAcquired = g.Max(p => p.DateAcquired ?? p.CreatedAt)
                         })
-                        .AsEnumerable(); // Switch to client-side for complex grouping logic
+                        .AsEnumerable()
+                        .OrderByDescending(g => g.LatestDateAcquired); // Switch to client-side for complex grouping logic
 
                     int totalCount = divisionGroups.Count();
                     int skip = (model.PageNumber - 1) * model.PageSize;
@@ -677,7 +705,10 @@ namespace API.Controllers
                     {
                         long? divisionId = group.DivisionId;
 
-                        var divisionPtaList = ptasQuery.Where(x => x.ActualDivisionId == divisionId).ToList();
+                        var divisionPtaList = ptasQuery
+                            .Where(x => x.ActualDivisionId == divisionId)
+                            .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt)
+                            .ToList();
 
                         var ptaResponseModels = new List<PTAResponseModel>();
 
@@ -726,7 +757,8 @@ namespace API.Controllers
                         model.PageNumber,
                         model.PageSize,
                         totalCount,
-                        "PTAs grouped by division retrieved successfully"
+                        "PTAs grouped by division retrieved successfully",
+                        model.AsOfDate
                     ));
                 }
                 #endregion
@@ -1281,6 +1313,301 @@ namespace API.Controllers
             }
         }
 
+
+        [HttpPost("pta/movement/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditPTAMovement([FromBody] EditPTAMovementQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblPTAMovement ptaMovement = new()
+                {
+                    Id = model.Id,
+                    PTAId = model.PTAId,
+                    DateAssigned = model.DateAssigned,
+                    PTRITRNumber = model.PtrItrNumber,
+                    RRPPERRSPNumber = model.RrppeRrspNumber,
+                    PARICSNumber = model.ParIcsNumber,
+                    PlantillaEmployeeId = model.PlantillaEmployeeId,
+                    NonPlantillaEmployeeId = model.NonPlantillaEmployeeId,
+                    ActualOfficeId = model.ActualOfficeId,
+                    ActualDivisionId = model.ActualDivisionId,
+                    Remarks = model.Condition,
+                    IsActive = model.IsActive,
+                    Status = model.Status,
+                    IsCurrent = model.IsCurrent
+
+                };
+
+                long ptaMovementId = await _editTools.PTA.EditTblPTAMovementAsync(ptaMovement, model.ActionBySystemUserId, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { PTAMovementId = ptaMovementId }, $"PTA Movement has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+        // GET api/inventory/pta/movement/next-number
+        [HttpGet("pta/movement/next-number")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetNextTransferNumber([FromQuery] string transferType = "PTR", [FromQuery] SoloQueryParams model = null)
+        {
+            await using var context = new PortalDbContext(_options);
+
+            try
+            {
+                // Validate transfer type
+                if (string.IsNullOrWhiteSpace(transferType) || (!transferType.Equals("PTR", StringComparison.OrdinalIgnoreCase) && !transferType.Equals("ITR", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.VALIDATION_FAILED, "Transfer type must be either 'PTR' or 'ITR'"));
+                }
+
+                // Get current date
+                var now = DateTime.UtcNow;
+                var year = now.Year;
+                var month = now.Month.ToString("D2");
+                var yearMonth = $"{year}-{month}";
+
+                // Get all movements for the current month and type
+                var movements = await _getTools.PTA.GetTblPTAMovements(context).ToListAsync();
+
+                // Filter for current month and transfer type
+                var currentMonthMovements = movements
+                    .Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && 
+                                x.PTRITRNumber.ToUpper().StartsWith(transferType.ToUpper()) &&
+                                x.PTRITRNumber.Contains(yearMonth))
+                    .ToList();
+
+                // Extract sequence numbers from the PTR/ITR numbers (format: PTR-yyyy-mm-001)
+                var sequenceNumbers = currentMonthMovements
+                    .Select(x =>
+                    {
+                        var parts = x.PTRITRNumber.Split('-');
+                        if (parts.Length >= 4 && int.TryParse(parts[3], out var sequence))
+                        {
+                            return sequence;
+                        }
+                        return 0;
+                    })
+                    .Where(x => x > 0)
+                    .ToList();
+
+                // Get the maximum sequence number, default to 0 if none found
+                var maxSequence = sequenceNumbers.Any() ? sequenceNumbers.Max() : 0;
+                var nextSequence = maxSequence + 1;
+
+                // Format the new transfer number
+                var nextNumber = $"{transferType.ToUpper()}-{yearMonth}-{nextSequence:D3}";
+
+                Console.WriteLine($"[NEXT_NUMBER] Type: {transferType}, Year-Month: {yearMonth}, Max Sequence: {maxSequence}, Next: {nextNumber}");
+
+                return Ok(ApiResponse<object>.Ok(new { transferNumber = nextNumber, sequence = nextSequence }, "Next transfer number generated successfully"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating next transfer number: {ex.Message}");
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while generating the transfer number."));
+            }
+        }
+
+        // GET api/inventory/pta/movement/next-return-number
+        [HttpGet("pta/movement/next-return-number")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetNextReturnNumber([FromQuery] string returnType = "RRPPE", [FromQuery] SoloQueryParams model = null)
+        {
+            await using var context = new PortalDbContext(_options);
+
+            try
+            {
+                // Validate return type
+                if (string.IsNullOrWhiteSpace(returnType) || (!returnType.Equals("RRPPE", StringComparison.OrdinalIgnoreCase) && !returnType.Equals("RRSP", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.VALIDATION_FAILED, "Return type must be either 'RRPPE' or 'RRSP'"));
+                }
+
+                // Get current date
+                var now = DateTime.UtcNow;
+                var year = now.Year;
+                var month = now.Month.ToString("D2");
+                var yearMonth = $"{year}-{month}";
+
+                // Get all movements for the current month and type
+                var movements = await _getTools.PTA.GetTblPTAMovements(context).ToListAsync();
+
+                // Filter for current month and return type
+                var currentMonthMovements = movements
+                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && 
+                                x.RRPPERRSPNumber.ToUpper().StartsWith(returnType.ToUpper()) &&
+                                x.RRPPERRSPNumber.Contains(yearMonth))
+                    .ToList();
+
+                // Extract sequence numbers from the RRPPE/RRSP numbers (format: RRPPE-yyyy-mm-001)
+                var sequenceNumbers = currentMonthMovements
+                    .Select(x =>
+                    {
+                        var parts = x.RRPPERRSPNumber.Split('-');
+                        if (parts.Length >= 4 && int.TryParse(parts[3], out var sequence))
+                        {
+                            return sequence;
+                        }
+                        return 0;
+                    })
+                    .Where(x => x > 0)
+                    .ToList();
+
+                // Get the maximum sequence number, default to 0 if none found
+                var maxSequence = sequenceNumbers.Any() ? sequenceNumbers.Max() : 0;
+                var nextSequence = maxSequence + 1;
+
+                // Format the new return number
+                var nextNumber = $"{returnType.ToUpper()}-{yearMonth}-{nextSequence:D3}";
+
+                Console.WriteLine($"[NEXT_RETURN_NUMBER] Type: {returnType}, Year-Month: {yearMonth}, Max Sequence: {maxSequence}, Next: {nextNumber}");
+
+                return Ok(ApiResponse<object>.Ok(new { returnNumber = nextNumber, sequence = nextSequence }, "Next return number generated successfully"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating next return number: {ex.Message}");
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while generating the return number."));
+            }
+        }
+
+        // GET api/inventory/pta/movement/next-par-number
+        [HttpGet("pta/movement/next-par-number")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetNextParIcsNumber([FromQuery] string parType = "PAR", [FromQuery] SoloQueryParams model = null)
+        {
+            await using var context = new PortalDbContext(_options);
+
+            try
+            {
+                // Validate PAR/ICS type
+                if (string.IsNullOrWhiteSpace(parType) || (!parType.Equals("PAR", StringComparison.OrdinalIgnoreCase) && !parType.Equals("ICS", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.VALIDATION_FAILED, "PAR type must be either 'PAR' or 'ICS'"));
+                }
+
+                var now = DateTime.UtcNow;
+                var year = now.Year;
+                var month = now.Month.ToString("D2");
+                var yearMonth = $"{year}-{month}";
+
+                // Get all movements for the current month and PAR/ICS type
+                var movements = await _getTools.PTA.GetTblPTAMovements(context).ToListAsync();
+
+                var currentMonthMovements = movements
+                    .Where(x => !string.IsNullOrEmpty(x.PARICSNumber) &&
+                                x.PARICSNumber.ToUpper().StartsWith(parType.ToUpper()) &&
+                                x.PARICSNumber.Contains(yearMonth))
+                    .ToList();
+
+                // Extract sequence numbers from the PAR/ICS numbers (format: PAR-yyyy-mm-001 / ICS-yyyy-mm-001)
+                var sequenceNumbers = currentMonthMovements
+                    .Select(x =>
+                    {
+                        var parts = x.PARICSNumber.Split('-');
+                        if (parts.Length >= 4 && int.TryParse(parts[3], out var sequence))
+                        {
+                            return sequence;
+                        }
+                        return 0;
+                    })
+                    .Where(x => x > 0)
+                    .ToList();
+
+                var maxSequence = sequenceNumbers.Any() ? sequenceNumbers.Max() : 0;
+                var nextSequence = maxSequence + 1;
+
+                var nextNumber = $"{parType.ToUpper()}-{yearMonth}-{nextSequence:D3}";
+
+                Console.WriteLine($"[NEXT_PAR_NUMBER] Type: {parType}, Year-Month: {yearMonth}, Max Sequence: {maxSequence}, Next: {nextNumber}");
+
+                return Ok(ApiResponse<object>.Ok(new { parNumber = nextNumber, sequence = nextSequence }, "Next PAR/ICS number generated successfully"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error generating next PAR/ICS number: {ex.Message}");
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while generating the PAR/ICS number."));
+            }
+        }
+
+        // GET api/inventory/pta/movement/statistics
+        [HttpGet("pta/movement/statistics")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetPTAMovementStatistics([FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+
+            try
+            {
+                // Get all current movements
+                var allMovements = await _getTools.PTA.GetTblPTAMovements(context)
+                    .Where(x => x.IsCurrent == true && !x.IsDeleted)
+                    .ToListAsync();
+
+                // Count unique Active PTR (PTRITRNumber starts with "PTR")
+                var activePTR = allMovements
+                    .Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().StartsWith("PTR"))
+                    .Select(x => x.PTRITRNumber.ToUpper())
+                    .Distinct()
+                    .Count();
+
+                // Count unique Active ITR (PTRITRNumber starts with "ITR")
+                var activeITR = allMovements
+                    .Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().StartsWith("ITR"))
+                    .Select(x => x.PTRITRNumber.ToUpper())
+                    .Distinct()
+                    .Count();
+
+                // Count unique Active Returns PPE (RRPPERRSPNumber starts with "RRPPE")
+                var activeReturnsPPE = allMovements
+                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRPPE"))
+                    .Select(x => x.RRPPERRSPNumber.ToUpper())
+                    .Distinct()
+                    .Count();
+
+                // Count unique Active Returns SE (RRPPERRSPNumber starts with "RRSP")
+                var activeReturnsSE = allMovements
+                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRSP"))
+                    .Select(x => x.RRPPERRSPNumber.ToUpper())
+                    .Distinct()
+                    .Count();
+
+                var statistics = new
+                {
+                    activePTR = activePTR,
+                    activeITR = activeITR,
+                    activeReturnsPPE = activeReturnsPPE,
+                    activeReturnsSE = activeReturnsSE,
+                    totalActive = activePTR + activeITR + activeReturnsPPE + activeReturnsSE
+                };
+
+                return Ok(ApiResponse<object>.Ok(statistics, "Movement statistics retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving movement statistics: {ex.Message}");
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while retrieving statistics."));
+            }
+        }
+
         // GET api/inventory/pta/movement/list
         [HttpGet("pta/movement/list")]
         [ValidateSessionToken]
@@ -1311,7 +1638,9 @@ namespace API.Controllers
                 var allMovements = await movements
                     .ToListAsync();
                 
+                // Filter to only show current movements (IsCurrent == true)
                 allMovements = allMovements
+                    .Where(x => x.IsCurrent == true)
                     .OrderByDescending(x => x.DateAssigned)
                     .ThenByDescending(x => x.CreatedAt)
                     .ToList();
@@ -1333,6 +1662,26 @@ namespace API.Controllers
                     {
                         // Search for specific PTR/ITR number
                         allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && x.PTRITRNumber.ToUpper().Contains(filterValue.ToUpper())).ToList();
+                    }
+                }
+
+                // Apply RRPPE/RRSP Filter on in-memory data (since it's encrypted)
+                if (!string.IsNullOrWhiteSpace(model.RrppeRrspFilter))
+                {
+                    string filterValue = model.RrppeRrspFilter.Trim();
+                    
+                    if (filterValue.ToUpper() == "RRPPE")
+                    {
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRPPE")).ToList();
+                    }
+                    else if (filterValue.ToUpper() == "RRSP")
+                    {
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRSP")).ToList();
+                    }
+                    else
+                    {
+                        // Search for specific RRPPE/RRSP number
+                        allMovements = allMovements.Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().Contains(filterValue.ToUpper())).ToList();
                     }
                 }
 
@@ -1393,6 +1742,7 @@ namespace API.Controllers
                         PTAId = movement.PTAId,
                         DateAssigned = movement.DateAssigned,
                         PTRITRNumber = movement.PTRITRNumber,
+                        RRPPERRSPNumber = movement.RRPPERRSPNumber,
                         PARICSNumber = movement.PARICSNumber,
                         Remarks = movement.Remarks,
                         Status = movement.Status,
@@ -1648,49 +1998,7 @@ namespace API.Controllers
         }
 
         // POST api/inventory/pta/movement/edit
-        [HttpPost("pta/movement/edit")]
-        [ValidateSessionToken]
-        [ValidateModelRequiredFields]
-        public async Task<IActionResult> EditPTAMovement([FromBody] EditPTAMovementQueryParams model)
-        {
-            await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
-
-            try
-            {
-
-                TblPTAMovement ptaMovement = new()
-                {
-                    Id = model.Id,
-                    PTAId = model.PTAId,
-                    DateAssigned = model.DateAssigned,
-                    PTRITRNumber = model.PtrItrNumber,
-                    PARICSNumber = model.ParIcsNumber,
-                    PlantillaEmployeeId = model.PlantillaEmployeeId,
-                    NonPlantillaEmployeeId = model.NonPlantillaEmployeeId,
-                    ActualOfficeId = model.ActualOfficeId,
-                    ActualDivisionId = model.ActualDivisionId,
-                    Remarks = model.Condition,
-                    IsActive = model.IsActive,
-                    Status = model.Status,
-                    IsCurrent = model.IsCurrent
-
-                };
-
-                long ptaMovementId = await _editTools.PTA.EditTblPTAMovementAsync(ptaMovement, model.ActionBySystemUserId, context);
-
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return Ok(ApiResponse<object>.Ok(new { PTAMovementId = ptaMovementId }, $"PTA Movement has been {(model.Id == 0 ? "added" : "updated")}"));
-
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryController));
-                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-            }
-        }
+        
 
         [HttpPost("pta/category/edit")]
         [ValidateSessionToken]

@@ -419,7 +419,7 @@ export function SharedAssetFields({
                       />
                     </div>
                     <div className="flex flex-col gap-2">
-                      <Label>Sub Accountable Employee (Non-Plantilla) *</Label>
+                      <Label>Sub Accountable Employee (Non-Plantilla)</Label>
                       <ReactSelect
                         options={nonPlantillaEmployeeOptions}
                         value={nonPlantillaEmployeeOptions.find(option =>
