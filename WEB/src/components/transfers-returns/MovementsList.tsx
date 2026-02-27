@@ -214,7 +214,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     try {
       setGenerating(true);
       if (prefix.startsWith('PTR')) {
-        const url = await PTRGenerator.generatePTRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType);
+        const url = await PTRGenerator.generatePTRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType, transferNumber);
         const blob = await fetch(url).then(r => r.blob());
         const dlUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -223,7 +223,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
         a.click();
         URL.revokeObjectURL(dlUrl);
       } else if (prefix.startsWith('ITR')) {
-        const url = await ITRGenerator.generateITRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType);
+        const url = await ITRGenerator.generateITRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType, transferNumber);
         const blob = await fetch(url).then(r => r.blob());
         const dlUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');

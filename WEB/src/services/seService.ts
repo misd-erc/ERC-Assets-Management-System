@@ -111,10 +111,7 @@ export class SEService {
       };
 
       const apiResponse = await seApi.update(
-        id,
-        apiData,
-        actionBySystemUserId,
-        sessionKey
+        { id, ...apiData, actionBySystemUserId, sessionKey }
       );
 
       if (!apiResponse.success || !apiResponse.data) {

@@ -181,7 +181,8 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         toEmp,
         ptrDetails.items,
         ptrDetails.dateAssigned,
-        ptrDetails.transferType || 'REASSIGNMENT'
+        ptrDetails.transferType || 'REASSIGNMENT',
+        ptrDetails.transferNumber
       );
       setPreviewUrl(url);
       setShowPreview(true);
@@ -218,15 +219,6 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         label: ptrDetails.toEmployeeName
       };
 
-      // Download directly (generatePTRMultiple already saves the file)
-      await PTRGenerator.generatePTRPreviewMultiple(
-        fromEmp,
-        toEmp,
-        ptrDetails.items,
-        ptrDetails.dateAssigned,
-        ptrDetails.transferType || 'REASSIGNMENT'
-      );
-      
       const blob = await fetch(previewUrl).then(r => r.blob());
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

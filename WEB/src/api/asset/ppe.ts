@@ -133,9 +133,9 @@ export const ppeApi = {
 		actionBySystemUserId?: string,
 		sessionKey?: string
 	): Promise<{ success: boolean; code?: string; message?: string; data?: PPEAsset }> => {
-		const url = API_BASE_URL + `/Inventory/pta/se-ppe/update/${asset.id}`;
+		const url = API_BASE_URL + `/Inventory/pta/se-ppe/edit`;
 		const response = await fetch(url, {
-			method: 'PUT',
+			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
