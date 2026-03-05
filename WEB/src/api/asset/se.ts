@@ -1,4 +1,5 @@
 import { SEAsset } from '@/types/supply/se';
+import axiosInstance from '@/lib/axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
@@ -167,18 +168,14 @@ export const seApi = {
 	editMovement: async (
 		movementData: any
 	): Promise<{ success: boolean; code?: string; message?: string; data?: any }> => {
-		const url = API_BASE_URL + '/Inventory/pta/movement/edit';
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(movementData),
-		});
-		if (!response.ok) {
+		const response = await axiosInstance.post<{ success: boolean; code?: string; message?: string; data?: any }>(
+			'/Inventory/pta/movement/edit',
+			movementData
+		);
+		if (!response.data.success) {
 			throw new Error('Failed to save asset movement');
 		}
-		return response.json();
+		return response.data;
 	},
 
 	// Delete SE asset

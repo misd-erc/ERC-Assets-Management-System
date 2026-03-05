@@ -13,6 +13,7 @@ import { Asset, NormalizedEmployee, UnifiedMovement } from "@/types/asset/Unifie
 import { getEmployeeById, getEmployees } from "@/api/user-management/userApi";
 import { UnifiedAssetService } from "@/services/UnifiedAssetService";
 import { getEmployeeAssets } from "@/api/asset/inventoryApi";
+import { IssuanceRecord } from "@/types/issuance";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -370,6 +371,53 @@ export class ICSGenerator {
     const link = document.createElement('a');
     link.href = url;
     link.download = `ICS_${Date.now()}.pdf`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /** Generate and download an ICS PDF from issuance records (SE group). */
+  static async generateFromIssuanceRecords(records: IssuanceRecord[]): Promise<void> {
+    if (!records.length) return;
+    const first = records[0];
+
+    let employeeName = first.employeeName || 'N/A';
+    let position = 'N/A';
+    let office = first.officeName || 'N/A';
+
+    if (first.employeeId) {
+      try {
+        const empResp = await getEmployeeById(first.employeeId);
+        if (empResp.success && empResp.data.length > 0) {
+          const empData = empResp.data[0];
+          employeeName = `${empData.lastName}, ${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          position = empData.position?.name || 'N/A';
+          office = empData.office?.name || first.officeName || 'N/A';
+        }
+      } catch { /* use fallback values */ }
+    }
+
+    const rows: ICSRow[] = records.map((r) => ({
+      qty: 1,
+      unit: r.unitOfMeasurement ?? 'Unit',
+      description: r.itemName ?? '',
+      propertyNo: r.propertyNumber ?? '',
+      value: r.unitValue ?? null,
+    }));
+
+    const blob = await pdf(
+      <ICSDocument
+        rows={rows}
+        employeeName={employeeName}
+        position={position}
+        office={office}
+        icsNumber={first.parIcsNumber}
+      />
+    ).toBlob();
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ICS_${first.parIcsNumber}_${Date.now()}.pdf`;
     link.click();
     URL.revokeObjectURL(url);
   }

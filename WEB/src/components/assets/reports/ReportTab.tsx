@@ -41,7 +41,7 @@ import { PTRGenerationModal } from './PTRGenerationModal';
 import { ITRGenerationModal } from './ITRGenerationModal';
 import { ReturnReceiptGenerationModal } from './ReturnReceiptGenerationModal';
 import { toast } from 'sonner';
-import { NumberInputModal } from './NumberInputModal';
+
 
 export function ReportTab() {
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
@@ -69,7 +69,6 @@ export function ReportTab() {
   const [showRRPPE, setShowRRPPE] = useState(false);
   const [showRRSP, setShowRRSP] = useState(false);
   const [showPAL, setShowPAL] = useState(false);
-  const [showNumberModal, setShowNumberModal] = useState(false);
   const [customNumber, setCustomNumber] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -136,25 +135,16 @@ export function ReportTab() {
     setShowItemMovementsModal(true);
   };
 
-  // Show number modal after movement selection
+  // Movement selected — directly generate preview using movement's PAR/ICS number
   const handleMovementSelect = (item: Asset, movement: UnifiedMovement | null) => {
     setSelectedItem(item);
     setSelectedMovement(movement);
     setShowItemMovementsModal(false);
-    // Auto-generate number
-    const autoNumber = selectedReport === 'ICS'
-      ? ICSGenerator.generateICSNumber()
-      : PARGenerator.generatePARNumber();
-    setCustomNumber(autoNumber);
-    setShowNumberModal(true);
-  };
-
-  // After number is confirmed, generate preview
-  const handleNumberConfirm = (number: string) => {
+    const number = movement?.parIcsNumber ||
+      (selectedReport === 'ICS' ? ICSGenerator.generateICSNumber() : PARGenerator.generatePARNumber());
     setCustomNumber(number);
-    setShowNumberModal(false);
     setShowPreview(true);
-    generateItemPreview(selectedItem, selectedMovement, number);
+    generateItemPreview(item, movement, number);
   };
 
   // Update preview generator to accept number
@@ -596,13 +586,7 @@ export function ReportTab() {
         onGenerate={handleSEPropertyReportGenerate}
       />
 
-      <NumberInputModal
-        isOpen={showNumberModal}
-        onClose={() => setShowNumberModal(false)}
-        onConfirm={handleNumberConfirm}
-        defaultNumber={customNumber}
-        label={selectedReport === 'ICS' ? 'ICS Number' : 'PAR Number'}
-      />
+
     </div>
   );
 }

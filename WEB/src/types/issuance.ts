@@ -6,8 +6,10 @@ export interface IssuanceRecord {
   ptaId: number;
   employeeId: number;
   employeeName: string;
+  employeeIdOriginal?: string;
   subEmployeeId?: number;
   subEmployeeName?: string;
+  subEmployeeIdOriginal?: string;
   itemName: string;
   itemGroup: 'PPE' | 'SE';
   parIcsNumber: string;
@@ -20,7 +22,20 @@ export interface IssuanceRecord {
   condition?: string;
   actualOfficeId?: number;
   actualDivisionId?: number;
+  officeName?: string;
+  officeAcronym?: string;
+  divisionName?: string;
+  divisionAcronym?: string;
   notes?: string;
+  // PTA item detail
+  propertyNumber?: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  category?: string;
+  unitOfMeasurement?: string;
+  unitValue?: number;
+  dateAcquired?: string;
 }
 
 export interface IssuanceStats {

@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { IssuanceRecord } from '@/types/issuance';
 
 interface EmployeeOption {
@@ -17,14 +18,10 @@ interface PPEIssuanceRenewFormProps {
   selectedEmployeeId: string;
   selectedIssuanceIds: number[];
   issuedDate: string;
-  expiryDate: string;
-  notes: string;
   saving: boolean;
   onSelectEmployee: (id: string) => void;
   onToggleIssuance: (id: number) => void;
   onChangeIssuedDate: (value: string) => void;
-  onChangeExpiryDate: (value: string) => void;
-  onChangeNotes: (value: string) => void;
   onSubmit: () => void;
   onClose: () => void;
 }
@@ -35,27 +32,37 @@ export function PPEIssuanceRenewForm({
   selectedEmployeeId,
   selectedIssuanceIds,
   issuedDate,
-  expiryDate,
-  notes,
   saving,
   onSelectEmployee,
   onToggleIssuance,
   onChangeIssuedDate,
-  onChangeExpiryDate,
-  onChangeNotes,
   onSubmit,
   onClose,
 }: PPEIssuanceRenewFormProps) {
+  const [expandedParIcs, setExpandedParIcs] = useState<string | null>(null);
+
   const employeeRecords = selectedEmployeeId
     ? records.filter((r) => r.employeeId === Number(selectedEmployeeId))
     : [];
+
+  // Group by PAR/ICS number, preserving first-appearance order
+  const parIcsGroups = employeeRecords.reduce<Map<string, IssuanceRecord[]>>((map, r) => {
+    const group = map.get(r.parIcsNumber);
+    if (group) group.push(r);
+    else map.set(r.parIcsNumber, [r]);
+    return map;
+  }, new Map());
+
+  const toggleExpand = (parIcs: string) => {
+    setExpandedParIcs((prev) => (prev === parIcs ? null : parIcs));
+  };
 
   return (
     <DialogContent className="max-w-5xl w-full">
       <DialogHeader>
         <DialogTitle>Renew Issuance</DialogTitle>
         <DialogDescription>
-          Piliin ang employee, tapos pumili ng PAR/ICS na i-re-renew. Maaari kang mag-renew ng isa o higit pang item sa isang submit.
+          Select an employee, then choose the PAR/ICS records to renew. You can renew one or more items in a single submission.
         </DialogDescription>
       </DialogHeader>
 
@@ -78,7 +85,7 @@ export function PPEIssuanceRenewForm({
             </select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="issuedDateRenew">Issued Date</Label>
+            <Label htmlFor="issuedDateRenew">Renewal Date</Label>
             <Input
               id="issuedDateRenew"
               type="date"
@@ -88,73 +95,94 @@ export function PPEIssuanceRenewForm({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="expiryDateRenew">Expiry Date (optional)</Label>
-            <Input
-              id="expiryDateRenew"
-              type="date"
-              value={expiryDate}
-              onChange={(e) => onChangeExpiryDate(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="notesRenew">Notes</Label>
-            <Input
-              id="notesRenew"
-              value={notes}
-              onChange={(e) => onChangeNotes(e.target.value)}
-              placeholder="Optional notes for renewal"
-            />
-          </div>
-        </div>
-
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">PAR/ICS to renew</p>
-              <p className="text-xs text-muted-foreground">Makikita dito lahat ng active issuance ng napiling employee.</p>
+              <p className="text-xs text-muted-foreground">
+                {parIcsGroups.size > 0
+                  ? `${parIcsGroups.size} PAR/ICS group${parIcsGroups.size !== 1 ? 's' : ''} — click a group to view and select items.`
+                  : 'All active issuance records for the selected employee will appear here.'}
+              </p>
             </div>
           </div>
 
           {selectedEmployeeId && employeeRecords.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Walang active issuance para sa employee na ito.</p>
+            <p className="text-sm text-muted-foreground">No active issuance records found for this employee.</p>
           ) : null}
 
           {!selectedEmployeeId ? (
-            <p className="text-sm text-muted-foreground">Pumili muna ng employee para lumabas ang listahan ng PAR/ICS.</p>
+            <p className="text-sm text-muted-foreground">Select an employee to view their PAR/ICS records.</p>
           ) : null}
 
-          {employeeRecords.map((record) => {
-            const selected = selectedIssuanceIds.includes(record.id);
+          {Array.from(parIcsGroups.entries()).map(([parIcs, groupRecords]) => {
+            const isExpanded = expandedParIcs === parIcs;
+            const selectedCount = groupRecords.filter((r) => selectedIssuanceIds.includes(r.id)).length;
+
             return (
-              <div
-                key={record.id}
-                className={`rounded-md border p-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 ${selected ? 'border-blue-500 bg-blue-50' : ''}`}
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge>{record.parIcsNumber}</Badge>
-                    <Badge variant="secondary">{record.itemGroup}</Badge>
-                    <Badge variant="outline">{record.issuanceType}</Badge>
-                    {record.condition && (
-                      <Badge variant="outline" className="text-xs">{record.condition}</Badge>
+              <div key={parIcs} className="rounded-md border overflow-hidden">
+                {/* PAR/ICS header row */}
+                <button
+                  type="button"
+                  onClick={() => toggleExpand(parIcs)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-accent transition-colors"
+                >
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {isExpanded
+                      ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />
+                      : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
+                    <Badge>{parIcs}</Badge>
+                    <Badge variant="secondary">{groupRecords[0].itemGroup}</Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {groupRecords.length} item{groupRecords.length !== 1 ? 's' : ''}
+                    </span>
+                    {selectedCount > 0 && (
+                      <Badge className="bg-blue-100 text-blue-700 border-blue-300">
+                        {selectedCount} selected
+                      </Badge>
                     )}
                   </div>
-                  <p className="font-semibold">{record.itemName}</p>
-                  {record.ptrItrNumber && (
-                    <p className="text-xs text-muted-foreground">PTR/ITR: {record.ptrItrNumber}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground">Date Assigned: {record.issuedDate}</p>
-                </div>
-                <Button
-                  type="button"
-                  variant={selected ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => onToggleIssuance(record.id)}
-                >
-                  {selected ? 'Selected' : 'Select to Renew'}
-                </Button>
+                  <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                    {groupRecords[0].issuedDate}
+                  </span>
+                </button>
+
+                {/* Expandable items */}
+                {isExpanded && (
+                  <div className="border-t divide-y">
+                    {groupRecords.map((record) => {
+                      const selected = selectedIssuanceIds.includes(record.id);
+                      return (
+                        <div
+                          key={record.id}
+                          className={`flex items-center justify-between gap-3 px-4 py-3 ${selected ? 'bg-blue-50 dark:bg-blue-950/30' : 'bg-background'}`}
+                        >
+                          <div className="space-y-0.5 min-w-0">
+                            <p className="font-medium text-sm truncate">{record.itemName}</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="outline" className="text-xs">{record.issuanceType}</Badge>
+                              {record.condition && (
+                                <Badge variant="outline" className="text-xs">{record.condition}</Badge>
+                              )}
+                              {record.propertyNumber && (
+                                <span className="text-xs text-muted-foreground">{record.propertyNumber}</span>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant={selected ? 'default' : 'outline'}
+                            size="sm"
+                            className="shrink-0"
+                            onClick={() => onToggleIssuance(record.id)}
+                          >
+                            {selected ? 'Selected' : 'Select'}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
