@@ -125,7 +125,7 @@ function EmployeePicker({ options, selectedValue, onSelect, placeholder = 'Click
       )}
 
       {open && (
-        <div className="mt-1 rounded-md border border-border bg-popover shadow-lg overflow-hidden z-10 relative">
+        <div className="absolute w-full mt-1 rounded-md border border-border bg-popover shadow-lg overflow-hidden z-50">
           <div className="max-h-56 overflow-y-auto">
             {filtered.length === 0 ? (
               <p className="py-3 text-center text-sm text-muted-foreground">No employees found.</p>
@@ -262,7 +262,7 @@ function ItemPicker({ options, selectedId, onSelect }: ItemPickerProps) {
 
       {/* Inline dropdown results */}
       {open && (
-        <div className="mt-1 rounded-md border border-border bg-popover shadow-lg overflow-hidden">
+        <div className="absolute w-full mt-1 rounded-md border border-border bg-popover shadow-lg overflow-hidden z-50">
           <div className="max-h-64 overflow-y-auto">
             {filtered.length === 0 ? (
               <p className="px-4 py-6 text-sm text-center text-muted-foreground">
@@ -357,7 +357,6 @@ export function PPEIssuanceForm({
 
       <div className="space-y-6 py-2">
 
-        {/* ── Accountable Employee ── */}
         <section className="space-y-4">
           <p className="text-base font-semibold">Accountable Employee</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -406,12 +405,12 @@ export function PPEIssuanceForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="officeId" className="text-sm font-medium">Office</Label>
+              <Label htmlFor="officeId" className="text-sm font-medium">Office <span className="text-destructive">*</span></Label>
               <select
                 id="officeId"
                 value={form.officeId}
                 onChange={(e) => onChange('officeId', e.target.value)}
-                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className={cn('w-full h-10 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring', !form.officeId ? 'border-destructive' : 'border-input')}
               >
                 <option value="">Select office</option>
                 {offices.map((o) => (
@@ -420,12 +419,12 @@ export function PPEIssuanceForm({
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="divisionId" className="text-sm font-medium">Division</Label>
+              <Label htmlFor="divisionId" className="text-sm font-medium">Division <span className="text-destructive">*</span></Label>
               <select
                 id="divisionId"
                 value={form.divisionId}
                 onChange={(e) => onChange('divisionId', e.target.value)}
-                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className={cn('w-full h-10 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring', !form.divisionId ? 'border-destructive' : 'border-input')}
               >
                 <option value="">Select division</option>
                 {divisions.map((d) => (
