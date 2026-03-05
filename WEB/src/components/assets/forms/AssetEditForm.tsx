@@ -114,12 +114,6 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate required fields
-    if (!formData.propertyNumber?.trim() || !formData.description?.trim() || !formData.brand?.trim() || !formData.model?.trim() || !formData.serialNumber?.trim() || !formData.unitOfMeasurement?.trim()) {
-      toast.error('Property Number, Description, Brand, Model, Serial Number, and Unit of Measurement are required');
-      return;
-    }
-
     // Determine group based on unit value
     const group = formData.unitValue <= 49999 ? 'SE' : 'PPE';
 
