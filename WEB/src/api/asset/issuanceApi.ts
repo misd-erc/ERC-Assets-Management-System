@@ -205,19 +205,21 @@ export const createIssuance = async (
 };
 
 /**
- * Renew an existing movement record by posting the same record with status = RENEW.
+ * Renew an existing movement record by creating a NEW record with status = RENEW.
+ * A freshly generated PAR/ICS number must be supplied so the renewal gets its own number.
  */
 export const renewIssuance = async (
   existing: IssuanceRecord,
-  issuedDate: string
+  issuedDate: string,
+  newParIcsNumber: string
 ): Promise<boolean> => {
   const { systemUserId, sessionKey } = getAuthParams();
   return editMovement({
-    id: existing.id,
+    id: 0,
     ptaId: existing.ptaId,
     dateAssigned: new Date(issuedDate).toISOString(),
     ptrItrNumber: existing.ptrItrNumber || '',
-    parIcsNumber: existing.parIcsNumber,
+    parIcsNumber: newParIcsNumber,
     rrppeRrspNumber: existing.rrppeRrspNumber || '',
     status: 'RENEW',
     plantillaEmployeeId: existing.employeeId,

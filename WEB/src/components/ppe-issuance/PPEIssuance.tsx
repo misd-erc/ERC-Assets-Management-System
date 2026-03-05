@@ -79,8 +79,6 @@ export function PPEIssuance() {
     employeeId: '',
     issuanceIds: [] as number[],
     issuedDate: new Date().toISOString().split('T')[0],
-    expiryDate: '',
-    notes: '',
   });
   const [saving, setSaving] = useState(false);
   const [detailRecords, setDetailRecords] = useState<IssuanceRecord[] | null>(null);
@@ -292,8 +290,6 @@ export function PPEIssuance() {
       employeeId: '',
       issuanceIds: [],
       issuedDate: new Date().toISOString().split('T')[0],
-      expiryDate: '',
-      notes: '',
     });
   };
 
@@ -348,7 +344,7 @@ export function PPEIssuance() {
 
     const hasValidItems = items.some((item) => item.ptaId > 0);
     if (!hasValidItems) {
-      toast.error('Pumili ng kahit isang item na ibibigay');
+      toast.error('Please select at least one item to issue');
       return;
     }
 
@@ -392,26 +388,43 @@ export function PPEIssuance() {
 
   const submitRenewForm = async () => {
     if (!renewState.employeeId) {
-      toast.error('Pumili ng employee para i-renew');
+      toast.error('Please select an employee to renew');
       return;
     }
 
     if (!renewState.issuanceIds.length) {
-      toast.error('Pumili ng PAR/ICS na i-re-renew');
+      toast.error('Please select at least one PAR/ICS to renew');
       return;
     }
 
     const selectedRecords = records.filter((r) => renewState.issuanceIds.includes(r.id));
     if (!selectedRecords.length) {
-      toast.error('Walang nakitang issuance na pwedeng i-renew');
+      toast.error('No matching issuance records found for renewal');
       return;
     }
 
     setSaving(true);
     try {
-      await Promise.all(
-        selectedRecords.map((record) => renewIssuance(record, renewState.issuedDate))
-      );
+      // Group selected records by their current PAR/ICS number.
+      // Each group gets ONE freshly generated PAR/ICS number so all items
+      // under the same PAR/ICS share the new number after renewal.
+      const groupMap = new Map<string, IssuanceRecord[]>();
+      for (const record of selectedRecords) {
+        const existing = groupMap.get(record.parIcsNumber);
+        if (existing) existing.push(record);
+        else groupMap.set(record.parIcsNumber, [record]);
+      }
+
+      // Generate a new PAR/ICS number sequentially for each group
+      const renewalTasks: Array<() => Promise<boolean>> = [];
+      for (const groupRecords of groupMap.values()) {
+        const newParIcsNumber = await getNextParNumber();
+        for (const record of groupRecords) {
+          renewalTasks.push(() => renewIssuance(record, renewState.issuedDate, newParIcsNumber));
+        }
+      }
+
+      await Promise.all(renewalTasks.map((fn) => fn()));
       toast.success('Renewal recorded');
       setDialogOpen(false);
       setDialogMode(null);
@@ -638,14 +651,10 @@ export function PPEIssuance() {
             selectedEmployeeId={renewState.employeeId}
             selectedIssuanceIds={renewState.issuanceIds}
             issuedDate={renewState.issuedDate}
-            expiryDate={renewState.expiryDate}
-            notes={renewState.notes}
             saving={saving}
             onSelectEmployee={(id: string) => setRenewState((prev) => ({ ...prev, employeeId: id, issuanceIds: [] }))}
             onToggleIssuance={toggleRenewIssuance}
             onChangeIssuedDate={(value: string) => setRenewState((prev) => ({ ...prev, issuedDate: value }))}
-            onChangeExpiryDate={(value: string) => setRenewState((prev) => ({ ...prev, expiryDate: value }))}
-            onChangeNotes={(value: string) => setRenewState((prev) => ({ ...prev, notes: value }))}
             onSubmit={submitRenewForm}
             onClose={() => {
               setDialogOpen(false);
