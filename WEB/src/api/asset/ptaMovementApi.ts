@@ -71,7 +71,7 @@ export interface PtaItem {
 export const getNextParNumber = async (): Promise<string> => {
   const { systemUserId, sessionKey } = getAuthParams();
   try {
-    const response = await axiosInstance.get<ApiResponse<string>>(
+    const response = await axiosInstance.get<ApiResponse<{ parNumber: string; sequence: number } | string>>(
       '/Inventory/pta/movement/next-par-number',
       { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
     );
@@ -79,7 +79,11 @@ export const getNextParNumber = async (): Promise<string> => {
       console.error('[PTA] Failed to fetch next PAR number:', response.data.message);
       return '';
     }
-    return response.data.data ?? '';
+    const data = response.data.data;
+    if (data && typeof data === 'object' && 'parNumber' in data) {
+      return data.parNumber ?? '';
+    }
+    return (data as string) ?? '';
   } catch (error) {
     console.error('[PTA] Error fetching next PAR number:', error);
     return '';
@@ -191,6 +195,51 @@ export const listSePpeItems = async (groupName?: 'PPE' | 'SE'): Promise<PtaItem[
     }));
   } catch (error) {
     console.error('[PTA] Error fetching SE/PPE items:', error);
+    return [];
+  }
+};
+
+/* -------------------------------------------------------------------------- */
+/*  GET SE / PPE items with NO movements (available for new issuance)          */
+/* -------------------------------------------------------------------------- */
+
+export const listSePpeItemsNoMovement = async (groupName?: 'PPE' | 'SE'): Promise<PtaItem[]> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+  try {
+    const response = await axiosInstance.get<ApiResponse<{ items: any[]; totalCount: number }>>(
+      '/Inventory/pta/se-ppe/no-movement',
+      {
+        params: {
+          ActionBySystemUserId: systemUserId,
+          SessionKey: sessionKey,
+          PageNumber: 1,
+          PageSize: 1000,
+          ...(groupName ? { GroupName: groupName } : {}),
+        },
+      }
+    );
+
+    if (!response.data.success) {
+      console.error('[PTA] Failed to fetch SE/PPE items (no movement):', response.data.message);
+      return [];
+    }
+
+    return (response.data.data?.items ?? []).map((item: any): PtaItem => ({
+      id: item.id,
+      description:
+        item.description ||
+        item.itemDescription ||
+        item.name ||
+        `Item #${item.id}`,
+      groupName: ((item.group || item.groupName || item.group_name || 'PPE') as 'PPE' | 'SE'),
+      propertyNumber: item.propertyNumber || item.property_number || '',
+      category: typeof item.category === 'object' ? item.category?.name ?? '' : item.category ?? '',
+      brand: item.brand || '',
+      model: item.model || '',
+      condition: item.condition || '',
+    }));
+  } catch (error) {
+    console.error('[PTA] Error fetching SE/PPE items (no movement):', error);
     return [];
   }
 };
