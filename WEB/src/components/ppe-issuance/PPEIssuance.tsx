@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { HardHat, RefreshCcw, ShieldCheck, Users, RotateCcw, Eye, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { HardHat, RefreshCcw, ShieldCheck, Users, RotateCcw, Eye, Search, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
 import { createIssuance, getIssuanceStats, getNextParNumber, IssuanceListParams, listIssuances, renewIssuance } from '@/api/asset/issuanceApi';
 import { listSePpeItemsNoMovement, PtaItem } from '@/api/asset/ptaMovementApi';
 import { getEmployees } from '@/api/user-management/userApi';
@@ -19,6 +19,8 @@ import { VwOffice, VwDivision } from '@/types/office';
 import { toast } from 'sonner';
 import { PPEIssuanceForm } from './PPEIssuanceForm';
 import { PPEIssuanceRenewForm } from './PPEIssuanceRenewForm';
+import { PARGenerator } from '@/components/assets/reports/PARGenerator';
+import { ICSGenerator } from '@/components/assets/reports/ICSGenerator';
 
 export interface IssuanceFormState {
   group: 'PPE' | 'SE';
@@ -608,7 +610,33 @@ export function PPEIssuance() {
           <DialogHeader>
             <DialogTitle>PAR/ICS Details — {detailRecords?.[0]?.parIcsNumber}</DialogTitle>
           </DialogHeader>
-          {detailRecords && <IssuanceDetailPanel records={detailRecords} />}
+          {detailRecords && (
+            <>
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (!detailRecords.length) return;
+                    try {
+                      if (detailRecords[0].itemGroup === 'PPE') {
+                        await PARGenerator.generateFromIssuanceRecords(detailRecords);
+                      } else {
+                        await ICSGenerator.generateFromIssuanceRecords(detailRecords);
+                      }
+                    } catch (err) {
+                      console.error('Print failed', err);
+                      toast.error('Failed to generate PDF');
+                    }
+                  }}
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  Print {detailRecords[0]?.itemGroup === 'PPE' ? 'PAR' : 'ICS'}
+                </Button>
+              </div>
+              <IssuanceDetailPanel records={detailRecords} />
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
