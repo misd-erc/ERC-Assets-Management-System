@@ -86,7 +86,8 @@ export function RolesManagement() {
       'Disposal of Properties': 8,
       'Contract Management': 9,
       'PPE & SE': 10,
-      'PPE & Semi-Expendables': 11,
+      'PPE/SE Issuance': 19,
+      'Asset Tagging': 11,
       'Reports Center': 12,
       'Approvals': 13,
       'User Management': 14,
@@ -137,6 +138,8 @@ export function RolesManagement() {
       'Contract Management': 9,
       'PPE & SE': 10,
       'PPE & Semi-Expendables': 11,
+      'PPE/SE Issuance': 19,
+      'Asset Tagging': 11,
       'Reports Center': 12,
       'Approvals': 13,
       'User Management': 14,
@@ -205,11 +208,17 @@ export function RolesManagement() {
       });
 
       // Convert API response to Role format with accurate permissions from scope
+      const safeScope = Array.isArray(roleDetails.scope)
+        ? roleDetails.scope
+            .filter((s: any) => s?.module?.name)
+            .map((s: any) => s.module.name)
+        : [];
+
       const updatedRole: Role = {
         id: roleDetails.id,
         roleName: roleDetails.roleName,
         description: roleDetails.description,
-        scope: roleDetails.scope ? roleDetails.scope.map(s => s.module.name) : [],
+        scope: safeScope,
         isActive: roleDetails.isActive,
         isDeleted: roleDetails.isDeleted,
         createdAt: roleDetails.createdAt,

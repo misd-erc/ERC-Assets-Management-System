@@ -1,4 +1,5 @@
 import { PPEAsset } from '@/types/asset/ppe';
+import axiosInstance from '@/lib/axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
@@ -133,9 +134,9 @@ export const ppeApi = {
 		actionBySystemUserId?: string,
 		sessionKey?: string
 	): Promise<{ success: boolean; code?: string; message?: string; data?: PPEAsset }> => {
-		const url = API_BASE_URL + `/Inventory/pta/se-ppe/update/${asset.id}`;
+		const url = API_BASE_URL + `/Inventory/pta/se-ppe/edit`;
 		const response = await fetch(url, {
-			method: 'PUT',
+			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
@@ -151,9 +152,9 @@ export const ppeApi = {
 	editPart: async (
 		partData: any
 	): Promise<{ success: boolean; code?: string; message?: string; data?: any }> => {
-		const url = API_BASE_URL + `/Inventory/pta/ppe/part/update/${partData.id}`;
+		const url = API_BASE_URL + `/Inventory/pta/ppe/part/edit`;
 		const response = await fetch(url, {
-			method: 'PUT',
+			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
@@ -169,18 +170,14 @@ export const ppeApi = {
 	editMovement: async (
 		movementData: any
 	): Promise<{ success: boolean; code?: string; message?: string; data?: any }> => {
-		const url = API_BASE_URL + `/Inventory/pta/se-ppe/movement/${movementData.id}`;
-		const response = await fetch(url, {
-			method: 'PUT',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(movementData),
-		});
-		if (!response.ok) {
+		const response = await axiosInstance.post<{ success: boolean; code?: string; message?: string; data?: any }>(
+			'/Inventory/pta/movement/edit',
+			movementData
+		);
+		if (!response.data.success) {
 			throw new Error('Failed to edit PPE asset movement');
 		}
-		return response.json();
+		return response.data;
 	},
 
 	// Delete PPE asset

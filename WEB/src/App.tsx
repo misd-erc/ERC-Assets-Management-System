@@ -98,6 +98,7 @@ function AppContent() {
           <Route path="dashboard" element={<div />} />
           <Route path="profile" element={<div />} />
           <Route path="under-construction" element={<div />} />
+          <Route path="disposals" element={<div />} />
 
         </Route>
         

@@ -44,6 +44,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
     movements: asset.movements || [],
   });
 
+  const [showAccountabilitySection, setShowAccountabilitySection] = useState(() => !!(asset.movements && asset.movements.length > 0));
   const [accountabilityEntries, setAccountabilityEntries] = useState<UnifiedMovement[]>([]);
   const [offices, setOffices] = useState<VwOffice[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
@@ -102,35 +103,16 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
       // Initialize accountability entries from movements
       if (asset.movements && asset.movements.length > 0) {
         setAccountabilityEntries(asset.movements);
+        setShowAccountabilitySection(true);
       } else {
-        // Auto-add a NEW movement object if API returns empty movements
-        setAccountabilityEntries([{
-          id: 0,
-          ptaId: asset.id,
-          dateAssigned: new Date().toISOString(),
-          ptrItrNumber: '',
-          parIcsNumber: '',
-          plantillaEmployeeId: 0,
-          nonPlantillaEmployeeId: 0,
-          actualOfficeId: 0,
-          actualDivisionId: 0,
-          condition: 'Working',
-          isActive: true,
-          isDeleted: false,
-          createdAt: new Date().toISOString(),
-        }]);
+        setAccountabilityEntries([]);
+        setShowAccountabilitySection(false);
       }
     }
   }, [asset]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate required fields
-    if (!formData.propertyNumber?.trim() || !formData.description?.trim() || !formData.brand?.trim() || !formData.model?.trim() || !formData.serialNumber?.trim() || !formData.unitOfMeasurement?.trim()) {
-      toast.error('Property Number, Description, Brand, Model, Serial Number, and Unit of Measurement are required');
-      return;
-    }
 
     // Determine group based on unit value
     const group = formData.unitValue <= 49999 ? 'SE' : 'PPE';
@@ -146,9 +128,10 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
 
     // Prepare movements with correct id and ptaId (ptaId always asset.id for edit)
     // Filter out any null/undefined entries
-    const preparedMovements: any[] = accountabilityEntries
-      .filter(movement => movement != null)
-      .map(movement => ({
+    const preparedMovements: any[] = showAccountabilitySection
+      ? accountabilityEntries
+          .filter(movement => movement != null)
+          .map(movement => ({
         id: movement.id || 0, // Use 0 for new movements, existing id for edits
         ptaId: asset.id,
         dateAssigned: movement.dateAssigned || new Date().toISOString(),
@@ -159,7 +142,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         actualOfficeId: movement.actualOfficeId || 0,
         actualDivisionId: movement.actualDivisionId || 0,
         condition: movement.condition || 'Working',
-      }));
+      }))
+      : [];
 
     const finalPayload: Asset = {
       id: asset.id,
@@ -351,6 +335,29 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         setFormData={setFormData}
         accountabilityEntries={accountabilityEntries}
         setAccountabilityEntries={setAccountabilityEntries}
+        showAccountabilitySection={showAccountabilitySection}
+        onToggleAccountabilitySection={() => {
+          setShowAccountabilitySection(prev => {
+            if (!prev && accountabilityEntries.length === 0) {
+              setAccountabilityEntries([{
+                id: 0,
+                ptaId: asset.id,
+                dateAssigned: new Date().toISOString(),
+                ptrItrNumber: '',
+                parIcsNumber: '',
+                plantillaEmployeeId: 0,
+                nonPlantillaEmployeeId: 0,
+                actualOfficeId: 0,
+                actualDivisionId: 0,
+                condition: 'Working',
+                isActive: true,
+                isDeleted: false,
+                createdAt: new Date().toISOString(),
+              }]);
+            }
+            return !prev;
+          });
+        }}
         handlePlantillaEmployeeSelect={handlePlantillaEmployeeSelect}
         handleNonPlantillaEmployeeSelect={handleNonPlantillaEmployeeSelect}
         employees={employees}

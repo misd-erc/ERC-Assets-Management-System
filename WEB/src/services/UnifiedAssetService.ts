@@ -501,7 +501,7 @@ export class UnifiedAssetService {
 
   static async update(id: number, data: Partial<Asset>): Promise<{ success: boolean; ptaId: number | null }> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const actionBySystemUserId = parseInt(localStorage.getItem('systemUserId') || '0');
       const sessionKey = localStorage.getItem('sessionToken') || '';
 
       // Get current asset to determine group
@@ -509,94 +509,60 @@ export class UnifiedAssetService {
       const group = data.group || currentAsset.group;
       const api = group === 'PPE' ? ppeApi : seApi;
 
-      // Normalize parts for edit mode
-      const normalizedParts = (data.parts || currentAsset.parts || []).map(part =>
-        this.normalizePart(part, 'edit', id)
-      );
-      // Normalize movements for edit mode
-      const normalizedMovements = (data.movements || currentAsset.movements || []).map(movement =>
-        this.normalizeMovement(movement, data.model || currentAsset.model || '', 'edit', id)
-      );
+      // Resolve flat categoryId / legendId
+      const categoryId =
+        (data as any).categoryId ??
+        (typeof data.category === 'object' && data.category ? (data.category as any).id : 0) ??
+        (typeof currentAsset.category === 'object' ? (currentAsset.category as any).id : 0);
 
-      const apiData = {
-        id: id,
-        propertyNumber: data.propertyNumber || currentAsset.propertyNumber,
-        category: data.category || currentAsset.category,
-        legend: data.legend || currentAsset.legend,
-        description: data.description || currentAsset.description,
-        brand: data.brand || currentAsset.brand,
-        model: data.model || currentAsset.model,
-        serialNumber: data.serialNumber || currentAsset.serialNumber,
-        parts: [], // Parts handled separately via editPart API
-        unitOfMeasurement: data.unitOfMeasurement || currentAsset.unitOfMeasurement,
-        unitValue: data.unitValue || currentAsset.unitValue,
-        dateAcquired: data.dateAcquired || currentAsset.dateAcquired,
+      const legendId =
+        (data as any).legendId ??
+        (typeof data.legend === 'object' && data.legend ? (data.legend as any).id : 0) ??
+        (typeof currentAsset.legend === 'object' && currentAsset.legend ? (currentAsset.legend as any).id : 0) ??
+        0;
+
+      // Build flat payload matching the /se-ppe/edit endpoint schema
+      const assetPayload = {
+        id,
+        group,
+        propertyNumber: data.propertyNumber ?? currentAsset.propertyNumber,
+        categoryId,
+        legendId,
+        description: data.description ?? currentAsset.description,
+        brand: data.brand ?? currentAsset.brand ?? '',
+        model: data.model ?? currentAsset.model ?? '',
+        serialNumber: data.serialNumber ?? currentAsset.serialNumber ?? '',
+        unitOfMeasurement: data.unitOfMeasurement ?? currentAsset.unitOfMeasurement,
+        unitValue: data.unitValue ?? currentAsset.unitValue,
+        dateAcquired: data.dateAcquired ?? currentAsset.dateAcquired,
         estimatedUsefulLife: data.estimatedUsefulLife ?? currentAsset.estimatedUsefulLife ?? 0,
         fiscalDate: data.fiscalDate ?? currentAsset.fiscalDate ?? new Date().toISOString().split('T')[0],
-        movements: [], // Movements handled separately via editMovement API
-        group: group,
+        isActive: data.isActive !== undefined ? data.isActive : (currentAsset.isActive ?? true),
         actionBySystemUserId,
         sessionKey,
       };
 
-      // Use appropriate API for update
-      let apiResponse;
-      if (group === 'SE') {
-        // SE asset - pass data directly since SEAsset interface matches the new API format
-        const apiDataForSE: Partial<SEAsset> = {
-          propertyNumber: apiData.propertyNumber,
-          category: apiData.category as any,
-          legend: typeof apiData.legend === 'object' && apiData.legend ? apiData.legend.name : apiData.legend,
-          description: apiData.description,
-          brand: apiData.brand,
-          model: apiData.model,
-          serialNumber: apiData.serialNumber,
-          parts: apiData.parts || [],
-          unitOfMeasurement: apiData.unitOfMeasurement,
-          unitValue: apiData.unitValue,
-          dateAcquired: apiData.dateAcquired,
-          estimatedUsefulLife: apiData.estimatedUsefulLife || 0,
-          movements: apiData.movements || [],
-        };
-        apiResponse = await seApi.update(id.toString(), apiDataForSE, actionBySystemUserId, sessionKey);
-        if (!apiResponse.success) throw new Error('Update failed');
-        // Handle movements update for SE
-        if (data.movements && data.movements.length > 0) {
-          for (const movement of data.movements) {
-            await seApi.editMovement({ ...movement, actionBySystemUserId, sessionKey });
-          }
+      const apiResponse = await api.update(assetPayload);
+      if (!apiResponse.success) throw new Error((apiResponse as any).message || 'Update failed');
+
+      // Handle parts separately via editPart API
+      const partsToUpdate = (data.parts || []).map(part => this.normalizePart(part, 'edit', id));
+      for (const part of partsToUpdate) {
+        if (part.name || part.serialNumber) {
+          await api.editPart(part);
         }
-        return { success: true, ptaId: apiResponse.data?.id ? Number(apiResponse.data.id) : null };
-      } else {
-        // PPE asset - use PPE API for update
-        const apiDataForPPE = {
-          id: id.toString(),
-          propertyNumber: apiData.propertyNumber,
-          category: apiData.category,
-          legend: typeof apiData.legend === 'object' && apiData.legend ? apiData.legend.name : apiData.legend,
-          description: apiData.description,
-          brand: apiData.brand,
-          model: apiData.model,
-          serialNumber: apiData.serialNumber,
-          parts: apiData.parts || [],
-          unitOfMeasurement: apiData.unitOfMeasurement,
-          unitValue: apiData.unitValue,
-          dateAcquired: apiData.dateAcquired,
-          estimatedUsefulLife: apiData.estimatedUsefulLife || 0,
-          movements: apiData.movements || [],
-          actionBySystemUserId,
-          sessionKey,
-        };
-        apiResponse = await ppeApi.update(apiDataForPPE);
-        if (!apiResponse.success) throw new Error('Update failed');
-        // Handle movements update for PPE
-        if (data.movements && data.movements.length > 0) {
-          for (const movement of data.movements) {
-            await ppeApi.editMovement({ ...movement, actionBySystemUserId, sessionKey });
-          }
-        }
-        return { success: true, ptaId: apiResponse.data?.id ? Number(apiResponse.data.id) : null };
       }
+
+      // Handle movements separately via editMovement API
+      const movementsToUpdate = (data.movements || [])
+        .filter(mv => mv != null)
+        .map(movement => this.normalizeMovement(movement, data.model ?? currentAsset.model ?? '', 'edit', id));
+
+      for (const movement of movementsToUpdate) {
+        await api.editMovement({ ...movement, actionBySystemUserId, sessionKey });
+      }
+
+      return { success: true, ptaId: apiResponse.data?.id ? Number(apiResponse.data.id) : id };
     } catch (error) {
       console.error('Error updating unified asset:', error);
       throw error;

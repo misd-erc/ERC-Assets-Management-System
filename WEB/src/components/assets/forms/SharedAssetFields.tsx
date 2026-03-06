@@ -35,6 +35,8 @@ interface SharedAssetFieldsProps {
   handleRemoveAccountabilityEntry: (index: number) => void;
   handleAccountabilityEntryChange: (index: number, field: string, value: any) => void;
   getUnitOfMeasurementOptions: () => { value: string; label: string }[];
+  showAccountabilitySection?: boolean;
+  onToggleAccountabilitySection?: () => void;
 }
 
 export function SharedAssetFields({
@@ -58,6 +60,8 @@ export function SharedAssetFields({
   handleRemoveAccountabilityEntry,
   handleAccountabilityEntryChange,
   getUnitOfMeasurementOptions,
+  showAccountabilitySection,
+  onToggleAccountabilitySection,
 }: SharedAssetFieldsProps) {
   const plantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId === 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
   const nonPlantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId !== 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
@@ -85,7 +89,7 @@ export function SharedAssetFields({
                 id="propertyNumber"
                 value={formData.propertyNumber}
                 onChange={(e) => handleInputChange('propertyNumber', e.target.value)}
-                required
+                required={mode === 'create'}
               />
             </div>
 
@@ -133,7 +137,7 @@ export function SharedAssetFields({
                 id="serialNumber"
                 value={formData.serialNumber || ''}
                 onChange={(e) => handleInputChange('serialNumber', e.target.value)}
-                required
+                required={mode === 'create'}
               />
             </div>
 
@@ -143,7 +147,7 @@ export function SharedAssetFields({
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
-                required
+                required={mode === 'create'}
               />
             </div>
 
@@ -153,7 +157,7 @@ export function SharedAssetFields({
                 id="brand"
                 value={formData.brand || ''}
                 onChange={(e) => handleInputChange('brand', e.target.value)}
-                required
+                required={mode === 'create'}
               />
             </div>
 
@@ -163,7 +167,7 @@ export function SharedAssetFields({
                 id="model"
                 value={formData.model || ''}
                 onChange={(e) => handleInputChange('model', e.target.value)}
-                required
+                required={mode === 'create'}
               />
             </div>
 
@@ -279,7 +283,7 @@ export function SharedAssetFields({
               <Select
                 value={formData.unitOfMeasurement}
                 onValueChange={(value) => handleInputChange('unitOfMeasurement', value)}
-                required
+                required={mode === 'create'}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select unit" />
@@ -302,7 +306,7 @@ export function SharedAssetFields({
                 step="0.01"
                 value={formData.unitValue}
                 onChange={(e) => handleInputChange('unitValue', parseFloat(e.target.value) || 0)}
-                required
+                required={mode === 'create'}
               />
             </div>
 
@@ -313,7 +317,7 @@ export function SharedAssetFields({
                 type="date"
                 value={formData.dateAcquired ? new Date(formData.dateAcquired).toISOString().split('T')[0] : ''}
                 onChange={(e) => handleInputChange('dateAcquired', e.target.value)}
-                required
+                required={mode === 'create'}
               />
             </div>
 
@@ -324,7 +328,7 @@ export function SharedAssetFields({
                 type="number"
                 value={formData.estimatedUsefulLife ?? ''}
                 onChange={(e) => handleInputChange('estimatedUsefulLife', parseInt(e.target.value) || 5)}
-                required
+                required={mode === 'create'}
               />
             </div>
           </div>
@@ -339,16 +343,37 @@ export function SharedAssetFields({
               <User className="size-5 text-blue-600" />
               Accountability Information
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={handleAddAccountabilityEntry}>
-              <Plus className="size-4 mr-2" />
-              Add Entry
-            </Button>
+            <div className="flex items-center gap-2">
+              {onToggleAccountabilitySection && (
+                <Button
+                  type="button"
+                  variant={showAccountabilitySection ? 'destructive' : 'outline'}
+                  size="sm"
+                  onClick={onToggleAccountabilitySection}
+                >
+                  {showAccountabilitySection ? (
+                    <><X className="size-4 mr-1" /> Remove</>
+                  ) : (
+                    <><Plus className="size-4 mr-1" /> Add Accountability</>
+                  )}
+                </Button>
+              )}
+              {(showAccountabilitySection === undefined || showAccountabilitySection) && (
+                <Button type="button" variant="outline" size="sm" onClick={handleAddAccountabilityEntry}>
+                  <Plus className="size-4 mr-2" />
+                  Add Entry
+                </Button>
+              )}
+            </div>
           </CardTitle>
           <CardDescription>
-            Current assignment and responsibility details (multiple entries for movement history)
+            {!showAccountabilitySection
+              ? 'Optional — add accountability info only if the item already has an assigned holder.'
+              : 'Current assignment and responsibility details (multiple entries for movement history)'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        {(showAccountabilitySection === undefined || showAccountabilitySection) && (
+          <CardContent>
           <div className="space-y-6">
             {accountabilityEntries.map((entry, index) => (
               <div key={index} className="p-4 border rounded-lg bg-gray-50">
@@ -376,7 +401,7 @@ export function SharedAssetFields({
                       type="datetime-local"
                       value={entry.dateAssigned ? new Date(entry.dateAssigned).toISOString().slice(0, 16) : ''}
                       onChange={(e) => handleAccountabilityEntryChange(index, 'dateAssigned', e.target.value)}
-                      required
+                      required={mode === 'create'}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4 md:col-span-1">
@@ -386,7 +411,7 @@ export function SharedAssetFields({
                         id={`ptrItrNumber-${index}`}
                         value={entry.ptrItrNumber}
                         onChange={(e) => handleAccountabilityEntryChange(index, 'ptrItrNumber', e.target.value)}
-                        required
+                        required={mode === 'create'}
                       />
                     </div>
                     <div className="space-y-2">
@@ -395,7 +420,7 @@ export function SharedAssetFields({
                         id={`parIcsNumber-${index}`}
                         value={entry.parIcsNumber}
                         onChange={(e) => handleAccountabilityEntryChange(index, 'parIcsNumber', e.target.value)}
-                        required
+                        required={mode === 'create'}
                       />
                     </div>
                   </div>
@@ -445,7 +470,7 @@ export function SharedAssetFields({
                         onValueChange={(value) => {
                           handleAccountabilityEntryChange(index, 'actualOfficeId', parseInt(value));
                         }}
-                        required
+                        required={mode === 'create'}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select office" />
@@ -466,7 +491,7 @@ export function SharedAssetFields({
                         onValueChange={(value) => {
                           handleAccountabilityEntryChange(index, 'actualDivisionId', parseInt(value));
                         }}
-                        required
+                        required={mode === 'create'}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select division" />
@@ -486,7 +511,7 @@ export function SharedAssetFields({
                     <Select
                       value={entry.condition}
                       onValueChange={(value) => handleAccountabilityEntryChange(index, 'condition', value)}
-                      required
+                      required={mode === 'create'}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select condition" />
@@ -506,6 +531,7 @@ export function SharedAssetFields({
             ))}
           </div>
         </CardContent>
+        )}
       </Card>
     </>
   );

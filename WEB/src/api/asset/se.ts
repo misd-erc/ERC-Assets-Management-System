@@ -1,4 +1,5 @@
 import { SEAsset } from '@/types/supply/se';
+import axiosInstance from '@/lib/axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
@@ -127,18 +128,17 @@ export const seApi = {
 
 	// Update SE asset
 	update: async (
-		id: string,
-		asset: Partial<SEAsset>,
-		actionBySystemUserId: string,
-		sessionKey: string
+		asset: any,
+		actionBySystemUserId?: string,
+		sessionKey?: string
 	): Promise<{ success: boolean; code?: string; message?: string; data?: SEAsset }> => {
-		const url = API_BASE_URL + `/Inventory/pta/se-ppe/update/${id}`;
+		const url = API_BASE_URL + `/Inventory/pta/se-ppe/edit`;
 		const response = await fetch(url, {
-			method: 'PUT',
+			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify({ ...asset, actionBySystemUserId, sessionKey }),
+			body: JSON.stringify(asset),
 		});
 		if (!response.ok) {
 			throw new Error('Failed to update SE asset');
@@ -168,18 +168,14 @@ export const seApi = {
 	editMovement: async (
 		movementData: any
 	): Promise<{ success: boolean; code?: string; message?: string; data?: any }> => {
-		const url = API_BASE_URL + '/Inventory/pta/movement/edit';
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(movementData),
-		});
-		if (!response.ok) {
+		const response = await axiosInstance.post<{ success: boolean; code?: string; message?: string; data?: any }>(
+			'/Inventory/pta/movement/edit',
+			movementData
+		);
+		if (!response.data.success) {
 			throw new Error('Failed to save asset movement');
 		}
-		return response.json();
+		return response.data;
 	},
 
 	// Delete SE asset
