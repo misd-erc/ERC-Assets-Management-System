@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { User, SystemRoleSimple } from '@/types/user';
 import { Office, VwDivision, EmploymentType, Position } from '@/types';
@@ -46,7 +45,7 @@ import {
 interface SearchableSelectProps {
   value: string;
   onChange: (value: string) => void;
-  options: { id: number | string; name: string | undefined }[]; // Flexible ID and Name type
+  options: { id: number | string; name: string | undefined }[];
   placeholder?: string;
   disabled?: boolean;
 }
@@ -54,7 +53,6 @@ interface SearchableSelectProps {
 const SearchableSelect = ({ value, onChange, options, placeholder = "Select...", disabled = false }: SearchableSelectProps) => {
   const [open, setOpen] = useState(false);
 
-  // Helper to safely convert IDs to string for comparison
   const normalizeId = (id: number | string) => id?.toString();
 
   const selectedLabel = value
@@ -74,7 +72,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Select...",
             !value && "text-muted-foreground"
           )}
         >
-          {selectedLabel || placeholder}
+          <span className="truncate">{selectedLabel || placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -117,7 +115,6 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Select...",
   );
 };
 
-// --- Constants ---
 const STATUS_OPTIONS = [
   { id: '1', name: 'Active' },
   { id: '2', name: 'Inactive' },
@@ -157,11 +154,16 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     isActive: true,
   });
 
+  // --- Filtered Divisions Logic ---
+  const filteredDivisions = useMemo(() => {
+    if (!formData.officeId) return [];
+    return divisions.filter(d => d.office?.id?.toString() === formData.officeId);
+  }, [formData.officeId, divisions]);
+
   const prefillForm = async (user: User) => {
     if (roles.length === 0) return; 
 
     setLoadingUserDetails(true);
-
     try {
       const details = await getUsersDetails(user.id.toString());
       const role = roles.find((r) => r.roleName === user.systemRole?.[0]?.roleName);
@@ -201,7 +203,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   }, [open]);
 
   useEffect(() => {
-    if (open && selectedUser) {
+    if (open && selectedUser && roles.length > 0) {
       prefillForm(selectedUser);
     }
   }, [open, selectedUser, roles]);
@@ -209,7 +211,6 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
   const fetchDropdownData = async () => {
     try {
       setLoading(true);
-
       const [officesData, divisionsData, employmentTypesData, positionsData, rolesData] = await Promise.all([
         getOffices(),
         getDivisions(),
@@ -279,7 +280,14 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     }
   };
 
-  // Helper to adapt role data for the select
+  const handleOfficeChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      officeId: value,
+      divisionId: '' // Reset division whenever office changes
+    }));
+  };
+
   const roleOptions = roles.map(r => ({ id: r.id, name: r.roleName }));
 
   return (
@@ -300,27 +308,28 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
             
             <div className="space-y-2">
-              <Label htmlFor="office">Office</Label>
+              <Label>Office</Label>
               <SearchableSelect
                 value={formData.officeId}
-                onChange={(value) => setFormData({ ...formData, officeId: value })}
+                onChange={handleOfficeChange}
                 options={offices}
                 placeholder="Select office"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="division">Division</Label>
+              <Label>Division</Label>
               <SearchableSelect
                 value={formData.divisionId}
                 onChange={(value) => setFormData({ ...formData, divisionId: value })}
-                options={divisions}
+                options={filteredDivisions}
                 placeholder="Select division"
+                disabled={!formData.officeId}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="employmentType">Employment Type</Label>
+              <Label>Employment Type</Label>
               <SearchableSelect
                 value={formData.employmentTypeId}
                 onChange={(value) => setFormData({ ...formData, employmentTypeId: value })}
@@ -330,7 +339,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="position">Position</Label>
+              <Label>Position</Label>
               <SearchableSelect
                 value={formData.positionId}
                 onChange={(value) => setFormData({ ...formData, positionId: value })}
@@ -340,7 +349,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label>Role</Label>
               <SearchableSelect
                 value={formData.roleId}
                 onChange={(value) => setFormData({ ...formData, roleId: value })}
@@ -350,7 +359,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label>Status</Label>
               <SearchableSelect
                 value={formData.statusId}
                 onChange={(value) => setFormData({ ...formData, statusId: value })}

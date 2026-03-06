@@ -51,8 +51,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                     await context.TblDeliveryRecords.Where(u => u.Id == model.Id)
                         .ExecuteUpdateAsync(u => u
                             .SetProperty(x => x.DRNumberEncrypted, model.DRNumberEncrypted)
-                            .SetProperty(x => x.PONumberEncrypted, model.PONumberEncrypted)
-                            .SetProperty(x => x.VendorId, model.VendorId)
+                            .SetProperty(x => x.SupplyIARId, model.SupplyIARId)
                             .SetProperty(x => x.DeliveryDate, model.DeliveryDate)
                             .SetProperty(x => x.EmployeeId, model.EmployeeId)
                             .SetProperty(x => x.RemarksEncrypted, model.RemarksEncrypted)

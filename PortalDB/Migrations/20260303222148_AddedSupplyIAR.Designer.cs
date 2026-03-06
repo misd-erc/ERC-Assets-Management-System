@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260303222148_AddedSupplyIAR")]
+    partial class AddedSupplyIAR
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -59,13 +62,17 @@ namespace PortalDB.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("DeliveryRecordIsReceived");
 
+                    b.Property<string>("PONumberEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DeliveryRecordPONumber");
+
                     b.Property<string>("RemarksEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("DeliveryRecordRemarks");
 
-                    b.Property<long?>("SupplyIARId")
+                    b.Property<long?>("VendorId")
                         .HasColumnType("bigint")
-                        .HasColumnName("SupplyIARId");
+                        .HasColumnName("VendorId");
 
                     b.HasKey("Id");
 
@@ -615,7 +622,7 @@ namespace PortalDB.Migrations
 
                     b.Property<long?>("DivisionId")
                         .HasColumnType("bigint")
-                        .HasColumnName("DivisionId");
+                        .HasColumnName("SupplyDivisionId");
 
                     b.Property<string>("EntityNameEncrypted")
                         .HasColumnType("nvarchar(max)")
@@ -651,7 +658,7 @@ namespace PortalDB.Migrations
 
                     b.Property<long?>("OfficeId")
                         .HasColumnType("bigint")
-                        .HasColumnName("OfficeId");
+                        .HasColumnName("SupplyOfficeId");
 
                     b.Property<DateTime?>("PODate")
                         .HasColumnType("datetime2")
@@ -661,13 +668,9 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyIARPONumber");
 
-                    b.Property<string>("ResponsibilityCenterCodeEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyResponsibilityCenterCode");
-
                     b.Property<long?>("VendorId")
                         .HasColumnType("bigint")
-                        .HasColumnName("SupplyVendorId");
+                        .HasColumnName("SupplySupplyVendorId");
 
                     b.HasKey("Id");
 

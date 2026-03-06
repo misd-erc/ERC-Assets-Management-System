@@ -24,17 +24,8 @@ namespace PortalDB.Entities.ASSET.Delivery
             set => DRNumberEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
-        [Column("DeliveryRecordPONumber")]
-        public string? PONumberEncrypted { get; set; }
-        [NotMapped]
-        public string? PONumber
-        {
-            get => string.IsNullOrEmpty(PONumberEncrypted) ? null : EncryptionHelper.Decrypt(PONumberEncrypted);
-            set => PONumberEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
-        }
-
-        [Column("VendorId")]
-        public long? VendorId { get; set; }
+        [Column("SupplyIARId")]
+        public long? SupplyIARId { get; set; }
 
         [Column("DeliveryRecordDeliveryDate")]
         public DateTime? DeliveryDate { get; set; }

@@ -10,7 +10,7 @@ import { Plus, X, Package } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 
 // Hooks
-import { useVendor } from '@/hooks';
+import { useSupplyIAR } from '@/hooks';
 
 // Components
 import { DeliveryItemModal } from './DeliveryItemModal';
@@ -27,16 +27,14 @@ interface Props {
 }
 
 export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSubmit }: Props) => {
-  const { vendors, fetchVendors } = useVendor();
+  const { iars, fetchSupplyIARs } = useSupplyIAR();
   const [loading, setLoading] = useState(false);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
 
-  // Main Form State
   const [formData, setFormData] = useState({
     id: 0,
     drNumber: '',
-    poNumber: '',
-    vendorId: 0,
+    supplyIARId: 0,
     deliveryDate: new Date().toISOString().split('T')[0],
     employeeId: 0,
     remarks: '',
@@ -44,36 +42,30 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
     isActive: true
   });
 
-  // Active Items (Visible in the list)
   const [items, setItems] = useState<Partial<DeliveryRecordItem>[]>([]);
-  
-  // Removed Items (Hidden, but tracked for deletion on save)
   const [removedItems, setRemovedItems] = useState<Partial<DeliveryRecordItem>[]>([]);
 
   useEffect(() => {
-    fetchVendors();
-  }, []);
+    if (open) fetchSupplyIARs();
+  }, [open, fetchSupplyIARs]);
 
   useEffect(() => {
     if (mode === 'edit' && record) {
       setFormData({
         id: record.id,
         drNumber: record.drNumber,
-        poNumber: record.poNumber,
-        vendorId: record.vendor?.id || 0,
+        supplyIARId: record.supplyIAR?.id || 0,
         deliveryDate: record.deliveryDate.split('T')[0],
         employeeId: record.employee?.id || 0,
         remarks: record.remarks,
         isReceived: record.isReceived,
         isActive: record.isActive
       });
-      // Load existing items and ensure isDeleted is false by default
       setItems(record.items.map(i => ({ ...i, isDeleted: false })));
-      // Clear removed buffer when opening edit mode
       setRemovedItems([]);
     } else {
       setFormData({
-        id: 0, drNumber: '', poNumber: '', vendorId: 0,
+        id: 0, drNumber: '', supplyIARId: 0,
         deliveryDate: new Date().toISOString().split('T')[0],
         employeeId: 0, remarks: '', isReceived: false, isActive: true
       });
@@ -83,27 +75,14 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
   }, [mode, record, open]);
 
   const handleAddItem = (newItem: any) => {
-    const itemToAdd: any = {
-      id: 0, 
-      recordId: formData.id,
-      ...newItem,
-      isActive: true,
-      isDeleted: false // Default for new items
-    };
-    setItems([...items, itemToAdd]);
+    setItems([...items, { id: 0, recordId: formData.id, ...newItem, isActive: true, isDeleted: false }]);
   };
 
   const handleRemoveItem = (index: number) => {
     const itemToRemove = items[index];
-    
-    // UPDATED LOGIC: 
-    // If the item has an ID > 0, it exists in the database.
-    // We must add it to 'removedItems' with isDeleted: true
     if (itemToRemove.id && itemToRemove.id > 0) {
-        setRemovedItems(prev => [...prev, { ...itemToRemove, isDeleted: true }]);
+      setRemovedItems(prev => [...prev, { ...itemToRemove, isDeleted: true }]);
     }
-
-    // Remove it from the visible 'items' list so the user sees it disappear
     const updated = [...items];
     updated.splice(index, 1);
     setItems(updated);
@@ -113,8 +92,20 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
     e.preventDefault();
     setLoading(true);
     try {
-      // COMBINE: Active items + Removed (deleted) items
-      const finalItems = [...items, ...removedItems];
+      // Mapping logic ensures no data is dropped during payload construction
+      const finalItems = [...items, ...removedItems].map(item => ({
+        id: item.id || 0,
+        recordId: formData.id,
+        itemTypeId: item.itemTypeId,
+        categoryId: item.category?.id || (item as any).category?.id || 0,
+        itemDescription: item.itemDescription,
+        itemSpecification: item.itemSpecification || '', // Correctly mapping specification
+        itemQuantity: item.itemQuantity,
+        measurementUnitId: item.measurementUnit?.id || (item as any).measurementUnit?.id || 0,
+        unitCost: item.unitCost,
+        isActive: item.isActive ?? true,
+        isDeleted: item.isDeleted ?? false
+      }));
 
       const payload = {
         deliveryRecord: formData,
@@ -130,102 +121,102 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
 
   return (
     <>
-        <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
+          <DialogHeader>
             <DialogTitle>{mode === 'add' ? 'Record New Delivery' : 'Edit Delivery Record'}</DialogTitle>
-            <DialogDescription>Enter delivery details and items.</DialogDescription>
-            </DialogHeader>
-            
-            <form onSubmit={handleSubmit} className="space-y-6">
-            {/* --- Main Details --- */}
+            <DialogDescription>Enter delivery details and link to an IAR.</DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+              <div className="space-y-2">
                 <Label>DR Number</Label>
                 <Input value={formData.drNumber} onChange={e => setFormData({...formData, drNumber: e.target.value})} required />
-                </div>
-                <div className="space-y-2">
-                <Label>PO Number</Label>
-                <Input value={formData.poNumber} onChange={e => setFormData({...formData, poNumber: e.target.value})} required />
-                </div>
-                <div className="space-y-2">
-                <Label>Vendor</Label>
-                <Select value={formData.vendorId.toString()} onValueChange={val => setFormData({...formData, vendorId: Number(val)})}>
-                    <SelectTrigger><SelectValue placeholder="Select Vendor" /></SelectTrigger>
-                    <SelectContent>
-                    {vendors.map(v => <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>)}
-                    </SelectContent>
+              </div>
+              <div className="space-y-2">
+                <Label>Linked IAR / PO</Label>
+                <Select value={formData.supplyIARId.toString()} onValueChange={val => setFormData({...formData, supplyIARId: Number(val)})}>
+                  <SelectTrigger><SelectValue placeholder="Select IAR Reference" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">Select IAR Reference</SelectItem>
+                    {iars.map(iar => (
+                      <SelectItem key={iar.id} value={iar.id.toString()}>
+                        {iar.iarNumber} (PO: {iar.poNumber})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
-                </div>
-                <div className="space-y-2">
+              </div>
+              <div className="space-y-2">
                 <Label>Delivery Date</Label>
                 <Input type="date" value={formData.deliveryDate} onChange={e => setFormData({...formData, deliveryDate: e.target.value})} required />
-                </div>
+              </div>
             </div>
             
             <div className="space-y-2">
-                <Label>Remarks</Label>
-                <Textarea value={formData.remarks} onChange={e => setFormData({...formData, remarks: e.target.value})} />
+              <Label>Remarks</Label>
+              <Textarea value={formData.remarks} onChange={e => setFormData({...formData, remarks: e.target.value})} />
             </div>
 
-            {/* --- Items Section --- */}
             <div className="border-t pt-4">
-                <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-sm font-semibold">Delivery Items</h3>
-                    <Button type="button" size="sm" onClick={() => setIsItemModalOpen(true)}>
-                        <Plus className="w-4 h-4 mr-2"/> Add Item
-                    </Button>
-                </div>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-semibold">Delivery Items</h3>
+                <Button type="button" size="sm" onClick={() => setIsItemModalOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2"/> Add Item
+                </Button>
+              </div>
 
-                {/* Items List */}
-                <div className="space-y-2 max-h-60 overflow-y-auto min-h-[100px] border rounded-md p-2 bg-slate-50/50">
-                    {items.length === 0 && (
-                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                            <Package className="h-10 w-10 mb-2 opacity-20" />
-                            <p className="text-sm">No items added yet.</p>
-                        </div>
-                    )}
-                    {items.map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center p-3 border rounded bg-white text-sm shadow-sm">
-                            <div>
-                                <div className="font-medium flex items-center gap-2">
-                                    <Badge variant="outline">{item.itemTypeId === 1 ? 'Supply' : item.itemTypeId === 2 ? 'PPE' : 'SE'}</Badge>
-                                    {item.itemDescription}
-                                </div>
-                                <div className="text-muted-foreground text-xs mt-1">
-                                    {item.itemQuantity} {item.measurementUnit?.name} x {formatCurrency(item.unitCost || 0)}
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <span className="font-semibold">{formatCurrency((item.itemQuantity || 0) * (item.unitCost || 0))}</span>
-                                <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveItem(idx)} className="text-red-500 hover:text-red-700 h-6 w-6 p-0"><X className="w-4 h-4"/></Button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                
-                <div className="flex justify-end pt-4 mt-4">
-                    <div className="text-right">
-                        <span className="text-sm text-muted-foreground">Total Value: </span>
-                        <span className="font-bold text-lg">{formatCurrency(items.reduce((acc, i) => acc + ((i.itemQuantity || 0) * (i.unitCost || 0)), 0))}</span>
+              <div className="space-y-2 max-h-60 overflow-y-auto min-h-[100px] border rounded-md p-2 bg-slate-50/50">
+                {items.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                    <Package className="h-10 w-10 mb-2 opacity-20" />
+                    <p className="text-sm">No items added yet.</p>
+                  </div>
+                )}
+                {items.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center p-3 border rounded bg-white text-sm shadow-sm">
+                    <div>
+                      <div className="font-medium flex items-center gap-2">
+                        <Badge variant="outline">{item.itemTypeId === 1 ? 'Supply' : item.itemTypeId === 2 ? 'PPE' : 'SE'}</Badge>
+                        {item.itemDescription}
+                      </div>
+                      <div className="text-muted-foreground text-[11px] mt-0.5">
+                        {item.itemSpecification && <span className="italic">Specs: {item.itemSpecification}</span>}
+                      </div>
+                      <div className="text-muted-foreground text-xs mt-1">
+                        {item.itemQuantity} {(item as any).measurementUnit?.name} x {formatCurrency(item.unitCost || 0)}
+                      </div>
                     </div>
+                    <div className="flex items-center gap-4">
+                      <span className="font-semibold">{formatCurrency((item.itemQuantity || 0) * (item.unitCost || 0))}</span>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => handleRemoveItem(idx)} className="text-red-500 hover:text-red-700 h-6 w-6 p-0"><X className="w-4 h-4"/></Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex justify-end pt-4 mt-4">
+                <div className="text-right">
+                  <span className="text-sm text-muted-foreground">Total Value: </span>
+                  <span className="font-bold text-lg">{formatCurrency(items.reduce((acc, i) => acc + ((i.itemQuantity || 0) * (i.unitCost || 0)), 0))}</span>
                 </div>
+              </div>
             </div>
 
             <DialogFooter>
-                <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
-                <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save Record'}</Button>
+              <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save Record'}</Button>
             </DialogFooter>
-            </form>
+          </form>
         </DialogContent>
-        </Dialog>
+      </Dialog>
 
-        {/* Nested Modal for Adding Item */}
-        <DeliveryItemModal 
-            open={isItemModalOpen} 
-            onOpenChange={setIsItemModalOpen} 
-            onSave={handleAddItem}
-        />
+      <DeliveryItemModal 
+        open={isItemModalOpen} 
+        onOpenChange={setIsItemModalOpen} 
+        onSave={handleAddItem}
+      />
     </>
   );
 };

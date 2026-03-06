@@ -328,6 +328,91 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+
+        [HttpGet("iar/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllIARs([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblSupplyIAR>? supplyIARs = await _getTools.Supply.GetTblSupplyIARs(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyIARs = supplyIARs.Where(x =>
+                        (x.IARNumber.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.IARNumberDate.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.PONumber.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.EntityName.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.FundCluster.ToString() ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    supplyIARs = supplyIARs.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    supplyIARs = supplyIARs.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = supplyIARs.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var supplyIARsList = supplyIARs
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var supplyIResponses = new List<SupplyIARResponseModel>();
+
+                foreach (var x in supplyIARsList)
+                {
+                    var supplyIARModel = new SupplyIARResponseModel
+                    {
+                        Id = x.Id,
+                        CenterCode = x.ResponsibilityCenterCode,
+                        EntityName = x.EntityName,
+                        FundCluster = x.FundCluster,
+                        Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(x.VendorId, context),
+                        PONumber = x.PONumber,
+                        Office = await _getTools.Office.GetTblOfficeAsync(x.OfficeId, context),
+                        Division = await _getTools.Office.GetTblDivisionAsync(x.DivisionId, context),
+                        IARNumber = x.IARNumber,
+                        IARNumberDate = x.IARNumberDate,
+                        IARInvoiceNumber = x.IARInvoiceNumber,
+                        IARInvoiceNumberDate = x.IARInvoiceNumberDate,
+                        PODate = x.PODate,
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    supplyIResponses.Add(supplyIARModel);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply IAR", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<SupplyIARResponseModel>.OkPaginated(
+                    supplyIResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Supply IARs have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         #endregion
 
         #region POST
@@ -470,6 +555,50 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+
+        [HttpPost("iar/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditSupplyIAR([FromBody] EditSupplyIARQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblSupplyIAR supplyIAR = new()
+                {
+                    Id = model.Id,
+                    EntityName = model.EntityName,
+                    ResponsibilityCenterCode = model.CenterCode,
+                    FundCluster = model.FundCluster,
+                    VendorId = model.VendorId,
+                    PONumber = model.PONumber,
+                    OfficeId = model.OfficeId,
+                    DivisionId = model.DivisionId,
+                    IARNumber = model.IARNumber,
+                    IARNumberDate = model.IARNumberDate,
+                    IARInvoiceNumber = model.IARInvoiceNumber,
+                    IARInvoiceNumberDate = model.IARInvoiceNumberDate,
+                    PODate = model.PODate,
+                    IsActive = model.IsActive
+                };
+
+                long supplyIARId = await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { SupplyIARId = supplyIARId }, $"Supply IAR has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         #endregion
 
         #region DELETE
@@ -492,6 +621,35 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok($"Supply Vendor has been deleted"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpDelete("iar/delete/{iarId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteSupplyIAR([FromQuery] SoloQueryParams model, [FromRoute] long iarId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _editTools.Supply.DeleteTblSupplyIARAsync(iarId, model.ActionBySystemUserId, context);
+
+                if (!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this Supply IAR, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Supply IAR has been deleted"));
 
             }
             catch (Exception ex)

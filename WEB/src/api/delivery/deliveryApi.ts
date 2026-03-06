@@ -18,8 +18,7 @@ interface ListResponse<T> {
 const mapVwDeliveryRecord = (raw: any): VwDeliveryRecord => ({
   id: raw.id,
   drNumber: raw.drNumber,
-  poNumber: raw.poNumber,
-  vendor: raw.vendor,
+  supplyIAR: raw.supplyIAR,
   deliveryDate: raw.deliveryDate,
   employee: raw.employee,
   remarks: raw.remarks,
@@ -72,8 +71,7 @@ export const editDeliveryRecord = async (payload: EditDeliveryRecord): Promise<{
   const requestPayload = {
     id: payload.deliveryRecord.id,
     drNumber: payload.deliveryRecord.drNumber,
-    poNumber: payload.deliveryRecord.poNumber,
-    vendorId: payload.deliveryRecord.vendorId,
+    supplyIARId: payload.deliveryRecord.supplyIARId,
     deliveryDate: payload.deliveryRecord.deliveryDate,
     employeeId: payload.deliveryRecord.employeeId,
     remarks: payload.deliveryRecord.remarks,
@@ -88,6 +86,3 @@ export const editDeliveryRecord = async (payload: EditDeliveryRecord): Promise<{
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save delivery record');
   return { message: response.data.message ?? 'Success' };
 };
-
-
-
