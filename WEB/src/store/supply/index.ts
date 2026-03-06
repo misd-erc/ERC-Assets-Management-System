@@ -1,14 +1,15 @@
 ﻿// src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
-import { SupplyItem, VwSupplyItem, SupplyUnit, SupplyStorageLocation } from '@/types';
+import { SupplyItem, VwSupplyItem, SupplyUnit, SupplyStorageLocation, SupplyIAR, VwSupplyIAR } from '@/types';
 import { 
-
   getSupplyItems,
   editSupplyItem,
   getSupplyUnits,
   editSupplyUnit,
   getSupplyStorageLocations,
-  editSupplyStorageLocation
+  editSupplyStorageLocation,
+  getSupplyIARs, // Make sure this is exported from your API
+  editSupplyIAR
 } from '@/api';
 import { toast } from 'sonner';
 import axiosInstance from '@/lib/axios';
@@ -57,7 +58,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
 
   addSupplyItem: async (supply) => {
     try {
-        const { systemUserId, sessionKey } = getAuthParams();
+      const { systemUserId, sessionKey } = getAuthParams();
       await editSupplyItem({
         id: 0,
         code: supply.code || '',
@@ -191,7 +192,7 @@ export const useSupplyUnitStore = create<SupplyUnitState>((set, get) => ({
       await get().fetchSupplyUnits();
       toast.success('Supply unit deleted');
     } catch {
-_double: toast.error('Failed to delete supply unit');
+      toast.error('Failed to delete supply unit');
     }
   },
 }));
@@ -273,10 +274,115 @@ export const useSupplyStorageLocationStore = create<SupplyStorageLocationState>(
       await get().fetchSupplyStorageLocations();
       toast.success('Supply storagelocation deleted');
     } catch {
-_double: toast.error('Failed to delete supply storagelocation');
+      toast.error('Failed to delete supply storagelocation');
     }
   },
 }));
 
 
 
+/* ========================================
+   SUPPLY IAR STORE
+======================================== */
+export interface SupplyIARState {
+  iars: VwSupplyIAR[]; // Changed to VwSupplyIAR[] to match API
+  loading: boolean;
+  searchQuery: string;
+
+  setSupplyIARs: (iars: VwSupplyIAR[]) => void;
+  setLoading: (loading: boolean) => void;
+  setSearchQuery: (query: string) => void;
+
+  fetchSupplyIARs: () => Promise<void>;
+  addSupplyIAR: (iar: Partial<SupplyIAR>) => Promise<void>;
+  updateSupplyIAR: (id: number, updates: Partial<SupplyIAR>) => Promise<void>;
+  deleteSupplyIAR: (id: number) => Promise<void>;
+}
+
+export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
+  iars: [],
+  loading: false,
+  searchQuery: '',
+
+  setSupplyIARs: (iars) => set({ iars }),
+  setLoading: (loading) => set({ loading }),
+  setSearchQuery: (query) => set({ searchQuery: query }),
+
+  fetchSupplyIARs: async () => {
+    set({ loading: true });
+    try {
+      const iars = await getSupplyIARs();
+      set({ iars });
+    } catch {
+      toast.error('Failed to load IARs');
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  addSupplyIAR: async (iar) => {
+    try {
+      await editSupplyIAR({
+        id: 0,
+        centerCode: iar.centerCode || '',
+        entityName: iar.entityName || '',
+        fundCluster: iar.fundCluster || '',
+        vendorId: iar.vendorId || 0,
+        poNumber: iar.poNumber || '',
+        officeId: iar.officeId || 0,
+        divisionId: iar.divisionId || 0,
+        iarNumber: iar.iarNumber || '',
+        iarNumberDate: iar.iarNumberDate || '',
+        iarInvoiceNumber: iar.iarInvoiceNumber || '',
+        iarInvoiceNumberDate: iar.iarInvoiceNumberDate || '',
+        poDate: iar.poDate || '',
+        isActive: iar.isActive ?? true,
+      } as SupplyIAR);
+      
+      await get().fetchSupplyIARs();
+      toast.success('IAR added successfully');
+    } catch {
+      toast.error('Failed to add IAR');
+    }
+  },
+
+  updateSupplyIAR: async (id, updates) => {
+    try {
+      await editSupplyIAR({
+        id: id,
+        centerCode: updates.centerCode || '',
+        entityName: updates.entityName,
+        fundCluster: updates.fundCluster,
+        vendorId: updates.vendorId,
+        poNumber: updates.poNumber,
+        officeId: updates.officeId,
+        divisionId: updates.divisionId,
+        iarNumber: updates.iarNumber,
+        iarNumberDate: updates.iarNumberDate,
+        iarInvoiceNumber: updates.iarInvoiceNumber,
+        iarInvoiceNumberDate: updates.iarInvoiceNumberDate,
+        poDate: updates.poDate,
+        isActive: updates.isActive ?? true,
+      } as SupplyIAR);
+      
+      await get().fetchSupplyIARs();
+      toast.success('IAR updated successfully');
+    } catch {
+      toast.error('Failed to update IAR');
+    }
+  },
+
+  deleteSupplyIAR: async (id) => {
+    try {
+      const { systemUserId, sessionKey } = getAuthParams();
+      await axiosInstance.delete(`/Supply/iar/delete/${id}`, {
+        params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+      });
+      
+      await get().fetchSupplyIARs();
+      toast.success('IAR deleted successfully');
+    } catch {
+      toast.error('Failed to delete IAR');
+    }
+  },
+}));

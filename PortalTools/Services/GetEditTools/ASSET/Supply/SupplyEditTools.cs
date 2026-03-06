@@ -82,6 +82,77 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                 throw;
             }
         }
+        public async Task<long> EditTblSupplyIARAsync(TblSupplyIAR model, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (model == null)
+                return 0;
+
+            try
+            {
+
+                bool isInsert = model.Id == 0;
+                TblSupplyIAR? existingSupplyIAR = null;
+
+                if (isInsert)
+                {
+                    await context.TblSupplyIARs.AddAsync(model);
+                    await context.SaveChangesAsync();
+                }
+                else
+                {
+                    existingSupplyIAR = await _getTools.Supply.GetTblSupplyIARAsync(model.Id, context);
+
+                    if (existingSupplyIAR == null)
+                        return 0;
+
+                    model.Id = existingSupplyIAR.Id;
+
+                    await context.TblSupplyIARs.Where(u => u.Id == model.Id)
+                        .ExecuteUpdateAsync(u => u
+                            .SetProperty(x => x.ResponsibilityCenterCodeEncrypted, model.ResponsibilityCenterCodeEncrypted)
+                            .SetProperty(x => x.EntityNameEncrypted, model.EntityNameEncrypted)
+                            .SetProperty(x => x.FundClusterEncrypted, model.FundClusterEncrypted)
+                            .SetProperty(x => x.VendorId, model.VendorId)
+                            .SetProperty(x => x.PONumberEncrypted, model.PONumberEncrypted)
+                            .SetProperty(x => x.OfficeId, model.OfficeId)
+                            .SetProperty(x => x.DivisionId, model.DivisionId)
+                            .SetProperty(x => x.IARNumberEncrypted, model.IARNumberEncrypted)
+                            .SetProperty(x => x.IARNumberDate, model.IARNumberDate)
+                            .SetProperty(x => x.IARInvoiceNumberEncrypted, model.IARInvoiceNumberEncrypted)
+                            .SetProperty(x => x.IARInvoiceNumberDate, model.IARInvoiceNumberDate)
+                            .SetProperty(x => x.PODate, model.PODate)
+                            .SetProperty(x => x.IsActive, model.IsActive));
+                }
+
+                return isInsert ? model.Id : existingSupplyIAR.Id;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyEditTools));
+                throw;
+            }
+        }
+        public async Task<bool> DeleteTblSupplyIARAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (id == 0)
+                return false;
+
+            try
+            {
+                TblSupplyIAR? supplyIARModel = await _getTools.Supply.GetTblSupplyIARAsync(id, context);
+                await context.TblDeliveryRecords.Where(x => x.SupplyIARId == id).ExecuteSoftDeleteAsync(context);
+                await context.TblSupplyIARs.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a Supply IAR", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, supplyIARModel, null, nameof(TblSupplyIAR), actionBySystemUserId, "Delete"));
+
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyEditTools));
+                throw;
+            }
+        }
         public async Task<long> EditTblSupplyCategoryAsync(TblPTACategory model, long actionBySystemUserId, PortalDbContext context)
         {
             if (model == null)

@@ -72,6 +72,7 @@ namespace PortalDB.Services
         public DbSet<TblSupplyItem> TblSupplyItems { get; set; }
         public DbSet<TblSupplyStorageLocation> TblSupplyStorageLocations { get; set; }
         public DbSet<TblSupplyUnit> TblSupplyUnits { get; set; }
+        public DbSet<TblSupplyIAR> TblSupplyIARs { get; set; }
         #endregion
         #region Delivery
         public DbSet<TblDeliveryRecord> TblDeliveryRecords { get; set; }

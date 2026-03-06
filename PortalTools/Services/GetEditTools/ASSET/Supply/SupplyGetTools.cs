@@ -24,6 +24,8 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
         public async Task<TblSupplyUnit?> GetTblSupplyUnitAsync(long? id, PortalDbContext context) => await context.TblSupplyUnits.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public IQueryable<TblDeliveryRecord>? GetTblDeliveryRecords(PortalDbContext context) => context.TblDeliveryRecords.AsNoTracking().Where(x => !x.IsDeleted);
         public async Task<TblDeliveryRecord?> GetTblDeliveryRecordAsync(long? id, PortalDbContext context) => await context.TblDeliveryRecords.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<TblSupplyIAR>? GetTblSupplyIARs(PortalDbContext context) => context.TblSupplyIARs.AsNoTracking().Where(x => !x.IsDeleted);
+        public async Task<TblSupplyIAR?> GetTblSupplyIARAsync(long? id, PortalDbContext context) => await context.TblSupplyIARs.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
 
     }
 }

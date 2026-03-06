@@ -9,8 +9,7 @@ namespace PortalDB.Models.QueryParams.Delivery
     {
         [Required] public long Id { get; set; }
         [Required] public string DRNumber { get; set; } = string.Empty;
-        [Required] public string PONumber { get; set; } = string.Empty;
-        [Required] public long VendorId { get; set; }
+        [Required] public long SupplyIARId { get; set; }
         [Required] public DateTime DeliveryDate { get; set; }
         [Required] public long EmployeeId { get; set; }
         [Required] public string Remarks { get; set; } = string.Empty;

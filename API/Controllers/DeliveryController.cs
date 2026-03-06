@@ -58,7 +58,6 @@ namespace API.Controllers
                     string searchLower = model.SearchString.ToLower();
                     deliveryRecords = deliveryRecords.Where(x =>
                         (x.DRNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.PONumber ?? "").ToLowerInvariant().Contains(searchLower) ||
                         (x.DeliveryDate).ToString().Contains(searchLower) ||
                         (x.Remarks ?? "").ToLowerInvariant().Contains(searchLower));
                 }
@@ -105,12 +104,36 @@ namespace API.Controllers
                         mappedItems.Add(mappedItemModel);
                     }
 
+                    TblSupplyIAR? z = _getTools.Supply.GetTblSupplyIARs(context).FirstOrDefault(iar => iar.Id == x.SupplyIARId);
+                    var supplyIARModel = new SupplyIARResponseModel();
+                    if (z != null)
+                    {
+
+                        supplyIARModel = new SupplyIARResponseModel
+                        {
+                            Id = z.Id,
+                            CenterCode = z.ResponsibilityCenterCode,
+                            EntityName = z.EntityName,
+                            FundCluster = z.FundCluster,
+                            Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(z.VendorId, context),
+                            Office = await _getTools.Office.GetTblOfficeAsync(z.OfficeId, context),
+                            Division = await _getTools.Office.GetTblDivisionAsync(z.DivisionId, context),
+                            PONumber = z.PONumber,
+                            IARNumber = z.IARNumber,
+                            IARNumberDate = z.IARNumberDate,
+                            IARInvoiceNumber = z.IARInvoiceNumber,
+                            IARInvoiceNumberDate = z.IARInvoiceNumberDate,
+                            PODate = z.PODate,
+                            IsActive = z.IsActive,
+                            CreatedAt = z.CreatedAt
+                        };
+                    }
+
                     var deliveryRecordModel = new DeliveryRecordResponseModel
                     {
                         Id = x.Id,
                         DRNumber = x.DRNumber,
-                        PONumber = x.PONumber,
-                        Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(x.VendorId, context),
+                        SupplyIAR = supplyIARModel,
                         DeliveryDate = x.DeliveryDate,
                         Employee = await _getTools.Account.GetTblEmployeeAsync(x.EmployeeId, context),
                         Remarks = x.Remarks,
@@ -179,12 +202,32 @@ namespace API.Controllers
                         mappedItems.Add(mappedItemModel);
                     }
 
-                    var deliveryRecordModel = new DeliveryRecordResponseModel
+                TblSupplyIAR? z = _getTools.Supply.GetTblSupplyIARs(context).FirstOrDefault(iar => iar.Id == deliveryRecord.SupplyIARId);
+
+                var supplyIARModel = new SupplyIARResponseModel
+                {
+                    Id = z.Id,
+                    CenterCode = z.ResponsibilityCenterCode,
+                    EntityName = z.EntityName,
+                    FundCluster = z.FundCluster,
+                    Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(z.VendorId, context),
+                    Office = await _getTools.Office.GetTblOfficeAsync(z.OfficeId, context),
+                    Division = await _getTools.Office.GetTblDivisionAsync(z.DivisionId, context),
+                    PONumber = z.PONumber,
+                    IARNumber = z.IARNumber,
+                    IARNumberDate = z.IARNumberDate,
+                    IARInvoiceNumber = z.IARInvoiceNumber,
+                    IARInvoiceNumberDate = z.IARInvoiceNumberDate,
+                    PODate = z.PODate,
+                    IsActive = z.IsActive,
+                    CreatedAt = z.CreatedAt
+                };
+
+                var deliveryRecordModel = new DeliveryRecordResponseModel
                     {
                         Id = deliveryRecord.Id,
                         DRNumber = deliveryRecord.DRNumber,
-                        PONumber = deliveryRecord.PONumber,
-                        Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(deliveryRecord.VendorId, context),
+                        SupplyIAR = supplyIARModel,
                         DeliveryDate = deliveryRecord.DeliveryDate,
                         Employee = await _getTools.Account.GetTblEmployeeAsync(deliveryRecord.EmployeeId, context),
                         Remarks = deliveryRecord.Remarks,
@@ -227,8 +270,7 @@ namespace API.Controllers
                 {
                     Id = model.Id,
                     DRNumber = model.DRNumber,
-                    PONumber = model.PONumber,
-                    VendorId = model.VendorId,
+                    SupplyIARId = model.SupplyIARId,
                     DeliveryDate = model.DeliveryDate,
                     EmployeeId = model.EmployeeId,
                     Remarks = model.Remarks,

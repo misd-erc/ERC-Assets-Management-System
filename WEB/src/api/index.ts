@@ -16,3 +16,6 @@ export * from '@/api/contract-management/vendorApi';
 export * from '@/api/supply-management/itemApi';
 export * from '@/api/supply-management/storageLocationApi';
 export * from '@/api/supply-management/unitApi';
+export * from '@/api/supply-management/iarApi';
+
+

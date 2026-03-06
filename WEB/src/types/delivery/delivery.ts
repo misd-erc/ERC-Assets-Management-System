@@ -1,11 +1,10 @@
-import { Employee, SupplyUnit, Vendor } from "@/types";
+import { Employee, SupplyIAR, SupplyUnit, Vendor, VwSupplyIAR } from "@/types";
 import { Category } from "@/api/categories/categoriesApi";
 
 export interface DeliveryRecord {
   id: number;
   drNumber: string;
-  poNumber: string;
-  vendorId: number;
+  supplyIARId: number;
   deliveryDate: string;
   employeeId: number;
   remarks: string;
@@ -32,8 +31,7 @@ export interface DeliveryRecordItem {
 export interface VwDeliveryRecord {
   id: number;
   drNumber: string;
-  poNumber: string;
-  vendor: Vendor;
+  supplyIAR: VwSupplyIAR;
   deliveryDate: string;
   employee: Employee;
   remarks: string;

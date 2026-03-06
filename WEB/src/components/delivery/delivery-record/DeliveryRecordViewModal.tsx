@@ -28,54 +28,69 @@ export const DeliveryRecordViewModal = ({ open, onOpenChange, record }: Props) =
         <div className="space-y-6">
           {/* Header Info */}
           <div className="grid grid-cols-2 gap-4 border-b pb-4">
-             <div>
-                <Label className="text-muted-foreground text-xs">Vendor</Label>
-                <div className="font-medium">{record.vendor?.name}</div>
-             </div>
-             <div>
-                <Label className="text-muted-foreground text-xs">PO Number</Label>
-                <div className="font-medium">{record.poNumber}</div>
-             </div>
-             <div>
-                <Label className="text-muted-foreground text-xs">Date</Label>
-                <div className="font-medium">{formatDate(record.deliveryDate)}</div>
-             </div>
-             <div>
-                <Label className="text-muted-foreground text-xs">Status</Label>
-                <div><Badge>{record.isReceived ? 'Received' : 'Pending'}</Badge></div>
-             </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Linked IAR Number</Label>
+              <div className="font-medium text-blue-700">{record.supplyIAR?.iarNumber}</div>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Vendor</Label>
+              <div className="font-medium">{record.supplyIAR?.vendor?.name}</div>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">PO Number</Label>
+              <div className="font-medium">{record.supplyIAR?.poNumber}</div>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Delivery Date</Label>
+              <div className="font-medium">{formatDate(record.deliveryDate)}</div>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Requisitioning Office / Division</Label>
+              <div className="font-medium">
+                {record.supplyIAR?.office?.name || record.supplyIAR?.division?.name 
+                  ? `${record.supplyIAR?.office?.name ?? ''} / ${record.supplyIAR?.division?.name ?? ''}` 
+                  : 'N/A'}
+              </div>
+            </div>
+            <div>
+              <Label className="text-muted-foreground text-xs">Status</Label>
+              <div><Badge variant={record.isReceived ? "default" : "secondary"}>{record.isReceived ? 'Received' : 'Pending'}</Badge></div>
+            </div>
           </div>
 
           {/* Items List */}
           <div>
-            <h3 className="font-semibold mb-3">Items</h3>
+            <h3 className="font-semibold mb-3 text-sm">Delivered Items</h3>
             <div className="space-y-2">
-                {record.items.map((item) => (
-                    <div key={item.id} className="flex justify-between items-center p-3 border rounded-lg bg-slate-50/50">
-                        <div>
-                            <div className="font-medium flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs">{item.itemTypeId === 1 ? 'Supply' : 'Asset'}</Badge>
-                                {item.itemDescription}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                                {item.itemQuantity} {item.measurementUnit?.name} @ {formatCurrency(item.unitCost)}
-                            </div>
-                        </div>
-                        <div className="font-semibold">
-                            {formatCurrency(item.itemQuantity * item.unitCost)}
-                        </div>
+              {record.items.map((item) => (
+                <div key={item.id} className="flex justify-between items-center p-3 border rounded-lg bg-slate-50/50">
+                  <div>
+                    <div className="font-medium flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">{item.itemTypeId === 1 ? 'Supply' : 'Asset'}</Badge>
+                      {item.itemDescription}
                     </div>
-                ))}
+                    {item.itemSpecification && (
+                      <div className="text-[11px] text-muted-foreground italic mt-1">
+                        Specs: {item.itemSpecification}
+                      </div>
+                    )}
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {item.itemQuantity} {item.measurementUnit?.name} @ {formatCurrency(item.unitCost)}
+                    </div>
+                  </div>
+                  <div className="font-semibold">{formatCurrency(item.itemQuantity * item.unitCost)}</div>
+                </div>
+              ))}
             </div>
             <div className="flex justify-end mt-4 pt-4 border-t">
-                <span className="font-bold text-lg text-green-700">Total: {formatCurrency(totalValue)}</span>
+              <span className="font-bold text-lg text-green-700">Total: {formatCurrency(totalValue)}</span>
             </div>
           </div>
           
           {record.remarks && (
             <div className="bg-slate-50 p-3 rounded text-sm">
-                <Label className="text-xs text-muted-foreground">Remarks</Label>
-                <p>{record.remarks}</p>
+              <Label className="text-xs text-muted-foreground">Remarks</Label>
+              <p>{record.remarks}</p>
             </div>
           )}
         </div>

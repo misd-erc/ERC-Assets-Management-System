@@ -16,7 +16,7 @@ interface DeliveryRecordState {
   setSearchQuery: (query: string) => void;
 
   fetchDeliveryRecords: () => Promise<void>;
-  addDeliveryRecord: (deliveryRecord: Partial<EditDeliveryRecord>) => Promise<void>;
+  addDeliveryRecord: (record: Partial<EditDeliveryRecord>) => Promise<void>;
   updateDeliveryRecord: (id: number, updates: Partial<EditDeliveryRecord>) => Promise<void>;
   deleteDeliveryRecord: (id: number) => Promise<void>;
 }
@@ -37,7 +37,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
       const vwDeliveryRecords = await getDeliveryRecords();
       set({ vwDeliveryRecords });
     } catch {
-      toast.error('Failed to load supplies');
+      toast.error('Failed to load delivery records');
     } finally {
       set({ loading: false });
     }
@@ -45,13 +45,11 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
 
   addDeliveryRecord: async (record) => {
     try {
-        const { systemUserId, sessionKey } = getAuthParams();
       await editDeliveryRecord({
         deliveryRecord: {
           id: 0,
           drNumber: record.deliveryRecord?.drNumber || '',
-          poNumber: record.deliveryRecord?.poNumber || '',
-          vendorId: record.deliveryRecord?.vendorId || 0,
+          supplyIARId: record.deliveryRecord?.supplyIARId || 0,
           deliveryDate: record.deliveryRecord?.deliveryDate || '',
           employeeId: record.deliveryRecord?.employeeId || 0,
           remarks: record.deliveryRecord?.remarks || '',
@@ -73,8 +71,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
         deliveryRecord: {
           id: id,
           drNumber: updates.deliveryRecord?.drNumber || '',
-          poNumber: updates.deliveryRecord?.poNumber || '',
-          vendorId: updates.deliveryRecord?.vendorId || 0,
+          supplyIARId: updates.deliveryRecord?.supplyIARId || 0,
           deliveryDate: updates.deliveryRecord?.deliveryDate || '',
           employeeId: updates.deliveryRecord?.employeeId || 0,
           remarks: updates.deliveryRecord?.remarks || '',

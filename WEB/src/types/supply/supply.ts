@@ -1,5 +1,6 @@
 import { Category } from "@/api/categories/categoriesApi";
-import { Vendor } from "../contract";
+import { Contract, Vendor } from "../contract";
+import { Division, Office } from "../office";
 
 export interface SupplyItem {
   id: number;
@@ -45,3 +46,38 @@ export interface SupplyUnit {
   createdAt?: string;
 }
 
+export interface SupplyIAR {
+  id: number;
+  centerCode: string;
+  entityName: string;
+  fundCluster: string;
+  vendorId: number;
+  poNumber: string;
+  officeId: number;
+  divisionId: number;
+  iarNumber: string;
+  iarNumberDate: string;
+  iarInvoiceNumber: string;
+  iarInvoiceNumberDate: string;
+  poDate: string;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface VwSupplyIAR {
+  id: number;
+  centerCode: string;
+  entityName: string;
+  fundCluster: string;
+  vendor: Vendor;
+  poNumber: string;
+  office: Office;
+  division: Division;
+  iarNumber: string;
+  iarNumberDate: string;
+  iarInvoiceNumber: string;
+  iarInvoiceNumberDate: string;
+  poDate: string;
+  isActive: boolean;
+  createdAt?: string;
+}

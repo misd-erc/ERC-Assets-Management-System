@@ -1,4 +1,6 @@
-﻿export { useAuth } from '@/hooks/auth/useAuth';
+﻿import { useSupplyIAR } from './supply/useIAR';
+
+export { useAuth } from '@/hooks/auth/useAuth';
 export { useData } from '@/hooks/data/useData';
 
 export { useOffice } from '@/hooks/office/useOffice';
@@ -11,4 +13,5 @@ export { useVendor } from '@/hooks/contract/useVendor';
 export { useSupplyItem } from '@/hooks/supply/useSupplyItem';
 export { useSupplyStorageLocation } from '@/hooks/supply/useSupplyStorageLocation';
 export { useSupplyUnit } from '@/hooks/supply/useSupplyUnit';
+export { useSupplyIAR } from '@/hooks/supply/useIAR';
 
