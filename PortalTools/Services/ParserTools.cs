@@ -139,26 +139,36 @@ namespace PortalTools.Services
                     "Please use the official template.");
             }
 
-            // 2. Only validate movement columns IF they exist (i.e., file has more than 12 columns)
-            if (headerRow.Length <= 12)
+            // 2. Only validate movement columns IF they exist (i.e., file has more than 13 columns)
+            if (headerRow.Length <= 13)
             {
                 // No movement columns at all → this is perfectly valid
                 return;
             }
 
-            // 3. There are extra columns → check if at least one complete, correct movement block exists
-            int movementStart = 12;
+            // 3. There are extra columns → check if at least one complete, correct movement block exists.
+            // Movement blocks start at index 13 (after the 13 static columns 0-12).
+            // Each block begins at a "PTR/ITR Number" column; scan forward to find it.
+            int movementStart = 13;
             bool hasValidMovementBlock = false;
 
-            while (movementStart + 6 < headerRow.Length)
+            while (movementStart < headerRow.Length)
             {
-                var block = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                // Check 8 columns to account for optional Status column
-                for (int i = 0; i < 8 && (movementStart + i) < headerRow.Length; i++)
+                // Find the next block start (PTR/ITR Number)
+                if (!string.Equals(headerRow[movementStart].Trim(), "PTR/ITR Number", StringComparison.OrdinalIgnoreCase))
                 {
-                    var header = headerRow[movementStart + i].Trim();
-                    if (!string.IsNullOrWhiteSpace(header))
-                        block.Add(header);
+                    movementStart++;
+                    continue;
+                }
+
+                var block = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                for (int i = movementStart; i < headerRow.Length; i++)
+                {
+                    // Stop at the next PTR/ITR Number (next block)
+                    if (i > movementStart && string.Equals(headerRow[i].Trim(), "PTR/ITR Number", StringComparison.OrdinalIgnoreCase))
+                        break;
+                    if (!string.IsNullOrWhiteSpace(headerRow[i]))
+                        block.Add(headerRow[i].Trim());
                 }
 
                 // Check if this block contains ALL required movement columns
@@ -168,7 +178,7 @@ namespace PortalTools.Services
                     break;
                 }
 
-                movementStart += 8; // Increment by 8 to account for optional Status
+                movementStart++;
             }
 
             if (!hasValidMovementBlock)
@@ -186,6 +196,30 @@ namespace PortalTools.Services
             var dataRows = rows.Skip(2)
                               .Where(row => row.Any(cell => !string.IsNullOrWhiteSpace(cell)))
                               .ToList();
+
+            // Pre-compute movement block column maps from the header row.
+            // Static columns occupy indices 0-12; movement columns start at index 13.
+            // Each movement block starts at a "PTR/ITR Number" header.
+            // Blocks may vary in size (e.g. one block may omit Plantilla Employee ID),
+            // so we build a name→index map per block for safe header-driven lookup.
+            const int movementColStart = 13;
+            var movementBlockMaps = new List<Dictionary<string, int>>();
+            for (int i = movementColStart; i < headerRow.Length; i++)
+            {
+                if (!string.Equals(headerRow[i], "PTR/ITR Number", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var blockMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (int j = i; j < headerRow.Length; j++)
+                {
+                    // Each new "PTR/ITR Number" after the block start marks the next block
+                    if (j > i && string.Equals(headerRow[j], "PTR/ITR Number", StringComparison.OrdinalIgnoreCase))
+                        break;
+                    if (!string.IsNullOrWhiteSpace(headerRow[j]))
+                        blockMap.TryAdd(headerRow[j], j); // TryAdd: first occurrence wins within a block
+                }
+                movementBlockMaps.Add(blockMap);
+            }
 
             var result = new List<PTAItem>(dataRows.Count);
 
@@ -231,32 +265,37 @@ namespace PortalTools.Services
                 var partsStr = Get(map, "Parts/Accessories", "parts", "accessories");
                 item.Parts = string.IsNullOrWhiteSpace(partsStr) ? null : ParsePtaParts(partsStr);
 
-                // Parse movement blocks (only if columns exist)
+                // Parse movement blocks using header-driven block maps.
+                // Each block is identified by its "Date Assigned (YYYY-MM-DD)" column;
+                // rows with a blank date in a block are simply skipped for that block.
                 var movements = new List<PTAAnnualCount>();
-                int col = 12;
-
-                while (col + 6 < dataRow.Length)
+                foreach (var blockMap in movementBlockMaps)
                 {
-                    var dateCell = dataRow[col].Trim();
-                    if (string.IsNullOrWhiteSpace(dateCell))
-                    {
-                        col += 7;
+                    if (!blockMap.TryGetValue("Date Assigned (YYYY-MM-DD)", out int dateIdx))
                         continue;
-                    }
+                    if (dateIdx >= dataRow.Length)
+                        continue;
 
-                    var movement = new PTAAnnualCount
+                    var dateCell = dataRow[dateIdx].Trim();
+                    if (string.IsNullOrWhiteSpace(dateCell))
+                        continue;
+
+                    string GetBlockCell(string colName) =>
+                        blockMap.TryGetValue(colName, out int idx) && idx < dataRow.Length
+                            ? dataRow[idx]?.Trim() ?? string.Empty
+                            : string.Empty;
+
+                    movements.Add(new PTAAnnualCount
                     {
-                        DateAssigned = TryParseDate(dateCell),
-                        PtrItrNumber = GetCell(dataRow, col + 1),
-                        ParIcsNumber = GetCell(dataRow, col + 2),
-                        PlantillaEmployeeId = GetCell(dataRow, col + 3),
-                        NonPlantillaEmployeeId = GetCell(dataRow, col + 4),
-                        ActualOfficeAndDivision = GetCell(dataRow, col + 5),
-                        Condition = GetCell(dataRow, col + 6),
-                        Status = GetCell(dataRow, col + 7) // Optional Status column
-                    };
-                    movements.Add(movement);
-                    col += 8; // Increment by 8 to account for optional Status column
+                        PtrItrNumber          = GetBlockCell("PTR/ITR Number"),
+                        ParIcsNumber          = GetBlockCell("PAR/ICS Number"),
+                        PlantillaEmployeeId   = GetBlockCell("Plantilla Employee ID"),
+                        NonPlantillaEmployeeId = GetBlockCell("Non-Plantilla Employee ID"),
+                        ActualOfficeAndDivision = GetBlockCell("Office/Division"),
+                        Condition             = GetBlockCell("Condition"),
+                        DateAssigned          = TryParseDate(dateCell),
+                        Status                = GetBlockCell("Status")
+                    });
                 }
 
                 item.AnnualCount = movements.Count > 0 ? movements : null;
