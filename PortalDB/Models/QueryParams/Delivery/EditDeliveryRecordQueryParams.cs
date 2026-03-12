@@ -12,7 +12,7 @@ namespace PortalDB.Models.QueryParams.Delivery
         [Required] public long SupplyIARId { get; set; }
         [Required] public DateTime DeliveryDate { get; set; }
         [Required] public long EmployeeId { get; set; }
-        [Required] public string Remarks { get; set; } = string.Empty;
+        public string Remarks { get; set; } = string.Empty;
         [Required] public bool IsReceived { get; set; } = false;
         [Required] public bool IsActive { get; set; } = true;
         [Required] public List<EditDeliveryRecordItemRawQueryParams>? Items { get; set; }
