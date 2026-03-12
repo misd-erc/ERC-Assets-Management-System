@@ -407,8 +407,8 @@ export function SharedAssetFields({
                     <Label htmlFor={`dateAssigned-${index}`}>Date Assigned *</Label>
                     <Input
                       id={`dateAssigned-${index}`}
-                      type="datetime-local"
-                      value={entry.dateAssigned ? toLocalDatetimeInput(entry.dateAssigned) : ''}
+                      type="date"
+                      value={entry.dateAssigned ? toLocalDatetimeInput(entry.dateAssigned).split('T')[0] : ''}
                       onChange={(e) => handleAccountabilityEntryChange(index, 'dateAssigned', new Date(e.target.value).toISOString())}
                       required={mode === 'create'}
                     />
