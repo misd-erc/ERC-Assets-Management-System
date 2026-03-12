@@ -66,6 +66,15 @@ export function SharedAssetFields({
   const plantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId === 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
   const nonPlantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId !== 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
 
+  // Convert a UTC ISO string to "YYYY-MM-DDTHH:mm" in local time (for datetime-local inputs)
+  const toLocalDatetimeInput = (utcString: string) => {
+    // Force UTC parsing if the string has no timezone marker (ASP.NET may omit the 'Z')
+    const normalized = /Z|[+-]\d{2}:\d{2}$/.test(utcString) ? utcString : utcString + 'Z';
+    const d = new Date(normalized);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   return (
     <>
       {/* Item Identification */}
@@ -398,9 +407,9 @@ export function SharedAssetFields({
                     <Label htmlFor={`dateAssigned-${index}`}>Date Assigned *</Label>
                     <Input
                       id={`dateAssigned-${index}`}
-                      type="datetime-local"
-                      value={entry.dateAssigned ? new Date(entry.dateAssigned).toISOString().slice(0, 16) : ''}
-                      onChange={(e) => handleAccountabilityEntryChange(index, 'dateAssigned', e.target.value)}
+                      type="date"
+                      value={entry.dateAssigned ? toLocalDatetimeInput(entry.dateAssigned).split('T')[0] : ''}
+                      onChange={(e) => handleAccountabilityEntryChange(index, 'dateAssigned', new Date(e.target.value).toISOString())}
                       required={mode === 'create'}
                     />
                   </div>
@@ -423,6 +432,14 @@ export function SharedAssetFields({
                         required={mode === 'create'}
                       />
                     </div>
+                  </div>
+                  <div className="space-y-2 md:col-span-1">
+                    <Label htmlFor={`rrppeRrspNumber-${index}`}>RRPPE/RRSP Number</Label>
+                    <Input
+                      id={`rrppeRrspNumber-${index}`}
+                      value={entry.rrppeRrspNumber ?? ''}
+                      onChange={(e) => handleAccountabilityEntryChange(index, 'rrppeRrspNumber', e.target.value)}
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4 md:col-span-2">
                     <div className="flex flex-col gap-2">
@@ -469,13 +486,14 @@ export function SharedAssetFields({
                         value={entry.actualOfficeId?.toString() ?? ''}
                         onValueChange={(value) => {
                           handleAccountabilityEntryChange(index, 'actualOfficeId', parseInt(value));
+                          handleAccountabilityEntryChange(index, 'actualDivisionId', 0);
                         }}
                         required={mode === 'create'}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select office" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="max-h-60">
                           {offices.map(office => (
                             <SelectItem key={office.id} value={office.id.toString()}>
                               {office.name}
@@ -496,12 +514,14 @@ export function SharedAssetFields({
                         <SelectTrigger>
                           <SelectValue placeholder="Select division" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {divisions.map(division => (
-                            <SelectItem key={division.id} value={division.id.toString()}>
-                              {division.name}
-                            </SelectItem>
-                          ))}
+                        <SelectContent className="max-h-60">
+                          {divisions
+                            .filter(d => !entry.actualOfficeId || d.office?.id === entry.actualOfficeId)
+                            .map(division => (
+                              <SelectItem key={division.id} value={division.id.toString()}>
+                                {division.name}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>

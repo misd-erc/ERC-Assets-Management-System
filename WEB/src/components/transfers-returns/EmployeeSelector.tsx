@@ -95,7 +95,11 @@ export function EmployeeSelector({
           )}
         </div>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent
+        className="w-full p-0"
+        align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <Command shouldFilter={false}>
           <CommandEmpty>No employees found.</CommandEmpty>
           <CommandList className="max-h-[300px]">
