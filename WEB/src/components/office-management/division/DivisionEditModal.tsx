@@ -2,20 +2,17 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useState, useEffect } from 'react';
 import { useDivision } from '@/hooks';
 import { Division, Office, VwDivision } from '@/types';
 import { toast } from 'sonner';
-import { getOffices } from '@/api';   // <-- same folder as other api calls
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { getOffices } from '@/api';
+import { cn } from '@/components/ui/utils';
 
 interface Props {
   open: boolean;
@@ -25,14 +22,6 @@ interface Props {
   onSuccess: () => void;
 }
 
-/* ------------------------------------------------------------------ */
-/*  Helper â€“ client-side filter (shadcn/ui does not have filterOption) */
-/* ------------------------------------------------------------------ */
-const useSearchableSelect = (items: Office[], search: string) => {
-  return items.filter((office) =>
-    office.name.toLowerCase().includes(search.toLowerCase())
-  );
-};
 
 export const DivisionEditModal = ({
   open,
@@ -45,7 +34,8 @@ export const DivisionEditModal = ({
 
   /* ------------------- STATE ------------------- */
   const [offices, setOffices] = useState<Office[]>([]);
-  const [search, setSearch] = useState('');               // <--- search input
+  const [officeOpen, setOfficeOpen] = useState(false);
+  const [officeSearch, setOfficeSearch] = useState('');
   const [form, setForm] = useState<Partial<Division>>({
     name: '',
     acronym: '',
@@ -71,7 +61,8 @@ export const DivisionEditModal = ({
       };
       load();
     } else {
-      setSearch('');   // reset search when modal closes
+      setOfficeOpen(false);
+      setOfficeSearch('');
     }
   }, [open]);
 
@@ -90,12 +81,9 @@ export const DivisionEditModal = ({
     }
   }, [mode, division, open]);
 
-  /* ------------------- FILTERED OFFICES ------------------- */
-  const filteredOffices = useSearchableSelect(offices, search);
-
   /* ------------------- SUBMIT ------------------- */
   const submit = async () => {
-    if (!form.name?.trim() || !form.acronym?.trim() || !form.officeId) {
+    if (!form.name?.trim() || !form.acronym?.trim() || form.officeId == null) {
       toast.error('Name, Acronym, and Office are required');
       return;
     }
@@ -163,51 +151,57 @@ export const DivisionEditModal = ({
               />
             </div>
 
-            {/* SEARCHABLE OFFICE SELECT */}
+            {/* OFFICE COMBOBOX */}
             <div className="grid gap-2">
               <Label htmlFor="office">Office</Label>
-
-              {/* Search input inside the Select trigger */}
-              <Select
-                value={form.officeId?.toString() ?? ''}
-                onValueChange={(v) => setForm({ ...form, officeId: parseInt(v, 10) })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select office">
-                    {/* Show selected name or placeholder */}
-                    {form.officeId
-                      ? offices.find((o) => o.id === form.officeId)?.name
+              <Popover open={officeOpen} onOpenChange={setOfficeOpen} modal={false}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={officeOpen}
+                    className="w-full justify-between font-normal"
+                    disabled={saving}
+                  >
+                    {form.officeId != null
+                      ? offices.find((o) => o.id === form.officeId)?.name ?? 'Select office'
                       : 'Select office'}
-                  </SelectValue>
-                </SelectTrigger>
-
-                <SelectContent>
-                  {/* Search box inside dropdown */}
-                  <div className="p-2">
-                    <Input
-                      placeholder="Search offices..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="h-8"
-                      // Prevent closing dropdown on input focus
-                      onFocus={(e) => e.stopPropagation()}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="p-0" style={{ width: 'var(--radix-popover-trigger-width)' }}>
+                  <Command shouldFilter={false}>
+                    <CommandInput
+                      placeholder="Search office..."
+                      value={officeSearch}
+                      onValueChange={setOfficeSearch}
                     />
-                  </div>
-
-                  {/* Filtered list */}
-                  {filteredOffices.length === 0 ? (
-                    <div className="px-3 py-2 text-sm text-muted-foreground">
-                      No offices found
-                    </div>
-                  ) : (
-                    filteredOffices.map((office) => (
-                      <SelectItem key={office.id} value={office.id.toString()}>
-                        {office.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                    <CommandList>
+                      <CommandEmpty>No office found.</CommandEmpty>
+                      <CommandGroup>
+                        {offices
+                          .filter((o) =>
+                            o.name.toLowerCase().includes(officeSearch.toLowerCase())
+                          )
+                          .map((office) => (
+                          <CommandItem
+                            key={office.id}
+                            value={String(office.id)}
+                            onSelect={() => {
+                              setForm({ ...form, officeId: office.id });
+                              setOfficeOpen(false);
+                              setOfficeSearch('');
+                            }}
+                          >
+                            <Check className={cn('mr-2 h-4 w-4', form.officeId === office.id ? 'opacity-100' : 'opacity-0')} />
+                            {office.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Active toggle */}
