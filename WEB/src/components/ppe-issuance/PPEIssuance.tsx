@@ -526,8 +526,8 @@ export function PPEIssuance() {
 
           <Tabs defaultValue="ppe">
             <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="ppe">PPE ({loading ? '...' : ppeParIcsCount} PAR/ICS)</TabsTrigger>
-              <TabsTrigger value="se">SE ({loading ? '...' : seParIcsCount} PAR/ICS)</TabsTrigger>
+              <TabsTrigger value="ppe">PPE ({loading ? '...' : ppeParIcsCount} PAR)</TabsTrigger>
+              <TabsTrigger value="se">SE ({loading ? '...' : seParIcsCount} ICS)</TabsTrigger>
             </TabsList>
 
             <TabsContent value="ppe" className="pt-4">
