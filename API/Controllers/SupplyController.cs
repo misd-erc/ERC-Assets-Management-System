@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
+using PortalDB.Entities.ASSET.Delivery;
 using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Entities.ASSET.Supply;
 using PortalDB.Models.QueryParams.Pagination;
@@ -389,6 +390,7 @@ namespace API.Controllers
                         IARInvoiceNumberDate = x.IARInvoiceNumberDate,
                         PODate = x.PODate,
                         IsActive = x.IsActive,
+                        IsApproved = x.IsApproved,
                         CreatedAt = x.CreatedAt
                     };
                     supplyIResponses.Add(supplyIARModel);
@@ -582,10 +584,49 @@ namespace API.Controllers
                     IARInvoiceNumber = model.IARInvoiceNumber,
                     IARInvoiceNumberDate = model.IARInvoiceNumberDate,
                     PODate = model.PODate,
-                    IsActive = model.IsActive
+                    IsActive = model.IsActive,
+                    IsApproved = model.IsApproved
                 };
 
+                if (supplyIAR.IsApproved)
+                {
+                    supplyIAR.IsApproved = true;
+                    supplyIAR.ApprovedOn = DateTime.UtcNow;
+
+                    List<TblDeliveryRecord>? deliveryRecords = _getTools.Delivery.GetTblDeliveryRecords(context)?.Where(x => x.SupplyIARId == supplyIAR.Id).ToList();
+                    foreach (var deliveryRecord in deliveryRecords)
+                    {
+                        deliveryRecord.IsReceived = true;
+                        List<TblDeliveryRecordItem>? deliveryRecordItems = _getTools.Delivery.GetTblDeliveryRecordItems(context)?.Where(x => x.RecordId == deliveryRecord.Id).ToList();
+
+                        foreach(var deliveryRecordItem in deliveryRecordItems)
+                        {
+                            if (deliveryRecordItem.ItemTypeId == 1)
+                            {
+                                TblSupplyItem? supplyItem = new TblSupplyItem()
+                                {
+                                    Code = deliveryRecordItem.Code,
+                                    CategoryId = deliveryRecordItem.CategoryId,
+                                    Description = deliveryRecordItem.ItemDescription,
+                                    MeasurementUnitId = deliveryRecordItem.UnitId,
+                                    CurrentStock = deliveryRecordItem.CurrentStock,
+                                    UnitCost = deliveryRecordItem.UnitCost,
+                                    ReorderPoint = deliveryRecordItem.ReorderPoint,
+                                    StorageLocationId = deliveryRecordItem.StorageLocationId,
+                                    VendorId = deliveryRecordItem.VendorId
+                                };
+
+                                await _editTools.Supply.EditTblSupplyItemAsync(supplyItem, model.ActionBySystemUserId, context);
+                            }
+                        }
+
+                        await _editTools.Delivery.EditTblDeliveryRecordAsync(deliveryRecord, model.ActionBySystemUserId, context);
+                    }
+                }
+
                 long supplyIARId = await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
+
+                
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();

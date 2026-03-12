@@ -11,6 +11,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
 {
     public class DeliveryGetTools
     {
+        public IQueryable<TblDeliveryRecord>? GetTblDeliveryRecords(PortalDbContext context) => context.TblDeliveryRecords.AsNoTracking().Where(x => !x.IsDeleted);
         public IQueryable<TblDeliveryRecordItem>? GetTblDeliveryRecordItems(PortalDbContext context) => context.TblDeliveryRecordItems.AsNoTracking().Where(x => !x.IsDeleted);
         public IQueryable<TblDeliveryRecordItem>? GetTblDeliveryRecordItemsByRecordId(long? recordId, PortalDbContext context) => context.TblDeliveryRecordItems.AsNoTracking().Where(x => x.RecordId == recordId && !x.IsDeleted);
         public async Task<TblDeliveryRecordItem?> GetTblDeliveryRecordItemAsync(long? id, PortalDbContext context) => await context.TblDeliveryRecordItems.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();

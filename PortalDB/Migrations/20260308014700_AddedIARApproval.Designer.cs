@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260308014700_AddedIARApproval")]
+    partial class AddedIARApproval
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -85,17 +88,9 @@ namespace PortalDB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("PTACategoryId");
 
-                    b.Property<string>("CodeEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("DeliveryRecordItemCode");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("DeliveryRecordItemCreatedAt");
-
-                    b.Property<int?>("CurrentStock")
-                        .HasColumnType("int")
-                        .HasColumnName("DeliveryRecordItemCurrentStock");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
@@ -125,14 +120,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("DeliveryRecordId");
 
-                    b.Property<int?>("ReorderPoint")
-                        .HasColumnType("int")
-                        .HasColumnName("DeliveryRecordItemReorderPoint");
-
-                    b.Property<long?>("StorageLocationId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyStorageLocationId");
-
                     b.Property<long?>("UnitCost")
                         .HasColumnType("bigint")
                         .HasColumnName("DeliveryRecordUnitCost");
@@ -140,10 +127,6 @@ namespace PortalDB.Migrations
                     b.Property<long?>("UnitId")
                         .HasColumnType("bigint")
                         .HasColumnName("SupplyUnitId");
-
-                    b.Property<long?>("VendorId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyVendorId");
 
                     b.HasKey("Id");
 
@@ -730,10 +713,6 @@ namespace PortalDB.Migrations
                     b.Property<string>("DescriptionEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyItemDescription");
-
-                    b.Property<long?>("IARId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyIARId");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")

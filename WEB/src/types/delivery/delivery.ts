@@ -1,4 +1,4 @@
-import { Employee, SupplyIAR, SupplyUnit, Vendor, VwSupplyIAR } from "@/types";
+import { Employee, SupplyIAR, SupplyStorageLocation, SupplyUnit, Vendor, VwSupplyIAR } from "@/types";
 import { Category } from "@/api/categories/categoriesApi";
 
 export interface DeliveryRecord {
@@ -16,6 +16,7 @@ export interface DeliveryRecord {
 export interface DeliveryRecordItem {
   id: number;
   recordId: number;
+  code: string;
   itemTypeId: number;
   category: Category;
   itemDescription: string;
@@ -23,6 +24,30 @@ export interface DeliveryRecordItem {
   itemQuantity: number;
   measurementUnit: SupplyUnit;
   unitCost: number;
+  currentStock: number;
+  reorderPoint: number;
+  storageLocation: SupplyStorageLocation;
+  vendor: Vendor;
+  isActive: boolean;
+  isDeleted: boolean;
+  createdAt?: string;
+}
+
+export interface DeliveryRecordRawItem {
+  id: number;
+  recordId: number;
+  code: string;
+  itemTypeId: number;
+  categoryId: number;
+  itemDescription: string;
+  itemSpecification: string;
+  itemQuantity: number;
+  measurementUnitId: number;
+  unitCost: number;
+  currentStock: number;
+  reorderPoint: number;
+  storageLocationId: number;
+  vendorId: number;
   isActive: boolean;
   isDeleted: boolean;
   createdAt?: string;
@@ -43,5 +68,5 @@ export interface VwDeliveryRecord {
 
 export interface EditDeliveryRecord {
   deliveryRecord: DeliveryRecord;
-  items: DeliveryRecordItem[];
+  items: DeliveryRecordRawItem[];
 }

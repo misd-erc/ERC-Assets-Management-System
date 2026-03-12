@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useSupplyUnit } from '@/hooks';
+import { useSupplyUnit, useVendor } from '@/hooks';
+import { useSupplyStorageLocationStore } from '@/store/supply';
 import { getCategories } from '@/api/asset/inventoryApi';
 
 interface Props {
@@ -16,6 +17,8 @@ interface Props {
 
 export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
   const { units, fetchSupplyUnits } = useSupplyUnit();
+  const { vendors, fetchVendors } = useVendor();
+  const { storagelocations, fetchSupplyStorageLocations } = useSupplyStorageLocationStore();
   const [categories, setCategories] = useState<any[]>([]);
 
   const [item, setItem] = useState({
@@ -25,34 +28,50 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
     itemSpecification: '',
     itemQuantity: 0,
     measurementUnitId: 0,
-    unitCost: 0
+    unitCost: 0,
+    code: '',
+    currentStock: 0,
+    reorderPoint: 0,
+    storageLocationId: 0,
+    vendorId: 0
   });
 
   useEffect(() => {
     if (open) {
       fetchSupplyUnits();
+      fetchVendors();
+      fetchSupplyStorageLocations();
       getCategories().then(setCategories);
-      setItem({ itemTypeId: 1, categoryId: 0, itemDescription: '', itemSpecification: '', itemQuantity: 0, measurementUnitId: 0, unitCost: 0 });
+      setItem({ 
+        itemTypeId: 1, categoryId: 0, itemDescription: '', itemSpecification: '', 
+        itemQuantity: 0, measurementUnitId: 0, unitCost: 0,
+        code: '', currentStock: 0, reorderPoint: 0, storageLocationId: 0, vendorId: 0 
+      });
     }
-  }, [open, fetchSupplyUnits]);
+  }, [open, fetchSupplyUnits, fetchVendors, fetchSupplyStorageLocations]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const categoryObj = categories.find(c => c.id === Number(item.categoryId));
     const unitObj = units.find(u => u.id === Number(item.measurementUnitId));
+    const vendorObj = vendors.find(v => v.id === Number(item.vendorId));
+    const locationObj = storagelocations.find(l => l.id === Number(item.storageLocationId));
 
-    // Passing the full item object ensures specifications and IDs are passed back to the parent
     onSave({ 
       ...item, 
       category: categoryObj, 
-      measurementUnit: unitObj 
+      measurementUnit: unitObj,
+      vendor: vendorObj,
+      storageLocation: locationObj
     });
     onOpenChange(false);
   };
 
+  const isSupply = item.itemTypeId === 1;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Delivery Item</DialogTitle>
           <DialogDescription>Enter item details.</DialogDescription>
@@ -90,6 +109,60 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
               required 
             />
           </div>
+
+          {isSupply && (
+            <div className="p-4 bg-slate-50 border rounded-md space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Item Code (Required)</Label>
+                  <Input 
+                    value={item.code} 
+                    onChange={e => setItem({...item, code: e.target.value})} 
+                    placeholder="e.g. SKU-123" 
+                    required={isSupply} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Storage Location</Label>
+                  <Select value={item.storageLocationId.toString()} onValueChange={v => setItem({...item, storageLocationId: Number(v)})}>
+                    <SelectTrigger><SelectValue placeholder="Select Location" /></SelectTrigger>
+                    <SelectContent>
+                      {storagelocations.map(l => <SelectItem key={l.id} value={l.id.toString()}>{l.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Current Stock</Label>
+                  <Input 
+                    type="number" 
+                    value={item.currentStock} 
+                    onChange={e => setItem({...item, currentStock: Number(e.target.value)})} 
+                    required={isSupply} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Reorder Point</Label>
+                  <Input 
+                    type="number" 
+                    value={item.reorderPoint} 
+                    onChange={e => setItem({...item, reorderPoint: Number(e.target.value)})} 
+                    required={isSupply} 
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Vendor</Label>
+                <Select value={item.vendorId.toString()} onValueChange={v => setItem({...item, vendorId: Number(v)})}>
+                  <SelectTrigger><SelectValue placeholder="Select Vendor" /></SelectTrigger>
+                  <SelectContent>
+                    {vendors.map(v => <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Specifications</Label>

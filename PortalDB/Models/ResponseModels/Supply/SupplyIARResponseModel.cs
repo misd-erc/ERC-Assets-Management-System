@@ -27,6 +27,8 @@ namespace PortalDB.Models.ResponseModels.Supply
         public DateTime? IARInvoiceNumberDate { get; set; }
         public DateTime? PODate { get; set; }
         public bool IsActive { get; set; } = true;
+        public bool IsApproved { get; set; } = true;
+        public DateTime? ApprovedOn { get; set; }
         public DateTime? CreatedAt { get; set; }
 
     }

@@ -61,6 +61,7 @@ export interface SupplyIAR {
   iarInvoiceNumberDate: string;
   poDate: string;
   isActive: boolean;
+  isApproved: boolean;
   createdAt?: string;
 }
 
@@ -79,5 +80,7 @@ export interface VwSupplyIAR {
   iarInvoiceNumberDate: string;
   poDate: string;
   isActive: boolean;
+  isApproved: boolean;
   createdAt?: string;
+  approvedOn?: string;
 }

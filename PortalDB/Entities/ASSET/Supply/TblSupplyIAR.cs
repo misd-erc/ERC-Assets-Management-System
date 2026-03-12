@@ -85,6 +85,9 @@ namespace PortalDB.Entities.ASSET.Supply
         [Column("SupplyIARInvoiceDate")]
         public DateTime? IARInvoiceNumberDate { get; set; }
 
+        [Column("SupplyIARIsApproved")]
+        public bool IsApproved { get; set; } = false;
+
         [Column("SupplyIARPODate")]
         public DateTime? PODate { get; set; }
 
@@ -95,6 +98,9 @@ namespace PortalDB.Entities.ASSET.Supply
         public bool IsDeleted { get; set; } = false;
 
         [Column("SupplyIARCreatedAt")]
+        public DateTime? ApprovedOn { get; set; }
+
+        [Column("SupplyIARApprovedOn")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
