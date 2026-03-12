@@ -66,6 +66,15 @@ export function SharedAssetFields({
   const plantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId === 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
   const nonPlantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId !== 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
 
+  // Convert a UTC ISO string to "YYYY-MM-DDTHH:mm" in local time (for datetime-local inputs)
+  const toLocalDatetimeInput = (utcString: string) => {
+    // Force UTC parsing if the string has no timezone marker (ASP.NET may omit the 'Z')
+    const normalized = /Z|[+-]\d{2}:\d{2}$/.test(utcString) ? utcString : utcString + 'Z';
+    const d = new Date(normalized);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   return (
     <>
       {/* Item Identification */}
@@ -399,8 +408,8 @@ export function SharedAssetFields({
                     <Input
                       id={`dateAssigned-${index}`}
                       type="datetime-local"
-                      value={entry.dateAssigned ? new Date(entry.dateAssigned).toISOString().slice(0, 16) : ''}
-                      onChange={(e) => handleAccountabilityEntryChange(index, 'dateAssigned', e.target.value)}
+                      value={entry.dateAssigned ? toLocalDatetimeInput(entry.dateAssigned) : ''}
+                      onChange={(e) => handleAccountabilityEntryChange(index, 'dateAssigned', new Date(e.target.value).toISOString())}
                       required={mode === 'create'}
                     />
                   </div>

@@ -113,7 +113,9 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return '-';
+    const normalized = /Z|[+-]\d{2}:\d{2}$/.test(dateString) ? dateString : dateString + 'Z';
+    return new Date(normalized).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
