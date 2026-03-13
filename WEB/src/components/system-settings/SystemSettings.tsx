@@ -109,7 +109,7 @@ export function SystemSettings() {
         if (response.success) {
           let message = `Successfully updated ${updatePayload.length} employee(s).`;
           if (skippedCount > 0) {
-            message += ` (${skippedCount} employee(s) skipped - missing ID or not in database)`;
+            message += ` (${skippedCount} employee(s) skipped - missing employee ID in Entra ID)`;
           }
           setSuccessMessage(message);
         } else {

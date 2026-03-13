@@ -1,9 +1,9 @@
 ﻿import { create } from 'zustand';
 import { toast } from 'sonner';
-import axiosInstance from '@/lib/axios';
-import { getAuthParams } from '@/utils/auth';
 import { DeliveryRecord, EditDeliveryRecord, VwDeliveryRecord } from '@/types/delivery/delivery';
 import { editDeliveryRecord, getDeliveryRecords } from '@/api/delivery/deliveryApi';
+import axiosInstance from '@/lib/axios';
+import { getAuthParams } from '@/utils/auth';
 
 interface DeliveryRecordState {
   deliveryRecords: DeliveryRecord[];
@@ -16,8 +16,8 @@ interface DeliveryRecordState {
   setSearchQuery: (query: string) => void;
 
   fetchDeliveryRecords: () => Promise<void>;
-  addDeliveryRecord: (record: Partial<EditDeliveryRecord>) => Promise<void>;
-  updateDeliveryRecord: (id: number, updates: Partial<EditDeliveryRecord>) => Promise<void>;
+  addDeliveryRecord: (record: EditDeliveryRecord) => Promise<void>;
+  updateDeliveryRecord: (id: number, updates: EditDeliveryRecord) => Promise<void>;
   deleteDeliveryRecord: (id: number) => Promise<void>;
 }
 
@@ -35,7 +35,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
     set({ loading: true });
     try {
       const vwDeliveryRecords = await getDeliveryRecords();
-      set({ vwDeliveryRecords });
+      set({ vwDeliveryRecords: vwDeliveryRecords });
     } catch {
       toast.error('Failed to load delivery records');
     } finally {
@@ -45,44 +45,21 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
 
   addDeliveryRecord: async (record) => {
     try {
-      await editDeliveryRecord({
-        deliveryRecord: {
-          id: 0,
-          drNumber: record.deliveryRecord?.drNumber || '',
-          supplyIARId: record.deliveryRecord?.supplyIARId || 0,
-          deliveryDate: record.deliveryRecord?.deliveryDate || '',
-          employeeId: record.deliveryRecord?.employeeId || 0,
-          remarks: record.deliveryRecord?.remarks || '',
-          isReceived: record.deliveryRecord?.isReceived ?? false,
-          isActive: record.deliveryRecord?.isActive ?? true
-        },
-        items: record.items || []
-      });
+      await editDeliveryRecord(record);
       await get().fetchDeliveryRecords();
       toast.success('Delivery Record added');
-    } catch {
-      toast.error('Failed to add delivery record');
+    } catch (error: any) {
+      console.error("Store Error:", error);
+      toast.error(error.message || 'Failed to add delivery record');
     }
   },
 
   updateDeliveryRecord: async (id, updates) => {
     try {
-      await editDeliveryRecord({
-        deliveryRecord: {
-          id: id,
-          drNumber: updates.deliveryRecord?.drNumber || '',
-          supplyIARId: updates.deliveryRecord?.supplyIARId || 0,
-          deliveryDate: updates.deliveryRecord?.deliveryDate || '',
-          employeeId: updates.deliveryRecord?.employeeId || 0,
-          remarks: updates.deliveryRecord?.remarks || '',
-          isReceived: updates.deliveryRecord?.isReceived ?? false,
-          isActive: updates.deliveryRecord?.isActive ?? true,
-        },
-        items: updates.items || []
-      });
+      await editDeliveryRecord(updates);
       await get().fetchDeliveryRecords();
       toast.success('Delivery record updated');
-    } catch {
+    } catch (error: any) {
       toast.error('Failed to update delivery record');
     }
   },

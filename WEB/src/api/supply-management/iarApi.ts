@@ -44,7 +44,8 @@ export const getSupplyIARs = async (): Promise<VwSupplyIAR[]> => {
         iarInvoiceNumberDate: u.iarInvoiceNumberDate,
         poDate: u.poDate,
         isActive: u.isActive ?? true,
-        createdAt: u.createdAt
+        createdAt: u.createdAt,
+        isApproved: u.isApproved
       }))
     : [];
 };
@@ -78,7 +79,8 @@ export const getSupplyIARById = async (iarId: number): Promise<VwSupplyIAR | nul
     iarInvoiceNumberDate: u.iarInvoiceNumberDate,
     poDate: u.poDate,
     isActive: u.isActive ?? true,
-    createdAt: u.createdAt
+    createdAt: u.createdAt,
+    isApproved: u.isApproved
   };
 };
 
@@ -102,6 +104,7 @@ export const editSupplyIAR = async (payload: SupplyIAR): Promise<{ message: stri
     IARInvoiceNumberDate: payload.iarInvoiceNumberDate,
     PODate: payload.poDate,
     IsActive: payload.isActive,
+    isApproved: payload.isApproved,
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,
   };

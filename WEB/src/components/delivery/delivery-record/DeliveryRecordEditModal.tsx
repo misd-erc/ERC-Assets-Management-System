@@ -16,7 +16,7 @@ import { useSupplyIAR } from '@/hooks';
 import { DeliveryItemModal } from './DeliveryItemModal';
 
 // Types
-import { VwDeliveryRecord, DeliveryRecordItem } from '@/types/delivery/delivery';
+import { VwDeliveryRecord, DeliveryRecordItem, DeliveryRecordRawItem } from '@/types/delivery/delivery';
 
 interface Props {
   open: boolean;
@@ -75,7 +75,7 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
   }, [mode, record, open]);
 
   const handleAddItem = (newItem: any) => {
-    setItems([...items, { id: 0, recordId: formData.id, ...newItem, isActive: true, isDeleted: false }]);
+    setItems([...items, { ...newItem, id: 0, isActive: true, isDeleted: false }]);
   };
 
   const handleRemoveItem = (index: number) => {
@@ -92,17 +92,22 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
     e.preventDefault();
     setLoading(true);
     try {
-      // Mapping logic ensures no data is dropped during payload construction
-      const finalItems = [...items, ...removedItems].map(item => ({
+      // Create the Raw Item payload required by the backend
+      const finalItems: DeliveryRecordRawItem[] = [...items, ...removedItems].map(item => ({
         id: item.id || 0,
         recordId: formData.id,
-        itemTypeId: item.itemTypeId,
-        categoryId: item.category?.id || (item as any).category?.id || 0,
-        itemDescription: item.itemDescription,
-        itemSpecification: item.itemSpecification || '', // Correctly mapping specification
-        itemQuantity: item.itemQuantity,
-        measurementUnitId: item.measurementUnit?.id || (item as any).measurementUnit?.id || 0,
-        unitCost: item.unitCost,
+        code: item.code || '',
+        itemTypeId: item.itemTypeId || 1,
+        categoryId: item.category?.id || (item as any).categoryId || 0,
+        itemDescription: item.itemDescription || '',
+        itemSpecification: item.itemSpecification || '',
+        itemQuantity: item.itemQuantity || 0,
+        measurementUnitId: item.measurementUnit?.id || (item as any).measurementUnitId || 0,
+        unitCost: item.unitCost || 0,
+        currentStock: item.currentStock || 0,
+        reorderPoint: item.reorderPoint || 0,
+        storageLocationId: item.storageLocation?.id || (item as any).storageLocationId || 0,
+        vendorId: item.vendor?.id || (item as any).vendorId || 0,
         isActive: item.isActive ?? true,
         isDeleted: item.isDeleted ?? false
       }));
@@ -180,12 +185,13 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
                       <div className="font-medium flex items-center gap-2">
                         <Badge variant="outline">{item.itemTypeId === 1 ? 'Supply' : item.itemTypeId === 2 ? 'PPE' : 'SE'}</Badge>
                         {item.itemDescription}
+                        {item.code && <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded font-mono">[{item.code}]</span>}
                       </div>
                       <div className="text-muted-foreground text-[11px] mt-0.5">
                         {item.itemSpecification && <span className="italic">Specs: {item.itemSpecification}</span>}
                       </div>
                       <div className="text-muted-foreground text-xs mt-1">
-                        {item.itemQuantity} {(item as any).measurementUnit?.name} x {formatCurrency(item.unitCost || 0)}
+                        {item.itemQuantity} {item.measurementUnit?.name || (item as any).measurementUnitName} x {formatCurrency(item.unitCost || 0)}
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -194,13 +200,6 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
                     </div>
                   </div>
                 ))}
-              </div>
-              
-              <div className="flex justify-end pt-4 mt-4">
-                <div className="text-right">
-                  <span className="text-sm text-muted-foreground">Total Value: </span>
-                  <span className="font-bold text-lg">{formatCurrency(items.reduce((acc, i) => acc + ((i.itemQuantity || 0) * (i.unitCost || 0)), 0))}</span>
-                </div>
               </div>
             </div>
 

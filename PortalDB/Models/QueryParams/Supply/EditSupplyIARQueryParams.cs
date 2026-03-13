@@ -21,6 +21,7 @@ namespace PortalDB.Models.QueryParams.Supply
         [Required] public DateTime? IARInvoiceNumberDate { get; set; }
         [Required] public DateTime? PODate { get; set; }
         [Required] public bool IsActive { get; set; } = true;
+        [Required] public bool IsApproved { get; set; } = false;
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;
     }

@@ -337,6 +337,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
         iarInvoiceNumberDate: iar.iarInvoiceNumberDate || '',
         poDate: iar.poDate || '',
         isActive: iar.isActive ?? true,
+        isApproved: iar.isApproved ?? false,
       } as SupplyIAR);
       
       await get().fetchSupplyIARs();
@@ -363,6 +364,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
         iarInvoiceNumberDate: updates.iarInvoiceNumberDate,
         poDate: updates.poDate,
         isActive: updates.isActive ?? true,
+        isApproved: updates.isApproved ?? false,
       } as SupplyIAR);
       
       await get().fetchSupplyIARs();

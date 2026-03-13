@@ -91,6 +91,7 @@ namespace API.Controllers
                         {
                             Id = y.Id,
                             RecordId = y.RecordId,
+                            Code = y.Code,
                             ItemTypeId = y.ItemTypeId,
                             Category = await _getTools.PTA.GetTblPTACategoryAsync(y.CategoryId, context),
                             ItemDescription = y.ItemDescription,
@@ -98,6 +99,10 @@ namespace API.Controllers
                             ItemQuantity = y.ItemQuantity,
                             MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(y.UnitId, context),
                             UnitCost = y.UnitCost,
+                            CurrentStock = y.CurrentStock,
+                            ReorderPoint = y.ReorderPoint,
+                            StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(y.StorageLocationId, context),
+                            Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(y.VendorId, context),
                             IsActive = y.IsActive,
                             CreatedAt = y.CreatedAt
                         };
@@ -168,7 +173,7 @@ namespace API.Controllers
         [HttpGet("record/all/{recordId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllDeliveryRecords([FromQuery] PaginationGenericQueryParams model, [FromRoute] long recordId)
+        public async Task<IActionResult> GetDeliveryRecord([FromQuery] PaginationGenericQueryParams model, [FromRoute] long recordId)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -286,11 +291,16 @@ namespace API.Controllers
                     {
                         Id = x.Id,
                         RecordId = deliveryRecordId,
+                        Code = x.Code,
                         ItemTypeId = x.ItemTypeId,
                         CategoryId = x.CategoryId,
                         ItemDescription = x.ItemDescription,
                         ItemSpecification = x.ItemSpecification,
                         ItemQuantity = x.ItemQuantity,
+                        CurrentStock = x.CurrentStock,
+                        ReorderPoint = x.ReorderPoint,
+                        StorageLocationId = x.StorageLocationId,
+                        VendorId = x.VendorId,
                         UnitId = x.UnitId,
                         UnitCost = x.UnitCost,
                         IsActive = x.IsActive,

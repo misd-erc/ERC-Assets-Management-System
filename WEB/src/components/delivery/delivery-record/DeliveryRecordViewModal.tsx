@@ -63,22 +63,36 @@ export const DeliveryRecordViewModal = ({ open, onOpenChange, record }: Props) =
             <h3 className="font-semibold mb-3 text-sm">Delivered Items</h3>
             <div className="space-y-2">
               {record.items.map((item) => (
-                <div key={item.id} className="flex justify-between items-center p-3 border rounded-lg bg-slate-50/50">
-                  <div>
-                    <div className="font-medium flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">{item.itemTypeId === 1 ? 'Supply' : 'Asset'}</Badge>
-                      {item.itemDescription}
-                    </div>
-                    {item.itemSpecification && (
-                      <div className="text-[11px] text-muted-foreground italic mt-1">
-                        Specs: {item.itemSpecification}
+                <div key={item.id} className="flex flex-col p-3 border rounded-lg bg-slate-50/50">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-medium flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">{item.itemTypeId === 1 ? 'Supply' : item.itemTypeId === 2 ? 'PPE' : 'SE'}</Badge>
+                        {item.itemDescription}
+                        {item.code && <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1 rounded">[{item.code}]</span>}
                       </div>
-                    )}
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {item.itemQuantity} {item.measurementUnit?.name} @ {formatCurrency(item.unitCost)}
+                      
+                      {item.itemTypeId === 1 && (
+                        <div className="flex gap-3 mt-1.5 mb-1 text-[11px] text-blue-700 font-medium">
+                          <span>Stock: {item.currentStock}</span>
+                          <span>Reorder: {item.reorderPoint}</span>
+                          <span>Loc: {item.storageLocation?.name || 'N/A'}</span>
+                        </div>
+                      )}
+
+                      {item.itemSpecification && (
+                        <div className="text-[11px] text-muted-foreground italic mt-1 max-w-sm">
+                          Specs: {item.itemSpecification}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">{formatCurrency(item.itemQuantity * item.unitCost)}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {item.itemQuantity} {item.measurementUnit?.name} @ {formatCurrency(item.unitCost)}
+                      </div>
                     </div>
                   </div>
-                  <div className="font-semibold">{formatCurrency(item.itemQuantity * item.unitCost)}</div>
                 </div>
               ))}
             </div>
