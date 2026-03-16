@@ -51,10 +51,6 @@ namespace PortalDB.Entities.ASSET.Supply
 
         [Column("SupplyRISNumber")]
         public string? RISNumberEncrypted { get; set; }
-
-        [Column("SupplyRISNumberDate")]
-        public DateTime? RISNumberDate { get; set; }
-
         [NotMapped]
         public string? RISNumber
         {
