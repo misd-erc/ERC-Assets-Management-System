@@ -15,10 +15,12 @@ interface ListResponse<T> {
 
 const mapVwSupplyItem = (raw: any): VwSupplyItem => ({
   id: raw.id,
+  iarId: raw.iarId,
   code: raw.code,
   category: raw.category,
   description: raw.description,
   measurementUnit: raw.measurementUnit,
+  quantity: raw.quantity,
   currentStock: raw.currentStock,
   unitCost: raw.unitCost,
   reorderPoint: raw.reorderPoint,
@@ -36,6 +38,7 @@ export const getSupplyItems = async (): Promise<VwSupplyItem[]> => {
   const response = await axiosInstance.get<SupplyItemResponse<ListResponse<any>>>('/Supply/item/all', {
     params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
   });
+
 
   if (!response.data.success) {
     toast.error(response.data.message || 'Failed to fetch items');
@@ -67,7 +70,6 @@ export const getSupplyItemById = async (itemId: number): Promise<VwSupplyItem | 
 
 export const editSupplyItem = async (payload: SupplyItem): Promise<{ message: string }> => {
   const { systemUserId, sessionKey } = getAuthParams();
-
   const requestPayload = {
     Id: payload.id,
     Code: payload.code,
@@ -75,6 +77,7 @@ export const editSupplyItem = async (payload: SupplyItem): Promise<{ message: st
     Description: payload.description,
     MeasurementUnitId: payload.measurementUnitId ?? 0,
     CurrentStock: payload.currentStock,
+    Quantity: payload.quantity,
     UnitCost: payload.unitCost,
     ReorderPoint: payload.reorderPoint,
     StorageLocationId: payload.storageLocationId ?? 0,

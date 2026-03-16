@@ -59,7 +59,7 @@ export const SupplyIARTable = ({ data, onAdd, onEdit, onDelete, onView, onApprov
                     <TableCell>
                       <Badge
                         variant={record.isApproved ? 'default' : 'secondary'}
-                        className={record.isApproved ? 'bg-green-600' : ''}
+                        className={record.isApproved ? 'bg-green-100 text-green-800 hover:bg-green-200' : ''}
                       >
                         {record.isApproved ? 'Approved' : 'Pending'}
                       </Badge>
@@ -72,29 +72,34 @@ export const SupplyIARTable = ({ data, onAdd, onEdit, onDelete, onView, onApprov
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onView(record)}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-
                           {!record.isApproved && (
                             <>
-                              <DropdownMenuItem onClick={() => onEdit(record)}>
-                                <Edit className="w-4 h-4 mr-2" />
-                                Edit
-                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => onApprove(record)} className="text-green-600">
                                 <CheckCircle className="w-4 h-4 mr-2" />
                                 Approve Record
                               </DropdownMenuItem>
                             </>
                           )}
-
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => onDelete(record)} className="text-red-600">
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
+                          <DropdownMenuItem onClick={() => onView(record)}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
                           </DropdownMenuItem>
+                          {!record.isApproved && (
+                            <>
+                              <DropdownMenuItem onClick={() => onEdit(record)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => onDelete(record)} className="text-red-600">
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </>
+
+                          )}
+
+
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

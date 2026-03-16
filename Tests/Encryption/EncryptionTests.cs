@@ -26,7 +26,7 @@ namespace Tests.Encryption
         public void Encrypt_Should_Not_Return_PlainText()
         {
             // Arrange
-            var plainText = "Server=MARK\\SQLEXPRESS;Database=AMSStaging;Integrated Security=True;TrustServerCertificate=True;";
+            var plainText = "Server=DESKTOP-DTAQOP7\\SQLEXPRESS;Database=AMSDev;Integrated Security=True;TrustServerCertificate=True;";
 
             // Act
             var encrypted = EncryptionHelper.Encrypt(plainText);

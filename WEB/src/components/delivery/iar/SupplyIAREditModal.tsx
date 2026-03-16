@@ -65,7 +65,12 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit 
              <div className="space-y-2">
               <Label>Office</Label>
               <Select value={formData.officeId?.toString()} onValueChange={v => setFormData({...formData, officeId: Number(v), divisionId: 0})}>
-                <SelectTrigger><SelectValue placeholder="Select Office" /></SelectTrigger>
+                <SelectTrigger>
+                  <div className="truncate text-left">
+                    <SelectValue placeholder="Select Office" />
+                  </div>
+                </SelectTrigger>
+                  
                 <SelectContent>
                   <SelectItem value="0">Select Office</SelectItem>
                   {vwOffices.map((o: any) => <SelectItem key={o.id} value={o.id.toString()}>{o.name}</SelectItem>)}
@@ -76,7 +81,11 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit 
             <div className="space-y-2">
               <Label>Division</Label>
               <Select value={formData.divisionId?.toString()} onValueChange={v => setFormData({...formData, divisionId: Number(v)})} disabled={!formData.officeId}>
-                <SelectTrigger><SelectValue placeholder="Select Division" /></SelectTrigger>
+                <SelectTrigger>
+                  <div className="truncate text-left">
+                    <SelectValue placeholder="Select Division" />
+                  </div>
+                  </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">Select Division</SelectItem>
                   {filteredDivisions.map((d: any) => <SelectItem key={d.id} value={d.id.toString()}>{d.name}</SelectItem>)}
@@ -91,7 +100,11 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit 
             <div className="space-y-2 col-span-2">
               <Label>Vendor</Label>
               <Select value={formData.vendorId?.toString()} onValueChange={v => setFormData({...formData, vendorId: Number(v)})}>
-                <SelectTrigger><SelectValue placeholder="Select Vendor" /></SelectTrigger>
+                <SelectTrigger>
+                  <div className="truncate text-left">
+                  <SelectValue placeholder="Select Vendor" />
+                  </div>
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">Select Vendor</SelectItem>
                   {vendors.map((v: any) => <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>)}

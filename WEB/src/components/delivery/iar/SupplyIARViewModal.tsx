@@ -2,19 +2,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { formatCurrency } from '@/utils/formatters';
 import { formatDate } from '@/utils/dateUtils';
 import { VwSupplyIAR } from '@/types';
 import { FileText, ClipboardCheck } from 'lucide-react';
+import {VwDeliveryRecord} from "@/types/delivery/delivery";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  record: VwSupplyIAR | null;
+  record: VwSupplyIAR | null
+  deliveryRecord: VwDeliveryRecord | null;
 }
 
-export const SupplyIARViewModal = ({ open, onOpenChange, record }: Props) => {
+export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord }: Props) => {
   if (!record) return null;
+  // if (!deliveryRecord) return null;
 
+  const deliveryItems = deliveryRecord?.items || [];
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -101,6 +106,57 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record }: Props) => {
                 <div className="text-sm font-medium">{record.iarInvoiceNumberDate ? formatDate(record.iarInvoiceNumberDate) : 'N/A'}</div>
              </div>
           </div>
+
+
+          {/* Items List */}
+          {deliveryItems.length > 0 ? (
+            <div className="space-y-4"> {/* Container to hold the border and the list */}
+              <div className="col-span-2 border-t my-4"></div>
+
+              <div>
+                <h3 className="font-semibold mb-3 text-sm">Delivered Items</h3>
+                <div className="space-y-2">
+                  {deliveryItems.map((item) => (
+                    <div key={item.id} className="flex flex-col p-3 border rounded-lg bg-slate-50/50">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">{item.itemTypeId === 1 ? 'Supply' : item.itemTypeId === 2 ? 'PPE' : 'SE'}</Badge>
+                            {item.itemDescription}
+                            {item.code && <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1 rounded">[{item.code}]</span>}
+                          </div>
+
+                          {item.itemTypeId === 1 && (
+                              <div className="flex gap-3 mt-1.5 mb-1 text-[11px] text-blue-700 font-medium">
+                                <span>Stock: {item.currentStock}</span>
+                                <span>Reorder: {item.reorderPoint}</span>
+                                <span>Loc: {item.storageLocation?.name || 'N/A'}</span>
+                              </div>
+                          )}
+
+                          {item.itemSpecification && (
+                              <div className="text-[11px] text-muted-foreground italic mt-1 max-w-sm">
+                                Specs: {item.itemSpecification}
+                              </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="font-semibold">{formatCurrency(item.itemQuantity * item.unitCost)}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {item.itemQuantity} {item.measurementUnit?.name} @ {formatCurrency(item.unitCost)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="py-10 text-center border-t">
+              <p className="text-sm text-muted-foreground italic">No Delivered Items Yet</p>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="mt-6">

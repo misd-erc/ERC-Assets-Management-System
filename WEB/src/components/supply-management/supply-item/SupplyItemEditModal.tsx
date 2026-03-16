@@ -117,6 +117,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
     description: '',
     categoryId: 0,
     measurementUnitId: 0,
+    quantity: 0,
     currentStock: 0,
     unitCost: 0,
     reorderPoint: 0,
@@ -148,6 +149,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
         description: supplyItem.description,
         categoryId: supplyItem.category?.id || 0,
         measurementUnitId: supplyItem.measurementUnit?.id || 0,
+        quantity: supplyItem.quantity,
         currentStock: supplyItem.currentStock,
         unitCost: supplyItem.unitCost,
         reorderPoint: supplyItem.reorderPoint,
@@ -161,6 +163,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
         description: '',
         categoryId: 0,
         measurementUnitId: 0,
+        quantity: 0,
         currentStock: 0,
         unitCost: 0,
         reorderPoint: 0,
@@ -247,10 +250,14 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
              <div className="space-y-2">
               <Label>Current Stock</Label>
               <Input type="number" value={form.currentStock} onChange={e => setForm({...form, currentStock: Number(e.target.value)})} disabled={isViewMode} />
+            </div>
+            <div className="space-y-2">
+              <Label>Quantity</Label>
+              <Input type="number" value={form.quantity ?? 0} onChange={e => setForm({...form, quantity: Number(e.target.value)})} disabled={isViewMode} />
             </div>
             <div className="space-y-2">
               <Label>Unit Cost</Label>
