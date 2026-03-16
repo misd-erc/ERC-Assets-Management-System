@@ -330,6 +330,95 @@ namespace API.Controllers
             }
         }
 
+        [HttpGet("item/unique/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSupplyUniqueRawItems([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblSupplyItem>? supplyItemsRaw = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+
+                var supplyItems = (supplyItemsRaw ?? new List<TblSupplyItem>())
+                    .OrderByDescending(x => x.CreatedAt)
+                    .GroupBy(i => new { i.Code, i.Description })
+                    .Select(g => g.First())
+                    .AsEnumerable();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyItems = supplyItems.Where(x =>
+                        (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                {
+                    supplyItems = supplyItems.Where(x => x.CreatedAt >= model.StartDate.Value);
+                }
+
+                if (model.EndDate.HasValue)
+                {
+                    supplyItems = supplyItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+                }
+
+                int totalCount = supplyItems.Count();
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var supplyItemsList = supplyItems
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var supplyItemsResponses = new List<SupplyItemResponseModel>();
+
+                foreach (var x in supplyItemsList)
+                {
+                    var supplyUnitModel = new SupplyItemResponseModel
+                    {
+                        Id = x.Id,
+                        Code = x.Code,
+                        Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
+                        MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(x.MeasurementUnitId, context),
+                        Description = x.Description,
+                        //CurrentStock = x.CurrentStock,
+                        //UnitCost = x.UnitCost,
+                        //ReorderPoint = x.ReorderPoint,
+                        StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(x.StorageLocationId, context),
+                        Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(x.VendorId, context),
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+
+                    supplyItemsResponses.Add(supplyUnitModel);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply Items", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<SupplyItemResponseModel>.OkPaginated(
+                    supplyItemsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Supply Items have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         [HttpGet("iar/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]

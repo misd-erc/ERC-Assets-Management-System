@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useSupplyUnit, useVendor } from '@/hooks';
+import { useSupplyUnit, useVendor, useSupplyItem } from '@/hooks';
 import { useSupplyStorageLocationStore } from '@/store/supply';
 import { getCategories } from '@/api/asset/inventoryApi';
 
@@ -19,13 +19,15 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
   const { units, fetchSupplyUnits } = useSupplyUnit();
   const { vendors, fetchVendors } = useVendor();
   const { storagelocations, fetchSupplyStorageLocations } = useSupplyStorageLocationStore();
+  const { vwUniqueRawSupplies, fetchSupplyUniqueRawItems } = useSupplyItem();
+  
   const [categories, setCategories] = useState<any[]>([]);
+  const [isNewItem, setIsNewItem] = useState(false);
 
   const [item, setItem] = useState({
     itemTypeId: 1, 
     categoryId: 0,
     itemDescription: '',
-    itemSpecification: '',
     itemQuantity: 0,
     measurementUnitId: 0,
     unitCost: 0,
@@ -41,14 +43,52 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
       fetchSupplyUnits();
       fetchVendors();
       fetchSupplyStorageLocations();
+      fetchSupplyUniqueRawItems();
       getCategories().then(setCategories);
-      setItem({ 
-        itemTypeId: 1, categoryId: 0, itemDescription: '', itemSpecification: '', 
-        itemQuantity: 0, measurementUnitId: 0, unitCost: 0,
-        code: '', currentStock: 0, reorderPoint: 0, storageLocationId: 0, vendorId: 0 
-      });
+      resetForm();
     }
-  }, [open, fetchSupplyUnits, fetchVendors, fetchSupplyStorageLocations]);
+  }, [open]);
+
+  const resetForm = () => {
+    setIsNewItem(false);
+    setItem({ 
+      itemTypeId: 1, categoryId: 0, itemDescription: '', 
+      itemQuantity: 0, measurementUnitId: 0, unitCost: 0,
+      code: '', currentStock: 0, reorderPoint: 0, 
+      storageLocationId: 0, vendorId: 0 
+    });
+  };
+
+  const handleCodeChange = (val: string) => {
+    if (val === "NEW_ITEM") {
+      setIsNewItem(true);
+      setItem(prev => ({ 
+        ...prev, 
+        code: '', 
+        itemDescription: '', 
+        categoryId: 0,
+        storageLocationId: 0, 
+        vendorId: 0, 
+        currentStock: 0, 
+        reorderPoint: 0 
+      }));
+    } else {
+      setIsNewItem(false);
+      const selected = vwUniqueRawSupplies.find(s => s.code === val);
+      if (selected) {
+        setItem(prev => ({
+          ...prev,
+          code: selected.code,
+          itemDescription: selected.description,
+          categoryId: selected.category?.id || 0,
+          storageLocationId: selected.storageLocation?.id || 0,
+          vendorId: selected.vendor?.id || 0,
+          currentStock: (selected as any).currentStock || 0,
+          reorderPoint: (selected as any).reorderPoint || 0
+        }));
+      }
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +108,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
   };
 
   const isSupply = item.itemTypeId === 1;
+  const isExistingItem = isSupply && !isNewItem && item.code !== '';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -80,7 +121,11 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Item Type</Label>
-              <Select value={item.itemTypeId.toString()} onValueChange={v => setItem({...item, itemTypeId: Number(v)})}>
+              <Select value={item.itemTypeId.toString()} onValueChange={v => {
+                const typeId = Number(v);
+                setItem({...item, itemTypeId: typeId});
+                if (typeId !== 1) setIsNewItem(true);
+              }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="1">Supply</SelectItem>
@@ -91,13 +136,53 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
             </div>
             <div className="space-y-2">
               <Label>Category</Label>
-              <Select value={item.categoryId.toString()} onValueChange={v => setItem({...item, categoryId: Number(v)})}>
-                <SelectTrigger><SelectValue placeholder="Select Category" /></SelectTrigger>
+              <Select 
+                disabled={isExistingItem && item.categoryId !== 0}
+                value={item.categoryId.toString()} 
+                onValueChange={v => setItem({...item, categoryId: Number(v)})}
+              >
+                <SelectTrigger className={isExistingItem && item.categoryId !== 0 ? "bg-slate-50" : ""}>
+                  <SelectValue placeholder="Select Category" />
+                </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="0">Select Category</SelectItem>
                   {categories.map(c => <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Item Code</Label>
+            {isSupply ? (
+              isNewItem ? (
+                <div className="flex gap-2">
+                  <Input 
+                    value={item.code} 
+                    onChange={e => setItem({...item, code: e.target.value})} 
+                    placeholder="Enter new item code" 
+                    required 
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={() => setIsNewItem(false)}>Cancel</Button>
+                </div>
+              ) : (
+                <Select value={item.code} onValueChange={handleCodeChange}>
+                  <SelectTrigger><SelectValue placeholder="Select or search item code" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NEW_ITEM" className="font-bold text-blue-600 italic">+ Add New Item Reference</SelectItem>
+                    {vwUniqueRawSupplies.map(s => (
+                      <SelectItem key={s.id} value={s.code}>{s.code} - {s.description}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )
+            ) : (
+              <Input 
+                value={item.code} 
+                onChange={e => setItem({...item, code: e.target.value})} 
+                placeholder="Enter Code" 
+              />
+            )}
           </div>
 
           <div className="space-y-2">
@@ -107,27 +192,43 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
               onChange={e => setItem({...item, itemDescription: e.target.value})} 
               placeholder="Item name/description" 
               required 
+              disabled={isExistingItem}
+              className={isExistingItem ? "bg-slate-50" : ""}
             />
           </div>
 
           {isSupply && (
-            <div className="p-4 bg-slate-50 border rounded-md space-y-4">
+            <div className="p-4 bg-slate-50/50 border rounded-md space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Item Code (Required)</Label>
-                  <Input 
-                    value={item.code} 
-                    onChange={e => setItem({...item, code: e.target.value})} 
-                    placeholder="e.g. SKU-123" 
-                    required={isSupply} 
-                  />
+                  <Label>Storage Location</Label>
+                  <Select 
+                    disabled={isExistingItem && item.storageLocationId !== 0} 
+                    value={item.storageLocationId.toString()} 
+                    onValueChange={v => setItem({...item, storageLocationId: Number(v)})}
+                  >
+                    <SelectTrigger className={isExistingItem && item.storageLocationId !== 0 ? "bg-slate-100" : ""}>
+                      <SelectValue placeholder="Select Location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Select Location</SelectItem>
+                      {storagelocations.map(l => <SelectItem key={l.id} value={l.id.toString()}>{l.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Storage Location</Label>
-                  <Select value={item.storageLocationId.toString()} onValueChange={v => setItem({...item, storageLocationId: Number(v)})}>
-                    <SelectTrigger><SelectValue placeholder="Select Location" /></SelectTrigger>
+                  <Label>Vendor</Label>
+                  <Select 
+                    disabled={isExistingItem && item.vendorId !== 0} 
+                    value={item.vendorId.toString()} 
+                    onValueChange={v => setItem({...item, vendorId: Number(v)})}
+                  >
+                    <SelectTrigger className={isExistingItem && item.vendorId !== 0 ? "bg-slate-100" : ""}>
+                      <SelectValue placeholder="Select Vendor" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {storagelocations.map(l => <SelectItem key={l.id} value={l.id.toString()}>{l.name}</SelectItem>)}
+                      <SelectItem value="0">Select Vendor</SelectItem>
+                      {vendors.map(v => <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -152,26 +253,8 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                   />
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Vendor</Label>
-                <Select value={item.vendorId.toString()} onValueChange={v => setItem({...item, vendorId: Number(v)})}>
-                  <SelectTrigger><SelectValue placeholder="Select Vendor" /></SelectTrigger>
-                  <SelectContent>
-                    {vendors.map(v => <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
           )}
-
-          <div className="space-y-2">
-            <Label>Specifications</Label>
-            <Textarea 
-              value={item.itemSpecification} 
-              onChange={e => setItem({...item, itemSpecification: e.target.value})} 
-              placeholder="Technical specs (model, brand, color, etc.)" 
-            />
-          </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
@@ -183,6 +266,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
               <Select value={item.measurementUnitId.toString()} onValueChange={v => setItem({...item, measurementUnitId: Number(v)})}>
                 <SelectTrigger><SelectValue placeholder="Select Unit" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="0">Select Unit</SelectItem>
                   {units.map(u => <SelectItem key={u.id} value={u.id.toString()}>{u.name}</SelectItem>)}
                 </SelectContent>
               </Select>

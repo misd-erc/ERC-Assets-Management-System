@@ -32,6 +32,22 @@ export interface VwSupplyItem {
   createdAt?: string;
 }
 
+export interface VwSupplyUniqueRawItem {
+  id: number;
+  code: string;
+  category: Category | null;
+  description: string;
+  measurementUnit: SupplyUnit | null;
+  // currentStock: number;
+  // unitCost: number;
+  // reorderPoint: number;
+  storageLocation: SupplyStorageLocation | null;
+  vendor: Vendor | null;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+
 export interface SupplyStorageLocation {
   id: number;
   name: string;
