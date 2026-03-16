@@ -15,8 +15,10 @@
 
   const mapVwSupplyItem = (raw: any): VwSupplyItem => ({
     id: raw.id,
+    iarId: raw.iarId,
     code: raw.code,
     category: raw.category,
+    quantity: raw.quantity,
     description: raw.description,
     measurementUnit: raw.measurementUnit,
     currentStock: raw.currentStock,
