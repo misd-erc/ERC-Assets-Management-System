@@ -115,6 +115,7 @@
       ReorderPoint: payload.reorderPoint,
       StorageLocationId: payload.storageLocationId ?? 0,
       VendorId: payload.vendorId ?? 0,
+      Quantity: payload.quantity,
       IsActive: payload.isActive,
       ActionBySystemUserId: systemUserId,
       SessionKey: sessionKey,
