@@ -1,6 +1,6 @@
 ﻿// src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
-import { SupplyItem, VwSupplyItem, SupplyUnit, SupplyStorageLocation, SupplyIAR, VwSupplyIAR } from '@/types';
+import { SupplyItem, VwSupplyItem, SupplyUnit, SupplyStorageLocation, SupplyIAR, VwSupplyIAR, VwSupplyUniqueRawItem } from '@/types';
 import { 
   getSupplyItems,
   editSupplyItem,
@@ -9,7 +9,8 @@ import {
   getSupplyStorageLocations,
   editSupplyStorageLocation,
   getSupplyIARs, // Make sure this is exported from your API
-  editSupplyIAR
+  editSupplyIAR,
+  getSupplyUniqueRawItems
 } from '@/api';
 import { toast } from 'sonner';
 import axiosInstance from '@/lib/axios';
@@ -21,6 +22,7 @@ import { getAuthParams } from '@/utils/auth';
 interface SupplyItemState {
   supplies: SupplyItem[];
   vwSupplies: VwSupplyItem[];
+  vwUniqueRawSupplies: VwSupplyUniqueRawItem[];
   loading: boolean;
   searchQuery: string;
 
@@ -29,6 +31,7 @@ interface SupplyItemState {
   setSearchQuery: (query: string) => void;
 
   fetchSupplyItems: () => Promise<void>;
+  fetchSupplyUniqueRawItems: () => Promise<void>;
   addSupplyItem: (supply: Partial<SupplyItem>) => Promise<void>;
   updateSupplyItem: (id: number, updates: Partial<SupplyItem>) => Promise<void>;
   deleteSupplyItem: (id: number) => Promise<void>;
@@ -37,6 +40,7 @@ interface SupplyItemState {
 export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
   supplies: [],
   vwSupplies: [],
+  vwUniqueRawSupplies: [],
   loading: false,
   searchQuery: '',
 
@@ -51,6 +55,18 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
       // console.log("Here is the response:");
       // console.log(vwSupplies);
       set({ vwSupplies });
+    } catch {
+      toast.error('Failed to load supplies');
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+    fetchSupplyUniqueRawItems: async () => {
+    set({ loading: true });
+    try {
+      const vwUniqueRawSupplies = await getSupplyUniqueRawItems();
+      set({ vwUniqueRawSupplies });
     } catch {
       toast.error('Failed to load supplies');
     } finally {
