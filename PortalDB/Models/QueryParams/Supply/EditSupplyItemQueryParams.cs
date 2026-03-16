@@ -12,6 +12,7 @@ namespace PortalDB.Models.QueryParams.Supply
         [Required] public long? CategoryId { get; set; }
         [Required] public string Description { get; set; } = string.Empty;
         [Required] public long? MeasurementUnitId { get; set; }
+        [Required] public int? Quantity { get; set; }
         [Required] public int? CurrentStock { get; set; }
         [Required] public long? UnitCost { get; set; }
         [Required] public int? ReorderPoint { get; set; }

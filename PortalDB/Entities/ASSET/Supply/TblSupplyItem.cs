@@ -42,6 +42,9 @@ namespace PortalDB.Entities.ASSET.Supply
         [Column("SupplyItemUnitId")]
         public long? MeasurementUnitId { get; set; }
 
+        [Column("SupplyItemQuantity")]
+        public int? Quantity { get; set; }
+
         [Column("SupplyItemCurrentStock")]
         public int? CurrentStock { get; set; }
 

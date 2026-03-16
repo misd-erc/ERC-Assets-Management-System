@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260315114451_UpdateOnTblSupplyItem")]
+    partial class UpdateOnTblSupplyItem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -770,146 +773,6 @@ namespace PortalDB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblSupplyItems", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyRIS", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime?>("ApprovedOn")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SupplyRISCreatedAt");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SupplyRISApprovedOn");
-
-                    b.Property<long?>("DivisionId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("DivisionId");
-
-                    b.Property<string>("FundClusterEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyRISFundCluster");
-
-                    b.Property<string>("FundEntityNameEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyRISEntityName");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyRISIsActive");
-
-                    b.Property<bool>("IsApproved")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyRISIsApproved");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyRISIsDeleted");
-
-                    b.Property<long?>("OfficeId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("OfficeId");
-
-                    b.Property<long?>("RISApprovedBySystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISApprovedBySystemUserId");
-
-                    b.Property<long?>("RISIssuedBySystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISIssuedBySystemUserId");
-
-                    b.Property<DateTime?>("RISNumberDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SupplyRISNumberDate");
-
-                    b.Property<string>("RISNumberEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyRISNumber");
-
-                    b.Property<string>("RISPurposeEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyRISPurpose");
-
-                    b.Property<long?>("RISRecievedBySystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISRecievedBySystemUserId");
-
-                    b.Property<long?>("RISRequestedBySystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISRequestedBySystemUserId");
-
-                    b.Property<string>("ResponsibilityCenterCodeEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyResponsibilityCenterCode");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblSupplyRISs", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyRISItem", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISItemId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SupplyRISItemCreatedAt");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyRISItemIsActive");
-
-                    b.Property<bool>("IsAvailable")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyRISItemIsAvailable");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyRISItemIsDeleted");
-
-                    b.Property<long>("IssueQuantity")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISItemIssueQuantity");
-
-                    b.Property<string>("ItemDescriptionEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyRISItemDescription");
-
-                    b.Property<string>("ItemRemarksEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyRISItemRemarks");
-
-                    b.Property<long?>("RISId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISId");
-
-                    b.Property<long>("RequisitionQuantity")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISItemRequisitionQuantity");
-
-                    b.Property<string>("StockNumberEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyRISItemStockNumber");
-
-                    b.Property<long?>("UnitId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISItemUnitId");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblRISItems", "asset");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyStorageLocation", b =>

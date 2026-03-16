@@ -48,6 +48,8 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
     set({ loading: true });
     try {
       const vwSupplies = await getSupplyItems();
+      // console.log("Here is the response:");
+      // console.log(vwSupplies);
       set({ vwSupplies });
     } catch {
       toast.error('Failed to load supplies');
@@ -65,6 +67,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
         categoryId: supply.categoryId || 0,
         description: supply.description || '',
         measurementUnitId: supply.measurementUnitId || 0,
+        quantity: supply.quantity || 0,
         currentStock: supply.currentStock || 0,
         unitCost: supply.unitCost || 0,
         reorderPoint: supply.reorderPoint || 0,
@@ -80,6 +83,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
   },
 
   updateSupplyItem: async (id, updates) => {
+
     try {
       await editSupplyItem({
         id: id,
@@ -87,6 +91,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
         categoryId: updates.categoryId || 0,
         description: updates.description || '',
         measurementUnitId: updates.measurementUnitId || 0,
+        quantity: updates.quantity || 0,
         currentStock: updates.currentStock || 0,
         unitCost: updates.unitCost || 0,
         reorderPoint: updates.reorderPoint || 0,

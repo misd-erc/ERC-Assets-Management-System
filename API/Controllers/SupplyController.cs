@@ -296,9 +296,11 @@ namespace API.Controllers
                     {
                         Id = x.Id,
                         Code = x.Code,
+                        IARId = x.IARId,
                         Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
                         MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(x.MeasurementUnitId, context),
                         Description = x.Description,
+                        Quantity = x.Quantity,
                         CurrentStock = x.CurrentStock,
                         UnitCost = x.UnitCost,
                         ReorderPoint = x.ReorderPoint,
@@ -535,6 +537,7 @@ namespace API.Controllers
                     CategoryId = model.CategoryId,
                     MeasurementUnitId = model.MeasurementUnitId,
                     Description = model.Description,
+                    Quantity = model.Quantity,
                     CurrentStock = model.CurrentStock,
                     UnitCost = model.UnitCost,
                     ReorderPoint = model.ReorderPoint,
@@ -606,6 +609,7 @@ namespace API.Controllers
                                 TblSupplyItem? supplyItem = new TblSupplyItem()
                                 {
                                     Code = deliveryRecordItem.Code,
+                                    IARId = model.Id,
                                     CategoryId = deliveryRecordItem.CategoryId,
                                     Description = deliveryRecordItem.ItemDescription,
                                     MeasurementUnitId = deliveryRecordItem.UnitId,

@@ -6,6 +6,8 @@ import { SupplyIARDeleteModal } from './SupplyIARDeleteModal';
 import { SupplyIARViewModal } from './SupplyIARViewModal';
 import { SupplyIARApproveModal } from './SupplyIARApproveModal';
 import { VwSupplyIAR } from '@/types';
+import {VwDeliveryRecord} from "@/types/delivery/delivery";
+import { useDeliveryRecordStore } from '@/store/delivery';
 
 export const SupplyIARTabContent = () => {
   const { iars, loading, fetchSupplyIARs, addSupplyIAR, updateSupplyIAR, deleteSupplyIAR } = useSupplyIAR();
@@ -16,14 +18,26 @@ export const SupplyIARTabContent = () => {
   const [isApproveOpen, setIsApproveOpen] = useState(false);
   
   const [selectedRecord, setSelectedRecord] = useState<VwSupplyIAR | null>(null);
+  const [selectedDeliveryRecord, setSelectedDeliveryRecord] = useState<VwDeliveryRecord | null>(null);
   const [mode, setMode] = useState<'add' | 'edit'>('add');
+  const { vwDeliveryRecords, fetchDeliveryRecords } = useDeliveryRecordStore();
 
-  useEffect(() => { fetchSupplyIARs(); }, []);
+  useEffect(() => {
+    fetchSupplyIARs();
+    fetchDeliveryRecords();
+    }, []);
 
   const handleAdd = () => { setSelectedRecord(null); setMode('add'); setIsEditOpen(true); };
   const handleEdit = (record: VwSupplyIAR) => { setSelectedRecord(record); setMode('edit'); setIsEditOpen(true); };
   const handleDelete = (record: VwSupplyIAR) => { setSelectedRecord(record); setIsDeleteOpen(true); };
-  const handleView = (record: VwSupplyIAR) => { setSelectedRecord(record); setIsViewOpen(true); };
+  const handleView = (record: VwSupplyIAR) => {
+    setSelectedRecord(record);
+
+    const match = vwDeliveryRecords.find(dr => dr.supplyIAR?.id === record.id);
+    setSelectedDeliveryRecord(match || null);
+
+    setIsViewOpen(true);
+  };
   
   const handleApproveClick = (record: VwSupplyIAR) => {
     setSelectedRecord(record);
@@ -52,6 +66,7 @@ export const SupplyIARTabContent = () => {
     setIsEditOpen(false);
   };
 
+
   return (
     <>
       <SupplyIARTable 
@@ -70,11 +85,12 @@ export const SupplyIARTabContent = () => {
       <SupplyIARApproveModal 
         open={isApproveOpen} 
         onOpenChange={setIsApproveOpen} 
-        record={selectedRecord} 
+        record={selectedRecord}
+        deliveryRecord={selectedDeliveryRecord}
         onConfirm={handleConfirmApprove} 
       />
 
-      <SupplyIARViewModal open={isViewOpen} onOpenChange={setIsViewOpen} record={selectedRecord} />
+      <SupplyIARViewModal open={isViewOpen} onOpenChange={setIsViewOpen} record={selectedRecord} deliveryRecord={selectedDeliveryRecord} />
     </>
   );
 };
