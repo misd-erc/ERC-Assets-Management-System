@@ -26,6 +26,10 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
         public async Task<TblDeliveryRecord?> GetTblDeliveryRecordAsync(long? id, PortalDbContext context) => await context.TblDeliveryRecords.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public IQueryable<TblSupplyIAR>? GetTblSupplyIARs(PortalDbContext context) => context.TblSupplyIARs.AsNoTracking().Where(x => !x.IsDeleted);
         public async Task<TblSupplyIAR?> GetTblSupplyIARAsync(long? id, PortalDbContext context) => await context.TblSupplyIARs.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<TblSupplyRIS>? GetTblSupplyRISs(PortalDbContext context) => context.TblSupplyRISs.AsNoTracking().Where(x => !x.IsDeleted);
+        public async Task<TblSupplyRIS?> GetTblSupplyRISAsync(long? id, PortalDbContext context) => await context.TblSupplyRISs.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public IQueryable<TblSupplyRISItem>? GetTblSupplyRISItems(PortalDbContext context) => context.TblSupplyRISItems.AsNoTracking().Where(x => !x.IsDeleted);
+        public async Task<TblSupplyRISItem?> GetTblSupplyRISItemAsync(long? id, PortalDbContext context) => await context.TblSupplyRISItems.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
 
     }
 }

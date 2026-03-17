@@ -16,13 +16,13 @@ namespace PortalDB.Entities.ASSET.Supply
         public long Id { get; set; }
 
         [Column("SupplyRISEntityName")]
-        public string? FundEntityNameEncrypted { get; set; }
+        public string? EntityNameEncrypted { get; set; }
 
         [NotMapped]
         public string? EntityName
         {
-            get => string.IsNullOrEmpty(FundEntityNameEncrypted) ? null : EncryptionHelper.Decrypt(FundEntityNameEncrypted);
-            set => FundEntityNameEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+            get => string.IsNullOrEmpty(EntityNameEncrypted) ? null : EncryptionHelper.Decrypt(EntityNameEncrypted);
+            set => EntityNameEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
         [Column("SupplyRISFundCluster")]
@@ -52,9 +52,6 @@ namespace PortalDB.Entities.ASSET.Supply
         [Column("SupplyRISNumber")]
         public string? RISNumberEncrypted { get; set; }
 
-        [Column("SupplyRISNumberDate")]
-        public DateTime? RISNumberDate { get; set; }
-
         [NotMapped]
         public string? RISNumber
         {
@@ -74,14 +71,26 @@ namespace PortalDB.Entities.ASSET.Supply
         [Column("SupplyRISRequestedBySystemUserId")]
         public long? RISRequestedBySystemUserId { get; set; }
 
+        [Column("SupplyRISRequestedDate")]
+        public DateTime? RISRequestedDate { get; set; }
+
         [Column("SupplyRISApprovedBySystemUserId")]
         public long? RISApprovedBySystemUserId { get; set; }
-        
+
+        [Column("SupplyRISApprovedDate")]
+        public DateTime? RISApprovedDate { get; set; }
+
         [Column("SupplyRISIssuedBySystemUserId")]
         public long? RISIssuedBySystemUserId { get; set; }
 
+        [Column("SupplyRISIssuedDate")]
+        public DateTime? RISIssuedDate { get; set; }
+
         [Column("SupplyRISRecievedBySystemUserId")]
         public long? RISRecievedBySystemUserId { get; set; }
+
+        [Column("SupplyRISRecievedDate")]
+        public DateTime? RISRecievedDate { get; set; }
 
         [Column("SupplyRISIsApproved")]
         public bool IsApproved { get; set; } = false;
@@ -92,10 +101,10 @@ namespace PortalDB.Entities.ASSET.Supply
         [Column("SupplyRISIsDeleted")]
         public bool IsDeleted { get; set; } = false;
 
-        [Column("SupplyRISCreatedAt")]
+        [Column("SupplyRISApprovedOn")]
         public DateTime? ApprovedOn { get; set; }
 
-        [Column("SupplyRISApprovedOn")]
+        [Column("SupplyRISCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

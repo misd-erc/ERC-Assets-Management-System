@@ -506,6 +506,94 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+
+        [HttpGet("ris/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllRISs([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblSupplyRIS>? supplyRISs = await _getTools.Supply.GetTblSupplyRISs(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyRISs = supplyRISs.Where(x =>
+                        (x.RISNumber.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.EntityName.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.FundCluster.ToString() ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    supplyRISs = supplyRISs.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    supplyRISs = supplyRISs.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = supplyRISs.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var supplyRISsList = supplyRISs
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var supplyIResponses = new List<SupplyRISResponseModel>();
+
+                foreach (var x in supplyRISsList)
+                {
+                    var supplyRISModel = new SupplyRISResponseModel
+                    {
+                        Id = x.Id,
+                        EntityName = x.EntityName,
+                        FundCluster = x.FundCluster,
+                        Office = await _getTools.Office.GetTblOfficeAsync(x.OfficeId, context),
+                        Division = await _getTools.Office.GetTblDivisionAsync(x.DivisionId, context),
+                        ResponsibilityCenterCode = x.ResponsibilityCenterCode,
+                        RISNumber = x.RISNumber,
+                        RISPurpose = x.RISPurpose,
+                        RequestedBySystemUserId = x.RISRequestedBySystemUserId,
+                        RISRequestedDate = x.RISRequestedDate,
+                        ApprovedBySystemUserId = x.RISApprovedBySystemUserId,
+                        RISApprovedDate = x.RISApprovedDate,
+                        IssuedBySystemUserId = x.RISIssuedBySystemUserId,
+                        RISIssuedDate = x.RISIssuedDate,
+                        RecievedBySystemUserId = x.RISRecievedBySystemUserId,
+                        RISRecievedDate = x.RISRecievedDate,
+                        IsActive = x.IsActive,
+                        IsApproved = x.IsApproved,
+                        ApprovedOn = x.ApprovedOn,
+                        CreatedAt = x.CreatedAt
+                    };
+                    supplyIResponses.Add(supplyRISModel);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply RIS", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<SupplyRISResponseModel>.OkPaginated(
+                    supplyIResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Supply RISs have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         #endregion
 
         #region POST
@@ -733,6 +821,69 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+
+        //Modifications need approval
+        [HttpPost("ris/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditSupplyRIS([FromBody] EditSupplyRISQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblSupplyRIS supplyRIS = new()
+                {
+                    Id = model.Id,
+                    EntityName = model.EntityName,
+                    FundCluster = model.FundCluster,
+                    DivisionId = model.DivisionId,
+                    OfficeId = model.OfficeId,
+                    ResponsibilityCenterCodeEncrypted = model.ResponsibilityCenterCode,
+                    RISNumberEncrypted = model.RISNumber,
+                    RISPurpose = model.RISPurpose,
+                    RISRequestedBySystemUserId = model.RISRequestedBySystemUserId,
+                    RISRequestedDate = model.RISRequestedDate,
+                    RISApprovedBySystemUserId = model.RISApprovedBySystemUserId,
+                    RISApprovedDate = model.RISApprovedDate,
+                    RISIssuedBySystemUserId = model.RISIssuedBySystemUserId,
+                    RISIssuedDate = model.RISIssuedDate,
+                    RISRecievedBySystemUserId = model.RISRecievedBySystemUserId,
+                    RISRecievedDate = model.RISRecievedDate,
+                    IsActive = model.IsActive,
+                    IsApproved = model.IsApproved
+                };
+
+                if (supplyRIS.IsApproved)
+                {
+                    supplyRIS.IsApproved = true;
+                    supplyRIS.ApprovedOn = DateTime.UtcNow;
+
+                    List<TblSupplyRISItem>? SupplyRISItems = _getTools.Supply.GetTblSupplyRISItems(context)?.Where(x => x.SupplyRISId == supplyRIS.Id).ToList();
+                    foreach (var SupplyRISItem in SupplyRISItems)
+                    {
+                        //Dito magbabawas ng quantity
+                    }
+                }
+
+                long supplyRISId = await _editTools.Supply.EditTblSupplyRISAsync(supplyRIS, model.ActionBySystemUserId, context);
+
+
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { SupplyRISId = supplyRISId }, $"Supply RIS has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         #endregion
 
         #region DELETE
@@ -871,6 +1022,35 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok($"Supply Unit has been deleted"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpDelete("ris/delete/{risId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteSupplyRIS([FromQuery] SoloQueryParams model, [FromRoute] long risId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _editTools.Supply.DeleteTblSupplyRISAsync(risId, model.ActionBySystemUserId, context);
+
+                if (!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this Supply RIS, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Supply RIS has been deleted"));
 
             }
             catch (Exception ex)
