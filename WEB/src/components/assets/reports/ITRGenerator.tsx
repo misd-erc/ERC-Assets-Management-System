@@ -252,6 +252,7 @@ const ITRDocument = ({
   fromEmployee,
   toEmployee,
   transferType,
+  nonPlantillaEmployee,
 }: {
   rows: ITRRow[];
   itrNumber: string;
@@ -259,6 +260,7 @@ const ITRDocument = ({
   fromEmployee: NormalizedEmployee;
   toEmployee: NormalizedEmployee;
   transferType: TransferType;
+  nonPlantillaEmployee?: NormalizedEmployee | null;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -421,7 +423,9 @@ const ITRDocument = ({
             </View>
             <Text style={styles.sigDateLabel}>DATE</Text>
           </View>
-          <Text style={{ fontSize: 8, fontWeight: "bold", marginTop: 8, textAlign: "left", alignSelf: "flex-start" }}>Sub-ICS :</Text>
+          <Text style={{ fontSize: 8, fontWeight: "bold", marginTop: 8, textAlign: "left", alignSelf: "flex-start" }}>
+            Sub-ICS :{nonPlantillaEmployee ? ` ${nonPlantillaEmployee.lastName?.toUpperCase()}, ${nonPlantillaEmployee.firstName?.toUpperCase()}${nonPlantillaEmployee.middleName ? ` ${nonPlantillaEmployee.middleName.toUpperCase()}` : ''}` : ""}
+          </Text>
         </View>
       </View>
     </Page>

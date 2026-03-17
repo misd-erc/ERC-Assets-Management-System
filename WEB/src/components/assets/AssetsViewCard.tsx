@@ -273,7 +273,8 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                     <TableHead>Date Assigned</TableHead>
                     <TableHead>PAR/ICS No.</TableHead>
                     <TableHead>PTR/ITR No.</TableHead>
-                    <TableHead>Employee</TableHead>
+                    <TableHead>Employee (Plantilla)</TableHead>
+                    <TableHead>Employee (Non-Plantilla)</TableHead>
                     <TableHead>Service/Office</TableHead>
                     <TableHead>Division</TableHead>
                     <TableHead>Condition</TableHead>
@@ -288,7 +289,10 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                       <TableCell>
                         {movement.plantillaEmployeeId
                           ? getEmployeeName(movement.plantillaEmployeeId)
-                          : movement.nonPlantillaEmployeeId
+                          : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {movement.nonPlantillaEmployeeId
                           ? getEmployeeName(movement.nonPlantillaEmployeeId)
                           : '-'}
                       </TableCell>
@@ -515,7 +519,8 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   <TableRow>
                     <TableHead>Date Assigned</TableHead>
                     <TableHead>PAR/ITR Number</TableHead>
-                    <TableHead>Employee</TableHead>
+                    <TableHead>Employee (Plantilla)</TableHead>
+                    <TableHead>Employee (Non-Plantilla)</TableHead>
                     <TableHead>Office</TableHead>
                     <TableHead>Division</TableHead>
                     <TableHead>Condition</TableHead>
@@ -529,7 +534,10 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                       <TableCell>
                         {movement.plantillaEmployeeId
                           ? getEmployeeName(movement.plantillaEmployeeId)
-                          : movement.nonPlantillaEmployeeId
+                          : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {movement.nonPlantillaEmployeeId
                           ? getEmployeeName(movement.nonPlantillaEmployeeId)
                           : '-'}
                       </TableCell>

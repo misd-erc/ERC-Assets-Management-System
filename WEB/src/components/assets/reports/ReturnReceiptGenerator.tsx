@@ -160,6 +160,7 @@ const ReturnReceiptDocument = ({
   returnType,
   returnedByName,
   returnedByPosition,
+  nonPlantillaEmployeeName,
 }: {
   rows: ReturnRow[];
   receiptNumber: string;
@@ -167,6 +168,7 @@ const ReturnReceiptDocument = ({
   returnType: ReturnType;
   returnedByName: string;
   returnedByPosition?: string;
+  nonPlantillaEmployeeName?: string;
 }) => {
   const title =
     returnType === "RRPPE"
@@ -247,7 +249,7 @@ const ReturnReceiptDocument = ({
           </View>
         </View>
 
-        <Text style={styles.subPar}>Sub-PAR:</Text>
+        <Text style={styles.subPar}>Sub-PAR:{nonPlantillaEmployeeName ? ` ${nonPlantillaEmployeeName.toUpperCase()}` : ""}</Text>
       </Page>
     </Document>
   );
@@ -260,7 +262,8 @@ export class ReturnReceiptGenerator {
     receiptNumber: string,
     dateAssigned: string,
     returnedByName: string,
-    returnedByPosition?: string
+    returnedByPosition?: string,
+    nonPlantillaEmployeeName?: string
   ): Promise<string> {
     const rows = buildRowsFromItems(items, returnedByName);
 
@@ -272,6 +275,7 @@ export class ReturnReceiptGenerator {
         returnType={returnType}
         returnedByName={returnedByName}
         returnedByPosition={returnedByPosition}
+        nonPlantillaEmployeeName={nonPlantillaEmployeeName}
       />
     ).toBlob();
 

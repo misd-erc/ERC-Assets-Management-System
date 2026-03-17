@@ -253,6 +253,7 @@ const PTRDocument = ({
   fromEmployee,
   toEmployee,
   transferType,
+  nonPlantillaEmployee,
 }: {
   rows: PTRRow[];
   ptrNumber: string;
@@ -260,6 +261,7 @@ const PTRDocument = ({
   fromEmployee: NormalizedEmployee;
   toEmployee: NormalizedEmployee;
   transferType: TransferType;
+  nonPlantillaEmployee?: NormalizedEmployee | null;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -425,7 +427,9 @@ const PTRDocument = ({
             </View>
             <Text style={styles.sigDateLabel}>DATE</Text>
           </View>
-          <Text style={{ fontSize: 8, fontWeight: "bold", marginTop: 8, textAlign: "left", alignSelf: "flex-start" }}>Sub-PAR :</Text>
+          <Text style={{ fontSize: 8, fontWeight: "bold", marginTop: 8, textAlign: "left", alignSelf: "flex-start" }}>
+            Sub-PAR :{nonPlantillaEmployee ? ` ${nonPlantillaEmployee.lastName?.toUpperCase()}, ${nonPlantillaEmployee.firstName?.toUpperCase()}${nonPlantillaEmployee.middleName ? ` ${nonPlantillaEmployee.middleName.toUpperCase()}` : ''}` : ""}
+          </Text>
         </View>
       </View>
     </Page>
