@@ -190,7 +190,7 @@ const ReturnReceiptDocument = ({
         <View style={styles.metaRow}>
           <View style={styles.metaLeft}>
             <Text style={styles.metaLabel}>Entity Name: ENERGY REGULATORY COMMISSION</Text>
-            <Text style={styles.metaText}>Returned by: {returnedByName || ""}</Text>
+            <Text style={styles.metaText}>Returned by: {returnedByName?.toUpperCase() || ""}</Text>
             <Text style={styles.metaText}>Received by: {RECEIVED_BY.name}</Text>
           </View>
           <View style={styles.metaRight}>
@@ -230,7 +230,7 @@ const ReturnReceiptDocument = ({
         <View style={[styles.sigRow,{marginTop: -1}]}>
           <View style={styles.sigBlock}>
             <Text style={styles.sigTitle}>Returned by:</Text>
-            <Text style={[styles.sigName,{marginBottom: -10}]}>{returnedByName || ""}</Text>
+            <Text style={[styles.sigName,{marginBottom: -10}]}>{returnedByName?.toUpperCase() || ""}</Text>
             <View style={[styles.sigLine,{marginBottom: 4}]} />
             <Text style={styles.sigLabel}>{returnedByPosition || "Position, Service-Division"}</Text>
             <View style={styles.sigDateLine} />

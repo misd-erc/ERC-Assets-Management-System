@@ -283,10 +283,10 @@ const PTRDocument = ({
             Entity Name: ENERGY REGULATORY COMMISSION
           </Text>
           <Text style={{ marginTop: 4 }}>
-            From Accountable Officer: {fromEmployee.firstName} {fromEmployee.middleName} {fromEmployee.lastName}
+            From Accountable Officer: {fromEmployee.firstName?.toUpperCase()} {fromEmployee.middleName?.toUpperCase()} {fromEmployee.lastName?.toUpperCase()}
           </Text>
           <Text style={{ marginTop: 4 }}>
-            To Accountable Officer: {toEmployee.firstName} {toEmployee.middleName} {toEmployee.lastName}
+            To Accountable Officer: {toEmployee.firstName?.toUpperCase()} {toEmployee.middleName?.toUpperCase()} {toEmployee.lastName?.toUpperCase()}
           </Text>
         </View>
 
@@ -412,7 +412,7 @@ const PTRDocument = ({
         <View style={styles.sigBlockLast}>
           <Text style={styles.sigTitle}>Received by:</Text>
           <Text style={styles.sigNameAboveLine}>
-            {toEmployee.lastName}, {toEmployee.firstName}
+            {toEmployee.lastName?.toUpperCase()}, {toEmployee.firstName?.toUpperCase()}
           </Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature Over Printed Name</Text>

@@ -251,7 +251,7 @@ const PARDocument = ({
         {/* RECEIVED BY */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Received by:</Text>
-          <Text style={[styles.sigName, { marginTop: 25 }]}>{employeeName}</Text>
+          <Text style={[styles.sigName, { marginTop: 25 }]}>{employeeName?.toUpperCase()}</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature over Printed Name of End User</Text>
           <Text style={[styles.sigTopText, { marginBottom: 4, marginTop: 6 }]}>{position} - {office}</Text>
