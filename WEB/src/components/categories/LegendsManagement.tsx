@@ -30,7 +30,7 @@ export function LegendsManagement() {
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ name: '', generalCode: '', isActive: true });
+  const [formData, setFormData] = useState({ name: '', generalCode: '', description: '', isActive: true });
 
   // Fetch legends on mount
   useEffect(() => {
@@ -54,23 +54,18 @@ export function LegendsManagement() {
       toast.error('Please enter a legend name');
       return;
     }
-    if (!formData.generalCode.trim()) {
-      toast.error('Please enter a general code');
-      return;
-    }
-
     setLoading(true);
     let result;
 
     if (editingId) {
-      result = await updateLegend(editingId, formData.name, formData.generalCode, formData.isActive);
+      result = await updateLegend(editingId, formData.name, formData.generalCode, formData.isActive, formData.description || undefined);
       if (result) {
         toast.success('Legend updated successfully');
       } else {
         toast.error('Failed to update legend');
       }
     } else {
-      result = await createLegend(formData.name, formData.generalCode);
+      result = await createLegend(formData.name, formData.generalCode, formData.description || undefined);
       if (result) {
         toast.success('Legend created successfully');
       } else {
@@ -81,7 +76,7 @@ export function LegendsManagement() {
     setLoading(false);
     if (result) {
       await fetchLegends();
-      setFormData({ name: '', generalCode: '', isActive: true });
+      setFormData({ name: '', generalCode: '', description: '', isActive: true });
       setEditingId(null);
       setIsOpen(false);
     }
@@ -92,6 +87,7 @@ export function LegendsManagement() {
     setFormData({
       name: legend.name,
       generalCode: legend.generalCode,
+      description: legend.description || '',
       isActive: legend.isActive
     });
     setIsOpen(true);
@@ -114,6 +110,7 @@ export function LegendsManagement() {
     { key: 'id', label: 'ID' },
     { key: 'name', label: 'Legend Name' },
     { key: 'generalCode', label: 'General Code' },
+    { key: 'description', label: 'Description', render: (v: string) => v || '—' },
     { key: 'isActive', label: 'Status', render: (v: boolean) => v ? 'Active' : 'Inactive' },
     {
       key: 'actions',
@@ -170,7 +167,7 @@ export function LegendsManagement() {
           <DialogTrigger asChild>
             <Button onClick={() => {
               setEditingId(null);
-              setFormData({ name: '', generalCode: '', isActive: true });
+              setFormData({ name: '', generalCode: '', description: '', isActive: true });
             }}>
               <Plus className="w-4 h-4 mr-2" />
               Add Legend
@@ -201,7 +198,7 @@ export function LegendsManagement() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="generalCode" className="text-sm font-medium text-slate-700">
-                  General Code <span className="text-red-500">*</span>
+                  General Code
                 </Label>
                 <Input
                   id="generalCode"
@@ -209,6 +206,19 @@ export function LegendsManagement() {
                   onChange={(e) => setFormData({ ...formData, generalCode: e.target.value })}
                   placeholder="e.g., LGD001"
                   className="h-9 uppercase"
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm font-medium text-slate-700">
+                  Description
+                </Label>
+                <Input
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="e.g., Brief description of this legend"
+                  className="h-9"
                   disabled={loading}
                 />
               </div>

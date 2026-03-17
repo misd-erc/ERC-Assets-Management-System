@@ -24,7 +24,7 @@ interface SharedAssetFieldsProps {
   handleNonPlantillaEmployeeSelect: (index: number, employeeId: number) => void;
   employees: NormalizedEmployee[];
   categories: { id: number; name: string }[];
-  legends: { id: number; name: string }[];
+  legends: { id: number; name: string; description?: string }[];
   offices: VwOffice[];
   divisions: VwDivision[];
   handleInputChange: (field: string, value: any) => void;
@@ -133,7 +133,10 @@ export function SharedAssetFields({
                 <SelectContent>
                   {legends.map(legend => (
                     <SelectItem key={legend.id} value={legend.id.toString()}>
-                      {legend.name}
+                      <span>{legend.name}</span>
+                      {legend.description && (
+                        <span className="ml-2 text-xs text-slate-400">{legend.description}</span>
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>

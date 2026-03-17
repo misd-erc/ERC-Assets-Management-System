@@ -2376,6 +2376,7 @@ namespace API.Controllers
                 {
                     Id = model.Id,
                     Name = model.Name,
+                    Description = model.Description,
                     IsActive = model.IsActive
                 };
 

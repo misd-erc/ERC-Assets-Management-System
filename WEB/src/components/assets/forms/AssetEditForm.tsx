@@ -49,7 +49,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
   const [offices, setOffices] = useState<VwOffice[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
-  const [legends, setLegends] = useState<{ id: number; name: string }[]>([]);
+  const [legends, setLegends] = useState<{ id: number; name: string; description?: string }[]>([]);
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<{ value: string; label: string }[]>([]);
 
