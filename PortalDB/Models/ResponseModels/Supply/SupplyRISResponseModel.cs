@@ -2,6 +2,7 @@
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Office.Division;
+using PortalDB.Models.ResponseModels.Account;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -21,7 +22,7 @@ namespace PortalDB.Models.ResponseModels.Supply
         public string? ResponsibilityCenterCode { get; set; } = string.Empty;
         public string? RISNumber { get; set; } = string.Empty;
         public string? RISPurpose { get; set; } = string.Empty;
-        public long? RequestedBySystemUserId { get; set; }
+        public UserBasicResponseModel? RequestedBySystemUser { get; set; }
         public DateTime? RISRequestedDate { get; set; }
         public long? ApprovedBySystemUserId { get; set; }
         public DateTime? RISApprovedDate { get; set; }

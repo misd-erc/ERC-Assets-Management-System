@@ -15,7 +15,7 @@ namespace PortalDB.Models.QueryParams.Delivery
         [Required] public string ItemDescription { get; set; } = string.Empty;
         public string ItemSpecification { get; set; } = string.Empty;
         [Required] public long ItemQuantity { get; set; }
-        public int CurrentStock { get; set; }
+        //public int CurrentStock { get; set; }
         public int ReorderPoint { get; set; }
         [Required] public long UnitId { get; set; }
         [Required] public long UnitCost { get; set; }

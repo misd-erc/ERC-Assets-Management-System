@@ -70,8 +70,8 @@ namespace PortalDB.Entities.ASSET.Delivery
         [Column("DeliveryRecordItemQuantity")]
         public long? ItemQuantity { get; set; }
 
-        [Column("DeliveryRecordItemCurrentStock")]
-        public int? CurrentStock { get; set; }
+        //[Column("DeliveryRecordItemCurrentStock")]
+        //public int? CurrentStock { get; set; }
 
         [Column("SupplyUnitId")]
         public long? UnitId { get; set; }

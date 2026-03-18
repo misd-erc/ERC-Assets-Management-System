@@ -21,7 +21,7 @@
     quantity: raw.quantity,
     description: raw.description,
     measurementUnit: raw.measurementUnit,
-    currentStock: raw.currentStock,
+    currentStock: 0,
     unitCost: raw.unitCost,
     reorderPoint: raw.reorderPoint,
     storageLocation: raw.storageLocation,

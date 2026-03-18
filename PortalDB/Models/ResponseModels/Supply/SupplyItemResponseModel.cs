@@ -16,7 +16,7 @@ namespace PortalDB.Models.ResponseModels.Supply
         public TblSupplyUnit? MeasurementUnit { get; set; }
         public TblPTACategory? Category { get; set; }
         public string Description { get; set; } = string.Empty;
-        public int? CurrentStock { get; set; }
+        //public int? CurrentStock { get; set; }
         public long? Quantity { get; set; }
         public long? UnitCost { get; set; }
         public int? ReorderPoint { get; set; }

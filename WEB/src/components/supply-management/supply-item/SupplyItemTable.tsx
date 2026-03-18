@@ -28,7 +28,6 @@ const PAGE_SIZE = 10;
 
 export const SupplyItemTable = ({ data, onAdd, onView, onEdit, onDelete }: Props) => {
   const [page, setPage] = useState(1);
-
   const totalPages = Math.ceil(data.length / PAGE_SIZE);
   const paginatedData = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   // console.log(data);

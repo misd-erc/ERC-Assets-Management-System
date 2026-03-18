@@ -32,7 +32,6 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
     measurementUnitId: 0,
     unitCost: 0,
     code: '',
-    currentStock: 0,
     reorderPoint: 0,
     storageLocationId: 0,
     vendorId: 0
@@ -54,7 +53,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
     setItem({ 
       itemTypeId: 1, categoryId: 0, itemDescription: '', 
       itemQuantity: 0, measurementUnitId: 0, unitCost: 0,
-      code: '', currentStock: 0, reorderPoint: 0, 
+      code: '', reorderPoint: 0,
       storageLocationId: 0, vendorId: 0 
     });
   };
@@ -68,8 +67,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
         itemDescription: '', 
         categoryId: 0,
         storageLocationId: 0, 
-        vendorId: 0, 
-        currentStock: 0, 
+        vendorId: 0,
         reorderPoint: 0 
       }));
     } else {
@@ -83,7 +81,6 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
           categoryId: selected.category?.id || 0,
           storageLocationId: selected.storageLocation?.id || 0,
           vendorId: selected.vendor?.id || 0,
-          currentStock: (selected as any).currentStock || 0,
           reorderPoint: (selected as any).reorderPoint || 0
         }));
       }
@@ -233,16 +230,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Current Stock</Label>
-                  <Input 
-                    type="number" 
-                    value={item.currentStock} 
-                    onChange={e => setItem({...item, currentStock: Number(e.target.value)})} 
-                    required={isSupply} 
-                  />
-                </div>
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label>Reorder Point</Label>
                   <Input 

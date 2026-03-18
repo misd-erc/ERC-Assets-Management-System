@@ -10,6 +10,7 @@ using PortalDB.Models.QueryParams.Pagination;
 using PortalDB.Models.QueryParams.PTA;
 using PortalDB.Models.QueryParams.Supply;
 using PortalDB.Models.QueryParams.Universal;
+using PortalDB.Models.ResponseModels.Account;
 using PortalDB.Models.ResponseModels.Office;
 using PortalDB.Models.ResponseModels.Supply;
 using PortalDB.Models.Responses;
@@ -301,7 +302,6 @@ namespace API.Controllers
                         MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(x.MeasurementUnitId, context),
                         Description = x.Description,
                         Quantity = x.Quantity,
-                        CurrentStock = x.CurrentStock,
                         UnitCost = x.UnitCost,
                         ReorderPoint = x.ReorderPoint,
                         StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(x.StorageLocationId, context),
@@ -547,6 +547,8 @@ namespace API.Controllers
 
                 var supplyIResponses = new List<SupplyRISResponseModel>();
 
+
+
                 foreach (var x in supplyRISsList)
                 {
                     var supplyRISModel = new SupplyRISResponseModel
@@ -559,7 +561,26 @@ namespace API.Controllers
                         ResponsibilityCenterCode = x.ResponsibilityCenterCode,
                         RISNumber = x.RISNumber,
                         RISPurpose = x.RISPurpose,
-                        RequestedBySystemUserId = x.RISRequestedBySystemUserId,
+                        //RequestedBySystemUser = new UserBasicResponseModel
+                        //{
+                        //    _getTools.Account.GetTblSystemUserAsync(x.RISRequestedBySystemUserId, context)
+
+                        //    Id = x.Id,
+                        //    FirstName = x.FirstName,
+                        //    LastName = x.LastName,
+                        //    Email = x.Email,
+                        //    EmployeeId = x.EmployeeId,
+                        //    IsActive = x.IsActive,
+                        //    SystemRole = await _getTools.Account.GetSystemRoleWithScopesAsListAsync(x.SystemRoleId, context),
+                        //    SystemUserStatus = await _getTools.Account.GetSystemUserStatusAsync(x.StatusId, context),
+                        //    Office = await _getTools.Office.GetTblOfficeAsync(x.OfficeId, context),
+                        //    Division = await _getTools.Office.GetTblDivisionAsync(x.DivisionId, context),
+                        //    EmploymentType = await _getTools.Office.GetTblEmploymentTypeAsync(x.EmploymentTypeId ?? 0, context),
+                        //    Position = await _getTools.Office.GetTblPositionAsync(x.PositionId ?? 0, context),
+                        //    ProfilePictureStorageFile = await _getTools.Storage.GetTblFileStorageAsync(x.ProfilePictureFileStorageId, context),
+                        //    CreatedAt = x.CreatedAt,
+                        //    LastLoginAt = x.LastLoginAt
+                        //},
                         RISRequestedDate = x.RISRequestedDate,
                         ApprovedBySystemUserId = x.RISApprovedBySystemUserId,
                         RISApprovedDate = x.RISApprovedDate,
@@ -793,7 +814,6 @@ namespace API.Controllers
                     MeasurementUnitId = model.MeasurementUnitId,
                     Description = model.Description,
                     Quantity = model.Quantity,
-                    CurrentStock = model.CurrentStock,
                     UnitCost = model.UnitCost,
                     ReorderPoint = model.ReorderPoint,
                     StorageLocationId = model.StorageLocationId,
@@ -868,7 +888,6 @@ namespace API.Controllers
                                     CategoryId = deliveryRecordItem.CategoryId,
                                     Description = deliveryRecordItem.ItemDescription,
                                     MeasurementUnitId = deliveryRecordItem.UnitId,
-                                    CurrentStock = deliveryRecordItem.CurrentStock,
                                     UnitCost = deliveryRecordItem.UnitCost,
                                     ReorderPoint = deliveryRecordItem.ReorderPoint,
                                     StorageLocationId = deliveryRecordItem.StorageLocationId,
