@@ -594,6 +594,84 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+
+        [HttpGet("ris-item/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSupplyRISItems([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblSupplyRISItem>? supplyRISItems = await _getTools.Supply.GetTblSupplyRISItems(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyRISItems = supplyRISItems.Where(x =>
+                        (x.StockNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.ItemDescription ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    supplyRISItems = supplyRISItems.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    supplyRISItems = supplyRISItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = supplyRISItems.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var supplyRISItemsList = supplyRISItems
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var supplyRISItemsResponses = new List<SupplyRISItemResponseModel>();
+
+                foreach (var x in supplyRISItemsList)
+                {
+                    var supplyRISItemModel = new SupplyRISItemResponseModel
+                    {
+                        Id = x.Id,
+                        RISId = x.SupplyRISId,
+                        StockNumber = x.StockNumber,
+                        SupplyUnit = await _getTools.Supply.GetTblSupplyUnitAsync(x.UnitId, context),
+                        ItemDescription = x.ItemDescription,
+                        RequisitionQuantity = x.RequisitionQuantity,
+                        IsAvailable = x.IsAvailable,
+                        IssueQuantity = x.IssueQuantity,
+                        ItemRemarks = x.ItemRemarks,
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    supplyRISItemsResponses.Add(supplyRISItemModel);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply Items", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<SupplyRISItemResponseModel>.OkPaginated(
+                    supplyRISItemsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Supply Items have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         #endregion
 
         #region POST
@@ -864,7 +942,7 @@ namespace API.Controllers
                     List<TblSupplyRISItem>? SupplyRISItems = _getTools.Supply.GetTblSupplyRISItems(context)?.Where(x => x.SupplyRISId == supplyRIS.Id).ToList();
                     foreach (var SupplyRISItem in SupplyRISItems)
                     {
-                        //Dito magbabawas ng quantity
+                        //Dito magbabawas ng quantity if approved
                     }
                 }
 
@@ -875,6 +953,46 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok(new { SupplyRISId = supplyRISId }, $"Supply RIS has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("ris-item/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditSupplyRISItem([FromBody] EditSupplyRISItemQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblSupplyRISItem supplyRISItem = new()
+                {
+                    Id = model.Id,
+                    SupplyRISId = model.RISId,
+                    StockNumberEncrypted = model.StockNumberEncrypted,
+                    UnitId = model.UnitId,
+                    ItemDescription = model.ItemDescription,
+                    RequisitionQuantity = model.RequisitionQuantity,
+                    IsAvailable = model.IsAvailable,
+                    IssueQuantity = model.IssueQuantity,
+                    ItemRemarks = model.ItemRemarks,
+                    IsActive = model.IsActive
+                };
+
+                long supplyRISItemId = await _editTools.Supply.EditTblSupplyRISItemAsync(supplyRISItem, model.ActionBySystemUserId, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { SupplyRISItemId = supplyRISItemId }, $"Supply RIS Item has been {(model.Id == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
@@ -1051,6 +1169,35 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok($"Supply RIS has been deleted"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpDelete("ris-item/delete/{supplyRISItemId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteSupplyRISItem([FromQuery] SoloQueryParams model, [FromRoute] long supplyRISItemId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _editTools.Supply.DeleteTblSupplyRISItemAsync(supplyRISItemId, model.ActionBySystemUserId, context);
+
+                if (!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this Supply RIS Item, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Supply RIS Item has been deleted"));
 
             }
             catch (Exception ex)

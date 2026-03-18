@@ -18,7 +18,7 @@ namespace PortalDB.Models.QueryParams.Supply
         [Required] public bool IsAvailable { get; set; }
         [Required] public long IssueQuantity { get; set; }
         [Required] public string? ItemRemarks { get; set; }
-
+        [Required] public bool IsActive { get; set; }
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;
     }
