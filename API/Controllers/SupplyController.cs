@@ -262,7 +262,6 @@ namespace API.Controllers
 
             try
             {
-
                 IEnumerable<TblSupplyItem>? supplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
@@ -279,11 +278,35 @@ namespace API.Controllers
                 if (model.EndDate.HasValue)
                     supplyItems = supplyItems.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                int totalCount = supplyItems.Count();
+                var groupedItems = supplyItems
+                    .GroupBy(x => new { x.Code, x.Description })
+                    .Select(g =>
+                    {
+                        var firstItem = g.First();
+                        return new TblSupplyItem
+                        {
+                            Code = g.Key.Code,
+                            Description = g.Key.Description,
+                            Quantity = g.Sum(x => x.Quantity),
+                            UnitCost = g.Sum(x => x.UnitCost), 
+
+                            Id = firstItem.Id,
+                            IARId = firstItem.IARId,
+                            CategoryId = firstItem.CategoryId,
+                            MeasurementUnitId = firstItem.MeasurementUnitId,
+                            ReorderPoint = firstItem.ReorderPoint,
+                            StorageLocationId = firstItem.StorageLocationId,
+                            VendorId = firstItem.VendorId,
+                            IsActive = firstItem.IsActive,
+                            CreatedAt = firstItem.CreatedAt
+                        };
+                    });
+
+                int totalCount = groupedItems.Count();
 
                 int skip = (model.PageNumber - 1) * model.PageSize;
 
-                var supplyItemsList = supplyItems
+                var supplyItemsList = groupedItems
                     .OrderByDescending(x => x.CreatedAt)
                     .Skip(skip)
                     .Take(model.PageSize)
@@ -315,6 +338,7 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply Items", actionBy: model.ActionBySystemUserId);
+
                 return Ok(ApiResponse<SupplyItemResponseModel>.OkPaginated(
                     supplyItemsResponses,
                     model.PageNumber,
