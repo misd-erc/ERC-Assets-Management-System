@@ -110,7 +110,7 @@
       CategoryId: payload.categoryId ?? 0,
       Description: payload.description,
       MeasurementUnitId: payload.measurementUnitId ?? 0,
-      CurrentStock: payload.currentStock,
+      CurrentStock: 0,
       UnitCost: payload.unitCost,
       ReorderPoint: payload.reorderPoint,
       StorageLocationId: payload.storageLocationId ?? 0,
