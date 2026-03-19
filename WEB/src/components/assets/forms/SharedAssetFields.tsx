@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Package, DollarSign, User, Plus, X, RotateCcw } from 'lucide-react';
 import ReactSelect from 'react-select';
 import { FormAsset, UnifiedMovement, NormalizedEmployee, Part } from '@/types/asset/UnifiedAsset';
 import { VwOffice, VwDivision } from '@/types/office';
+import { getConditions } from '@/api/asset/inventoryApi';
 
 
 interface SharedAssetFieldsProps {
@@ -62,6 +63,12 @@ export function SharedAssetFields({
   showAccountabilitySection,
   onToggleAccountabilitySection,
 }: SharedAssetFieldsProps) {
+  const [conditions, setConditions] = useState<string[]>([]);
+
+  useEffect(() => {
+    getConditions().then(setConditions).catch(() => {});
+  }, []);
+
   const plantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId === 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
   const nonPlantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId !== 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
 
@@ -547,12 +554,16 @@ export function SharedAssetFields({
                         <SelectValue placeholder="Select condition" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Working">Working</SelectItem>
-                        <SelectItem value="Not Working">Not Working</SelectItem>
-                        <SelectItem value="IIRUP">IIRUP</SelectItem>
-                        <SelectItem value="Disposed">Disposed</SelectItem>
-                        <SelectItem value="Missing">Missing</SelectItem>
-                        <SelectItem value="Unserviceable">Unserviceable</SelectItem>
+                        {conditions.length > 0
+                          ? conditions.map(c => (
+                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                            ))
+                          : (
+                              <SelectItem value={entry.condition || 'Working'}>
+                                {entry.condition || 'Working'}
+                              </SelectItem>
+                            )
+                        }
                       </SelectContent>
                     </Select>
                   </div>
