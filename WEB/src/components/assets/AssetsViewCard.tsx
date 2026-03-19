@@ -266,7 +266,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {ppeAsset.movements && ppeAsset.movements.length > 0 ? (
+            {ppeAsset.movements && ppeAsset.movements.filter(m => m.isActive !== false).length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -281,7 +281,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {ppeAsset.movements.map((movement) => (
+                  {ppeAsset.movements.filter(m => m.isActive !== false).map((movement) => (
                     <TableRow key={movement.id}>
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
                       <TableCell>{movement.parIcsNumber || '-'}</TableCell>
@@ -513,7 +513,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {asset.movements && asset.movements.length > 0 ? (
+            {asset.movements && asset.movements.filter(m => m.isActive !== false).length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -527,7 +527,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {asset.movements.map((movement) => (
+                  {asset.movements.filter(m => m.isActive !== false).map((movement) => (
                     <TableRow key={movement.id}>
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
                       <TableCell>{movement.ptrItrNumber || '-'}</TableCell>

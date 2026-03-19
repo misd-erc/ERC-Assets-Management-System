@@ -37,7 +37,7 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
     unitValue: 0,
     dateAcquired: '',
     estimatedUsefulLife: 5,
-    fiscalDate: new Date().toISOString().split('T')[0],
+    fiscalDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
     condition: 'Working',
     movements: [],
   });

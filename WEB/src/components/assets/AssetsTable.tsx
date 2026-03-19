@@ -72,8 +72,9 @@ export function AssetsTable({
   }
 
   const getPlantillaEmployeeName = (asset: Asset): string => {
-    if (asset.movements && asset.movements.length > 0) {
-      const latestMovement = asset.movements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+    const activeMovements = (asset.movements || []).filter(m => m.isActive !== false);
+    if (activeMovements.length > 0) {
+      const latestMovement = activeMovements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
 
       // First try embedded employee (plantilla only)
       if (latestMovement.employee && Array.isArray(latestMovement.employee) && latestMovement.employee.length > 0) {
@@ -98,8 +99,9 @@ export function AssetsTable({
   };
 
   const getNonPlantillaEmployeeName = (asset: Asset): string => {
-    if (asset.movements && asset.movements.length > 0) {
-      const latestMovement = asset.movements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+    const activeMovements = (asset.movements || []).filter(m => m.isActive !== false);
+    if (activeMovements.length > 0) {
+      const latestMovement = activeMovements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
 
       // First try embedded employee (non-plantilla only)
       if (latestMovement.employee && Array.isArray(latestMovement.employee) && latestMovement.employee.length > 0) {
@@ -213,9 +215,10 @@ export function AssetsTable({
             </TableHeader>
             <TableBody>
               {assets.map((asset) => {
+                const activeMovements = (asset.movements || []).filter(m => m.isActive !== false);
                 const latestMovement =
-                  asset.movements && asset.movements.length > 0
-                    ? asset.movements[asset.movements.length - 1]
+                  activeMovements.length > 0
+                    ? activeMovements[activeMovements.length - 1]
                     : null;
 
                 return (
