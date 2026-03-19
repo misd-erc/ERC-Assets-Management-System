@@ -167,12 +167,14 @@ const ICSDocument = ({
   position,
   office,
   icsNumber,
+  nonPlantillaEmployeeName,
 }: {
   rows: ICSRow[];
   employeeName: string;
   position: string;
   office: string;
   icsNumber?: string;
+  nonPlantillaEmployeeName?: string;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -259,7 +261,9 @@ const ICSDocument = ({
 
       {/* SUB-ICS */}
       <View style={{ flexDirection: "row", marginTop: 8 }}>
-        <Text style={{ fontSize: 8, fontWeight: "bold" }}>Sub-ICS :</Text>
+        <Text style={{ fontSize: 8, fontWeight: "bold" }}>
+          Sub-ICS :{nonPlantillaEmployeeName ? ` ${nonPlantillaEmployeeName.toUpperCase()}` : ""}
+        </Text>
       </View>
     </Page>
   </Document>
@@ -286,6 +290,7 @@ export class ICSGenerator {
     let employeeName = 'N/A';
     let position = 'N/A';
     let office = 'N/A';
+    let nonPlantillaEmployeeName = '';
 
     if (movement) {
       // Try to get employee details from movement
@@ -297,6 +302,13 @@ export class ICSGenerator {
           employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
           office = empData.office?.name || 'N/A';
+        }
+      }
+      if (movement.nonPlantillaEmployeeId) {
+        const npResp = await getEmployeeById(movement.nonPlantillaEmployeeId);
+        if (npResp.success && npResp.data.length > 0) {
+          const npData = npResp.data[0];
+          nonPlantillaEmployeeName = `${npData.lastName}, ${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
         }
       }
     }
@@ -318,6 +330,7 @@ export class ICSGenerator {
         position={position}
         office={office}
         icsNumber={number}
+        nonPlantillaEmployeeName={nonPlantillaEmployeeName}
       />
     ).toBlob();
     return URL.createObjectURL(blob);
@@ -335,6 +348,7 @@ export class ICSGenerator {
     let employeeName = 'N/A';
     let position = 'N/A';
     let office = 'N/A';
+    let nonPlantillaEmployeeName = '';
 
     if (movement) {
       // Try to get employee details from movement
@@ -346,6 +360,13 @@ export class ICSGenerator {
           employeeName = `${empData.lastName}, ${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
           office = empData.office?.name || 'N/A';
+        }
+      }
+      if (movement.nonPlantillaEmployeeId) {
+        const npResp = await getEmployeeById(movement.nonPlantillaEmployeeId);
+        if (npResp.success && npResp.data.length > 0) {
+          const npData = npResp.data[0];
+          nonPlantillaEmployeeName = `${npData.lastName}, ${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
         }
       }
     }
@@ -364,6 +385,7 @@ export class ICSGenerator {
         employeeName={employeeName}
         position={position}
         office={office}
+        nonPlantillaEmployeeName={nonPlantillaEmployeeName}
       />
     ).toBlob();
 
@@ -383,6 +405,7 @@ export class ICSGenerator {
     let employeeName = first.employeeName || 'N/A';
     let position = 'N/A';
     let office = first.officeName || 'N/A';
+    let nonPlantillaEmployeeName = first.subEmployeeName || '';
 
     if (first.employeeId) {
       try {
@@ -394,6 +417,16 @@ export class ICSGenerator {
           office = empData.office?.name || first.officeName || 'N/A';
         }
       } catch { /* use fallback values */ }
+    }
+
+    if (first.subEmployeeId && !nonPlantillaEmployeeName) {
+      try {
+        const npResp = await getEmployeeById(first.subEmployeeId);
+        if (npResp.success && npResp.data.length > 0) {
+          const npData = npResp.data[0];
+          nonPlantillaEmployeeName = `${npData.lastName}, ${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
+        }
+      } catch { /* use fallback */ }
     }
 
     const rows: ICSRow[] = records.map((r) => ({
@@ -411,6 +444,7 @@ export class ICSGenerator {
         position={position}
         office={office}
         icsNumber={first.parIcsNumber}
+        nonPlantillaEmployeeName={nonPlantillaEmployeeName}
       />
     ).toBlob();
 

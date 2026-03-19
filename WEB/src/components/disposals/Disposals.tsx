@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, FileText, AlertTriangle, DollarSign, CheckCircle, Clock, Archive, Eye, Printer } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,14 @@ import { DataTable } from '@/components/common/DataTable';
 import { formatCurrency } from '@/utils/formatters';
 import { getStatusBadge } from '@/components/disposals/helpers';
 import { toast } from 'sonner';
+import {
+  getDisposals,
+  createDisposal,
+  approveDisposal as approveDisposalApi,
+  markDisposed as markDisposedApi,
+  getAvailablePTAs,
+  type DisposalRecord,
+} from '@/api/asset/disposalApi';
 
 export interface DisposalAsset {
   id: string;
@@ -33,11 +42,13 @@ export interface DisposalAsset {
   currentValue: number;
   condition: string;
   location: string;
+  group: 'PPE' | 'SE';
 }
 
 export interface Disposal {
   id: string;
   disposalNumber: string;
+  group: 'PPE' | 'SE';
   assets: DisposalAsset[];
   reason: 'End of Life' | 'Damaged' | 'Obsolete' | 'Lost' | 'Stolen';
   method: 'Sale' | 'Donation' | 'Destruction' | 'Return to Supplier';
@@ -53,65 +64,51 @@ export interface Disposal {
   status: 'Pending' | 'Approved' | 'Disposed' | 'Rejected';
 }
 
+function mapApiToDisposal(record: DisposalRecord): Disposal {
+  const totalValue = record.items.reduce((sum, item) => sum + (item.pta?.unitValue ?? 0), 0);
+  return {
+    id: String(record.id),
+    disposalNumber: record.disposalNumber,
+    group: record.group as 'PPE' | 'SE',
+    assets: record.items.map(item => ({
+      id: String(item.ptaId),
+      code: item.pta?.propertyNumber ?? '',
+      description: item.pta?.description ?? '',
+      category: item.pta?.category ?? '',
+      acquisitionCost: item.pta?.unitValue ?? 0,
+      currentValue: item.pta?.unitValue ?? 0,
+      condition: '',
+      location: '',
+      group: (item.pta?.group as 'PPE' | 'SE') ?? (record.group as 'PPE' | 'SE'),
+    })),
+    reason: record.reason as Disposal['reason'],
+    method: record.method as Disposal['method'],
+    requestedBy: record.requestedByName ?? `User #${record.requestedBySystemUserId}`,
+    dateRequested: record.dateRequested?.split('T')[0] ?? '',
+    approvedBy: record.approvedByName,
+    dateApproved: record.dateApproved?.split('T')[0],
+    dateDisposed: record.dateDisposed?.split('T')[0],
+    totalValue,
+    proceedAmount: record.proceedAmount ?? undefined,
+    buyer: record.buyer,
+    remarks: record.remarks,
+    status: record.status,
+  };
+}
+
 export function Disposals() {
-  const [disposals, setDisposals] = useState<Disposal[]>([
-    {
-      id: '1',
-      disposalNumber: 'DISP-2024-001',
-      assets: [
-        { id: '1', code: 'PPE-2019-001', description: 'HP Desktop Computer Pentium', category: 'ICT Equipment', acquisitionCost: 25000, currentValue: 2500, condition: 'For Disposal', location: 'IT Dept' }
-      ],
-      reason: 'End of Life',
-      method: 'Donation',
-      requestedBy: 'John Doe',
-      dateRequested: '2024-11-15',
-      approvedBy: 'Property Custodian',
-      dateApproved: '2024-11-20',
-      totalValue: 2500,
-      status: 'Approved',
-      remarks: 'To be donated to local government unit'
-    },
-    {
-      id: '2',
-      disposalNumber: 'DISP-2024-002',
-      assets: [
-        { id: '2', code: 'PPE-2020-015', description: 'Old Printer Canon', category: 'ICT Equipment', acquisitionCost: 8000, currentValue: 800, condition: 'Unserviceable', location: 'Admin' }
-      ],
-      reason: 'Obsolete',
-      method: 'Destruction',
-      requestedBy: 'Jane Smith',
-      dateRequested: '2024-11-18',
-      totalValue: 800,
-      status: 'Pending'
-    },
-    {
-      id: '3',
-      disposalNumber: 'DISP-2024-003',
-      assets: [
-        { id: '3', code: 'PPE-2018-032', description: 'Office Chair - Damaged', category: 'Furniture', acquisitionCost: 5000, currentValue: 500, condition: 'For Disposal', location: 'Legal Dept' }
-      ],
-      reason: 'Damaged',
-      method: 'Sale',
-      requestedBy: 'Mike Johnson',
-      dateRequested: '2024-11-10',
-      approvedBy: 'Property Custodian',
-      dateApproved: '2024-11-12',
-      dateDisposed: '2024-11-25',
-      totalValue: 500,
-      proceedAmount: 200,
-      buyer: 'Scrap Dealer Inc.',
-      status: 'Disposed',
-      remarks: 'Sold as scrap material'
-    }
-  ]);
+  const [disposals, setDisposals] = useState<Disposal[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [showStartDialog, setShowStartDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState<'PPE' | 'SE'>('PPE');
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showDisposedDialog, setShowDisposedDialog] = useState(false);
   const [selectedDisposal, setSelectedDisposal] = useState<Disposal | null>(null);
 
   const [formData, setFormData] = useState({
+    group: 'PPE' as 'PPE' | 'SE',
     reason: 'End of Life' as const,
     method: 'Sale' as const,
     requestedBy: 'Current User',
@@ -119,23 +116,68 @@ export function Disposals() {
   });
 
   const [disposedFormData, setDisposedFormData] = useState({
-    dateDisposed: new Date().toISOString().split('T')[0],
+    dateDisposed: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(),
     proceedAmount: 0,
     buyer: '',
     remarks: ''
   });
 
-  const [availableAssets] = useState<DisposalAsset[]>([
-    { id: '10', code: 'PPE-2017-045', description: 'Old Monitor LCD 17"', category: 'ICT Equipment', acquisitionCost: 6000, currentValue: 600, condition: 'For Disposal', location: 'Finance' },
-    { id: '11', code: 'PPE-2018-078', description: 'Broken Photocopier', category: 'ICT Equipment', acquisitionCost: 45000, currentValue: 4500, condition: 'Unserviceable', location: 'Admin' },
-    { id: '12', code: 'PPE-2019-102', description: 'Damaged Filing Cabinet', category: 'Furniture', acquisitionCost: 8000, currentValue: 800, condition: 'For Disposal', location: 'HR' }
-  ]);
-
+  const [availableAssets, setAvailableAssets] = useState<DisposalAsset[]>([]);
+  const [assetsLoading, setAssetsLoading] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+
+  // Load disposals from API
+  const loadDisposals = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const result = await getDisposals();
+      setDisposals(result.items.map(mapApiToDisposal));
+    } catch {
+      toast.error('Failed to load disposals');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDisposals();
+  }, [loadDisposals]);
+
+  // Load available PTAs when disposal dialog is open or group changes
+  useEffect(() => {
+    if (!showStartDialog) return;
+    let cancelled = false;
+    const load = async () => {
+      setAssetsLoading(true);
+      try {
+        const assets = await getAvailablePTAs(formData.group);
+        if (!cancelled) {
+          setAvailableAssets(assets.map(a => ({
+            id: String(a.id),
+            code: a.propertyNumber,
+            description: a.description,
+            category: a.category,
+            acquisitionCost: a.unitValue,
+            currentValue: a.unitValue,
+            condition: '',
+            location: '',
+            group: a.group as 'PPE' | 'SE',
+          })));
+        }
+      } catch {
+        if (!cancelled) setAvailableAssets([]);
+      } finally {
+        if (!cancelled) setAssetsLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [showStartDialog, formData.group]);
 
   const handleStartDisposal = () => {
     setSelectedAssets([]);
     setFormData({
+      group: 'PPE',
       reason: 'End of Life',
       method: 'Sale',
       requestedBy: 'Current User',
@@ -144,7 +186,7 @@ export function Disposals() {
     setShowStartDialog(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (selectedAssets.length === 0) {
@@ -152,25 +194,26 @@ export function Disposals() {
       return;
     }
 
-    const assets = availableAssets.filter(a => selectedAssets.includes(a.id));
-    const totalValue = assets.reduce((sum, a) => sum + a.currentValue, 0);
+    try {
+      const result = await createDisposal({
+        id: 0,
+        group: formData.group,
+        reason: formData.reason,
+        method: formData.method,
+        ptaIds: selectedAssets.map(id => Number(id)),
+        remarks: formData.remarks || undefined,
+      });
 
-    const newDisposal: Disposal = {
-      id: String(disposals.length + 1),
-      disposalNumber: `DISP-${new Date().getFullYear()}-${String(disposals.length + 1).padStart(3, '0')}`,
-      assets,
-      reason: formData.reason,
-      method: formData.method,
-      requestedBy: formData.requestedBy,
-      dateRequested: new Date().toISOString().split('T')[0],
-      totalValue,
-      status: 'Pending',
-      remarks: formData.remarks
-    };
-
-    setDisposals(prev => [newDisposal, ...prev]);
-    toast.success(`Disposal request ${newDisposal.disposalNumber} created successfully`);
-    setShowStartDialog(false);
+      if (result) {
+        toast.success(`Disposal request ${result.disposalNumber} created successfully`);
+        setShowStartDialog(false);
+        await loadDisposals();
+      } else {
+        toast.error('Failed to create disposal request');
+      }
+    } catch {
+      toast.error('Failed to create disposal request');
+    }
   };
 
   const handleView = (disposal: Disposal) => {
@@ -183,28 +226,29 @@ export function Disposals() {
     setShowApproveDialog(true);
   };
 
-  const confirmApprove = () => {
-    if (selectedDisposal) {
-      setDisposals(prev => prev.map(d =>
-        d.id === selectedDisposal.id
-          ? {
-              ...d,
-              status: 'Approved' as const,
-              approvedBy: 'Current User',
-              dateApproved: new Date().toISOString().split('T')[0]
-            }
-          : d
-      ));
-      toast.success(`Disposal ${selectedDisposal.disposalNumber} approved`);
+  const confirmApprove = async () => {
+    if (!selectedDisposal) return;
+    try {
+      const success = await approveDisposalApi(Number(selectedDisposal.id));
+      if (success) {
+        toast.success(`Disposal ${selectedDisposal.disposalNumber} approved`);
+        await loadDisposals();
+      } else {
+        toast.error('Failed to approve disposal');
+      }
+    } catch {
+      toast.error('Failed to approve disposal');
+    } finally {
+      setShowApproveDialog(false);
+      setSelectedDisposal(null);
     }
-    setShowApproveDialog(false);
-    setSelectedDisposal(null);
   };
 
   const handleMarkDisposed = (disposal: Disposal) => {
     setSelectedDisposal(disposal);
+    const d = new Date();
     setDisposedFormData({
-      dateDisposed: new Date().toISOString().split('T')[0],
+      dateDisposed: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
       proceedAmount: 0,
       buyer: '',
       remarks: ''
@@ -212,26 +256,28 @@ export function Disposals() {
     setShowDisposedDialog(true);
   };
 
-  const confirmDisposed = (e: React.FormEvent) => {
+  const confirmDisposed = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (selectedDisposal) {
-      setDisposals(prev => prev.map(d =>
-        d.id === selectedDisposal.id
-          ? {
-              ...d,
-              status: 'Disposed' as const,
-              dateDisposed: disposedFormData.dateDisposed,
-              proceedAmount: disposedFormData.proceedAmount,
-              buyer: disposedFormData.buyer,
-              remarks: d.remarks + (disposedFormData.remarks ? `\n${disposedFormData.remarks}` : '')
-            }
-          : d
-      ));
-      toast.success(`Disposal ${selectedDisposal.disposalNumber} marked as disposed`);
+    if (!selectedDisposal) return;
+    try {
+      const success = await markDisposedApi(Number(selectedDisposal.id), {
+        dateDisposed: disposedFormData.dateDisposed,
+        proceedAmount: disposedFormData.proceedAmount || undefined,
+        buyer: disposedFormData.buyer || undefined,
+        remarks: disposedFormData.remarks || undefined,
+      });
+      if (success) {
+        toast.success(`Disposal ${selectedDisposal.disposalNumber} marked as disposed`);
+        await loadDisposals();
+      } else {
+        toast.error('Failed to mark disposal as disposed');
+      }
+    } catch {
+      toast.error('Failed to mark disposal as disposed');
+    } finally {
+      setShowDisposedDialog(false);
+      setSelectedDisposal(null);
     }
-    setShowDisposedDialog(false);
-    setSelectedDisposal(null);
   };
 
   const handlePrint = (disposal: Disposal) => {
@@ -317,6 +363,10 @@ export function Disposals() {
   const approvedCount = disposals.filter(d => d.status === 'Approved').length;
   const disposedCount = disposals.filter(d => d.status === 'Disposed').length;
   const totalValue = disposals.filter(d => d.status === 'Disposed').reduce((sum, d) => sum + (d.proceedAmount || 0), 0);
+
+  const ppeDisposals = disposals.filter(d => d.group === 'PPE');
+  const seDisposals = disposals.filter(d => d.group === 'SE');
+  const activeDisposals = activeTab === 'PPE' ? ppeDisposals : seDisposals;
 
   return (
     <div className="p-6 pt-20 space-y-6">
@@ -432,12 +482,46 @@ export function Disposals() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable
-            data={disposals}
-            columns={columns}
-            title="disposals"
-            emptyMessage="No disposal records found."
-          />
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'PPE' | 'SE')}>
+            <TabsList className="w-full h-auto p-1 bg-slate-100 rounded-xl mb-5 grid grid-cols-2 gap-1">
+              <TabsTrigger
+                value="PPE"
+                className="rounded-lg py-3 px-4 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-500"
+              >
+                <span className="flex flex-col items-center gap-0.5">
+                  <span className="font-semibold">PPE</span>
+                  <span className="text-xs font-normal opacity-70">IIRUP</span>
+                </span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="SE"
+                className="rounded-lg py-3 px-4 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-500"
+              >
+                <span className="flex flex-col items-center gap-0.5">
+                  <span className="font-semibold">SE</span>
+                  <span className="text-xs font-normal opacity-70">IIRSP</span>
+                </span>
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="PPE">
+              <p className="text-xs text-slate-500 mb-3">Inventory and Inspection Report of Unserviceable Properties — PPE</p>
+              <DataTable
+                data={ppeDisposals}
+                columns={columns}
+                title="IIRUP records"
+                emptyMessage="No IIRUP disposal records found."
+              />
+            </TabsContent>
+            <TabsContent value="SE">
+              <p className="text-xs text-slate-500 mb-3">Inventory and Inspection Report of Semi-Expendable Properties — SE</p>
+              <DataTable
+                data={seDisposals}
+                columns={columns}
+                title="IIRSP records"
+                emptyMessage="No IIRSP disposal records found."
+              />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
@@ -453,6 +537,27 @@ export function Disposals() {
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
               <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 col-span-2">
+                  <Label>Asset Type *</Label>
+                  <div className="flex gap-3">
+                    {(['PPE', 'SE'] as const).map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => { setFormData(prev => ({ ...prev, group: g })); setSelectedAssets([]); }}
+                        className={`flex-1 rounded-lg border-2 py-2.5 text-sm font-semibold transition-colors ${
+                          formData.group === g
+                            ? g === 'PPE'
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-purple-500 bg-purple-50 text-purple-700'
+                            : 'border-input bg-background text-slate-600 hover:bg-accent'
+                        }`}
+                      >
+                        {g === 'PPE' ? 'PPE — IIRUP' : 'SE — IIRSP'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label>Reason for Disposal *</Label>
                   <Select 
@@ -503,7 +608,12 @@ export function Disposals() {
               <div className="space-y-2">
                 <Label>Select Assets for Disposal *</Label>
                 <div className="border rounded-lg p-4 space-y-2 max-h-96 overflow-y-auto">
-                  {availableAssets.map((asset) => (
+                  {assetsLoading ? (
+                    <p className="text-sm text-slate-500 text-center py-4">Loading assets...</p>
+                  ) : availableAssets.filter(a => a.group === formData.group).length === 0 ? (
+                    <p className="text-sm text-slate-500 text-center py-4">No assets available for disposal.</p>
+                  ) : (
+                    availableAssets.filter(a => a.group === formData.group).map((asset) => (
                     <div key={asset.id} className="flex items-center space-x-2 p-3 border rounded hover:bg-slate-50">
                       <Checkbox
                         checked={selectedAssets.includes(asset.id)}
@@ -526,7 +636,8 @@ export function Disposals() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ))
+                  )}
                 </div>
                 {selectedAssets.length > 0 && (
                   <p className="text-sm text-slate-600 mt-2">

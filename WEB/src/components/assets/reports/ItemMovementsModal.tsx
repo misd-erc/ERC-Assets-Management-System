@@ -44,20 +44,29 @@ export function ItemMovementsModal({
   };
 
   const getMovementDetails = (movement: UnifiedMovement) => {
-    const employee = Array.isArray(movement.employee) ? movement.employee[0] : movement.employee;
-    
-    // Build full name
-    const fullName = employee
-      ? `${employee.lastName}, ${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''}${employee.suffixName ? ` ${employee.suffixName}` : ''}`
-      : 'N/A';
-    
-    // Get office name
-    const officeName = employee?.office?.name || 'N/A';
-    
-    // Get original employee ID
+    const employees = Array.isArray(movement.employee) ? movement.employee : (movement.employee ? [movement.employee] : []);
+
+    const plantillaEmp = movement.plantillaEmployeeId
+      ? employees.find(e => e.id === movement.plantillaEmployeeId) ?? null
+      : null;
+    const nonPlantillaEmp = movement.nonPlantillaEmployeeId
+      ? employees.find(e => e.id === movement.nonPlantillaEmployeeId) ?? null
+      : null;
+
+    const buildName = (e: typeof employees[0] | null) =>
+      e ? `${e.lastName}, ${e.firstName}${e.middleName ? ` ${e.middleName}` : ''}${e.suffixName ? ` ${e.suffixName}` : ''}` : null;
+
+    const plantillaName = buildName(plantillaEmp);
+    const nonPlantillaName = buildName(nonPlantillaEmp);
+
+    // Fallback: if neither matched by id, use first employee
+    const fallbackEmp = !plantillaEmp && !nonPlantillaEmp ? (employees[0] ?? null) : null;
+    const fallbackName = buildName(fallbackEmp);
+
+    const officeName = (plantillaEmp ?? nonPlantillaEmp ?? fallbackEmp)?.office?.name || 'N/A';
     const employeeId = movement.plantillaEmployeeIdOriginal || movement.nonPlantillaEmployeeIdOriginal || 'N/A';
-    
-    return { fullName, officeName, employeeId };
+
+    return { plantillaName, nonPlantillaName, fallbackName, officeName, employeeId };
   };
 
   if (!item) return null;
@@ -129,7 +138,7 @@ export function ItemMovementsModal({
               ) : (
                 <div className="p-4 space-y-3">
                   {activeMovements.map((movement, index) => {
-                    const { fullName, officeName, employeeId } = getMovementDetails(movement);
+                    const { plantillaName, nonPlantillaName, fallbackName, officeName, employeeId } = getMovementDetails(movement);
                     return (
                       <div
                         key={movement.id || index}
@@ -149,14 +158,28 @@ export function ItemMovementsModal({
                                 {movement.condition}
                               </Badge>
                             </div>
-                            <div className="text-sm font-semibold text-slate-900 dark:text-white">
-                              {fullName}
-                            </div>
+                            {plantillaName || nonPlantillaName ? (
+                              <>
+                                {plantillaName && (
+                                  <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400 mr-1">Plantilla:</span>
+                                    {plantillaName}
+                                  </div>
+                                )}
+                                {nonPlantillaName && (
+                                  <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                                    <span className="text-xs font-normal text-slate-500 dark:text-slate-400 mr-1">Non-Plantilla:</span>
+                                    {nonPlantillaName}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                                {fallbackName ?? 'N/A'}
+                              </div>
+                            )}
                             <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                               {officeName}
-                            </div>
-                            <div className="text-xs text-slate-600 dark:text-slate-400">
-                              Employee ID: {employeeId}
                             </div>
                             {movement.parIcsNumber && (
                               <div className="text-xs font-medium text-blue-700 dark:text-blue-400 mt-1">

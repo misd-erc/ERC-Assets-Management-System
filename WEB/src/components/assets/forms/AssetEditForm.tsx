@@ -39,7 +39,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
     unitValue: asset.unitValue || 0,
     dateAcquired: asset.dateAcquired || '',
     estimatedUsefulLife: asset.estimatedUsefulLife || 5,
-    fiscalDate: asset.fiscalDate || new Date().toISOString().split('T')[0],
+    fiscalDate: asset.fiscalDate || (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
     condition: asset.condition || 'Working',
     movements: asset.movements || [],
   });
@@ -49,7 +49,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
   const [offices, setOffices] = useState<VwOffice[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
-  const [legends, setLegends] = useState<{ id: number; name: string }[]>([]);
+  const [legends, setLegends] = useState<{ id: number; name: string; description?: string }[]>([]);
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<{ value: string; label: string }[]>([]);
 
@@ -95,14 +95,18 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         unitValue: asset.unitValue || 0,
         dateAcquired: asset.dateAcquired || '',
         estimatedUsefulLife: asset.estimatedUsefulLife || 5,
-        fiscalDate: asset.fiscalDate || new Date().toISOString().split('T')[0],
+        fiscalDate: asset.fiscalDate || (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
         condition: asset.condition || 'Working',
         movements: asset.movements || [],
       });
 
       // Initialize accountability entries from movements
       if (asset.movements && asset.movements.length > 0) {
-        setAccountabilityEntries(asset.movements);
+        setAccountabilityEntries(asset.movements.map(m => ({
+          ...m,
+          actualOfficeId: m.actualOfficeId || (m.office as any)?.id || 0,
+          actualDivisionId: m.actualDivisionId || (m.division as any)?.id || 0,
+        })));
         setShowAccountabilitySection(true);
       } else {
         setAccountabilityEntries([]);
@@ -142,6 +146,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         actualOfficeId: movement.actualOfficeId || 0,
         actualDivisionId: movement.actualDivisionId || 0,
         condition: movement.condition || 'Working',
+        isActive: movement.isActive !== undefined ? movement.isActive : true,
       }))
       : [];
 
@@ -174,7 +179,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
       unitValue: formData.unitValue,
       dateAcquired: formData.dateAcquired,
       estimatedUsefulLife: formData.estimatedUsefulLife,
-      fiscalDate: formData.fiscalDate ?? new Date().toISOString().split('T')[0],
+      fiscalDate: formData.fiscalDate ?? (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
       movements: preparedMovements,
       condition: formData.condition,
       isActive: asset.isActive,
@@ -252,9 +257,22 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
   };
 
   const handleRemoveAccountabilityEntry = (index: number) => {
-    if (accountabilityEntries.length > 1) {
+    const entry = accountabilityEntries[index];
+    if (entry.id && entry.id > 0) {
+      // Soft-delete existing saved movement: set isActive = false so the API deactivates it
+      setAccountabilityEntries((prev) =>
+        prev.map((e, i) => (i === index ? { ...e, isActive: false } : e))
+      );
+    } else {
+      // Hard-remove unsaved (new) entries
       setAccountabilityEntries((prev) => prev.filter((_, i) => i !== index));
     }
+  };
+
+  const handleRestoreAccountabilityEntry = (index: number) => {
+    setAccountabilityEntries((prev) =>
+      prev.map((e, i) => (i === index ? { ...e, isActive: true } : e))
+    );
   };
 
   const handleAccountabilityEntryChange = (index: number, field: string, value: any) => {
@@ -373,6 +391,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         handleRemovePart={handleRemovePart}
         handleAddAccountabilityEntry={handleAddAccountabilityEntry}
         handleRemoveAccountabilityEntry={handleRemoveAccountabilityEntry}
+        handleRestoreAccountabilityEntry={handleRestoreAccountabilityEntry}
         handleAccountabilityEntryChange={handleAccountabilityEntryChange}
         getUnitOfMeasurementOptions={getUnitOfMeasurementOptions}
       />
