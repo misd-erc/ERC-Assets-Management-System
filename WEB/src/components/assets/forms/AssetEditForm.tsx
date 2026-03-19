@@ -102,7 +102,11 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
 
       // Initialize accountability entries from movements
       if (asset.movements && asset.movements.length > 0) {
-        setAccountabilityEntries(asset.movements);
+        setAccountabilityEntries(asset.movements.map(m => ({
+          ...m,
+          actualOfficeId: m.actualOfficeId || (m.office as any)?.id || 0,
+          actualDivisionId: m.actualDivisionId || (m.division as any)?.id || 0,
+        })));
         setShowAccountabilitySection(true);
       } else {
         setAccountabilityEntries([]);
