@@ -40,6 +40,7 @@ import { SEPropertyReportGenerator, SEPropertyReportFilterModal } from './SEProp
 import { PTRGenerationModal } from './PTRGenerationModal';
 import { ITRGenerationModal } from './ITRGenerationModal';
 import { ReturnReceiptGenerationModal } from './ReturnReceiptGenerationModal';
+import { IIRUPGenerationModal } from './IIRUPGenerator';
 import { toast } from 'sonner';
 
 
@@ -69,6 +70,8 @@ export function ReportTab() {
   const [showRRPPE, setShowRRPPE] = useState(false);
   const [showRRSP, setShowRRSP] = useState(false);
   const [showPAL, setShowPAL] = useState(false);
+  const [showIIRUP, setShowIIRUP] = useState(false);
+  const [showIIRUSP, setShowIIRUSP] = useState(false);
   const [customNumber, setCustomNumber] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -90,6 +93,8 @@ export function ReportTab() {
     setShowPTR(false);
     setShowITR(false);
     setShowPAL(false);
+    setShowIIRUP(false);
+    setShowIIRUSP(false);
     setSelectedReport(null);
     setSelectedItem(null);
     setSelectedMovement(null);
@@ -375,6 +380,20 @@ export function ReportTab() {
       bgColor: 'bg-indigo-600',
       action: () => { setSelectedReport('PAL'); setShowEmployeeModal(true); }
     },
+    {
+      title: 'IIRUP',
+      subtitle: 'Inventory & Inspection Report of Unserviceable Property (PPE)',
+      icon: Recycle,
+      bgColor: 'bg-rose-700',
+      action: () => setShowIIRUP(true)
+    },
+    {
+      title: 'IIRUSP',
+      subtitle: 'Inventory & Inspection Report of Unserviceable Semi-Expendable Property',
+      icon: Recycle,
+      bgColor: 'bg-fuchsia-700',
+      action: () => setShowIIRUSP(true)
+    },
   ]), []);
 
   const filteredReports = useMemo(() => {
@@ -574,16 +593,16 @@ export function ReportTab() {
         onGenerate={handleSEPropertyReportGenerate}
       />
 
-      <SEPropertyReportFilterModal
-        isOpen={showSEPropertyReport}
-        onClose={() => setShowSEPropertyReport(false)}
-        onGenerate={handleSEPropertyReportGenerate}
+      <IIRUPGenerationModal
+        isOpen={showIIRUP}
+        onClose={() => setShowIIRUP(false)}
+        reportType="IIRUP"
       />
 
-      <SEPropertyReportFilterModal
-        isOpen={showSEPropertyReport}
-        onClose={() => setShowSEPropertyReport(false)}
-        onGenerate={handleSEPropertyReportGenerate}
+      <IIRUPGenerationModal
+        isOpen={showIIRUSP}
+        onClose={() => setShowIIRUSP(false)}
+        reportType="IIRUSP"
       />
 
 
