@@ -1,9 +1,9 @@
 ﻿import { TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, Users, Briefcase, UserCheck } from 'lucide-react';
+import { Building2, Users, Briefcase, UserCheck, UserCircle } from 'lucide-react';
 
 export const OfficeTabsList = () => {
   return (
-    <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+    <TabsList className="grid w-full grid-cols-5 max-w-2xl">
       <TabsTrigger value="office">
         <Building2 className="w-4 h-4 mr-2" />
         Office
@@ -19,6 +19,10 @@ export const OfficeTabsList = () => {
       <TabsTrigger value="position">
         <UserCheck className="w-4 h-4 mr-2" />
         Position
+      </TabsTrigger>
+      <TabsTrigger value="employee">
+        <UserCircle className="w-4 h-4 mr-2" />
+        Employee
       </TabsTrigger>
     </TabsList>
   );
