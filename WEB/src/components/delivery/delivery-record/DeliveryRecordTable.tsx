@@ -1,7 +1,13 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { Edit, Trash2, MoreHorizontal, Eye, PackageOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { VwDeliveryRecord } from '@/types/delivery/delivery';
@@ -63,7 +69,9 @@ export const DeliveryRecordTable = ({ data, onAdd, onEdit, onDelete, onView }: P
                       {formatCurrency(getTotalValue(record.items || []))}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={record.isReceived ? "default" : "secondary"}>
+                      <Badge variant={record.isReceived ? "default" : "secondary"}
+                         className={record.isReceived ? 'bg-blue-100 text-blue-800 hover:bg-blue-200' : ''}
+                      >
                         {record.isReceived ? 'Received' : 'Pending'}
                       </Badge>
                     </TableCell>
@@ -79,13 +87,17 @@ export const DeliveryRecordTable = ({ data, onAdd, onEdit, onDelete, onView }: P
                             <Eye className="w-4 h-4 mr-2" /> View Details
                           </DropdownMenuItem>
                           {!record.isReceived && (
-                            <DropdownMenuItem onClick={() => onEdit(record)}>
-                              <Edit className="w-4 h-4 mr-2" /> Edit
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuItem onClick={() => onEdit(record)}>
+                                <Edit className="w-4 h-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => onDelete(record)} className="text-red-600">
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </>
                           )}
-                          <DropdownMenuItem onClick={() => onDelete(record)} className="text-red-600">
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete
-                          </DropdownMenuItem>
+
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

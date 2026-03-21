@@ -240,11 +240,13 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
 
                     await context.TblSupplyItems.Where(u => u.Id == model.Id)
                         .ExecuteUpdateAsync(u => u
+                            .SetProperty(x => x.IARId, model.IARId)
                             .SetProperty(x => x.CodeEncrypted, model.CodeEncrypted)
                             .SetProperty(x => x.CategoryId, model.CategoryId)
                             .SetProperty(x => x.DescriptionEncrypted, model.DescriptionEncrypted)
                             .SetProperty(x => x.MeasurementUnitId, model.MeasurementUnitId)
                             .SetProperty(x => x.CurrentStock, model.CurrentStock)
+                            .SetProperty(x => x.Quantity, model.Quantity)
                             .SetProperty(x => x.UnitCost, model.UnitCost)
                             .SetProperty(x => x.ReorderPoint, model.ReorderPoint)
                             .SetProperty(x => x.StorageLocationId, model.StorageLocationId)
@@ -398,6 +400,66 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                 throw;
             }
         }
+        //public async Task<long> EditTblSupplyRISAsync(TblSupplyRIS model, long actionBySystemUserId, PortalDbContext context)
+        //{
+        //    if (model == null)
+        //        return 0;
+
+        //    try
+        //    {
+
+        //        bool isInsert = model.Id == 0;
+        //        TblSupplyRIS? existingSupplyRIS = null;
+
+        //        if (isInsert)
+        //        {
+        //            await context.TblSupplyRISs.AddAsync(model);
+        //            await context.SaveChangesAsync();
+        //        }
+        //        else
+        //        {
+        //            existingSupplyRIS = await _getTools.Supply.GetTblSupplyRISAsync(model.Id, context);
+
+        //            if (existingSupplyRIS == null)
+        //                return 0;
+
+        //            model.Id = existingSupplyRIS.Id;
+
+        //            await context.TblSupplyUnits.Where(u => u.Id == model.Id)
+        //                .ExecuteUpdateAsync(u => u
+        //                    .SetProperty(x => x.Name, model.Name)
+        //                    .SetProperty(x => x.IsActive, model.IsActive));
+        //        }
+
+        //        return isInsert ? model.Id : existingSupplyRIS.Id;
+        //    }
+        //    catch (DbUpdateException ex)
+        //    {
+        //        await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyEditTools));
+        //        throw;
+        //    }
+        //}
+        //public async Task<bool> DeleteTblSupplyRISAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        //{
+        //    if (id == 0)
+        //        return false;
+
+        //    try
+        //    {
+        //        TblSupplyRIS? supplyRISModel = await _getTools.Supply.GetTblSupplyRISAsync(id, context);
+        //        await context.TblSupplyRISItems.Where(x => x.RISId == id).ExecuteSoftDeleteAsync(context);
+        //        await context.TblSupplyRISs.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+        //        await AuditTrailTool.LogActivityAsync(_options, $"Deleted a Supply RIS", actionBy: actionBySystemUserId,
+        //            linkedAuditTrailId: AuditTrailTool.TrackChanges(context, supplyRISModel, null, nameof(TblSupplyUnit), actionBySystemUserId, "Delete"));
+
+        //        return true;
+        //    }
+        //    catch (DbUpdateException ex)
+        //    {
+        //        await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyEditTools));
+        //        throw;
+        //    }
+        //}
 
     }
 }

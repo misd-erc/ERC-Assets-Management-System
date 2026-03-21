@@ -190,6 +190,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       suffixName: '',
       employeeIdOriginal: emp?.employeeIdOriginal || '',
       employmentTypeId: 0,
+      employmentTypeName: '',
       label: emp?.fullName || '',
     };
   };

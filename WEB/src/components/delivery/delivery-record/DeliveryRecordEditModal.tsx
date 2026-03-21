@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, X, Package } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
+import { VwSupplyIAR } from '@/types';
 
 // Hooks
 import { useSupplyIAR } from '@/hooks';
@@ -23,11 +24,12 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   mode: 'add' | 'edit';
   record?: VwDeliveryRecord | null;
+  availableIars: VwSupplyIAR[],
   onSubmit: (data: any) => Promise<void>;
 }
 
-export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSubmit }: Props) => {
-  const { iars, fetchSupplyIARs } = useSupplyIAR();
+export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, availableIars, onSubmit }: Props) => {
+  // const { iars, fetchSupplyIARs } = useSupplyIAR();
   const [loading, setLoading] = useState(false);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
 
@@ -45,9 +47,9 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
   const [items, setItems] = useState<Partial<DeliveryRecordItem>[]>([]);
   const [removedItems, setRemovedItems] = useState<Partial<DeliveryRecordItem>[]>([]);
 
-  useEffect(() => {
-    if (open) fetchSupplyIARs();
-  }, [open, fetchSupplyIARs]);
+  // useEffect(() => {
+  //   if (open) fetchSupplyIARs();
+  // }, [open, fetchSupplyIARs]);
 
   useEffect(() => {
     if (mode === 'edit' && record) {
@@ -142,14 +144,22 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
               <div className="space-y-2">
                 <Label>Linked IAR / PO</Label>
                 <Select value={formData.supplyIARId.toString()} onValueChange={val => setFormData({...formData, supplyIARId: Number(val)})}>
-                  <SelectTrigger><SelectValue placeholder="Select IAR Reference" /></SelectTrigger>
+                  <SelectTrigger>
+                    <div className="truncate text-left">
+                      <SelectValue placeholder="Select IAR Reference" />
+                    </div>
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="0">Select IAR Reference</SelectItem>
-                    {iars.map(iar => (
-                      <SelectItem key={iar.id} value={iar.id.toString()}>
-                        {iar.iarNumber} (PO: {iar.poNumber})
-                      </SelectItem>
-                    ))}
+                    {availableIars.map((iar) => {
+                      return (
+                        <SelectItem key={iar.id} value={iar.id.toString()}>
+                          <span className="truncate">
+                            {iar.iarNumber} (PO: {iar.poNumber})
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>

@@ -150,6 +150,118 @@ namespace PortalDB.Migrations
                     b.ToTable("tblDeliveryRecordItems", "asset");
                 });
 
+            modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblDisposal", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("ApprovedBySystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalApprovedBySystemUserId");
+
+                    b.Property<string>("BuyerEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalBuyer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalCreatedAt");
+
+                    b.Property<DateTime?>("DateApproved")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalDateApproved");
+
+                    b.Property<DateTime?>("DateDisposed")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalDateDisposed");
+
+                    b.Property<DateTime?>("DateRequested")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalDateRequested");
+
+                    b.Property<string>("DisposalNumberEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalNumber");
+
+                    b.Property<string>("Group")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalGroup");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("DisposalIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("DisposalIsDeleted");
+
+                    b.Property<string>("MethodEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalMethod");
+
+                    b.Property<decimal?>("ProceedAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("DisposalProceedAmount");
+
+                    b.Property<string>("ReasonEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalReason");
+
+                    b.Property<string>("RemarksEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalRemarks");
+
+                    b.Property<long?>("RequestedBySystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalRequestedBySystemUserId");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalStatus");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblDisposals", "asset");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblDisposalItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalItemId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalItemCreatedAt");
+
+                    b.Property<long?>("DisposalId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalId");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("DisposalItemIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("DisposalItemIsDeleted");
+
+                    b.Property<long?>("PTAId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("PTAId");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblDisposalItems", "asset");
+                });
+
             modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblPTA", b =>
                 {
                     b.Property<long>("Id")
@@ -275,6 +387,10 @@ namespace PortalDB.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("PTALegendCreatedAt");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("PTALegendDescription");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
@@ -747,6 +863,10 @@ namespace PortalDB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("SupplyItemUnitId");
 
+                    b.Property<int?>("Quantity")
+                        .HasColumnType("int")
+                        .HasColumnName("SupplyItemQuantity");
+
                     b.Property<int?>("ReorderPoint")
                         .HasColumnType("int")
                         .HasColumnName("SupplyItemReorderPoint");
@@ -766,6 +886,142 @@ namespace PortalDB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblSupplyItems", "asset");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyRIS", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("ApprovedOn")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyRISCreatedAt");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyRISApprovedOn");
+
+                    b.Property<long?>("DivisionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DivisionId");
+
+                    b.Property<string>("FundClusterEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyRISFundCluster");
+
+                    b.Property<string>("FundEntityNameEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyRISEntityName");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("SupplyRISIsActive");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit")
+                        .HasColumnName("SupplyRISIsApproved");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("SupplyRISIsDeleted");
+
+                    b.Property<long?>("OfficeId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("OfficeId");
+
+                    b.Property<long?>("RISApprovedBySystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISApprovedBySystemUserId");
+
+                    b.Property<long?>("RISIssuedBySystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISIssuedBySystemUserId");
+
+                    b.Property<string>("RISNumberEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyRISNumber");
+
+                    b.Property<string>("RISPurposeEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyRISPurpose");
+
+                    b.Property<long?>("RISRecievedBySystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISRecievedBySystemUserId");
+
+                    b.Property<long?>("RISRequestedBySystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISRequestedBySystemUserId");
+
+                    b.Property<string>("ResponsibilityCenterCodeEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyResponsibilityCenterCode");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblSupplyRISs", "asset");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyRISItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISItemId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyRISItemCreatedAt");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("SupplyRISItemIsActive");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("bit")
+                        .HasColumnName("SupplyRISItemIsAvailable");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("SupplyRISItemIsDeleted");
+
+                    b.Property<long>("IssueQuantity")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISItemIssueQuantity");
+
+                    b.Property<string>("ItemDescriptionEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyRISItemDescription");
+
+                    b.Property<string>("ItemRemarksEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyRISItemRemarks");
+
+                    b.Property<long?>("RISId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISId");
+
+                    b.Property<long>("RequisitionQuantity")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISItemRequisitionQuantity");
+
+                    b.Property<string>("StockNumberEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyRISItemStockNumber");
+
+                    b.Property<long?>("UnitId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISItemUnitId");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblRISItems", "asset");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyStorageLocation", b =>

@@ -1,6 +1,7 @@
 import { Category } from "@/api/categories/categoriesApi";
 import { Contract, Vendor } from "../contract";
 import { Division, Office } from "../office";
+import {VwDeliveryRecord} from "@/types/delivery/delivery";
 
 export interface SupplyItem {
   id: number;
@@ -9,6 +10,7 @@ export interface SupplyItem {
   description: string;
   measurementUnitId: number;
   currentStock: number;
+  quantity: number;
   unitCost: number;
   reorderPoint: number;
   storageLocationId: number;
@@ -20,10 +22,12 @@ export interface SupplyItem {
 export interface VwSupplyItem {
   id: number;
   code: string;
+  iarId: number | null;
   category: Category | null;
   description: string;
   measurementUnit: SupplyUnit | null;
   currentStock: number;
+  quantity: number;
   unitCost: number;
   reorderPoint: number;
   storageLocation: SupplyStorageLocation | null;
@@ -31,6 +35,22 @@ export interface VwSupplyItem {
   isActive: boolean;
   createdAt?: string;
 }
+
+export interface VwSupplyUniqueRawItem {
+  id: number;
+  code: string;
+  category: Category | null;
+  description: string;
+  measurementUnit: SupplyUnit | null;
+  // currentStock: number;
+  // unitCost: number;
+  // reorderPoint: number;
+  storageLocation: SupplyStorageLocation | null;
+  vendor: Vendor | null;
+  isActive: boolean;
+  createdAt?: string;
+}
+
 
 export interface SupplyStorageLocation {
   id: number;

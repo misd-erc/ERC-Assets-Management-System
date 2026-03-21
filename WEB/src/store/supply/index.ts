@@ -1,6 +1,6 @@
 ﻿// src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
-import { SupplyItem, VwSupplyItem, SupplyUnit, SupplyStorageLocation, SupplyIAR, VwSupplyIAR } from '@/types';
+import { SupplyItem, VwSupplyItem, SupplyUnit, SupplyStorageLocation, SupplyIAR, VwSupplyIAR, VwSupplyUniqueRawItem } from '@/types';
 import { 
   getSupplyItems,
   editSupplyItem,
@@ -9,7 +9,8 @@ import {
   getSupplyStorageLocations,
   editSupplyStorageLocation,
   getSupplyIARs, // Make sure this is exported from your API
-  editSupplyIAR
+  editSupplyIAR,
+  getSupplyUniqueRawItems
 } from '@/api';
 import { toast } from 'sonner';
 import axiosInstance from '@/lib/axios';
@@ -21,6 +22,7 @@ import { getAuthParams } from '@/utils/auth';
 interface SupplyItemState {
   supplies: SupplyItem[];
   vwSupplies: VwSupplyItem[];
+  vwUniqueRawSupplies: VwSupplyUniqueRawItem[];
   loading: boolean;
   searchQuery: string;
 
@@ -29,6 +31,7 @@ interface SupplyItemState {
   setSearchQuery: (query: string) => void;
 
   fetchSupplyItems: () => Promise<void>;
+  fetchSupplyUniqueRawItems: () => Promise<void>;
   addSupplyItem: (supply: Partial<SupplyItem>) => Promise<void>;
   updateSupplyItem: (id: number, updates: Partial<SupplyItem>) => Promise<void>;
   deleteSupplyItem: (id: number) => Promise<void>;
@@ -37,6 +40,7 @@ interface SupplyItemState {
 export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
   supplies: [],
   vwSupplies: [],
+  vwUniqueRawSupplies: [],
   loading: false,
   searchQuery: '',
 
@@ -48,7 +52,21 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
     set({ loading: true });
     try {
       const vwSupplies = await getSupplyItems();
+      // console.log("Here is the response:");
+      // console.log(vwSupplies);
       set({ vwSupplies });
+    } catch {
+      toast.error('Failed to load supplies');
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+    fetchSupplyUniqueRawItems: async () => {
+    set({ loading: true });
+    try {
+      const vwUniqueRawSupplies = await getSupplyUniqueRawItems();
+      set({ vwUniqueRawSupplies });
     } catch {
       toast.error('Failed to load supplies');
     } finally {
@@ -65,6 +83,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
         categoryId: supply.categoryId || 0,
         description: supply.description || '',
         measurementUnitId: supply.measurementUnitId || 0,
+        quantity: supply.quantity || 0,
         currentStock: supply.currentStock || 0,
         unitCost: supply.unitCost || 0,
         reorderPoint: supply.reorderPoint || 0,
@@ -80,6 +99,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
   },
 
   updateSupplyItem: async (id, updates) => {
+
     try {
       await editSupplyItem({
         id: id,
@@ -87,6 +107,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
         categoryId: updates.categoryId || 0,
         description: updates.description || '',
         measurementUnitId: updates.measurementUnitId || 0,
+        quantity: updates.quantity || 0,
         currentStock: updates.currentStock || 0,
         unitCost: updates.unitCost || 0,
         reorderPoint: updates.reorderPoint || 0,

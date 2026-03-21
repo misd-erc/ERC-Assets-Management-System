@@ -1,172 +1,94 @@
-﻿import React, { useMemo } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Package,
-  ArrowRightLeft,
-  FileText,
-  AlertTriangle,
-  Clock,
-  User
-} from 'lucide-react';
-import { useData } from '@/hooks';
-import { RISRequest } from '@/types/supply/ris';
+import { Package, ArrowRightLeft, FileText, AlertTriangle, Eye, User } from 'lucide-react';
+import { getRecentActivities, DashboardRecentActivity } from '@/api/dashboard/dashboardApi';
+import { toast } from 'sonner';
 
-interface Activity {
-  id: string;
-  type: 'issued' | 'transferred' | 'returned' | 'created' | 'disposed';
-  title: string;
-  description: string;
-  user: string;
-  timestamp: Date;
-  status: 'completed' | 'pending' | 'failed';
+function getActivityMeta(action: string) {
+  const a = (action ?? '').toLowerCase();
+  if (a.includes('transfer')) return { icon: ArrowRightLeft, color: 'bg-purple-50 text-purple-600' };
+  if (a.includes('return')) return { icon: ArrowRightLeft, color: 'bg-green-50 text-green-600' };
+  if (a.includes('issu') || a.includes('assign') || a.includes('par') || a.includes('ics'))
+    return { icon: Package, color: 'bg-blue-50 text-blue-600' };
+  if (a.includes('creat') || a.includes('add') || a.includes('upload'))
+    return { icon: FileText, color: 'bg-indigo-50 text-indigo-600' };
+  if (a.includes('dispos') || a.includes('delete'))
+    return { icon: AlertTriangle, color: 'bg-red-50 text-red-600' };
+  return { icon: Eye, color: 'bg-gray-50 text-gray-600' };
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 }
 
 export function RecentActivitiesCard() {
-  const { risRequests } = useData();
+  const [activities, setActivities] = useState<DashboardRecentActivity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const activities: Activity[] = useMemo(() => {
-    return risRequests.map((request: RISRequest) => ({
-      id: request.id,
-      type: 'issued' as const,
-      title: `RIS Request ${request.risNumber || request.id}`,
-      description: `Items: ${request.items
-        .map(
-          (item) => `${item.quantityRequested} ${item.description}`
-        )
-        .join(', ')}`,
-      user: request.requester,
-      timestamp: new Date(request.dateRequested), // âœ… convert string â†’ Date
-      status:
-        request.status === 'approved'
-          ? 'completed'
-          : request.status === 'pending'
-          ? 'pending'
-          : 'failed',
-    }));
-  }, [risRequests]);
-
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'issued':
-        return Package;
-      case 'transferred':
-        return ArrowRightLeft;
-      case 'returned':
-        return ArrowRightLeft;
-      case 'created':
-        return FileText;
-      case 'disposed':
-        return AlertTriangle;
-      default:
-        return Package;
-    }
-  };
-
-  const getActivityColor = (type: string) => {
-    switch (type) {
-      case 'issued':
-        return 'bg-blue-50 text-blue-600';
-      case 'transferred':
-        return 'bg-purple-50 text-purple-600';
-      case 'returned':
-        return 'bg-green-50 text-green-600';
-      case 'created':
-        return 'bg-indigo-50 text-indigo-600';
-      case 'disposed':
-        return 'bg-red-50 text-red-600';
-      default:
-        return 'bg-gray-50 text-gray-600';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-amber-100 text-amber-800';
-      case 'failed':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
-  };
+  useEffect(() => {
+    getRecentActivities()
+      .then(setActivities)
+      .catch(() => toast.error('Failed to load recent activities'))
+      .finally(() => setIsLoading(false));
+  }, []);
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>Recent Activities</CardTitle>
-        <CardDescription>
-          Latest asset management operations and transactions
-        </CardDescription>
+        <CardDescription>Latest system actions</CardDescription>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-96">
-          <div className="space-y-4">
-            {activities.map((activity) => {
-              const Icon = getActivityIcon(activity.type);
-              return (
-                <div
-                  key={activity.id}
-                  className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
-                >
-                  <div
-                    className={`p-2 rounded-lg ${getActivityColor(
-                      activity.type
-                    )}`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm">{activity.title}</p>
-                      <Badge
-                        className={`text-xs ${getStatusColor(activity.status)}`}
-                      >
-                        {activity.status}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      {activity.description}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <div className="flex items-center space-x-1">
-                        <User className="w-3 h-3" />
-                        <span>{activity.user}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{formatTimeAgo(activity.timestamp)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+        {isLoading ? (
+          <div className="flex items-center justify-center h-48">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
           </div>
-        </ScrollArea>
-        <Button variant="outline" className="w-full mt-4" size="sm">
-          View Activity Log
-        </Button>
+        ) : activities.length === 0 ? (
+          <p className="text-center text-muted-foreground py-12">No recent activities</p>
+        ) : (
+          <ScrollArea className="h-80">
+            <div className="space-y-2 pr-3">
+              {activities.map((activity) => {
+                const { icon: Icon, color } = getActivityMeta(activity.action ?? '');
+                return (
+                  <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className={`p-2 rounded-full flex-shrink-0 ${color}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-900 truncate">{activity.action}</p>
+                      <div className="flex items-center space-x-1 mt-0.5">
+                        <User className="w-3 h-3 text-slate-400" />
+                        <p className="text-xs text-slate-500 truncate">{activity.performedBy}</p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-slate-400 whitespace-nowrap flex-shrink-0">
+                      {activity.createdAt ? formatTimeAgo(activity.createdAt) : '—'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        )}
       </CardContent>
     </Card>
   );
 }
+
+
+
+
+
+
+
 
 
 

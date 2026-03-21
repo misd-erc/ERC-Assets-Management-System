@@ -22,3 +22,9 @@ export { PositionSearchBar } from "@/components/office-management/position/Posit
 export { PositionTable } from "@/components/office-management/position/PositionTable";
 export { PositionTabContent } from "@/components/office-management/position/PositionTabContent";
 
+export { EmployeeDeleteModal } from "@/components/office-management/employee/EmployeeDeleteModal";
+export { EmployeeEditModal } from "@/components/office-management/employee/EmployeeEditModal";
+export { EmployeeSearchBar } from "@/components/office-management/employee/EmployeeSearchBar";
+export { EmployeeTable } from "@/components/office-management/employee/EmployeeTable";
+export { EmployeeTabContent } from "@/components/office-management/employee/EmployeeTabContent";
+

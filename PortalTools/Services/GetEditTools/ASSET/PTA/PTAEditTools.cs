@@ -344,6 +344,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                     await context.TblPTALegends.Where(u => u.Id == model.Id)
                         .ExecuteUpdateAsync(u => u
                             .SetProperty(x => x.Name, model.Name)
+                            .SetProperty(x => x.Description, model.Description)
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 

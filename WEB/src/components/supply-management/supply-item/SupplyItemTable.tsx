@@ -31,7 +31,7 @@ export const SupplyItemTable = ({ data, onAdd, onView, onEdit, onDelete }: Props
 
   const totalPages = Math.ceil(data.length / PAGE_SIZE);
   const paginatedData = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
+  // console.log(data);
   const getStockStatus = (item: VwSupplyItem) => {
     if (item.currentStock === 0) return { label: 'Out of Stock', color: 'bg-red-100 text-red-800' };
     if (item.currentStock <= item.reorderPoint) return { label: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
@@ -66,7 +66,7 @@ export const SupplyItemTable = ({ data, onAdd, onView, onEdit, onDelete }: Props
                 <TableHead>Category</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Vendor</TableHead>
-                <TableHead>Current Stock</TableHead>
+                <TableHead>Quantity</TableHead>
                 <TableHead>Unit Cost</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -77,7 +77,11 @@ export const SupplyItemTable = ({ data, onAdd, onView, onEdit, onDelete }: Props
                  const status = getStockStatus(item);
                  return (
                   <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.code}</TableCell>
+                    <TableCell className="font-medium">{item.code}
+                      {item.iarId && (
+                        <span className="font-normal text-xs tracking-tight"> (IAR-{item.iarId})</span>
+                      )}
+                    </TableCell>
                     <TableCell className="max-w-xs truncate" title={item.description}>
                       {item.description}
                     </TableCell>
@@ -87,7 +91,7 @@ export const SupplyItemTable = ({ data, onAdd, onView, onEdit, onDelete }: Props
                     <TableCell>{item.vendor?.name}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <span>{item.currentStock} {item.measurementUnit?.name}</span>
+                        <span>{item.quantity ?? 0} {item.measurementUnit?.name}</span>
                         {item.currentStock <= item.reorderPoint && (
                           <AlertTriangle className="w-4 h-4 text-amber-500" />
                         )}
@@ -109,14 +113,16 @@ export const SupplyItemTable = ({ data, onAdd, onView, onEdit, onDelete }: Props
                            <DropdownMenuItem onClick={() => onView(item)}>
                             <Eye className="w-4 h-4 mr-2" /> View
                           </DropdownMenuItem>
-                          
-                          <DropdownMenuItem onClick={() => onEdit(item)}>
-                            <Edit className="w-4 h-4 mr-2" /> Edit
-                          </DropdownMenuItem>
-                          
-                          <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600">
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete
-                          </DropdownMenuItem>
+                          {!item.iarId && (
+                            <>
+                              <DropdownMenuItem onClick={() => onEdit(item)}>
+                                <Edit className="w-4 h-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600">
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

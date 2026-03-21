@@ -12,10 +12,12 @@ namespace PortalDB.Models.ResponseModels.Supply
 
         public long Id { get; set; }
         public string Code { get; set; } = string.Empty;
+        public long? IARId { get; set; }
         public TblSupplyUnit? MeasurementUnit { get; set; }
         public TblPTACategory? Category { get; set; }
         public string Description { get; set; } = string.Empty;
         public int? CurrentStock { get; set; }
+        public long? Quantity { get; set; }
         public long? UnitCost { get; set; }
         public int? ReorderPoint { get; set; }
         public TblSupplyStorageLocation? StorageLocation { get; set; }

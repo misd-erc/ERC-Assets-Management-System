@@ -1,18 +1,17 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Package, DollarSign, User, Plus, X, CalendarIcon } from 'lucide-react';
+import { Package, DollarSign, User, Plus, X, RotateCcw } from 'lucide-react';
 import ReactSelect from 'react-select';
 import { FormAsset, UnifiedMovement, NormalizedEmployee, Part } from '@/types/asset/UnifiedAsset';
 import { VwOffice, VwDivision } from '@/types/office';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { getConditions } from '@/api/asset/inventoryApi';
+import { isPlantillaEmploymentType } from '@/utils/employeeUtils';
+
 
 interface SharedAssetFieldsProps {
   mode: 'create' | 'edit';
@@ -24,7 +23,7 @@ interface SharedAssetFieldsProps {
   handleNonPlantillaEmployeeSelect: (index: number, employeeId: number) => void;
   employees: NormalizedEmployee[];
   categories: { id: number; name: string }[];
-  legends: { id: number; name: string }[];
+  legends: { id: number; name: string; description?: string }[];
   offices: VwOffice[];
   divisions: VwDivision[];
   handleInputChange: (field: string, value: any) => void;
@@ -33,6 +32,7 @@ interface SharedAssetFieldsProps {
   handleRemovePart: (index: number) => void;
   handleAddAccountabilityEntry: () => void;
   handleRemoveAccountabilityEntry: (index: number) => void;
+  handleRestoreAccountabilityEntry?: (index: number) => void;
   handleAccountabilityEntryChange: (index: number, field: string, value: any) => void;
   getUnitOfMeasurementOptions: () => { value: string; label: string }[];
   showAccountabilitySection?: boolean;
@@ -58,13 +58,20 @@ export function SharedAssetFields({
   handleRemovePart,
   handleAddAccountabilityEntry,
   handleRemoveAccountabilityEntry,
+  handleRestoreAccountabilityEntry,
   handleAccountabilityEntryChange,
   getUnitOfMeasurementOptions,
   showAccountabilitySection,
   onToggleAccountabilitySection,
 }: SharedAssetFieldsProps) {
-  const plantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId === 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
-  const nonPlantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId !== 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
+  const [conditions, setConditions] = useState<string[]>([]);
+
+  useEffect(() => {
+    getConditions().then(setConditions).catch(() => {});
+  }, []);
+
+  const plantillaEmployeeOptions = employees.filter(emp => emp.id != null && isPlantillaEmploymentType(emp.employmentTypeName)).map(emp => ({ value: emp.id.toString(), label: emp.label }));
+  const nonPlantillaEmployeeOptions = employees.filter(emp => emp.id != null && !isPlantillaEmploymentType(emp.employmentTypeName)).map(emp => ({ value: emp.id.toString(), label: emp.label }));
 
   // Convert a UTC ISO string to "YYYY-MM-DDTHH:mm" in local time (for datetime-local inputs)
   const toLocalDatetimeInput = (utcString: string) => {
@@ -133,7 +140,10 @@ export function SharedAssetFields({
                 <SelectContent>
                   {legends.map(legend => (
                     <SelectItem key={legend.id} value={legend.id.toString()}>
-                      {legend.name}
+                      <span>{legend.name}</span>
+                      {legend.description && (
+                        <span className="ml-2 text-xs text-slate-400">{legend.description}</span>
+                      )}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -182,35 +192,12 @@ export function SharedAssetFields({
 
             <div className="space-y-2">
               <Label htmlFor="fiscalDate">Fiscal Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.fiscalDate && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.fiscalDate ? format(new Date(formData.fiscalDate), "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.fiscalDate ? new Date(formData.fiscalDate) : new Date()}
-                    onSelect={(date) => {
-                      if (date) {
-                        handleInputChange('fiscalDate', date.toISOString().split('T')[0]);
-                      }
-                    }}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <Input
+                id="fiscalDate"
+                type="date"
+                value={formData.fiscalDate || ''}
+                onChange={(e) => handleInputChange('fiscalDate', e.target.value)}
+              />
             </div>
           </div>
         </CardContent>
@@ -354,18 +341,22 @@ export function SharedAssetFields({
             </div>
             <div className="flex items-center gap-2">
               {onToggleAccountabilitySection && (
-                <Button
-                  type="button"
-                  variant={showAccountabilitySection ? 'destructive' : 'outline'}
-                  size="sm"
-                  onClick={onToggleAccountabilitySection}
-                >
-                  {showAccountabilitySection ? (
-                    <><X className="size-4 mr-1" /> Remove</>
-                  ) : (
-                    <><Plus className="size-4 mr-1" /> Add Accountability</>
-                  )}
-                </Button>
+                // In edit mode: only show the button when section is hidden (to expand it)
+                // In create mode: show both expand and collapse states
+                (!showAccountabilitySection || mode === 'create') && (
+                  <Button
+                    type="button"
+                    variant={showAccountabilitySection ? 'destructive' : 'outline'}
+                    size="sm"
+                    onClick={onToggleAccountabilitySection}
+                  >
+                    {showAccountabilitySection ? (
+                      <><X className="size-4 mr-1" /> Remove</>
+                    ) : (
+                      <><Plus className="size-4 mr-1" /> Add Accountability</>
+                    )}
+                  </Button>
+                )
               )}
               {(showAccountabilitySection === undefined || showAccountabilitySection) && (
                 <Button type="button" variant="outline" size="sm" onClick={handleAddAccountabilityEntry}>
@@ -385,12 +376,38 @@ export function SharedAssetFields({
           <CardContent>
           <div className="space-y-6">
             {accountabilityEntries.map((entry, index) => (
-              <div key={index} className="p-4 border rounded-lg bg-gray-50">
+              <div
+                key={index}
+                className={`p-4 border rounded-lg ${
+                  entry.isActive === false
+                    ? 'bg-red-50 border-red-200 opacity-60'
+                    : 'bg-gray-50'
+                }`}
+              >
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-sm">
-                    {index === 0 ? 'Current Holder' : `Previous Holder ${index}`}
-                  </h4>
-                  {accountabilityEntries.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium text-sm">
+                      {index === 0 ? 'Current Holder' : `Previous Holder ${index}`}
+                    </h4>
+                    {entry.isActive === false && (
+                      <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded">
+                        Deleted
+                      </span>
+                    )}
+                  </div>
+                  {entry.isActive === false ? (
+                    handleRestoreAccountabilityEntry && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRestoreAccountabilityEntry(index)}
+                        className="text-green-600 hover:text-green-700 border-green-400"
+                      >
+                        <RotateCcw className="size-4 mr-1" /> Restore
+                      </Button>
+                    )
+                  ) : (
                     <Button
                       type="button"
                       variant="outline"
@@ -402,6 +419,7 @@ export function SharedAssetFields({
                     </Button>
                   )}
                 </div>
+                <fieldset disabled={entry.isActive === false} className="contents">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2 md:col-span-1">
                     <Label htmlFor={`dateAssigned-${index}`}>Date Assigned *</Label>
@@ -537,16 +555,21 @@ export function SharedAssetFields({
                         <SelectValue placeholder="Select condition" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Working">Working</SelectItem>
-                        <SelectItem value="Not Working">Not Working</SelectItem>
-                        <SelectItem value="IIRUP">IIRUP</SelectItem>
-                        <SelectItem value="Disposed">Disposed</SelectItem>
-                        <SelectItem value="Missing">Missing</SelectItem>
-                        <SelectItem value="Unserviceable">Unserviceable</SelectItem>
+                        {conditions.length > 0
+                          ? conditions.map(c => (
+                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                            ))
+                          : (
+                              <SelectItem value={entry.condition || 'Working'}>
+                                {entry.condition || 'Working'}
+                              </SelectItem>
+                            )
+                        }
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
+                </fieldset>
               </div>
             ))}
           </div>
