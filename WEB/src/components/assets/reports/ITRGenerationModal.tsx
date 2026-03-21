@@ -162,6 +162,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         suffixName: itrDetails.fromEmployee?.suffixName || '',
         employeeIdOriginal: '',
         employmentTypeId: 0,
+        employmentTypeName: '',
         label: itrDetails.fromEmployeeName
       };
 
@@ -173,6 +174,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         suffixName: itrDetails.toEmployee?.suffixName || '',
         employeeIdOriginal: '',
         employmentTypeId: 0,
+        employmentTypeName: '',
         label: itrDetails.toEmployeeName
       };
 
@@ -205,6 +207,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         suffixName: itrDetails.fromEmployee?.suffixName || '',
         employeeIdOriginal: '',
         employmentTypeId: 0,
+        employmentTypeName: '',
         label: itrDetails.fromEmployeeName
       };
 
@@ -216,6 +219,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         suffixName: itrDetails.toEmployee?.suffixName || '',
         employeeIdOriginal: '',
         employmentTypeId: 0,
+        employmentTypeName: '',
         label: itrDetails.toEmployeeName
       };
 

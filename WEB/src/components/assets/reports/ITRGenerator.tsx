@@ -480,6 +480,7 @@ export class ITRGenerator {
       suffixName: employee?.suffixName || '',
       employeeIdOriginal: movement?.plantillaEmployeeIdOriginal || movement?.nonPlantillaEmployeeIdOriginal || '',
       employmentTypeId: 0,
+      employmentTypeName: '',
       label: `${employee?.lastName || ''}, ${employee?.firstName || ''}`,
     };
 
@@ -517,6 +518,7 @@ export class ITRGenerator {
       suffixName: employee?.suffixName || '',
       employeeIdOriginal: movement?.plantillaEmployeeIdOriginal || movement?.nonPlantillaEmployeeIdOriginal || '',
       employmentTypeId: 0,
+      employmentTypeName: '',
       label: `${employee?.lastName || ''}, ${employee?.firstName || ''}`,
     };
 

@@ -295,9 +295,10 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
     const suffixName = e.suffixName ?? "";
     const employeeIdOriginal = e.employeeIdOriginal ?? "";
     const employmentTypeId = e.employmentType?.id ?? 1;
-    const employmentTypeName = employmentTypeId === 1 ? 'Plantilla' : 'Non-Plantilla';
+    const employmentTypeName = e.employmentType?.name ?? 'Plantilla';
+    const groupLabel = employmentTypeName === 'Plantilla' || employmentTypeName === 'Contractual' ? 'Plantilla' : 'Non-Plantilla';
 
-    const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${employmentTypeName})`;
+    const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${groupLabel})`;
 
     return {
       id: e.id,
@@ -307,6 +308,7 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
       suffixName,
       employeeIdOriginal,
       employmentTypeId,
+      employmentTypeName,
       label,
     };
   }

@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
+import { printDisposal } from './printUtils';
 import { Plus, Trash2, FileText, AlertTriangle, DollarSign, CheckCircle, Clock, Archive, Eye, Printer } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,7 @@ export interface DisposalAsset {
   condition: string;
   location: string;
   group: 'PPE' | 'SE';
+  dateAcquired?: string;
 }
 
 export interface Disposal {
@@ -80,6 +82,7 @@ function mapApiToDisposal(record: DisposalRecord): Disposal {
       condition: '',
       location: '',
       group: (item.pta?.group as 'PPE' | 'SE') ?? (record.group as 'PPE' | 'SE'),
+      dateAcquired: item.pta?.dateAcquired,
     })),
     reason: record.reason as Disposal['reason'],
     method: record.method as Disposal['method'],
@@ -281,7 +284,7 @@ export function Disposals() {
   };
 
   const handlePrint = (disposal: Disposal) => {
-    toast.success(`Printing disposal memo for ${disposal.disposalNumber}`);
+    printDisposal(disposal);
   };
 
   const toggleAssetSelection = (assetId: string) => {

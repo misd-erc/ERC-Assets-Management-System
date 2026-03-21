@@ -10,6 +10,7 @@ import ReactSelect from 'react-select';
 import { FormAsset, UnifiedMovement, NormalizedEmployee, Part } from '@/types/asset/UnifiedAsset';
 import { VwOffice, VwDivision } from '@/types/office';
 import { getConditions } from '@/api/asset/inventoryApi';
+import { isPlantillaEmploymentType } from '@/utils/employeeUtils';
 
 
 interface SharedAssetFieldsProps {
@@ -69,8 +70,8 @@ export function SharedAssetFields({
     getConditions().then(setConditions).catch(() => {});
   }, []);
 
-  const plantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId === 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
-  const nonPlantillaEmployeeOptions = employees.filter(emp => emp.id != null && emp.employmentTypeId !== 1).map(emp => ({ value: emp.id.toString(), label: emp.label }));
+  const plantillaEmployeeOptions = employees.filter(emp => emp.id != null && isPlantillaEmploymentType(emp.employmentTypeName)).map(emp => ({ value: emp.id.toString(), label: emp.label }));
+  const nonPlantillaEmployeeOptions = employees.filter(emp => emp.id != null && !isPlantillaEmploymentType(emp.employmentTypeName)).map(emp => ({ value: emp.id.toString(), label: emp.label }));
 
   // Convert a UTC ISO string to "YYYY-MM-DDTHH:mm" in local time (for datetime-local inputs)
   const toLocalDatetimeInput = (utcString: string) => {

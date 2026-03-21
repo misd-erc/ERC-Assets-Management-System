@@ -80,3 +80,18 @@ export interface VwPosition {
   createdAt?: string;
 }
 
+export interface EmployeeDetail {
+  id: number;
+  systemUser: import('@/types/user').User | null;
+  firstName: string | null;
+  middleName: string | null;
+  lastName: string | null;
+  suffixName: string | null;
+  employeeIdOriginal: string;
+  office: Office | null;
+  division: Division | null;
+  employmentType: EmploymentType | null;
+  position: Position | null;
+  isActive: boolean;
+  createdAt: string;
+}
