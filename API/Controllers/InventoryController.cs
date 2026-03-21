@@ -166,7 +166,9 @@ namespace API.Controllers
             try
             {
 
-                IEnumerable<TblPTALegend?> ppeLegends = await _getTools.PTA.GetTblPTALegends(context).ToListAsync();
+                IEnumerable<TblPTALegend?> ppeLegends = await _getTools.PTA.GetTblPTALegends(context)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .ToListAsync();
 
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
@@ -187,7 +189,6 @@ namespace API.Controllers
                 int skip = (model.PageNumber - 1) * model.PageSize;
 
                 var ppeLegendList = ppeLegends
-                    .OrderByDescending(x => x.CreatedAt)
                     .Skip(skip)
                     .Take(model.PageSize)
                     .ToList();

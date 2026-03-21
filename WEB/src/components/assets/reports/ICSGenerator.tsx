@@ -84,10 +84,11 @@ const styles = StyleSheet.create({
 
   cell: { padding: 4 },
 
-  colQty: { width: "8%" },
-  colUnit: { width: "10%" },
-  colDesc: { width: "42%" },
-  colProp: { width: "25%" },
+  colQty: { width: "7%" },
+  colUnit: { width: "9%" },
+  colDesc: { width: "34%" },
+  colProp: { width: "22%" },
+  colDateAcq: { width: "13%" },
   colValue: { width: "15%" },
 
   // SIGNATURES
@@ -158,6 +159,7 @@ interface ICSRow {
   unit: string;
   description: string;
   propertyNo: string;
+  dateAcquired: string;
   value: number | null;
 }
 
@@ -200,6 +202,7 @@ const ICSDocument = ({
           <Text style={[styles.cell, styles.colUnit]}>Unit</Text>
           <Text style={[styles.cell, styles.colDesc]}>Description</Text>
           <Text style={[styles.cell, styles.colProp]}>Property Number</Text>
+          <Text style={[styles.cell, styles.colDateAcq]}>Date Acquired</Text>
           <Text style={[styles.cell, styles.colValue]}>Value</Text>
         </View>
 
@@ -209,6 +212,7 @@ const ICSDocument = ({
             <Text style={[styles.cell, styles.colUnit]}>{r.unit}</Text>
             <Text style={[styles.cell, styles.colDesc]}>{r.description}</Text>
             <Text style={[styles.cell, styles.colProp]}>{r.propertyNo}</Text>
+            <Text style={[styles.cell, styles.colDateAcq]}>{r.dateAcquired || ""}</Text>
             <Text style={[styles.cell, styles.colValue]}>
               {r.value != null
                 ? r.value.toLocaleString("en-PH", {
@@ -318,6 +322,9 @@ export class ICSGenerator {
       unit: item.unitOfMeasurement ?? "Unit",
       description: item.description ?? "",
       propertyNo: item.propertyNumber ?? "",
+      dateAcquired: item.dateAcquired
+        ? new Date(item.dateAcquired).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })
+        : "",
       value: item.unitValue ?? null,
     });
 
@@ -376,6 +383,9 @@ export class ICSGenerator {
       unit: item.unitOfMeasurement ?? "Unit",
       description: item.description ?? "",
       propertyNo: item.propertyNumber ?? "",
+      dateAcquired: item.dateAcquired
+        ? new Date(item.dateAcquired).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })
+        : "",
       value: item.unitValue ?? null,
     });
 
@@ -434,6 +444,9 @@ export class ICSGenerator {
       unit: r.unitOfMeasurement ?? 'Unit',
       description: r.itemName ?? '',
       propertyNo: r.propertyNumber ?? '',
+      dateAcquired: r.dateAcquired
+        ? new Date(r.dateAcquired).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })
+        : '',
       value: r.unitValue ?? null,
     }));
 

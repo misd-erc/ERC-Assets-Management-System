@@ -124,19 +124,7 @@ export default function AssetTaggingPage() {
     }
   };
 
-  const handleDownloadTemplate = () => {
-    const headers = ['Asset Code', 'Description', 'Category', 'Location', 'Assigned To', 'Type'];
-    const csv = `${headers.join(',')}\n`;
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'asset-tag-template.csv';
-    link.click();
-    URL.revokeObjectURL(url);
 
-    toast.success('Tag template downloaded');
-  };
 
   const activeTemplate = (TAG_TEMPLATES.find((t) => t.id === tagTemplate) || TAG_TEMPLATES[0]) as TagTemplate;
 
@@ -148,9 +136,7 @@ export default function AssetTaggingPage() {
           <p className="text-muted-foreground">Generate QR-ready labels for PPE and SE assets</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleDownloadTemplate}>
-            Template
-          </Button>
+         
         </div>
       </div>
 
