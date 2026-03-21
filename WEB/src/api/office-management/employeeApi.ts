@@ -38,7 +38,7 @@ export const getEmployeeList = async (): Promise<EmployeeDetail[]> => {
 
   const response = await axiosInstance.get<EmployeeResponse<ListResponse<any>>>(
     '/Employee/all',
-    { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
+    { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey, PageSize: 10000 } }
   );
 
   if (!response.data.success) {
