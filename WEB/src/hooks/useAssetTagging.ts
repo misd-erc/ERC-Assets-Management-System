@@ -1,4 +1,5 @@
 import QRCode from "qrcode";
+import JsBarcode from "jsbarcode";
 import { Asset, UnifiedMovement } from "@/types/asset/UnifiedAsset";
 
 export interface TagTemplate {
@@ -22,6 +23,7 @@ export interface TaggableAsset {
 
 export interface TagPreview extends TaggableAsset {
   qrCode?: string;
+  barcodeUrl?: string;
 }
 
 export const TAG_TEMPLATES: TagTemplate[] = [
@@ -79,6 +81,26 @@ export async function generateQRCode(data: string): Promise<string> {
     });
   } catch (error) {
     console.error("Error generating QR code:", error);
+    return "";
+  }
+}
+
+export function generateBarcode(data: string): string {
+  try {
+    const svgEl = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    JsBarcode(svgEl, data || "N/A", {
+      format: "CODE128",
+      width: 2,
+      height: 40,
+      displayValue: true,
+      fontSize: 10,
+      margin: 4,
+    });
+    const svgStr = new XMLSerializer().serializeToString(svgEl);
+    const encoded = btoa(unescape(encodeURIComponent(svgStr)));
+    return `data:image/svg+xml;base64,${encoded}`;
+  } catch (error) {
+    console.error("Error generating barcode:", error);
     return "";
   }
 }
