@@ -13,7 +13,7 @@ namespace PortalDB.Models.ResponseModels.Supply
         public long Id { get; set; }
         public long? RISId { get; set; }
         public string? StockNumber { get; set; } = string.Empty;
-        public TblSupplyUnit? SupplyUnit { get; set; }
+        public TblSupplyUnit? Unit { get; set; }
         public string? ItemDescription { get; set; } = string.Empty;
         public long RequisitionQuantity { get; set; }
         public bool IsAvailable { get; set; } = true;

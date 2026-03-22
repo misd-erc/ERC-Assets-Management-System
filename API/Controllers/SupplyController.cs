@@ -17,6 +17,7 @@ using PortalDB.Models.Responses;
 using PortalDB.Services;
 using PortalTools.Composition;
 using PortalTools.Services;
+using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace API.Controllers
 {
@@ -367,9 +368,10 @@ namespace API.Controllers
             try
             {
                 // 1. Fetch all supply items
+                // 1. Fetch all supply items
                 IEnumerable<TblSupplyItem>? supplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
 
-                // 2. Apply filters (same as original)
+                // 2. Apply filters
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
                     string searchLower = model.SearchString.ToLower();
@@ -377,31 +379,23 @@ namespace API.Controllers
                         (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
                         (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
                 }
-
                 if (model.StartDate.HasValue)
                     supplyItems = supplyItems.Where(x => x.CreatedAt >= model.StartDate.Value);
-
                 if (model.EndDate.HasValue)
                     supplyItems = supplyItems.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                // 3. Group by Code and Description, then compute aggregates
+                // 3. Group by Code and Description, compute aggregates
                 var groupedItems = supplyItems
                     .GroupBy(x => new { x.Code, x.Description })
                     .Select(g =>
                     {
-                        var firstItem = g.First(); // representative item for non-aggregated fields
-
+                        var firstItem = g.First();
                         return new
                         {
-                            // Grouping key
                             Code = g.Key.Code,
                             Description = g.Key.Description,
-
-                            // Aggregated values
                             TotalCurrentStock = g.Sum(x => x.Quantity ?? 0),
                             TotalStockCost = g.Sum(x => (x.Quantity ?? 0) * (x.UnitCost ?? 0)),
-
-                            // Non-aggregated fields (taken from first item)
                             Id = firstItem.Id,
                             IARId = firstItem.IARId,
                             IsActive = firstItem.IsActive,
@@ -409,10 +403,23 @@ namespace API.Controllers
                         };
                     });
 
-                // 4. Count total before pagination
+                // 4. Fetch all RIS items and sum IssueQuantity per group (code/description)
+                var risItems = await _getTools.Supply.GetTblSupplyRISItems(context).ToListAsync();
+                var issuedStockGroup = risItems
+                    .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.ItemDescription))
+                    .GroupBy(x => new { x.StockNumber, x.ItemDescription })
+                    .Select(g => new
+                    {
+                        g.Key.StockNumber,
+                        g.Key.ItemDescription,
+                        TotalIssuedQuantity = g.Sum(x => x.IssueQuantity)
+                    })
+                    .ToDictionary(k => (k.StockNumber, k.ItemDescription), v => v.TotalIssuedQuantity);
+
+                // 5. Count total before pagination
                 int totalCount = groupedItems.Count();
 
-                // 5. Pagination
+                // 6. Pagination
                 int skip = (model.PageNumber - 1) * model.PageSize;
                 var pagedGroups = groupedItems
                     .OrderByDescending(x => x.CreatedAt)
@@ -420,18 +427,33 @@ namespace API.Controllers
                     .Take(model.PageSize)
                     .ToList();
 
-                // 6. Map to response model
-                var supplyItemsResponses = pagedGroups.Select(x => new SupplyItemGroupedResponseModel
+                // 7. Map to response model (subtract issued quantity from current stock)
+                var supplyItemsResponses = pagedGroups.Select(x =>
                 {
-                    Id = x.Id,
-                    Code = x.Code ?? string.Empty,
-                    IARId = x.IARId,
-                    Description = x.Description ?? string.Empty,
-                    TotalCurrentStock = x.TotalCurrentStock,
-                    TotalStockCost = (int?)x.TotalStockCost, // cast if needed; model expects int? (adjust as necessary)
-                    IsActive = x.IsActive,
-                    CreatedAt = x.CreatedAt
+                    var key = (x.Code, x.Description);
+                    var issuedQty = issuedStockGroup.GetValueOrDefault(key, 0);
+
+                    return new SupplyItemGroupedResponseModel
+                    {
+                        Id = x.Id,
+                        Code = x.Code ?? string.Empty,
+                        IARId = x.IARId,
+                        Description = x.Description ?? string.Empty,
+                        TotalCurrentStock = (int?)Math.Max(0, x.TotalCurrentStock - issuedQty), // ensure non-negative
+                        TotalStockCost = (int?)x.TotalStockCost,
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
                 }).ToList();
+
+                // Return paginated response
+                return Ok(ApiResponse<SupplyItemGroupedResponseModel>.OkPaginated(
+                    supplyItemsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Grouped Supply Items have been retrieved"
+                ));
 
                 // 7. Commit transaction (though no changes, kept for consistency)
                 await context.SaveChangesAsync();
@@ -941,7 +963,7 @@ namespace API.Controllers
                         Id = x.Id,
                         RISId = x.SupplyRISId,
                         StockNumber = x.StockNumber,
-                        SupplyUnit = await _getTools.Supply.GetTblSupplyUnitAsync(x.UnitId, context),
+                        Unit = await _getTools.Supply.GetTblSupplyUnitAsync(x.UnitId, context),
                         ItemDescription = x.ItemDescription,
                         RequisitionQuantity = x.RequisitionQuantity,
                         IsAvailable = x.IsAvailable,
@@ -1024,7 +1046,7 @@ namespace API.Controllers
                         Id = x.Id,
                         RISId = x.SupplyRISId,
                         StockNumber = x.StockNumber,
-                        SupplyUnit = await _getTools.Supply.GetTblSupplyUnitAsync(x.UnitId, context),
+                        Unit = await _getTools.Supply.GetTblSupplyUnitAsync(x.UnitId, context),
                         ItemDescription = x.ItemDescription,
                         RequisitionQuantity = x.RequisitionQuantity,
                         IsAvailable = x.IsAvailable,

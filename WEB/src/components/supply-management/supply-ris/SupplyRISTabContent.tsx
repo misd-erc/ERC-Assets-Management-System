@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRISStore } from '@/store/supply/risStore';
 import { SupplyRISTable } from './SupplyRISTable';
-import { SupplyRISFormModal } from './SupplyRISFormModal';
+import { RISFormModal } from './RISFormModal';
 import { SupplyRISDeleteModal } from './SupplyRISDeleteModal';
 import { VwSupplyRIS } from '@/types/supply/ris';
 
@@ -57,7 +57,7 @@ export const SupplyRISTabContent = () => {
         onDelete={handleDelete}
         loading={loading}
       />
-      <SupplyRISFormModal
+      <RISFormModal
         open={modalOpen}
         onOpenChange={setModalOpen}
         mode={modalMode}

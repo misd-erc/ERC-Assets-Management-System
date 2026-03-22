@@ -134,7 +134,7 @@ function AppContent() {
 export default function App() {
   return (
     <Router>
-      <ErrorBoundary>
+      {/* <ErrorBoundary> */}
         <Suspense fallback={
           <div className="min-h-screen flex items-center justify-center">
             <div className="text-center">
@@ -148,7 +148,7 @@ export default function App() {
           </div>
         </Suspense>
         <Toaster />
-      </ErrorBoundary>
+      {/* </ErrorBoundary> */}
     </Router>
   );
 }

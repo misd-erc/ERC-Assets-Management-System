@@ -1,4 +1,4 @@
-// src/components/supply-management/ris/RISItemRow.tsx
+// src/components/supply-management/supply-ris/RISItemRow.tsx
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { Loader2, Trash2 } from 'lucide-react';
 import { VwSupplyGroupedItem } from '@/types';
-import { FormItem } from './SupplyRISFormModal';
+import { FormItem } from './RISItemsSection';
 
 interface Props {
   item: FormItem;
@@ -34,13 +34,13 @@ export const RISItemRow = ({
   const isLoadingUnits = item.isLoadingUnits || false;
 
   return (
-    <div className="border rounded-md p-4 space-y-3 relative">
+    <div className="border rounded-md p-4 space-y-3 relative bg-white">
       {!isViewMode && (
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="absolute top-2 right-2"
+          className="absolute top-2 right-2 hover:bg-red-50"
           onClick={() => onRemove(index)}
         >
           <Trash2 className="h-4 w-4 text-red-500" />
@@ -54,7 +54,7 @@ export const RISItemRow = ({
             onValueChange={(val) => onUpdate(index, 'stockNumber', val)}
             disabled={isViewMode}
           >
-            <SelectTrigger>
+            <SelectTrigger className={isViewMode ? "bg-slate-50" : ""}>
               <SelectValue placeholder="Select Item" />
             </SelectTrigger>
             <SelectContent>
@@ -71,7 +71,7 @@ export const RISItemRow = ({
           <Input
             value={item.itemDescription}
             disabled
-            className="bg-gray-100"
+            className="bg-slate-50 text-slate-700"
           />
         </div>
       </div>
@@ -79,29 +79,29 @@ export const RISItemRow = ({
         <div className="space-y-2">
           <Label>Unit</Label>
           {isLoadingUnits ? (
-            <div className="flex items-center gap-2 h-10 px-3 border rounded-md bg-gray-50">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm text-muted-foreground">Loading units...</span>
+            <div className="flex items-center gap-2 h-10 px-3 border rounded-md bg-slate-50">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Loading...</span>
             </div>
           ) : availableUnits.length > 0 ? (
             <Select
-              value={item.unitId.toString()}
+              value={item.unitId && item.unitId > 0 ? item.unitId.toString() : undefined}
               onValueChange={(val) => onUpdate(index, 'unitId', Number(val))}
               disabled={isViewMode}
             >
-              <SelectTrigger>
+              <SelectTrigger className={isViewMode ? "bg-slate-50" : ""}>
                 <SelectValue placeholder="Select Unit" />
               </SelectTrigger>
               <SelectContent>
-                {availableUnits.map((u) => (
-                  <SelectItem key={u.id} value={u.id.toString()}>
-                    {u.name}
+                {availableUnits.map((unit) => (
+                  <SelectItem key={unit.id} value={unit.id.toString()}>
+                    {unit.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           ) : (
-            <Input value="—" disabled className="bg-gray-100" />
+            <Input value="—" disabled className="bg-slate-50 text-slate-500 text-center" />
           )}
         </div>
         <div className="space-y-2">
@@ -110,7 +110,7 @@ export const RISItemRow = ({
             type="number"
             value={item.requisitionQuantity}
             disabled
-            className="bg-gray-100"
+            className="bg-slate-50 text-slate-700"
           />
         </div>
         <div className="space-y-2">
@@ -123,6 +123,7 @@ export const RISItemRow = ({
             max={item.requisitionQuantity}
             required
             disabled={isViewMode}
+            className={isViewMode ? "bg-slate-50" : ""}
           />
         </div>
       </div>
@@ -133,6 +134,7 @@ export const RISItemRow = ({
           onChange={(e) => onUpdate(index, 'itemRemarks', e.target.value)}
           placeholder="Optional remarks"
           disabled={isViewMode}
+          className={isViewMode ? "bg-slate-50" : ""}
         />
       </div>
     </div>
