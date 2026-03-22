@@ -1,6 +1,6 @@
 ﻿// src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
-import { SupplyItem, VwSupplyItem, SupplyUnit, SupplyStorageLocation, SupplyIAR, VwSupplyIAR, VwSupplyUniqueRawItem } from '@/types';
+import { SupplyItem, VwSupplyItem, SupplyUnit, SupplyStorageLocation, SupplyIAR, VwSupplyIAR, VwSupplyUniqueRawItem, VwSupplyGroupedItem } from '@/types';
 import { 
   getSupplyItems,
   editSupplyItem,
@@ -10,7 +10,9 @@ import {
   editSupplyStorageLocation,
   getSupplyIARs, // Make sure this is exported from your API
   editSupplyIAR,
-  getSupplyUniqueRawItems
+  getSupplyUniqueRawItems,
+  getVwSupplyGroupedItems,
+  getVwSupplyGroupedItemLists
 } from '@/api';
 import { toast } from 'sonner';
 import axiosInstance from '@/lib/axios';
@@ -21,7 +23,9 @@ import { getAuthParams } from '@/utils/auth';
 ======================================== */
 interface SupplyItemState {
   supplies: SupplyItem[];
+  vwSupplyGroupItems: VwSupplyItem[];
   vwSupplies: VwSupplyItem[];
+  vwSupplyGroups: VwSupplyGroupedItem[];
   vwUniqueRawSupplies: VwSupplyUniqueRawItem[];
   loading: boolean;
   searchQuery: string;
@@ -32,6 +36,8 @@ interface SupplyItemState {
 
   fetchSupplyItems: () => Promise<void>;
   fetchSupplyUniqueRawItems: () => Promise<void>;
+  fetchSupplyGroupedItems: () => Promise<void>;
+  fetchSupplyGroupedItemLists: (id: number) => Promise<void>;
   addSupplyItem: (supply: Partial<SupplyItem>) => Promise<void>;
   updateSupplyItem: (id: number, updates: Partial<SupplyItem>) => Promise<void>;
   deleteSupplyItem: (id: number) => Promise<void>;
@@ -40,6 +46,8 @@ interface SupplyItemState {
 export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
   supplies: [],
   vwSupplies: [],
+  vwSupplyGroups: [],
+  vwSupplyGroupItems: [],
   vwUniqueRawSupplies: [],
   loading: false,
   searchQuery: '',
@@ -47,6 +55,18 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
   setSupplyItems: (supplies) => set({ supplies }),
   setLoading: (loading) => set({ loading }),
   setSearchQuery: (query) => set({ searchQuery: query }),
+
+  fetchSupplyGroupedItemLists: async (id) => {
+    set({ loading: true });
+    try {
+      const vwSupplyGroupItems = await getVwSupplyGroupedItemLists(id);
+      set({ vwSupplyGroupItems });
+    } catch {
+      toast.error('Failed to load supplies');
+    } finally {
+      set({ loading: false });
+    }
+  },
 
   fetchSupplyItems: async () => {
     set({ loading: true });
@@ -62,7 +82,19 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
     }
   },
 
-    fetchSupplyUniqueRawItems: async () => {
+  fetchSupplyGroupedItems: async () => {
+    set({ loading: true });
+    try {
+      const vwSupplyGroups = await getVwSupplyGroupedItems();
+      set({ vwSupplyGroups });
+    } catch {
+      toast.error('Failed to load supply groups');
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchSupplyUniqueRawItems: async () => {
     set({ loading: true });
     try {
       const vwUniqueRawSupplies = await getSupplyUniqueRawItems();

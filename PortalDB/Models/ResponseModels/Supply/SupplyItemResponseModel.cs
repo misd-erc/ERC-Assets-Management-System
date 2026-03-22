@@ -26,4 +26,18 @@ namespace PortalDB.Models.ResponseModels.Supply
         public DateTime? CreatedAt { get; set; }
 
     }
+
+    public class SupplyItemGroupedResponseModel
+    {
+
+        public long Id { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public long? IARId { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public int? TotalCurrentStock { get; set; }
+        public int? TotalStockCost { get; set; }
+        public bool IsActive { get; set; } = true;
+        public DateTime? CreatedAt { get; set; }
+
+    }
 }

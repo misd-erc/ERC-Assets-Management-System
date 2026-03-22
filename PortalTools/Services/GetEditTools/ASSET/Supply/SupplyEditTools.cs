@@ -121,7 +121,8 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                             .SetProperty(x => x.IARInvoiceNumberDate, model.IARInvoiceNumberDate)
                             .SetProperty(x => x.PODate, model.PODate)
                             .SetProperty(x => x.IsActive, model.IsActive)
-                            .SetProperty(x => x.IsApproved, model.IsApproved));
+                            .SetProperty(x => x.IsApproved, model.IsApproved)
+                            .SetProperty(x => x.ApprovedOn, model.ApprovedOn));
                 }
 
                 return isInsert ? model.Id : existingSupplyIAR.Id;

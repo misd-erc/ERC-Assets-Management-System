@@ -356,6 +356,207 @@ namespace API.Controllers
             }
         }
 
+        [HttpGet("item/grouped/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSupplyGroups([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // 1. Fetch all supply items
+                IEnumerable<TblSupplyItem>? supplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+
+                // 2. Apply filters (same as original)
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyItems = supplyItems.Where(x =>
+                        (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    supplyItems = supplyItems.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    supplyItems = supplyItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                // 3. Group by Code and Description, then compute aggregates
+                var groupedItems = supplyItems
+                    .GroupBy(x => new { x.Code, x.Description })
+                    .Select(g =>
+                    {
+                        var firstItem = g.First(); // representative item for non-aggregated fields
+
+                        return new
+                        {
+                            // Grouping key
+                            Code = g.Key.Code,
+                            Description = g.Key.Description,
+
+                            // Aggregated values
+                            TotalCurrentStock = g.Sum(x => x.Quantity ?? 0),
+                            TotalStockCost = g.Sum(x => (x.Quantity ?? 0) * (x.UnitCost ?? 0)),
+
+                            // Non-aggregated fields (taken from first item)
+                            Id = firstItem.Id,
+                            IARId = firstItem.IARId,
+                            IsActive = firstItem.IsActive,
+                            CreatedAt = firstItem.CreatedAt
+                        };
+                    });
+
+                // 4. Count total before pagination
+                int totalCount = groupedItems.Count();
+
+                // 5. Pagination
+                int skip = (model.PageNumber - 1) * model.PageSize;
+                var pagedGroups = groupedItems
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                // 6. Map to response model
+                var supplyItemsResponses = pagedGroups.Select(x => new SupplyItemGroupedResponseModel
+                {
+                    Id = x.Id,
+                    Code = x.Code ?? string.Empty,
+                    IARId = x.IARId,
+                    Description = x.Description ?? string.Empty,
+                    TotalCurrentStock = x.TotalCurrentStock,
+                    TotalStockCost = (int?)x.TotalStockCost, // cast if needed; model expects int? (adjust as necessary)
+                    IsActive = x.IsActive,
+                    CreatedAt = x.CreatedAt
+                }).ToList();
+
+                // 7. Commit transaction (though no changes, kept for consistency)
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed Grouped Supply Items", actionBy: model.ActionBySystemUserId);
+
+                // 8. Return paginated result
+                return Ok(ApiResponse<SupplyItemGroupedResponseModel>.OkPaginated(
+                    supplyItemsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Grouped Supply Items have been retrieved"
+                ));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("item/grouped/all/{id}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSupplyGroupedItems(long id, [FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // 1. Get the target item to obtain its Code and Description
+                TblSupplyItem? targetItem = await _getTools.Supply.GetTblSupplyItemAsync(id, context);
+                if (targetItem == null)
+                {
+                    return NotFound(ApiResponse<object>.Fail(ErrorCodes.NOT_FOUND, "Supply item not found."));
+                }
+
+                string targetCode = targetItem.Code ?? string.Empty;
+                string targetDescription = targetItem.Description ?? string.Empty;
+
+                // 2. Fetch all supply items
+                IEnumerable<TblSupplyItem> allItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+
+                // 3. Filter by matching Code and Description
+                var filteredItems = allItems.Where(x =>
+                    (x.Code ?? string.Empty).Equals(targetCode, StringComparison.OrdinalIgnoreCase) &&
+                    (x.Description ?? string.Empty).Equals(targetDescription, StringComparison.OrdinalIgnoreCase));
+
+                // 4. Apply search filter if provided (search across Code and Description)
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    filteredItems = filteredItems.Where(x =>
+                        (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                // 5. Apply date filters
+                if (model.StartDate.HasValue)
+                    filteredItems = filteredItems.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    filteredItems = filteredItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                // 6. Count total items before pagination
+                int totalCount = filteredItems.Count();
+
+                // 7. Apply pagination and ordering
+                int skip = (model.PageNumber - 1) * model.PageSize;
+                var pagedItems = filteredItems
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                // 8. Map to response model (including related entities)
+                var supplyItemsResponses = new List<SupplyItemResponseModel>();
+                foreach (var item in pagedItems)
+                {
+                    var response = new SupplyItemResponseModel
+                    {
+                        Id = item.Id,
+                        Code = item.Code ?? string.Empty,
+                        IARId = item.IARId,
+                        Category = await _getTools.PTA.GetTblPTACategoryAsync(item.CategoryId, context),
+                        MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(item.MeasurementUnitId, context),
+                        Description = item.Description ?? string.Empty,
+                        Quantity = item.Quantity,
+                        UnitCost = item.UnitCost,
+                        ReorderPoint = item.ReorderPoint,
+                        StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(item.StorageLocationId, context),
+                        Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(item.VendorId, context),
+                        IsActive = item.IsActive,
+                        CreatedAt = item.CreatedAt
+                    };
+                    supplyItemsResponses.Add(response);
+                }
+
+                // 9. Commit transaction (no changes, but consistent with pattern)
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // 10. Log activity
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed grouped supply items for Code: {targetCode}, Description: {targetDescription}", actionBy: model.ActionBySystemUserId);
+
+                // 11. Return paginated result
+                return Ok(ApiResponse<SupplyItemResponseModel>.OkPaginated(
+                    supplyItemsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Grouped Supply Items have been retrieved"
+                ));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         [HttpGet("item/unique/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -915,7 +1116,8 @@ namespace API.Controllers
                                     UnitCost = deliveryRecordItem.UnitCost,
                                     ReorderPoint = deliveryRecordItem.ReorderPoint,
                                     StorageLocationId = deliveryRecordItem.StorageLocationId,
-                                    VendorId = deliveryRecordItem.VendorId
+                                    VendorId = deliveryRecordItem.VendorId,
+                                    Quantity = deliveryRecordItem.ItemQuantity
                                 };
 
                                 await _editTools.Supply.EditTblSupplyItemAsync(supplyItem, model.ActionBySystemUserId, context);

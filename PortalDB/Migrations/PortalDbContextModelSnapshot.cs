@@ -93,10 +93,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("DeliveryRecordItemCreatedAt");
 
-                    b.Property<int?>("CurrentStock")
-                        .HasColumnType("int")
-                        .HasColumnName("DeliveryRecordItemCurrentStock");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("DeliveryRecordItemIsActive");
@@ -109,8 +105,8 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("DeliveryRecordItemDescription");
 
-                    b.Property<long?>("ItemQuantity")
-                        .HasColumnType("bigint")
+                    b.Property<int?>("ItemQuantity")
+                        .HasColumnType("int")
                         .HasColumnName("DeliveryRecordItemQuantity");
 
                     b.Property<string>("ItemSpecificationEncrypted")
@@ -839,10 +835,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("SupplyItemCreatedAt");
 
-                    b.Property<int?>("CurrentStock")
-                        .HasColumnType("int")
-                        .HasColumnName("SupplyItemCurrentStock");
-
                     b.Property<string>("DescriptionEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyItemDescription");
@@ -909,13 +901,13 @@ namespace PortalDB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("DivisionId");
 
+                    b.Property<string>("EntityNameEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyRISEntityName");
+
                     b.Property<string>("FundClusterEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyRISFundCluster");
-
-                    b.Property<string>("FundEntityNameEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyRISEntityName");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
@@ -1019,10 +1011,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyRISItemRemarks");
 
-                    b.Property<long?>("RISId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISId");
-
                     b.Property<long>("RequisitionQuantity")
                         .HasColumnType("bigint")
                         .HasColumnName("SupplyRISItemRequisitionQuantity");
@@ -1030,6 +1018,10 @@ namespace PortalDB.Migrations
                     b.Property<string>("StockNumberEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyRISItemStockNumber");
+
+                    b.Property<long?>("SupplyRISId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISId");
 
                     b.Property<long?>("UnitId")
                         .HasColumnType("bigint")

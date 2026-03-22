@@ -1,5 +1,5 @@
   import axiosInstance from '@/lib/axios';
-  import { ApiResponse, SupplyItem, VwSupplyItem, VwSupplyUniqueRawItem } from '@/types';
+  import { ApiResponse, SupplyItem, VwSupplyGroupedItem, VwSupplyItem, VwSupplyUniqueRawItem } from '@/types';
   import { toast } from 'sonner';
   import { getAuthParams } from '@/utils/auth';
 
@@ -26,6 +26,17 @@
     reorderPoint: raw.reorderPoint,
     storageLocation: raw.storageLocation,
     vendor: raw.vendor,
+    isActive: raw.isActive ?? true,
+    createdAt: raw.createdAt,
+  });
+
+  const mapVwSupplyGroupedItem = (raw: any): VwSupplyGroupedItem => ({
+    id: raw.id,
+    iarId: raw.iarId,
+    code: raw.code,
+    description: raw.description,
+    totalCurrentStock: raw.totalCurrentStock,
+    totalStockCost: raw.totalStockCost,
     isActive: raw.isActive ?? true,
     createdAt: raw.createdAt,
   });
@@ -64,6 +75,40 @@
       ? response.data.data.items.map(mapVwSupplyItem)
       : [];
   };
+
+    export const getVwSupplyGroupedItems = async (): Promise<VwSupplyGroupedItem[]> => {
+    const { systemUserId, sessionKey } = getAuthParams();
+
+    const response = await axiosInstance.get<SupplyItemResponse<ListResponse<any>>>('/Supply/item/grouped/all', {
+      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+    });
+
+    if (!response.data.success) {
+      toast.error(response.data.message || 'Failed to fetch items');
+      return [];
+    }
+        return Array.isArray(response.data.data.items)
+      ? response.data.data.items.map(mapVwSupplyGroupedItem)
+      : [];
+  };
+
+    export const getVwSupplyGroupedItemLists = async (id: number): Promise<VwSupplyItem[]> => {
+    const { systemUserId, sessionKey } = getAuthParams();
+
+    const response = await axiosInstance.get<SupplyItemResponse<ListResponse<any>>>(`/Supply/item/grouped/all/${id}`, {
+      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+    });
+
+    if (!response.data.success) {
+      toast.error(response.data.message || 'Failed to fetch items');
+      return [];
+    }
+
+    return Array.isArray(response.data.data.items)
+      ? response.data.data.items.map(mapVwSupplyItem)
+      : [];
+  };
+
 
   export const getSupplyUniqueRawItems = async (): Promise<VwSupplyUniqueRawItem[]> => {
     const { systemUserId, sessionKey } = getAuthParams();

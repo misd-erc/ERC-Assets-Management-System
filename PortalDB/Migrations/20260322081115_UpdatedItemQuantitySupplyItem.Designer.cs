@@ -12,8 +12,8 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    [Migration("20260319152455_AddNewTblDisposal")]
-    partial class AddNewTblDisposal
+    [Migration("20260322081115_UpdatedItemQuantitySupplyItem")]
+    partial class UpdatedItemQuantitySupplyItem
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -96,10 +96,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("DeliveryRecordItemCreatedAt");
 
-                    b.Property<int?>("CurrentStock")
-                        .HasColumnType("int")
-                        .HasColumnName("DeliveryRecordItemCurrentStock");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("DeliveryRecordItemIsActive");
@@ -112,8 +108,8 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("DeliveryRecordItemDescription");
 
-                    b.Property<long?>("ItemQuantity")
-                        .HasColumnType("bigint")
+                    b.Property<int?>("ItemQuantity")
+                        .HasColumnType("int")
                         .HasColumnName("DeliveryRecordItemQuantity");
 
                     b.Property<string>("ItemSpecificationEncrypted")
@@ -750,11 +746,11 @@ namespace PortalDB.Migrations
 
                     b.Property<DateTime?>("ApprovedOn")
                         .HasColumnType("datetime2")
-                        .HasColumnName("SupplyIARCreatedAt");
+                        .HasColumnName("SupplyIARApprovedOn");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
-                        .HasColumnName("SupplyIARApprovedOn");
+                        .HasColumnName("SupplyIARCreatedAt");
 
                     b.Property<long?>("DivisionId")
                         .HasColumnType("bigint")
@@ -842,10 +838,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("SupplyItemCreatedAt");
 
-                    b.Property<int?>("CurrentStock")
-                        .HasColumnType("int")
-                        .HasColumnName("SupplyItemCurrentStock");
-
                     b.Property<string>("DescriptionEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyItemDescription");
@@ -902,23 +894,23 @@ namespace PortalDB.Migrations
 
                     b.Property<DateTime?>("ApprovedOn")
                         .HasColumnType("datetime2")
-                        .HasColumnName("SupplyRISCreatedAt");
+                        .HasColumnName("SupplyRISApprovedOn");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
-                        .HasColumnName("SupplyRISApprovedOn");
+                        .HasColumnName("SupplyRISCreatedAt");
 
                     b.Property<long?>("DivisionId")
                         .HasColumnType("bigint")
                         .HasColumnName("DivisionId");
 
+                    b.Property<string>("EntityNameEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyRISEntityName");
+
                     b.Property<string>("FundClusterEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyRISFundCluster");
-
-                    b.Property<string>("FundEntityNameEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyRISEntityName");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
@@ -940,9 +932,17 @@ namespace PortalDB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("SupplyRISApprovedBySystemUserId");
 
+                    b.Property<DateTime?>("RISApprovedDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyRISApprovedDate");
+
                     b.Property<long?>("RISIssuedBySystemUserId")
                         .HasColumnType("bigint")
                         .HasColumnName("SupplyRISIssuedBySystemUserId");
+
+                    b.Property<DateTime?>("RISIssuedDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyRISIssuedDate");
 
                     b.Property<string>("RISNumberEncrypted")
                         .HasColumnType("nvarchar(max)")
@@ -956,9 +956,17 @@ namespace PortalDB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("SupplyRISRecievedBySystemUserId");
 
+                    b.Property<DateTime?>("RISRecievedDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyRISRecievedDate");
+
                     b.Property<long?>("RISRequestedBySystemUserId")
                         .HasColumnType("bigint")
                         .HasColumnName("SupplyRISRequestedBySystemUserId");
+
+                    b.Property<DateTime?>("RISRequestedDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyRISRequestedDate");
 
                     b.Property<string>("ResponsibilityCenterCodeEncrypted")
                         .HasColumnType("nvarchar(max)")
@@ -1006,10 +1014,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyRISItemRemarks");
 
-                    b.Property<long?>("RISId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISId");
-
                     b.Property<long>("RequisitionQuantity")
                         .HasColumnType("bigint")
                         .HasColumnName("SupplyRISItemRequisitionQuantity");
@@ -1017,6 +1021,10 @@ namespace PortalDB.Migrations
                     b.Property<string>("StockNumberEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyRISItemStockNumber");
+
+                    b.Property<long?>("SupplyRISId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISId");
 
                     b.Property<long?>("UnitId")
                         .HasColumnType("bigint")
