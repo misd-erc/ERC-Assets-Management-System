@@ -776,6 +776,63 @@ namespace API.Controllers
 
                 foreach (var x in supplyRISsList)
                 {
+                    // Map ApprovedBySystemUser
+                    UserBasicResponseModel? approvedByUser = null;
+                    if (x.RISApprovedBySystemUserId.HasValue)
+                    {
+                        var user = await _getTools.Account.GetTblSystemUserAsync(x.RISApprovedBySystemUserId.Value, context);
+                        if (user != null)
+                        {
+                            approvedByUser = new UserBasicResponseModel
+                            {
+                                Id = user.Id,
+                                FirstName = user.FirstName,
+                                LastName = user.LastName,
+                                Email = user.Email,
+                                EmployeeId = user.EmployeeId,
+                                IsActive = user.IsActive
+                            };
+                        }
+                    }
+
+                    // Map IssuedBySystemUser
+                    UserBasicResponseModel? issuedByUser = null;
+                    if (x.RISIssuedBySystemUserId.HasValue)
+                    {
+                        var user = await _getTools.Account.GetTblSystemUserAsync(x.RISIssuedBySystemUserId.Value, context);
+                        if (user != null)
+                        {
+                            issuedByUser = new UserBasicResponseModel
+                            {
+                                Id = user.Id,
+                                FirstName = user.FirstName,
+                                LastName = user.LastName,
+                                Email = user.Email,
+                                EmployeeId = user.EmployeeId,
+                                IsActive = user.IsActive
+                            };
+                        }
+                    }
+
+                    // Map ReceivedBySystemUser (note spelling of column: RISRecievedBySystemUserId)
+                    UserBasicResponseModel? receivedByUser = null;
+                    if (x.RISReceivedBySystemUserId.HasValue) // adjust property name if needed
+                    {
+                        var user = await _getTools.Account.GetTblSystemUserAsync(x.RISReceivedBySystemUserId.Value, context);
+                        if (user != null)
+                        {
+                            receivedByUser = new UserBasicResponseModel
+                            {
+                                Id = user.Id,
+                                FirstName = user.FirstName,
+                                LastName = user.LastName,
+                                Email = user.Email,
+                                EmployeeId = user.EmployeeId,
+                                IsActive = user.IsActive
+                            };
+                        }
+                    }
+
                     var supplyRISModel = new SupplyRISResponseModel
                     {
                         Id = x.Id,
@@ -786,36 +843,14 @@ namespace API.Controllers
                         ResponsibilityCenterCode = x.ResponsibilityCenterCode,
                         RISNumber = x.RISNumber,
                         RISPurpose = x.RISPurpose,
-                        //RequestedBySystemUser = new UserBasicResponseModel
-                        //{
-                        //    _getTools.Account.GetTblSystemUserAsync(x.RISRequestedBySystemUserId, context)
-
-                        //    Id = x.Id,
-                        //    FirstName = x.FirstName,
-                        //    LastName = x.LastName,
-                        //    Email = x.Email,
-                        //    EmployeeId = x.EmployeeId,
-                        //    IsActive = x.IsActive,
-                        //    SystemRole = await _getTools.Account.GetSystemRoleWithScopesAsListAsync(x.SystemRoleId, context),
-                        //    SystemUserStatus = await _getTools.Account.GetSystemUserStatusAsync(x.StatusId, context),
-                        //    Office = await _getTools.Office.GetTblOfficeAsync(x.OfficeId, context),
-                        //    Division = await _getTools.Office.GetTblDivisionAsync(x.DivisionId, context),
-                        //    EmploymentType = await _getTools.Office.GetTblEmploymentTypeAsync(x.EmploymentTypeId ?? 0, context),
-                        //    Position = await _getTools.Office.GetTblPositionAsync(x.PositionId ?? 0, context),
-                        //    ProfilePictureStorageFile = await _getTools.Storage.GetTblFileStorageAsync(x.ProfilePictureFileStorageId, context),
-                        //    CreatedAt = x.CreatedAt,
-                        //    LastLoginAt = x.LastLoginAt
-                        //},
                         RISRequestedDate = x.RISRequestedDate,
-                        ApprovedBySystemUserId = x.RISApprovedBySystemUserId,
+                        ApprovedBySystemUser = approvedByUser,
                         RISApprovedDate = x.RISApprovedDate,
-                        IssuedBySystemUserId = x.RISIssuedBySystemUserId,
+                        IssuedBySystemUser = issuedByUser,
                         RISIssuedDate = x.RISIssuedDate,
-                        RecievedBySystemUserId = x.RISRecievedBySystemUserId,
-                        RISRecievedDate = x.RISRecievedDate,
+                        ReceivedBySystemUser = receivedByUser,
+                        RISReceivedDate = x.RISReceivedDate,
                         IsActive = x.IsActive,
-                        IsApproved = x.IsApproved,
-                        ApprovedOn = x.ApprovedOn,
                         CreatedAt = x.CreatedAt
                     };
                     supplyIResponses.Add(supplyRISModel);
@@ -1173,23 +1208,23 @@ namespace API.Controllers
                     RISApprovedDate = model.RISApprovedDate,
                     RISIssuedBySystemUserId = model.RISIssuedBySystemUserId,
                     RISIssuedDate = model.RISIssuedDate,
-                    RISRecievedBySystemUserId = model.RISRecievedBySystemUserId,
-                    RISRecievedDate = model.RISRecievedDate,
+                    RISReceivedBySystemUserId = model.RISReceivedBySystemUserId,
+                    RISReceivedDate = model.RISReceivedDate,
                     IsActive = model.IsActive,
-                    IsApproved = model.IsApproved
+                    //IsApproved = model.IsApproved
                 };
 
-                if (supplyRIS.IsApproved)
-                {
-                    supplyRIS.IsApproved = true;
-                    supplyRIS.ApprovedOn = DateTime.UtcNow;
+                //if (supplyRIS.IsApproved)
+                //{
+                //    supplyRIS.IsApproved = true;
+                //    supplyRIS.ApprovedOn = DateTime.UtcNow;
 
-                    List<TblSupplyRISItem>? SupplyRISItems = _getTools.Supply.GetTblSupplyRISItems(context)?.Where(x => x.SupplyRISId == supplyRIS.Id).ToList();
-                    foreach (var SupplyRISItem in SupplyRISItems)
-                    {
-                        //Dito magbabawas ng quantity if approved
-                    }
-                }
+                //    List<TblSupplyRISItem>? SupplyRISItems = _getTools.Supply.GetTblSupplyRISItems(context)?.Where(x => x.SupplyRISId == supplyRIS.Id).ToList();
+                //    foreach (var SupplyRISItem in SupplyRISItems)
+                //    {
+                //        //Dito magbabawas ng quantity if approved
+                //    }
+                //}
 
                 long supplyRISId = await _editTools.Supply.EditTblSupplyRISAsync(supplyRIS, model.ActionBySystemUserId, context);
 

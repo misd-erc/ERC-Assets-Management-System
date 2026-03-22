@@ -439,10 +439,9 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                             .SetProperty(x => x.RISApprovedDate, model.RISApprovedDate)
                             .SetProperty(x => x.RISIssuedBySystemUserId, model.RISIssuedBySystemUserId)
                             .SetProperty(x => x.RISIssuedDate, model.RISIssuedDate)
-                            .SetProperty(x => x.RISRecievedBySystemUserId, model.RISRecievedBySystemUserId)
-                            .SetProperty(x => x.RISRecievedDate, model.RISRecievedDate)
-                            .SetProperty(x => x.IsActive, model.IsActive)
-                            .SetProperty(x => x.IsApproved, model.IsApproved));
+                            .SetProperty(x => x.RISReceivedBySystemUserId, model.RISReceivedBySystemUserId)
+                            .SetProperty(x => x.RISReceivedDate, model.RISReceivedDate)
+                            .SetProperty(x => x.IsActive, model.IsActive));
                 }
 
                 return isInsert ? model.Id : existingSupplyRIS.Id;

@@ -15,7 +15,6 @@ namespace PortalDB.Models.ResponseModels.Supply
     {
         public long Id { get; set; }
         public string? EntityName { get; set; } = string.Empty;
-
         public string? FundCluster { get; set; } = string.Empty;
         public TblDivision? Division { get; set; }
         public TblOffice? Office { get; set; }
@@ -24,15 +23,13 @@ namespace PortalDB.Models.ResponseModels.Supply
         public string? RISPurpose { get; set; } = string.Empty;
         public UserBasicResponseModel? RequestedBySystemUser { get; set; }
         public DateTime? RISRequestedDate { get; set; }
-        public long? ApprovedBySystemUserId { get; set; }
+        public UserBasicResponseModel? ApprovedBySystemUser { get; set; }
         public DateTime? RISApprovedDate { get; set; }
-        public long? IssuedBySystemUserId { get; set; }
+        public UserBasicResponseModel? IssuedBySystemUser { get; set; }
         public DateTime? RISIssuedDate { get; set; }
-        public long? RecievedBySystemUserId { get; set; }
-        public DateTime? RISRecievedDate { get; set; }
-        public bool IsApproved { get; set; } = false;
+        public UserBasicResponseModel? ReceivedBySystemUser { get; set; }
+        public DateTime? RISReceivedDate { get; set; }
         public bool IsActive { get; set; } = true;
-        public DateTime? ApprovedOn { get; set; }
         public DateTime CreatedAt { get; set; }
 
     }

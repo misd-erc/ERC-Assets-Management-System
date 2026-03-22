@@ -85,23 +85,17 @@ namespace PortalDB.Entities.ASSET.Supply
         [Column("SupplyRISIssuedDate")]
         public DateTime? RISIssuedDate { get; set; }
 
-        [Column("SupplyRISRecievedBySystemUserId")]
-        public long? RISRecievedBySystemUserId { get; set; }
+        [Column("SupplyRISReceivedBySystemUserId")]
+        public long? RISReceivedBySystemUserId { get; set; }
 
-        [Column("SupplyRISRecievedDate")]
-        public DateTime? RISRecievedDate { get; set; }
-
-        [Column("SupplyRISIsApproved")]
-        public bool IsApproved { get; set; } = false;
+        [Column("SupplyRISReceivedDate")]
+        public DateTime? RISReceivedDate { get; set; }
 
         [Column("SupplyRISIsActive")]
         public bool IsActive { get; set; } = true;
 
         [Column("SupplyRISIsDeleted")]
         public bool IsDeleted { get; set; } = false;
-
-        [Column("SupplyRISApprovedOn")]
-        public DateTime? ApprovedOn { get; set; }
 
         [Column("SupplyRISCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
