@@ -22,7 +22,6 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
             _options = options;
             _getTools = getTools;
         }
-
         public async Task<long> EditTblSupplyVendorAsync(TblSupplyVendor model, long actionBySystemUserId, PortalDbContext context)
         {
             if (model == null)
