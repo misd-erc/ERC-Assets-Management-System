@@ -37,7 +37,7 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
     unitValue: 0,
     dateAcquired: '',
     estimatedUsefulLife: 5,
-    fiscalDate: new Date().toISOString().split('T')[0],
+    fiscalDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
     condition: 'Working',
     movements: [],
   });
@@ -47,7 +47,7 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
   const [offices, setOffices] = useState<VwOffice[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
-  const [legends, setLegends] = useState<{ id: number; name: string }[]>([]);
+  const [legends, setLegends] = useState<{ id: number; name: string; description?: string }[]>([]);
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<{ value: string; label: string }[]>([]);
 
@@ -295,9 +295,10 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
     const suffixName = e.suffixName ?? "";
     const employeeIdOriginal = e.employeeIdOriginal ?? "";
     const employmentTypeId = e.employmentType?.id ?? 1;
-    const employmentTypeName = employmentTypeId === 1 ? 'Plantilla' : 'Non-Plantilla';
+    const employmentTypeName = e.employmentType?.name ?? 'Plantilla';
+    const groupLabel = employmentTypeName === 'Plantilla' || employmentTypeName === 'Contractual' ? 'Plantilla' : 'Non-Plantilla';
 
-    const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${employmentTypeName})`;
+    const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${groupLabel})`;
 
     return {
       id: e.id,
@@ -307,6 +308,7 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
       suffixName,
       employeeIdOriginal,
       employmentTypeId,
+      employmentTypeName,
       label,
     };
   }

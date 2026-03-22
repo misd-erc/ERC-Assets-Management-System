@@ -12,6 +12,7 @@ export interface Legend {
   id: number;
   name: string;
   generalCode: string;
+  description?: string;
   isActive: boolean;
 }
 
@@ -136,7 +137,7 @@ export const getLegends = async (): Promise<Legend[]> => {
   }
 };
 
-export const createLegend = async (name: string, generalCode: string): Promise<Legend | null> => {
+export const createLegend = async (name: string, generalCode: string, description?: string): Promise<Legend | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -144,6 +145,7 @@ export const createLegend = async (name: string, generalCode: string): Promise<L
       id: 0,
       name,
       generalCode,
+      description,
       isActive: true,
       actionBySystemUserId: systemUserId,
       sessionKey,
@@ -161,7 +163,7 @@ export const createLegend = async (name: string, generalCode: string): Promise<L
   }
 };
 
-export const updateLegend = async (id: number, name: string, generalCode: string, isActive: boolean): Promise<Legend | null> => {
+export const updateLegend = async (id: number, name: string, generalCode: string, isActive: boolean, description?: string): Promise<Legend | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -169,6 +171,7 @@ export const updateLegend = async (id: number, name: string, generalCode: string
       id,
       name,
       generalCode,
+      description,
       isActive,
       actionBySystemUserId: systemUserId,
       sessionKey,

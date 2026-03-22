@@ -19,6 +19,7 @@ export interface NormalizedEmployee {
   suffixName: string;
   employeeIdOriginal: string;
   employmentTypeId: number;
+  employmentTypeName: string;
   label: string;
 }
 

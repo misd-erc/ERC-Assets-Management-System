@@ -378,6 +378,84 @@ namespace PortalTools.Services.GetEditTools.DBO.Account
             }
         }
 
+        /// <summary>
+        /// Creates or updates a TblEmployee directly using IDs.
+        /// Returns the employee id on success, 0 otherwise.
+        /// </summary>
+        public async Task<long> EditTblEmployeeDirectAsync(TblEmployee model, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (model == null)
+                return 0;
+
+            try
+            {
+                bool isInsert = model.Id == 0;
+                TblEmployee? existingEmployee = null;
+
+                if (isInsert)
+                {
+                    model.CreatedAt = DateTime.UtcNow;
+                    await context.TblEmployees.AddAsync(model);
+                    await context.SaveChangesAsync();
+                }
+                else
+                {
+                    existingEmployee = await _getTools.Account.GetTblEmployeeAsync(model.Id, context);
+
+                    if (existingEmployee == null)
+                        return 0;
+
+                    await context.TblEmployees.Where(e => e.Id == model.Id)
+                        .ExecuteUpdateAsync(e => e
+                            .SetProperty(x => x.FirstNameEncrypted, model.FirstNameEncrypted)
+                            .SetProperty(x => x.MiddleNameEncrypted, model.MiddleNameEncrypted)
+                            .SetProperty(x => x.LastNameEncrypted, model.LastNameEncrypted)
+                            .SetProperty(x => x.SuffixNameEncrypted, model.SuffixNameEncrypted)
+                            .SetProperty(x => x.EmployeeIdOriginalEncrypted, model.EmployeeIdOriginalEncrypted)
+                            .SetProperty(x => x.OfficeId, model.OfficeId)
+                            .SetProperty(x => x.DivisionId, model.DivisionId)
+                            .SetProperty(x => x.EmploymentTypeId, model.EmploymentTypeId)
+                            .SetProperty(x => x.PositionId, model.PositionId)
+                            .SetProperty(x => x.IsActive, model.IsActive));
+                }
+
+                await AuditTrailTool.LogActivityAsync(_options, $"{(isInsert ? "Added" : "Updated")} employee record", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, isInsert ? null! : existingEmployee!, model, nameof(TblEmployee), actionBySystemUserId, isInsert ? "Insert" : "Update"));
+
+                return isInsert ? model.Id : existingEmployee!.Id;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(AccountEditTools));
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Soft-deletes a TblEmployee by id.
+        /// Returns true on success, false otherwise.
+        /// </summary>
+        public async Task<bool> DeleteTblEmployeeAsync(long id, long actionBySystemUserId, PortalDbContext context)
+        {
+            if (id == 0)
+                return false;
+
+            try
+            {
+                TblEmployee? employeeModel = await _getTools.Account.GetTblEmployeeAsync(id, context);
+                await context.TblEmployees.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context, actionBySystemUserId);
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted employee record", actionBy: actionBySystemUserId,
+                    linkedAuditTrailId: AuditTrailTool.TrackChanges(context, employeeModel, null, nameof(TblEmployee), actionBySystemUserId, "Delete"));
+
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(AccountEditTools));
+                throw;
+            }
+        }
+
 
 
     }

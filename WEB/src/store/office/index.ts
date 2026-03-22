@@ -1,12 +1,13 @@
 ﻿// src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
-import { Office, VwDivision, EmploymentType, Position, Division, VwEmploymentType, VwOffice, VwPosition } from '@/types';
+import { Office, VwDivision, EmploymentType, Position, Division, VwEmploymentType, VwOffice, VwPosition, EmployeeDetail } from '@/types';
 import { 
   getOffices, editOffice,
   getEmploymentTypes, editEmploymentType,
   getPositions, editPosition,
   getDivisions,
-  editDivision
+  editDivision,
+  getEmployeeList, editEmployeeRecord, deleteEmployeeRecord,
 } from '@/api';
 import { toast } from 'sonner';
 import axiosInstance from '@/lib/axios';
@@ -358,4 +359,99 @@ export const usePositionStore = create<PositionState>((set, get) => ({
 }));
 
 
+/* ========================================
+   EMPLOYEE STORE
+======================================== */
+interface EmployeeState {
+  employees: EmployeeDetail[];
+  loading: boolean;
+  searchQuery: string;
+
+  setLoading: (loading: boolean) => void;
+  setSearchQuery: (query: string) => void;
+
+  fetchEmployees: () => Promise<void>;
+  addEmployee: (employee: {
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
+    suffixName?: string;
+    employeeIdOriginal: string;
+    officeId?: number | null;
+    divisionId?: number | null;
+    employmentTypeId?: number | null;
+    positionId?: number | null;
+    isActive: boolean;
+  }) => Promise<void>;
+  updateEmployee: (id: number, updates: {
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
+    suffixName?: string;
+    employeeIdOriginal: string;
+    officeId?: number | null;
+    divisionId?: number | null;
+    employmentTypeId?: number | null;
+    positionId?: number | null;
+    isActive: boolean;
+  }) => Promise<void>;
+  deleteEmployee: (id: number) => Promise<void>;
+}
+
+export const useEmployeeStore = create<EmployeeState>((set, get) => ({
+  employees: [],
+  loading: false,
+  searchQuery: '',
+
+  setLoading: (loading) => set({ loading }),
+  setSearchQuery: (query) => set({ searchQuery: query }),
+
+  fetchEmployees: async () => {
+    set({ loading: true });
+    try {
+      const employees = await getEmployeeList();
+      set({ employees });
+    } catch {
+      toast.error('Failed to load employees');
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  addEmployee: async (employee) => {
+    try {
+      await editEmployeeRecord({
+        employeeId: 0,
+        ...employee,
+      });
+      await get().fetchEmployees();
+      toast.success('Employee added');
+    } catch {
+      toast.error('Failed to add employee');
+    }
+  },
+
+  updateEmployee: async (id, updates) => {
+    try {
+      await editEmployeeRecord({
+        employeeId: id,
+        ...updates,
+      });
+      await get().fetchEmployees();
+      toast.success('Employee updated');
+    } catch {
+      toast.error('Failed to update employee');
+    }
+  },
+
+  deleteEmployee: async (id) => {
+    try {
+      await deleteEmployeeRecord(id);
+      await get().fetchEmployees();
+      toast.success('Employee deleted');
+    } catch {
+      toast.error('Failed to delete employee');
+    }
+  },
+}));
 

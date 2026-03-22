@@ -10,9 +10,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useData } from '@/hooks/data/useData';
-// import { AssetOverviewChart } from '@/components/dashboard/AssetOverviewChart';
-// import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
-// import { PendingApprovalsCard } from '@/components/dashboard/PendingApprovalsCard';
+import { AssetOverviewChart } from '@/components/dashboard/AssetOverviewChart';
+import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
+import { PendingApprovalsCard } from '@/components/dashboard/PendingApprovalsCard';
 import { getDashboardSummary, DashboardSummary, getPTADashboard, PTADashboardData } from '@/api/dashboard/dashboardApi';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -259,18 +259,14 @@ function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* TOR-Compliant Dashboard Content */}
       {/* Asset Overview Chart */}
-      {/* <AssetOverviewChart /> */}
+      <AssetOverviewChart />
 
-      {/* Additional Dashboard Row */}
-      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activities */}
-        {/* <RecentActivitiesCard /> */}
-
-        {/* Pending Approvals */}
-        {/* <PendingApprovalsCard /> */}
-      {/* </div> */}
+      {/* Recent Activities & Disposal Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RecentActivitiesCard />
+        <PendingApprovalsCard />
+      </div>
     </div>
   );
 }

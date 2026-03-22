@@ -1,5 +1,13 @@
 import { NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 
+// Employment types that belong to the "Plantilla" accountability group.
+// Contractual employees are treated the same as Plantilla for asset accountability purposes.
+const PLANTILLA_TYPE_NAMES = ['Plantilla', 'Contractual'];
+
+export function isPlantillaEmploymentType(name: string): boolean {
+  return PLANTILLA_TYPE_NAMES.includes(name);
+}
+
 export function normalizeEmployee(e: any): NormalizedEmployee {
   const firstName = e.firstName ?? "";
   const middleName = e.middleName ?? "";
@@ -7,9 +15,10 @@ export function normalizeEmployee(e: any): NormalizedEmployee {
   const suffixName = e.suffixName ?? "";
   const employeeIdOriginal = e.employeeIdOriginal ?? "";
   const employmentTypeId = e.employmentType?.id ?? 1;
-  const employmentTypeName = employmentTypeId === 1 ? 'Plantilla' : 'Non-Plantilla';
+  const employmentTypeName = e.employmentType?.name ?? 'Plantilla';
+  const groupLabel = isPlantillaEmploymentType(employmentTypeName) ? 'Plantilla' : 'Non-Plantilla';
 
-  const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${employmentTypeName})`;
+  const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${groupLabel})`;
 
   return {
     id: e.id,
@@ -19,6 +28,7 @@ export function normalizeEmployee(e: any): NormalizedEmployee {
     suffixName,
     employeeIdOriginal,
     employmentTypeId,
+    employmentTypeName,
     label,
   };
 }
@@ -34,7 +44,7 @@ export function handleEmployeeSelect(
     return;
   }
 
-  if (emp.employmentTypeId === 1) {
+  if (isPlantillaEmploymentType(emp.employmentTypeName)) {
     onChange(employeeId, 0);
   } else {
     onChange(0, employeeId);
