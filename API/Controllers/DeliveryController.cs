@@ -299,7 +299,7 @@ namespace API.Controllers
                         ReorderPoint = x.ReorderPoint,
                         StorageLocationId = x.StorageLocationId,
                         VendorId = x.VendorId,
-                        UnitId = x.UnitId,
+                        UnitId = x.MeasurementUnitId,
                         UnitCost = x.UnitCost,
                         IsActive = x.IsActive,
                         IsDeleted = x.IsDeleted

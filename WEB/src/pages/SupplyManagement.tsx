@@ -1,11 +1,11 @@
+// src/pages/SupplyManagement.tsx (or wherever the page is)
 import { useState } from 'react';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 
-// Clean imports thanks to the index.ts file
-import { 
-  SupplyGeneralHeader, 
-  SupplyTabsList, 
-  SupplyItemTabContent,
+import {
+  SupplyGeneralHeader,
+  SupplyTabsList,
+  SupplyGroupedTabContent, // <-- Import the new grouped tab content
   SupplyUnitTabContent,
   SupplyStorageTabContent
 } from '@/components/supply-management';
@@ -20,9 +20,9 @@ export const SupplyManagement = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <SupplyTabsList />
 
-        {/* --- INVENTORY ITEMS --- */}
+        {/* --- INVENTORY ITEMS (GROUPED) --- */}
         <TabsContent value="inventory">
-          <SupplyItemTabContent />
+          <SupplyGroupedTabContent /> {/* Replaced old SupplyItemTabContent */}
         </TabsContent>
 
         {/* --- UNITS --- */}
@@ -30,32 +30,12 @@ export const SupplyManagement = () => {
           <SupplyUnitTabContent />
         </TabsContent>
 
-         {/* --- STORAGE LOCATIONS --- */}
-         <TabsContent value="storage">
+        {/* --- STORAGE LOCATIONS --- */}
+        <TabsContent value="storage">
           <SupplyStorageTabContent />
         </TabsContent>
 
-        {/* --- PLACEHOLDERS FOR FUTURE MODULES --- */}
-        {/* <TabsContent value="categories">
-           <div className="p-12 text-center text-muted-foreground border rounded-lg bg-slate-50">
-             Category Module Coming Soon
-           </div>
-        </TabsContent> */}
-        <TabsContent value="ris-requests">
-           <div className="p-12 text-center text-muted-foreground border rounded-lg bg-slate-50">
-             RIS Module Coming Soon
-           </div>
-        </TabsContent>
-         <TabsContent value="stock-cards">
-           <div className="p-12 text-center text-muted-foreground border rounded-lg bg-slate-50">
-             Stock Cards Module Coming Soon
-           </div>
-        </TabsContent>
-         <TabsContent value="allocations">
-           <div className="p-12 text-center text-muted-foreground border rounded-lg bg-slate-50">
-             Allocations Module Coming Soon
-           </div>
-        </TabsContent>
+        {/* ... other tabs ... */}
       </Tabs>
     </div>
   );

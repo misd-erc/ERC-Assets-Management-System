@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useSupplyUnit, useVendor, useSupplyItem } from '@/hooks';
 import { useSupplyStorageLocationStore } from '@/store/supply';
 import { getCategories } from '@/api/asset/inventoryApi';
+import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
@@ -87,8 +88,48 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
     }
   };
 
+  const validate = () => {
+    if (!item.code) {
+      toast.error('Item code is required');
+      return false;
+    }
+    if (!item.itemDescription) {
+      toast.error('Description is required');
+      return false;
+    }
+    if (item.itemTypeId === 1) { // Supply
+      if (!item.categoryId || item.categoryId === 0) {
+        toast.error('Category is required');
+        return false;
+      }
+      if (!item.measurementUnitId || item.measurementUnitId === 0) {
+        toast.error('Unit is required');
+        return false;
+      }
+      if (!item.storageLocationId || item.storageLocationId === 0) {
+        toast.error('Storage location is required');
+        return false;
+      }
+      if (!item.vendorId || item.vendorId === 0) {
+        toast.error('Vendor is required');
+        return false;
+      }
+    }
+    if (item.itemQuantity <= 0) {
+      toast.error('Quantity must be greater than 0');
+      return false;
+    }
+    if (item.unitCost < 0) {
+      toast.error('Unit cost cannot be negative');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
+
     const categoryObj = categories.find(c => c.id === Number(item.categoryId));
     const unitObj = units.find(u => u.id === Number(item.measurementUnitId));
     const vendorObj = vendors.find(v => v.id === Number(item.vendorId));
