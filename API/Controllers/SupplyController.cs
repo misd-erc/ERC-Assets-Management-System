@@ -833,6 +833,24 @@ namespace API.Controllers
                         }
                     }
 
+                    UserBasicResponseModel? requestedByUser = null;
+                    if (x.RISRequestedBySystemUserId.HasValue) // adjust property name if needed
+                    {
+                        var user = await _getTools.Account.GetTblSystemUserAsync(x.RISRequestedBySystemUserId.Value, context);
+                        if (user != null)
+                        {
+                            receivedByUser = new UserBasicResponseModel
+                            {
+                                Id = user.Id,
+                                FirstName = user.FirstName,
+                                LastName = user.LastName,
+                                Email = user.Email,
+                                EmployeeId = user.EmployeeId,
+                                IsActive = user.IsActive
+                            };
+                        }
+                    }
+
                     var supplyRISModel = new SupplyRISResponseModel
                     {
                         Id = x.Id,
@@ -843,6 +861,7 @@ namespace API.Controllers
                         ResponsibilityCenterCode = x.ResponsibilityCenterCode,
                         RISNumber = x.RISNumber,
                         RISPurpose = x.RISPurpose,
+                        RequestedBySystemUser = requestedByUser,
                         RISRequestedDate = x.RISRequestedDate,
                         ApprovedBySystemUser = approvedByUser,
                         RISApprovedDate = x.RISApprovedDate,
@@ -945,6 +964,93 @@ namespace API.Controllers
                     "Supply Items have been retrieved"
                 ));
 
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("ris-item/all/{risId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetSupplyRISItemsByRISId(long risId, [FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // Fetch all supply RIS items from the repository
+                IEnumerable<TblSupplyRISItem>? supplyRISItems = await _getTools.Supply.GetTblSupplyRISItems(context).ToListAsync();
+
+                // Filter by the provided RIS ID
+                supplyRISItems = supplyRISItems.Where(x => x.SupplyRISId == risId);
+
+                // Apply search filter if provided
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyRISItems = supplyRISItems.Where(x =>
+                        (x.StockNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.ItemDescription ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                // Apply date filters
+                if (model.StartDate.HasValue)
+                    supplyRISItems = supplyRISItems.Where(x => x.CreatedAt >= model.StartDate.Value);
+                if (model.EndDate.HasValue)
+                    supplyRISItems = supplyRISItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                // Count total before pagination
+                int totalCount = supplyRISItems.Count();
+
+                // Apply pagination
+                int skip = (model.PageNumber - 1) * model.PageSize;
+                var supplyRISItemsList = supplyRISItems
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                // Map to response model
+                var supplyRISItemsResponses = new List<SupplyRISItemResponseModel>();
+                foreach (var x in supplyRISItemsList)
+                {
+                    var supplyRISItemModel = new SupplyRISItemResponseModel
+                    {
+                        Id = x.Id,
+                        RISId = x.SupplyRISId,
+                        StockNumber = x.StockNumber,
+                        SupplyUnit = await _getTools.Supply.GetTblSupplyUnitAsync(x.UnitId, context),
+                        ItemDescription = x.ItemDescription,
+                        RequisitionQuantity = x.RequisitionQuantity,
+                        IsAvailable = x.IsAvailable,
+                        IssueQuantity = x.IssueQuantity,
+                        ItemRemarks = x.ItemRemarks,
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    supplyRISItemsResponses.Add(supplyRISItemModel);
+                }
+
+                // Commit transaction (no changes, but keeps consistency)
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Log activity
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed Supply RIS Items for RIS ID: {risId}", actionBy: model.ActionBySystemUserId);
+
+                // Return paginated response
+                return Ok(ApiResponse<SupplyRISItemResponseModel>.OkPaginated(
+                    supplyRISItemsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Supply RIS Items have been retrieved"
+                ));
             }
             catch (Exception ex)
             {
@@ -1180,7 +1286,6 @@ namespace API.Controllers
             }
         }
 
-        //Modifications need approval
         [HttpPost("ris/edit")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1199,8 +1304,8 @@ namespace API.Controllers
                     FundCluster = model.FundCluster,
                     DivisionId = model.DivisionId,
                     OfficeId = model.OfficeId,
-                    ResponsibilityCenterCodeEncrypted = model.ResponsibilityCenterCode,
-                    RISNumberEncrypted = model.RISNumber,
+                    ResponsibilityCenterCode = model.ResponsibilityCenterCode,
+                    RISNumber = model.RISNumber,
                     RISPurpose = model.RISPurpose,
                     RISRequestedBySystemUserId = model.RISRequestedBySystemUserId,
                     RISRequestedDate = model.RISRequestedDate,
@@ -1258,7 +1363,7 @@ namespace API.Controllers
                 {
                     Id = model.Id,
                     SupplyRISId = model.RISId,
-                    StockNumberEncrypted = model.StockNumberEncrypted,
+                    StockNumber = model.StockNumber,
                     UnitId = model.UnitId,
                     ItemDescription = model.ItemDescription,
                     RequisitionQuantity = model.RequisitionQuantity,

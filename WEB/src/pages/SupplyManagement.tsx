@@ -9,6 +9,7 @@ import {
   SupplyUnitTabContent,
   SupplyStorageTabContent
 } from '@/components/supply-management';
+import { SupplyRISTabContent } from '@/components/supply-management/supply-ris/SupplyRISTabContent';
 
 export const SupplyManagement = () => {
   const [activeTab, setActiveTab] = useState('inventory');
@@ -35,6 +36,9 @@ export const SupplyManagement = () => {
           <SupplyStorageTabContent />
         </TabsContent>
 
+      <TabsContent value="ris-requests">
+        <SupplyRISTabContent />
+      </TabsContent>
         {/* ... other tabs ... */}
       </Tabs>
     </div>
