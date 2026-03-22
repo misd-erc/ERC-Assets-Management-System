@@ -11,7 +11,9 @@ import {
   TagPreview,
   normalizeAssets,
   generateQRCode,
+  generateBarcode,
 } from '@/hooks/useAssetTagging';
+import { CodeType } from '@/components/asset-tagging/TagConfigurationCard';
 import { TagConfigurationCard } from '@/components/asset-tagging/TagConfigurationCard';
 import { AssetSelectionCard } from '@/components/asset-tagging/AssetSelectionCard';
 import { StatsRow } from '@/components/asset-tagging/StatsRow';
@@ -26,8 +28,7 @@ export default function AssetTaggingPage() {
   const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [tagTemplate, setTagTemplate] = useState<string>('standard');
-  const [includeQR, setIncludeQR] = useState(true);
-  const [includeBarcode, setIncludeBarcode] = useState(false);
+  const [codeType, setCodeType] = useState<CodeType>('qr');
   const [includeLogo, setIncludeLogo] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,8 +89,11 @@ export default function AssetTaggingPage() {
 
       for (const asset of selected) {
         let qrCode = '';
+        let barcodeUrl = '';
 
-        if (includeQR) {
+        const codeData = asset.code || `ASSET-${asset.id}`;
+
+        if (codeType === 'qr') {
           const qrData = JSON.stringify({
             code: asset.code,
             description: asset.description,
@@ -97,11 +101,12 @@ export default function AssetTaggingPage() {
             location: asset.location,
             group: asset.group,
           });
-
           qrCode = await generateQRCode(qrData);
+        } else if (codeType === 'barcode') {
+          barcodeUrl = generateBarcode(codeData);
         }
 
-        previews.push({ ...asset, qrCode });
+        previews.push({ ...asset, qrCode, barcodeUrl });
       }
 
       setTagPreviews(previews);
@@ -119,19 +124,7 @@ export default function AssetTaggingPage() {
     }
   };
 
-  const handleDownloadTemplate = () => {
-    const headers = ['Asset Code', 'Description', 'Category', 'Location', 'Assigned To', 'Type'];
-    const csv = `${headers.join(',')}\n`;
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'asset-tag-template.csv';
-    link.click();
-    URL.revokeObjectURL(url);
 
-    toast.success('Tag template downloaded');
-  };
 
   const activeTemplate = (TAG_TEMPLATES.find((t) => t.id === tagTemplate) || TAG_TEMPLATES[0]) as TagTemplate;
 
@@ -143,9 +136,7 @@ export default function AssetTaggingPage() {
           <p className="text-muted-foreground">Generate QR-ready labels for PPE and SE assets</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleDownloadTemplate}>
-            Template
-          </Button>
+         
         </div>
       </div>
 
@@ -154,15 +145,13 @@ export default function AssetTaggingPage() {
           tagTemplate={tagTemplate}
           tagTemplates={TAG_TEMPLATES}
           activeTemplate={activeTemplate}
-          includeQR={includeQR}
-          includeBarcode={includeBarcode}
+          codeType={codeType}
           includeLogo={includeLogo}
           selectedCount={selectedAssets.length}
           isGenerating={isGenerating}
           isLoading={isLoading}
           onTemplateChange={setTagTemplate}
-          onToggleQR={setIncludeQR}
-          onToggleBarcode={setIncludeBarcode}
+          onCodeTypeChange={setCodeType}
           onToggleLogo={setIncludeLogo}
           onGenerate={handleGenerateTags}
         />
@@ -189,7 +178,8 @@ export default function AssetTaggingPage() {
 
       <TagPreviewGrid
         tagPreviews={tagPreviews}
-        includeQR={includeQR}
+        includeQR={codeType === 'qr'}
+        includeBarcode={codeType === 'barcode'}
         includeLogo={includeLogo}
         activeTemplate={activeTemplate}
         generatedBy={user || undefined}

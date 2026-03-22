@@ -17,6 +17,7 @@ import {
 import { getEmployees } from '@/api/user-management/userApi';
 import { getOffices } from '@/api/office-management/officeApi';
 import { getDivisions } from '@/api/office-management/divisionApi';
+import { getConditions } from '@/api/asset/inventoryApi';
 import { ApiEmployee } from '@/types/transfer';
 import { VwOffice, VwDivision } from '@/types';
 
@@ -58,6 +59,7 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
+  const [conditions, setConditions] = useState<string[]>([]);
 
   const groupName = returnType === 'RRPPE' ? 'PPE' : 'SE';
 
@@ -92,6 +94,10 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
         // Load divisions
         const divisionsData = await getDivisions();
         setDivisions(divisionsData || []);
+
+        // Load conditions
+        const conditionsData = await getConditions();
+        setConditions(conditionsData || []);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load data';
         setError(message);
@@ -415,11 +421,16 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="Good">Good</SelectItem>
-                                    <SelectItem value="Fair">Fair</SelectItem>
-                                    <SelectItem value="Poor">Poor</SelectItem>
-                                    <SelectItem value="Damaged">Damaged</SelectItem>
-                                    <SelectItem value="Salvage">Salvage</SelectItem>
+                                    {conditions.length > 0
+                                      ? conditions.map(c => (
+                                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                                        ))
+                                      : (
+                                          <SelectItem value={selectedItems[String(item.id)]?.condition || 'Good'}>
+                                            {selectedItems[String(item.id)]?.condition || 'Good'}
+                                          </SelectItem>
+                                        )
+                                    }
                                   </SelectContent>
                                 </Select>
                               </div>

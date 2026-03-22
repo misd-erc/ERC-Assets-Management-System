@@ -331,7 +331,7 @@ export function PPEIssuanceForm({
   const pickedCount = items.filter((i) => i.ptaId > 0).length;
 
   const plantillaOptions: EmployeeOption[] = employees
-    .filter((e) => e.employmentTypeId === 1)
+    .filter((e) => e.employmentTypeName === 'Plantilla' || e.employmentTypeName === 'Contractual')
     .map((e) => ({
       value: e.id.toString(),
       label: e.label,
@@ -339,7 +339,7 @@ export function PPEIssuanceForm({
     }));
 
   const nonPlantillaOptions: EmployeeOption[] = employees
-    .filter((e) => e.employmentTypeId !== 1)
+    .filter((e) => e.employmentTypeName !== 'Plantilla' && e.employmentTypeName !== 'Contractual')
     .map((e) => ({
       value: e.id.toString(),
       label: e.label,

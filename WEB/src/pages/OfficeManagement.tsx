@@ -9,7 +9,8 @@ import {
   OfficeTabContent,
   DivisionTabContent,
   EmploymentTypeTabContent,
-  PositionTabContent
+  PositionTabContent,
+  EmployeeTabContent,
 } from '@/components/office-management';
 import {
   OfficeEditModal,
@@ -19,7 +20,9 @@ import {
   EmploymentTypeEditModal,
   EmploymentTypeDeleteModal,
   PositionEditModal,
-  PositionDeleteModal
+  PositionDeleteModal,
+  EmployeeEditModal,
+  EmployeeDeleteModal,
 } from '@/components/office-management';
 
 import {
@@ -27,6 +30,7 @@ import {
   useDivision,
   useEmploymentType,
   usePosition,
+  useEmployee,
 } from '@/hooks';
 
 import {
@@ -34,6 +38,7 @@ import {
   VwDivision,
   EmploymentType,
   Position,
+  EmployeeDetail,
 } from '@/types';
 
 const OfficeManagement = () => {
@@ -65,6 +70,13 @@ const OfficeManagement = () => {
     loading: posLoading,
   } = usePosition();
 
+  const {
+    employees,
+    searchQuery: employeeSearch,
+    fetchEmployees,
+    loading: employeeLoading,
+  } = useEmployee();
+
   // â”€â”€ Dialog state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [officeDialog, setOfficeDialog] = useState<{
     open: boolean;
@@ -90,9 +102,15 @@ const OfficeManagement = () => {
     position?: Position;
   }>({ open: false, mode: 'add' });
 
+  const [employeeDialog, setEmployeeDialog] = useState<{
+    open: boolean;
+    mode: 'add' | 'edit';
+    employee?: EmployeeDetail;
+  }>({ open: false, mode: 'add' });
+
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
-    type: 'office' | 'division' | 'employment-type' | 'position';
+    type: 'office' | 'division' | 'employment-type' | 'position' | 'employee';
     id?: number;
     name?: string;
   }>({ open: false, type: 'office' });
@@ -103,7 +121,8 @@ const OfficeManagement = () => {
     fetchDivisions();
     fetchEmploymentTypes();
     fetchPositions();
-  }, [fetchOffices, fetchDivisions, fetchEmploymentTypes, fetchPositions]);
+    fetchEmployees();
+  }, [fetchOffices, fetchDivisions, fetchEmploymentTypes, fetchPositions, fetchEmployees]);
 
   // â”€â”€ Filter data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const filteredOffices = vwOffices.filter(
@@ -122,6 +141,16 @@ const OfficeManagement = () => {
     p.salaryGrade.toLowerCase().includes(posSearch.toLowerCase())
   );
 
+  const filteredEmployees = employees.filter(e => {
+    const q = employeeSearch.toLowerCase();
+    return (
+      (e.firstName ?? '').toLowerCase().includes(q) ||
+      (e.lastName ?? '').toLowerCase().includes(q) ||
+      (e.middleName ?? '').toLowerCase().includes(q) ||
+      e.employeeIdOriginal.toLowerCase().includes(q)
+    );
+  });
+
   // â”€â”€ Handlers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const openOfficeAdd = () => setOfficeDialog({ open: true, mode: 'add' });
   const openOfficeEdit = (office: Office) => setOfficeDialog({ open: true, mode: 'edit', office });
@@ -135,8 +164,11 @@ const OfficeManagement = () => {
   const openPositionAdd = () => setPositionDialog({ open: true, mode: 'add' });
   const openPositionEdit = (p: Position) => setPositionDialog({ open: true, mode: 'edit', position: p });
 
+  const openEmployeeAdd = () => setEmployeeDialog({ open: true, mode: 'add' });
+  const openEmployeeEdit = (e: EmployeeDetail) => setEmployeeDialog({ open: true, mode: 'edit', employee: e });
+
   const openDelete = (
-    type: 'office' | 'division' | 'employment-type' | 'position',
+    type: 'office' | 'division' | 'employment-type' | 'position' | 'employee',
     id: number,
     name: string
   ) => setDeleteDialog({ open: true, type, id, name });
@@ -146,6 +178,7 @@ const OfficeManagement = () => {
     setDivisionDialog(prev => ({ ...prev, open: false }));
     setTypeDialog(prev => ({ ...prev, open: false }));
     setPositionDialog(prev => ({ ...prev, open: false }));
+    setEmployeeDialog(prev => ({ ...prev, open: false }));
     setDeleteDialog({ open: false, type: 'office' });
   };
 
@@ -155,6 +188,7 @@ const OfficeManagement = () => {
     fetchDivisions();
     fetchEmploymentTypes();
     fetchPositions();
+    fetchEmployees();
   };
 
   return (
@@ -205,6 +239,17 @@ const OfficeManagement = () => {
             onAdd={openPositionAdd}
             onEdit={openPositionEdit}
             onDelete={(id, name) => openDelete('position', id, name)}
+          />
+        </TabsContent>
+
+        {/* ── EMPLOYEE TAB ─────────────────────────────────── */}
+        <TabsContent value="employee" className="space-y-6">
+          <EmployeeTabContent
+            data={filteredEmployees}
+            loading={employeeLoading}
+            onAdd={openEmployeeAdd}
+            onEdit={openEmployeeEdit}
+            onDelete={(id, name) => openDelete('employee', id, name)}
           />
         </TabsContent>
       </Tabs>
@@ -264,14 +309,29 @@ const OfficeManagement = () => {
           typeId={deleteDialog.id}
           typeName={deleteDialog.name}
         />
-      ) : (
+      ) : deleteDialog.type === 'position' ? (
         <PositionDeleteModal
           open={deleteDialog.open}
           onOpenChange={open => !open && closeAll()}
           positionId={deleteDialog.id}
           positionName={deleteDialog.name}
         />
+      ) : (
+        <EmployeeDeleteModal
+          open={deleteDialog.open}
+          onOpenChange={open => !open && closeAll()}
+          employeeId={deleteDialog.id}
+          employeeName={deleteDialog.name}
+        />
       )}
+
+      <EmployeeEditModal
+        open={employeeDialog.open}
+        mode={employeeDialog.mode}
+        employee={employeeDialog.employee}
+        onOpenChange={open => !open && closeAll()}
+        onSuccess={onSuccess}
+      />
     </div>
   );
 };

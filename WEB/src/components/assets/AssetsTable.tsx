@@ -55,9 +55,10 @@ export function AssetsTable({
     const suffixName = e.suffixName ?? "";
     const employeeIdOriginal = e.employeeIdOriginal ?? "";
     const employmentTypeId = e.employmentType?.id ?? 1;
-    const employmentTypeName = employmentTypeId === 1 ? 'Plantilla' : 'Non-Plantilla';
+    const employmentTypeName = e.employmentType?.name ?? 'Plantilla';
+    const groupLabel = employmentTypeName === 'Plantilla' || employmentTypeName === 'Contractual' ? 'Plantilla' : 'Non-Plantilla';
 
-    const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${employmentTypeName})`;
+    const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${groupLabel})`;
 
     return {
       id: e.id,
@@ -67,32 +68,59 @@ export function AssetsTable({
       suffixName,
       employeeIdOriginal,
       employmentTypeId,
+      employmentTypeName,
       label,
     };
   }
 
-  const getEmployeeName = (asset: Asset): string => {
-    if (asset.movements && asset.movements.length > 0) {
-      const latestMovement = asset.movements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+  const getPlantillaEmployeeName = (asset: Asset): string => {
+    const activeMovements = (asset.movements || []).filter(m => m.isActive !== false);
+    if (activeMovements.length > 0) {
+      const latestMovement = activeMovements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
 
-      // First try to use the embedded employee object from the movement
+      // First try embedded employee (plantilla only)
       if (latestMovement.employee && Array.isArray(latestMovement.employee) && latestMovement.employee.length > 0) {
         const emp = latestMovement.employee[0];
-        const firstName = emp.firstName ?? "";
-        const middleName = emp.middleName ?? "";
-        const lastName = emp.lastName ?? "";
-        const suffixName = emp.suffixName ?? "";
-        const employeeIdOriginal = emp.employeeIdOriginal ?? "";
-        const employmentTypeId = emp.employmentType?.id ?? 1;
-        const employmentTypeName = employmentTypeId === 1 ? 'Plantilla' : 'Non-Plantilla';
-
-        return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${employmentTypeName})`;
+        if ((emp.employmentType?.id ?? 1) === 1) {
+          const firstName = emp.firstName ?? "";
+          const middleName = emp.middleName ?? "";
+          const lastName = emp.lastName ?? "";
+          const suffixName = emp.suffixName ?? "";
+          const employeeIdOriginal = emp.employeeIdOriginal ?? "";
+          return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''}`;
+        }
       }
 
-      // Fallback to using employee ID lookup
-      const employeeId = latestMovement.plantillaEmployeeId || latestMovement.nonPlantillaEmployeeId;
-      if (employeeId) {
-        const employee = employees.find((e: NormalizedEmployee) => e.id === employeeId);
+      // Fallback to ID lookup
+      if (latestMovement.plantillaEmployeeId) {
+        const employee = employees.find((e: NormalizedEmployee) => e.id === latestMovement.plantillaEmployeeId);
+        return employee ? employee.label : 'Unknown Employee';
+      }
+    }
+    return 'N/A';
+  };
+
+  const getNonPlantillaEmployeeName = (asset: Asset): string => {
+    const activeMovements = (asset.movements || []).filter(m => m.isActive !== false);
+    if (activeMovements.length > 0) {
+      const latestMovement = activeMovements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+
+      // First try embedded employee (non-plantilla only)
+      if (latestMovement.employee && Array.isArray(latestMovement.employee) && latestMovement.employee.length > 0) {
+        const emp = latestMovement.employee[0];
+        if ((emp.employmentType?.id ?? 1) !== 1) {
+          const firstName = emp.firstName ?? "";
+          const middleName = emp.middleName ?? "";
+          const lastName = emp.lastName ?? "";
+          const suffixName = emp.suffixName ?? "";
+          const employeeIdOriginal = emp.employeeIdOriginal ?? "";
+          return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''}`;
+        }
+      }
+
+      // Fallback to ID lookup
+      if (latestMovement.nonPlantillaEmployeeId) {
+        const employee = employees.find((e: NormalizedEmployee) => e.id === latestMovement.nonPlantillaEmployeeId);
         return employee ? employee.label : 'Unknown Employee';
       }
     }
@@ -176,7 +204,8 @@ export function AssetsTable({
             <TableHeader>
               <TableRow>
                 <TableHead>Property Number</TableHead>
-                <TableHead>Accountable Personel</TableHead>
+                <TableHead>Accountable Employee (Plantilla)</TableHead>
+                <TableHead>Accountable Employee (Non-Plantilla)</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Unit Value</TableHead>
@@ -188,15 +217,17 @@ export function AssetsTable({
             </TableHeader>
             <TableBody>
               {assets.map((asset) => {
+                const activeMovements = (asset.movements || []).filter(m => m.isActive !== false);
                 const latestMovement =
-                  asset.movements && asset.movements.length > 0
-                    ? asset.movements[asset.movements.length - 1]
+                  activeMovements.length > 0
+                    ? activeMovements[activeMovements.length - 1]
                     : null;
 
                 return (
                   <TableRow key={asset.id}>
                     <TableCell className="font-medium">{asset.propertyNumber}</TableCell>
-                    <TableCell>{getEmployeeName(asset)}</TableCell>
+                    <TableCell>{getPlantillaEmployeeName(asset)}</TableCell>
+                    <TableCell>{getNonPlantillaEmployeeName(asset)}</TableCell>
                     <TableCell className="max-w-xs truncate" title={asset.description}>
                       {asset.description}
                     </TableCell>

@@ -150,6 +150,118 @@ namespace PortalDB.Migrations
                     b.ToTable("tblDeliveryRecordItems", "asset");
                 });
 
+            modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblDisposal", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("ApprovedBySystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalApprovedBySystemUserId");
+
+                    b.Property<string>("BuyerEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalBuyer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalCreatedAt");
+
+                    b.Property<DateTime?>("DateApproved")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalDateApproved");
+
+                    b.Property<DateTime?>("DateDisposed")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalDateDisposed");
+
+                    b.Property<DateTime?>("DateRequested")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalDateRequested");
+
+                    b.Property<string>("DisposalNumberEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalNumber");
+
+                    b.Property<string>("Group")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalGroup");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("DisposalIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("DisposalIsDeleted");
+
+                    b.Property<string>("MethodEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalMethod");
+
+                    b.Property<decimal?>("ProceedAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("DisposalProceedAmount");
+
+                    b.Property<string>("ReasonEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalReason");
+
+                    b.Property<string>("RemarksEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalRemarks");
+
+                    b.Property<long?>("RequestedBySystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalRequestedBySystemUserId");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalStatus");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblDisposals", "asset");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblDisposalItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalItemId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalItemCreatedAt");
+
+                    b.Property<long?>("DisposalId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalId");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("DisposalItemIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("DisposalItemIsDeleted");
+
+                    b.Property<long?>("PTAId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("PTAId");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblDisposalItems", "asset");
+                });
+
             modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblPTA", b =>
                 {
                     b.Property<long>("Id")
@@ -275,6 +387,10 @@ namespace PortalDB.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("PTALegendCreatedAt");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("PTALegendDescription");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")

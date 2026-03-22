@@ -65,6 +65,8 @@ namespace PortalDB.Services
         public DbSet<TblPTALegend> TblPTALegends { get; set; }
         public DbSet<TblPTAMovement> TblPTAMovements { get; set; }
         public DbSet<TblPTAPart> TblPTAParts { get; set; }
+        public DbSet<TblDisposal> TblDisposals { get; set; }
+        public DbSet<TblDisposalItem> TblDisposalItems { get; set; }
 
         #endregion
         #region Supply

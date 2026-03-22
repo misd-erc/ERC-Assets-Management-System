@@ -3,6 +3,7 @@ import { User, ApiResponse, Office, Division, EmploymentType, Position, SystemRo
 import { Employee, ApiEmployee } from '@/types/asset/UnifiedAsset';
 import { UserDetails, getUserDetails } from '@/api/user-management/authApi';
 import { getAuditTrail } from '@/api/audit/auditApi';
+import { getAuthParams } from '@/utils/auth';
 
 export interface UserListResponse {
   success: boolean;
@@ -242,23 +243,23 @@ export const getUsersDetails = async (userId: string): Promise<UserDetails> => {
   return response.data.data;
 };
 
-export const getEmployees = async (page: number = 1, pageSize: number = 1000): Promise<ApiResponse<{ items: ApiEmployee[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>> => {
-  const systemUserId = localStorage.getItem('systemUserId') || '';
-  const sessionKey = localStorage.getItem('sessionToken') || '';
+export const getEmployees = async (page: number = 1, pageSize: number = 10000): Promise<ApiResponse<{ items: ApiEmployee[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>> => {
+  const { systemUserId, sessionKey } = getAuthParams();
 
   const response = await axiosInstance.get<ApiResponse<{ items: ApiEmployee[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>>(
-    `/Users/employees/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}&pageNumber=${page}&pageSize=${pageSize}`
+    '/Employee/all',
+    { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey, PageNumber: page, PageSize: pageSize } }
   );
 
   return response.data;
 };
 
 export const getEmployeeById = async (employeeId: number): Promise<ApiResponse<ApiEmployee[]>> => {
-  const systemUserId = localStorage.getItem('systemUserId') || '';
-  const sessionKey = localStorage.getItem('sessionToken') || '';
+  const { systemUserId, sessionKey } = getAuthParams();
 
   const response = await axiosInstance.get<ApiResponse<ApiEmployee[]>>(
-    `/Users/employees/all/${employeeId}?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
+    `/Employee/all/${employeeId}`,
+    { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
   );
 
   return response.data;

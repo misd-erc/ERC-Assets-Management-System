@@ -162,6 +162,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         suffixName: ptrDetails.fromEmployee?.suffixName || '',
         employeeIdOriginal: '',
         employmentTypeId: 0,
+        employmentTypeName: '',
         label: ptrDetails.fromEmployeeName
       };
 
@@ -173,6 +174,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         suffixName: ptrDetails.toEmployee?.suffixName || '',
         employeeIdOriginal: '',
         employmentTypeId: 0,
+        employmentTypeName: '',
         label: ptrDetails.toEmployeeName
       };
 
@@ -205,6 +207,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         suffixName: ptrDetails.fromEmployee?.suffixName || '',
         employeeIdOriginal: '',
         employmentTypeId: 0,
+        employmentTypeName: '',
         label: ptrDetails.fromEmployeeName
       };
 
@@ -216,6 +219,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         suffixName: ptrDetails.toEmployee?.suffixName || '',
         employeeIdOriginal: '',
         employmentTypeId: 0,
+        employmentTypeName: '',
         label: ptrDetails.toEmployeeName
       };
 

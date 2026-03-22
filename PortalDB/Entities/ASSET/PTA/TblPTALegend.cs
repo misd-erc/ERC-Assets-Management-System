@@ -21,6 +21,9 @@ namespace PortalDB.Entities.ASSET.PTA
         [Column("PTALegendName")]
         public string? Name { get; set; }
 
+        [Column("PTALegendDescription")]
+        public string? Description { get; set; }
+
         [Column("PTALegendIsActive")]
         public bool IsActive { get; set; } = true;
 

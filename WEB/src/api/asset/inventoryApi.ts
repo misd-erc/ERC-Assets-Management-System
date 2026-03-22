@@ -37,11 +37,11 @@ export const getCategories = async (): Promise<{ id: number; name: string; gener
   }
 };
 
-export const getLegends = async (): Promise<{ id: number; name: string }[]> => {
+export const getLegends = async (): Promise<{ id: number; name: string; description?: string }[]> => {
 	const { systemUserId, sessionKey } = getAuthParams();
 
 	try {
-		const response = await axiosInstance.get<ApiResponse<{ items: { id: number; name: string; isActive: boolean; isDeleted: boolean; createdAt: string }[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>>('/Inventory/pta/legend/all', {
+		const response = await axiosInstance.get<ApiResponse<{ items: { id: number; name: string; description?: string; isActive: boolean; isDeleted: boolean; createdAt: string }[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>>('/Inventory/pta/legend/all', {
 			params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
 		});
 
@@ -50,7 +50,7 @@ export const getLegends = async (): Promise<{ id: number; name: string }[]> => {
 			return [];
 		}
 
-		return response.data.data?.items?.map(item => ({ id: item.id, name: item.name })) || [];
+		return response.data.data?.items?.map(item => ({ id: item.id, name: item.name, description: item.description })) || [];
 	} catch (error) {
 		console.error('Error fetching legends:', error);
 		return [];

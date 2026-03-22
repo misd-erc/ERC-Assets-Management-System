@@ -8,6 +8,7 @@ export * from '@/api/office-management/officeApi';
 export * from '@/api/office-management/divisionApi';
 export * from '@/api/office-management/employmentTypeApi';
 export * from '@/api/office-management/positionApi';
+export * from '@/api/office-management/employeeApi';
 
 export * from '@/api/roles/rolesApi';
 
