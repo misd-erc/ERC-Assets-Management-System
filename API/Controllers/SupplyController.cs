@@ -579,6 +579,163 @@ namespace API.Controllers
             }
         }
 
+        [HttpGet("item/grouped/stock-card/all/{stockNumber}/{description}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetSupplyStockCardItems(
+    [FromQuery] PaginationGenericQueryParams model,
+    string stockNumber,
+    string description)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                string targetCode = stockNumber ?? string.Empty;
+                string targetDesc = description ?? string.Empty;
+
+                // ===== 1. Fetch and decrypt supply items (additions) =====
+                // 1. Fetch all addition events (Supply Items)
+                var allSupplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+                var additionEvents = allSupplyItems
+    .Where(x => x.Code == targetCode && x.Description == targetDesc)
+    .Select(x => new
+    {
+        x.Id,
+        Quantity = x.Quantity,   // already long
+        x.CreatedAt,
+        x.IsActive,
+        ItemRemarks = (string?)null,
+        UnitId = x.MeasurementUnitId,
+        Type = "Addition"
+    })
+    .ToList();
+
+                // 2. Fetch all issuance events (RIS Items)
+                var allRISItems = await _getTools.Supply.GetTblSupplyRISItems(context).ToListAsync();
+                var issuanceEvents = allRISItems
+    .Where(x => x.StockNumber == targetCode && x.ItemDescription == targetDesc)
+    .Select(x => new
+    {
+        x.Id,
+        Quantity = x.IssueQuantity,   // already long
+        x.CreatedAt,
+        x.IsActive,
+        x.ItemRemarks,
+        UnitId = x.UnitId,
+        Type = "Issuance"
+    })
+    .ToList();
+
+                // ===== 3. Combine and sort chronologically =====
+                var allEvents = additionEvents.Cast<dynamic>()
+                    .Concat(issuanceEvents.Cast<dynamic>())
+                    .OrderBy(e => e.CreatedAt)
+                    .ToList();
+
+                // ===== 4. Efficient unit loading =====
+                var unitIds = allEvents
+                    .Select(e => (long?)e.UnitId)
+                    .Where(id => id.HasValue)
+                    .Select(id => id.Value)
+                    .Distinct()
+                    .ToList();
+
+                var units = new Dictionary<long, TblSupplyUnit>();
+                if (unitIds.Any())
+                {
+                    // Fetch only needed units (implement GetTblSupplyUnitsByIds in your tools)
+                    var unitEntities = await _getTools.Supply.GetTblSupplyUnitsByIds(context, unitIds);
+                    units = unitEntities.ToDictionary(u => u.Id);
+                }
+
+                // ===== 5. Pagination =====
+                int totalCount = allEvents.Count;
+                int skip = (model.PageNumber - 1) * model.PageSize;
+                var pagedEvents = allEvents.Skip(skip).Take(model.PageSize).ToList();
+
+                // ===== 6. Compute running balance before the first event in the page =====
+                long previousBalance = 0;
+                if (skip > 0)
+                {
+                    var eventsBeforePage = allEvents.Take(skip);
+                    foreach (var evt in eventsBeforePage)
+                    {
+                        if (evt.Type == "Addition")
+                            previousBalance += evt.Quantity;
+                        else if (evt.Type == "Issuance")
+                            previousBalance -= evt.Quantity;
+                    }
+                }
+
+                // ===== 7. Build response models for the paged events =====
+                var responseItems = new List<SupplyStockCardItemViewModel>();
+                long currentBalance = previousBalance;
+
+                foreach (var evt in pagedEvents)
+                {
+                    long added = 0, issued = 0;
+                    long newBalance = currentBalance;
+
+                    if (evt.Type == "Addition")
+                    {
+                        added = evt.Quantity;
+                        newBalance = currentBalance + added;
+                    }
+                    else if (evt.Type == "Issuance")
+                    {
+                        issued = evt.Quantity;
+                        newBalance = currentBalance - issued;
+                    }
+
+                    var unit = evt.UnitId != null && units.ContainsKey(evt.UnitId)
+                        ? units[evt.UnitId]
+                        : null;
+
+                    responseItems.Add(new SupplyStockCardItemViewModel
+                    {
+                        Id = evt.Id,
+                        StockNumber = targetCode,
+                        Unit = unit,
+                        ItemDescription = targetDesc,
+                        CurrentStockQuantity = currentBalance,
+                        AddedStockQuantity = added,
+                        IssuedStockQuantity = issued,
+                        NewStockQuantity = newBalance,
+                        ItemRemarks = evt.ItemRemarks,
+                        IsActive = evt.IsActive,
+                        CreatedAt = evt.CreatedAt
+                    });
+
+                    currentBalance = newBalance;
+                }
+
+                // ===== 8. Commit and log =====
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options,
+                    $"Viewed stock card for {targetCode} - {targetDesc}",
+                    actionBy: model.ActionBySystemUserId);
+
+                // ===== 9. Return paginated result =====
+                return Ok(ApiResponse<SupplyStockCardItemViewModel>.OkPaginated(
+                    responseItems,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Stock card items retrieved"
+                ));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError,
+                    ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         [HttpGet("item/unique/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
