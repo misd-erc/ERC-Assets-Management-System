@@ -12,6 +12,20 @@ import {
 import { User } from '@/types';
 import { VwOffice, VwDivision } from '@/types'; // adjust import path
 import { EditSupplyRIS } from '@/types/supply/ris';
+import { Check, ChevronsUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
 
 interface Props {
   header: EditSupplyRIS;
@@ -87,48 +101,128 @@ export const RISHeader = ({
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Office</Label>
-          <Select
-            value={header.officeId?.toString() || '0'}
-            onValueChange={(val) => {
-              handleChange('officeId', Number(val));
-              if (Number(val) !== header.officeId) handleChange('divisionId', 0);
-            }}
-            disabled={isViewMode}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Office" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Select Office</SelectItem>
-              {offices.map((o) => (
-                <SelectItem key={o.id} value={o.id.toString()}>
-                  {o.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Office Combobox */}
+        <div className="space-y-2 min-w-0 flex flex-col">
+          <Label className="text-slate-700 font-medium">Office</Label>
+          <Popover>
+            <PopoverTrigger asChild disabled={isViewMode}>
+              <Button
+                  variant="outline"
+                  role="combobox"
+                  className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
+              >
+          <span className="truncate text-slate-700">
+            {header.officeId
+                ? offices.find((o) => o.id === header.officeId)?.name
+                : "Select Office"}
+          </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+              </Button>
+            </PopoverTrigger>
+
+            {/* Upgraded Dropdown Container */}
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
+              <Command className="bg-white">
+
+                {/* --- ENHANCED SEARCH BOX --- */}
+                <div className="p-2 bg-slate-50 border-b border-slate-100">
+                  <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                    <CommandInput
+                        placeholder="Search office..."
+                        className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                    />
+                  </div>
+                </div>
+                {/* --------------------------- */}
+
+                <CommandEmpty className="py-6 text-center text-sm text-slate-500">
+                  No office found.
+                </CommandEmpty>
+
+                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
+                  {offices.map((o) => (
+                      <CommandItem
+                          key={o.id}
+                          value={o.name}
+                          onSelect={() => {
+                            handleChange('officeId', o.id);
+                            if (o.id !== header.officeId) handleChange('divisionId', 0);
+                          }}
+                          className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                      >
+                        <span className="truncate flex-1">{o.name}</span>
+                        <Check
+                            className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
+                                header.officeId === o.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                            }`}
+                        />
+                      </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
-        <div className="space-y-2">
-          <Label>Division</Label>
-          <Select
-            value={header.divisionId?.toString() || '0'}
-            onValueChange={(val) => handleChange('divisionId', Number(val))}
-            disabled={isViewMode || !header.officeId}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select Division" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Select Division</SelectItem>
-              {filteredDivisions.map((d) => (
-                <SelectItem key={d.id} value={d.id.toString()}>
-                  {d.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+        {/* Division Combobox */}
+        <div className="space-y-2 min-w-0 flex flex-col">
+          <Label className="text-slate-700 font-medium">Division</Label>
+          <Popover>
+            <PopoverTrigger asChild disabled={isViewMode || !header.officeId}>
+              <Button
+                  variant="outline"
+                  role="combobox"
+                  className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
+              >
+          <span className="truncate text-slate-700">
+            {header.divisionId
+                ? filteredDivisions.find((d) => d.id === header.divisionId)?.name
+                : "Select Division"}
+          </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+              </Button>
+            </PopoverTrigger>
+
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
+              <Command className="bg-white">
+
+                {/* --- ENHANCED SEARCH BOX --- */}
+                <div className="p-2 bg-slate-50 border-b border-slate-100">
+                  <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                    <CommandInput
+                        placeholder="Search division..."
+                        className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                    />
+                  </div>
+                </div>
+                {/* --------------------------- */}
+
+                <CommandEmpty className="py-6 text-center text-sm text-slate-500">
+                  No division found.
+                </CommandEmpty>
+
+                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
+                  {filteredDivisions.map((d) => (
+                      <CommandItem
+                          key={d.id}
+                          value={d.name}
+                          onSelect={() => {
+                            handleChange('divisionId', d.id);
+                          }}
+                          className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                      >
+                        <span className="truncate flex-1">{d.name}</span>
+                        <Check
+                            className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
+                                header.divisionId === d.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                            }`}
+                        />
+                      </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 

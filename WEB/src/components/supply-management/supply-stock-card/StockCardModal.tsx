@@ -59,7 +59,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-[90vw] !w-[90vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="!max-w-[70vw] !w-[70vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Stock Card: {stockNumber} - {description}</DialogTitle>
           <DialogDescription>
