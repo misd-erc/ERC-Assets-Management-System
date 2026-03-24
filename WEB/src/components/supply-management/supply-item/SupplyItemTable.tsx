@@ -51,6 +51,7 @@ export const SupplyItemTable = ({ data, onAdd, onView, onEdit, onDelete, hideAdd
               <Plus className="w-4 h-4 mr-2" /> Add Item
             </Button>
           )}
+
         </div>
       </CardHeader>
       <CardContent>
