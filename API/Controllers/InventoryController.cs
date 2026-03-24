@@ -230,10 +230,13 @@ namespace API.Controllers
                 if (model.GroupBy == null || string.IsNullOrEmpty(model.GroupBy)) { 
                     IEnumerable<TblPTA?> ptas = await _getTools.PTA.GetTblPTAsByGroup(model.GroupName!, context).Where(x => x.Group == model.GroupName).ToListAsync();
 
-                    // AS OF Filter: Include all assets acquired on or before the specified "as of" date
+                    // Date Filter: "As of" range (<=) when IsAsOf=true, exact match (==) otherwise
                     if (model.AsOfDate.HasValue)
                     {
-                        ptas = ptas.Where(x => x.DateAcquired <= model.AsOfDate.Value);
+                        if (model.IsAsOf == true)
+                            ptas = ptas.Where(x => x != null && x.DateAcquired.HasValue && x.DateAcquired.Value.Date <= model.AsOfDate.Value.Date);
+                        else
+                            ptas = ptas.Where(x => x != null && x.DateAcquired.HasValue && x.DateAcquired.Value.Date == model.AsOfDate.Value.Date);
                     }
 
                     if (model.CategoryId != null && model.CategoryId != 0)
