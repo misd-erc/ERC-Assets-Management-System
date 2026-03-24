@@ -1091,6 +1091,7 @@ namespace API.Controllers
                 int insertedMovementCount = 0;
                 int updatedMovementCount = 0;
                 int failedCount = 0;
+                var failedDetails = new List<object>();
 
                 Console.WriteLine($"[BATCH_UPLOAD] Starting batch upload with {items.Count()} items");
 
@@ -1099,7 +1100,15 @@ namespace API.Controllers
                     try
                     {
                         Console.WriteLine($"[BATCH_UPLOAD] Processing item: {item?.PropertyNumber ?? "Unknown"}");
-                        
+
+                        if (string.IsNullOrWhiteSpace(item?.PropertyNumber))
+                        {
+                            Console.WriteLine($"[BATCH_UPLOAD] Skipping item: Property Number is empty or missing");
+                            failedCount++;
+                            failedDetails.Add(new { PropertyNumber = "(empty)", Reason = "Missing Property Number" });
+                            continue;
+                        }
+
                         long ppeId = 0;
                         long categoryId = 0;
                         long legendId = 0;
@@ -1202,6 +1211,7 @@ namespace API.Controllers
                             {
                                 Console.WriteLine($"[BATCH_UPLOAD] WARNING: Asset insertion returned ID 0 for {item.PropertyNumber}");
                                 failedCount++;
+                                failedDetails.Add(new { PropertyNumber = item.PropertyNumber, Reason = "Asset insertion failed (returned ID 0)" });
                                 continue;
                             }
                             
@@ -1404,6 +1414,8 @@ namespace API.Controllers
                     catch (Exception itemEx)
                     {
                         failedCount++;
+                        string failReason = itemEx.InnerException?.Message ?? itemEx.Message;
+                        failedDetails.Add(new { PropertyNumber = item?.PropertyNumber ?? "(unknown)", Reason = failReason });
                         Console.WriteLine($"[BATCH_UPLOAD] ERROR processing item {item?.PropertyNumber ?? "Unknown"}: {itemEx.Message}");
                         Console.WriteLine($"[BATCH_UPLOAD] Stack Trace: {itemEx.StackTrace}");
                         
@@ -1443,7 +1455,8 @@ namespace API.Controllers
                         Inserted = insertedMovementCount,
                         Updated = updatedMovementCount
                     },
-                    Failed = failedCount
+                    Failed = failedCount,
+                    FailedDetails = failedDetails
                 };
 
                 return Ok(ApiResponse<object>.Ok(resultSummary, $"Batch upload completed: {insertedAssetCount + updatedAssetCount} assets processed, {insertedMovementCount + updatedMovementCount} movements processed"));

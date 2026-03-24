@@ -589,9 +589,9 @@ export class UnifiedAssetService {
     }
   }
 
-  static async batchUpload(file: File, userId: string, sessionKey: string): Promise<{ success: boolean; code: string; message: string; data: string }> {
+  static async batchUpload(file: File, userId: string, sessionKey: string, onProgress?: (percent: number) => void): Promise<{ success: boolean; code: string; message: string; data: string }> {
     // Use PPE API for batch upload (both PPE and SE use the same endpoint)
-    return await ppeApi.batchUpload(file, userId, sessionKey);
+    return await ppeApi.batchUpload(file, userId, sessionKey, onProgress);
   }
 
 

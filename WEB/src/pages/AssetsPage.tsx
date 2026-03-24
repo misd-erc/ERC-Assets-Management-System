@@ -6,7 +6,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Upload, Download, Plus, FileText, Printer } from 'lucide-react';
+import { Upload, Download, Plus, FileText, Printer, Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { AssetsTable } from '@/components/assets/AssetsTable';
 import { AssetsFilters } from '@/components/assets/AssetsFilters';
@@ -69,6 +70,11 @@ export function AssetsPage() {
   const [exportStartDate, setExportStartDate] = useState('');
   const [exportEndDate, setExportEndDate] = useState('');
   const [exporting, setExporting] = useState(false);
+
+  // Batch upload progress
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const uploadProcessingIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     loadAssets();
@@ -384,7 +390,35 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
         return;
       }
 
-      const result = await UnifiedAssetService.batchUpload(uploadFile, actionBySystemUserId, sessionKey);
+      setIsUploading(true);
+      setUploadProgress(0);
+
+      // After upload reaches 80%, slowly inch toward 98% while server processes
+      const startProcessingAnimation = () => {
+        uploadProcessingIntervalRef.current = setInterval(() => {
+          setUploadProgress((prev) => {
+            if (prev >= 98) {
+              clearInterval(uploadProcessingIntervalRef.current!);
+              return 98;
+            }
+            return prev + 1;
+          });
+        }, 400);
+      };
+
+      const result = await UnifiedAssetService.batchUpload(
+        uploadFile,
+        actionBySystemUserId,
+        sessionKey,
+        (percent) => {
+          setUploadProgress(percent);
+          if (percent >= 80) startProcessingAnimation();
+        }
+      );
+
+      clearInterval(uploadProcessingIntervalRef.current!);
+      setUploadProgress(100);
+      await new Promise((r) => setTimeout(r, 500));
 
       if (result.success) {
         // Format the batch upload summary
@@ -432,6 +466,10 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
       if (fileInput) {
         fileInput.value = '';
       }
+    } finally {
+      clearInterval(uploadProcessingIntervalRef.current!);
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -806,6 +844,29 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Batch Upload Progress Dialog */}
+      <Dialog open={isUploading} onOpenChange={() => {}}>  
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Loader2 className="size-5 animate-spin text-blue-600" />
+              {uploadProgress < 80 ? 'Uploading File...' : uploadProgress < 100 ? 'Processing...' : 'Done!'}
+            </DialogTitle>
+            <DialogDescription>
+              {uploadProgress < 80
+                ? 'Sending your file to the server. Please wait.'
+                : uploadProgress < 100
+                ? 'Server is processing your records. This may take a moment.'
+                : 'Upload complete!'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <Progress value={uploadProgress} className="h-3" />
+            <p className="text-center text-sm font-medium text-slate-700">{uploadProgress}%</p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Batch Upload Confirmation */}
       <AlertDialog open={uploadConfirmDialogOpen} onOpenChange={setUploadConfirmDialogOpen}>

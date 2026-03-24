@@ -81,6 +81,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  sectionHeaderRow: {
+    flexDirection: "row",
+    backgroundColor: "#0A62C6",
+    borderBottomWidth: 0.8,
+    borderColor: "#000",
+    minHeight: 18,
+    alignItems: "center",
+  },
+
+  sectionHeaderText: {
+    color: "#ffffff",
+    fontWeight: "bold",
+    fontSize: 8,
+    padding: 3,
+    width: "100%",
+  },
+
+  subtotalRow: {
+    flexDirection: "row",
+    borderTopWidth: 0.5,
+    borderColor: "#aaa",
+    minHeight: 16,
+    alignItems: "center",
+    backgroundColor: "#e8f0fb",
+  },
+
   totalRow: {
     flexDirection: "row",
     borderTopWidth: 0.8,
@@ -102,6 +128,7 @@ const styles = StyleSheet.create({
   colPropertyNo: { width: "20%" },
   colDateAcquired: { width: "14%" },
   colAmount: { width: "13%" },
+  colSubtotalLabel: { width: "79%", textAlign: "right", fontSize: 8, fontStyle: "italic" },
   colTotalLabel: { width: "79%", textAlign: "right", fontWeight: "bold" },
 });
 
@@ -125,8 +152,19 @@ interface PALRow {
   amount: number | null;
 }
 
+const TableHeader = () => (
+  <View style={styles.tableHeaderRow}>
+    <Text style={[styles.cell, styles.colNo]}>No.</Text>
+    <Text style={[styles.cell, styles.colDescription]}>Description</Text>
+    <Text style={[styles.cell, styles.colPropertyNo]}>Property Number</Text>
+    <Text style={[styles.cell, styles.colDateAcquired]}>Date Acquired</Text>
+    <Text style={[styles.cell, styles.colAmount]}>Amount</Text>
+  </View>
+);
+
 const PALDocument = ({
-  allRows,
+  ppeRows,
+  seRows,
   totalAmount,
   employeeName,
   position,
@@ -134,72 +172,113 @@ const PALDocument = ({
   divisionService,
   employeeNumber,
 }: {
-  allRows: PALRow[];
+  ppeRows: PALRow[];
+  seRows: PALRow[];
   totalAmount: number;
   employeeName: string;
   position: string;
   office: string;
   divisionService: string;
   employeeNumber: string;
-}) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      {/* HEADER */}
-      <View style={styles.headerContainer}>
-        <Image src={logoSrc} style={styles.logo} />
-        <View style={styles.titleBlock}>
-          <Text style={styles.headerTitle}>PROPERTY ACCOUNTABILITY LIST</Text>
-        </View>
-      </View>
+}) => {
+  const ppeTotal = ppeRows.reduce((s, r) => s + (r.amount ?? 0), 0);
+  const seTotal = seRows.reduce((s, r) => s + (r.amount ?? 0), 0);
+  const hasAny = ppeRows.length > 0 || seRows.length > 0;
 
-      <View style={styles.blueRule} />
-
-      {/* META INFORMATION */}
-      <View style={styles.metaRow}>
-        <View style={styles.metaLeft}>
-          <Text style={styles.metaValue}>Name: {employeeName}</Text>
-          <Text style={styles.metaValue}>Service/Division: {divisionService}</Text>
-        </View>
-        <View style={styles.metaRight}>
-          <Text style={styles.metaValue}>Employee Number: {employeeNumber}</Text>
-          <Text style={styles.metaValue}>Position: {position}</Text>
-        </View>
-      </View>
-
-      {/* ASSETS TABLE */}
-      {allRows.length > 0 && (
-        <View style={styles.tableWrap}>
-          <View style={styles.table}>
-            <View style={styles.tableHeaderRow}>
-              <Text style={[styles.cell, styles.colNo]}>No.</Text>
-              <Text style={[styles.cell, styles.colDescription]}>Description</Text>
-              <Text style={[styles.cell, styles.colPropertyNo]}>Property Number</Text>
-              <Text style={[styles.cell, styles.colDateAcquired]}>Date Acquired</Text>
-              <Text style={[styles.cell, styles.colAmount]}>Amount</Text>
-            </View>
-
-            {allRows.map((r, i) => (
-              <View key={i} style={styles.tableRow}>
-                <Text style={[styles.cell, styles.colNo]}>{r.no}</Text>
-                <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
-                <Text style={[styles.cell, styles.colPropertyNo]}>{r.propertyNo}</Text>
-                <Text style={[styles.cell, styles.colDateAcquired]}>{r.dateAcquired}</Text>
-                <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
-              </View>
-            ))}
-
-            {/* TOTAL ROW */}
-            <View style={styles.totalRow}>
-              <Text style={[styles.cell, styles.colNo]}> </Text>
-              <Text style={[styles.cell, styles.colTotalLabel]}>TOTAL:</Text>
-              <Text style={[styles.cell, styles.colAmount, styles.totalAmountText]}>{currency(totalAmount)}</Text>
-            </View>
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        {/* HEADER */}
+        <View style={styles.headerContainer}>
+          <Image src={logoSrc} style={styles.logo} />
+          <View style={styles.titleBlock}>
+            <Text style={styles.headerTitle}>PROPERTY ACCOUNTABILITY LIST</Text>
           </View>
         </View>
-      )}
-    </Page>
-  </Document>
-);
+
+        <View style={styles.blueRule} />
+
+        {/* META INFORMATION */}
+        <View style={styles.metaRow}>
+          <View style={styles.metaLeft}>
+            <Text style={styles.metaValue}>Name: {employeeName}</Text>
+            <Text style={styles.metaValue}>Service/Division: {divisionService}</Text>
+          </View>
+          <View style={styles.metaRight}>
+            <Text style={styles.metaValue}>Employee Number: {employeeNumber}</Text>
+            <Text style={styles.metaValue}>Position: {position}</Text>
+          </View>
+        </View>
+
+        {/* ASSETS TABLE */}
+        {hasAny && (
+          <View style={styles.tableWrap}>
+            <View style={styles.table}>
+              <TableHeader />
+
+              {/* PPE SECTION */}
+              {ppeRows.length > 0 && (
+                <>
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionHeaderText}>
+                      PROPERTY, PLANT AND EQUIPMENT (PPE)
+                    </Text>
+                  </View>
+                  {ppeRows.map((r, i) => (
+                    <View key={`ppe-${i}`} style={styles.tableRow}>
+                      <Text style={[styles.cell, styles.colNo]}>{r.no}</Text>
+                      <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
+                      <Text style={[styles.cell, styles.colPropertyNo]}>{r.propertyNo}</Text>
+                      <Text style={[styles.cell, styles.colDateAcquired]}>{r.dateAcquired}</Text>
+                      <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
+                    </View>
+                  ))}
+                  <View style={styles.subtotalRow}>
+                    <Text style={[styles.cell, styles.colNo]}> </Text>
+                    <Text style={[styles.cell, styles.colSubtotalLabel]}>PPE Sub-total:</Text>
+                    <Text style={[styles.cell, styles.colAmount, styles.totalAmountText]}>{currency(ppeTotal)}</Text>
+                  </View>
+                </>
+              )}
+
+              {/* SE SECTION */}
+              {seRows.length > 0 && (
+                <>
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionHeaderText}>
+                      SEMI-EXPENDABLE PROPERTY (SE)
+                    </Text>
+                  </View>
+                  {seRows.map((r, i) => (
+                    <View key={`se-${i}`} style={styles.tableRow}>
+                      <Text style={[styles.cell, styles.colNo]}>{r.no}</Text>
+                      <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
+                      <Text style={[styles.cell, styles.colPropertyNo]}>{r.propertyNo}</Text>
+                      <Text style={[styles.cell, styles.colDateAcquired]}>{r.dateAcquired}</Text>
+                      <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
+                    </View>
+                  ))}
+                  <View style={styles.subtotalRow}>
+                    <Text style={[styles.cell, styles.colNo]}> </Text>
+                    <Text style={[styles.cell, styles.colSubtotalLabel]}>SE Sub-total:</Text>
+                    <Text style={[styles.cell, styles.colAmount, styles.totalAmountText]}>{currency(seTotal)}</Text>
+                  </View>
+                </>
+              )}
+
+              {/* GRAND TOTAL ROW */}
+              <View style={styles.totalRow}>
+                <Text style={[styles.cell, styles.colNo]}> </Text>
+                <Text style={[styles.cell, styles.colTotalLabel]}>TOTAL:</Text>
+                <Text style={[styles.cell, styles.colAmount, styles.totalAmountText]}>{currency(totalAmount)}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+      </Page>
+    </Document>
+  );
+};
 
 export class PALGenerator {
   static async generatePALPreview(employee: NormalizedEmployee): Promise<string> {
@@ -210,8 +289,6 @@ export class PALGenerator {
       alert('No assets found for this employee. Cannot generate PAL preview.');
       return '';
     }
-
-    const allRows: PALRow[] = [];
 
     const employeeName = `${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''} ${employee.lastName}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
 
@@ -230,44 +307,38 @@ export class PALGenerator {
       employeeNumber = empData.employeeIdOriginal || 'N/A';
     }
 
-    // Process all assets (PPE and SE) in one list
-    let itemNumber = 1;
-    
-    const isCurrentForEmployee = (asset: any, empId: number) =>
+    const isCurrentForEmployee = (asset: any) =>
       asset.movements?.some((m: any) => {
         const current = m.isCurrent === true || m.isCurrent === 1 || (typeof m.isCurrent === 'string' && m.isCurrent.toLowerCase() === 'true');
         return current && (
-          m.plantillaEmployeeId === empId ||
-          m.nonPlantillaEmployeeId === empId ||
-          (Array.isArray(m.employee) && m.employee.some((e: any) => e.id === empId))
+          m.plantillaEmployeeId === employee.id ||
+          m.nonPlantillaEmployeeId === employee.id ||
+          (Array.isArray(m.employee) && m.employee.some((e: any) => e.id === employee.id))
         );
       });
 
-    ppeAssets.filter((a: any) => isCurrentForEmployee(a, employee.id)).forEach((asset: any) => {
-      allRows.push({
-        no: itemNumber++,
-        description: asset.description ?? "",
-        propertyNo: asset.propertyNumber ?? "",
-        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-        amount: asset.unitValue ?? null,
-      });
-    });
+    let itemNumber = 1;
+    const ppeRows: PALRow[] = ppeAssets.filter(isCurrentForEmployee).map((asset: any) => ({
+      no: itemNumber++,
+      description: asset.description ?? "",
+      propertyNo: asset.propertyNumber ?? "",
+      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+      amount: asset.unitValue ?? null,
+    }));
+    const seRows: PALRow[] = seAssets.filter(isCurrentForEmployee).map((asset: any) => ({
+      no: itemNumber++,
+      description: asset.description ?? "",
+      propertyNo: asset.propertyNumber ?? "",
+      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+      amount: asset.unitValue ?? null,
+    }));
 
-    seAssets.filter((a: any) => isCurrentForEmployee(a, employee.id)).forEach((asset: any) => {
-      allRows.push({
-        no: itemNumber++,
-        description: asset.description ?? "",
-        propertyNo: asset.propertyNumber ?? "",
-        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-        amount: asset.unitValue ?? null,
-      });
-    });
-
-    const totalAmount = allRows.reduce((sum, row) => sum + (row.amount ?? 0), 0);
+    const totalAmount = [...ppeRows, ...seRows].reduce((sum, row) => sum + (row.amount ?? 0), 0);
 
     const blob = await pdf(
       <PALDocument
-        allRows={allRows}
+        ppeRows={ppeRows}
+        seRows={seRows}
         totalAmount={totalAmount}
         employeeName={employeeName}
         position={position}
@@ -289,8 +360,6 @@ export class PALGenerator {
       return;
     }
 
-    const allRows: PALRow[] = [];
-
     const employeeName = `${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''} ${employee.lastName}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
 
     // Fetch employee details to get position and office
@@ -308,44 +377,38 @@ export class PALGenerator {
       employeeNumber = empData.employeeIdOriginal || 'N/A';
     }
 
-    // Process all assets (PPE and SE) in one list
-    let itemNumber = 1;
-    
-    const isCurrentForEmployee = (asset: any, empId: number) =>
+    const isCurrentForEmployee = (asset: any) =>
       asset.movements?.some((m: any) => {
         const current = m.isCurrent === true || m.isCurrent === 1 || (typeof m.isCurrent === 'string' && m.isCurrent.toLowerCase() === 'true');
         return current && (
-          m.plantillaEmployeeId === empId ||
-          m.nonPlantillaEmployeeId === empId ||
-          (Array.isArray(m.employee) && m.employee.some((e: any) => e.id === empId))
+          m.plantillaEmployeeId === employee.id ||
+          m.nonPlantillaEmployeeId === employee.id ||
+          (Array.isArray(m.employee) && m.employee.some((e: any) => e.id === employee.id))
         );
       });
 
-    ppeAssets.filter((a: any) => isCurrentForEmployee(a, employee.id)).forEach((asset: any) => {
-      allRows.push({
-        no: itemNumber++,
-        description: asset.description ?? "",
-        propertyNo: asset.propertyNumber ?? "",
-        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-        amount: asset.unitValue ?? null,
-      });
-    });
+    let itemNumber = 1;
+    const ppeRows: PALRow[] = ppeAssets.filter(isCurrentForEmployee).map((asset: any) => ({
+      no: itemNumber++,
+      description: asset.description ?? "",
+      propertyNo: asset.propertyNumber ?? "",
+      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+      amount: asset.unitValue ?? null,
+    }));
+    const seRows: PALRow[] = seAssets.filter(isCurrentForEmployee).map((asset: any) => ({
+      no: itemNumber++,
+      description: asset.description ?? "",
+      propertyNo: asset.propertyNumber ?? "",
+      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+      amount: asset.unitValue ?? null,
+    }));
 
-    seAssets.filter((a: any) => isCurrentForEmployee(a, employee.id)).forEach((asset: any) => {
-      allRows.push({
-        no: itemNumber++,
-        description: asset.description ?? "",
-        propertyNo: asset.propertyNumber ?? "",
-        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-        amount: asset.unitValue ?? null,
-      });
-    });
-
-    const totalAmount = allRows.reduce((sum, row) => sum + (row.amount ?? 0), 0);
+    const totalAmount = [...ppeRows, ...seRows].reduce((sum, row) => sum + (row.amount ?? 0), 0);
 
     const blob = await pdf(
       <PALDocument
-        allRows={allRows}
+        ppeRows={ppeRows}
+        seRows={seRows}
         totalAmount={totalAmount}
         employeeName={employeeName}
         position={position}

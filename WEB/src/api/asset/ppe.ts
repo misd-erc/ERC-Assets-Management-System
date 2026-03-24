@@ -5,31 +5,50 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 export const ppeApi = {
 	// Batch upload PPE assets with file, ActionBySystemUserId and SessionKey params
-	batchUpload: async (
+	batchUpload: (
 		file: File,
 		actionBySystemUserId: string,
-		sessionKey: string
+		sessionKey: string,
+		onProgress?: (percent: number) => void
 	): Promise<{ success: boolean; code: string; message: string; data: string }> => {
-		const formData = new FormData();
-		formData.append('file', file);
+		return new Promise((resolve, reject) => {
+			const formData = new FormData();
+			formData.append('file', file);
 
-		const url =
-			API_BASE_URL +
-			'/Inventory/pta/batch-upload?ActionBySystemUserId=' +
-			actionBySystemUserId +
-			'&SessionKey=' +
-			encodeURIComponent(sessionKey);
+			const url =
+				API_BASE_URL +
+				'/Inventory/pta/batch-upload?ActionBySystemUserId=' +
+				actionBySystemUserId +
+				'&SessionKey=' +
+				encodeURIComponent(sessionKey);
 
-		const response = await fetch(url, {
-			method: 'POST',
-			body: formData,
+			const xhr = new XMLHttpRequest();
+			xhr.open('POST', url);
+
+			if (onProgress) {
+				xhr.upload.onprogress = (event) => {
+					if (event.lengthComputable) {
+						// Map upload phase to 0–80%
+						onProgress(Math.round((event.loaded / event.total) * 80));
+					}
+				};
+				xhr.upload.onload = () => onProgress(80);
+			}
+
+			xhr.onload = () => {
+				if (xhr.status >= 200 && xhr.status < 300) {
+					try {
+						resolve(JSON.parse(xhr.responseText));
+					} catch {
+						reject(new Error('Invalid JSON response'));
+					}
+				} else {
+					reject(new Error('Failed to batch upload PPE assets'));
+				}
+			};
+			xhr.onerror = () => reject(new Error('Failed to batch upload PPE assets'));
+			xhr.send(formData);
 		});
-
-		if (!response.ok) {
-			throw new Error('Failed to batch upload PPE assets');
-		}
-
-		return response.json();
 	},
 
 	// List PPE assets with pagination, search, optional date filters, and user/session auth
