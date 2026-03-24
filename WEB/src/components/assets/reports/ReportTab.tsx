@@ -36,6 +36,7 @@ import { ICSGenerator } from './ICSGenerator';
 import { PALGenerator } from './PALGenerator';
 import { RPCPPEPdfGenerator } from './RPCPPEExcelGenerator';
 import { SESPIExcelGenerator, SESPIFilterModal } from './SESPIGenerator';
+import { RegistrySPIByEmployeeGenerator, RegistrySPIEmployeeFilterModal } from './RegistrySPIByEmployeeGenerator';
 import { SEPropertyReportGenerator, SEPropertyReportFilterModal } from './SEPropertyReportGenerator';
 import { PTRGenerationModal } from './PTRGenerationModal';
 import { ITRGenerationModal } from './ITRGenerationModal';
@@ -72,6 +73,8 @@ export function ReportTab() {
   const [showPAL, setShowPAL] = useState(false);
   const [showIIRUP, setShowIIRUP] = useState(false);
   const [showIIRUSP, setShowIIRUSP] = useState(false);
+  const [showRegistrySPI, setShowRegistrySPI] = useState(false);
+  const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [customNumber, setCustomNumber] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -95,6 +98,7 @@ export function ReportTab() {
     setShowPAL(false);
     setShowIIRUP(false);
     setShowIIRUSP(false);
+    setShowRegistrySPI(false);
     setSelectedReport(null);
     setSelectedItem(null);
     setSelectedMovement(null);
@@ -174,8 +178,13 @@ export function ReportTab() {
     if (!selectedReport) return;
 
     if (selectedReport === 'SESPI') {
-      await SESPIExcelGenerator.generate(sespiDate!);
-      toast.success('Register SPI PDF generated');
+      if (registrySPIEmployee) {
+        await RegistrySPIByEmployeeGenerator.generate(registrySPIEmployee);
+        toast.success('Registry SPI PDF generated');
+      } else {
+        await SESPIExcelGenerator.generate(sespiDate!);
+        toast.success('Register SPI PDF generated');
+      }
     } else if (selectedReport === 'SESPI-REPORT') {
       await SEPropertyReportGenerator.generate(sespiDate!);
       toast.success('Report of Semi-Expandable Property Issued PDF generated');
@@ -219,6 +228,7 @@ export function ReportTab() {
     setSelectedItem(null);
     setSelectedMovement(null);
     setCustomNumber('');
+    setRegistrySPIEmployee(null);
   };
 
   const handleRPCPPEGenerate = async (asOfDate: Date, categoryId?: number) => {
@@ -267,10 +277,26 @@ export function ReportTab() {
       setShowPreview(true);
     } catch (error) {
       console.error('SE SPI preview generation failed:', error);
-      toast.error('SE SPI preview generation failed');
+      toast.error((error as Error).message || 'SE SPI preview generation failed');
     }
 
     setShowSESPI(false);
+  };
+
+  const handleRegistrySPIGenerate = async (employee: import('@/types/asset/UnifiedAsset').NormalizedEmployee) => {
+    setShowRegistrySPI(false);
+    try {
+      setLoadingPreview(true);
+      const url = await RegistrySPIByEmployeeGenerator.generatePreview(employee);
+      setPreviewUrl(url);
+      setLoadingPreview(false);
+      setRegistrySPIEmployee(employee);
+      setSelectedReport('SESPI');
+      setShowPreview(true);
+    } catch (error) {
+      setLoadingPreview(false);
+      toast.error((error as Error).message || 'Registry SPI generation failed');
+    }
   };
 
   const handleSEPropertyReportGenerate = async (asOfDate: Date) => {
@@ -285,7 +311,7 @@ export function ReportTab() {
       setShowPreview(true);
     } catch (error) {
       console.error('SE Property Report preview generation failed:', error);
-      toast.error('SE Property Report preview generation failed');
+      toast.error((error as Error).message || 'SE Property Report preview generation failed');
     }
 
     setShowSEPropertyReport(false);
@@ -347,13 +373,13 @@ export function ReportTab() {
     },
     {
       title: 'Registry SPI',
-      subtitle: 'Semi-Expandable Property',
+      subtitle: 'Semi-Expandable Property (by Employee)',
       icon: BookOpen,
       bgColor: 'bg-purple-600',
-      action: () => setShowSESPI(true)
+      action: () => setShowRegistrySPI(true)
     },
     {
-      title: 'SE Property Issued',
+      title: 'Report of SE Property Issued',
       subtitle: 'Report of Semi-Expandable Property Issued',
       icon: FileBarChart,
       bgColor: 'bg-pink-600',
@@ -585,6 +611,13 @@ export function ReportTab() {
         isOpen={showSESPI}
         onClose={() => setShowSESPI(false)}
         onGenerate={handleSESPIGenerate}
+      />
+
+      <RegistrySPIEmployeeFilterModal
+        isOpen={showRegistrySPI}
+        onClose={() => setShowRegistrySPI(false)}
+        employees={employees}
+        onGenerate={handleRegistrySPIGenerate}
       />
 
       <SEPropertyReportFilterModal

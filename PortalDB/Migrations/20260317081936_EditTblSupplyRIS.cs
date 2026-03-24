@@ -11,11 +11,17 @@ namespace PortalDB.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "SupplyRISNumberDate",
-                schema: "asset",
-                table: "tblSupplyRISs",
-                newName: "SupplyRISRequestedDate");
+            migrationBuilder.Sql(@"
+                IF EXISTS (
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = 'asset'
+                      AND TABLE_NAME = 'tblSupplyRISs'
+                      AND COLUMN_NAME = 'SupplyRISNumberDate'
+                )
+                BEGIN
+                    EXEC sp_rename N'[asset].[tblSupplyRISs].[SupplyRISNumberDate]', N'SupplyRISRequestedDate', 'COLUMN';
+                END
+            ");
 
             migrationBuilder.AlterColumn<DateTime>(
                 name: "SupplyRISCreatedAt",

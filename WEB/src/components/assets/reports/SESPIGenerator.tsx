@@ -161,9 +161,9 @@ export function SESPIFilterModal({ isOpen, onClose, onGenerate }: SESPIFilterMod
         <div className="space-y-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">As of Date</Label>
-            <Input 
-              type="date" 
-              value={asOfDate} 
+            <Input
+              type="date"
+              value={asOfDate}
               onChange={(e) => setAsOfDate(e.target.value)}
               className="col-span-3"
             />
@@ -184,19 +184,21 @@ export class SESPIExcelGenerator {
   private static colWidth(i: number) {
     const cols = [
       0.10, // ICS No.
-      0.14, // Responsibility Center Code
-      0.18, // Semi-expandable Property No.
-      0.24, // Item Description
+      0.12, // Responsibility Center Code
+      0.16, // Semi-expandable Property No.
+      0.20, // Item Description
       0.06, // Unit
-      0.10, // Quantity Issued
-      0.09, // Unit Cost
-      0.09, // Amount
+      0.08, // Quantity Issued
+      0.12, // Date Acquired
+      0.08, // Unit Cost
+      0.08, // Amount
     ];
     return TABLE_WIDTH * cols[i];
   }
 
   static async generateSESPIPreview(asOfDate: Date): Promise<string> {
     const seAssets = await PTAService.getAllForSE(asOfDate);
+    if (!seAssets.length) throw new Error('No SE assets found for the selected date.');
 
     const doc = this.buildDocument(seAssets);
     const blob = await pdf(doc).toBlob();
@@ -268,6 +270,7 @@ export class SESPIExcelGenerator {
                 'Item Description',
                 'Unit',
                 'Quantity Issued',
+                'Date Acquired',
                 'Unit Cost',
                 'Amount',
               ].map((h, i) => (
@@ -297,9 +300,12 @@ export class SESPIExcelGenerator {
                   1
                 </Text>
                 <Text style={[styles.td, styles.center, { width: this.colWidth(6) }]}>
-                  {asset.unitValue?.toFixed(2)}
+                  {asset.dateAcquired ? (() => { const d = new Date(asset.dateAcquired); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; })() : ''}
                 </Text>
                 <Text style={[styles.td, styles.center, { width: this.colWidth(7) }]}>
+                  {asset.unitValue?.toFixed(2)}
+                </Text>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(8) }]}>
                   {asset.unitValue?.toFixed(2)}
                 </Text>
               </View>
@@ -308,7 +314,7 @@ export class SESPIExcelGenerator {
             {/* EMPTY ROWS */}
             {Array.from({ length: Math.max(0, 20 - finalAssets.length) }).map((_, i) => (
               <View key={i} style={styles.row}>
-                {Array.from({ length: 8 }).map((_, c) => (
+                {Array.from({ length: 9 }).map((_, c) => (
                   <Text key={c} style={[styles.td, { width: this.colWidth(c) }]} />
                 ))}
               </View>
