@@ -76,6 +76,7 @@ export function ReportTab() {
   const [showRegistrySPI, setShowRegistrySPI] = useState(false);
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [customNumber, setCustomNumber] = useState('');
+  const [signatureDate, setSignatureDate] = useState(new Date().toISOString().slice(0, 10));
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -145,26 +146,27 @@ export function ReportTab() {
   };
 
   // Movement selected — directly generate preview using movement's PAR/ICS number
-  const handleMovementSelect = (item: Asset, movement: UnifiedMovement | null) => {
+  const handleMovementSelect = (item: Asset, movement: UnifiedMovement | null, sigDate?: string) => {
     setSelectedItem(item);
     setSelectedMovement(movement);
     setShowItemMovementsModal(false);
     const number = movement?.parIcsNumber ||
       (selectedReport === 'ICS' ? ICSGenerator.generateICSNumber() : PARGenerator.generatePARNumber());
     setCustomNumber(number);
+    if (sigDate) setSignatureDate(sigDate);
     setShowPreview(true);
-    generateItemPreview(item, movement, number);
+    generateItemPreview(item, movement, number, sigDate ?? signatureDate);
   };
 
-  // Update preview generator to accept number
-  const generateItemPreview = async (item: Asset | null, movement: UnifiedMovement | null, number?: string) => {
+  // Update preview generator to accept number and signature date
+  const generateItemPreview = async (item: Asset | null, movement: UnifiedMovement | null, number?: string, sigDate?: string) => {
     setLoadingPreview(true);
     try {
       if (!item) throw new Error('No item selected');
       const url =
         selectedReport === 'ICS'
-          ? await ICSGenerator.generateICSPreview(item, movement, number)
-          : await PARGenerator.generatePARPreview(item, movement, number);
+          ? await ICSGenerator.generateICSPreview(item, movement, number, sigDate)
+          : await PARGenerator.generatePARPreview(item, movement, number, sigDate);
       setPreviewUrl(url);
     } catch (error) {
       console.error('Preview generation failed:', error);
@@ -204,15 +206,27 @@ export function ReportTab() {
         toast.error('RPCPPE generation failed');
       }
     } else if (selectedReport === 'PAR') {
-      // New item-based flow
-      if (selectedItem) {
-        await PARGenerator.generatePAR(selectedItem, selectedMovement);
+      // Download from the already-generated preview (which includes signatureDate)
+      if (previewUrl) {
+        const blob = await fetch(previewUrl).then(r => r.blob());
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `PAR_${customNumber || Date.now()}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
         toast.success('PAR PDF generated');
       }
     } else if (selectedReport === 'ICS') {
-      // New item-based flow
-      if (selectedItem) {
-        await ICSGenerator.generateICS(selectedItem, selectedMovement);
+      // Download from the already-generated preview (which includes signatureDate)
+      if (previewUrl) {
+        const blob = await fetch(previewUrl).then(r => r.blob());
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ICS_${customNumber || Date.now()}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
         toast.success('ICS PDF generated');
       }
     } else if (selectedEmployee) {
