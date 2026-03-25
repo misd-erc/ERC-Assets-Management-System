@@ -1018,7 +1018,7 @@ namespace API.Controllers
                         var user = await _getTools.Account.GetTblSystemUserAsync(x.RISRequestedBySystemUserId.Value, context);
                         if (user != null)
                         {
-                            receivedByUser = new UserBasicResponseModel
+                            requestedByUser = new UserBasicResponseModel
                             {
                                 Id = user.Id,
                                 FirstName = user.FirstName,

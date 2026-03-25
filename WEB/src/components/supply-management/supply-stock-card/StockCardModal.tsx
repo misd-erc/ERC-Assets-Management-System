@@ -52,7 +52,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description }:
   };
 
   const getEventType = (item: SupplyStockCardItem) => {
-    if (item.addedStockQuantity > 0) return { label: 'Addition', color: 'bg-green-100 text-green-800' };
+    if (item.addedStockQuantity > 0) return { label: 'Delivery', color: 'bg-green-100 text-green-800' };
     if (item.issuedStockQuantity > 0) return { label: 'Issuance', color: 'bg-red-100 text-red-800' };
     return { label: 'Unknown', color: 'bg-gray-100 text-gray-800' };
   };
