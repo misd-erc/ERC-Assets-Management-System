@@ -143,6 +143,13 @@ function formatLongDate(date?: string | Date) {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
+function formatShortDate(dateStr?: string) {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  return `${parts[1]}-${parts[2]}-${parts[0]}`;
+}
+
 function buildRowsFromItems(items: any[], endUser: string): ReturnRow[] {
   return (items || []).map((item: any) => ({
     description: item?.description || "",
@@ -161,6 +168,7 @@ const ReturnReceiptDocument = ({
   returnedByName,
   returnedByPosition,
   nonPlantillaEmployeeName,
+  signatureDate,
 }: {
   rows: ReturnRow[];
   receiptNumber: string;
@@ -169,6 +177,7 @@ const ReturnReceiptDocument = ({
   returnedByName: string;
   returnedByPosition?: string;
   nonPlantillaEmployeeName?: string;
+  signatureDate?: string;
 }) => {
   const title =
     returnType === "RRPPE"
@@ -235,6 +244,7 @@ const ReturnReceiptDocument = ({
             <Text style={[styles.sigName,{marginBottom: -10}]}>{returnedByName?.toUpperCase() || ""}</Text>
             <View style={[styles.sigLine,{marginBottom: 4}]} />
             <Text style={styles.sigLabel}>{returnedByPosition || "Position, Service-Division"}</Text>
+            {signatureDate ? <Text style={{ fontSize: 8, textAlign: "center", marginTop: 4 }}>{formatShortDate(signatureDate)}</Text> : null}
             <View style={styles.sigDateLine} />
             <Text style={styles.sigDateLabel}>Date</Text>
           </View>
@@ -244,6 +254,7 @@ const ReturnReceiptDocument = ({
             <Text style={[styles.sigName,{marginBottom: -10}]}>{RECEIVED_BY.name}</Text>
             <View style={[styles.sigLine,{marginBottom: 4}]} />
             <Text style={styles.sigLabel}>{RECEIVED_BY.designation}</Text>
+            {signatureDate ? <Text style={{ fontSize: 8, textAlign: "center", marginTop: 4 }}>{formatShortDate(signatureDate)}</Text> : null}
             <View style={styles.sigDateLine} />
             <Text style={styles.sigDateLabel}>Date</Text>
           </View>
@@ -263,7 +274,8 @@ export class ReturnReceiptGenerator {
     dateAssigned: string,
     returnedByName: string,
     returnedByPosition?: string,
-    nonPlantillaEmployeeName?: string
+    nonPlantillaEmployeeName?: string,
+    signatureDate?: string
   ): Promise<string> {
     const rows = buildRowsFromItems(items, returnedByName);
 
@@ -276,6 +288,7 @@ export class ReturnReceiptGenerator {
         returnedByName={returnedByName}
         returnedByPosition={returnedByPosition}
         nonPlantillaEmployeeName={nonPlantillaEmployeeName}
+        signatureDate={signatureDate}
       />
     ).toBlob();
 

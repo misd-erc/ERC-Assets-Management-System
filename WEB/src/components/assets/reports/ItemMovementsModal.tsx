@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Asset, UnifiedMovement } from '@/types/asset/UnifiedAsset';
@@ -23,7 +24,7 @@ interface ItemMovementsModalProps {
   isOpen: boolean;
   onClose: () => void;
   item: Asset | null;
-  onConfirm: (item: Asset, selectedMovement: UnifiedMovement | null) => void;
+  onConfirm: (item: Asset, selectedMovement: UnifiedMovement | null, signatureDate: string) => void;
 }
 
 export function ItemMovementsModal({
@@ -32,6 +33,8 @@ export function ItemMovementsModal({
   item,
   onConfirm,
 }: ItemMovementsModalProps) {
+  const [signatureDate, setSignatureDate] = useState(new Date().toISOString().slice(0, 10));
+
   const activeMovements = useMemo(() => {
     if (!item || !item.movements) return [];
     return item.movements.filter(m => m.isActive && !m.isDeleted);
@@ -39,7 +42,7 @@ export function ItemMovementsModal({
 
   const handleSelectMovement = (movement: UnifiedMovement) => {
     if (item) {
-      onConfirm(item, movement);
+      onConfirm(item, movement, signatureDate);
     }
   };
 
@@ -203,7 +206,16 @@ export function ItemMovementsModal({
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-2 pt-2 border-t">
+          <div className="flex items-center justify-between gap-2 pt-2 border-t">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">Signature Date</label>
+              <Input
+                type="date"
+                value={signatureDate}
+                onChange={(e) => setSignatureDate(e.target.value)}
+                className="w-40"
+              />
+            </div>
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
