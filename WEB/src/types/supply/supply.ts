@@ -19,6 +19,17 @@ export interface SupplyItem {
   createdAt?: string;
 }
 
+export interface VwSupplyGroupedItem {
+  id: number;
+  code: string;
+  iarId: number | null;
+  description: string;
+  totalCurrentStock: number;
+  totalStockCost: number;
+  isActive: boolean;
+  createdAt?: string;
+}
+
 export interface VwSupplyItem {
   id: number;
   code: string;

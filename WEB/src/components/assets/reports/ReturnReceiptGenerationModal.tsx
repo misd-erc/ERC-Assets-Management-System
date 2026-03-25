@@ -34,6 +34,7 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [signatureDate, setSignatureDate] = useState(new Date().toISOString().slice(0, 10));
 
   useEffect(() => {
     if (isOpen) {
@@ -51,6 +52,7 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
     setSearch('');
     setPreviewUrl('');
     setShowPreview(false);
+    setSignatureDate(new Date().toISOString().slice(0, 10));
   };
 
   const loadRecords = async () => {
@@ -125,6 +127,8 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
         details.dateAssigned || new Date().toISOString(),
         details.returnedBy,
         details.returnedByPosition,
+        undefined,
+        signatureDate
       );
       setPreviewUrl(url);
       setShowPreview(true);
@@ -260,6 +264,15 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
               </div>
             )}
           </div>
+        </div>
+
+        <div className="space-y-1 pt-2">
+          <p className="text-sm font-medium text-gray-700">Signature Date</p>
+          <Input
+            type="date"
+            value={signatureDate}
+            onChange={(e) => setSignatureDate(e.target.value)}
+          />
         </div>
       </div>
     );

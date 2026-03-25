@@ -20,10 +20,12 @@ const logoSrc =
     ? `${window.location.origin}/images/erc-logo.png`
     : "/mnt/data/erc-logo.png";
 
-// (Removed remote font registration to avoid fetch failures.)
-
-// Auto insert today's date (long format)
-const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+function formatShortDate(dateStr?: string) {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  return `${parts[1]}-${parts[2]}-${parts[0]}`;
+}
 
 const styles = StyleSheet.create({
   page: {
@@ -170,6 +172,7 @@ const ICSDocument = ({
   office,
   icsNumber,
   nonPlantillaEmployeeName,
+  signatureDate,
 }: {
   rows: ICSRow[];
   employeeName: string;
@@ -177,6 +180,7 @@ const ICSDocument = ({
   office: string;
   icsNumber?: string;
   nonPlantillaEmployeeName?: string;
+  signatureDate?: string;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -238,6 +242,7 @@ const ICSDocument = ({
           <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 6 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 4 }]}>Position/Office</Text>
           <View>
+            {signatureDate ? <Text style={[styles.sigDateValue, { textAlign: "center" }]}>{formatShortDate(signatureDate)}</Text> : null}
             <View style={styles.sigDateRow}>
               <View style={styles.sigDateLine} />
             </View>
@@ -255,6 +260,7 @@ const ICSDocument = ({
           <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 6 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 0 }]}>Position/Office</Text>
           <View>
+            {signatureDate ? <Text style={[styles.sigDateValue, { textAlign: "center" }]}>{formatShortDate(signatureDate)}</Text> : null}
             <View style={styles.sigDateRow}>
               <View style={styles.sigDateLine} />
             </View>
@@ -283,7 +289,7 @@ export class ICSGenerator {
     return `${year}-${month}-${seqStr}`;
   }
 
-  static async generateICSPreview(item: Asset, movement: UnifiedMovement | null, icsNumber?: string): Promise<string> {
+  static async generateICSPreview(item: Asset, movement: UnifiedMovement | null, icsNumber?: string, signatureDate?: string): Promise<string> {
     if (!item) {
       alert('No item selected. Cannot generate ICS preview.');
       return '';
@@ -338,6 +344,7 @@ export class ICSGenerator {
         office={office}
         icsNumber={number}
         nonPlantillaEmployeeName={nonPlantillaEmployeeName}
+        signatureDate={signatureDate}
       />
     ).toBlob();
     return URL.createObjectURL(blob);

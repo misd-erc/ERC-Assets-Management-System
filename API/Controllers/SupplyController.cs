@@ -10,12 +10,14 @@ using PortalDB.Models.QueryParams.Pagination;
 using PortalDB.Models.QueryParams.PTA;
 using PortalDB.Models.QueryParams.Supply;
 using PortalDB.Models.QueryParams.Universal;
+using PortalDB.Models.ResponseModels.Account;
 using PortalDB.Models.ResponseModels.Office;
 using PortalDB.Models.ResponseModels.Supply;
 using PortalDB.Models.Responses;
 using PortalDB.Services;
 using PortalTools.Composition;
 using PortalTools.Services;
+using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace API.Controllers
 {
@@ -261,7 +263,6 @@ namespace API.Controllers
 
             try
             {
-
                 IEnumerable<TblSupplyItem>? supplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
@@ -278,11 +279,35 @@ namespace API.Controllers
                 if (model.EndDate.HasValue)
                     supplyItems = supplyItems.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                int totalCount = supplyItems.Count();
+                var groupedItems = supplyItems
+                    .GroupBy(x => new { x.Code, x.Description })
+                    .Select(g =>
+                    {
+                        var firstItem = g.First();
+                        return new TblSupplyItem
+                        {
+                            Code = g.Key.Code,
+                            Description = g.Key.Description,
+                            Quantity = g.Sum(x => x.Quantity),
+                            UnitCost = g.Sum(x => x.UnitCost), 
+
+                            Id = firstItem.Id,
+                            IARId = firstItem.IARId,
+                            CategoryId = firstItem.CategoryId,
+                            MeasurementUnitId = firstItem.MeasurementUnitId,
+                            ReorderPoint = firstItem.ReorderPoint,
+                            StorageLocationId = firstItem.StorageLocationId,
+                            VendorId = firstItem.VendorId,
+                            IsActive = firstItem.IsActive,
+                            CreatedAt = firstItem.CreatedAt
+                        };
+                    });
+
+                int totalCount = groupedItems.Count();
 
                 int skip = (model.PageNumber - 1) * model.PageSize;
 
-                var supplyItemsList = supplyItems
+                var supplyItemsList = groupedItems
                     .OrderByDescending(x => x.CreatedAt)
                     .Skip(skip)
                     .Take(model.PageSize)
@@ -301,7 +326,6 @@ namespace API.Controllers
                         MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(x.MeasurementUnitId, context),
                         Description = x.Description,
                         Quantity = x.Quantity,
-                        CurrentStock = x.CurrentStock,
                         UnitCost = x.UnitCost,
                         ReorderPoint = x.ReorderPoint,
                         StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(x.StorageLocationId, context),
@@ -315,6 +339,7 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply Items", actionBy: model.ActionBySystemUserId);
+
                 return Ok(ApiResponse<SupplyItemResponseModel>.OkPaginated(
                     supplyItemsResponses,
                     model.PageNumber,
@@ -331,6 +356,385 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+
+        [HttpGet("item/grouped/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSupplyGroups([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // 1. Fetch all supply items
+                // 1. Fetch all supply items
+                IEnumerable<TblSupplyItem>? supplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+
+                // 2. Apply filters
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyItems = supplyItems.Where(x =>
+                        (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+                if (model.StartDate.HasValue)
+                    supplyItems = supplyItems.Where(x => x.CreatedAt >= model.StartDate.Value);
+                if (model.EndDate.HasValue)
+                    supplyItems = supplyItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                // 3. Group by Code and Description, compute aggregates
+                var groupedItems = supplyItems
+                    .GroupBy(x => new { x.Code, x.Description })
+                    .Select(g =>
+                    {
+                        var firstItem = g.First();
+                        return new
+                        {
+                            Code = g.Key.Code,
+                            Description = g.Key.Description,
+                            TotalCurrentStock = g.Sum(x => x.Quantity ?? 0),
+                            TotalStockCost = g.Sum(x => (x.Quantity ?? 0) * (x.UnitCost ?? 0)),
+                            Id = firstItem.Id,
+                            IARId = firstItem.IARId,
+                            IsActive = firstItem.IsActive,
+                            CreatedAt = firstItem.CreatedAt
+                        };
+                    });
+
+                // 4. Fetch all RIS items and sum IssueQuantity per group (code/description)
+                var risItems = await _getTools.Supply.GetTblSupplyRISItems(context).ToListAsync();
+                var issuedStockGroup = risItems
+                    .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.ItemDescription))
+                    .GroupBy(x => new { x.StockNumber, x.ItemDescription })
+                    .Select(g => new
+                    {
+                        g.Key.StockNumber,
+                        g.Key.ItemDescription,
+                        TotalIssuedQuantity = g.Sum(x => x.IssueQuantity)
+                    })
+                    .ToDictionary(k => (k.StockNumber, k.ItemDescription), v => v.TotalIssuedQuantity);
+
+                // 5. Count total before pagination
+                int totalCount = groupedItems.Count();
+
+                // 6. Pagination
+                int skip = (model.PageNumber - 1) * model.PageSize;
+                var pagedGroups = groupedItems
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                // 7. Map to response model (subtract issued quantity from current stock)
+                var supplyItemsResponses = pagedGroups.Select(x =>
+                {
+                    var key = (x.Code, x.Description);
+                    var issuedQty = issuedStockGroup.GetValueOrDefault(key, 0);
+
+                    return new SupplyItemGroupedResponseModel
+                    {
+                        Id = x.Id,
+                        Code = x.Code ?? string.Empty,
+                        IARId = x.IARId,
+                        Description = x.Description ?? string.Empty,
+                        TotalCurrentStock = (int?)Math.Max(0, x.TotalCurrentStock - issuedQty), // ensure non-negative
+                        TotalStockCost = (int?)x.TotalStockCost,
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                }).ToList();
+
+                // Return paginated response
+                return Ok(ApiResponse<SupplyItemGroupedResponseModel>.OkPaginated(
+                    supplyItemsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Grouped Supply Items have been retrieved"
+                ));
+
+                // 7. Commit transaction (though no changes, kept for consistency)
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed Grouped Supply Items", actionBy: model.ActionBySystemUserId);
+
+                // 8. Return paginated result
+                return Ok(ApiResponse<SupplyItemGroupedResponseModel>.OkPaginated(
+                    supplyItemsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Grouped Supply Items have been retrieved"
+                ));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("item/grouped/all/{id}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSupplyGroupedItems(long id, [FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // 1. Get the target item to obtain its Code and Description
+                TblSupplyItem? targetItem = await _getTools.Supply.GetTblSupplyItemAsync(id, context);
+                if (targetItem == null)
+                {
+                    return NotFound(ApiResponse<object>.Fail(ErrorCodes.NOT_FOUND, "Supply item not found."));
+                }
+
+                string targetCode = targetItem.Code ?? string.Empty;
+                string targetDescription = targetItem.Description ?? string.Empty;
+
+                // 2. Fetch all supply items
+                IEnumerable<TblSupplyItem> allItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+
+                // 3. Filter by matching Code and Description
+                var filteredItems = allItems.Where(x =>
+                    (x.Code ?? string.Empty).Equals(targetCode, StringComparison.OrdinalIgnoreCase) &&
+                    (x.Description ?? string.Empty).Equals(targetDescription, StringComparison.OrdinalIgnoreCase));
+
+                // 4. Apply search filter if provided (search across Code and Description)
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    filteredItems = filteredItems.Where(x =>
+                        (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                // 5. Apply date filters
+                if (model.StartDate.HasValue)
+                    filteredItems = filteredItems.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    filteredItems = filteredItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                // 6. Count total items before pagination
+                int totalCount = filteredItems.Count();
+
+                // 7. Apply pagination and ordering
+                int skip = (model.PageNumber - 1) * model.PageSize;
+                var pagedItems = filteredItems
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                // 8. Map to response model (including related entities)
+                var supplyItemsResponses = new List<SupplyItemResponseModel>();
+                foreach (var item in pagedItems)
+                {
+                    var response = new SupplyItemResponseModel
+                    {
+                        Id = item.Id,
+                        Code = item.Code ?? string.Empty,
+                        IARId = item.IARId,
+                        Category = await _getTools.PTA.GetTblPTACategoryAsync(item.CategoryId, context),
+                        MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(item.MeasurementUnitId, context),
+                        Description = item.Description ?? string.Empty,
+                        Quantity = item.Quantity,
+                        UnitCost = item.UnitCost,
+                        ReorderPoint = item.ReorderPoint,
+                        StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(item.StorageLocationId, context),
+                        Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(item.VendorId, context),
+                        IsActive = item.IsActive,
+                        CreatedAt = item.CreatedAt
+                    };
+                    supplyItemsResponses.Add(response);
+                }
+
+                // 9. Commit transaction (no changes, but consistent with pattern)
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // 10. Log activity
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed grouped supply items for Code: {targetCode}, Description: {targetDescription}", actionBy: model.ActionBySystemUserId);
+
+                // 11. Return paginated result
+                return Ok(ApiResponse<SupplyItemResponseModel>.OkPaginated(
+                    supplyItemsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Grouped Supply Items have been retrieved"
+                ));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("item/grouped/stock-card/all/{stockNumber}/{description}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetSupplyStockCardItems(
+            [FromQuery] PaginationGenericQueryParams model,
+            string stockNumber,
+            string description)
+                {
+                    await using var context = new PortalDbContext(_options);
+                    await using var transaction = await context.Database.BeginTransactionAsync();
+
+                    try
+                    {
+                        string targetCode = stockNumber ?? string.Empty;
+                        string targetDesc = description ?? string.Empty;
+
+                        // ===== 1. Fetch and decrypt supply items (additions) =====
+                        // 1. Fetch all addition events (Supply Items)
+                        var allSupplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+                        var additionEvents = allSupplyItems
+                        .Where(x => x.Code == targetCode && x.Description == targetDesc)
+                        .Select(x => new
+                        {
+                            x.Id,
+                            Quantity = x.Quantity,   // already long
+                            x.CreatedAt,
+                            x.IsActive,
+                            ItemRemarks = (string?)null,
+                            UnitId = x.MeasurementUnitId,
+                            Type = "Addition"
+                        })
+                        .ToList();
+
+                                    // 2. Fetch all issuance events (RIS Items)
+                                    var allRISItems = await _getTools.Supply.GetTblSupplyRISItems(context).ToListAsync();
+                                    var issuanceEvents = allRISItems
+                        .Where(x => x.StockNumber == targetCode && x.ItemDescription == targetDesc)
+                        .Select(x => new
+                        {
+                            x.Id,
+                            Quantity = x.IssueQuantity,   // already long
+                            x.CreatedAt,
+                            x.IsActive,
+                            x.ItemRemarks,
+                            UnitId = x.UnitId,
+                            Type = "Issuance"
+                        })
+                        .ToList();
+
+                        // ===== 3. Combine and sort chronologically =====
+                        var allEvents = additionEvents.Cast<dynamic>()
+                            .Concat(issuanceEvents.Cast<dynamic>())
+                            .OrderBy(e => e.CreatedAt)
+                            .ToList();
+
+                        // ===== 4. Efficient unit loading =====
+                        var unitIds = allEvents
+                            .Select(e => (long?)e.UnitId)
+                            .Where(id => id.HasValue)
+                            .Select(id => id.Value)
+                            .Distinct()
+                            .ToList();
+
+                        var units = new Dictionary<long, TblSupplyUnit>();
+                        if (unitIds.Any())
+                        {
+                            // Fetch only needed units (implement GetTblSupplyUnitsByIds in your tools)
+                            var unitEntities = await _getTools.Supply.GetTblSupplyUnitsByIds(context, unitIds);
+                            units = unitEntities.ToDictionary(u => u.Id);
+                        }
+
+                        // ===== 5. Pagination =====
+                        int totalCount = allEvents.Count;
+                        int skip = (model.PageNumber - 1) * model.PageSize;
+                        var pagedEvents = allEvents.Skip(skip).Take(model.PageSize).ToList();
+
+                        // ===== 6. Compute running balance before the first event in the page =====
+                        long previousBalance = 0;
+                        if (skip > 0)
+                        {
+                            var eventsBeforePage = allEvents.Take(skip);
+                            foreach (var evt in eventsBeforePage)
+                            {
+                                if (evt.Type == "Addition")
+                                    previousBalance += evt.Quantity;
+                                else if (evt.Type == "Issuance")
+                                    previousBalance -= evt.Quantity;
+                            }
+                        }
+
+                        // ===== 7. Build response models for the paged events =====
+                        var responseItems = new List<SupplyStockCardItemViewModel>();
+                        long currentBalance = previousBalance;
+
+                        foreach (var evt in pagedEvents)
+                        {
+                            long added = 0, issued = 0;
+                            long newBalance = currentBalance;
+
+                            if (evt.Type == "Addition")
+                            {
+                                added = evt.Quantity;
+                                newBalance = currentBalance + added;
+                            }
+                            else if (evt.Type == "Issuance")
+                            {
+                                issued = evt.Quantity;
+                                newBalance = currentBalance - issued;
+                            }
+
+                            var unit = evt.UnitId != null && units.ContainsKey(evt.UnitId)
+                                ? units[evt.UnitId]
+                                : null;
+
+                            responseItems.Add(new SupplyStockCardItemViewModel
+                            {
+                                Id = evt.Id,
+                                StockNumber = targetCode,
+                                Unit = unit,
+                                ItemDescription = targetDesc,
+                                CurrentStockQuantity = currentBalance,
+                                AddedStockQuantity = added,
+                                IssuedStockQuantity = issued,
+                                NewStockQuantity = newBalance,
+                                ItemRemarks = evt.ItemRemarks,
+                                IsActive = evt.IsActive,
+                                CreatedAt = evt.CreatedAt
+                            });
+
+                            currentBalance = newBalance;
+                        }
+
+                        // ===== 8. Commit and log =====
+                        await context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                        await AuditTrailTool.LogActivityAsync(_options,
+                            $"Viewed stock card for {targetCode} - {targetDesc}",
+                            actionBy: model.ActionBySystemUserId);
+
+                        // ===== 9. Return paginated result =====
+                        return Ok(ApiResponse<SupplyStockCardItemViewModel>.OkPaginated(
+                            responseItems,
+                            model.PageNumber,
+                            model.PageSize,
+                            totalCount,
+                            "Stock card items retrieved"
+                        ));
+                    }
+                    catch (Exception ex)
+                    {
+                        await transaction.RollbackAsync();
+                        await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                        return StatusCode(ApiStatusCode.InternalServerError,
+                            ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+                    }
+                }
 
         [HttpGet("item/unique/all")]
         [ValidateSessionToken]
@@ -506,6 +910,334 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+
+        [HttpGet("ris/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllRISs([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblSupplyRIS>? supplyRISs = await _getTools.Supply.GetTblSupplyRISs(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyRISs = supplyRISs.Where(x =>
+                        (x.RISNumber.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.EntityName.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.FundCluster.ToString() ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    supplyRISs = supplyRISs.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    supplyRISs = supplyRISs.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = supplyRISs.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var supplyRISsList = supplyRISs
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var supplyIResponses = new List<SupplyRISResponseModel>();
+
+
+
+                foreach (var x in supplyRISsList)
+                {
+                    // Map ApprovedBySystemUser
+                    UserBasicResponseModel? approvedByUser = null;
+                    if (x.RISApprovedBySystemUserId.HasValue)
+                    {
+                        var user = await _getTools.Account.GetTblSystemUserAsync(x.RISApprovedBySystemUserId.Value, context);
+                        if (user != null)
+                        {
+                            approvedByUser = new UserBasicResponseModel
+                            {
+                                Id = user.Id,
+                                FirstName = user.FirstName,
+                                LastName = user.LastName,
+                                Email = user.Email,
+                                EmployeeId = user.EmployeeId,
+                                IsActive = user.IsActive
+                            };
+                        }
+                    }
+
+                    // Map IssuedBySystemUser
+                    UserBasicResponseModel? issuedByUser = null;
+                    if (x.RISIssuedBySystemUserId.HasValue)
+                    {
+                        var user = await _getTools.Account.GetTblSystemUserAsync(x.RISIssuedBySystemUserId.Value, context);
+                        if (user != null)
+                        {
+                            issuedByUser = new UserBasicResponseModel
+                            {
+                                Id = user.Id,
+                                FirstName = user.FirstName,
+                                LastName = user.LastName,
+                                Email = user.Email,
+                                EmployeeId = user.EmployeeId,
+                                IsActive = user.IsActive
+                            };
+                        }
+                    }
+
+                    // Map ReceivedBySystemUser (note spelling of column: RISRecievedBySystemUserId)
+                    UserBasicResponseModel? receivedByUser = null;
+                    if (x.RISReceivedBySystemUserId.HasValue) // adjust property name if needed
+                    {
+                        var user = await _getTools.Account.GetTblSystemUserAsync(x.RISReceivedBySystemUserId.Value, context);
+                        if (user != null)
+                        {
+                            receivedByUser = new UserBasicResponseModel
+                            {
+                                Id = user.Id,
+                                FirstName = user.FirstName,
+                                LastName = user.LastName,
+                                Email = user.Email,
+                                EmployeeId = user.EmployeeId,
+                                IsActive = user.IsActive
+                            };
+                        }
+                    }
+
+                    UserBasicResponseModel? requestedByUser = null;
+                    if (x.RISRequestedBySystemUserId.HasValue) // adjust property name if needed
+                    {
+                        var user = await _getTools.Account.GetTblSystemUserAsync(x.RISRequestedBySystemUserId.Value, context);
+                        if (user != null)
+                        {
+                            receivedByUser = new UserBasicResponseModel
+                            {
+                                Id = user.Id,
+                                FirstName = user.FirstName,
+                                LastName = user.LastName,
+                                Email = user.Email,
+                                EmployeeId = user.EmployeeId,
+                                IsActive = user.IsActive
+                            };
+                        }
+                    }
+
+                    var supplyRISModel = new SupplyRISResponseModel
+                    {
+                        Id = x.Id,
+                        EntityName = x.EntityName,
+                        FundCluster = x.FundCluster,
+                        Office = await _getTools.Office.GetTblOfficeAsync(x.OfficeId, context),
+                        Division = await _getTools.Office.GetTblDivisionAsync(x.DivisionId, context),
+                        ResponsibilityCenterCode = x.ResponsibilityCenterCode,
+                        RISNumber = x.RISNumber,
+                        RISPurpose = x.RISPurpose,
+                        RequestedBySystemUser = requestedByUser,
+                        RISRequestedDate = x.RISRequestedDate,
+                        ApprovedBySystemUser = approvedByUser,
+                        RISApprovedDate = x.RISApprovedDate,
+                        IssuedBySystemUser = issuedByUser,
+                        RISIssuedDate = x.RISIssuedDate,
+                        ReceivedBySystemUser = receivedByUser,
+                        RISReceivedDate = x.RISReceivedDate,
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    supplyIResponses.Add(supplyRISModel);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply RIS", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<SupplyRISResponseModel>.OkPaginated(
+                    supplyIResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Supply RISs have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("ris-item/all")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetAllSupplyRISItems([FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                IEnumerable<TblSupplyRISItem>? supplyRISItems = await _getTools.Supply.GetTblSupplyRISItems(context).ToListAsync();
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyRISItems = supplyRISItems.Where(x =>
+                        (x.StockNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.ItemDescription ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                if (model.StartDate.HasValue)
+                    supplyRISItems = supplyRISItems.Where(x => x.CreatedAt >= model.StartDate.Value);
+
+                if (model.EndDate.HasValue)
+                    supplyRISItems = supplyRISItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                int totalCount = supplyRISItems.Count();
+
+                int skip = (model.PageNumber - 1) * model.PageSize;
+
+                var supplyRISItemsList = supplyRISItems
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                var supplyRISItemsResponses = new List<SupplyRISItemResponseModel>();
+
+                foreach (var x in supplyRISItemsList)
+                {
+                    var supplyRISItemModel = new SupplyRISItemResponseModel
+                    {
+                        Id = x.Id,
+                        RISId = x.SupplyRISId,
+                        StockNumber = x.StockNumber,
+                        Unit = await _getTools.Supply.GetTblSupplyUnitAsync(x.UnitId, context),
+                        ItemDescription = x.ItemDescription,
+                        RequisitionQuantity = x.RequisitionQuantity,
+                        IsAvailable = x.IsAvailable,
+                        IssueQuantity = x.IssueQuantity,
+                        ItemRemarks = x.ItemRemarks,
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    supplyRISItemsResponses.Add(supplyRISItemModel);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply Items", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<SupplyRISItemResponseModel>.OkPaginated(
+                    supplyRISItemsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Supply Items have been retrieved"
+                ));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("ris-item/all/{risId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetSupplyRISItemsByRISId(long risId, [FromQuery] PaginationGenericQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // Fetch all supply RIS items from the repository
+                IEnumerable<TblSupplyRISItem>? supplyRISItems = await _getTools.Supply.GetTblSupplyRISItems(context).ToListAsync();
+
+                // Filter by the provided RIS ID
+                supplyRISItems = supplyRISItems.Where(x => x.SupplyRISId == risId);
+
+                // Apply search filter if provided
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    supplyRISItems = supplyRISItems.Where(x =>
+                        (x.StockNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.ItemDescription ?? "").ToLowerInvariant().Contains(searchLower));
+                }
+
+                // Apply date filters
+                if (model.StartDate.HasValue)
+                    supplyRISItems = supplyRISItems.Where(x => x.CreatedAt >= model.StartDate.Value);
+                if (model.EndDate.HasValue)
+                    supplyRISItems = supplyRISItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                // Count total before pagination
+                int totalCount = supplyRISItems.Count();
+
+                // Apply pagination
+                int skip = (model.PageNumber - 1) * model.PageSize;
+                var supplyRISItemsList = supplyRISItems
+                    .OrderByDescending(x => x.CreatedAt)
+                    .Skip(skip)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                // Map to response model
+                var supplyRISItemsResponses = new List<SupplyRISItemResponseModel>();
+                foreach (var x in supplyRISItemsList)
+                {
+                    var supplyRISItemModel = new SupplyRISItemResponseModel
+                    {
+                        Id = x.Id,
+                        RISId = x.SupplyRISId,
+                        StockNumber = x.StockNumber,
+                        Unit = await _getTools.Supply.GetTblSupplyUnitAsync(x.UnitId, context),
+                        ItemDescription = x.ItemDescription,
+                        RequisitionQuantity = x.RequisitionQuantity,
+                        IsAvailable = x.IsAvailable,
+                        IssueQuantity = x.IssueQuantity,
+                        ItemRemarks = x.ItemRemarks,
+                        IsActive = x.IsActive,
+                        CreatedAt = x.CreatedAt
+                    };
+                    supplyRISItemsResponses.Add(supplyRISItemModel);
+                }
+
+                // Commit transaction (no changes, but keeps consistency)
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Log activity
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed Supply RIS Items for RIS ID: {risId}", actionBy: model.ActionBySystemUserId);
+
+                // Return paginated response
+                return Ok(ApiResponse<SupplyRISItemResponseModel>.OkPaginated(
+                    supplyRISItemsResponses,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Supply RIS Items have been retrieved"
+                ));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
         #endregion
 
         #region POST
@@ -627,7 +1359,6 @@ namespace API.Controllers
                     MeasurementUnitId = model.MeasurementUnitId,
                     Description = model.Description,
                     Quantity = model.Quantity,
-                    CurrentStock = model.CurrentStock,
                     UnitCost = model.UnitCost,
                     ReorderPoint = model.ReorderPoint,
                     StorageLocationId = model.StorageLocationId,
@@ -702,11 +1433,11 @@ namespace API.Controllers
                                     CategoryId = deliveryRecordItem.CategoryId,
                                     Description = deliveryRecordItem.ItemDescription,
                                     MeasurementUnitId = deliveryRecordItem.UnitId,
-                                    CurrentStock = deliveryRecordItem.CurrentStock,
                                     UnitCost = deliveryRecordItem.UnitCost,
                                     ReorderPoint = deliveryRecordItem.ReorderPoint,
                                     StorageLocationId = deliveryRecordItem.StorageLocationId,
-                                    VendorId = deliveryRecordItem.VendorId
+                                    VendorId = deliveryRecordItem.VendorId,
+                                    Quantity = deliveryRecordItem.ItemQuantity
                                 };
 
                                 await _editTools.Supply.EditTblSupplyItemAsync(supplyItem, model.ActionBySystemUserId, context);
@@ -724,6 +1455,108 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok(new { SupplyIARId = supplyIARId }, $"Supply IAR has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("ris/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditSupplyRIS([FromBody] EditSupplyRISQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblSupplyRIS supplyRIS = new()
+                {
+                    Id = model.Id,
+                    EntityName = model.EntityName,
+                    FundCluster = model.FundCluster,
+                    DivisionId = model.DivisionId,
+                    OfficeId = model.OfficeId,
+                    ResponsibilityCenterCode = model.ResponsibilityCenterCode,
+                    RISNumber = model.RISNumber,
+                    RISPurpose = model.RISPurpose,
+                    RISRequestedBySystemUserId = model.RISRequestedBySystemUserId,
+                    RISRequestedDate = model.RISRequestedDate,
+                    RISApprovedBySystemUserId = model.RISApprovedBySystemUserId,
+                    RISApprovedDate = model.RISApprovedDate,
+                    RISIssuedBySystemUserId = model.RISIssuedBySystemUserId,
+                    RISIssuedDate = model.RISIssuedDate,
+                    RISReceivedBySystemUserId = model.RISReceivedBySystemUserId,
+                    RISReceivedDate = model.RISReceivedDate,
+                    IsActive = model.IsActive,
+                    //IsApproved = model.IsApproved
+                };
+
+                //if (supplyRIS.IsApproved)
+                //{
+                //    supplyRIS.IsApproved = true;
+                //    supplyRIS.ApprovedOn = DateTime.UtcNow;
+
+                //    List<TblSupplyRISItem>? SupplyRISItems = _getTools.Supply.GetTblSupplyRISItems(context)?.Where(x => x.SupplyRISId == supplyRIS.Id).ToList();
+                //    foreach (var SupplyRISItem in SupplyRISItems)
+                //    {
+                //        //Dito magbabawas ng quantity if approved
+                //    }
+                //}
+
+                long supplyRISId = await _editTools.Supply.EditTblSupplyRISAsync(supplyRIS, model.ActionBySystemUserId, context);
+
+
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { SupplyRISId = supplyRISId }, $"Supply RIS has been {(model.Id == 0 ? "added" : "updated")}"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("ris-item/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditSupplyRISItem([FromBody] EditSupplyRISItemQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                TblSupplyRISItem supplyRISItem = new()
+                {
+                    Id = model.Id,
+                    SupplyRISId = model.RISId,
+                    StockNumber = model.StockNumber,
+                    UnitId = model.UnitId,
+                    ItemDescription = model.ItemDescription,
+                    RequisitionQuantity = model.RequisitionQuantity,
+                    IsAvailable = model.IsAvailable,
+                    IssueQuantity = model.IssueQuantity,
+                    ItemRemarks = model.ItemRemarks,
+                    IsActive = model.IsActive
+                };
+
+                long supplyRISItemId = await _editTools.Supply.EditTblSupplyRISItemAsync(supplyRISItem, model.ActionBySystemUserId, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { SupplyRISItemId = supplyRISItemId }, $"Supply RIS Item has been {(model.Id == 0 ? "added" : "updated")}"));
 
             }
             catch (Exception ex)
@@ -871,6 +1704,64 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok($"Supply Unit has been deleted"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpDelete("ris/delete/{risId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteSupplyRIS([FromQuery] SoloQueryParams model, [FromRoute] long risId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _editTools.Supply.DeleteTblSupplyRISAsync(risId, model.ActionBySystemUserId, context);
+
+                if (!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this Supply RIS, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Supply RIS has been deleted"));
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpDelete("ris-item/delete/{supplyRISItemId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteSupplyRISItem([FromQuery] SoloQueryParams model, [FromRoute] long supplyRISItemId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+
+                bool isDeleted = await _editTools.Supply.DeleteTblSupplyRISItemAsync(supplyRISItemId, model.ActionBySystemUserId, context);
+
+                if (!isDeleted)
+                    return Ok(ApiResponse<object>.Ok($"Unable to delete this Supply RIS Item, try again later"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok($"Supply RIS Item has been deleted"));
 
             }
             catch (Exception ex)

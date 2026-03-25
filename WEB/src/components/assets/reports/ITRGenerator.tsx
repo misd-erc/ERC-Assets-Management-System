@@ -221,6 +221,13 @@ function formatLongDate(date?: string | Date) {
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
+function formatShortDate(dateStr?: string) {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  return `${parts[1]}-${parts[2]}-${parts[0]}`;
+}
+
 /* -------------------------------- HELPERS -------------------------------- */
 
 function currency(val?: number | null) {
@@ -253,6 +260,7 @@ const ITRDocument = ({
   toEmployee,
   transferType,
   nonPlantillaEmployee,
+  signatureDate,
 }: {
   rows: ITRRow[];
   itrNumber: string;
@@ -261,6 +269,7 @@ const ITRDocument = ({
   toEmployee: NormalizedEmployee;
   transferType: TransferType;
   nonPlantillaEmployee?: NormalizedEmployee | null;
+  signatureDate?: string;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -384,6 +393,7 @@ const ITRDocument = ({
           <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 2 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 2 }]}>Position/Office</Text>
           <View>
+            {signatureDate ? <Text style={[styles.sigDateValue, { textAlign: "center" }]}>{formatShortDate(signatureDate)}</Text> : null}
             <View style={styles.sigDateRow}>
               <View style={styles.sigDateLine} />
             </View>
@@ -400,6 +410,7 @@ const ITRDocument = ({
           <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 2 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 2 }]}>Position/Office</Text>
           <View>
+            {signatureDate ? <Text style={[styles.sigDateValue, { textAlign: "center" }]}>{formatShortDate(signatureDate)}</Text> : null}
             <View style={styles.sigDateRow}>
               <View style={styles.sigDateLine} />
             </View>
@@ -418,6 +429,7 @@ const ITRDocument = ({
           <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 2 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 2 }]}>Position/Office</Text>
           <View>
+            {signatureDate ? <Text style={[styles.sigDateValue, { textAlign: "center" }]}>{formatShortDate(signatureDate)}</Text> : null}
             <View style={styles.sigDateRow}>
               <View style={styles.sigDateLine} />
             </View>
@@ -441,7 +453,8 @@ export class ITRGenerator {
     items: any[],
     transferDate: string,
     transferType: TransferType,
-    existingNumber?: string
+    existingNumber?: string,
+    signatureDate?: string
   ): Promise<string> {
     const itrNumber = existingNumber || this.generateITRNumber();
     const rows = this.buildRowsFromItems(items);
@@ -454,6 +467,7 @@ export class ITRGenerator {
         fromEmployee={fromEmployee}
         toEmployee={toEmployee}
         transferType={transferType}
+        signatureDate={signatureDate}
       />
     ).toBlob();
 

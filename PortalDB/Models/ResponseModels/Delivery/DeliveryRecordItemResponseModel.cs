@@ -19,7 +19,7 @@ namespace PortalDB.Models.ResponseModels.Delivery
         public string ItemDescription { get; set; } = string.Empty;
         public string ItemSpecification { get; set; } = string.Empty;
         public long? ItemQuantity { get; set; }
-        public int? CurrentStock { get; set; }
+        //public int? CurrentStock { get; set; }
         public TblSupplyUnit? MeasurementUnit { get; set; }
         public long? UnitCost { get; set; }
         public int? ReorderPoint { get; set; }

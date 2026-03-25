@@ -12,8 +12,8 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    [Migration("20260317150500_AddingDescLegend")]
-    partial class AddingDescLegend
+    [Migration("20260322110151_UpdatedRISTbl")]
+    partial class UpdatedRISTbl
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -96,10 +96,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("DeliveryRecordItemCreatedAt");
 
-                    b.Property<int?>("CurrentStock")
-                        .HasColumnType("int")
-                        .HasColumnName("DeliveryRecordItemCurrentStock");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("DeliveryRecordItemIsActive");
@@ -112,8 +108,8 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("DeliveryRecordItemDescription");
 
-                    b.Property<long?>("ItemQuantity")
-                        .HasColumnType("bigint")
+                    b.Property<int?>("ItemQuantity")
+                        .HasColumnType("int")
                         .HasColumnName("DeliveryRecordItemQuantity");
 
                     b.Property<string>("ItemSpecificationEncrypted")
@@ -151,6 +147,118 @@ namespace PortalDB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblDeliveryRecordItems", "asset");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblDisposal", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("ApprovedBySystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalApprovedBySystemUserId");
+
+                    b.Property<string>("BuyerEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalBuyer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalCreatedAt");
+
+                    b.Property<DateTime?>("DateApproved")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalDateApproved");
+
+                    b.Property<DateTime?>("DateDisposed")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalDateDisposed");
+
+                    b.Property<DateTime?>("DateRequested")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalDateRequested");
+
+                    b.Property<string>("DisposalNumberEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalNumber");
+
+                    b.Property<string>("Group")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalGroup");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("DisposalIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("DisposalIsDeleted");
+
+                    b.Property<string>("MethodEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalMethod");
+
+                    b.Property<decimal?>("ProceedAmount")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("DisposalProceedAmount");
+
+                    b.Property<string>("ReasonEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalReason");
+
+                    b.Property<string>("RemarksEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalRemarks");
+
+                    b.Property<long?>("RequestedBySystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalRequestedBySystemUserId");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DisposalStatus");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblDisposals", "asset");
+                });
+
+            modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblDisposalItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalItemId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DisposalItemCreatedAt");
+
+                    b.Property<long?>("DisposalId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DisposalId");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("DisposalItemIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("DisposalItemIsDeleted");
+
+                    b.Property<long?>("PTAId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("PTAId");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblDisposalItems", "asset");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblPTA", b =>
@@ -638,11 +746,11 @@ namespace PortalDB.Migrations
 
                     b.Property<DateTime?>("ApprovedOn")
                         .HasColumnType("datetime2")
-                        .HasColumnName("SupplyIARCreatedAt");
+                        .HasColumnName("SupplyIARApprovedOn");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
-                        .HasColumnName("SupplyIARApprovedOn");
+                        .HasColumnName("SupplyIARCreatedAt");
 
                     b.Property<long?>("DivisionId")
                         .HasColumnType("bigint")
@@ -730,10 +838,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("SupplyItemCreatedAt");
 
-                    b.Property<int?>("CurrentStock")
-                        .HasColumnType("int")
-                        .HasColumnName("SupplyItemCurrentStock");
-
                     b.Property<string>("DescriptionEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyItemDescription");
@@ -788,33 +892,25 @@ namespace PortalDB.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<DateTime?>("ApprovedOn")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("SupplyRISCreatedAt");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
-                        .HasColumnName("SupplyRISApprovedOn");
+                        .HasColumnName("SupplyRISCreatedAt");
 
                     b.Property<long?>("DivisionId")
                         .HasColumnType("bigint")
                         .HasColumnName("DivisionId");
 
+                    b.Property<string>("EntityNameEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyRISEntityName");
+
                     b.Property<string>("FundClusterEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyRISFundCluster");
 
-                    b.Property<string>("FundEntityNameEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyRISEntityName");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("SupplyRISIsActive");
-
-                    b.Property<bool>("IsApproved")
-                        .HasColumnType("bit")
-                        .HasColumnName("SupplyRISIsApproved");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit")
@@ -828,9 +924,17 @@ namespace PortalDB.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("SupplyRISApprovedBySystemUserId");
 
+                    b.Property<DateTime?>("RISApprovedDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyRISApprovedDate");
+
                     b.Property<long?>("RISIssuedBySystemUserId")
                         .HasColumnType("bigint")
                         .HasColumnName("SupplyRISIssuedBySystemUserId");
+
+                    b.Property<DateTime?>("RISIssuedDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyRISIssuedDate");
 
                     b.Property<string>("RISNumberEncrypted")
                         .HasColumnType("nvarchar(max)")
@@ -840,13 +944,21 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyRISPurpose");
 
-                    b.Property<long?>("RISRecievedBySystemUserId")
+                    b.Property<long?>("RISReceivedBySystemUserId")
                         .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISRecievedBySystemUserId");
+                        .HasColumnName("SupplyRISReceivedBySystemUserId");
+
+                    b.Property<DateTime?>("RISReceivedDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyRISReceivedDate");
 
                     b.Property<long?>("RISRequestedBySystemUserId")
                         .HasColumnType("bigint")
                         .HasColumnName("SupplyRISRequestedBySystemUserId");
+
+                    b.Property<DateTime?>("RISRequestedDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyRISRequestedDate");
 
                     b.Property<string>("ResponsibilityCenterCodeEncrypted")
                         .HasColumnType("nvarchar(max)")
@@ -894,10 +1006,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyRISItemRemarks");
 
-                    b.Property<long?>("RISId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SupplyRISId");
-
                     b.Property<long>("RequisitionQuantity")
                         .HasColumnType("bigint")
                         .HasColumnName("SupplyRISItemRequisitionQuantity");
@@ -905,6 +1013,10 @@ namespace PortalDB.Migrations
                     b.Property<string>("StockNumberEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyRISItemStockNumber");
+
+                    b.Property<long?>("SupplyRISId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyRISId");
 
                     b.Property<long?>("UnitId")
                         .HasColumnType("bigint")

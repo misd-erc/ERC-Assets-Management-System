@@ -106,7 +106,7 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, avai
         itemQuantity: item.itemQuantity || 0,
         measurementUnitId: item.measurementUnit?.id || (item as any).measurementUnitId || 0,
         unitCost: item.unitCost || 0,
-        currentStock: item.currentStock || 0,
+        currentStock: 0,
         reorderPoint: item.reorderPoint || 0,
         storageLocationId: item.storageLocation?.id || (item as any).storageLocationId || 0,
         vendorId: item.vendor?.id || (item as any).vendorId || 0,

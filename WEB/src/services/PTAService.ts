@@ -36,8 +36,8 @@ export class PTAService {
 
       const pageSize = 1000;
       const asOfDate = Date.toISOString().split('T')[0];
-      // Build URL with AsOfDate parameter (filters assets acquired on or before this date)
-      let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&AsOfDate=${asOfDate}&GroupName=ppe&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+      // Build URL with AsOfDate + IsAsOf=true (range filter: assets acquired on or before this date)
+      let url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&AsOfDate=${asOfDate}&IsAsOf=true&GroupName=ppe&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 
       // Add CategoryId if specified
       if (categoryId) {
@@ -75,7 +75,7 @@ export class PTAService {
 
       const pageSize = 1000;
       const asOfDate = Date.toISOString().split('T')[0];
-      // Build URL with AsOfDate parameter (filters assets acquired on or before this date) for SE assets
+      // Send exact date to backend — only assets with DateAcquired matching this date are returned
       const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&AsOfDate=${asOfDate}&GroupName=se&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 
       const response = await fetch(url, {
@@ -90,7 +90,6 @@ export class PTAService {
       const data = await response.json();
       const ptaItems: PTAData[] = data.data?.items || [];
 
-      // Convert PTA data to Asset format
       const assets: Asset[] = ptaItems.map(item => this.mapPTAToAsset(item));
 
       return assets;
@@ -100,7 +99,27 @@ export class PTAService {
     }
   }
 
-  private static mapPTAToAsset(ptaItem: PTAData): Asset {
+  static async getAllForSEByEmployee(employeeId: number): Promise<Asset[]> {
+    try {
+      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+      const pageSize = 1000;
+      const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&GroupName=se&EmployeeId=${employeeId}&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+
+      const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error('Failed to fetch SE assets for employee');
+
+      const data = await response.json();
+      const ptaItems: PTAData[] = data.data?.items || [];
+      return ptaItems.map(item => this.mapPTAToAsset(item));
+    } catch (error) {
+      console.error('Error fetching SE assets by employee:', error);
+      throw error;
+    }
+  }
+
+  static mapPTAToAsset(ptaItem: PTAData): Asset {
     // Map category string to categoryId
     const categoryMapping: { [key: string]: number } = {
       'Information and Communication Technology Equipment': 1,

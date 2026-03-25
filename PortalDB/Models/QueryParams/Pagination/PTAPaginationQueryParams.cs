@@ -19,6 +19,11 @@ namespace PortalDB.Models.QueryParams.Pagination
         /// "As of" date filter: Returns assets acquired on or before this date
         /// </summary>
         public DateTime? AsOfDate { get; set; }
+
+        /// <summary>
+        /// If true, AsOfDate uses range filter (<=). If false or null, uses exact date match (==).
+        /// </summary>
+        public bool? IsAsOf { get; set; }
         public DateTime? EndDate { get; set; }
         public long? CategoryId { get; set; }
         public long? EmployeeId { get; set; }

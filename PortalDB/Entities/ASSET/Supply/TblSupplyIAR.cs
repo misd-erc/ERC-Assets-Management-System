@@ -97,10 +97,10 @@ namespace PortalDB.Entities.ASSET.Supply
         [Column("SupplyIARIsDeleted")]
         public bool IsDeleted { get; set; } = false;
 
-        [Column("SupplyIARCreatedAt")]
+        [Column("SupplyIARApprovedOn")]
         public DateTime? ApprovedOn { get; set; }
 
-        [Column("SupplyIARApprovedOn")]
+        [Column("SupplyIARCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

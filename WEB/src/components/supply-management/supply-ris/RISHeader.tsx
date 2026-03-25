@@ -1,0 +1,393 @@
+// src/components/supply-management/supply-ris/RISHeader.tsx
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { User } from '@/types';
+import { VwOffice, VwDivision } from '@/types'; // adjust import path
+import { EditSupplyRIS } from '@/types/supply/ris';
+import { Check, ChevronsUpDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+
+interface Props {
+  header: EditSupplyRIS;
+  offices: VwOffice[];
+  divisions: VwDivision[];
+  users: User[];
+  isViewMode: boolean;
+  onChange: (updated: Partial<EditSupplyRIS>) => void;
+}
+
+export const RISHeader = ({
+  header,
+  offices,
+  divisions,
+  users,
+  isViewMode,
+  onChange,
+}: Props) => {
+  const handleChange = (field: keyof EditSupplyRIS, value: any) => {
+    onChange({ [field]: value });
+  };
+
+  const filteredDivisions = divisions.filter((d) => d.office?.id === header.officeId);
+
+  return (
+    <div className="space-y-4 border rounded-lg p-4">
+      <h3 className="font-semibold">RIS Information</h3>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>RIS Number</Label>
+          <Input
+            value={header.risNumber}
+            onChange={(e) => handleChange('risNumber', e.target.value)}
+            placeholder="e.g., RIS-2024-001"
+            required
+            disabled={isViewMode}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Requested Date</Label>
+          <Input
+            type="date"
+            value={header.risRequestedDate}
+            onChange={(e) => handleChange('risRequestedDate', e.target.value)}
+            required
+            disabled={isViewMode}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Entity Name</Label>
+          <Input
+            value={header.entityName}
+            onChange={(e) => handleChange('entityName', e.target.value)}
+            placeholder="e.g., DOST"
+            required
+            disabled={isViewMode}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Fund Cluster</Label>
+          <Input
+            value={header.fundCluster}
+            onChange={(e) => handleChange('fundCluster', e.target.value)}
+            placeholder="e.g., General Fund"
+            required
+            disabled={isViewMode}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        {/* Office Combobox */}
+        <div className="space-y-2 min-w-0 flex flex-col">
+          <Label className="text-slate-700 font-medium">Office</Label>
+          <Popover>
+            <PopoverTrigger asChild disabled={isViewMode}>
+              <Button
+                  variant="outline"
+                  role="combobox"
+                  className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
+              >
+          <span className="truncate text-slate-700">
+            {header.officeId
+                ? offices.find((o) => o.id === header.officeId)?.name
+                : "Select Office"}
+          </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+              </Button>
+            </PopoverTrigger>
+
+            {/* Upgraded Dropdown Container */}
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
+              <Command className="bg-white">
+
+                {/* --- ENHANCED SEARCH BOX --- */}
+                <div className="p-2 bg-slate-50 border-b border-slate-100">
+                  <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                    <CommandInput
+                        placeholder="Search office..."
+                        className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                    />
+                  </div>
+                </div>
+                {/* --------------------------- */}
+
+                <CommandEmpty className="py-6 text-center text-sm text-slate-500">
+                  No office found.
+                </CommandEmpty>
+
+                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
+                  {offices.map((o) => (
+                      <CommandItem
+                          key={o.id}
+                          value={o.name}
+                          onSelect={() => {
+                            handleChange('officeId', o.id);
+                            if (o.id !== header.officeId) handleChange('divisionId', 0);
+                          }}
+                          className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                      >
+                        <span className="truncate flex-1">{o.name}</span>
+                        <Check
+                            className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
+                                header.officeId === o.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                            }`}
+                        />
+                      </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Division Combobox */}
+        <div className="space-y-2 min-w-0 flex flex-col">
+          <Label className="text-slate-700 font-medium">Division</Label>
+          <Popover>
+            <PopoverTrigger asChild disabled={isViewMode || !header.officeId}>
+              <Button
+                  variant="outline"
+                  role="combobox"
+                  className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
+              >
+          <span className="truncate text-slate-700">
+            {header.divisionId
+                ? filteredDivisions.find((d) => d.id === header.divisionId)?.name
+                : "Select Division"}
+          </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+              </Button>
+            </PopoverTrigger>
+
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
+              <Command className="bg-white">
+
+                {/* --- ENHANCED SEARCH BOX --- */}
+                <div className="p-2 bg-slate-50 border-b border-slate-100">
+                  <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                    <CommandInput
+                        placeholder="Search division..."
+                        className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                    />
+                  </div>
+                </div>
+                {/* --------------------------- */}
+
+                <CommandEmpty className="py-6 text-center text-sm text-slate-500">
+                  No division found.
+                </CommandEmpty>
+
+                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
+                  {filteredDivisions.map((d) => (
+                      <CommandItem
+                          key={d.id}
+                          value={d.name}
+                          onSelect={() => {
+                            handleChange('divisionId', d.id);
+                          }}
+                          className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                      >
+                        <span className="truncate flex-1">{d.name}</span>
+                        <Check
+                            className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
+                                header.divisionId === d.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                            }`}
+                        />
+                      </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Responsibility Center Code</Label>
+        <Input
+          value={header.responsibilityCenterCode}
+          onChange={(e) => handleChange('responsibilityCenterCode', e.target.value)}
+          placeholder="RCC-123"
+          required
+          disabled={isViewMode}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Purpose</Label>
+        <Textarea
+          value={header.risPurpose}
+          onChange={(e) => handleChange('risPurpose', e.target.value)}
+          placeholder="State the reason for the requisition"
+          required
+          disabled={isViewMode}
+        />
+      </div>
+
+      {/* User fields grouped with dates */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Requested By</Label>
+          <Select
+            value={header.risRequestedBySystemUserId?.toString() || '0'}
+            onValueChange={(val) => handleChange('risRequestedBySystemUserId', val === '0' ? undefined : Number(val))}
+            disabled={isViewMode}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select User" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Select User</SelectItem>
+              {users.map((u) => (
+                <SelectItem key={u.id} value={u.id.toString()}>
+                  {u.firstName} {u.lastName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Requested Date</Label>
+          <Input type="date" value={header.risRequestedDate} disabled className="bg-gray-100" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Approved By</Label>
+          <Select
+            value={header.risApprovedBySystemUserId?.toString() || '0'}
+            onValueChange={(val) => handleChange('risApprovedBySystemUserId', val === '0' ? undefined : Number(val))}
+            disabled={isViewMode}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select User" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Select User</SelectItem>
+              {users.map((u) => (
+                <SelectItem key={u.id} value={u.id.toString()}>
+                  {u.firstName} {u.lastName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Approved Date</Label>
+          <Input
+            type="date"
+            value={header.risApprovedDate?.slice(0, 10) || ''}
+            onChange={(e) => handleChange('risApprovedDate', e.target.value || undefined)}
+            disabled={isViewMode}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Issued By</Label>
+          <Select
+            value={header.risIssuedBySystemUserId?.toString() || '0'}
+            onValueChange={(val) => handleChange('risIssuedBySystemUserId', val === '0' ? undefined : Number(val))}
+            disabled={isViewMode}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select User" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Select User</SelectItem>
+              {users.map((u) => (
+                <SelectItem key={u.id} value={u.id.toString()}>
+                  {u.firstName} {u.lastName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Issued Date</Label>
+          <Input
+            type="date"
+            value={header.risIssuedDate?.slice(0, 10) || ''}
+            onChange={(e) => handleChange('risIssuedDate', e.target.value || undefined)}
+            disabled={isViewMode}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Received By</Label>
+          <Select
+            value={header.risReceivedBySystemUserId?.toString() || '0'}
+            onValueChange={(val) => handleChange('risReceivedBySystemUserId', val === '0' ? undefined : Number(val))}
+            disabled={isViewMode}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select User" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">Select User</SelectItem>
+              {users.map((u) => (
+                <SelectItem key={u.id} value={u.id.toString()}>
+                  {u.firstName} {u.lastName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Received Date</Label>
+          <Input
+            type="date"
+            value={header.risReceivedDate?.slice(0, 10) || ''}
+            onChange={(e) => handleChange('risReceivedDate', e.target.value || undefined)}
+            disabled={isViewMode}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Status</Label>
+        <Select
+          value={header.isActive ? 'active' : 'inactive'}
+          onValueChange={(val) => handleChange('isActive', val === 'active')}
+          disabled={isViewMode}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+};

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useSupplyUnit, useVendor, useSupplyItem } from '@/hooks';
 import { useSupplyStorageLocationStore } from '@/store/supply';
 import { getCategories } from '@/api/asset/inventoryApi';
+import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
@@ -32,7 +33,6 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
     measurementUnitId: 0,
     unitCost: 0,
     code: '',
-    currentStock: 0,
     reorderPoint: 0,
     storageLocationId: 0,
     vendorId: 0
@@ -54,7 +54,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
     setItem({ 
       itemTypeId: 1, categoryId: 0, itemDescription: '', 
       itemQuantity: 0, measurementUnitId: 0, unitCost: 0,
-      code: '', currentStock: 0, reorderPoint: 0, 
+      code: '', reorderPoint: 0,
       storageLocationId: 0, vendorId: 0 
     });
   };
@@ -68,8 +68,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
         itemDescription: '', 
         categoryId: 0,
         storageLocationId: 0, 
-        vendorId: 0, 
-        currentStock: 0, 
+        vendorId: 0,
         reorderPoint: 0 
       }));
     } else {
@@ -83,15 +82,54 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
           categoryId: selected.category?.id || 0,
           storageLocationId: selected.storageLocation?.id || 0,
           vendorId: selected.vendor?.id || 0,
-          currentStock: (selected as any).currentStock || 0,
           reorderPoint: (selected as any).reorderPoint || 0
         }));
       }
     }
   };
 
+  const validate = () => {
+    if (!item.code) {
+      toast.error('Item code is required');
+      return false;
+    }
+    if (!item.itemDescription) {
+      toast.error('Description is required');
+      return false;
+    }
+    if (item.itemTypeId === 1) { // Supply
+      if (!item.categoryId || item.categoryId === 0) {
+        toast.error('Category is required');
+        return false;
+      }
+      if (!item.measurementUnitId || item.measurementUnitId === 0) {
+        toast.error('Unit is required');
+        return false;
+      }
+      if (!item.storageLocationId || item.storageLocationId === 0) {
+        toast.error('Storage location is required');
+        return false;
+      }
+      if (!item.vendorId || item.vendorId === 0) {
+        toast.error('Vendor is required');
+        return false;
+      }
+    }
+    if (item.itemQuantity <= 0) {
+      toast.error('Quantity must be greater than 0');
+      return false;
+    }
+    if (item.unitCost < 0) {
+      toast.error('Unit cost cannot be negative');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
+
     const categoryObj = categories.find(c => c.id === Number(item.categoryId));
     const unitObj = units.find(u => u.id === Number(item.measurementUnitId));
     const vendorObj = vendors.find(v => v.id === Number(item.vendorId));
@@ -233,16 +271,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Current Stock</Label>
-                  <Input 
-                    type="number" 
-                    value={item.currentStock} 
-                    onChange={e => setItem({...item, currentStock: Number(e.target.value)})} 
-                    required={isSupply} 
-                  />
-                </div>
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label>Reorder Point</Label>
                   <Input 

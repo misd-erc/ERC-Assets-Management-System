@@ -44,6 +44,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
   const [previewUrl, setPreviewUrl] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [signatureDate, setSignatureDate] = useState(new Date().toISOString().slice(0, 10));
 
   useEffect(() => {
     if (isOpen) {
@@ -59,6 +60,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
     setSearchQuery('');
     setPreviewUrl('');
     setShowPreview(false);
+    setSignatureDate(new Date().toISOString().slice(0, 10));
   };
 
   const loadPTRRecords = async () => {
@@ -184,7 +186,8 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         ptrDetails.items,
         ptrDetails.dateAssigned,
         ptrDetails.transferType || 'REASSIGNMENT',
-        ptrDetails.transferNumber
+        ptrDetails.transferNumber,
+        signatureDate
       );
       setPreviewUrl(url);
       setShowPreview(true);
@@ -378,7 +381,14 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
                 ))}
               </div>
             </div>
-          </div>
+            <div className="space-y-1 pt-2">
+              <label className="text-sm font-medium text-gray-700">Signature Date</label>
+              <Input
+                type="date"
+                value={signatureDate}
+                onChange={(e) => setSignatureDate(e.target.value)}
+              />
+            </div>          </div>
         );
     }
   };

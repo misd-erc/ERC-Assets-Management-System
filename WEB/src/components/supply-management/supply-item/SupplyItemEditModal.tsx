@@ -6,8 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-
-// Imports for Searchable Dropdown (Combobox)
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -23,12 +21,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-
 import { useSupplyItem, useSupplyUnit, useSupplyStorageLocation, useVendor } from '@/hooks';
 import { SupplyItem, VwSupplyItem } from '@/types';
 import { getCategories } from '@/api/asset/inventoryApi';
 
-// --- Reusable Searchable Select Component ---
 interface SearchableSelectProps {
   value: number;
   onChange: (value: number) => void;
@@ -39,7 +35,6 @@ interface SearchableSelectProps {
 
 const SearchableSelect = ({ value, onChange, options, placeholder = "Select...", disabled = false }: SearchableSelectProps) => {
   const [open, setOpen] = useState(false);
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -53,9 +48,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Select...",
             !value && "text-muted-foreground"
           )}
         >
-          {value
-            ? options.find((item) => item.id === value)?.name
-            : placeholder}
+          {value ? options.find((item) => item.id === value)?.name : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -74,12 +67,7 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Select...",
                     setOpen(false);
                   }}
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === item.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
+                  <Check className={cn("mr-2 h-4 w-4", value === item.id ? "opacity-100" : "opacity-0")} />
                   {item.name}
                 </CommandItem>
               ))}
@@ -91,25 +79,25 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Select...",
   );
 };
 
-// --- Main Component ---
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: 'add' | 'edit' | 'view';
   supplyItem?: VwSupplyItem | null;
+  groupContext?: { code: string; description: string };
+  onSuccess?: () => void;
 }
 
-export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Props) => {
+export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem, groupContext, onSuccess }: Props) => {
   const { addSupplyItem, updateSupplyItem } = useSupplyItem();
   const { units, fetchSupplyUnits } = useSupplyUnit();
   const { storagelocations, fetchSupplyStorageLocations } = useSupplyStorageLocation();
   const { vendors, fetchVendors } = useVendor();
-  
   const [loading, setLoading] = useState(false);
-  // UPDATED: Added isActive to state type definition
   const [categories, setCategories] = useState<{ id: number; name: string; isActive?: boolean }[]>([]);
 
   const isViewMode = mode === 'view';
+  const isAddWithGroup = mode === 'add' && groupContext !== undefined;
 
   const [form, setForm] = useState<Partial<SupplyItem>>({
     id: 0,
@@ -118,7 +106,6 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
     categoryId: 0,
     measurementUnitId: 0,
     quantity: 0,
-    currentStock: 0,
     unitCost: 0,
     reorderPoint: 0,
     storageLocationId: 0,
@@ -150,35 +137,48 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
         categoryId: supplyItem.category?.id || 0,
         measurementUnitId: supplyItem.measurementUnit?.id || 0,
         quantity: supplyItem.quantity,
-        currentStock: supplyItem.currentStock,
         unitCost: supplyItem.unitCost,
         reorderPoint: supplyItem.reorderPoint,
         storageLocationId: supplyItem.storageLocation?.id || 0,
         vendorId: supplyItem.vendor?.id || 0,
-        isActive: supplyItem.isActive
+        isActive: supplyItem.isActive,
       });
-    } else {
-      setForm({
-        code: '',
-        description: '',
-        categoryId: 0,
-        measurementUnitId: 0,
-        quantity: 0,
-        currentStock: 0,
-        unitCost: 0,
-        reorderPoint: 0,
-        storageLocationId: 0,
-        vendorId: 0,
-        isActive: true
-      });
+    } else if (mode === 'add') {
+      if (groupContext) {
+        setForm({
+          code: groupContext.code,
+          description: groupContext.description,
+          categoryId: 0,
+          measurementUnitId: 0,
+          quantity: 0,
+          unitCost: 0,
+          reorderPoint: 0,
+          storageLocationId: 0,
+          vendorId: 0,
+          isActive: true,
+        });
+      } else {
+        setForm({
+          code: '',
+          description: '',
+          categoryId: 0,
+          measurementUnitId: 0,
+          quantity: 0,
+          unitCost: 0,
+          reorderPoint: 0,
+          storageLocationId: 0,
+          vendorId: 0,
+          isActive: true,
+        });
+      }
     }
-  }, [mode, supplyItem, open]);
+  }, [mode, supplyItem, open, groupContext]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isViewMode) {
-        onOpenChange(false);
-        return;
+      onOpenChange(false);
+      return;
     }
 
     setLoading(true);
@@ -188,24 +188,23 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
       } else if (supplyItem) {
         await updateSupplyItem(supplyItem.id, form);
       }
+      onSuccess?.();
       onOpenChange(false);
     } finally {
       setLoading(false);
     }
   };
 
-  // --- Helper to filter active options ---
-  // Returns options that are either Active OR match the current selected ID (so we don't break existing data)
   const getFilteredOptions = (items: any[], currentId: number) => {
     if (!items) return [];
     return items.filter(item => item.isActive === true || item.id === currentId);
   };
 
   const getTitle = () => {
-      if (mode === 'add') return 'Add Supply Item';
-      if (mode === 'edit') return 'Edit Supply Item';
-      return 'View Supply Item Details';
-  }
+    if (mode === 'add') return 'Add Supply Item';
+    if (mode === 'edit') return 'Edit Supply Item';
+    return 'View Supply Item Details';
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -220,20 +219,20 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Item Code</Label>
-              <Input 
-                value={form.code} 
-                onChange={e => setForm({...form, code: e.target.value})} 
+              <Input
+                value={form.code}
+                onChange={e => setForm({ ...form, code: e.target.value })}
                 placeholder="e.g. ITM-001"
-                required 
-                disabled={isViewMode}
+                required
+                disabled={isViewMode || isAddWithGroup}
               />
             </div>
-             <div className="space-y-2">
+            <div className="space-y-2">
               <Label>Unit</Label>
               <SearchableSelect
                 value={form.measurementUnitId || 0}
-                onChange={(val) => setForm({...form, measurementUnitId: val})}
-                options={getFilteredOptions(units, form.measurementUnitId || 0)} // Filtered
+                onChange={(val) => setForm({ ...form, measurementUnitId: val })}
+                options={getFilteredOptions(units, form.measurementUnitId || 0)}
                 placeholder="Select Unit"
                 disabled={isViewMode}
               />
@@ -242,30 +241,42 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
 
           <div className="space-y-2">
             <Label>Description</Label>
-            <Textarea 
-              value={form.description} 
-              onChange={e => setForm({...form, description: e.target.value})} 
-              required 
-              disabled={isViewMode}
+            <Textarea
+              value={form.description}
+              onChange={e => setForm({ ...form, description: e.target.value })}
+              required
+              disabled={isViewMode || isAddWithGroup}
             />
           </div>
 
-          <div className="grid grid-cols-4 gap-4">
-             <div className="space-y-2">
-              <Label>Current Stock</Label>
-              <Input type="number" value={form.currentStock} onChange={e => setForm({...form, currentStock: Number(e.target.value)})} disabled={isViewMode} />
-            </div>
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Quantity</Label>
-              <Input type="number" value={form.quantity ?? 0} onChange={e => setForm({...form, quantity: Number(e.target.value)})} disabled={isViewMode} />
+              <Input
+                type="number"
+                value={form.quantity ?? 0}
+                onChange={e => setForm({ ...form, quantity: Number(e.target.value) })}
+                disabled={isViewMode}
+              />
             </div>
             <div className="space-y-2">
               <Label>Unit Cost</Label>
-              <Input type="number" step="0.01" value={form.unitCost} onChange={e => setForm({...form, unitCost: Number(e.target.value)})} disabled={isViewMode} />
+              <Input
+                type="number"
+                step="0.01"
+                value={form.unitCost}
+                onChange={e => setForm({ ...form, unitCost: Number(e.target.value) })}
+                disabled={isViewMode}
+              />
             </div>
             <div className="space-y-2">
               <Label>Reorder Point</Label>
-              <Input type="number" value={form.reorderPoint} onChange={e => setForm({...form, reorderPoint: Number(e.target.value)})} disabled={isViewMode} />
+              <Input
+                type="number"
+                value={form.reorderPoint}
+                onChange={e => setForm({ ...form, reorderPoint: Number(e.target.value) })}
+                disabled={isViewMode}
+              />
             </div>
           </div>
 
@@ -274,8 +285,8 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
               <Label>Category</Label>
               <SearchableSelect
                 value={form.categoryId || 0}
-                onChange={(val) => setForm({...form, categoryId: val})}
-                options={getFilteredOptions(categories, form.categoryId || 0)} // Filtered
+                onChange={(val) => setForm({ ...form, categoryId: val })}
+                options={getFilteredOptions(categories, form.categoryId || 0)}
                 placeholder="Select Category"
                 disabled={isViewMode}
               />
@@ -285,8 +296,8 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
               <Label>Vendor</Label>
               <SearchableSelect
                 value={form.vendorId || 0}
-                onChange={(val) => setForm({...form, vendorId: val})}
-                options={getFilteredOptions(vendors, form.vendorId || 0)} // Filtered
+                onChange={(val) => setForm({ ...form, vendorId: val })}
+                options={getFilteredOptions(vendors, form.vendorId || 0)}
                 placeholder="Select Vendor"
                 disabled={isViewMode}
               />
@@ -298,31 +309,31 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem }: Pr
               <Label>Storage Location</Label>
               <SearchableSelect
                 value={form.storageLocationId || 0}
-                onChange={(val) => setForm({...form, storageLocationId: val})}
-                options={getFilteredOptions(storagelocations, form.storageLocationId || 0)} // Filtered
+                onChange={(val) => setForm({ ...form, storageLocationId: val })}
+                options={getFilteredOptions(storagelocations, form.storageLocationId || 0)}
                 placeholder="Select Location"
                 disabled={isViewMode}
               />
             </div>
-            
+
             <div className="flex items-center space-x-2 pt-8">
-                <Switch 
-                  checked={form.isActive} 
-                  onCheckedChange={c => setForm({...form, isActive: c})} 
-                  disabled={isViewMode}
-                />
-                <Label>Active Status</Label>
+              <Switch
+                checked={form.isActive}
+                onCheckedChange={c => setForm({ ...form, isActive: c })}
+                disabled={isViewMode}
+              />
+              <Label>Active Status</Label>
             </div>
           </div>
 
           <DialogFooter>
             {isViewMode ? (
-                <Button type="button" onClick={() => onOpenChange(false)}>Close</Button>
+              <Button type="button" onClick={() => onOpenChange(false)}>Close</Button>
             ) : (
-                <>
-                    <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
-                </>
+              <>
+                <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>Cancel</Button>
+                <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
+              </>
             )}
           </DialogFooter>
         </form>

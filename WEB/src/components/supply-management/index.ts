@@ -8,6 +8,9 @@ export { SupplyItemTable } from "./supply-item/SupplyItemTable";
 export { SupplyItemSearchBar } from "./supply-item/SupplyItemSearchBar";
 export { SupplyItemEditModal } from "./supply-item/SupplyItemEditModal";
 export { SupplyItemDeleteModal } from "./supply-item/SupplyItemDeleteModal";
+export { SupplyGroupedItemTable } from "./supply-item/supply-grouped/SupplyGroupedItemTable";
+export { SupplyGroupItemsModal } from "./supply-item/supply-grouped/SupplyGroupItemsModal";
+export { SupplyGroupedTabContent } from "./supply-item/supply-grouped/SupplyGroupedTabContent";
 
 // Supply Unit Components
 export { SupplyUnitTabContent } from "./supply-unit/SupplyUnitTabContent";

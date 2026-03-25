@@ -30,6 +30,11 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
         public async Task<TblSupplyRIS?> GetTblSupplyRISAsync(long? id, PortalDbContext context) => await context.TblSupplyRISs.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public IQueryable<TblSupplyRISItem>? GetTblSupplyRISItems(PortalDbContext context) => context.TblSupplyRISItems.AsNoTracking().Where(x => !x.IsDeleted);
         public async Task<TblSupplyRISItem?> GetTblSupplyRISItemAsync(long? id, PortalDbContext context) => await context.TblSupplyRISItems.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
-
+        public async Task<List<TblSupplyUnit>> GetTblSupplyUnitsByIds(PortalDbContext context, List<long> ids)
+        {
+            return await context.TblSupplyUnits
+                .Where(u => ids.Contains(u.Id))
+                .ToListAsync();
+        }
     }
 }

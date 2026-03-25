@@ -16,7 +16,7 @@ namespace PortalDB.Entities.ASSET.Supply
         public long Id { get; set; }
 
         [Column("SupplyRISId")]
-        public long? RISId { get; set; }
+        public long? SupplyRISId { get; set; }
 
         [Column("SupplyRISItemStockNumber")]
         public string? StockNumberEncrypted { get; set; }

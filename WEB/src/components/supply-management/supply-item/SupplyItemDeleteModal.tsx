@@ -10,14 +10,16 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   supplyItem?: VwSupplyItem | null;
+  onSuccess?: () => void;
 }
 
-export const SupplyItemDeleteModal = ({ open, onOpenChange, supplyItem }: Props) => {
+export const SupplyItemDeleteModal = ({ open, onOpenChange, supplyItem, onSuccess }: Props) => {
   const { deleteSupplyItem } = useSupplyItem();
 
   const handleDelete = async () => {
     if (supplyItem) {
       await deleteSupplyItem(supplyItem.id);
+      onSuccess?.(); // Notify parent to refresh lists
       onOpenChange(false);
     }
   };

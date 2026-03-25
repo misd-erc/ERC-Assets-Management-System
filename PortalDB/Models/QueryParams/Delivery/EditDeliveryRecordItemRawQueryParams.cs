@@ -14,10 +14,10 @@ namespace PortalDB.Models.QueryParams.Delivery
         [Required] public long CategoryId { get; set; }
         [Required] public string ItemDescription { get; set; } = string.Empty;
         public string ItemSpecification { get; set; } = string.Empty;
-        [Required] public long ItemQuantity { get; set; }
-        public int CurrentStock { get; set; }
+        [Required] public int ItemQuantity { get; set; }
+        //public int CurrentStock { get; set; }
         public int ReorderPoint { get; set; }
-        [Required] public long UnitId { get; set; }
+        [Required] public long MeasurementUnitId { get; set; }
         [Required] public long UnitCost { get; set; }
         public long StorageLocationId { get; set; }
         public long VendorId { get; set; }

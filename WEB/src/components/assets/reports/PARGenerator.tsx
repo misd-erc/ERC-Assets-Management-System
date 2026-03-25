@@ -170,7 +170,12 @@ function currency(val?: number | null) {
 function truncate(text = "", max = 250) {
   return text.length > max ? text.slice(0, max) + "…" : text;
 }
-
+function formatShortDate(dateStr?: string) {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  return `${parts[1]}-${parts[2]}-${parts[0]}`;
+}
 interface PARRow {
   qty: number;
   unit: string;
@@ -187,6 +192,7 @@ const PARDocument = ({
   office,
   parNumber,
   nonPlantillaEmployeeName,
+  signatureDate,
 }: {
   rows: PARRow[];
   employeeName: string;
@@ -194,6 +200,7 @@ const PARDocument = ({
   office: string;
   parNumber?: string;
   nonPlantillaEmployeeName?: string;
+  signatureDate?: string;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -260,6 +267,7 @@ const PARDocument = ({
           <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 2 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 2 }]}>Position/Office</Text>
           <View>
+            {signatureDate ? <Text style={[styles.sigDateValue, { textAlign: "center" }]}>{formatShortDate(signatureDate)}</Text> : null}
             <View style={styles.sigDateRow}>
               <View style={styles.sigDateLine} />
             </View>
@@ -277,6 +285,7 @@ const PARDocument = ({
            <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 2 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 2 }]}>Position/Office</Text>
           <View>
+            {signatureDate ? <Text style={[styles.sigDateValue, { textAlign: "center" }]}>{formatShortDate(signatureDate)}</Text> : null}
             <View style={styles.sigDateRow}>
               <View style={styles.sigDateLine} />
             </View>
@@ -305,7 +314,7 @@ export class PARGenerator {
     return `${year}-${month}-${seqStr}`;
   }
 
-  static async generatePARPreview(item: Asset, movement: UnifiedMovement | null, parNumber?: string): Promise<string> {
+  static async generatePARPreview(item: Asset, movement: UnifiedMovement | null, parNumber?: string, signatureDate?: string): Promise<string> {
     if (!item) {
       alert('No item selected. Cannot generate PAR preview.');
       return '';
@@ -358,6 +367,7 @@ export class PARGenerator {
         office={office}
         parNumber={number}
         nonPlantillaEmployeeName={nonPlantillaEmployeeName}
+        signatureDate={signatureDate}
       />
     ).toBlob();
     return URL.createObjectURL(blob);
