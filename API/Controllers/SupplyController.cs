@@ -368,7 +368,6 @@ namespace API.Controllers
             try
             {
                 // 1. Fetch all supply items
-                // 1. Fetch all supply items
                 IEnumerable<TblSupplyItem>? supplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
 
                 // 2. Apply filters
@@ -395,7 +394,7 @@ namespace API.Controllers
                             Code = g.Key.Code,
                             Description = g.Key.Description,
                             TotalCurrentStock = g.Sum(x => x.Quantity ?? 0),
-                            TotalStockCost = g.Sum(x => (x.Quantity ?? 0) * (x.UnitCost ?? 0)),
+                            UnitCost = firstItem.UnitCost ?? 0, // <-- Capture UnitCost here instead of calculating total cost early
                             Id = firstItem.Id,
                             IARId = firstItem.IARId,
                             IsActive = firstItem.IsActive,
@@ -433,34 +432,28 @@ namespace API.Controllers
                     var key = (x.Code, x.Description);
                     var issuedQty = issuedStockGroup.GetValueOrDefault(key, 0);
 
+                    // Calculate final stock once so we can use it for both Stock and Cost
+                    var finalCurrentStock = Math.Max(0, x.TotalCurrentStock - issuedQty);
+
                     return new SupplyItemGroupedResponseModel
                     {
                         Id = x.Id,
                         Code = x.Code ?? string.Empty,
                         IARId = x.IARId,
                         Description = x.Description ?? string.Empty,
-                        TotalCurrentStock = (int?)Math.Max(0, x.TotalCurrentStock - issuedQty), // ensure non-negative
-                        TotalStockCost = (int?)x.TotalStockCost,
+                        TotalCurrentStock = (int?)finalCurrentStock,
+                        TotalStockCost = (int?)(finalCurrentStock * x.UnitCost), // <-- Multiply updated stock by the item's unit cost
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
                 }).ToList();
 
-                // Return paginated response
-                return Ok(ApiResponse<SupplyItemGroupedResponseModel>.OkPaginated(
-                    supplyItemsResponses,
-                    model.PageNumber,
-                    model.PageSize,
-                    totalCount,
-                    "Grouped Supply Items have been retrieved"
-                ));
-
-                // 7. Commit transaction (though no changes, kept for consistency)
+                // 8. Commit transaction and log audit trail
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Viewed Grouped Supply Items", actionBy: model.ActionBySystemUserId);
 
-                // 8. Return paginated result
+                // 9. Return paginated result (Removed duplicate return block)
                 return Ok(ApiResponse<SupplyItemGroupedResponseModel>.OkPaginated(
                     supplyItemsResponses,
                     model.PageNumber,
