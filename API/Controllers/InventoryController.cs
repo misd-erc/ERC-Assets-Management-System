@@ -282,7 +282,7 @@ namespace API.Controllers
                     int skip = (model.PageNumber - 1) * model.PageSize;
 
                     var ptasList = ptas
-                        .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt)
+                        .OrderByDescending(x => x.CreatedAt)
                         .Skip(skip)
                         .Take(model.PageSize)
                         .ToList();
