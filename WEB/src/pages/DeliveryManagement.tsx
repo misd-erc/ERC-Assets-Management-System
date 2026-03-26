@@ -15,7 +15,7 @@ const DeliveryManagement = () => {
 
       <DeliveryGeneralHeader />
 
-      <Tabs defaultValue="iar" className="space-y-4">
+      <Tabs defaultValue="deliveries" className="space-y-4">
         <TabsList>
           <TabsTrigger value="deliveries">Delivery Records</TabsTrigger>
           <TabsTrigger value="iar">Inspection & Acceptance</TabsTrigger>
