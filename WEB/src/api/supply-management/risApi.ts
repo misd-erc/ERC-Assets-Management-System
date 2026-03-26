@@ -18,6 +18,7 @@ const mapVwSupplyRIS = (raw: any): VwSupplyRIS => ({
   responsibilityCenterCode: raw.responsibilityCenterCode,
   risNumber: raw.risNumber,
   risPurpose: raw.risPurpose,
+  requestedBySystemUser: raw.requestedBySystemUser,
   risRequestedDate: raw.risRequestedDate,
   approvedBySystemUser: raw.approvedBySystemUser,
   risApprovedDate: raw.risApprovedDate,

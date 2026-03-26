@@ -249,56 +249,132 @@ export const RISHeader = ({
       </div>
 
       {/* User fields grouped with dates */}
+      {/* ---------------- REQUESTED BY SECTION ---------------- */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Requested By</Label>
-          <Select
-            value={header.risRequestedBySystemUserId?.toString() || '0'}
-            onValueChange={(val) => handleChange('risRequestedBySystemUserId', val === '0' ? undefined : Number(val))}
-            disabled={isViewMode}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select User" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Select User</SelectItem>
-              {users.map((u) => (
-                <SelectItem key={u.id} value={u.id.toString()}>
-                  {u.firstName} {u.lastName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="space-y-2 min-w-0 flex flex-col">
+          <Label className="text-slate-700 font-medium">Requested By</Label>
+          <Popover>
+            <PopoverTrigger asChild disabled={isViewMode}>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
+              >
+                <span className="truncate text-slate-700">
+                  {header.risRequestedBySystemUserId
+                    ? users
+                        .filter((u) => u.id === header.risRequestedBySystemUserId)
+                        .map((u) => `${u.firstName} ${u.lastName}`)[0] || "Select User"
+                    : "Select User"}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
+              <Command className="bg-white">
+                <div className="p-2 bg-slate-50 border-b border-slate-100">
+                  <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                    <CommandInput
+                      placeholder="Search user..."
+                      className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                    />
+                  </div>
+                </div>
+                <CommandEmpty className="py-6 text-center text-sm text-slate-500">No user found.</CommandEmpty>
+                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
+                  <CommandItem
+                    onSelect={() => handleChange('risRequestedBySystemUserId', undefined)}
+                    className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50"
+                  >
+                    <span className="truncate flex-1">Clear Selection</span>
+                  </CommandItem>
+                  {users.map((u) => (
+                    <CommandItem
+                      key={u.id}
+                      value={`${u.firstName} ${u.lastName}`}
+                      onSelect={() => handleChange('risRequestedBySystemUserId', u.id)}
+                      className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                    >
+                      <span className="truncate flex-1">{u.firstName} {u.lastName}</span>
+                      <Check
+                        className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
+                          header.risRequestedBySystemUserId === u.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                        }`}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="space-y-2">
-          <Label>Requested Date</Label>
+          <Label className="text-slate-700 font-medium">Requested Date</Label>
           <Input type="date" value={header.risRequestedDate} disabled className="bg-gray-100" />
         </div>
       </div>
 
+      {/* ---------------- APPROVED BY SECTION ---------------- */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Approved By</Label>
-          <Select
-            value={header.risApprovedBySystemUserId?.toString() || '0'}
-            onValueChange={(val) => handleChange('risApprovedBySystemUserId', val === '0' ? undefined : Number(val))}
-            disabled={isViewMode}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select User" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Select User</SelectItem>
-              {users.map((u) => (
-                <SelectItem key={u.id} value={u.id.toString()}>
-                  {u.firstName} {u.lastName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="space-y-2 min-w-0 flex flex-col">
+          <Label className="text-slate-700 font-medium">Approved By</Label>
+          <Popover>
+            <PopoverTrigger asChild disabled={isViewMode}>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
+              >
+                <span className="truncate text-slate-700">
+                  {header.risApprovedBySystemUserId
+                    ? users
+                        .filter((u) => u.id === header.risApprovedBySystemUserId)
+                        .map((u) => `${u.firstName} ${u.lastName}`)[0] || "Select User"
+                    : "Select User"}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
+              <Command className="bg-white">
+                <div className="p-2 bg-slate-50 border-b border-slate-100">
+                  <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                    <CommandInput
+                      placeholder="Search user..."
+                      className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                    />
+                  </div>
+                </div>
+                <CommandEmpty className="py-6 text-center text-sm text-slate-500">No user found.</CommandEmpty>
+                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
+                  <CommandItem
+                    onSelect={() => handleChange('risApprovedBySystemUserId', undefined)}
+                    className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50"
+                  >
+                    <span className="truncate flex-1">Clear Selection</span>
+                  </CommandItem>
+                  {users.map((u) => (
+                    <CommandItem
+                      key={u.id}
+                      value={`${u.firstName} ${u.lastName}`}
+                      onSelect={() => handleChange('risApprovedBySystemUserId', u.id)}
+                      className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                    >
+                      <span className="truncate flex-1">{u.firstName} {u.lastName}</span>
+                      <Check
+                        className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
+                          header.risApprovedBySystemUserId === u.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                        }`}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="space-y-2">
-          <Label>Approved Date</Label>
+          <Label className="text-slate-700 font-medium">Approved Date</Label>
           <Input
             type="date"
             value={header.risApprovedDate?.slice(0, 10) || ''}
@@ -308,29 +384,67 @@ export const RISHeader = ({
         </div>
       </div>
 
+      {/* ---------------- ISSUED BY SECTION ---------------- */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Issued By</Label>
-          <Select
-            value={header.risIssuedBySystemUserId?.toString() || '0'}
-            onValueChange={(val) => handleChange('risIssuedBySystemUserId', val === '0' ? undefined : Number(val))}
-            disabled={isViewMode}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select User" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Select User</SelectItem>
-              {users.map((u) => (
-                <SelectItem key={u.id} value={u.id.toString()}>
-                  {u.firstName} {u.lastName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="space-y-2 min-w-0 flex flex-col">
+          <Label className="text-slate-700 font-medium">Issued By</Label>
+          <Popover>
+            <PopoverTrigger asChild disabled={isViewMode}>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
+              >
+                <span className="truncate text-slate-700">
+                  {header.risIssuedBySystemUserId
+                    ? users
+                        .filter((u) => u.id === header.risIssuedBySystemUserId)
+                        .map((u) => `${u.firstName} ${u.lastName}`)[0] || "Select User"
+                    : "Select User"}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
+              <Command className="bg-white">
+                <div className="p-2 bg-slate-50 border-b border-slate-100">
+                  <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                    <CommandInput
+                      placeholder="Search user..."
+                      className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                    />
+                  </div>
+                </div>
+                <CommandEmpty className="py-6 text-center text-sm text-slate-500">No user found.</CommandEmpty>
+                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
+                  <CommandItem
+                    onSelect={() => handleChange('risIssuedBySystemUserId', undefined)}
+                    className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50"
+                  >
+                    <span className="truncate flex-1">Clear Selection</span>
+                  </CommandItem>
+                  {users.map((u) => (
+                    <CommandItem
+                      key={u.id}
+                      value={`${u.firstName} ${u.lastName}`}
+                      onSelect={() => handleChange('risIssuedBySystemUserId', u.id)}
+                      className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                    >
+                      <span className="truncate flex-1">{u.firstName} {u.lastName}</span>
+                      <Check
+                        className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
+                          header.risIssuedBySystemUserId === u.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                        }`}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="space-y-2">
-          <Label>Issued Date</Label>
+          <Label className="text-slate-700 font-medium">Issued Date</Label>
           <Input
             type="date"
             value={header.risIssuedDate?.slice(0, 10) || ''}
@@ -340,29 +454,67 @@ export const RISHeader = ({
         </div>
       </div>
 
+      {/* ---------------- RECEIVED BY SECTION ---------------- */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label>Received By</Label>
-          <Select
-            value={header.risReceivedBySystemUserId?.toString() || '0'}
-            onValueChange={(val) => handleChange('risReceivedBySystemUserId', val === '0' ? undefined : Number(val))}
-            disabled={isViewMode}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select User" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Select User</SelectItem>
-              {users.map((u) => (
-                <SelectItem key={u.id} value={u.id.toString()}>
-                  {u.firstName} {u.lastName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="space-y-2 min-w-0 flex flex-col">
+          <Label className="text-slate-700 font-medium">Received By</Label>
+          <Popover>
+            <PopoverTrigger asChild disabled={isViewMode}>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
+              >
+                <span className="truncate text-slate-700">
+                  {header.risReceivedBySystemUserId
+                    ? users
+                        .filter((u) => u.id === header.risReceivedBySystemUserId)
+                        .map((u) => `${u.firstName} ${u.lastName}`)[0] || "Select User"
+                    : "Select User"}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
+              <Command className="bg-white">
+                <div className="p-2 bg-slate-50 border-b border-slate-100">
+                  <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                    <CommandInput
+                      placeholder="Search user..."
+                      className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                    />
+                  </div>
+                </div>
+                <CommandEmpty className="py-6 text-center text-sm text-slate-500">No user found.</CommandEmpty>
+                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
+                  <CommandItem
+                    onSelect={() => handleChange('risReceivedBySystemUserId', undefined)}
+                    className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50"
+                  >
+                    <span className="truncate flex-1">Clear Selection</span>
+                  </CommandItem>
+                  {users.map((u) => (
+                    <CommandItem
+                      key={u.id}
+                      value={`${u.firstName} ${u.lastName}`}
+                      onSelect={() => handleChange('risReceivedBySystemUserId', u.id)}
+                      className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                    >
+                      <span className="truncate flex-1">{u.firstName} {u.lastName}</span>
+                      <Check
+                        className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
+                          header.risReceivedBySystemUserId === u.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                        }`}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="space-y-2">
-          <Label>Received Date</Label>
+          <Label className="text-slate-700 font-medium">Received Date</Label>
           <Input
             type="date"
             value={header.risReceivedDate?.slice(0, 10) || ''}

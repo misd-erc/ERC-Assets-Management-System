@@ -377,6 +377,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
     try {
       await editSupplyIAR({
         id: 0,
+        recordId: iar.recordId || 0,
         centerCode: iar.centerCode || '',
         entityName: iar.entityName || '',
         fundCluster: iar.fundCluster || '',
@@ -389,6 +390,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
         iarInvoiceNumber: iar.iarInvoiceNumber || '',
         iarInvoiceNumberDate: iar.iarInvoiceNumberDate || '',
         poDate: iar.poDate || '',
+        actualDeliveryDate: iar.actualDeliveryDate || '',
         isActive: iar.isActive ?? true,
         isApproved: iar.isApproved ?? false,
       } as SupplyIAR);
@@ -404,6 +406,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
     try {
       await editSupplyIAR({
         id: id,
+        recordId: updates.recordId || 0,
         centerCode: updates.centerCode || '',
         entityName: updates.entityName,
         fundCluster: updates.fundCluster,
@@ -416,6 +419,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
         iarInvoiceNumber: updates.iarInvoiceNumber,
         iarInvoiceNumberDate: updates.iarInvoiceNumberDate,
         poDate: updates.poDate,
+        actualDeliveryDate: updates.actualDeliveryDate,
         isActive: updates.isActive ?? true,
         isApproved: updates.isApproved ?? false,
       } as SupplyIAR);

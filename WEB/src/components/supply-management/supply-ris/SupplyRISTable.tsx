@@ -74,12 +74,11 @@ export const SupplyRISTable = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>RIS Number</TableHead>
-                <TableHead>Entity</TableHead>
-                <TableHead>Fund Cluster</TableHead>
-                <TableHead>Office/Division</TableHead>
-                <TableHead>Purpose</TableHead>
                 <TableHead>Requested Date</TableHead>
+                <TableHead>RIS Number</TableHead>
+                <TableHead>Office/Division</TableHead>
+                <TableHead>Requested By</TableHead>
+                
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -87,14 +86,12 @@ export const SupplyRISTable = ({
             <TableBody>
               {paginatedData.map((ris) => (
                 <TableRow key={ris.id}>
+                  <TableCell>{formatDate(ris.risRequestedDate)}</TableCell>
                   <TableCell className="font-medium text-blue-600">{ris.risNumber}</TableCell>
-                  <TableCell>{ris.entityName}</TableCell>
-                  <TableCell>{ris.fundCluster}</TableCell>
                   <TableCell>
                     {ris.office?.acronym} / {ris.division?.acronym}
                   </TableCell>
-                  <TableCell className="max-w-xs truncate">{ris.risPurpose}</TableCell>
-                  <TableCell>{formatDate(ris.risRequestedDate)}</TableCell>
+                  <TableCell>{ris.requestedBySystemUser?.firstName} {ris.requestedBySystemUser?.lastName}</TableCell>
                   <TableCell>
                     <Badge
                       variant={

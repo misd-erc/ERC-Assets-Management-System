@@ -24,9 +24,6 @@ namespace PortalDB.Entities.ASSET.Delivery
             set => DRNumberEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
-        [Column("SupplyIARId")]
-        public long? SupplyIARId { get; set; }
-
         [Column("DeliveryRecordDeliveryDate")]
         public DateTime? DeliveryDate { get; set; }
 

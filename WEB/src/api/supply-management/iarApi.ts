@@ -31,6 +31,8 @@ export const getSupplyIARs = async (): Promise<VwSupplyIAR[]> => {
   return Array.isArray(response.data.data.items)
     ? response.data.data.items.map((u: any) => ({
         id: u.id,
+        recordId: u.recordId,
+        drNumber: u.drNumber,
         centerCode: u.centerCode,
         entityName: u.entityName,
         fundCluster: u.fundCluster,
@@ -43,6 +45,7 @@ export const getSupplyIARs = async (): Promise<VwSupplyIAR[]> => {
         iarInvoiceNumber: u.iarInvoiceNumber,
         iarInvoiceNumberDate: u.iarInvoiceNumberDate,
         poDate: u.poDate,
+        actualDeliveryDate: u.actualDeliveryDate,
         isActive: u.isActive ?? true,
         createdAt: u.createdAt,
         isApproved: u.isApproved
@@ -66,6 +69,8 @@ export const getSupplyIARById = async (iarId: number): Promise<VwSupplyIAR | nul
   const u = response.data.data;
   return {
     id: u.id,
+    recordId: u.recordId,
+    drNumber: u.drNumber,
     centerCode: u.centerCode,
     entityName: u.entityName,
     fundCluster: u.fundCluster,
@@ -78,6 +83,7 @@ export const getSupplyIARById = async (iarId: number): Promise<VwSupplyIAR | nul
     iarInvoiceNumber: u.iarInvoiceNumber,
     iarInvoiceNumberDate: u.iarInvoiceNumberDate,
     poDate: u.poDate,
+    actualDeliveryDate: u.actualDeliveryDate,
     isActive: u.isActive ?? true,
     createdAt: u.createdAt,
     isApproved: u.isApproved
@@ -91,6 +97,7 @@ export const editSupplyIAR = async (payload: SupplyIAR): Promise<{ message: stri
 
   const requestPayload = {
     Id: payload.id ?? 0,
+    RecordId: payload.recordId,
     CenterCode: payload.centerCode,
     EntityName: payload.entityName,
     FundCluster: payload.fundCluster,
@@ -105,6 +112,7 @@ export const editSupplyIAR = async (payload: SupplyIAR): Promise<{ message: stri
     PODate: payload.poDate,
     IsActive: payload.isActive,
     isApproved: payload.isApproved,
+    ActualDeliveryDate: payload.actualDeliveryDate,
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,
   };

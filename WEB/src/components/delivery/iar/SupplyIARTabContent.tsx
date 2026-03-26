@@ -22,7 +22,6 @@ export const SupplyIARTabContent = () => {
   const [selectedDeliveryRecord, setSelectedDeliveryRecord] = useState<VwDeliveryRecord | null>(null);
   const [mode, setMode] = useState<'add' | 'edit'>('add');
 
-  // Fetch IARs and delivery records when the component mounts
   useEffect(() => {
     fetchSupplyIARs();
     fetchDeliveryRecords();
@@ -47,16 +46,14 @@ export const SupplyIARTabContent = () => {
 
   const handleView = (record: VwSupplyIAR) => {
     setSelectedRecord(record);
-    // Find the delivery record linked to this IAR
-    const match = vwDeliveryRecords.find(dr => dr.supplyIAR?.id === record.id);
+    const match = vwDeliveryRecords.find(dr => dr.id === record.recordId);
     setSelectedDeliveryRecord(match || null);
     setIsViewOpen(true);
   };
   
   const handleApproveClick = (record: VwSupplyIAR) => {
     setSelectedRecord(record);
-    // Also find the delivery record here, so the approve modal has it immediately
-    const match = vwDeliveryRecords.find(dr => dr.supplyIAR?.id === record.id);
+    const match = vwDeliveryRecords.find(dr => dr.id === record.recordId);
     setSelectedDeliveryRecord(match || null);
     setIsApproveOpen(true);
   };
@@ -68,6 +65,7 @@ export const SupplyIARTabContent = () => {
         vendorId: selectedRecord.vendor?.id,
         officeId: selectedRecord.office?.id,
         divisionId: selectedRecord.division?.id,
+        deliveryRecordId: selectedRecord.recordId,
         isApproved: true,
         isActive: selectedRecord.isActive ?? true
       };
@@ -82,6 +80,19 @@ export const SupplyIARTabContent = () => {
     else if (selectedRecord) await updateSupplyIAR(selectedRecord.id, data);
     setIsEditOpen(false);
   };
+
+  // === CORE FILTERING LOGIC ===
+  // A DR is available for linking if:
+  // 1. It's NOT yet received (!dr.isReceived), AND
+  // 2. It's either NOT linked to any IAR, OR it's linked to the IAR currently being edited
+  const availableDeliveryRecords = vwDeliveryRecords.filter(dr => {
+    const isUnreceived = !dr.isReceived;
+    const isLinkedToOtherIAR = iars.some(iar => 
+      iar.recordId === dr.id && 
+      iar.id !== selectedRecord?.id
+    );
+    return isUnreceived && !isLinkedToOtherIAR;
+  });
 
   return (
     <>
@@ -99,7 +110,8 @@ export const SupplyIARTabContent = () => {
         onOpenChange={setIsEditOpen} 
         mode={mode} 
         record={selectedRecord} 
-        onSubmit={handleSave} 
+        onSubmit={handleSave}
+        availableDeliveryRecords={availableDeliveryRecords}
       />
       
       <SupplyIARDeleteModal 

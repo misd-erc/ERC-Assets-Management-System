@@ -8,6 +8,7 @@ namespace PortalDB.Models.QueryParams.Supply
     public class EditSupplyIARQueryParams
     {
         [Required] public long Id { get; set; }
+        [Required] public long RecordId { get; set; }
         [Required] public string CenterCode { get; set; } = string.Empty;
         [Required] public string EntityName { get; set; } = string.Empty;
         [Required] public string FundCluster { get; set; } = string.Empty;
@@ -23,6 +24,7 @@ namespace PortalDB.Models.QueryParams.Supply
         [Required] public bool IsActive { get; set; } = true;
         [Required] public bool IsApproved { get; set; } = false;
         public DateTime? ApprovedOn { get; set; }
+        public DateTime? ActualDeliveryDate { get; set; }
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;
     }

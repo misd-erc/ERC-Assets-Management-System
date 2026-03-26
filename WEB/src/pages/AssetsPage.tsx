@@ -475,8 +475,8 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
 
   const handleDownloadTemplate = () => {
     const link = document.createElement('a');
-    link.href = '/ppe-templates/ppe_template.xlsx';
-    link.download = 'ppe_template.xlsx';
+    link.href = '/ppe-templates/PPE_SE_LATEST_TEMPLATE.xlsx';
+    link.download = 'PPE_SE_LATEST_TEMPLATE.xlsx';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

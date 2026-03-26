@@ -15,6 +15,9 @@ namespace PortalDB.Entities.ASSET.Supply
         [Column("SupplyIARId")]
         public long Id { get; set; }
 
+        [Column("DeliveryRecordId")]
+        public long RecordId { get; set; }
+
         [Column("SupplyResponsibilityCenterCode")]
         public string? ResponsibilityCenterCodeEncrypted { get; set; }
         [NotMapped]
@@ -90,6 +93,9 @@ namespace PortalDB.Entities.ASSET.Supply
 
         [Column("SupplyIARPODate")]
         public DateTime? PODate { get; set; }
+
+        [Column("SupplyIARActualDeliveryDate")]
+        public DateTime? ActualDeliveryDate { get; set; }
 
         [Column("SupplyIARIsActive")]
         public bool IsActive { get; set; } = true;

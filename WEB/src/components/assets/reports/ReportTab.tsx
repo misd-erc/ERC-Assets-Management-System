@@ -54,6 +54,7 @@ export function ReportTab() {
   const [rpcppeDate, setRpcppeDate] = useState<Date | null>(null);
   const [rpcppeCategoryId, setRpcppeCategoryId] = useState<number | undefined>(undefined);
   const [sespiDate, setSespiDate] = useState<Date | null>(null);
+  const [sespiEmployee, setSespiEmployee] = useState<NormalizedEmployee | null>(null);
 
   // Item-centric flow states
   const [selectedItem, setSelectedItem] = useState<Asset | null>(null);
@@ -181,10 +182,10 @@ export function ReportTab() {
 
     if (selectedReport === 'SESPI') {
       if (registrySPIEmployee) {
-        await RegistrySPIByEmployeeGenerator.generate(registrySPIEmployee);
+        await RegistrySPIByEmployeeGenerator.generate(registrySPIEmployee, sespiDate!);
         toast.success('Registry SPI PDF generated');
       } else {
-        await SESPIExcelGenerator.generate(sespiDate!);
+        await SESPIExcelGenerator.generate(sespiDate!, sespiEmployee!.id);
         toast.success('Register SPI PDF generated');
       }
     } else if (selectedReport === 'SESPI-REPORT') {
@@ -275,16 +276,17 @@ export function ReportTab() {
     setShowRPCPPE(false);
   };
 
-  const handleSESPIGenerate = async (asOfDate: Date) => {
+  const handleSESPIGenerate = async (asOfDate: Date, employee: NormalizedEmployee) => {
     try {
       // Generate preview
       setLoadingPreview(true);
-      const url = await SESPIExcelGenerator.generateSESPIPreview(asOfDate);
+      const url = await SESPIExcelGenerator.generateSESPIPreview(asOfDate, employee.id);
       setPreviewUrl(url);
       setLoadingPreview(false);
 
       // Store parameters for download
       setSespiDate(asOfDate);
+      setSespiEmployee(employee);
       setSelectedReport('SESPI');
 
       // Show preview modal
@@ -297,14 +299,15 @@ export function ReportTab() {
     setShowSESPI(false);
   };
 
-  const handleRegistrySPIGenerate = async (employee: import('@/types/asset/UnifiedAsset').NormalizedEmployee) => {
+  const handleRegistrySPIGenerate = async (employee: import('@/types/asset/UnifiedAsset').NormalizedEmployee, date: Date) => {
     setShowRegistrySPI(false);
     try {
       setLoadingPreview(true);
-      const url = await RegistrySPIByEmployeeGenerator.generatePreview(employee);
+      const url = await RegistrySPIByEmployeeGenerator.generatePreview(employee, date);
       setPreviewUrl(url);
       setLoadingPreview(false);
       setRegistrySPIEmployee(employee);
+      setSespiDate(date);
       setSelectedReport('SESPI');
       setShowPreview(true);
     } catch (error) {
@@ -624,6 +627,7 @@ export function ReportTab() {
       <SESPIFilterModal
         isOpen={showSESPI}
         onClose={() => setShowSESPI(false)}
+        employees={employees}
         onGenerate={handleSESPIGenerate}
       />
 

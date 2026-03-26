@@ -108,6 +108,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
 
                     await context.TblSupplyIARs.Where(u => u.Id == model.Id)
                         .ExecuteUpdateAsync(u => u
+                            .SetProperty(x => x.RecordId, model.RecordId)
                             .SetProperty(x => x.ResponsibilityCenterCodeEncrypted, model.ResponsibilityCenterCodeEncrypted)
                             .SetProperty(x => x.EntityNameEncrypted, model.EntityNameEncrypted)
                             .SetProperty(x => x.FundClusterEncrypted, model.FundClusterEncrypted)
@@ -122,6 +123,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                             .SetProperty(x => x.PODate, model.PODate)
                             .SetProperty(x => x.IsActive, model.IsActive)
                             .SetProperty(x => x.IsApproved, model.IsApproved)
+                            .SetProperty(x => x.ActualDeliveryDate, model.ActualDeliveryDate)
                             .SetProperty(x => x.ApprovedOn, model.ApprovedOn));
                 }
 
@@ -141,7 +143,6 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
             try
             {
                 TblSupplyIAR? supplyIARModel = await _getTools.Supply.GetTblSupplyIARAsync(id, context);
-                await context.TblDeliveryRecords.Where(x => x.SupplyIARId == id).ExecuteSoftDeleteAsync(context);
                 await context.TblSupplyIARs.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
                 await AuditTrailTool.LogActivityAsync(_options, $"Deleted a Supply IAR", actionBy: actionBySystemUserId,
                     linkedAuditTrailId: AuditTrailTool.TrackChanges(context, supplyIARModel, null, nameof(TblSupplyIAR), actionBySystemUserId, "Delete"));

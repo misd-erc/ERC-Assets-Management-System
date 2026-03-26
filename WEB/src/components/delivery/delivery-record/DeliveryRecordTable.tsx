@@ -44,8 +44,6 @@ export const DeliveryRecordTable = ({ data, onAdd, onEdit, onDelete, onView }: P
             <TableHeader>
               <TableRow>
                 <TableHead>DR Number</TableHead>
-                <TableHead>Linked IAR / PO</TableHead>
-                <TableHead>Vendor</TableHead>
                 <TableHead>Delivery Date</TableHead>
                 <TableHead>Total Value</TableHead>
                 <TableHead>Status</TableHead>
@@ -57,13 +55,6 @@ export const DeliveryRecordTable = ({ data, onAdd, onEdit, onDelete, onView }: P
                 data.map((record) => (
                   <TableRow key={record.id}>
                     <TableCell className="font-medium text-blue-600">{record.drNumber}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{record.supplyIAR?.iarNumber}</div>
-                        <div className="text-xs text-muted-foreground">PO: {record.supplyIAR?.poNumber}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{record.supplyIAR?.vendor?.name || 'Unknown Vendor'}</TableCell>
                     <TableCell>{formatDate(record.deliveryDate)}</TableCell>
                     <TableCell className="font-semibold text-green-600">
                       {formatCurrency(getTotalValue(record.items || []))}
@@ -97,7 +88,6 @@ export const DeliveryRecordTable = ({ data, onAdd, onEdit, onDelete, onView }: P
                               </DropdownMenuItem>
                             </>
                           )}
-
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -105,7 +95,7 @@ export const DeliveryRecordTable = ({ data, onAdd, onEdit, onDelete, onView }: P
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-40 text-center">
+                  <TableCell colSpan={5} className="h-40 text-center">
                     <div className="flex flex-col items-center justify-center space-y-2 text-muted-foreground">
                       <PackageOpen className="h-10 w-10 opacity-20" />
                       <p className="text-sm">No delivery records found.</p>

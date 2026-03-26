@@ -4,7 +4,6 @@ import { Category } from "@/api/categories/categoriesApi";
 export interface DeliveryRecord {
   id: number;
   drNumber: string;
-  supplyIARId: number;
   deliveryDate: string;
   employeeId: number;
   remarks: string;

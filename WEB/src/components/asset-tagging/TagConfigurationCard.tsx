@@ -3,25 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { TagTemplate } from "@/hooks/useAssetTagging";
 import { Printer, Tag } from "lucide-react";
 
-export type CodeType = 'none' | 'qr' | 'barcode';
+export type CodeType = 'none' | 'qr';
 
 interface TagConfigurationCardProps {
   tagTemplate: string;
   tagTemplates: TagTemplate[];
   activeTemplate: TagTemplate;
-  codeType: CodeType;
   includeLogo: boolean;
   selectedCount: number;
   isGenerating: boolean;
   isLoading: boolean;
   onTemplateChange: (value: string) => void;
-  onCodeTypeChange: (type: CodeType) => void;
   onToggleLogo: (checked: boolean) => void;
   onGenerate: () => void;
 }
@@ -31,13 +28,11 @@ export function TagConfigurationCard(props: TagConfigurationCardProps) {
     tagTemplate,
     tagTemplates,
     activeTemplate,
-    codeType,
     includeLogo,
     selectedCount,
     isGenerating,
     isLoading,
     onTemplateChange,
-    onCodeTypeChange,
     onToggleLogo,
     onGenerate,
   } = props;
@@ -69,30 +64,6 @@ export function TagConfigurationCard(props: TagConfigurationCardProps) {
           <p className="text-xs text-muted-foreground">
             {tagTemplates.find((t) => t.id === tagTemplate)?.description}
           </p>
-        </div>
-
-        <Separator />
-
-        <div className="space-y-3">
-          <Label>Code Type</Label>
-          <RadioGroup
-            value={codeType}
-            onValueChange={(val) => onCodeTypeChange(val as CodeType)}
-            className="space-y-1"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="none" id="codeNone" />
-              <label htmlFor="codeNone" className="text-sm cursor-pointer">None</label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="qr" id="codeQR" />
-              <label htmlFor="codeQR" className="text-sm cursor-pointer">QR Code</label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="barcode" id="codeBarcode" />
-              <label htmlFor="codeBarcode" className="text-sm cursor-pointer">Barcode (Code 128)</label>
-            </div>
-          </RadioGroup>
         </div>
 
         <div className="flex items-center space-x-2">

@@ -667,48 +667,52 @@ export function Disposals() {
 
       {/* View Disposal Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="!max-w-[82vw] w-[82vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Disposal Details - {selectedDisposal?.disposalNumber}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl">Disposal Details</DialogTitle>
+              {selectedDisposal && (
+                <div className="flex items-center gap-3 mr-6">
+                  <span className="text-sm font-mono font-semibold text-slate-700">{selectedDisposal.disposalNumber}</span>
+                  {getStatusBadge(selectedDisposal.status)}
+                </div>
+              )}
+            </div>
           </DialogHeader>
           {selectedDisposal && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-6 pt-2">
+
+              {/* Info grid */}
+              <div className="grid grid-cols-3 gap-x-8 gap-y-4 bg-slate-50 rounded-xl p-5 border">
                 <div>
-                  <Label className="text-sm font-medium text-slate-900">Disposal Number</Label>
-                  <p className="text-sm text-slate-600">{selectedDisposal.disposalNumber}</p>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Reason</p>
+                  <p className="text-sm font-medium text-slate-800 mt-0.5">{selectedDisposal.reason}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-900">Status</Label>
-                  <div className="mt-1">{getStatusBadge(selectedDisposal.status)}</div>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Method</p>
+                  <p className="text-sm font-medium text-slate-800 mt-0.5">{selectedDisposal.method}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-900">Reason</Label>
-                  <p className="text-sm text-slate-600">{selectedDisposal.reason}</p>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Total Value</p>
+                  <p className="text-sm font-semibold text-slate-800 mt-0.5">{formatCurrency(selectedDisposal.totalValue)}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-900">Method</Label>
-                  <p className="text-sm text-slate-600">{selectedDisposal.method}</p>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Requested By</p>
+                  <p className="text-sm font-medium text-slate-800 mt-0.5">{selectedDisposal.requestedBy}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-slate-900">Requested By</Label>
-                  <p className="text-sm text-slate-600">{selectedDisposal.requestedBy}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-slate-900">Date Requested</Label>
-                  <p className="text-sm text-slate-600">
-                    {new Date(selectedDisposal.dateRequested).toLocaleDateString()}
-                  </p>
+                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Date Requested</p>
+                  <p className="text-sm font-medium text-slate-800 mt-0.5">{new Date(selectedDisposal.dateRequested).toLocaleDateString()}</p>
                 </div>
                 {selectedDisposal.approvedBy && (
                   <>
                     <div>
-                      <Label className="text-sm font-medium text-slate-900">Approved By</Label>
-                      <p className="text-sm text-slate-600">{selectedDisposal.approvedBy}</p>
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Approved By</p>
+                      <p className="text-sm font-medium text-slate-800 mt-0.5">{selectedDisposal.approvedBy}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-900">Date Approved</Label>
-                      <p className="text-sm text-slate-600">
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Date Approved</p>
+                      <p className="text-sm font-medium text-slate-800 mt-0.5">
                         {selectedDisposal.dateApproved && new Date(selectedDisposal.dateApproved).toLocaleDateString()}
                       </p>
                     </div>
@@ -716,65 +720,63 @@ export function Disposals() {
                 )}
                 {selectedDisposal.dateDisposed && (
                   <div>
-                    <Label className="text-sm font-medium text-slate-900">Date Disposed</Label>
-                    <p className="text-sm text-slate-600">
-                      {new Date(selectedDisposal.dateDisposed).toLocaleDateString()}
-                    </p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Date Disposed</p>
+                    <p className="text-sm font-medium text-slate-800 mt-0.5">{new Date(selectedDisposal.dateDisposed).toLocaleDateString()}</p>
                   </div>
                 )}
                 {selectedDisposal.buyer && (
                   <div>
-                    <Label className="text-sm font-medium text-slate-900">Buyer/Recipient</Label>
-                    <p className="text-sm text-slate-600">{selectedDisposal.buyer}</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Buyer / Recipient</p>
+                    <p className="text-sm font-medium text-slate-800 mt-0.5">{selectedDisposal.buyer}</p>
                   </div>
                 )}
-                <div>
-                  <Label className="text-sm font-medium text-slate-900">Total Value</Label>
-                  <p className="text-sm text-slate-600">{formatCurrency(selectedDisposal.totalValue)}</p>
-                </div>
                 {selectedDisposal.proceedAmount !== undefined && selectedDisposal.proceedAmount > 0 && (
                   <div>
-                    <Label className="text-sm font-medium text-slate-900">Proceed Amount</Label>
-                    <p className="text-sm text-slate-600">{formatCurrency(selectedDisposal.proceedAmount)}</p>
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Proceed Amount</p>
+                    <p className="text-sm font-semibold text-green-700 mt-0.5">{formatCurrency(selectedDisposal.proceedAmount)}</p>
                   </div>
                 )}
               </div>
+
               {selectedDisposal.remarks && (
-                <div>
-                  <Label className="text-sm font-medium text-slate-900">Remarks</Label>
-                  <p className="text-sm text-slate-600 mt-1 whitespace-pre-line">{selectedDisposal.remarks}</p>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                  <p className="text-xs font-medium text-amber-700 uppercase tracking-wide mb-1">Remarks</p>
+                  <p className="text-sm text-slate-700 whitespace-pre-line">{selectedDisposal.remarks}</p>
                 </div>
               )}
+
+              {/* Assets table */}
               <div>
-                <Label className="text-sm font-medium text-slate-900 mb-2 block">Assets ({selectedDisposal.assets.length})</Label>
-                <div className="border rounded-lg">
+                <p className="text-sm font-semibold text-slate-700 mb-2">Assets <span className="text-slate-400 font-normal">({selectedDisposal.assets.length})</span></p>
+                <div className="border rounded-xl overflow-hidden">
                   <table className="w-full text-sm">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="p-2 text-left">Code</th>
-                        <th className="p-2 text-left">Description</th>
-                        <th className="p-2 text-left">Category</th>
-                        <th className="p-2 text-right">Acquisition Cost</th>
-                        <th className="p-2 text-right">Current Value</th>
+                    <thead>
+                      <tr className="bg-slate-100 text-slate-600">
+                        <th className="px-4 py-3 text-left font-medium">Code</th>
+                        <th className="px-4 py-3 text-left font-medium">Description</th>
+                        <th className="px-4 py-3 text-left font-medium">Category</th>
+                        <th className="px-4 py-3 text-right font-medium">Acquisition Cost</th>
+                        <th className="px-4 py-3 text-right font-medium">Current Value</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedDisposal.assets.map((asset) => (
-                        <tr key={asset.id} className="border-t">
-                          <td className="p-2">{asset.code}</td>
-                          <td className="p-2">{asset.description}</td>
-                          <td className="p-2">{asset.category}</td>
-                          <td className="p-2 text-right">{formatCurrency(asset.acquisitionCost)}</td>
-                          <td className="p-2 text-right">{formatCurrency(asset.currentValue)}</td>
+                      {selectedDisposal.assets.map((asset, idx) => (
+                        <tr key={asset.id} className={`border-t ${idx % 2 === 1 ? 'bg-slate-50' : 'bg-white'}`}>
+                          <td className="px-4 py-3 font-mono text-xs text-slate-700">{asset.code}</td>
+                          <td className="px-4 py-3 text-slate-800">{asset.description}</td>
+                          <td className="px-4 py-3 text-slate-600">{asset.category}</td>
+                          <td className="px-4 py-3 text-right text-slate-700">{formatCurrency(asset.acquisitionCost)}</td>
+                          <td className="px-4 py-3 text-right font-medium text-slate-800">{formatCurrency(asset.currentValue)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               </div>
+
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="pt-2">
             <Button variant="outline" onClick={() => setShowViewDialog(false)}>
               Close
             </Button>

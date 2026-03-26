@@ -11,9 +11,7 @@ import {
   TagPreview,
   normalizeAssets,
   generateQRCode,
-  generateBarcode,
 } from '@/hooks/useAssetTagging';
-import { CodeType } from '@/components/asset-tagging/TagConfigurationCard';
 import { TagConfigurationCard } from '@/components/asset-tagging/TagConfigurationCard';
 import { AssetSelectionCard } from '@/components/asset-tagging/AssetSelectionCard';
 import { StatsRow } from '@/components/asset-tagging/StatsRow';
@@ -28,7 +26,6 @@ export default function AssetTaggingPage() {
   const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [tagTemplate, setTagTemplate] = useState<string>('standard');
-  const [codeType, setCodeType] = useState<CodeType>('qr');
   const [includeLogo, setIncludeLogo] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,7 +35,7 @@ export default function AssetTaggingPage() {
     const loadAssets = async () => {
       setIsLoading(true);
       try {
-        const response = await UnifiedAssetService.getAll({ PageNumber: 1, PageSize: 500 });
+        const response = await UnifiedAssetService.getAll({ PageNumber: 1, PageSize: 10000 });
         setAssets(response.items || []);
       } catch (error) {
         console.error('Error loading assets for tagging:', error);
@@ -88,25 +85,9 @@ export default function AssetTaggingPage() {
       const previews: TagPreview[] = [];
 
       for (const asset of selected) {
-        let qrCode = '';
-        let barcodeUrl = '';
-
-        const codeData = asset.code || `ASSET-${asset.id}`;
-
-        if (codeType === 'qr') {
-          const qrData = JSON.stringify({
-            code: asset.code,
-            description: asset.description,
-            category: asset.category,
-            location: asset.location,
-            group: asset.group,
-          });
-          qrCode = await generateQRCode(qrData);
-        } else if (codeType === 'barcode') {
-          barcodeUrl = generateBarcode(codeData);
-        }
-
-        previews.push({ ...asset, qrCode, barcodeUrl });
+        const assetUrl = `${window.location.origin}/asset-info/${asset.id}`;
+        const qrCode = await generateQRCode(assetUrl);
+        previews.push({ ...asset, qrCode });
       }
 
       setTagPreviews(previews);
@@ -145,13 +126,11 @@ export default function AssetTaggingPage() {
           tagTemplate={tagTemplate}
           tagTemplates={TAG_TEMPLATES}
           activeTemplate={activeTemplate}
-          codeType={codeType}
           includeLogo={includeLogo}
           selectedCount={selectedAssets.length}
           isGenerating={isGenerating}
           isLoading={isLoading}
           onTemplateChange={setTagTemplate}
-          onCodeTypeChange={setCodeType}
           onToggleLogo={setIncludeLogo}
           onGenerate={handleGenerateTags}
         />
@@ -178,8 +157,7 @@ export default function AssetTaggingPage() {
 
       <TagPreviewGrid
         tagPreviews={tagPreviews}
-        includeQR={codeType === 'qr'}
-        includeBarcode={codeType === 'barcode'}
+        includeQR={true}
         includeLogo={includeLogo}
         activeTemplate={activeTemplate}
         generatedBy={user || undefined}

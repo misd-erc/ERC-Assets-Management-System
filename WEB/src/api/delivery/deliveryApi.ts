@@ -71,7 +71,6 @@ export const editDeliveryRecord = async (payload: EditDeliveryRecord): Promise<{
   const requestPayload = {
     id: payload.deliveryRecord.id,
     drNumber: payload.deliveryRecord.drNumber,
-    supplyIARId: payload.deliveryRecord.supplyIARId,
     deliveryDate: payload.deliveryRecord.deliveryDate,
     employeeId: payload.deliveryRecord.employeeId,
     remarks: payload.deliveryRecord.remarks,
