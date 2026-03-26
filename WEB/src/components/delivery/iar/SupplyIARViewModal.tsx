@@ -102,6 +102,11 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord 
             </div>
             
             <div>
+              <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Actual Delivery Date</Label>
+              <div className="font-medium text-slate-900">{record.actualDeliveryDate ? formatDate(record.actualDeliveryDate) : '-'}</div>
+            </div>
+            
+            <div>
               <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">RCC Code</Label>
               <div className="font-medium text-slate-900">{record.centerCode || '-'}</div>
             </div>

@@ -33,7 +33,7 @@ namespace PortalDB.Models.QueryParams.PTA
 
         public int PageNumber { get; set; } = 1;
 
-        public int PageSize { get; set; } = 100;
+        public int PageSize { get; set; } = 9999; //temporary only
 
         public DateTime? StartDate { get; set; }
 

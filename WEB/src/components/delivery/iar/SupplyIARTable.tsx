@@ -2,7 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { Edit, Trash2, MoreHorizontal, Eye, CheckCircle, FileQuestion } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Eye, CheckCircle, FileQuestion, Package } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { VwSupplyIAR } from '@/types';
 import { formatDate } from '@/utils/dateUtils';
@@ -36,6 +36,7 @@ export const SupplyIARTable = ({ data, onAdd, onEdit, onDelete, onView, onApprov
             <TableHeader>
               <TableRow>
                 <TableHead>IAR Number</TableHead>
+                <TableHead>Linked DR</TableHead>
                 <TableHead>Vendor</TableHead>
                 <TableHead>Office / Div</TableHead>
                 <TableHead>PO Number</TableHead>
@@ -48,6 +49,16 @@ export const SupplyIARTable = ({ data, onAdd, onEdit, onDelete, onView, onApprov
                 data.map((record: VwSupplyIAR) => (
                   <TableRow key={record.id}>
                     <TableCell className="font-medium text-blue-600">{record.iarNumber}</TableCell>
+                    <TableCell>
+                      {record.drNumber ? (
+                        <div className="flex items-center gap-1.5">
+                          <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-sm font-medium text-blue-700">{record.drNumber}</span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground italic">Not linked</span>
+                      )}
+                    </TableCell>
                     <TableCell className="max-w-[150px] truncate">{record.vendor?.name}</TableCell>
                     <TableCell>
                       <div className="text-xs">
@@ -96,10 +107,7 @@ export const SupplyIARTable = ({ data, onAdd, onEdit, onDelete, onView, onApprov
                                 Delete
                               </DropdownMenuItem>
                             </>
-
                           )}
-
-
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -107,7 +115,7 @@ export const SupplyIARTable = ({ data, onAdd, onEdit, onDelete, onView, onApprov
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center">
+                  <TableCell colSpan={7} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center text-muted-foreground">
                       <FileQuestion className="h-8 w-8 mb-2 opacity-50" />
                       <p>No IAR records found.</p>

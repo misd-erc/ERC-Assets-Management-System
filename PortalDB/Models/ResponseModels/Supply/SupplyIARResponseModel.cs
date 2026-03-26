@@ -15,6 +15,7 @@ namespace PortalDB.Models.ResponseModels.Supply
 
         public long Id { get; set; }
         public long RecordId { get; set; }
+        public string? DRNumber { get; set; }
         public string CenterCode { get; set; } = string.Empty;
         public string EntityName { get; set; } = string.Empty;
         public string FundCluster { get; set; } = string.Empty;
@@ -27,6 +28,7 @@ namespace PortalDB.Models.ResponseModels.Supply
         public string IARInvoiceNumber { get; set; } = string.Empty;
         public DateTime? IARInvoiceNumberDate { get; set; }
         public DateTime? PODate { get; set; }
+        public DateTime? ActualDeliveryDate { get; set; }
         public bool IsActive { get; set; } = true;
         public bool IsApproved { get; set; } = true;
         public DateTime? ApprovedOn { get; set; }

@@ -866,6 +866,7 @@ namespace API.Controllers
                     {
                         Id = x.Id,
                         RecordId = x.RecordId,
+                        DRNumber = _getTools.Delivery.GetTblDeliveryRecords(context).Where(y => y.Id == x.RecordId).FirstOrDefault()?.DRNumber ?? "",
                         CenterCode = x.ResponsibilityCenterCode,
                         EntityName = x.EntityName,
                         FundCluster = x.FundCluster,
@@ -878,6 +879,7 @@ namespace API.Controllers
                         IARInvoiceNumber = x.IARInvoiceNumber,
                         IARInvoiceNumberDate = x.IARInvoiceNumberDate,
                         PODate = x.PODate,
+                        ActualDeliveryDate = x.ActualDeliveryDate,
                         IsActive = x.IsActive,
                         IsApproved = x.IsApproved,
                         CreatedAt = x.CreatedAt
@@ -1402,6 +1404,7 @@ namespace API.Controllers
                     IARInvoiceNumber = model.IARInvoiceNumber,
                     IARInvoiceNumberDate = model.IARInvoiceNumberDate,
                     PODate = model.PODate,
+                    ActualDeliveryDate = model.ActualDeliveryDate,
                     IsActive = model.IsActive,
                     IsApproved = model.IsApproved
                 };

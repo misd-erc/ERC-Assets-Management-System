@@ -123,6 +123,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                             .SetProperty(x => x.PODate, model.PODate)
                             .SetProperty(x => x.IsActive, model.IsActive)
                             .SetProperty(x => x.IsApproved, model.IsApproved)
+                            .SetProperty(x => x.ActualDeliveryDate, model.ActualDeliveryDate)
                             .SetProperty(x => x.ApprovedOn, model.ApprovedOn));
                 }
 

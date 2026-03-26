@@ -92,6 +92,7 @@ export interface SupplyIAR {
   iarInvoiceNumber: string;
   iarInvoiceNumberDate: string;
   poDate: string;
+  actualDeliveryDate: string;
   isActive: boolean;
   isApproved: boolean;
   createdAt?: string;
@@ -100,6 +101,7 @@ export interface SupplyIAR {
 export interface VwSupplyIAR {
   id: number;
   recordId: number;
+  drNumber: number;
   centerCode: string;
   entityName: string;
   fundCluster: string;
@@ -111,6 +113,7 @@ export interface VwSupplyIAR {
   iarNumberDate: string;
   iarInvoiceNumber: string;
   iarInvoiceNumberDate: string;
+  actualDeliveryDate: string;
   poDate: string;
   isActive: boolean;
   isApproved: boolean;

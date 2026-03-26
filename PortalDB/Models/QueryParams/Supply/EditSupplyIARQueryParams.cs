@@ -24,6 +24,7 @@ namespace PortalDB.Models.QueryParams.Supply
         [Required] public bool IsActive { get; set; } = true;
         [Required] public bool IsApproved { get; set; } = false;
         public DateTime? ApprovedOn { get; set; }
+        public DateTime? ActualDeliveryDate { get; set; }
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;
     }

@@ -94,6 +94,9 @@ namespace PortalDB.Entities.ASSET.Supply
         [Column("SupplyIARPODate")]
         public DateTime? PODate { get; set; }
 
+        [Column("SupplyIARActualDeliveryDate")]
+        public DateTime? ActualDeliveryDate { get; set; }
+
         [Column("SupplyIARIsActive")]
         public bool IsActive { get; set; } = true;
 
