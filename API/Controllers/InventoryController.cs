@@ -230,13 +230,23 @@ namespace API.Controllers
                 if (model.GroupBy == null || string.IsNullOrEmpty(model.GroupBy)) { 
                     IEnumerable<TblPTA?> ptas = await _getTools.PTA.GetTblPTAsByGroup(model.GroupName!, context).Where(x => x.Group == model.GroupName).ToListAsync();
 
-                    // Date Filter: "As of" range (<=) when IsAsOf=true, exact match (==) otherwise
+                    // Date Filter: "As of" range (<=) when IsAsOf=true, exact match (==) on DateAssigned from movements otherwise
                     if (model.AsOfDate.HasValue)
                     {
                         if (model.IsAsOf == true)
                             ptas = ptas.Where(x => x != null && x.DateAcquired.HasValue && x.DateAcquired.Value.Date <= model.AsOfDate.Value.Date);
                         else
-                            ptas = ptas.Where(x => x != null && x.DateAcquired.HasValue && x.DateAcquired.Value.Date == model.AsOfDate.Value.Date);
+                        {
+                            var ptaIdsList = ptas.Where(x => x != null).Select(x => x!.Id).ToList();
+                            var movementsForFilter = await _getTools.PTA.GetTblPTAMovements(context)
+                                .Where(m => m.PTAId.HasValue && ptaIdsList.Contains(m.PTAId.Value))
+                                .ToListAsync();
+                            var validPtaIds = movementsForFilter
+                                .Where(m => m.DateAssigned.HasValue && m.DateAssigned.Value.Date == model.AsOfDate.Value.Date)
+                                .Select(m => m.PTAId!.Value)
+                                .ToHashSet();
+                            ptas = ptas.Where(x => x != null && validPtaIds.Contains(x.Id));
+                        }
                     }
 
                     if (model.CategoryId != null && model.CategoryId != 0)
@@ -272,7 +282,7 @@ namespace API.Controllers
                     int skip = (model.PageNumber - 1) * model.PageSize;
 
                     var ptasList = ptas
-                        .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt)
+                        .OrderByDescending(x => x.CreatedAt)
                         .Skip(skip)
                         .Take(model.PageSize)
                         .ToList();

@@ -44,6 +44,7 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
 
   const [showAccountabilitySection, setShowAccountabilitySection] = useState(false);
   const [accountabilityEntries, setAccountabilityEntries] = useState<UnifiedMovement[]>([]);
+  const [submitted, setSubmitted] = useState(false);
   const [offices, setOffices] = useState<VwOffice[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
@@ -111,10 +112,19 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitted(true);
 
-    // Validate Item Identification required fields
+    // Validate required fields
     if (!formData.propertyNumber?.trim() || !formData.description?.trim() || !formData.brand?.trim() || !formData.model?.trim() || !formData.serialNumber?.trim()) {
       toast.error('Property Number, Description, Brand, Model, and Serial Number are required');
+      return;
+    }
+    if (!formData.categoryId || formData.categoryId <= 0) {
+      toast.error('Category is required');
+      return;
+    }
+    if (!formData.legendId || formData.legendId <= 0) {
+      toast.error('Legend is required');
       return;
     }
 
@@ -378,6 +388,7 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
         handleRemoveAccountabilityEntry={handleRemoveAccountabilityEntry}
         handleAccountabilityEntryChange={handleAccountabilityEntryChange}
         getUnitOfMeasurementOptions={getUnitOfMeasurementOptions}
+        submitted={submitted}
       />
 
       {/* Form Actions */}

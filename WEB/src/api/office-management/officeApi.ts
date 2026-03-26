@@ -32,6 +32,7 @@ export const getOffices = async (): Promise<VwOffice[]> => {
         id: o.id,
         name: o.name,
         acronym: o.acronym,
+        generalCode: o.generalCode,
         users: o.users,
         isActive: o.isActive ?? true,
         isDeleted: o.isDeleted ?? false,

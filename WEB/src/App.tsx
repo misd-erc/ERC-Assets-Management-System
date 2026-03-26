@@ -8,6 +8,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { isSessionValid, isSessionExpired, handleSessionExpired } from '@/utils/sessionUtils';
 import { NoRolePage, UnderConstructionPage } from '@/pages';
+import AssetInfoPage from '@/pages/AssetInfoPage';
 import { initUserSync } from '@/utils/userSync';
 
 import { decrypt } from '@/utils/encryption';
@@ -80,6 +81,9 @@ function AppContent() {
         element={!isAuthenticated ? <LoginScreen /> : <Navigate to="/dashboard" replace />} 
       />
       
+      {/* Public asset info — accessible without login (e.g. scanning a QR sticker) */}
+      <Route path="/asset-info/:id" element={<AssetInfoPage />} />
+
       {/* MFA Route */}
       <Route 
         path="/mfa" 

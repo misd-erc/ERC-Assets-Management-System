@@ -77,6 +77,7 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
         officeId: id,
         name: updates.name || '',
         acronym: updates.acronym || '',
+        generalCode: updates.generalCode || '',
         isActive: updates.isActive ?? true
       });
       await get().fetchOffices();

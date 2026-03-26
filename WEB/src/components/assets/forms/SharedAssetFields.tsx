@@ -37,6 +37,7 @@ interface SharedAssetFieldsProps {
   getUnitOfMeasurementOptions: () => { value: string; label: string }[];
   showAccountabilitySection?: boolean;
   onToggleAccountabilitySection?: () => void;
+  submitted?: boolean;
 }
 
 export function SharedAssetFields({
@@ -63,8 +64,10 @@ export function SharedAssetFields({
   getUnitOfMeasurementOptions,
   showAccountabilitySection,
   onToggleAccountabilitySection,
+  submitted = false,
 }: SharedAssetFieldsProps) {
   const [conditions, setConditions] = useState<string[]>([]);
+  const err = (cond: boolean) => cond ? 'border-red-500 focus-visible:ring-red-500' : '';
 
   useEffect(() => {
     getConditions().then(setConditions).catch(() => {});
@@ -99,23 +102,24 @@ export function SharedAssetFields({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="propertyNumber">
-                Property Number *
+                Property Number <span className="text-red-500">*</span>
               </Label>
               <Input
                 id="propertyNumber"
                 value={formData.propertyNumber}
                 onChange={(e) => handleInputChange('propertyNumber', e.target.value)}
                 required={mode === 'create'}
+                className={err(submitted && !formData.propertyNumber?.trim())}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">Category <span className="text-red-500">*</span></Label>
               <Select
                 value={formData.categoryId?.toString() ?? undefined}
                 onValueChange={(value) => handleInputChange('categoryId', parseInt(value))}
               >
-                <SelectTrigger>
+                <SelectTrigger className={err(submitted && (!formData.categoryId || formData.categoryId <= 0))}>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -129,12 +133,12 @@ export function SharedAssetFields({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="legend">Legend</Label>
+              <Label htmlFor="legend">Legend <span className="text-red-500">*</span></Label>
               <Select
                 value={formData.legendId?.toString() ?? undefined}
                 onValueChange={(value) => handleInputChange('legendId', parseInt(value))}
               >
-                <SelectTrigger>
+                <SelectTrigger className={err(submitted && (!formData.legendId || formData.legendId <= 0))}>
                   <SelectValue placeholder="Select legend" />
                 </SelectTrigger>
                 <SelectContent>
@@ -151,42 +155,46 @@ export function SharedAssetFields({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="serialNumber">Serial Number *</Label>
+              <Label htmlFor="serialNumber">Serial Number <span className="text-red-500">*</span></Label>
               <Input
                 id="serialNumber"
                 value={formData.serialNumber || ''}
                 onChange={(e) => handleInputChange('serialNumber', e.target.value)}
                 required={mode === 'create'}
+                className={err(submitted && !formData.serialNumber?.trim())}
               />
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="description">Description *</Label>
+              <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 required={mode === 'create'}
+                className={err(submitted && !formData.description?.trim())}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="brand">Brand *</Label>
+              <Label htmlFor="brand">Brand <span className="text-red-500">*</span></Label>
               <Input
                 id="brand"
                 value={formData.brand || ''}
                 onChange={(e) => handleInputChange('brand', e.target.value)}
                 required={mode === 'create'}
+                className={err(submitted && !formData.brand?.trim())}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="model">Model *</Label>
+              <Label htmlFor="model">Model <span className="text-red-500">*</span></Label>
               <Input
                 id="model"
                 value={formData.model || ''}
                 onChange={(e) => handleInputChange('model', e.target.value)}
                 required={mode === 'create'}
+                className={err(submitted && !formData.model?.trim())}
               />
             </div>
 
@@ -275,13 +283,13 @@ export function SharedAssetFields({
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="unitOfMeasurement">Unit of Measurement *</Label>
+              <Label htmlFor="unitOfMeasurement">Unit of Measurement <span className="text-red-500">*</span></Label>
               <Select
                 value={formData.unitOfMeasurement}
                 onValueChange={(value) => handleInputChange('unitOfMeasurement', value)}
                 required={mode === 'create'}
               >
-                <SelectTrigger>
+                <SelectTrigger className={err(submitted && !formData.unitOfMeasurement?.trim())}>
                   <SelectValue placeholder="Select unit" />
                 </SelectTrigger>
                 <SelectContent>
@@ -295,7 +303,7 @@ export function SharedAssetFields({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="unitValue">Unit Value *</Label>
+              <Label htmlFor="unitValue">Unit Value <span className="text-red-500">*</span></Label>
               <Input
                 id="unitValue"
                 type="number"
@@ -303,28 +311,31 @@ export function SharedAssetFields({
                 value={formData.unitValue}
                 onChange={(e) => handleInputChange('unitValue', parseFloat(e.target.value) || 0)}
                 required={mode === 'create'}
+                className={err(submitted && (!formData.unitValue || formData.unitValue <= 0))}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="dateAcquired">Date Acquired *</Label>
+              <Label htmlFor="dateAcquired">Date Acquired <span className="text-red-500">*</span></Label>
               <Input
                 id="dateAcquired"
                 type="date"
                 value={formData.dateAcquired ? new Date(formData.dateAcquired).toISOString().split('T')[0] : ''}
                 onChange={(e) => handleInputChange('dateAcquired', e.target.value)}
                 required={mode === 'create'}
+                className={err(submitted && !formData.dateAcquired?.trim())}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="estimatedUsefulLife">Estimated Useful Life (years) *</Label>
+              <Label htmlFor="estimatedUsefulLife">Estimated Useful Life (years) <span className="text-red-500">*</span></Label>
               <Input
                 id="estimatedUsefulLife"
                 type="number"
                 value={formData.estimatedUsefulLife ?? ''}
                 onChange={(e) => handleInputChange('estimatedUsefulLife', parseInt(e.target.value) || 5)}
                 required={mode === 'create'}
+                className={err(submitted && (!formData.estimatedUsefulLife || formData.estimatedUsefulLife <= 0))}
               />
             </div>
           </div>
@@ -422,32 +433,35 @@ export function SharedAssetFields({
                 <fieldset disabled={entry.isActive === false} className="contents">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2 md:col-span-1">
-                    <Label htmlFor={`dateAssigned-${index}`}>Date Assigned *</Label>
+                    <Label htmlFor={`dateAssigned-${index}`}>Date Assigned <span className="text-red-500">*</span></Label>
                     <Input
                       id={`dateAssigned-${index}`}
                       type="date"
                       value={entry.dateAssigned ? toLocalDatetimeInput(entry.dateAssigned).split('T')[0] : ''}
                       onChange={(e) => handleAccountabilityEntryChange(index, 'dateAssigned', new Date(e.target.value).toISOString())}
                       required={mode === 'create'}
+                      className={err(submitted && !!showAccountabilitySection && !entry.dateAssigned)}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4 md:col-span-1">
                     <div className="space-y-2">
-                      <Label htmlFor={`ptrItrNumber-${index}`}>PTR/ITR Number *</Label>
+                      <Label htmlFor={`ptrItrNumber-${index}`}>PTR/ITR Number <span className="text-red-500">*</span></Label>
                       <Input
                         id={`ptrItrNumber-${index}`}
                         value={entry.ptrItrNumber}
                         onChange={(e) => handleAccountabilityEntryChange(index, 'ptrItrNumber', e.target.value)}
                         required={mode === 'create'}
+                        className={err(submitted && !!showAccountabilitySection && !entry.ptrItrNumber?.trim())}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor={`parIcsNumber-${index}`}>PAR/ICS Number *</Label>
+                      <Label htmlFor={`parIcsNumber-${index}`}>PAR/ICS Number <span className="text-red-500">*</span></Label>
                       <Input
                         id={`parIcsNumber-${index}`}
                         value={entry.parIcsNumber}
                         onChange={(e) => handleAccountabilityEntryChange(index, 'parIcsNumber', e.target.value)}
                         required={mode === 'create'}
+                        className={err(submitted && !!showAccountabilitySection && !entry.parIcsNumber?.trim())}
                       />
                     </div>
                   </div>
@@ -461,7 +475,7 @@ export function SharedAssetFields({
                   </div>
                   <div className="grid grid-cols-2 gap-4 md:col-span-2">
                     <div className="flex flex-col gap-2">
-                      <Label>Accountable Employee (Plantilla) *</Label>
+                      <Label>Accountable Employee (Plantilla) <span className="text-red-500">*</span></Label>
                       <ReactSelect
                         options={plantillaEmployeeOptions}
                         value={plantillaEmployeeOptions.find(option =>
@@ -476,6 +490,13 @@ export function SharedAssetFields({
                         }}
                         placeholder="Select plantilla employee"
                         isClearable
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            borderColor: submitted && showAccountabilitySection && !entry.plantillaEmployeeId ? '#ef4444' : base.borderColor,
+                            '&:hover': { borderColor: submitted && showAccountabilitySection && !entry.plantillaEmployeeId ? '#ef4444' : undefined },
+                          }),
+                        }}
                       />
                     </div>
                     <div className="flex flex-col gap-2">
@@ -499,7 +520,7 @@ export function SharedAssetFields({
                   </div>
                   <div className="grid grid-cols-2 gap-4 md:col-span-2">
                     <div className="space-y-2">
-                      <Label htmlFor={`actualOffice-${index}`}>Office *</Label>
+                      <Label htmlFor={`actualOffice-${index}`}>Office <span className="text-red-500">*</span></Label>
                       <Select
                         value={entry.actualOfficeId?.toString() ?? ''}
                         onValueChange={(value) => {
@@ -521,7 +542,7 @@ export function SharedAssetFields({
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor={`actualDivision-${index}`}>Division *</Label>
+                      <Label htmlFor={`actualDivision-${index}`}>Division <span className="text-red-500">*</span></Label>
                       <Select
                         value={entry.actualDivisionId?.toString() ?? ''}
                         onValueChange={(value) => {
@@ -545,7 +566,7 @@ export function SharedAssetFields({
                     </div>
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor={`condition-${index}`}>Condition *</Label>
+                    <Label htmlFor={`condition-${index}`}>Condition <span className="text-red-500">*</span></Label>
                     <Select
                       value={entry.condition}
                       onValueChange={(value) => handleAccountabilityEntryChange(index, 'condition', value)}

@@ -46,6 +46,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
 
   const [showAccountabilitySection, setShowAccountabilitySection] = useState(() => !!(asset.movements && asset.movements.length > 0));
   const [accountabilityEntries, setAccountabilityEntries] = useState<UnifiedMovement[]>([]);
+  const [submitted, setSubmitted] = useState(false);
   const [offices, setOffices] = useState<VwOffice[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
@@ -117,6 +118,37 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitted(true);
+
+    // Validate required fields
+    if (!formData.propertyNumber?.trim() || !formData.description?.trim() || !formData.brand?.trim() || !formData.model?.trim() || !formData.serialNumber?.trim()) {
+      toast.error('Property Number, Description, Brand, Model, and Serial Number are required');
+      return;
+    }
+    if (!formData.categoryId || formData.categoryId <= 0) {
+      toast.error('Category is required');
+      return;
+    }
+    if (!formData.legendId || formData.legendId <= 0) {
+      toast.error('Legend is required');
+      return;
+    }
+    if (!formData.unitOfMeasurement?.trim()) {
+      toast.error('Unit of Measurement is required');
+      return;
+    }
+    if (!formData.unitValue || formData.unitValue <= 0) {
+      toast.error('Unit Value is required and must be greater than 0');
+      return;
+    }
+    if (!formData.dateAcquired?.trim()) {
+      toast.error('Date Acquired is required');
+      return;
+    }
+    if (!formData.estimatedUsefulLife || formData.estimatedUsefulLife <= 0) {
+      toast.error('Estimated Useful Life is required and must be greater than 0');
+      return;
+    }
 
     // Determine group based on unit value
     const group = formData.unitValue <= 49999 ? 'SE' : 'PPE';
@@ -396,6 +428,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         handleRestoreAccountabilityEntry={handleRestoreAccountabilityEntry}
         handleAccountabilityEntryChange={handleAccountabilityEntryChange}
         getUnitOfMeasurementOptions={getUnitOfMeasurementOptions}
+        submitted={submitted}
       />
 
       {/* Form Actions */}
