@@ -17,8 +17,8 @@ const DeliveryManagement = () => {
 
       <Tabs defaultValue="iar" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="iar">Inspection & Acceptance</TabsTrigger>
           <TabsTrigger value="deliveries">Delivery Records</TabsTrigger>
+          <TabsTrigger value="iar">Inspection & Acceptance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="iar" className="space-y-4">

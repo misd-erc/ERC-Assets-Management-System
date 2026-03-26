@@ -14,6 +14,7 @@ namespace PortalDB.Models.ResponseModels.Supply
     {
 
         public long Id { get; set; }
+        public long RecordId { get; set; }
         public string CenterCode { get; set; } = string.Empty;
         public string EntityName { get; set; } = string.Empty;
         public string FundCluster { get; set; } = string.Empty;

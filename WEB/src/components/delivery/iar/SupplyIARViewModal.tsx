@@ -5,21 +5,21 @@ import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/utils/formatters';
 import { formatDate } from '@/utils/dateUtils';
 import { VwSupplyIAR } from '@/types';
-import { FileText, ClipboardCheck } from 'lucide-react';
-import {VwDeliveryRecord} from "@/types/delivery/delivery";
+import { FileText, ClipboardCheck, Package } from 'lucide-react';
+import { VwDeliveryRecord } from "@/types/delivery/delivery";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  record: VwSupplyIAR | null
+  record: VwSupplyIAR | null;
   deliveryRecord: VwDeliveryRecord | null;
 }
 
 export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord }: Props) => {
   if (!record) return null;
-  // if (!deliveryRecord) return null;
 
   const deliveryItems = deliveryRecord?.items || [];
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -42,6 +42,33 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord 
               <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">IAR Date</Label>
               <div className="font-medium text-slate-900">{formatDate(record.iarNumberDate)}</div>
             </div>
+            
+            {/* Linked Delivery Record */}
+            {deliveryRecord && (
+              <>
+                <div className="col-span-2 border-t pt-4"></div>
+                <div className="col-span-2 bg-blue-50/50 p-3 rounded-md border border-blue-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Package className="h-4 w-4 text-blue-600" />
+                    <Label className="text-[10px] uppercase font-bold tracking-wider text-blue-700">Linked Delivery Record</Label>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground text-xs">DR Number:</span>
+                      <div className="font-medium text-blue-700">{deliveryRecord.drNumber}</div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground text-xs">Delivery Date:</span>
+                      <div className="font-medium">{formatDate(deliveryRecord.deliveryDate)}</div>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground text-xs">Items:</span>
+                      <div className="font-medium">{deliveryRecord.items?.length || 0} item(s)</div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
             
             <div className="col-span-2 border-t pt-4"></div>
             
@@ -107,12 +134,10 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord 
              </div>
           </div>
 
-
-          {/* Items List */}
+          {/* Items List from Linked DR */}
           {deliveryItems.length > 0 ? (
-            <div className="space-y-4"> {/* Container to hold the border and the list */}
+            <div className="space-y-4">
               <div className="col-span-2 border-t my-4"></div>
-
               <div>
                 <h3 className="font-semibold mb-3 text-sm">Delivered Items</h3>
                 <div className="space-y-2">

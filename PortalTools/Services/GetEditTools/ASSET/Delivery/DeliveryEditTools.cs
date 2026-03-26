@@ -51,7 +51,6 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                     await context.TblDeliveryRecords.Where(u => u.Id == model.Id)
                         .ExecuteUpdateAsync(u => u
                             .SetProperty(x => x.DRNumberEncrypted, model.DRNumberEncrypted)
-                            .SetProperty(x => x.SupplyIARId, model.SupplyIARId)
                             .SetProperty(x => x.DeliveryDate, model.DeliveryDate)
                             .SetProperty(x => x.EmployeeId, model.EmployeeId)
                             .SetProperty(x => x.RemarksEncrypted, model.RemarksEncrypted)
@@ -75,6 +74,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
             try
             {
                 TblDeliveryRecord? deliveryRecordModel = await _getTools.Supply.GetTblDeliveryRecordAsync(id, context);
+                await context.TblSupplyIARs.Where(x => x.RecordId == id).ExecuteSoftDeleteAsync(context);
                 await context.TblDeliveryRecordItems.Where(x => x.RecordId == id).ExecuteSoftDeleteAsync(context);
                 await context.TblDeliveryRecords.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
                 await AuditTrailTool.LogActivityAsync(_options, $"Deleted a Delivery Record", actionBy: actionBySystemUserId,

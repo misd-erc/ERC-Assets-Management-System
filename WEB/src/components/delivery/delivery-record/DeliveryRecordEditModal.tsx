@@ -8,10 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, X, Package } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
-import { VwSupplyIAR } from '@/types';
-
-// Hooks
-import { useSupplyIAR } from '@/hooks';
 
 // Components
 import { DeliveryItemModal } from './DeliveryItemModal';
@@ -24,19 +20,16 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   mode: 'add' | 'edit';
   record?: VwDeliveryRecord | null;
-  availableIars: VwSupplyIAR[],
   onSubmit: (data: any) => Promise<void>;
 }
 
-export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, availableIars, onSubmit }: Props) => {
-  // const { iars, fetchSupplyIARs } = useSupplyIAR();
+export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSubmit }: Props) => {
   const [loading, setLoading] = useState(false);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     id: 0,
     drNumber: '',
-    supplyIARId: 0,
     deliveryDate: new Date().toISOString().split('T')[0],
     employeeId: 0,
     remarks: '',
@@ -47,16 +40,11 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, avai
   const [items, setItems] = useState<Partial<DeliveryRecordItem>[]>([]);
   const [removedItems, setRemovedItems] = useState<Partial<DeliveryRecordItem>[]>([]);
 
-  // useEffect(() => {
-  //   if (open) fetchSupplyIARs();
-  // }, [open, fetchSupplyIARs]);
-
   useEffect(() => {
     if (mode === 'edit' && record) {
       setFormData({
         id: record.id,
         drNumber: record.drNumber,
-        supplyIARId: record.supplyIAR?.id || 0,
         deliveryDate: record.deliveryDate.split('T')[0],
         employeeId: record.employee?.id || 0,
         remarks: record.remarks,
@@ -67,7 +55,7 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, avai
       setRemovedItems([]);
     } else {
       setFormData({
-        id: 0, drNumber: '', supplyIARId: 0,
+        id: 0, drNumber: '',
         deliveryDate: new Date().toISOString().split('T')[0],
         employeeId: 0, remarks: '', isReceived: false, isActive: true
       });
@@ -132,7 +120,7 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, avai
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{mode === 'add' ? 'Record New Delivery' : 'Edit Delivery Record'}</DialogTitle>
-            <DialogDescription>Enter delivery details and link to an IAR.</DialogDescription>
+            <DialogDescription>Enter delivery details.</DialogDescription>
           </DialogHeader>
           
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -140,28 +128,6 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, avai
               <div className="space-y-2">
                 <Label>DR Number</Label>
                 <Input value={formData.drNumber} onChange={e => setFormData({...formData, drNumber: e.target.value})} required />
-              </div>
-              <div className="space-y-2">
-                <Label>Linked IAR / PO</Label>
-                <Select value={formData.supplyIARId.toString()} onValueChange={val => setFormData({...formData, supplyIARId: Number(val)})}>
-                  <SelectTrigger>
-                    <div className="truncate text-left">
-                      <SelectValue placeholder="Select IAR Reference" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">Select IAR Reference</SelectItem>
-                    {availableIars.map((iar) => {
-                      return (
-                        <SelectItem key={iar.id} value={iar.id.toString()}>
-                          <span className="truncate">
-                            {iar.iarNumber} (PO: {iar.poNumber})
-                          </span>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Delivery Date</Label>

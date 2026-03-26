@@ -8,6 +8,7 @@ namespace PortalDB.Models.QueryParams.Supply
     public class EditSupplyIARQueryParams
     {
         [Required] public long Id { get; set; }
+        [Required] public long RecordId { get; set; }
         [Required] public string CenterCode { get; set; } = string.Empty;
         [Required] public string EntityName { get; set; } = string.Empty;
         [Required] public string FundCluster { get; set; } = string.Empty;

@@ -29,28 +29,8 @@ export const DeliveryRecordViewModal = ({ open, onOpenChange, record }: Props) =
           {/* Header Info */}
           <div className="grid grid-cols-2 gap-4 border-b pb-4">
             <div>
-              <Label className="text-muted-foreground text-xs">Linked IAR Number</Label>
-              <div className="font-medium text-blue-700">{record.supplyIAR?.iarNumber}</div>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-xs">Vendor</Label>
-              <div className="font-medium">{record.supplyIAR?.vendor?.name}</div>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-xs">PO Number</Label>
-              <div className="font-medium">{record.supplyIAR?.poNumber}</div>
-            </div>
-            <div>
               <Label className="text-muted-foreground text-xs">Delivery Date</Label>
               <div className="font-medium">{formatDate(record.deliveryDate)}</div>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-xs">Requisitioning Office / Division</Label>
-              <div className="font-medium">
-                {record.supplyIAR?.office?.name || record.supplyIAR?.division?.name 
-                  ? `${record.supplyIAR?.office?.name ?? ''} / ${record.supplyIAR?.division?.name ?? ''}` 
-                  : 'N/A'}
-              </div>
             </div>
             <div>
               <Label className="text-muted-foreground text-xs">Status</Label>

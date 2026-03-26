@@ -377,6 +377,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
     try {
       await editSupplyIAR({
         id: 0,
+        recordId: iar.recordId || 0,
         centerCode: iar.centerCode || '',
         entityName: iar.entityName || '',
         fundCluster: iar.fundCluster || '',
@@ -404,6 +405,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
     try {
       await editSupplyIAR({
         id: id,
+        recordId: updates.recordId || 0,
         centerCode: updates.centerCode || '',
         entityName: updates.entityName,
         fundCluster: updates.fundCluster,

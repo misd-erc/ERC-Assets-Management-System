@@ -5,8 +5,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useVendor, useOffice, useDivision } from '@/hooks';
+import { VwDeliveryRecord } from '@/types/delivery/delivery';
 
-export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit }: any) => {
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  mode: 'add' | 'edit';
+  record?: any;
+  onSubmit: (data: any) => void;
+  availableDeliveryRecords: VwDeliveryRecord[];
+}
+
+export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit, availableDeliveryRecords }: Props) => {
   const { vendors, fetchVendors } = useVendor();
   const { vwOffices, fetchOffices } = useOffice();
   const { vwDivisions, fetchDivisions } = useDivision();
@@ -22,6 +32,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit 
         vendorId: record.vendor?.id || 0,
         officeId: record.office?.id || 0,
         divisionId: record.division?.id || 0,
+        recordId: record.recordId || 0,
         iarNumberDate: record.iarNumberDate?.split('T')[0] || '',
         poDate: record.poDate?.split('T')[0] || '',
         iarInvoiceNumberDate: record.iarInvoiceNumberDate?.split('T')[0] || ''
@@ -35,7 +46,8 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit 
         vendorId: 0, 
         poNumber: '',
         officeId: 0, 
-        divisionId: 0, 
+        divisionId: 0,
+        recordId: 0,
         iarNumber: '',
         iarNumberDate: '',
         iarInvoiceNumber: '',
@@ -54,6 +66,37 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit 
         <DialogHeader><DialogTitle>{mode === 'add' ? 'New IAR' : 'Edit IAR'}</DialogTitle></DialogHeader>
         <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
+            
+            {/* Linked Delivery Record */}
+            <div className="space-y-2 col-span-2">
+              <Label>Linked Delivery Record (DR)</Label>
+              <Select 
+                value={formData.recordId?.toString()} 
+                onValueChange={v => setFormData({...formData, recordId: Number(v)})}
+              >
+                <SelectTrigger>
+                  <div className="truncate text-left">
+                    <SelectValue placeholder="Select or search DR Number" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="min-w-[300px]">
+                  <SelectItem value="0">Select Delivery Record</SelectItem>
+                  {availableDeliveryRecords.length > 0 ? (
+                    availableDeliveryRecords.map((dr: VwDeliveryRecord) => (
+                      <SelectItem key={dr.id} value={dr.id.toString()}>
+                        <span className="truncate">
+                          {dr.drNumber} • {dr.deliveryDate?.split('T')[0]} • {dr.items?.length || 0} items
+                        </span>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>No pending delivery records available</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">Only shows unlinked, unreceived delivery records.</p>
+            </div>
+            
              <div className="space-y-2"><Label>IAR Number</Label><Input value={formData.iarNumber || ''} onChange={e => setFormData({...formData, iarNumber: e.target.value})} required /></div>
              <div className="space-y-2"><Label>IAR Date</Label><Input type="date" value={formData.iarNumberDate || ''} onChange={e => setFormData({...formData, iarNumberDate: e.target.value})} required /></div>
              
@@ -70,7 +113,6 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit 
                     <SelectValue placeholder="Select Office" />
                   </div>
                 </SelectTrigger>
-                  
                 <SelectContent>
                   <SelectItem value="0">Select Office</SelectItem>
                   {vwOffices.map((o: any) => <SelectItem key={o.id} value={o.id.toString()}>{o.name}</SelectItem>)}
@@ -85,7 +127,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit 
                   <div className="truncate text-left">
                     <SelectValue placeholder="Select Division" />
                   </div>
-                  </SelectTrigger>
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="0">Select Division</SelectItem>
                   {filteredDivisions.map((d: any) => <SelectItem key={d.id} value={d.id.toString()}>{d.name}</SelectItem>)}
@@ -102,7 +144,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit 
               <Select value={formData.vendorId?.toString()} onValueChange={v => setFormData({...formData, vendorId: Number(v)})}>
                 <SelectTrigger>
                   <div className="truncate text-left">
-                  <SelectValue placeholder="Select Vendor" />
+                    <SelectValue placeholder="Select Vendor" />
                   </div>
                 </SelectTrigger>
                 <SelectContent>

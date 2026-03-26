@@ -865,6 +865,7 @@ namespace API.Controllers
                     var supplyIARModel = new SupplyIARResponseModel
                     {
                         Id = x.Id,
+                        RecordId = x.RecordId,
                         CenterCode = x.ResponsibilityCenterCode,
                         EntityName = x.EntityName,
                         FundCluster = x.FundCluster,
@@ -1388,6 +1389,7 @@ namespace API.Controllers
                 TblSupplyIAR supplyIAR = new()
                 {
                     Id = model.Id,
+                    RecordId = model.RecordId,
                     EntityName = model.EntityName,
                     ResponsibilityCenterCode = model.CenterCode,
                     FundCluster = model.FundCluster,
@@ -1409,7 +1411,9 @@ namespace API.Controllers
                     supplyIAR.IsApproved = true;
                     supplyIAR.ApprovedOn = DateTime.UtcNow;
 
-                    List<TblDeliveryRecord>? deliveryRecords = _getTools.Delivery.GetTblDeliveryRecords(context)?.Where(x => x.SupplyIARId == supplyIAR.Id).ToList();
+
+
+                    List<TblDeliveryRecord>? deliveryRecords = _getTools.Delivery.GetTblDeliveryRecords(context)?.Where(x => x.Id == supplyIAR.RecordId).ToList();
                     foreach (var deliveryRecord in deliveryRecords)
                     {
                         deliveryRecord.IsReceived = true;

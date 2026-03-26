@@ -31,6 +31,7 @@ export const getSupplyIARs = async (): Promise<VwSupplyIAR[]> => {
   return Array.isArray(response.data.data.items)
     ? response.data.data.items.map((u: any) => ({
         id: u.id,
+        recordId: u.recordId,
         centerCode: u.centerCode,
         entityName: u.entityName,
         fundCluster: u.fundCluster,
@@ -66,6 +67,7 @@ export const getSupplyIARById = async (iarId: number): Promise<VwSupplyIAR | nul
   const u = response.data.data;
   return {
     id: u.id,
+    recordId: u.recordId,
     centerCode: u.centerCode,
     entityName: u.entityName,
     fundCluster: u.fundCluster,
@@ -91,6 +93,7 @@ export const editSupplyIAR = async (payload: SupplyIAR): Promise<{ message: stri
 
   const requestPayload = {
     Id: payload.id ?? 0,
+    RecordId: payload.recordId,
     CenterCode: payload.centerCode,
     EntityName: payload.entityName,
     FundCluster: payload.fundCluster,

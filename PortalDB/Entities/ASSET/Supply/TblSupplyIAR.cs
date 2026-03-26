@@ -15,6 +15,9 @@ namespace PortalDB.Entities.ASSET.Supply
         [Column("SupplyIARId")]
         public long Id { get; set; }
 
+        [Column("DeliveryRecordId")]
+        public long RecordId { get; set; }
+
         [Column("SupplyResponsibilityCenterCode")]
         public string? ResponsibilityCenterCodeEncrypted { get; set; }
         [NotMapped]

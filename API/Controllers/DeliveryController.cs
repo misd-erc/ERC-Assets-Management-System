@@ -108,7 +108,7 @@ namespace API.Controllers
                         mappedItems.Add(mappedItemModel);
                     }
 
-                    TblSupplyIAR? z = _getTools.Supply.GetTblSupplyIARs(context).FirstOrDefault(iar => iar.Id == x.SupplyIARId);
+                    TblSupplyIAR? z = _getTools.Supply.GetTblSupplyIARs(context).FirstOrDefault(iar => iar.RecordId == x.Id);
                     var supplyIARModel = new SupplyIARResponseModel();
                     if (z != null)
                     {
@@ -206,7 +206,7 @@ namespace API.Controllers
                         mappedItems.Add(mappedItemModel);
                     }
 
-                TblSupplyIAR? z = _getTools.Supply.GetTblSupplyIARs(context).FirstOrDefault(iar => iar.Id == deliveryRecord.SupplyIARId);
+                TblSupplyIAR? z = _getTools.Supply.GetTblSupplyIARs(context).FirstOrDefault(iar => iar.RecordId == deliveryRecord.Id);
 
                 var supplyIARModel = new SupplyIARResponseModel
                 {
@@ -274,7 +274,6 @@ namespace API.Controllers
                 {
                     Id = model.Id,
                     DRNumber = model.DRNumber,
-                    SupplyIARId = model.SupplyIARId,
                     DeliveryDate = model.DeliveryDate,
                     EmployeeId = model.EmployeeId,
                     Remarks = model.Remarks,
