@@ -13,7 +13,7 @@ import { useData } from '@/hooks/data/useData';
 import { AssetOverviewChart } from '@/components/dashboard/AssetOverviewChart';
 import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
 import { PendingApprovalsCard } from '@/components/dashboard/PendingApprovalsCard';
-import { getDashboardSummary, DashboardSummary, getPTADashboard, PTADashboardData } from '@/api/dashboard/dashboardApi';
+import { getDashboardSummary, DashboardSummary, getPTADashboard, PTADashboardData, getSupplyStats, DashboardSupplyStats } from '@/api/dashboard/dashboardApi';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -39,6 +39,7 @@ function Dashboard() {
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [ptaData, setPtaData] = useState<PTADashboardData | null>(null);
+  const [supplyStats, setSupplyStats] = useState<DashboardSupplyStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -48,6 +49,10 @@ function Dashboard() {
         // Fetch PTA dashboard data
         const ptaDashboardData = await getPTADashboard();
         setPtaData(ptaDashboardData);
+
+        // Fetch supply stats
+        const supplyStatsData = await getSupplyStats();
+        setSupplyStats(supplyStatsData);
         
         // Optionally fetch summary data if needed
         // const summaryData = await getDashboardSummary();
@@ -112,6 +117,16 @@ function Dashboard() {
       color: 'bg-green-50 text-green-600 border-green-200'
     },
     {
+      title: 'Supply Total',
+      value: formatCurrency(supplyStats?.totalValue || 0),
+      count: `${(supplyStats?.totalQuantity || 0).toLocaleString()} qty`,
+      description: `${(supplyStats?.totalItems || 0).toLocaleString()} unique items`,
+      changeType: 'neutral' as const,
+      change: supplyStats?.lowStockCount ? `${supplyStats.lowStockCount} low stock` : 'All stocks sufficient',
+      icon: AlertTriangle,
+      color: 'bg-amber-50 text-amber-600 border-amber-200'
+    },
+    {
       title: 'Total Asset Value',
       value: formatCurrency(totalAmount),
       count: `${totalAssets.toLocaleString()} items`,
@@ -120,7 +135,7 @@ function Dashboard() {
       change: 'PPE & SE Combined',
       icon: TrendingUp,
       color: 'bg-indigo-50 text-indigo-600 border-indigo-200'
-    }
+    },
   ];
 
   if (isLoading) {
@@ -152,8 +167,8 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Cards - Enhanced Grid with Amounts in â‚± */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* KPI Cards - Enhanced Grid with Amounts in ₱ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpiData.map((kpi) => (
           <Card key={kpi.title} className={`hover:shadow-lg transition-all duration-200 border-2 ${kpi.color.includes('border') ? kpi.color.split(' ').pop() : 'border-slate-200'}`}>
             <CardContent className="p-6">
@@ -169,8 +184,11 @@ function Dashboard() {
                   <p className="text-xs text-slate-600 font-medium mb-1">{kpi.count}</p>
                   <p className="text-xs text-slate-500 mb-2">{kpi.description}</p>
                   <div className="flex items-center">
-                    <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
-                    <span className="text-xs font-medium text-green-600">
+                    {kpi.changeType === 'neutral' && supplyStats?.lowStockCount
+                      ? <AlertTriangle className="w-3 h-3 text-amber-500 mr-1" />
+                      : <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
+                    }
+                    <span className={`text-xs font-medium ${kpi.changeType === 'neutral' && supplyStats?.lowStockCount ? 'text-amber-500' : 'text-green-600'}`}>
                       {kpi.change}
                     </span>
                   </div>
@@ -186,7 +204,7 @@ function Dashboard() {
         <CardHeader>
           <CardTitle>Asset Portfolio Summary</CardTitle>
           <CardDescription>
-            Breakdown of total asset value of \u20B1{(totalAmount / 1000000).toFixed(2)}M (PPE & SE)
+            Breakdown of total asset value of ₱{((totalAmount + (supplyStats?.totalValue || 0)) / 1000000).toFixed(2)}M (PPE, SE & Supply)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -236,6 +254,36 @@ function Dashboard() {
                 {sePercentage.toFixed(1)}% of total asset value
               </p>
             </div>
+
+            {/* Supply Breakdown */}
+            {(() => {
+              const supplyValue = supplyStats?.totalValue || 0;
+              const grandTotal = totalAmount + supplyValue;
+              const supplyPct = grandTotal > 0 ? (supplyValue / grandTotal) * 100 : 0;
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                      <span className="text-sm font-medium">Supply Items</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{formatCurrency(supplyValue)}</p>
+                      <p className="text-xs text-slate-500">{(supplyStats?.totalQuantity || 0).toLocaleString()} qty · {(supplyStats?.totalItems || 0).toLocaleString()} unique items</p>
+                    </div>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2">
+                    <div
+                      className="bg-amber-500 h-2 rounded-full"
+                      style={{ width: `${supplyPct.toFixed(1)}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-slate-600 text-right">
+                    {supplyPct.toFixed(1)}% of total asset value
+                  </p>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Total Summary */}
@@ -251,8 +299,8 @@ function Dashboard() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-indigo-900">{formatCurrency(totalAmount)}</p>
-                <p className="text-xs text-indigo-600 font-medium">{totalAssets.toLocaleString()} total items</p>
+                <p className="text-2xl font-bold text-indigo-900">{formatCurrency(totalAmount + (supplyStats?.totalValue || 0))}</p>
+                <p className="text-xs text-indigo-600 font-medium">{(totalAssets + (supplyStats?.totalQuantity || 0)).toLocaleString()} total items</p>
               </div>
             </div>
           </div>

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
 using PortalDB.Entities.ASSET.PTA;
+using PortalDB.Entities.ASSET.Supply;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Models.QueryParams.Pagination;
 using PortalDB.Models.QueryParams.Universal;
@@ -230,6 +231,68 @@ namespace API.Controllers
 
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<DashboardDisposalStatsResponseModel>.Ok(result, "Disposal stats retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(DashboardController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // GET api/dashboard/supply-stats
+        [HttpGet("supply-stats")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetSupplyStats([FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                IEnumerable<TblSupplyItem>? supplyItems = await _getTools.Supply.GetTblSupplyItems(context)!.ToListAsync();
+
+                // Sum issued quantities per (Code, Description) from RIS items
+                IEnumerable<TblSupplyRISItem>? risItems = await _getTools.Supply.GetTblSupplyRISItems(context)!.ToListAsync();
+                var issuedStockGroup = risItems
+                    .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.ItemDescription))
+                    .GroupBy(x => new { x.StockNumber, x.ItemDescription })
+                    .ToDictionary(
+                        g => (g.Key.StockNumber, g.Key.ItemDescription),
+                        g => g.Sum(x => x.IssueQuantity));
+
+                // Group supply items by Code+Description (same logic as GetAllSupplyGroups)
+                var groups = supplyItems
+                    .GroupBy(x => new { x.Code, x.Description })
+                    .Select(g =>
+                    {
+                        var firstItem = g.First();
+                        var totalStock = g.Sum(x => x.Quantity ?? 0);
+                        var key = (g.Key.Code, g.Key.Description);
+                        var issued = issuedStockGroup.GetValueOrDefault(key, 0);
+                        var stockOnHand = Math.Max(0, totalStock - issued);
+                        var unitCost = firstItem.UnitCost ?? 0;
+                        var reorderPoint = g.Max(x => x.ReorderPoint ?? 0);
+                        return new
+                        {
+                            StockOnHand = stockOnHand,
+                            TotalValue = stockOnHand * unitCost,
+                            IsLowStock = stockOnHand <= reorderPoint
+                        };
+                    })
+                    .ToList();
+
+                var result = new DashboardSupplyStatsResponseModel
+                {
+                    TotalItems = groups.Count,
+                    TotalQuantity = groups.Sum(x => (long)x.StockOnHand),
+                    TotalValue = groups.Sum(x => (decimal)x.TotalValue),
+                    LowStockCount = groups.Count(x => x.IsLowStock)
+                };
+
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<DashboardSupplyStatsResponseModel>.Ok(result, "Supply stats retrieved"));
             }
             catch (Exception ex)
             {

@@ -89,3 +89,16 @@ export const getDisposalStats = async (): Promise<DashboardDisposalStats> => {
   return response.data.data;
 };
 
+export interface DashboardSupplyStats {
+  totalItems: number;
+  totalQuantity: number;
+  totalValue: number;
+  lowStockCount: number;
+}
+
+export const getSupplyStats = async (): Promise<DashboardSupplyStats> => {
+  const response = await axiosInstance.get(`/Dashboard/supply-stats?${authQuery()}`);
+  if (!response.data.success) throw new Error(response.data.message || 'Failed to fetch supply stats');
+  return response.data.data;
+};
+
