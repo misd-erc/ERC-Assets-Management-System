@@ -14,6 +14,7 @@ export interface VwOffice {
   id: number;
   name: string;
   acronym: string;
+  generalCode?: string;
   users: User[];
   isActive: boolean;
   isDeleted?: boolean;

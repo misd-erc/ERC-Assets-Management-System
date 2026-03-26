@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -114,7 +115,7 @@ interface RegistrySPIEmployeeFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   employees: NormalizedEmployee[];
-  onGenerate: (employee: NormalizedEmployee) => void;
+  onGenerate: (employee: NormalizedEmployee, date: Date) => void;
 }
 
 export function RegistrySPIEmployeeFilterModal({
@@ -123,13 +124,17 @@ export function RegistrySPIEmployeeFilterModal({
   employees,
   onGenerate,
 }: RegistrySPIEmployeeFilterModalProps) {
+  const [step, setStep] = useState<'employee' | 'date'>('employee');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<NormalizedEmployee | null>(null);
+  const [asOfDate, setAsOfDate] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
+      setStep('employee');
       setSearch('');
       setSelected(null);
+      setAsOfDate('');
     }
   }, [isOpen]);
 
@@ -142,48 +147,73 @@ export function RegistrySPIEmployeeFilterModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Generate Registry SPI — Select Employee</DialogTitle>
+          <DialogTitle>
+            {step === 'employee' ? 'Generate Registry SPI — Select Employee' : 'Generate Registry SPI — Select Date'}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <Input
-            placeholder="Search employee name or ID..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-
-          <ScrollArea className="h-64 border rounded-md">
-            <div className="p-2 space-y-1">
-              {filtered.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No employees found</p>
-              ) : filtered.map(emp => (
-                <button
-                  key={emp.id}
-                  onClick={() => setSelected(emp)}
-                  className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                    selected?.id === emp.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'hover:bg-muted'
-                  }`}
-                >
-                  <div className="font-medium">{emp.label}</div>
-                  {emp.employeeIdOriginal && (
-                    <div className="text-xs opacity-70">{emp.employeeIdOriginal}</div>
-                  )}
-                </button>
-              ))}
+        {step === 'employee' ? (
+          <div className="space-y-3">
+            <Input
+              placeholder="Search employee name or ID..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            <ScrollArea className="h-64 border rounded-md">
+              <div className="p-2 space-y-1">
+                {filtered.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No employees found</p>
+                ) : filtered.map(emp => (
+                  <button
+                    key={emp.id}
+                    onClick={() => setSelected(emp)}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                      selected?.id === emp.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted'
+                    }`}
+                  >
+                    <div className="font-medium">{emp.label}</div>
+                    {emp.employeeIdOriginal && (
+                      <div className="text-xs opacity-70">{emp.employeeIdOriginal}</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Employee: <span className="font-medium text-foreground">{selected?.label}</span>
             </div>
-          </ScrollArea>
-        </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Input
+                type="date"
+                value={asOfDate}
+                onChange={e => setAsOfDate(e.target.value)}
+                className="col-span-4"
+              />
+            </div>
+          </div>
+        )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button
-            onClick={() => selected && onGenerate(selected)}
-            disabled={!selected}
-          >
-            Generate Report
+          <Button variant="outline" onClick={step === 'date' ? () => setStep('employee') : onClose}>
+            {step === 'date' ? 'Back' : 'Cancel'}
           </Button>
+          {step === 'employee' ? (
+            <Button onClick={() => setStep('date')} disabled={!selected}>
+              Next
+            </Button>
+          ) : (
+            <Button
+              onClick={() => selected && asOfDate && onGenerate(selected, new Date(asOfDate))}
+              disabled={!asOfDate}
+            >
+              Generate Report
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -195,18 +225,18 @@ export function RegistrySPIEmployeeFilterModal({
 // ─────────────────────────────────────────────────────────────────────────────
 export class RegistrySPIByEmployeeGenerator {
 
-  static async generatePreview(employee: NormalizedEmployee): Promise<string> {
-    const assets = await PTAService.getAllForSEByEmployee(employee.id);
+  static async generatePreview(employee: NormalizedEmployee, date: Date): Promise<string> {
+    const assets = await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
     if (!assets.length) {
-      throw new Error(`No SE assets found issued to ${employee.label}.`);
+      throw new Error(`No SE assets found issued to ${employee.label} for the selected date.`);
     }
     const doc = this.buildDocument(assets, employee);
     const blob = await pdf(doc).toBlob();
     return URL.createObjectURL(blob);
   }
 
-  static async generate(employee: NormalizedEmployee) {
-    const assets = await PTAService.getAllForSEByEmployee(employee.id);
+  static async generate(employee: NormalizedEmployee, date: Date) {
+    const assets = await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
     const doc = this.buildDocument(assets, employee);
     const blob = await pdf(doc).toBlob();
     const url = URL.createObjectURL(blob);

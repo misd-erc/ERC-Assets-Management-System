@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { PTAService } from '@/services/PTAService';
+import { NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 
 /** TABLE CONSTANT */
@@ -137,42 +139,107 @@ const styles = StyleSheet.create({
 interface SESPIFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerate: (date: Date) => void;
+  employees: NormalizedEmployee[];
+  onGenerate: (date: Date, employee: NormalizedEmployee) => void;
 }
 
-export function SESPIFilterModal({ isOpen, onClose, onGenerate }: SESPIFilterModalProps) {
+export function SESPIFilterModal({ isOpen, onClose, employees, onGenerate }: SESPIFilterModalProps) {
+  const [step, setStep] = useState<'employee' | 'date'>('employee');
+  const [search, setSearch] = useState('');
+  const [selectedEmployee, setSelectedEmployee] = useState<NormalizedEmployee | null>(null);
   const [asOfDate, setAsOfDate] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) {
+      setStep('employee');
+      setSearch('');
+      setSelectedEmployee(null);
+      setAsOfDate('');
+    }
+  }, [isOpen]);
+
+  const filtered = employees.filter(e =>
+    e.label.toLowerCase().includes(search.toLowerCase()) ||
+    e.employeeIdOriginal?.toLowerCase().includes(search.toLowerCase())
+  );
 
   const handleGenerate = () => {
     if (!asOfDate) {
       toast.error('Please select a date');
       return;
     }
-    onGenerate(new Date(asOfDate));
+    if (!selectedEmployee) return;
+    onGenerate(new Date(asOfDate), selectedEmployee);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Generate SESPI Report</DialogTitle>
+          <DialogTitle>
+            {step === 'employee' ? 'Generate SESPI Report — Select Employee' : 'Generate SESPI Report — Select Date'}
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">As of Date</Label>
+        {step === 'employee' ? (
+          <div className="space-y-3">
             <Input
-              type="date"
-              value={asOfDate}
-              onChange={(e) => setAsOfDate(e.target.value)}
-              className="col-span-3"
+              placeholder="Search employee name or ID..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
             />
+            <ScrollArea className="h-64 border rounded-md">
+              <div className="p-2 space-y-1">
+                {filtered.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No employees found</p>
+                ) : filtered.map(emp => (
+                  <button
+                    key={emp.id}
+                    onClick={() => setSelectedEmployee(emp)}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                      selectedEmployee?.id === emp.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted'
+                    }`}
+                  >
+                    <div className="font-medium">{emp.label}</div>
+                    {emp.employeeIdOriginal && (
+                      <div className="text-xs opacity-70">{emp.employeeIdOriginal}</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Employee: <span className="font-medium text-foreground">{selectedEmployee?.label}</span>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Input
+                type="date"
+                value={asOfDate}
+                onChange={(e) => setAsOfDate(e.target.value)}
+                className="col-span-4"
+              />
+            </div>
+          </div>
+        )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleGenerate}>Generate Report</Button>
+          <Button variant="outline" onClick={step === 'date' ? () => setStep('employee') : onClose}>
+            {step === 'date' ? 'Back' : 'Cancel'}
+          </Button>
+          {step === 'employee' ? (
+            <Button onClick={() => setStep('date')} disabled={!selectedEmployee}>
+              Next
+            </Button>
+          ) : (
+            <Button onClick={handleGenerate} disabled={!asOfDate}>
+              Generate Report
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -196,17 +263,17 @@ export class SESPIExcelGenerator {
     return TABLE_WIDTH * cols[i];
   }
 
-  static async generateSESPIPreview(asOfDate: Date): Promise<string> {
-    const seAssets = await PTAService.getAllForSE(asOfDate);
-    if (!seAssets.length) throw new Error('No SE assets found for the selected date.');
+  static async generateSESPIPreview(asOfDate: Date, employeeId: number): Promise<string> {
+    const seAssets = await PTAService.getAllForSEByEmployeeAndDate(employeeId, asOfDate);
+    if (!seAssets.length) throw new Error('No SE assets found for the selected employee and date.');
 
     const doc = this.buildDocument(seAssets);
     const blob = await pdf(doc).toBlob();
     return URL.createObjectURL(blob);
   }
 
-  static async generate(asOfDate: Date) {
-    const seAssets = await PTAService.getAllForSE(asOfDate);
+  static async generate(asOfDate: Date, employeeId: number) {
+    const seAssets = await PTAService.getAllForSEByEmployeeAndDate(employeeId, asOfDate);
 
     const doc = this.buildDocument(seAssets);
     const blob = await pdf(doc).toBlob();

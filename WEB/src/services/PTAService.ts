@@ -23,6 +23,8 @@ export interface PTAData {
     actualDivisionId: number | null;
     condition: string;
     isActive: boolean;
+    office?: { id: number; name: string; acronym: string; generalCode?: string; isActive: boolean; isDeleted: boolean; createdAt: string } | null;
+    division?: { id: number; officeId: number; name: string; acronym: string; isActive: boolean; isDeleted: boolean; createdAt: string } | null;
   }>;
 }
 
@@ -119,6 +121,27 @@ export class PTAService {
     }
   }
 
+  static async getAllForSEByEmployeeAndDate(employeeId: number, date: Date): Promise<Asset[]> {
+    try {
+      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+      const pageSize = 1000;
+      const asOfDate = date.toISOString().split('T')[0];
+      const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&GroupName=se&EmployeeId=${employeeId}&AsOfDate=${asOfDate}&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+
+      const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error('Failed to fetch SE assets for employee and date');
+
+      const data = await response.json();
+      const ptaItems: PTAData[] = data.data?.items || [];
+      return ptaItems.map(item => this.mapPTAToAsset(item));
+    } catch (error) {
+      console.error('Error fetching SE assets by employee and date:', error);
+      throw error;
+    }
+  }
+
   static mapPTAToAsset(ptaItem: PTAData): Asset {
     // Map category string to categoryId
     const categoryMapping: { [key: string]: number } = {
@@ -177,8 +200,8 @@ export class PTAService {
         condition: m.condition,
         isActive: m.isActive,
         isDeleted: false,
-        office: undefined,
-        division: undefined,
+        office: m.office,
+        division: m.division,
         createdAt: m.dateAssigned,
         plantillaEmployeeIdOriginal: '',
         nonPlantillaEmployeeIdOriginal: '',

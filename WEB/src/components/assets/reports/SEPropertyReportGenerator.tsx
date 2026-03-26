@@ -160,12 +160,11 @@ export function SEPropertyReportFilterModal({ isOpen, onClose, onGenerate }: SEP
 
         <div className="space-y-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">As of Date</Label>
             <Input
               type="date"
               value={asOfDate}
               onChange={(e) => setAsOfDate(e.target.value)}
-              className="col-span-3"
+              className="col-span-4"
             />
           </div>
         </div>
@@ -256,7 +255,7 @@ export class SEPropertyReportGenerator {
                 'Item Description',
                 'Unit',
                 'Quantity Issued',
-                'Date Acquired',
+                'Date Issued',
                 'Unit Cost',
                 'Amount',
               ].map((h, i) => (
@@ -272,7 +271,9 @@ export class SEPropertyReportGenerator {
                 <Text style={[styles.td, styles.center, { width: this.colWidth(0) }]}>
                   {asset.icsNo}
                 </Text>
-                <Text style={[styles.td, { width: this.colWidth(1) }]} />
+                <Text style={[styles.td, styles.center, { width: this.colWidth(1) }]}>
+                  {asset.latestMovement?.office?.generalCode ?? ''}
+                </Text>
                 <Text style={[styles.td, { width: this.colWidth(2) }]}>
                   {asset.propertyNumber}
                 </Text>
