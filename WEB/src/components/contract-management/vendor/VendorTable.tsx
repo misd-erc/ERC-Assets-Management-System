@@ -17,6 +17,8 @@ interface Props {
 }
 
 export const VendorTable = ({ data, usageCounts, onAdd, onEdit, onDelete, onViewLinkedItems }: Props) => {
+  // console.log(`This is the vendor data: ${data}`);
+
   return (
     <Card>
       <CardHeader>
@@ -35,7 +37,11 @@ export const VendorTable = ({ data, usageCounts, onAdd, onEdit, onDelete, onView
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Vendor Name</TableHead>
+                <TableHead>Vendee</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Contact Number</TableHead>
+                <TableHead>Contact Person</TableHead>
                 <TableHead className="text-center w-[150px]">Supplied Items</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -48,6 +54,10 @@ export const VendorTable = ({ data, usageCounts, onAdd, onEdit, onDelete, onView
                 return (
                   <TableRow key={vendor.id}>
                     <TableCell className="font-medium">{vendor.name}</TableCell>
+                    <TableCell className="font-medium">{vendor.address}</TableCell>
+                    <TableCell className="font-medium">{vendor.email}</TableCell>
+                    <TableCell className="font-medium">{vendor.contact}</TableCell>
+                    <TableCell className="font-medium">{vendor.contactPerson}</TableCell>
                     <TableCell className="text-center">
                        {itemCount > 0 ? (
                          <Button 

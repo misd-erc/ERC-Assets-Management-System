@@ -16,6 +16,10 @@ interface ListResponse<T> {
 const mapVendor = (raw: any): Vendor => ({
   id: raw.id,
   name: raw.name,
+  address: raw.address,
+  email: raw.email,
+  contact: raw.contact,
+  contactPerson: raw.contactPerson,
   isActive: raw.isActive ?? true,
   createdAt: raw.createdAt,
 });
@@ -28,6 +32,8 @@ export const getVendors = async (): Promise<Vendor[]> => {
   const response = await axiosInstance.get<VendorResponse<ListResponse<any>>>('/Supply/vendor/all', {
     params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
   });
+
+
 
   if (!response.data.success) {
     toast.error(response.data.message || 'Failed to fetch vendors');
@@ -63,6 +69,10 @@ export const editVendor = async (payload: Vendor): Promise<{ message: string }> 
   const requestPayload = {
     Id: payload.id ?? 0,
     Name: payload.name,
+    Address: payload.address,
+    Email: payload.email,
+    Contact: payload.contact,
+    ContactPerson: payload.contactPerson,
     IsActive: payload.isActive,
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,

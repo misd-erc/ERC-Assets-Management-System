@@ -11,6 +11,10 @@ export interface Contract {
 export interface Vendor {
   id: number;
   name: string;
+  address: string;
+  email: string;
+  contact: string;
+  contactPerson: string;
   isActive: boolean;
   createdAt?: string;
 }

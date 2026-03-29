@@ -29,7 +29,6 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
 
             try
             {
-
                 bool isInsert = model.Id == 0;
                 TblSupplyVendor? existingSupplyVendor = null;
 
@@ -45,11 +44,13 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                     if (existingSupplyVendor == null)
                         return 0;
 
-                    model.Id = existingSupplyVendor.Id;
-
                     await context.TblSupplyVendors.Where(u => u.Id == model.Id)
                         .ExecuteUpdateAsync(u => u
                             .SetProperty(x => x.NameEncrypted, model.NameEncrypted)
+                            .SetProperty(x => x.AddressEncrypted, model.AddressEncrypted)
+                            .SetProperty(x => x.EmailEncrypted, model.EmailEncrypted)
+                            .SetProperty(x => x.ContactEncrypted, model.ContactEncrypted)
+                            .SetProperty(x => x.ContactPersonEncrypted, model.ContactPersonEncrypted)
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 
@@ -61,6 +62,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                 throw;
             }
         }
+
         public async Task<bool> DeleteTblSupplyVendorAsync(long id, long actionBySystemUserId, PortalDbContext context)
         {
             if (id == 0)
@@ -69,7 +71,12 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
             try
             {
                 TblSupplyVendor? supplyVendorModel = await _getTools.Supply.GetTblSupplyVendorAsync(id, context);
+
+                if (supplyVendorModel == null)
+                    return false;
+
                 await context.TblSupplyVendors.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+
                 await AuditTrailTool.LogActivityAsync(_options, $"Deleted a Supply Vendor", actionBy: actionBySystemUserId,
                     linkedAuditTrailId: AuditTrailTool.TrackChanges(context, supplyVendorModel, null, nameof(TblSupplyVendor), actionBySystemUserId, "Delete"));
 

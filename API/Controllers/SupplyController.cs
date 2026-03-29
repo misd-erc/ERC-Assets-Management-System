@@ -87,6 +87,10 @@ namespace API.Controllers
                     {
                         Id = x.Id,
                         Name = x.Name,
+                        Address = x.Address,
+                        Email = x.Email,
+                        Contact = x.Contact,
+                        ContactPerson = x.ContactPerson,
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
@@ -1252,6 +1256,10 @@ namespace API.Controllers
                 {
                     Id = model.Id,
                     Name = model.Name,
+                    Address = model.Address,
+                    Email = model.Email,
+                    Contact = model.Contact,
+                    ContactPerson = model.ContactPerson,
                     IsActive = model.IsActive
                 };
 
