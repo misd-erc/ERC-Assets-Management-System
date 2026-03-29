@@ -1,5 +1,5 @@
 // src/components/supply-management/supply-grouped/SupplyGroupedItemTable.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { VwSupplyGroupedItem } from '@/types';
 import {
   Table,
@@ -36,12 +36,32 @@ const PAGE_SIZE = 10;
 export const SupplyGroupedItemTable = ({ data, onView, loading }: Props) => {
   const [page, setPage] = useState(1);
 
+  // 1. Add Search State
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // 2. Reset page on new search
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery]);
+
   // State to control the creation modals
   const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
   const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
 
-  const totalPages = Math.ceil(data.length / PAGE_SIZE);
-  const paginatedData = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  // 3. Filter the data FIRST
+  const filteredData = data.filter((item) => {
+    if (!searchQuery) return true;
+
+    const query = String(searchQuery).toLowerCase().trim();
+    const codeStr = String(item.code || '').toLowerCase();
+    const descStr = String(item.description || '').toLowerCase();
+
+    return codeStr.includes(query) || descStr.includes(query);
+  });
+
+  // 4. Paginate the FILTERED data
+  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
+  const paginatedData = filteredData.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   if (loading && data.length === 0) {
     return <p className="text-center text-gray-500 py-12">Loading grouped items...</p>;
@@ -78,7 +98,11 @@ export const SupplyGroupedItemTable = ({ data, onView, loading }: Props) => {
 
           <CardContent>
             <div className="flex items-center justify-between mb-4">
-              <SupplyItemSearchBar />
+              {/* 5. Pass the props to the controlled Search Bar! */}
+              <SupplyItemSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+              />
             </div>
 
             <div className="border rounded-md">
@@ -127,7 +151,8 @@ export const SupplyGroupedItemTable = ({ data, onView, loading }: Props) => {
                         </TableRow>
                     );
                   })}
-                  {data.length === 0 && !loading && (
+                  {/* 6. Update empty state logic to use filteredData */}
+                  {filteredData.length === 0 && !loading && (
                       <TableRow>
                         <TableCell colSpan={6} className="h-24 text-center">
                           No grouped items found.
