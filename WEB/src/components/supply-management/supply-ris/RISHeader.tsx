@@ -25,6 +25,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 
 interface Props {
@@ -111,16 +112,15 @@ export const RISHeader = ({
                   role="combobox"
                   className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
               >
-          <span className="truncate text-slate-700">
-            {header.officeId
-                ? offices.find((o) => o.id === header.officeId)?.name
-                : "Select Office"}
-          </span>
+                <span className="truncate text-slate-700">
+                  {header.officeId
+                      ? offices.find((o) => o.id === header.officeId)?.name
+                      : "Select Office"}
+                </span>
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
               </Button>
             </PopoverTrigger>
 
-            {/* Upgraded Dropdown Container */}
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
               <Command className="bg-white">
 
@@ -135,30 +135,36 @@ export const RISHeader = ({
                 </div>
                 {/* --------------------------- */}
 
-                <CommandEmpty className="py-6 text-center text-sm text-slate-500">
-                  No office found.
-                </CommandEmpty>
+                {/* ✅ Updated CommandList with Scroll Fixes ✅ */}
+                <CommandList
+                    className="max-h-60 overflow-y-auto overscroll-contain"
+                    onWheelCapture={(e) => e.stopPropagation()}
+                >
+                  <CommandEmpty className="py-6 text-center text-sm text-slate-500">
+                    No office found.
+                  </CommandEmpty>
 
-                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
-                  {offices.map((o) => (
-                      <CommandItem
-                          key={o.id}
-                          value={o.name}
-                          onSelect={() => {
-                            handleChange('officeId', o.id);
-                            if (o.id !== header.officeId) handleChange('divisionId', 0);
-                          }}
-                          className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
-                      >
-                        <span className="truncate flex-1">{o.name}</span>
-                        <Check
-                            className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
-                                header.officeId === o.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
-                            }`}
-                        />
-                      </CommandItem>
-                  ))}
-                </CommandGroup>
+                  <CommandGroup className="p-1.5">
+                    {offices.map((o) => (
+                        <CommandItem
+                            key={o.id}
+                            value={o.name}
+                            onSelect={() => {
+                              handleChange('officeId', o.id);
+                              if (o.id !== header.officeId) handleChange('divisionId', 0);
+                            }}
+                            className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                        >
+                          <span className="truncate flex-1">{o.name}</span>
+                          <Check
+                              className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
+                                  header.officeId === o.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                              }`}
+                          />
+                        </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
               </Command>
             </PopoverContent>
           </Popover>
@@ -174,11 +180,11 @@ export const RISHeader = ({
                   role="combobox"
                   className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
               >
-          <span className="truncate text-slate-700">
-            {header.divisionId
-                ? filteredDivisions.find((d) => d.id === header.divisionId)?.name
-                : "Select Division"}
-          </span>
+                <span className="truncate text-slate-700">
+                  {header.divisionId
+                      ? filteredDivisions.find((d) => d.id === header.divisionId)?.name
+                      : "Select Division"}
+                </span>
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
               </Button>
             </PopoverTrigger>
@@ -197,29 +203,35 @@ export const RISHeader = ({
                 </div>
                 {/* --------------------------- */}
 
-                <CommandEmpty className="py-6 text-center text-sm text-slate-500">
-                  No division found.
-                </CommandEmpty>
+                {/* ✅ Updated CommandList with Scroll Fixes ✅ */}
+                <CommandList
+                    className="max-h-60 overflow-y-auto overscroll-contain"
+                    onWheelCapture={(e) => e.stopPropagation()}
+                >
+                  <CommandEmpty className="py-6 text-center text-sm text-slate-500">
+                    No division found.
+                  </CommandEmpty>
 
-                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
-                  {filteredDivisions.map((d) => (
-                      <CommandItem
-                          key={d.id}
-                          value={d.name}
-                          onSelect={() => {
-                            handleChange('divisionId', d.id);
-                          }}
-                          className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
-                      >
-                        <span className="truncate flex-1">{d.name}</span>
-                        <Check
-                            className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
-                                header.divisionId === d.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
-                            }`}
-                        />
-                      </CommandItem>
-                  ))}
-                </CommandGroup>
+                  <CommandGroup className="p-1.5">
+                    {filteredDivisions.map((d) => (
+                        <CommandItem
+                            key={d.id}
+                            value={d.name}
+                            onSelect={() => {
+                              handleChange('divisionId', d.id);
+                            }}
+                            className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                        >
+                          <span className="truncate flex-1">{d.name}</span>
+                          <Check
+                              className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
+                                  header.divisionId === d.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                              }`}
+                          />
+                        </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
               </Command>
             </PopoverContent>
           </Popover>
