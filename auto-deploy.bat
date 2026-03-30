@@ -27,19 +27,6 @@ dotnet publish -c Release -o ../publish
 cd ..
 
 echo ============================
-echo DEPLOYING TO IIS FOLDER
-echo ============================
-
-SET IIS_PATH=C:\inetpub\wwwroot\AMS-UAT
-
-echo Removing existing contents...
-del /q "%IIS_PATH%\*" >nul 2>&1
-for /d %%x in ("%IIS_PATH%\*") do rmdir /s /q "%%x"
-
-echo Copying new build...
-xcopy /s /e /y "publish\*" "%IIS_PATH%\" >nul
-
-echo ============================
-echo DEPLOY COMPLETE
+echo BUILD COMPLETE
 echo ============================
 pause
