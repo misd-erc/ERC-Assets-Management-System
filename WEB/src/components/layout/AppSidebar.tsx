@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState, useEffect } from "react";
+﻿import React, { useCallback, useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -19,10 +19,11 @@ import { decrypt, encrypt } from "@/utils/encryption";
 import {
   moduleConfig,
   fallbackModule,
-  adminOverrideModules, // Make sure this is exported as an array of strings in moduleConfig.ts
+  adminOverrideModules,
 } from "@/utils/moduleConfig";
 
 import { getUserDetails } from "@/api/user-management/authApi";
+
 import { Building } from "lucide-react";
 
 interface NavigationItem {
@@ -43,12 +44,13 @@ export function AppSidebar({ activeModule, onModuleChange }: any) {
   const navigate = useNavigate();
 
   // ----------------------
-  // LOAD USER DETAILS (Kept for caching purposes)
+  // LOAD USER DETAILS
   // ----------------------
   useEffect(() => {
     let isActive = true;
 
     const loadUserDetails = async () => {
+      // Try local cache first
       const encrypted = localStorage.getItem("userDetails");
       if (encrypted) {
         try {
@@ -56,10 +58,11 @@ export function AppSidebar({ activeModule, onModuleChange }: any) {
           if (isActive) setUserDetails(parsed);
           return;
         } catch (err) {
-          console.warn("[Sidebar] Failed to decrypt cached user details", err);
+          console.warn("[Sidebar] Failed to decrypt cached user details, refetching", err);
         }
       }
 
+      // Fallback: fetch fresh details and cache them
       try {
         const fresh = await getUserDetails();
         const encryptedFresh = encrypt(JSON.stringify(fresh));
@@ -78,19 +81,42 @@ export function AppSidebar({ activeModule, onModuleChange }: any) {
   }, []);
 
   // ----------------------
-  // BUILD NAVIGATION GROUPS (SHOW EVERYTHING)
+  // EXTRACT SCOPES (ACRONYM-BASED)
+  // ----------------------
+  const { acronyms } = useMemo(() => {
+    if (!userDetails) return { acronyms: [] };
+
+    const list: string[] = [];
+
+    userDetails.systemRole?.forEach((role: any) => {
+      role.scope?.forEach((s: any) => {
+        if (s.module?.acronym) list.push(s.module.acronym);
+      });
+    });
+
+    return { acronyms: list };
+  }, [userDetails]);
+
+  const effectiveAcronyms = useMemo(() => {
+    const set = new Set(acronyms);
+    // Always surface PPE/SE Issuance while backend scopes are being rolled out
+    set.add("PPEISS");
+    return Array.from(set);
+  }, [acronyms]);
+
+  // ----------------------
+  // BUILD NAVIGATION GROUPS
   // ----------------------
   const navigationGroups: NavigationGroup[] = useMemo(() => {
     const grouped: Record<string, NavigationItem[]> = {};
 
-    // Bypass role checks and just loop through the entire list of modules
-    adminOverrideModules.forEach((acronym) => {
+    effectiveAcronyms.forEach((acronym) => {
       const config = moduleConfig[acronym] || {
         ...fallbackModule,
         id: acronym.toLowerCase(),
-        title: acronym, // Fallback to acronym name if missing
+        title: acronym,
         icon: Building,
-        implemented: true, // Defaulting to true so they are accessible
+        implemented: false,
       };
 
       const item: NavigationItem = {
@@ -114,6 +140,7 @@ export function AppSidebar({ activeModule, onModuleChange }: any) {
       'Administration',
     ];
 
+    // Always put Dashboard at the top
     let dashboardGroup: NavigationGroup | undefined;
     let otherGroups: NavigationGroup[] = [];
 
@@ -133,7 +160,7 @@ export function AppSidebar({ activeModule, onModuleChange }: any) {
     });
 
     return dashboardGroup ? [dashboardGroup, ...otherGroups] : otherGroups;
-  }, []); // Removed acronyms dependency since we show everything
+  }, [acronyms]);
 
   // ----------------------
   // CLICK HANDLER
@@ -153,7 +180,7 @@ export function AppSidebar({ activeModule, onModuleChange }: any) {
     <Sidebar className="w-64 shrink-0 border-r bg-white">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-3 px-4 py-1">
-          <img src="/images/erc-logo.png" alt="ERC Logo" className="w-8 h-8" />
+          <img src="/images/erc-logo.png" className="w-8 h-8" />
           <div className="flex flex-col min-w-0">
             <p className="text-sm font-semibold truncate">
               Energy Regulatory Commission
