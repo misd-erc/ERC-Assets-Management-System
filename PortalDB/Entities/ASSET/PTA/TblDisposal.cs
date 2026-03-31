@@ -2,6 +2,7 @@ using PortalCommon.Utilities;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace PortalDB.Entities.ASSET.PTA
 {
@@ -66,6 +67,7 @@ namespace PortalDB.Entities.ASSET.PTA
         public DateTime? DateDisposed { get; set; }
 
         [Column("DisposalProceedAmount")]
+        [Precision(18, 2)]
         public decimal? ProceedAmount { get; set; }
 
         [Column("DisposalBuyer")]
