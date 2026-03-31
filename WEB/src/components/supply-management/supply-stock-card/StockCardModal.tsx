@@ -116,7 +116,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description }:
                               </Badge>
                             </TableCell>
                             <TableCell className="font-medium text-slate-700">
-                              {item.id}
+                              {item.stockNumber}
                             </TableCell>
                             <TableCell className="text-slate-600">
                               {item.unit?.name || '—'}

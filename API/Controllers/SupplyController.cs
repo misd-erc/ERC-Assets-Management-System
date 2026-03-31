@@ -1,6 +1,7 @@
 ﻿using API.Attributes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Identity.Client;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
 using PortalDB.Entities.ASSET.Delivery;
@@ -1229,6 +1230,136 @@ namespace API.Controllers
                     model.PageSize,
                     totalCount,
                     "Supply RIS Items have been retrieved"
+                ));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("rmsi-items/filter/{categoryId}/{startDate}/{endDate}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> FilterRMSIItems(long categoryId, DateTime startDate, DateTime endDate, [FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // 1. Get supply RIS within date range
+                var supplyRISs = await _getTools.Supply.GetTblSupplyRISs(context)
+                    .Where(x => x.CreatedAt >= startDate && x.CreatedAt <= endDate)
+                    .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode })
+                    .ToListAsync();
+
+                if (!supplyRISs.Any())
+                {
+                    return Ok(ApiResponse<List<FilteredRMSIItemGroupResponseModel>>.Ok(
+                        new List<FilteredRMSIItemGroupResponseModel>(),
+                        "No items found"
+                    ));
+                }
+
+                var supplyRISIds = supplyRISs.Select(x => x.Id).ToList();
+
+                // 2. Get RIS items for those RIS IDs
+                var supplyRISItems = await _getTools.Supply.GetTblSupplyRISItems(context)
+                    .Where(x => supplyRISIds.Contains(x.SupplyRISId.Value))
+                    .Select(x => new
+                    {
+                        x.SupplyRISId,
+                        x.StockNumber,
+                        x.ItemDescription,
+                        x.IssueQuantity
+                    })
+                    .ToListAsync();
+
+                if (!supplyRISItems.Any())
+                {
+                    return Ok(ApiResponse<List<FilteredRMSIItemGroupResponseModel>>.Ok(
+                        new List<FilteredRMSIItemGroupResponseModel>(),
+                        "No items found"
+                    ));
+                }
+
+                // 3. Decrypt and get distinct (StockNumber, Description) pairs from RIS items
+                var risItemPairs = supplyRISItems
+                    .Select(x => new
+                    {
+                        x.StockNumber,
+                        Description = x.ItemDescription
+                    })
+                    .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.Description))
+                    .Distinct()
+                    .ToList();
+
+                // 4. Get supply items that match those pairs and have the given category
+                var allSupplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+                var matchingSupplyItems = allSupplyItems
+                    .Select(x => new
+                    {
+                        x.Code,
+                        x.Description,
+                        x.CategoryId
+                    })
+                    .Where(x => x.CategoryId == categoryId)
+                    .ToList();
+
+                // Filter pairs that exist in supply items (i.e., belong to the category)
+                var validPairs = risItemPairs
+                    .Where(pair => matchingSupplyItems.Any(si => si.Code == pair.StockNumber && si.Description == pair.Description))
+                    .ToList();
+
+                if (!validPairs.Any())
+                {
+                    return Ok(ApiResponse<List<FilteredRMSIItemGroupResponseModel>>.Ok(
+                        new List<FilteredRMSIItemGroupResponseModel>(),
+                        "No items found for the selected category"
+                    ));
+                }
+
+                // Build a map of RIS details by RIS ID for quick lookup
+                var risDetails = supplyRISs.ToDictionary(r => r.Id, r => new { r.RISNumber, r.ResponsibilityCenterCode });
+
+                // Group RIS items by (StockNumber, Description) and compute total and details
+                var decryptedRISItems = supplyRISItems
+                    .Select(x => new
+                    {
+                        RISId = x.SupplyRISId,
+                        x.StockNumber,
+                        Description = x.ItemDescription,
+                        x.IssueQuantity
+                    })
+                    .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.Description))
+                    .ToList();
+
+                var grouped = decryptedRISItems
+                    .Where(x => validPairs.Any(vp => vp.StockNumber == x.StockNumber && vp.Description == x.Description))
+                    .GroupBy(x => new { x.StockNumber, x.Description })
+                    .Select(g => new FilteredRMSIItemGroupResponseModel
+                    {
+                        StockNumber = g.Key.StockNumber,
+                        ItemDescription = g.Key.Description,
+                        Total = g.Sum(x => x.IssueQuantity),
+                        Items = g.Select(x => new FilteredRMSIItemDetailResponseModel
+                        {
+                            RISNumber = risDetails.TryGetValue(x.RISId.Value, out var ris) ? ris.RISNumber : string.Empty,
+                            ResponsibilityCenterCode = risDetails.TryGetValue(x.RISId.Value, out ris) ? ris.ResponsibilityCenterCode : string.Empty,
+                            IssueQuantity = x.IssueQuantity
+                        }).ToList()
+                    })
+                    .ToList();
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.Ok(
+                    grouped,
+                    "Filtered RIS items retrieved"
                 ));
             }
             catch (Exception ex)
