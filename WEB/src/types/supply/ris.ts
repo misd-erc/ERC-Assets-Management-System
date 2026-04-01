@@ -13,6 +13,7 @@ export interface RISItem {
   quantityApproved?: number;
   unitCost?: number;
   purpose?: string;
+
 }
 
 export interface RISRequest {
@@ -125,6 +126,9 @@ export interface VwSupplyRISItem {
   itemRemarks: string;
   isActive: boolean;
   createdAt?: string;
+
+  office?: any;
+  division?: any;
 }
 
 // Request payload for editing a RIS item
