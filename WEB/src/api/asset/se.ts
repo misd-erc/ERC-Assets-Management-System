@@ -42,6 +42,7 @@ export const seApi = {
 		SessionKey: string;
 		GroupName: string;
 		EmployeeId?: number;
+		CategoryId?: number;
 	}): Promise<{ items: SEAsset[]; totalCount: number }> => {
 		const query = new URLSearchParams();
 
@@ -61,6 +62,10 @@ export const seApi = {
 
 		if (params.EmployeeId) {
 			query.append('EmployeeId', params.EmployeeId.toString());
+		}
+
+		if (params.CategoryId) {
+			query.append('CategoryId', params.CategoryId.toString());
 		}
 
 		query.append('ActionBySystemUserId', params.ActionBySystemUserId);

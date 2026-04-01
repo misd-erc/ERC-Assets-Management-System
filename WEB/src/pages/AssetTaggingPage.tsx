@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks';
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
-import { Asset } from '@/types/asset/UnifiedAsset';
 import {
   TAG_TEMPLATES,
   TagTemplate,
@@ -22,53 +21,101 @@ const logoSrc = '/images/erc-logo.png';
 
 export default function AssetTaggingPage() {
   const { user } = useAuth();
-  const [assets, setAssets] = useState<Asset[]>([]);
+
   const [selectedAssets, setSelectedAssets] = useState<number[]>([]);
+  // Cache asset details for selected items (persists across page navigation)
+  const selectedDetailsRef = useRef<Map<number, TaggableAsset>>(new Map());
+
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
   const [tagTemplate, setTagTemplate] = useState<string>('standard');
   const [includeLogo, setIncludeLogo] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [tagPreviews, setTagPreviews] = useState<TagPreview[]>([]);
 
+  // PPE pagination
+  const [ppeItems, setPpeItems] = useState<TaggableAsset[]>([]);
+  const [ppePage, setPpePage] = useState(1);
+  const [ppePageSize, setPpePageSize] = useState(10);
+  const [ppeTotalCount, setPpeTotalCount] = useState(0);
+  const [isPpeLoading, setIsPpeLoading] = useState(true);
+
+  // SE pagination
+  const [seItems, setSeItems] = useState<TaggableAsset[]>([]);
+  const [seePage, setSeePage] = useState(1);
+  const [sePageSize, setSePageSize] = useState(10);
+  const [seTotalCount, setSeTotalCount] = useState(0);
+  const [isSeLoading, setIsSeLoading] = useState(true);
+
+  // Debounce search → reset both pages to 1
   useEffect(() => {
-    const loadAssets = async () => {
-      setIsLoading(true);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPpePage(1);
+      setSeePage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Fetch PPE
+  useEffect(() => {
+    const fetch = async () => {
+      setIsPpeLoading(true);
       try {
-        const response = await UnifiedAssetService.getAll({ PageNumber: 1, PageSize: 10000 });
-        setAssets(response.items || []);
-      } catch (error) {
-        console.error('Error loading assets for tagging:', error);
-        toast.error('Failed to load assets for tagging');
-      } finally {
-        setIsLoading(false);
-      }
+        const res = await UnifiedAssetService.getAll({
+          group: 'PPE',
+          search: debouncedSearch || undefined,
+          PageNumber: ppePage,
+          PageSize: ppePageSize,
+        });
+        setPpeItems(normalizeAssets(res.items || []));
+        setPpeTotalCount(res.totalCount);
+      } catch {}
+      finally { setIsPpeLoading(false); }
     };
+    fetch();
+  }, [ppePage, ppePageSize, debouncedSearch]);
 
-    loadAssets();
-  }, []);
+  // Fetch SE
+  useEffect(() => {
+    const fetch = async () => {
+      setIsSeLoading(true);
+      try {
+        const res = await UnifiedAssetService.getAll({
+          group: 'SE',
+          search: debouncedSearch || undefined,
+          PageNumber: seePage,
+          PageSize: sePageSize,
+        });
+        setSeItems(normalizeAssets(res.items || []));
+        setSeTotalCount(res.totalCount);
+      } catch {}
+      finally { setIsSeLoading(false); }
+    };
+    fetch();
+  }, [seePage, sePageSize, debouncedSearch]);
 
-  const normalizedAssets = useMemo<TaggableAsset[]>(() => normalizeAssets(assets), [assets]);
-
-  const filteredAssets = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    return normalizedAssets.filter((asset) =>
-      [asset.code, asset.description, asset.category, asset.location, asset.assignedTo]
-        .some((field) => field.toLowerCase().includes(term))
-    );
-  }, [normalizedAssets, searchTerm]);
-
-  const handleSelectAsset = (assetId: number) => {
-    setSelectedAssets((prev) =>
-      prev.includes(assetId) ? prev.filter((id) => id !== assetId) : [...prev, assetId]
-    );
+  const handleToggleAsset = (asset: TaggableAsset) => {
+    setSelectedAssets((prev) => {
+      if (prev.includes(asset.id)) {
+        selectedDetailsRef.current.delete(asset.id);
+        return prev.filter((id) => id !== asset.id);
+      }
+      selectedDetailsRef.current.set(asset.id, asset);
+      return [...prev, asset.id];
+    });
   };
 
-  const handleSelectAll = () => {
-    if (selectedAssets.length === filteredAssets.length) {
-      setSelectedAssets([]);
+  const handleSelectAll = (items: TaggableAsset[]) => {
+    const ids = items.map((a) => a.id);
+    const allSelected = ids.every((id) => selectedAssets.includes(id));
+    if (allSelected) {
+      ids.forEach((id) => selectedDetailsRef.current.delete(id));
+      setSelectedAssets((prev) => prev.filter((id) => !ids.includes(id)));
     } else {
-      setSelectedAssets(filteredAssets.map((a) => a.id));
+      items.forEach((a) => selectedDetailsRef.current.set(a.id, a));
+      setSelectedAssets((prev) => [...new Set([...prev, ...ids])]);
     }
   };
 
@@ -81,7 +128,9 @@ export default function AssetTaggingPage() {
     setIsGenerating(true);
 
     try {
-      const selected = normalizedAssets.filter((a) => selectedAssets.includes(a.id));
+      const selected = Array.from(selectedDetailsRef.current.values()).filter((a) =>
+        selectedAssets.includes(a.id)
+      );
       const previews: TagPreview[] = [];
 
       for (const asset of selected) {
@@ -129,26 +178,39 @@ export default function AssetTaggingPage() {
           includeLogo={includeLogo}
           selectedCount={selectedAssets.length}
           isGenerating={isGenerating}
-          isLoading={isLoading}
+          isLoading={isPpeLoading || isSeLoading}
           onTemplateChange={setTagTemplate}
           onToggleLogo={setIncludeLogo}
           onGenerate={handleGenerateTags}
         />
 
         <AssetSelectionCard
-          filteredAssets={filteredAssets}
+          ppeItems={ppeItems}
+          seItems={seItems}
+          ppePage={ppePage}
+          ppePageSize={ppePageSize}
+          ppeTotalCount={ppeTotalCount}
+          sePage={seePage}
+          sePageSize={sePageSize}
+          seTotalCount={seTotalCount}
+          onPpePageChange={setPpePage}
+          onPpePageSizeChange={(s) => { setPpePageSize(s); setPpePage(1); }}
+          onSePageChange={setSeePage}
+          onSePageSizeChange={(s) => { setSePageSize(s); setSeePage(1); }}
           selectedAssets={selectedAssets}
-          isLoading={isLoading}
+          isPpeLoading={isPpeLoading}
+          isSeLoading={isSeLoading}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           onSelectAll={handleSelectAll}
-          onToggleAsset={handleSelectAsset}
+          onToggleAsset={handleToggleAsset}
         />
       </div>
 
       <StatsRow
-        totalAssets={normalizedAssets.length}
-        ppeAssets={normalizedAssets.filter((a) => a.group === 'PPE').length}
+        totalAssets={ppeTotalCount + seTotalCount}
+        ppeAssets={ppeTotalCount}
+        seAssets={seTotalCount}
         selected={selectedAssets.length}
         ready={tagPreviews.length}
       />

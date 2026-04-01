@@ -15,6 +15,7 @@ interface AssetsTableProps {
   onDelete: (asset: Asset) => void;
   currentPage: number;
   totalPages: number;
+  totalCount: number;
   pageSize: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
@@ -28,6 +29,7 @@ export function AssetsTable({
   onDelete,
   currentPage,
   totalPages,
+  totalCount,
   pageSize,
   onPageChange,
   onPageSizeChange,
@@ -283,7 +285,7 @@ export function AssetsTable({
         {assets.length > 0 && (
           <div className="flex items-center justify-between mt-4">
             <div className="text-sm text-muted-foreground">
-              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, assets.length)} of {assets.length} assets
+              Showing {totalCount === 0 ? 0 : ((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} assets
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2">

@@ -6,6 +6,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { Upload, Download, Plus, FileText, Printer, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
@@ -27,6 +28,8 @@ export function AssetsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [ppeTotalCount, setPpeTotalCount] = useState(0);
+  const [seTotalCount, setSeTotalCount] = useState(0);
   const [pageSize, setPageSize] = useState(5);
 
   // Active tab
@@ -76,6 +79,21 @@ export function AssetsPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const uploadProcessingIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // On mount, fetch total counts for both tabs
+  useEffect(() => {
+    const fetchTabCounts = async () => {
+      try {
+        const [ppeRes, seRes] = await Promise.all([
+          UnifiedAssetService.getAll({ group: 'PPE', PageNumber: 1, PageSize: 1 }),
+          UnifiedAssetService.getAll({ group: 'SE', PageNumber: 1, PageSize: 1 }),
+        ]);
+        setPpeTotalCount(ppeRes.totalCount);
+        setSeTotalCount(seRes.totalCount);
+      } catch {}
+    };
+    fetchTabCounts();
+  }, []);
+
   useEffect(() => {
     loadAssets();
   }, [currentPage, pageSize, appliedFilters, activeTab]);
@@ -100,6 +118,8 @@ export function AssetsPage() {
       setAssets(response.items);
       setTotalCount(response.totalCount);
       setTotalPages(Math.ceil(response.totalCount / pageSize));
+      if (activeTab === 'PPE') setPpeTotalCount(response.totalCount);
+      else if (activeTab === 'SE') setSeTotalCount(response.totalCount);
     } catch (error) {
       console.error('Error loading assets:', error);
       toast.error('Failed to load assets');
@@ -642,8 +662,14 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="PPE">PPE Assets</TabsTrigger>
-          <TabsTrigger value="SE">SE Assets</TabsTrigger>
+          <TabsTrigger value="PPE" className="gap-2">
+            PPE Assets
+            <Badge variant="secondary" className="ml-1">{ppeTotalCount.toLocaleString()}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="SE" className="gap-2">
+            SE Assets
+            <Badge variant="secondary" className="ml-1">{seTotalCount.toLocaleString()}</Badge>
+          </TabsTrigger>
         </TabsList>
 
 
@@ -690,6 +716,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
             onDelete={handleDelete}
             currentPage={currentPage}
             totalPages={totalPages}
+            totalCount={totalCount}
             onPageChange={handlePageChange}
             pageSize={pageSize}
             onPageSizeChange={handlePageSizeChange}
@@ -738,6 +765,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
             onDelete={handleDelete}
             currentPage={currentPage}
             totalPages={totalPages}
+            totalCount={totalCount}
             onPageChange={handlePageChange}
             pageSize={pageSize}
             onPageSizeChange={handlePageSizeChange}
