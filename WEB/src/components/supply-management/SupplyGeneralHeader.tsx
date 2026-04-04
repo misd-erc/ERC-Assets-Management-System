@@ -1,20 +1,46 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Package, FileText, BarChart3, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { useSupplyItem } from '@/hooks';
+import {
+  Package,
+  FileText,
+  BarChart3,
+  AlertTriangle,
+  CheckCircle2,
+  AlertOctagon,
+  Truck,
+  TrendingUp
+} from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 
-export const SupplyGeneralHeader = () => {
-  const { vwSupplies } = useSupplyItem();
+// 1. Import your hooks and stores
+import { useSupplyItem } from '@/hooks';
+import { useSupplyIARStore } from '@/store/supply/index';
+import { useRISStore } from '@/store/supply/risStore'; // Adjust path to where your RIS store is located
 
-  // Optimized calculations to prevent unnecessary re-renders
+export const SupplyGeneralHeader = () => {
+  // 2. Consume the stores
+  const { vwSupplies } = useSupplyItem();
+  const { iars, fetchSupplyIARs } = useSupplyIARStore();
+  const { risList, fetchRISs } = useRISStore();
+
+  // 3. Fetch latest IARs and RISs on mount
+  useEffect(() => {
+    fetchSupplyIARs();
+    fetchRISs();
+  }, [fetchSupplyIARs, fetchRISs]);
+
+  // 4. Calculate all metrics
   const stats = useMemo(() => {
+    // --- INVENTORY METRICS (from vwSupplies) ---
     const totalItems = vwSupplies.length;
 
-    // Ensure numbers to avoid string comparison bugs
+    const outOfStockItems = vwSupplies.filter(
+        s => Number(s.currentStock || 0) === 0
+    ).length;
+
     const lowStockItems = vwSupplies.filter(
-        s => Number(s.currentStock || 0) <= Number(s.reorderPoint || 0)
+        s => Number(s.currentStock || 0) > 0 && Number(s.currentStock || 0) <= Number(s.reorderPoint || 0)
     ).length;
 
     const totalInventoryValue = vwSupplies.reduce(
@@ -22,13 +48,63 @@ export const SupplyGeneralHeader = () => {
         0
     );
 
+    // --- DELIVERY METRICS (from IAR Store) ---
+    const pendingDeliveries = iars.filter(iar => !iar.isApproved).length;
+
+    // --- RIS METRICS (from your RIS Store) ---
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    let pendingRIS = 0;
+    let completedRISThisMonth = 0;
+    let issuedValueMTD = 0;
+
+    risList.forEach(ris => {
+      // 1. Pending: Requested but not yet approved or issued
+      if (!ris.risApprovedDate && !ris.risIssuedDate) {
+        pendingRIS++;
+      }
+
+      // 2. Completed (MTD): Has been issued, and the issue date is in the current month/year
+      if (ris.risIssuedDate) {
+        const issueDate = new Date(ris.risIssuedDate);
+        if (issueDate.getMonth() === currentMonth && issueDate.getFullYear() === currentYear) {
+          completedRISThisMonth++;
+
+          // --- NEW: CALCULATE VALUE ISSUED MTD ---
+          // Ensure the RIS has items loaded
+          if (ris.items && ris.items.length > 0) {
+            ris.items.forEach(risItem => {
+              // A. Find the matching supply item in your inventory catalog to get its price
+              // (Assuming 'code' in vwSupplies matches 'stockNumber' in risItem)
+              const matchedSupply = vwSupplies.find(s => s.code === risItem.stockNumber);
+
+              // B. Extract the unit cost (default to 0 if something is missing)
+              const costPerUnit = matchedSupply ? Number(matchedSupply.unitCost || 0) : 0;
+
+              // C. Multiply the cost by the ACTUAL quantity issued (not the requested amount)
+              const itemTotalValue = Number(risItem.issueQuantity || 0) * costPerUnit;
+
+              // D. Add it to our running total
+              issuedValueMTD += itemTotalValue;
+            });
+          }
+        }
+      }
+    });
+
     return {
       totalItems,
+      outOfStockItems,
       lowStockItems,
       totalInventoryValue,
-      pendingRIS: 0 // Mock data
+      pendingDeliveries,
+      pendingRIS,
+      completedRISThisMonth,
+      issuedValueMTD
     };
-  }, [vwSupplies]);
+  }, [vwSupplies, iars, risList]); // Re-calculate when any of these 3 lists change
 
   return (
       <div className="space-y-6 mb-8">
@@ -45,7 +121,7 @@ export const SupplyGeneralHeader = () => {
         {/* Metrics Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
-          {/* 1. Total Items Card */}
+          {/* ROW 1: Current Inventory State */}
           <Card className="hover:shadow-md transition-shadow duration-200 border-slate-200">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
@@ -60,21 +136,34 @@ export const SupplyGeneralHeader = () => {
             </CardContent>
           </Card>
 
-          {/* 2. Low Stock Alert Card (Dynamic State) */}
+          <Card className="hover:shadow-md transition-shadow duration-200 border-slate-200">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-500">Current Stock Value</p>
+                  <p className="text-3xl font-bold text-slate-900 truncate max-w-[150px]" title={formatCurrency(stats.totalInventoryValue)}>
+                    {formatCurrency(stats.totalInventoryValue)}
+                  </p>
+                </div>
+                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl shrink-0">
+                  <BarChart3 className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className={`hover:shadow-md transition-shadow duration-200 ${
-              stats.lowStockItems > 0
-                  ? 'border-red-200 bg-red-50/30'
-                  : 'border-slate-200'
+              stats.lowStockItems > 0 ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200'
           }`}>
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <p className={`text-sm font-medium ${stats.lowStockItems > 0 ? 'text-red-600' : 'text-slate-500'}`}>
+                  <p className={`text-sm font-medium ${stats.lowStockItems > 0 ? 'text-amber-600' : 'text-slate-500'}`}>
                     Low Stock Items
                   </p>
                   <div className="flex items-center gap-2">
                     <p className="text-3xl font-bold text-slate-900">{stats.lowStockItems}</p>
-                    {stats.lowStockItems === 0 && (
+                    {stats.lowStockItems === 0 && stats.outOfStockItems === 0 && (
                         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 mt-1">
                           Healthy
                         </Badge>
@@ -82,21 +171,43 @@ export const SupplyGeneralHeader = () => {
                   </div>
                 </div>
                 <div className={`p-3 rounded-xl ${
-                    stats.lowStockItems > 0
-                        ? 'bg-red-100 text-red-600 animate-pulse'
-                        : 'bg-green-50 text-green-600'
+                    stats.lowStockItems > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-50 text-slate-400'
                 }`}>
-                  {stats.lowStockItems > 0 ? (
-                      <AlertTriangle className="w-5 h-5" />
-                  ) : (
-                      <CheckCircle2 className="w-5 h-5" />
-                  )}
+                  <AlertTriangle className="w-5 h-5" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* 3. Pending RIS Card */}
+          <Card className={`hover:shadow-md transition-shadow duration-200 ${
+              stats.outOfStockItems > 0 ? 'border-red-200 bg-red-50/40' : 'border-slate-200'
+          }`}>
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className={`text-sm font-medium ${stats.outOfStockItems > 0 ? 'text-red-600' : 'text-slate-500'}`}>
+                    Out of Stock
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-3xl font-bold text-slate-900">{stats.outOfStockItems}</p>
+                    {stats.outOfStockItems > 0 && (
+                        <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200 mt-1 animate-pulse">
+                          Critical
+                        </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className={`p-3 rounded-xl ${
+                    stats.outOfStockItems > 0 ? 'bg-red-100 text-red-600' : 'bg-slate-50 text-slate-400'
+                }`}>
+                  <AlertOctagon className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ROW 2: Operations & Velocity */}
+
           <Card className="hover:shadow-md transition-shadow duration-200 border-slate-200">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
@@ -104,25 +215,52 @@ export const SupplyGeneralHeader = () => {
                   <p className="text-sm font-medium text-slate-500">Pending RIS</p>
                   <p className="text-3xl font-bold text-slate-900">{stats.pendingRIS}</p>
                 </div>
-                <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
                   <FileText className="w-5 h-5" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* 4. Total Value Card */}
           <Card className="hover:shadow-md transition-shadow duration-200 border-slate-200">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-slate-500">Total Value</p>
-                  <p className="text-3xl font-bold text-slate-900 truncate max-w-[150px]" title={formatCurrency(stats.totalInventoryValue)}>
-                    {formatCurrency(stats.totalInventoryValue)}
+                  <p className="text-sm font-medium text-slate-500">Completed RIS (MTD)</p>
+                  <p className="text-3xl font-bold text-slate-900">{stats.completedRISThisMonth}</p>
+                </div>
+                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow duration-200 border-slate-200">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-500">Inbound Deliveries</p>
+                  <p className="text-3xl font-bold text-slate-900">{stats.pendingDeliveries}</p>
+                </div>
+                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl shrink-0">
+                  <Truck className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow duration-200 border-slate-200">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-500">Value Issued (MTD)</p>
+                  <p className="text-3xl font-bold text-slate-900 truncate max-w-[150px]" title={formatCurrency(stats.issuedValueMTD)}>
+                    {formatCurrency(stats.issuedValueMTD)}
                   </p>
                 </div>
-                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl shrink-0">
-                  <BarChart3 className="w-5 h-5" />
+                <div className="p-3 bg-purple-50 text-purple-600 rounded-xl shrink-0">
+                  <TrendingUp className="w-5 h-5" />
                 </div>
               </div>
             </CardContent>
