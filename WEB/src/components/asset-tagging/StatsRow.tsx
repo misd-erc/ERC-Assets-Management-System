@@ -4,20 +4,22 @@ import { CheckCircle, Grid3x3, Package, QrCode } from "lucide-react";
 interface StatsRowProps {
   totalAssets: number;
   ppeAssets: number;
+  seAssets: number;
   selected: number;
   ready: number;
 }
 
-export function StatsRow({ totalAssets, ppeAssets, selected, ready }: StatsRowProps) {
+export function StatsRow({ totalAssets, ppeAssets, seAssets, selected, ready }: StatsRowProps) {
   const cards = [
     { label: "Total Assets", value: totalAssets, icon: Package, color: "text-blue-600" },
     { label: "PPE Assets", value: ppeAssets, icon: Grid3x3, color: "text-green-600" },
+    { label: "SE Assets", value: seAssets, icon: Grid3x3, color: "text-sky-600" },
     { label: "Selected", value: selected, icon: CheckCircle, color: "text-purple-600" },
     { label: "Tags Ready", value: ready, icon: QrCode, color: "text-orange-600" },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-5">
       {cards.map((card) => (
         <Card key={card.label}>
           <CardContent className="pt-6">

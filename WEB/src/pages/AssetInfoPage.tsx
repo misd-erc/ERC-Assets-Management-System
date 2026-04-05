@@ -67,10 +67,7 @@ export default function AssetInfoPage() {
       return;
     }
 
-    const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-    const sessionKey = localStorage.getItem('sessionToken') || '';
-
-    const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all/${id}?ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+    const url = `${API_BASE_URL}/Public/asset/${id}`;
 
     fetch(url, { headers: { Accept: 'application/json' } })
       .then(r => {
@@ -84,7 +81,7 @@ export default function AssetInfoPage() {
         setLoading(false);
       })
       .catch(() => {
-        setError('Asset not found or session expired. Please log in to view this asset.');
+        setError('Asset not found. Please verify the QR code or contact the administrator.');
         setLoading(false);
       });
   }, [id]);

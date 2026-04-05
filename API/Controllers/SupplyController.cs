@@ -1595,6 +1595,41 @@ namespace API.Controllers
 
                                 await _editTools.Supply.EditTblSupplyItemAsync(supplyItem, model.ActionBySystemUserId, context);
                             }
+                            else if (deliveryRecordItem.ItemTypeId == 2 || deliveryRecordItem.ItemTypeId == 3)
+                            {
+                                string ptaGroup = deliveryRecordItem.ItemTypeId == 2 ? TblPTA.PPE : TblPTA.SE;
+
+                                TblSupplyUnit? unit = await _getTools.Supply.GetTblSupplyUnitAsync(deliveryRecordItem.UnitId, context);
+                                string unitName = unit?.Name ?? string.Empty;
+
+                                int quantity = (deliveryRecordItem.ItemQuantity ?? 1) > 0 ? (deliveryRecordItem.ItemQuantity ?? 1) : 1;
+                                for (int i = 0; i < quantity; i++)
+                                {
+                                    string propertyNumber = $"{deliveryRecordItem.Code}-{i + 1:D3}";
+
+                                    TblPTA pta = new()
+                                    {
+                                        Group = ptaGroup,
+                                        PropertyNumber = propertyNumber,
+                                        CategoryId = deliveryRecordItem.CategoryId,
+                                        LegendId = null,
+                                        Description = deliveryRecordItem.ItemDescription,
+                                        Brand = null,
+                                        Model = deliveryRecordItem.ItemSpecification,
+                                        SerialNumber = null,
+                                        UnitOfMeasurement = unitName,
+                                        UnitValue = deliveryRecordItem.UnitCost,
+                                        DateAcquired = deliveryRecord.DeliveryDate,
+                                        FiscalDate = deliveryRecord.DeliveryDate,
+                                        IsActive = true
+                                    };
+
+                                    if (ptaGroup == TblPTA.PPE)
+                                        pta.EstimatedUsefulLife = 0;
+
+                                    await _editTools.PTA.EditTblPTAAsync(pta, model.ActionBySystemUserId, context, isBatch: true);
+                                }
+                            }
                         }
 
                         await _editTools.Delivery.EditTblDeliveryRecordAsync(deliveryRecord, model.ActionBySystemUserId, context);
