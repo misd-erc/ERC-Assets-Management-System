@@ -1132,10 +1132,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyVendorName");
 
-                    b.Property<string>("VendeeEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("SupplyVendeeName");
-
                     b.HasKey("Id");
 
                     b.ToTable("tblSupplyVendors", "asset");
