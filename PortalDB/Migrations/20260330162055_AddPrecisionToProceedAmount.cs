@@ -10,21 +10,21 @@ namespace PortalDB.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "SupplyVendeeName",
-                schema: "asset",
-                table: "tblSupplyVendors");
+            //migrationBuilder.DropColumn(
+            //    name: "SupplyVendeeName",
+            //    schema: "asset",
+            //    table: "tblSupplyVendors");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "SupplyVendeeName",
-                schema: "asset",
-                table: "tblSupplyVendors",
-                type: "nvarchar(max)",
-                nullable: true);
+            //migrationBuilder.AddColumn<string>(
+            //    name: "SupplyVendeeName",
+            //    schema: "asset",
+            //    table: "tblSupplyVendors",
+            //    type: "nvarchar(max)",
+            //    nullable: true);
         }
     }
 }
