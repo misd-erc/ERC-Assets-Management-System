@@ -1,4 +1,6 @@
 ﻿using PortalDB.Entities.ASSET.Supply;
+using PortalDB.Entities.DBO.Office;
+using PortalDB.Entities.DBO.Office.Division;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,6 +12,8 @@ namespace PortalDB.Models.ResponseModels.Supply
         public long Id { get; set; }
         public string? StockNumber { get; set; }
         public TblSupplyUnit? Unit { get; set; }
+        public TblOffice? Office { get; set; }
+        public TblDivision? Division { get; set; }
         public string? ItemDescription { get; set; }
         public long CurrentStockQuantity { get; set; }
         public long AddedStockQuantity { get; set; }

@@ -1,3 +1,4 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +44,7 @@ import { ITRGenerationModal } from './ITRGenerationModal';
 import { ReturnReceiptGenerationModal } from './ReturnReceiptGenerationModal';
 import { IIRUPGenerationModal } from './IIRUPGenerator';
 import { toast } from 'sonner';
+import { RSMIReportModal } from "./RSMIReportModal";
 
 
 export function ReportTab() {
@@ -74,6 +76,7 @@ export function ReportTab() {
   const [showPAL, setShowPAL] = useState(false);
   const [showIIRUP, setShowIIRUP] = useState(false);
   const [showIIRUSP, setShowIIRUSP] = useState(false);
+  const [showRSMI, setShowRSMI] = useState(false);
   const [showRegistrySPI, setShowRegistrySPI] = useState(false);
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [customNumber, setCustomNumber] = useState('');
@@ -86,7 +89,7 @@ export function ReportTab() {
         setEmployees(res.data.items.map(normalizeEmployee));
       }
     });
-    
+
     // Reset modal states when component mounts
     setShowItemSelectModal(false);
     setShowItemMovementsModal(false);
@@ -100,6 +103,7 @@ export function ReportTab() {
     setShowPAL(false);
     setShowIIRUP(false);
     setShowIIRUSP(false);
+    setShowRSMI(false);
     setShowRegistrySPI(false);
     setSelectedReport(null);
     setSelectedItem(null);
@@ -152,7 +156,7 @@ export function ReportTab() {
     setSelectedMovement(movement);
     setShowItemMovementsModal(false);
     const number = movement?.parIcsNumber ||
-      (selectedReport === 'ICS' ? ICSGenerator.generateICSNumber() : PARGenerator.generatePARNumber());
+        (selectedReport === 'ICS' ? ICSGenerator.generateICSNumber() : PARGenerator.generatePARNumber());
     setCustomNumber(number);
     if (sigDate) setSignatureDate(sigDate);
     setShowPreview(true);
@@ -165,9 +169,9 @@ export function ReportTab() {
     try {
       if (!item) throw new Error('No item selected');
       const url =
-        selectedReport === 'ICS'
-          ? await ICSGenerator.generateICSPreview(item, movement, number, sigDate)
-          : await PARGenerator.generatePARPreview(item, movement, number, sigDate);
+          selectedReport === 'ICS'
+              ? await ICSGenerator.generateICSPreview(item, movement, number, sigDate)
+              : await PARGenerator.generatePARPreview(item, movement, number, sigDate);
       setPreviewUrl(url);
     } catch (error) {
       console.error('Preview generation failed:', error);
@@ -437,226 +441,237 @@ export function ReportTab() {
       bgColor: 'bg-fuchsia-700',
       action: () => setShowIIRUSP(true)
     },
+    {
+      title: 'RSMI',
+      subtitle: 'Report of Supplies and Materials Issued',
+      icon: FileText,
+      bgColor: 'bg-cyan-600',
+      action: () => setShowRSMI(true)
+    }
   ]), []);
 
   const filteredReports = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     if (!q) return reports;
     return reports.filter(r =>
-      r.title.toLowerCase().includes(q) ||
-      r.subtitle.toLowerCase().includes(q)
+        r.title.toLowerCase().includes(q) ||
+        r.subtitle.toLowerCase().includes(q)
     );
   }, [reports, searchTerm]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6">
-      <div className="max-w-7xl mx-auto space-y-12">
-        {/* Header Section */}
-        <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
-            Reports
-          </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Generate comprehensive reports for asset management
-          </p>
-          <div className="max-w-xl mx-auto">
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search reports by name or description"
-            />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-6">
+        <div className="max-w-7xl mx-auto space-y-12">
+          {/* Header Section */}
+          <div className="text-center space-y-4">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
+              Reports
+            </h1>
+            <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+              Generate comprehensive reports for asset management
+            </p>
+            <div className="max-w-xl mx-auto">
+              <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search reports by name or description"
+              />
+            </div>
           </div>
+
+          {/* Reports Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredReports.map((r, i) => (
+                <Card
+                    key={i}
+                    onClick={r.action}
+                    className="cursor-pointer group hover:shadow-xl transition-all duration-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                >
+                  <CardContent className="p-8 text-center">
+                    <div className="space-y-4">
+                      <div className={`inline-flex items-center justify-center w-16 h-16 rounded-xl ${r.bgColor} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                        {renderIcon(r.icon)}
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">
+                          {r.title}
+                        </h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                          {r.subtitle}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+            ))}
+          </div>
+
+
         </div>
 
-        {/* Reports Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredReports.map((r, i) => (
-            <Card
-              key={i}
-              onClick={r.action}
-              className="cursor-pointer group hover:shadow-xl transition-all duration-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
-            >
-              <CardContent className="p-8 text-center">
-                <div className="space-y-4">
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-xl ${r.bgColor} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    {renderIcon(r.icon)}
+        {/* Modals */}
+        <EmployeeSelectModal
+            isOpen={showEmployeeModal}
+            employees={employees}
+            onClose={() => setShowEmployeeModal(false)}
+            onSelect={handleEmployeeSelect}
+        />
+
+        {showItemSelectModal === true && selectedReport !== null && (
+            <ItemSelectModal
+                key={`item-select-modal-${selectedReport}`}
+                isOpen={true}
+                onClose={() => {
+                  console.log('[ReportTab] ItemSelectModal onClose called');
+                  setShowItemSelectModal(false);
+                }}
+                onSelect={handleItemSelect}
+                groupType={selectedReport === 'ICS' ? 'SE' : 'PPE'}
+                title={`Select ${selectedReport === 'ICS' ? 'SE' : 'PPE'} Item`}
+            />
+        )}
+
+        <ItemMovementsModal
+            isOpen={showItemMovementsModal}
+            onClose={() => {
+              setShowItemMovementsModal(false);
+              setSelectedItem(null);
+              setSelectedMovement(null);
+              setShowItemSelectModal(false);
+            }}
+            item={selectedItem}
+            onConfirm={handleMovementSelect}
+        />
+
+
+        {/* Fullscreen Preview */}
+        {showPreview && (
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex flex-col items-center justify-center">
+              <div className="w-full max-w-6xl h-[90vh] flex flex-col bg-white rounded-lg shadow-xl relative">
+                <div className="flex items-center justify-between px-6 py-4 border-b">
+                  <div className="flex items-center gap-2">
+                    <Download className="size-5 text-blue-600" />
+                    <span className="font-semibold text-lg text-slate-900">Preview {selectedReport === 'PAR' ? 'Property Acknowledgement Receipt (PAR)' :
+                        selectedReport === 'ICS' ? 'Inventory Custodian Slip (ICS)' :
+                            selectedReport === 'PTR' ? 'Property Transfer Report (PTR)' :
+                                selectedReport === 'ITR' ? 'Inventory Transfer Report (ITR)' :
+                                    selectedReport === 'RPCPPE' ? 'Report on the Physical Count of Property, Plant and Equipment (RPCPPE)' :
+                                        selectedReport === 'PAL' ? 'Property Accountability List (PAL)' :
+                                            selectedReport === 'SESPI' ? 'Registry SPI Semi-Expandable Property (SESPI)' :
+                                                selectedReport === 'SESPI-REPORT' ? 'Report of Semi-Expandable Property Issued' :
+                                                    ''}
+                </span>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-1">
-                      {r.title}
-                    </h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      {r.subtitle}
-                    </p>
-                  </div>
+                  <button
+                      className="ml-auto text-slate-500 hover:text-red-600 transition-colors"
+                      onClick={() => setShowPreview(false)}
+                      disabled={loadingPreview}
+                      aria-label="Close Preview"
+                  >
+                    <X className="size-6" />
+                  </button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <div className="flex-1 min-h-0 overflow-auto">
+                  {loadingPreview ? (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="flex flex-col items-center gap-4">
+                          <Loader2 className="size-8 animate-spin text-blue-600" />
+                          <p className="text-muted-foreground">Generating preview...</p>
+                        </div>
+                      </div>
+                  ) : previewUrl ? (
+                      <iframe
+                          src={previewUrl}
+                          className="w-full h-[70vh] border-none rounded-b-lg"
+                          title={`${selectedReport} Preview`}
+                      />
+                  ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-muted-foreground">No preview available</p>
+                      </div>
+                  )}
+                </div>
+                <div className="flex justify-end gap-2 px-6 py-4 border-t">
+                  <Button variant="outline" onClick={() => setShowPreview(false)} disabled={loadingPreview}>
+                    <X className="size-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button onClick={handlePreviewConfirm} disabled={loadingPreview || !previewUrl}>
+                    <Download className="size-4 mr-2" />
+                    Confirm Download
+                  </Button>
+                </div>
+              </div>
+            </div>
+        )}
 
+        <RPCPPEFilterModal
+            isOpen={showRPCPPE}
+            onClose={() => setShowRPCPPE(false)}
+            onGenerate={handleRPCPPEGenerate}
+        />
+
+        <PTRGenerationModal
+            isOpen={showPTR}
+            onClose={() => setShowPTR(false)}
+            employees={employees}
+        />
+
+        <ITRGenerationModal
+            isOpen={showITR}
+            onClose={() => setShowITR(false)}
+            employees={employees}
+        />
+
+        <ReturnReceiptGenerationModal
+            isOpen={showRRPPE}
+            onClose={() => setShowRRPPE(false)}
+            returnType="RRPPE"
+        />
+
+        <ReturnReceiptGenerationModal
+            isOpen={showRRSP}
+            onClose={() => setShowRRSP(false)}
+            returnType="RRSP"
+        />
+
+        <SESPIFilterModal
+            isOpen={showSESPI}
+            onClose={() => setShowSESPI(false)}
+            employees={employees}
+            onGenerate={handleSESPIGenerate}
+        />
+
+        <RegistrySPIEmployeeFilterModal
+            isOpen={showRegistrySPI}
+            onClose={() => setShowRegistrySPI(false)}
+            employees={employees}
+            onGenerate={handleRegistrySPIGenerate}
+        />
+
+        <SEPropertyReportFilterModal
+            isOpen={showSEPropertyReport}
+            onClose={() => setShowSEPropertyReport(false)}
+            onGenerate={handleSEPropertyReportGenerate}
+        />
+
+        <IIRUPGenerationModal
+            isOpen={showIIRUP}
+            onClose={() => setShowIIRUP(false)}
+            reportType="IIRUP"
+        />
+
+        <IIRUPGenerationModal
+            isOpen={showIIRUSP}
+            onClose={() => setShowIIRUSP(false)}
+            reportType="IIRUSP"
+        />
+
+        <RSMIReportModal
+            isOpen={showRSMI}
+            onClose={() => setShowRSMI(false)}
+        />
 
       </div>
-
-      {/* Modals */}
-      <EmployeeSelectModal
-        isOpen={showEmployeeModal}
-        employees={employees}
-        onClose={() => setShowEmployeeModal(false)}
-        onSelect={handleEmployeeSelect}
-      />
-
-      {showItemSelectModal === true && selectedReport !== null && (
-        <ItemSelectModal
-          key={`item-select-modal-${selectedReport}`}
-          isOpen={true}
-          onClose={() => {
-            console.log('[ReportTab] ItemSelectModal onClose called');
-            setShowItemSelectModal(false);
-          }}
-          onSelect={handleItemSelect}
-          groupType={selectedReport === 'ICS' ? 'SE' : 'PPE'}
-          title={`Select ${selectedReport === 'ICS' ? 'SE' : 'PPE'} Item`}
-        />
-      )}
-
-      <ItemMovementsModal
-        isOpen={showItemMovementsModal}
-        onClose={() => {
-          setShowItemMovementsModal(false);
-          setSelectedItem(null);
-          setSelectedMovement(null);
-          setShowItemSelectModal(false);
-        }}
-        item={selectedItem}
-        onConfirm={handleMovementSelect}
-      />
-
-
-      {/* Fullscreen Preview */}
-      {showPreview && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex flex-col items-center justify-center">
-          <div className="w-full max-w-6xl h-[90vh] flex flex-col bg-white rounded-lg shadow-xl relative">
-            <div className="flex items-center justify-between px-6 py-4 border-b">
-              <div className="flex items-center gap-2">
-                <Download className="size-5 text-blue-600" />
-                <span className="font-semibold text-lg text-slate-900">Preview {selectedReport === 'PAR' ? 'Property Acknowledgement Receipt (PAR)' :
-                  selectedReport === 'ICS' ? 'Inventory Custodian Slip (ICS)' :
-                  selectedReport === 'PTR' ? 'Property Transfer Report (PTR)' :
-                  selectedReport === 'ITR' ? 'Inventory Transfer Report (ITR)' :
-                  selectedReport === 'RPCPPE' ? 'Report on the Physical Count of Property, Plant and Equipment (RPCPPE)' :
-                  selectedReport === 'PAL' ? 'Property Accountability List (PAL)' :
-                  selectedReport === 'SESPI' ? 'Registry SPI Semi-Expandable Property (SESPI)' :
-                  selectedReport === 'SESPI-REPORT' ? 'Report of Semi-Expandable Property Issued' :
-                  ''}
-                </span>
-              </div>
-              <button
-                className="ml-auto text-slate-500 hover:text-red-600 transition-colors"
-                onClick={() => setShowPreview(false)}
-                disabled={loadingPreview}
-                aria-label="Close Preview"
-              >
-                <X className="size-6" />
-              </button>
-            </div>
-            <div className="flex-1 min-h-0 overflow-auto">
-              {loadingPreview ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="size-8 animate-spin text-blue-600" />
-                    <p className="text-muted-foreground">Generating preview...</p>
-                  </div>
-                </div>
-              ) : previewUrl ? (
-                <iframe
-                  src={previewUrl}
-                  className="w-full h-[70vh] border-none rounded-b-lg"
-                  title={`${selectedReport} Preview`}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-muted-foreground">No preview available</p>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end gap-2 px-6 py-4 border-t">
-              <Button variant="outline" onClick={() => setShowPreview(false)} disabled={loadingPreview}>
-                <X className="size-4 mr-2" />
-                Cancel
-              </Button>
-              <Button onClick={handlePreviewConfirm} disabled={loadingPreview || !previewUrl}>
-                <Download className="size-4 mr-2" />
-                Confirm Download
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <RPCPPEFilterModal
-        isOpen={showRPCPPE}
-        onClose={() => setShowRPCPPE(false)}
-        onGenerate={handleRPCPPEGenerate}
-      />
-
-      <PTRGenerationModal
-        isOpen={showPTR}
-        onClose={() => setShowPTR(false)}
-        employees={employees}
-      />
-
-      <ITRGenerationModal
-        isOpen={showITR}
-        onClose={() => setShowITR(false)}
-        employees={employees}
-      />
-
-      <ReturnReceiptGenerationModal
-        isOpen={showRRPPE}
-        onClose={() => setShowRRPPE(false)}
-        returnType="RRPPE"
-      />
-
-      <ReturnReceiptGenerationModal
-        isOpen={showRRSP}
-        onClose={() => setShowRRSP(false)}
-        returnType="RRSP"
-      />
-
-      <SESPIFilterModal
-        isOpen={showSESPI}
-        onClose={() => setShowSESPI(false)}
-        employees={employees}
-        onGenerate={handleSESPIGenerate}
-      />
-
-      <RegistrySPIEmployeeFilterModal
-        isOpen={showRegistrySPI}
-        onClose={() => setShowRegistrySPI(false)}
-        employees={employees}
-        onGenerate={handleRegistrySPIGenerate}
-      />
-
-      <SEPropertyReportFilterModal
-        isOpen={showSEPropertyReport}
-        onClose={() => setShowSEPropertyReport(false)}
-        onGenerate={handleSEPropertyReportGenerate}
-      />
-
-      <IIRUPGenerationModal
-        isOpen={showIIRUP}
-        onClose={() => setShowIIRUP(false)}
-        reportType="IIRUP"
-      />
-
-      <IIRUPGenerationModal
-        isOpen={showIIRUSP}
-        onClose={() => setShowIIRUSP(false)}
-        reportType="IIRUSP"
-      />
-
-
-    </div>
   );
 }

@@ -12,4 +12,6 @@ export interface SupplyStockCardItem {
   itemRemarks: string | null;
   isActive: boolean;
   createdAt: string;
+  office?: any;
+  division?: any;
 }

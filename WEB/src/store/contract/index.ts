@@ -51,6 +51,10 @@ export const useVendorStore = create<VendorState>((set, get) => ({
       await editVendor({
         id: 0,
         name: vendor.name || '',
+        address: vendor.address || '',
+        email: vendor.email || '',
+        contact: vendor.contact || '',
+        contactPerson: vendor.contactPerson || '',
         isActive: vendor.isActive ?? true,
       });
       await get().fetchVendors();
@@ -65,6 +69,10 @@ export const useVendorStore = create<VendorState>((set, get) => ({
       await editVendor({
         id: id,
         name: updates.name || '',
+        address: updates.address || '',
+        email: updates.email || '',
+        contact: updates.contact || '',
+        contactPerson: updates.contactPerson || '',
         isActive: updates.isActive ?? true
       });
       await get().fetchVendors();

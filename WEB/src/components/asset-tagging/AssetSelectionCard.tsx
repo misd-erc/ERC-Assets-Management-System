@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,53 +10,71 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Package, Search } from "lucide-react";
 
 interface AssetSelectionCardProps {
-  filteredAssets: TaggableAsset[];
+  ppeItems: TaggableAsset[];
+  seItems: TaggableAsset[];
+  ppePage: number;
+  ppePageSize: number;
+  ppeTotalCount: number;
+  sePage: number;
+  sePageSize: number;
+  seTotalCount: number;
+  onPpePageChange: (p: number) => void;
+  onPpePageSizeChange: (s: number) => void;
+  onSePageChange: (p: number) => void;
+  onSePageSizeChange: (s: number) => void;
   selectedAssets: number[];
-  isLoading: boolean;
+  isPpeLoading: boolean;
+  isSeLoading: boolean;
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  onSelectAll: () => void;
-  onToggleAsset: (id: number) => void;
+  onSelectAll: (items: TaggableAsset[]) => void;
+  onToggleAsset: (asset: TaggableAsset) => void;
 }
 
 export function AssetSelectionCard({
-  filteredAssets,
+  ppeItems,
+  seItems,
+  ppePage,
+  ppePageSize,
+  ppeTotalCount,
+  sePage,
+  sePageSize,
+  seTotalCount,
+  onPpePageChange,
+  onPpePageSizeChange,
+  onSePageChange,
+  onSePageSizeChange,
   selectedAssets,
-  isLoading,
+  isPpeLoading,
+  isSeLoading,
   searchTerm,
   onSearchChange,
   onSelectAll,
   onToggleAsset,
 }: AssetSelectionCardProps) {
-  const [page, setPage] = useState(1);
   const [activeGroup, setActiveGroup] = useState<"PPE" | "SE">("PPE");
-  const pageSize = 10;
 
-  useEffect(() => {
-    setPage(1);
-  }, [searchTerm, filteredAssets.length, activeGroup]);
+  const isPpe = activeGroup === "PPE";
+  const items = isPpe ? ppeItems : seItems;
+  const page = isPpe ? ppePage : sePage;
+  const pageSize = isPpe ? ppePageSize : sePageSize;
+  const totalCount = isPpe ? ppeTotalCount : seTotalCount;
+  const isLoading = isPpe ? isPpeLoading : isSeLoading;
+  const setPage = isPpe ? onPpePageChange : onSePageChange;
+  const setPageSize = isPpe ? onPpePageSizeChange : onSePageSizeChange;
 
-  const groupedAssets = useMemo(
-    () => filteredAssets.filter((a) => a.group === activeGroup),
-    [filteredAssets, activeGroup]
-  );
-
-  const totalPages = Math.max(1, Math.ceil(groupedAssets.length / pageSize));
-
-  const paginatedAssets = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return groupedAssets.slice(start, start + pageSize);
-  }, [groupedAssets, page]);
-
-  const ppeCount = filteredAssets.filter((a) => a.group === "PPE").length;
-  const seCount = filteredAssets.filter((a) => a.group === "SE").length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const allCurrentSelected = items.length > 0 && items.every((a) => selectedAssets.includes(a.id));
 
   const columns = [
     {
       key: "select",
       label: "",
-      render: (_: any, asset: TaggableAsset) => (
-        <Checkbox checked={selectedAssets.includes(asset.id)} onCheckedChange={() => onToggleAsset(asset.id)} />
+      render: (_: unknown, asset: TaggableAsset) => (
+        <Checkbox
+          checked={selectedAssets.includes(asset.id)}
+          onCheckedChange={() => onToggleAsset(asset)}
+        />
       ),
     },
     { key: "code", label: "Asset Code" },
@@ -71,24 +89,41 @@ export function AssetSelectionCard({
         {isLoading ? (
           <div className="p-6 text-sm text-muted-foreground">Loading assets...</div>
         ) : (
-          <DataTable data={paginatedAssets} columns={columns} />
+          <DataTable data={items} columns={columns} />
         )}
       </div>
 
-      {!isLoading && groupedAssets.length > 0 && (
+      {!isLoading && totalCount > 0 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>
-            Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, groupedAssets.length)} of {groupedAssets.length}
+            Showing {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, totalCount)} of {totalCount.toLocaleString()}
           </span>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+            <label className="text-xs">Per page:</label>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="h-7 rounded-md border border-input bg-background px-2 py-0.5 text-xs"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page === 1}
+            >
               Prev
             </Button>
             <span>Page {page} / {totalPages}</span>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
               disabled={page === totalPages}
             >
               Next
@@ -97,7 +132,7 @@ export function AssetSelectionCard({
         </div>
       )}
 
-      {!isLoading && groupedAssets.length === 0 && (
+      {!isLoading && totalCount === 0 && (
         <div className="text-center py-12">
           <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg mb-2">No assets found</h3>
@@ -127,8 +162,8 @@ export function AssetSelectionCard({
               className="pl-9"
             />
           </div>
-          <Button variant="outline" onClick={onSelectAll} disabled={isLoading}>
-            {selectedAssets.length === filteredAssets.length && filteredAssets.length > 0 ? "Deselect All" : "Select All"}
+          <Button variant="outline" onClick={() => onSelectAll(items)} disabled={isLoading || items.length === 0}>
+            {allCurrentSelected ? "Deselect Page" : "Select Page"}
           </Button>
         </div>
 
@@ -136,11 +171,11 @@ export function AssetSelectionCard({
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="PPE">
               PPE
-              <Badge variant="secondary" className="ml-2 text-xs">{ppeCount}</Badge>
+              <Badge variant="secondary" className="ml-2 text-xs">{ppeTotalCount.toLocaleString()}</Badge>
             </TabsTrigger>
             <TabsTrigger value="SE">
               SE
-              <Badge variant="secondary" className="ml-2 text-xs">{seCount}</Badge>
+              <Badge variant="secondary" className="ml-2 text-xs">{seTotalCount.toLocaleString()}</Badge>
             </TabsTrigger>
           </TabsList>
           <TabsContent value="PPE" className="space-y-3 mt-3">{renderTable()}</TabsContent>

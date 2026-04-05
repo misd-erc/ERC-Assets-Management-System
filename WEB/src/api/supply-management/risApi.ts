@@ -43,6 +43,8 @@ const mapVwSupplyRISItem = (raw: any): VwSupplyRISItem => ({
   itemRemarks: raw.itemRemarks,
   isActive: raw.isActive ?? true,
   createdAt: raw.createdAt,
+  office: raw.office,
+  division: raw.division,
 });
 
 // ------------------- GET -------------------
