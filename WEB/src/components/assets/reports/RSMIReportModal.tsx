@@ -19,7 +19,6 @@ import { Loader2, Filter, FileText, ChevronDown, ChevronRight, Download, AlertCi
 import { useRSMIReport } from '@/hooks/supply/useRSMIReport';
 import { getCategories } from '@/api/asset/inventoryApi';
 
-// 1. Import your existing PDF library
 import {
     pdf,
     Document,
@@ -29,127 +28,162 @@ import {
     StyleSheet
 } from '@react-pdf/renderer';
 
-// 2. Define PDF Styles to match the Excel-style design
 const pdfStyles = StyleSheet.create({
-    page: { padding: 30, fontSize: 9, fontFamily: 'Helvetica' },
-    dateText: { color: '#64748b', marginBottom: 15, fontSize: 10 },
-
-    // Table Styles
-    table: {
-        width: '100%',
-        borderStyle: 'solid',
-        borderWidth: 1,
-        borderColor: '#000',
-        marginBottom: 20
-    },
+    page: { padding: 20, fontSize: 8, fontFamily: 'Helvetica', orientation: 'landscape' },
+    
+    headerContainer: { marginBottom: 10, borderBottomWidth: 1, borderBottomColor: '#000', paddingBottom: 5 },
+    headerTitle: { textAlign: 'center', fontFamily: 'Helvetica-Bold', fontSize: 11, marginBottom: 2 },
+    headerAgency: { textAlign: 'center', fontSize: 9, marginBottom: 3 },
+    headerUnitsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
+    headerUnitLeft: { fontSize: 7, width: '50%', textAlign: 'left' },
+    headerUnitRight: { fontSize: 7, width: '50%', textAlign: 'right' },
+    headerMetaRow: { flexDirection: 'row', justifyContent: 'flex-end' },
+    headerMeta: { fontSize: 8 },
+    
+    table: { width: '100%', borderStyle: 'solid', borderWidth: 1, borderColor: '#000', marginBottom: 15 },
     tableRow: { flexDirection: 'row' },
-    tableHeaderRow: { flexDirection: 'row', backgroundColor: '#f8fafc', borderBottomWidth: 1, borderBottomColor: '#000' },
-
-    // Column Widths
-    colStock: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    colItem: { width: '35%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    colRis: { width: '20%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    colRc: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    colQty: { width: '15%', padding: 4 },
-
-    // Cell Text Styles
-    cellHeader: { fontFamily: 'Helvetica-Bold', textAlign: 'center', fontSize: 9 },
-    cellText: { fontSize: 9 },
-    cellTextCenter: { fontSize: 9, textAlign: 'center' },
-    cellTextRight: { fontSize: 9, textAlign: 'right' },
-
-    // Inner Borders for Data Rows
-    rowBorderBottom: { borderBottomWidth: 0.5, borderBottomColor: '#cbd5e1' },
-
-    // Subtotal Row
-    subtotalRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderTopWidth: 0.5, borderTopColor: '#000', backgroundColor: '#f8fafc' },
-    subtotalText: { fontFamily: 'Helvetica-Bold', fontSize: 9, textAlign: 'right', padding: 4 },
-    subtotalValue: { fontFamily: 'Helvetica-Bold', fontSize: 9, textAlign: 'right', padding: 4, color: '#000' },
-
-    // Marker Row
-    markerRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000' },
-    markerText: { width: '100%', fontFamily: 'Helvetica-Oblique', fontSize: 9, textAlign: 'center', padding: 6 },
-
-    // Signature Block
-    certText: { textAlign: 'center', fontSize: 10, marginTop: 10, marginBottom: 40 },
-    sigContainer: { flexDirection: 'row', width: '100%' },
-    sigBlock: { width: '50%', alignItems: 'center' },
-    sigName: { fontFamily: 'Helvetica-Bold', fontSize: 10, textDecoration: 'underline', marginBottom: 2 },
-    sigTitle: { fontSize: 10 },
-    sigLine: { width: 160, borderBottomWidth: 1, borderBottomColor: '#000', marginBottom: 2 }
+    tableHeaderRow: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderBottomWidth: 1, borderBottomColor: '#000' },
+    
+    colStock: { width: '14%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
+    colItem: { width: '26%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
+    colRis: { width: '11%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
+    colRc: { width: '8%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
+    colQty: { width: '9%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
+    colUnitCost: { width: '9%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
+    colTotalCost: { width: '10%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
+    colAccount: { width: '13%', padding: 3 },
+    
+    cellHeader: { fontFamily: 'Helvetica-Bold', textAlign: 'center', fontSize: 8 },
+    cellText: { fontSize: 7.5 },
+    cellTextCenter: { fontSize: 7.5, textAlign: 'center' },
+    cellTextRight: { fontSize: 7.5, textAlign: 'right' },
+    
+    rowBorderBottom: { borderBottomWidth: 0.3, borderBottomColor: '#94a3b8' },
+    
+    subtotalRow: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#000', borderTopWidth: 0.5, borderTopColor: '#000', backgroundColor: '#f8fafc' },
+    subtotalSpacer: { width: '77%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
+    subtotalLabel: { width: '10%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+    subtotalText: { fontFamily: 'Helvetica-Bold', fontSize: 8, textAlign: 'right' },
+    subtotalValue: { width: '13%', padding: 3, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
+    subtotalNumber: { fontFamily: 'Helvetica-Bold', fontSize: 8, textAlign: 'right' },
+    
+    markerRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderTopWidth: 0.5, borderTopColor: '#000' },
+    markerText: { width: '100%', fontFamily: 'Helvetica-Oblique', fontSize: 8, textAlign: 'center', padding: 5 },
+    
+    certSection: { marginTop: 15, marginBottom: 20 },
+    certText: { textAlign: 'left', fontSize: 8.5, marginBottom: 3 },
+    postedBy: { fontSize: 8, color: '#475569', marginBottom: 25 },
+    
+    sigContainer: { flexDirection: 'row', width: '100%', marginTop: 5 },
+    sigBlock: { width: '50%', alignItems: 'flex-start' },
+    sigName: { fontFamily: 'Helvetica-Bold', fontSize: 8.5, textDecoration: 'underline', marginBottom: 1 },
+    sigTitle: { fontSize: 7.5 },
+    sigSection: { fontSize: 7.5, marginTop: 1 },
+    approvedBy: { fontSize: 7.5, marginTop: 15 },
+    sigLine: { width: 160, borderBottomWidth: 1, borderBottomColor: '#000', marginBottom: 2, marginTop: 8 }
 });
 
-// 3. Create the PDF Document Component
-const RSMIPDFDocument = ({ data }: { data: any[] }) => (
+interface RSMIPDFDocumentProps {
+    data: any[];
+    reportDate: string;
+    rsmiNumber: string;
+}
+
+const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsmiNumber }) => (
     <Document>
-        <Page size="A4" style={pdfStyles.page}>
-            <Text style={pdfStyles.dateText}>Created: {new Date().toLocaleDateString('en-PH')}</Text>
+        <Page size="A4" style={pdfStyles.page} orientation="landscape">
+            <View style={pdfStyles.headerContainer}>
+                <Text style={pdfStyles.headerTitle}>REPORT OF SUPPLIES AND MATERIALS ISSUED</Text>
+                <Text style={pdfStyles.headerAgency}>ENERGY REGULATORY COMMISSION Agency</Text>
+                <View style={pdfStyles.headerMetaRow}>
+                    <Text style={pdfStyles.headerMeta}>Date: {reportDate} RSMI: {rsmiNumber}</Text>
+                </View>
+                <View style={pdfStyles.headerUnitsRow}>
+                    <Text style={pdfStyles.headerUnitLeft}>To be filled up in the Supply & Property Unit</Text>
+                    <Text style={pdfStyles.headerUnitRight}>To be filled up in the Accounting Unit</Text>
+                </View>
+            </View>
 
             <View style={pdfStyles.table}>
-                {/* Table Header */}
                 <View style={pdfStyles.tableHeaderRow}>
                     <View style={pdfStyles.colStock}><Text style={pdfStyles.cellHeader}>Stock No</Text></View>
                     <View style={pdfStyles.colItem}><Text style={pdfStyles.cellHeader}>Item</Text></View>
                     <View style={pdfStyles.colRis}><Text style={pdfStyles.cellHeader}>RIS No</Text></View>
                     <View style={pdfStyles.colRc}><Text style={pdfStyles.cellHeader}>RC Code</Text></View>
                     <View style={pdfStyles.colQty}><Text style={pdfStyles.cellHeader}>Qty. Issued</Text></View>
+                    <View style={pdfStyles.colUnitCost}><Text style={pdfStyles.cellHeader}>Unit Cost</Text></View>
+                    <View style={pdfStyles.colTotalCost}><Text style={pdfStyles.cellHeader}>Total Cost</Text></View>
+                    <View style={pdfStyles.colAccount}><Text style={pdfStyles.cellHeader}>Account Code</Text></View>
                 </View>
 
-                {/* Table Body (Grouped) */}
-                {data.map((group, gIdx) => (
+                {data.map((group: any, gIdx: number) => (
                     <React.Fragment key={gIdx}>
-                        {(group.items || []).map((item: any, iIdx: number) => (
-                            <View key={iIdx} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
-                                <View style={pdfStyles.colStock}>
-                                    <Text style={pdfStyles.cellText}>{iIdx === 0 ? (group.stockNumber || '') : ''}</Text>
+                        {(group.items || []).map((item: any, iIdx: number) => {
+                            const showStock = iIdx === 0;
+                            const unitCost = item.unitCost ?? 0;
+                            const qty = item.issueQuantity ?? 0;
+                            const totalCost = unitCost * qty;
+                            return (
+                                <View key={iIdx} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
+                                    <View style={pdfStyles.colStock}>
+                                        <Text style={pdfStyles.cellText}>{showStock ? (group.stockNumber ?? '') : ''}</Text>
+                                    </View>
+                                    <View style={pdfStyles.colItem}>
+                                        <Text style={pdfStyles.cellText}>{showStock ? (group.itemDescription ?? '') : ''}</Text>
+                                    </View>
+                                    <View style={pdfStyles.colRis}>
+                                        <Text style={pdfStyles.cellTextCenter}>{item.risNumber ?? ''}</Text>
+                                    </View>
+                                    <View style={pdfStyles.colRc}>
+                                        <Text style={pdfStyles.cellTextCenter}>{item.responsibilityCenterCode ?? ''}</Text>
+                                    </View>
+                                    <View style={pdfStyles.colQty}>
+                                        <Text style={pdfStyles.cellTextRight}>{qty}</Text>
+                                    </View>
+                                    <View style={pdfStyles.colUnitCost}>
+                                        <Text style={pdfStyles.cellTextRight}>{unitCost > 0 ? unitCost.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</Text>
+                                    </View>
+                                    <View style={pdfStyles.colTotalCost}>
+                                        <Text style={pdfStyles.cellTextRight}>{totalCost > 0 ? totalCost.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</Text>
+                                    </View>
+                                    <View style={pdfStyles.colAccount}>
+                                        <Text style={pdfStyles.cellText}>{item.accountCode ?? group.accountCode ?? ''}</Text>
+                                    </View>
                                 </View>
-                                <View style={pdfStyles.colItem}>
-                                    <Text style={pdfStyles.cellText}>{iIdx === 0 ? (group.itemDescription || '') : ''}</Text>
-                                </View>
-                                <View style={pdfStyles.colRis}>
-                                    <Text style={pdfStyles.cellTextCenter}>{item.risNumber || ''}</Text>
-                                </View>
-                                <View style={pdfStyles.colRc}>
-                                    <Text style={pdfStyles.cellTextCenter}>{item.responsibilityCenterCode || ''}</Text>
-                                </View>
-                                <View style={pdfStyles.colQty}>
-                                    <Text style={pdfStyles.cellTextRight}>{item.issueQuantity}</Text>
-                                </View>
-                            </View>
-                        ))}
+                            );
+                        })}
 
-                        {/* Subtotal Row */}
                         <View style={pdfStyles.subtotalRow}>
-                            <View style={[pdfStyles.colStock, { borderRightWidth: 0 }]}><Text>{''}</Text></View>
-                            <View style={[pdfStyles.colItem, { borderRightWidth: 0 }]}><Text>{''}</Text></View>
-                            <View style={[pdfStyles.colRis, { borderRightWidth: 0 }]}><Text>{''}</Text></View>
-                            <View style={pdfStyles.colRc}>
-                                <Text style={pdfStyles.subtotalText}></Text>
+                            <View style={pdfStyles.subtotalSpacer}><Text>{''}</Text></View>
+                            <View style={pdfStyles.subtotalLabel}>
+                                <Text style={pdfStyles.subtotalText}>Total Issued:</Text>
                             </View>
-                            <View style={pdfStyles.colQty}>
-                                <Text style={pdfStyles.subtotalValue}>{group.total}</Text>
+                            <View style={pdfStyles.subtotalValue}>
+                                <Text style={pdfStyles.subtotalNumber}>{group.total ?? 0}</Text>
                             </View>
                         </View>
                     </React.Fragment>
                 ))}
 
-                {/* Nothing Follows Marker */}
                 <View style={pdfStyles.markerRow}>
                     <Text style={pdfStyles.markerText}>****nothing follows****</Text>
                 </View>
             </View>
 
-            {/* Certification & Signatures */}
-            <Text style={pdfStyles.certText}>I hereby certify to the correctness of the above information</Text>
+            <View style={pdfStyles.certSection}>
+                <Text style={pdfStyles.certText}>I hereby certify to the correctness of the above information</Text>
+                <Text style={pdfStyles.postedBy}>Posted By/Date:</Text>
+            </View>
 
             <View style={pdfStyles.sigContainer}>
                 <View style={pdfStyles.sigBlock}>
                     <Text style={pdfStyles.sigName}>MS. ROSELLE MALAKI GUINTU</Text>
                     <Text style={pdfStyles.sigTitle}>Administrative Officer III</Text>
+                    <Text style={pdfStyles.sigSection}>Accounting Section</Text>
                 </View>
                 <View style={pdfStyles.sigBlock}>
                     <View style={pdfStyles.sigLine}></View>
-                    <Text style={pdfStyles.sigTitle}>Accounting Section</Text>
+                    <Text style={pdfStyles.approvedBy}>Approved By:</Text>
                 </View>
             </View>
         </Page>
@@ -207,7 +241,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            const allStockNumbers = data.map((group, index) => group.stockNumber ?? `unknown-stock-${index}`);
+            const allStockNumbers = data.map((group: any, index: number) => group.stockNumber ?? `unknown-stock-${index}`);
             setSelectedItems(new Set(allStockNumbers));
         } else {
             setSelectedItems(new Set());
@@ -221,27 +255,26 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
         setSelectedItems(new Set());
     };
 
-    // 4. Generate PDF Blob and Download
     const handleExportPDF = async () => {
         if (selectedItems.size === 0) return;
         setIsGeneratingPDF(true);
 
         try {
-            const selectedData = data.filter((group, index) =>
+            const selectedData = data.filter((group: any, index: number) =>
                 selectedItems.has(group.stockNumber ?? `unknown-stock-${index}`)
             );
 
-            // Generate blob using the @react-pdf/renderer pdf() utility
-            const blob = await pdf(<RSMIPDFDocument data={selectedData} />).toBlob();
+            const reportDate = startDate ? new Date(startDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' }) : new Date().toLocaleDateString('en-PH');
+            const rsmiNumber = `RSMI-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
 
-            // Trigger standard browser download
+            const blob = await pdf(<RSMIPDFDocument data={selectedData} reportDate={reportDate} rsmiNumber={rsmiNumber} />).toBlob();
+
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `RSMI_Report_${startDate}_to_${endDate}.pdf`;
             a.click();
 
-            // Cleanup
             setTimeout(() => URL.revokeObjectURL(url), 5000);
         } catch (err) {
             console.error("Failed to generate PDF", err);
@@ -364,7 +397,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                         </TableRow>
                                     ))
                                 ) : data.length > 0 ? (
-                                    data.map((group, index) => {
+                                    data.map((group: any, index: number) => {
                                         const safeStockNumber = group.stockNumber ?? `unknown-stock-${index}`;
                                         const isExpanded = expandedRows[safeStockNumber];
                                         const isSelected = selectedItems.has(safeStockNumber);
@@ -404,7 +437,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                                                         </TableRow>
                                                                     </TableHeader>
                                                                     <TableBody>
-                                                                        {(group.items || []).map((detail, idx) => (
+                                                                        {(group.items || []).map((detail: any, idx: number) => (
                                                                             <TableRow key={idx} className="border-b-0 hover:bg-slate-50">
                                                                                 <TableCell className="py-2 text-sm font-medium text-blue-600">
                                                                                     {detail.risNumber || 'N/A'}
