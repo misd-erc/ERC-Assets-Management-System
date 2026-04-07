@@ -109,7 +109,7 @@ export function AssetsFilters({
               <SelectTrigger>
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-60 overflow-y-auto">
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category.id} value={category.id.toString()}>
@@ -127,7 +127,7 @@ export function AssetsFilters({
               <SelectTrigger>
                 <SelectValue placeholder="All Conditions" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-60 overflow-y-auto">
                 <SelectItem value="all">All Conditions</SelectItem>
                 {conditions.map(condition => (
                   <SelectItem key={condition} value={condition}>
@@ -145,7 +145,7 @@ export function AssetsFilters({
               <SelectTrigger>
                 <SelectValue placeholder="All Offices" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-60 overflow-y-auto">
                 <SelectItem value="all">All Offices</SelectItem>
                 {offices.map(office => (
                   <SelectItem key={office.id} value={office.id.toString()}>
@@ -163,7 +163,7 @@ export function AssetsFilters({
               <SelectTrigger>
                 <SelectValue placeholder="All Divisions" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-60 overflow-y-auto">
                 <SelectItem value="all">All Divisions</SelectItem>
                 {divisions.map(division => (
                   <SelectItem key={division.id} value={division.id.toString()}>
