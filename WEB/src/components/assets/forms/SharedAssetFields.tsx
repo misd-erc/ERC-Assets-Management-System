@@ -67,6 +67,8 @@ export function SharedAssetFields({
   submitted = false,
 }: SharedAssetFieldsProps) {
   const [conditions, setConditions] = useState<string[]>([]);
+  const [unitValueText, setUnitValueText] = useState('');
+  const [isUnitFocused, setIsUnitFocused] = useState(false);
   const err = (cond: boolean) => cond ? 'border-red-500 focus-visible:ring-red-500' : '';
 
   useEffect(() => {
@@ -306,10 +308,32 @@ export function SharedAssetFields({
               <Label htmlFor="unitValue">Unit Value <span className="text-red-500">*</span></Label>
               <Input
                 id="unitValue"
-                type="number"
-                step="0.01"
-                value={formData.unitValue}
-                onChange={(e) => handleInputChange('unitValue', parseFloat(e.target.value) || 0)}
+                type="text"
+                inputMode="decimal"
+                value={
+                  isUnitFocused
+                    ? unitValueText
+                    : formData.unitValue
+                      ? formData.unitValue.toLocaleString('en-US', { maximumFractionDigits: 2 })
+                      : ''
+                }
+                onFocus={() => {
+                  setIsUnitFocused(true);
+                  setUnitValueText(formData.unitValue ? String(formData.unitValue) : '');
+                }}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/,/g, '');
+                  if (raw !== '' && !/^\d*\.?\d*$/.test(raw)) return;
+                  const stripped = raw.replace(/^0+(\d)/, '$1');
+                  setUnitValueText(stripped);
+                  const parsed = parseFloat(stripped);
+                  handleInputChange('unitValue', isNaN(parsed) ? 0 : parsed);
+                }}
+                onBlur={() => {
+                  setIsUnitFocused(false);
+                  const parsed = parseFloat(unitValueText.replace(/,/g, ''));
+                  handleInputChange('unitValue', isNaN(parsed) ? 0 : parsed);
+                }}
                 required={mode === 'create'}
                 className={err(submitted && (!formData.unitValue || formData.unitValue <= 0))}
               />
