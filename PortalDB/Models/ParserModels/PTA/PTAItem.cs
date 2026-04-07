@@ -17,7 +17,7 @@ namespace PortalDB.Models.ParserModels.PTA
         public string SerialNumber { get; set; } = string.Empty;
         public List<PTAPart>? Parts { get; set; }
         public string UnitOfMeasurement { get; set; } = string.Empty;
-        public long? UnitValue { get; set; }
+        public double? UnitValue { get; set; }
         public DateTime? DateAssigned { get; set; }
         public List<PTAAnnualCount>? AnnualCount { get; set; }
         public long? EstimatedUsefulLife { get; set; }
