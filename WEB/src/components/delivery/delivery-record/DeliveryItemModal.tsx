@@ -161,19 +161,75 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Item Type</Label>
-              <Select value={item.itemTypeId.toString()} onValueChange={v => {
-                const typeId = Number(v);
-                setItem({...item, itemTypeId: typeId});
-                if (typeId !== 1) setIsNewItem(true);
-              }}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Supply</SelectItem>
-                  <SelectItem value="2">PPE</SelectItem>
-                  <SelectItem value="3">Semi-Expendable</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label className="text-slate-700 font-medium">Item Type</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors font-normal"
+                  >
+                  <span className="truncate text-slate-700">
+                    {item.itemTypeId === 1 && "Supply"}
+                    {item.itemTypeId === 2 && "PPE"}
+                    {item.itemTypeId === 3 && "Semi-Expendable"}
+                    {!item.itemTypeId && "Select Item Type"}
+                  </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
+                  <Command className="bg-white">
+                    {/* --- SEARCHABLE --- */}
+                    <div className="p-2 bg-slate-50 border-b border-slate-100">
+                      <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                        <CommandInput
+                            placeholder="Search type..."
+                            className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* --- SCROLLABLE --- */}
+                    <CommandList
+                        className="max-h-40 overflow-y-auto overscroll-contain"
+                        onWheelCapture={(e) => e.stopPropagation()} // Fix for mouse scrollwheel
+                    >
+                      <CommandEmpty className="py-4 text-center text-sm text-slate-500">
+                        No type found.
+                      </CommandEmpty>
+
+                      <CommandGroup className="p-1.5">
+                        {[
+                          { id: 1, label: "Supply" },
+                          { id: 2, label: "PPE" },
+                          { id: 3, label: "Semi-Expendable" },
+                        ].map((type) => (
+                            <CommandItem
+                                key={type.id}
+                                value={type.label}
+                                onSelect={() => {
+                                  const typeId = type.id;
+                                  setItem({ ...item, itemTypeId: typeId });
+                                  if (typeId !== 1) setIsNewItem(true);
+                                  // No close logic here; stays open until click-away
+                                }}
+                                className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                            >
+                              <span className="flex-1">{type.label}</span>
+                              <Check
+                                  className={`ml-2 h-4 w-4 shrink-0 transition-all ${
+                                      item.itemTypeId === type.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                                  }`}
+                              />
+                            </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2 min-w-0 flex flex-col">
@@ -540,18 +596,95 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Quantity</Label>
-              <Input type="number" min="1" value={item.itemQuantity} onChange={e => setItem({...item, itemQuantity: Number(e.target.value)})} required />
+              <Label htmlFor="quantity" className="text-slate-700 font-medium">Quantity</Label>
+              <Input
+                  id="quantity"
+                  type="number"
+                  placeholder="0"
+
+                  value={item.itemQuantity === 0 ? "" : item.itemQuantity}
+
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // Convert empty string back to 0, otherwise convert to Number
+                    setItem({ ...item, itemQuantity: val === "" ? 0 : Number(val) });
+                  }}
+
+                  onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+
+                  className="bg-white border-slate-200 focus:ring-blue-500 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
             </div>
             <div className="space-y-2">
-              <Label>Unit</Label>
-              <Select value={item.measurementUnitId.toString()} onValueChange={v => setItem({...item, measurementUnitId: Number(v)})}>
-                <SelectTrigger><SelectValue placeholder="Select Unit" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Select Unit</SelectItem>
-                  {units.map(u => <SelectItem key={u.id} value={u.id.toString()}>{u.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label className="text-slate-700 font-medium">Unit</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors font-normal"
+                  >
+                    <span className="truncate text-slate-700">
+                      {item.measurementUnitId
+                          ? units.find((u) => u.id === item.measurementUnitId)?.name || "Select Unit"
+                          : "Select Unit"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
+                  <Command className="bg-white">
+                    {/* --- SEARCHABLE --- */}
+                    <div className="p-2 bg-slate-50 border-b border-slate-100">
+                      <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                        <CommandInput
+                            placeholder="Search units..."
+                            className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* --- SCROLLABLE --- */}
+                    <CommandList
+                        className="max-h-48 overflow-y-auto overscroll-contain"
+                        onWheelCapture={(e) => e.stopPropagation()} // Fix for mouse scrollwheel
+                    >
+                      <CommandEmpty className="py-4 text-center text-sm text-slate-500">
+                        No unit found.
+                      </CommandEmpty>
+
+                      <CommandGroup className="p-1.5">
+                        {/* Clear/Default Option */}
+                        <CommandItem
+                            onSelect={() => setItem({ ...item, measurementUnitId: 0 })}
+                            className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer text-slate-500 italic hover:bg-slate-50"
+                        >
+                          <span>Select Unit</span>
+                        </CommandItem>
+
+                        {units.map((u) => (
+                            <CommandItem
+                                key={u.id}
+                                value={u.name} // Search filters against the unit name
+                                onSelect={() => {
+                                  setItem({ ...item, measurementUnitId: u.id });
+                                }}
+                                className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                            >
+                              <span className="flex-1">{u.name}</span>
+                              <Check
+                                  className={`ml-2 h-4 w-4 shrink-0 transition-all ${
+                                      item.measurementUnitId === u.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                                  }`}
+                              />
+                            </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <Label>Unit Cost</Label>

@@ -74,31 +74,80 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
             
             {/* Linked Delivery Record */}
             <div className="space-y-2 col-span-2">
-              <Label>Linked Delivery Record (DR)</Label>
-              <Select 
-                value={formData.recordId?.toString()} 
-                onValueChange={v => setFormData({...formData, recordId: Number(v)})}
-              >
-                <SelectTrigger>
-                  <div className="truncate text-left">
-                    <SelectValue placeholder="Select or search DR Number" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="min-w-[300px]">
-                  <SelectItem value="0">Select Delivery Record</SelectItem>
-                  {availableDeliveryRecords.length > 0 ? (
-                    availableDeliveryRecords.map((dr: VwDeliveryRecord) => (
-                      <SelectItem key={dr.id} value={dr.id.toString()}>
-                        <span className="truncate">
-                          {dr.drNumber} • {dr.deliveryDate?.split('T')[0]} • {dr.items?.length || 0} items
-                        </span>
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="none" disabled>No pending delivery records available</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              <Label className="text-slate-700 font-medium">Linked Delivery Record (DR)</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
+                  >
+                  <span className="truncate text-slate-700">
+                    {formData.recordId
+                        ? availableDeliveryRecords.find((dr: any) => dr.id === formData.recordId)?.drNumber || "Select Delivery Record"
+                        : "Select or search DR Number"}
+                  </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
+                  <Command className="bg-white">
+                    {/* --- SEARCH BOX --- */}
+                    <div className="p-2 bg-slate-50 border-b border-slate-100">
+                      <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                        <CommandInput
+                            placeholder="Search DR number..."
+                            className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* --- SCROLLABLE LIST --- */}
+                    <CommandList
+                        className="max-h-64 overflow-y-auto overscroll-contain"
+                        onWheelCapture={(e) => e.stopPropagation()} // Fix for mouse scrollwheel
+                    >
+                      <CommandEmpty className="py-6 text-center text-sm text-slate-500">
+                        No delivery records found.
+                      </CommandEmpty>
+
+                      <CommandGroup className="p-1.5">
+                        {/* Clear Selection Option */}
+                        <CommandItem
+                            onSelect={() => setFormData({ ...formData, recordId: 0 })}
+                            className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer text-slate-500 italic hover:bg-slate-50"
+                        >
+                          <span>Clear Selection</span>
+                        </CommandItem>
+
+                        {availableDeliveryRecords.map((dr: any) => (
+                            <CommandItem
+                                key={dr.id}
+                                value={dr.drNumber} // This is what the search filters against
+                                onSelect={() => {
+                                  setFormData({ ...formData, recordId: dr.id });
+                                }}
+                                className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                            >
+                              <div className="flex flex-col truncate">
+                                <span className="font-medium">{dr.drNumber}</span>
+                                <span className="text-[11px] text-slate-500">
+                    {dr.deliveryDate?.split('T')[0]} • {dr.items?.length || 0} items
+                  </span>
+                              </div>
+                              <Check
+                                  className={`ml-2 h-4 w-4 shrink-0 transition-all ${
+                                      formData.recordId === dr.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                                  }`}
+                              />
+                            </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <p className="text-[11px] text-muted-foreground">Only shows unlinked, unreceived delivery records.</p>
             </div>
             
