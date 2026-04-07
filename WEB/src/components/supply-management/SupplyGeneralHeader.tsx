@@ -20,7 +20,7 @@ import { useRISStore } from '@/store/supply/risStore'; // Adjust path to where y
 
 export const SupplyGeneralHeader = () => {
   // 2. Consume the stores
-  const { vwSupplies } = useSupplyItem();
+  const { vwSupplies, fetchSupplyItems } = useSupplyItem();
   const { iars, fetchSupplyIARs } = useSupplyIARStore();
   const { risList, fetchRISs } = useRISStore();
 
@@ -28,6 +28,7 @@ export const SupplyGeneralHeader = () => {
   useEffect(() => {
     fetchSupplyIARs();
     fetchRISs();
+    fetchSupplyItems();
   }, [fetchSupplyIARs, fetchRISs]);
 
   // 4. Calculate all metrics
