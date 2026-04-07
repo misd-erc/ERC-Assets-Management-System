@@ -81,6 +81,23 @@ export function AssetsPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const uploadProcessingIntervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // On mount: apply any pending search from GlobalSearch navigation
+  useEffect(() => {
+    const raw = sessionStorage.getItem('_gsq');
+    if (!raw) return;
+    try {
+      const { query, tab } = JSON.parse(raw);
+      sessionStorage.removeItem('_gsq');
+      if (query) {
+        setSearchTerm(query);
+        setAppliedFilters(f => ({ ...f, searchTerm: query }));
+      }
+      if (tab) setActiveTab(tab);
+    } catch {
+      sessionStorage.removeItem('_gsq');
+    }
+  }, []);
+
   // On mount, fetch total counts for both tabs
   useEffect(() => {
     const fetchTabCounts = async () => {

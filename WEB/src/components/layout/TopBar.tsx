@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Bell, Search, Menu, Clock, Command } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks';
 import { ProfileDropdown } from '@/components/layout/ProfileDropdown';
+import { GlobalSearch } from '@/components/layout/GlobalSearch';
 
 interface TopbarProps {
   onMenuClick?: () => void;
@@ -24,12 +25,25 @@ interface TopbarProps {
 export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigate }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { logout } = useAuth();
 
   // Update current time every minute
   React.useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Open search on Ctrl+K / Cmd+K
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const leftOffset = isMobile ? 'left-0' : 'left-64';
@@ -54,24 +68,19 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigat
         )}
         {/* Search bar */}
         <div className={searchFlex}>
-          <label htmlFor="search" className="sr-only">
-            Search across all modules
-          </label>
-          <div className="relative text-gray-400 focus-within:text-gray-600">
-            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              id="search"
-              type="search"
-              placeholder="Search across all modules... (Press Ctrl+K)"
-              className="w-full rounded-md border border-gray-300 bg-gray-50 py-2 pl-10 pr-4 text-sm placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <Badge variant="outline" className="text-xs px-2 py-0.5">
-                <Command className="w-3 h-3 mr-1" />
-                K
-              </Badge>
-            </div>
-          </div>
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="w-full flex items-center rounded-md border border-gray-300 bg-gray-50 py-2 pl-3 pr-4 text-sm text-gray-400 hover:border-blue-400 hover:bg-white transition-colors"
+            aria-label="Open global search (Ctrl+K)"
+          >
+            <Search className="w-5 h-5 mr-2 shrink-0" />
+            <span className="flex-1 text-left truncate">Search assets, supply, employees...</span>
+            <Badge variant="outline" className="text-xs px-2 py-0.5 ml-2 shrink-0">
+              <Command className="w-3 h-3 mr-1" />
+              K
+            </Badge>
+          </button>
         </div>
 
         {/* Session info, notifications, user */}
@@ -95,6 +104,13 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigat
           />
         </div>
       </header>
+
+      {/* Global Search Dialog */}
+      <GlobalSearch
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        onNavigate={onNavigate}
+      />
 
       {/* Logout Confirmation Dialog */}
       <AlertDialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
