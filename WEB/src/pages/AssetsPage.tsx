@@ -41,6 +41,7 @@ export function AssetsPage() {
   const [conditionFilter, setConditionFilter] = useState('all');
   const [officeFilter, setOfficeFilter] = useState('all');
   const [divisionFilter, setDivisionFilter] = useState('all');
+  const [employeeFilter, setEmployeeFilter] = useState('all');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -50,6 +51,7 @@ export function AssetsPage() {
     conditionFilter: 'all',
     officeFilter: 'all',
     divisionFilter: 'all',
+    employeeFilter: 'all',
     startDate: '',
     endDate: '',
   });
@@ -107,6 +109,7 @@ export function AssetsPage() {
         condition: appliedFilters.conditionFilter !== 'all' ? appliedFilters.conditionFilter : undefined,
         office: appliedFilters.officeFilter !== 'all' ? appliedFilters.officeFilter : undefined,
         division: appliedFilters.divisionFilter !== 'all' ? appliedFilters.divisionFilter : undefined,
+        EmployeeId: appliedFilters.employeeFilter !== 'all' ? parseInt(appliedFilters.employeeFilter) : undefined,
         startDate: appliedFilters.startDate || undefined,
         endDate: appliedFilters.endDate || undefined,
         group: activeTab !== 'all' ? activeTab : undefined,
@@ -509,6 +512,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
     setConditionFilter('all');
     setOfficeFilter('all');
     setDivisionFilter('all');
+    setEmployeeFilter('all');
     setStartDate('');
     setEndDate('');
     setAppliedFilters({
@@ -517,6 +521,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
       conditionFilter: 'all',
       officeFilter: 'all',
       divisionFilter: 'all',
+      employeeFilter: 'all',
       startDate: '',
       endDate: '',
     });
@@ -530,6 +535,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
       conditionFilter,
       officeFilter,
       divisionFilter,
+      employeeFilter,
       startDate,
       endDate,
     });
@@ -689,6 +695,8 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
                 onOfficeFilterChange={setOfficeFilter}
                 divisionFilter={divisionFilter}
                 onDivisionFilterChange={setDivisionFilter}
+                employeeFilter={employeeFilter}
+                onEmployeeFilterChange={setEmployeeFilter}
                 startDate={startDate}
                 onStartDateChange={setStartDate}
                 endDate={endDate}
@@ -738,6 +746,8 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
                 onOfficeFilterChange={setOfficeFilter}
                 divisionFilter={divisionFilter}
                 onDivisionFilterChange={setDivisionFilter}
+                employeeFilter={employeeFilter}
+                onEmployeeFilterChange={setEmployeeFilter}
                 startDate={startDate}
                 onStartDateChange={setStartDate}
                 endDate={endDate}
