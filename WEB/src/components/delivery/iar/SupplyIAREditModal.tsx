@@ -67,7 +67,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="!max-w-7xl !w-[60vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{mode === 'add' ? 'New IAR' : 'Edit IAR'}</DialogTitle></DialogHeader>
         <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
