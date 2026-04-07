@@ -122,7 +122,7 @@ export function SharedAssetFields({
                 <SelectTrigger className={err(submitted && (!formData.categoryId || formData.categoryId <= 0))}>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60 overflow-y-auto">
                   {categories.map(category => (
                     <SelectItem key={category.id} value={category.id.toString()}>
                       {category.name}
@@ -141,7 +141,7 @@ export function SharedAssetFields({
                 <SelectTrigger className={err(submitted && (!formData.legendId || formData.legendId <= 0))}>
                   <SelectValue placeholder="Select legend" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60 overflow-y-auto">
                   {legends.map(legend => (
                     <SelectItem key={legend.id} value={legend.id.toString()}>
                       <span>{legend.name}</span>
@@ -292,7 +292,7 @@ export function SharedAssetFields({
                 <SelectTrigger className={err(submitted && !formData.unitOfMeasurement?.trim())}>
                   <SelectValue placeholder="Select unit" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-60 overflow-y-auto">
                   {getUnitOfMeasurementOptions().map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
@@ -575,7 +575,7 @@ export function SharedAssetFields({
                       <SelectTrigger>
                         <SelectValue placeholder="Select condition" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-60 overflow-y-auto">
                         {conditions.length > 0
                           ? conditions.map(c => (
                               <SelectItem key={c} value={c}>{c}</SelectItem>
