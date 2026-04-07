@@ -20,9 +20,10 @@ interface TopbarProps {
   onMenuClick?: () => void;
   isMobile?: boolean;
   onNavigate?: (module: string) => void;
+  sidebarOpen?: boolean;
 }
 
-export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigate }) => {
+export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigate, sidebarOpen }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -46,7 +47,7 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigat
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const leftOffset = isMobile ? 'left-0' : 'left-64';
+  const leftOffset = isMobile ? 'left-0' : sidebarOpen === false ? 'left-16' : 'left-64';
   const searchFlex = isMobile ? 'flex-1' : 'flex-1 max-w-lg';
 
   const confirmLogout = () => {
@@ -57,15 +58,10 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigat
   return (
     <>
       <header
-        className={`fixed top-0 ${leftOffset} right-0  bg-white border-b border-gray-200 shadow-sm z-50 flex items-center justify-between px-4 py-[0.08rem] sm:px-6`}
+        className={`fixed top-0 ${leftOffset} right-0 bg-white border-b border-gray-200 shadow-sm z-50 flex items-center justify-between px-4 py-[0.08rem] sm:px-6 transition-all duration-300`}
         role="banner"
       >
-        {isMobile && onMenuClick && (
-          <Button variant="ghost" size="sm" onClick={onMenuClick} className="mr-2">
-            <Menu className="w-5 h-5" />
-            <span className="sr-only">Open sidebar</span>
-          </Button>
-        )}
+
         {/* Search bar */}
         <div className={searchFlex}>
           <button
@@ -85,12 +81,7 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile, onNavigat
 
         {/* Session info, notifications, user */}
         <div className="flex items-center space-x-4 sm:space-x-6 min-w-0">
-          <div className="flex items-center space-x-2 whitespace-nowrap">
-            <span className="text-xs text-gray-500">Session Active</span>
-            <span className="text-xs font-semibold text-gray-900">
-              {currentTime.toLocaleTimeString()}
-            </span>
-          </div>
+        
 
           <Button variant="ghost" size="sm" className="relative" aria-label="Notifications">
             <Bell className="w-5 h-5" />

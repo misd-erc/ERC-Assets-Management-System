@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useMemo, useState, useEffect } from "react";
+﻿import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sidebar";
 
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { decrypt, encrypt } from "@/utils/encryption";
 import {
   moduleConfig,
@@ -24,7 +25,7 @@ import {
 
 import { getUserDetails } from "@/api/user-management/authApi";
 
-import { Building } from "lucide-react";
+import { Building, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 interface NavigationItem {
   id: string;
@@ -39,7 +40,7 @@ interface NavigationGroup {
   items: NavigationItem[];
 }
 
-export function AppSidebar({ activeModule, onModuleChange }: any) {
+export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenChange }: any) {
   const [userDetails, setUserDetails] = useState<any>(null);
   const navigate = useNavigate();
 
@@ -176,74 +177,172 @@ export function AppSidebar({ activeModule, onModuleChange }: any) {
   // ----------------------
   // RENDER UI
   // ----------------------
+  const collapsed = !open;
+
   return (
-    <Sidebar className="w-64 shrink-0 border-r bg-white">
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-3 px-4 py-1">
-          <img src="/images/erc-logo.png" className="w-8 h-8" />
-          <div className="flex flex-col min-w-0">
-            <p className="text-sm font-semibold truncate">
-              Energy Regulatory Commission
-            </p>
-            <p className="text-xs text-blue-600 truncate">
-              Asset Management System
-            </p>
-          </div>
-        </div>
-      </SidebarHeader>
+    <TooltipProvider delayDuration={0}>
+      <Sidebar
+        className={`shrink-0 bg-white fixed top-0 left-0 h-full z-40 transition-all duration-300 overflow-hidden border-r border-slate-100 shadow-[1px_0_8px_0_rgba(0,0,0,0.04)] ${
+          collapsed ? 'w-16' : 'w-64'
+        }`}
+      >
+        {/* ── Header ── */}
+        <SidebarHeader className="p-0 border-b border-slate-100">
+          {collapsed ? (
+            /* Collapsed — just the toggle */
+            <div className="flex justify-center py-3">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onOpenChange?.(true)}
+                    className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white shadow-md shadow-blue-200 transition-all duration-200"
+                    aria-label="Expand sidebar"
+                  >
+                    <PanelLeftOpen className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-xs font-medium">Expand Menu</TooltipContent>
+              </Tooltip>
+            </div>
+          ) : (
+            /* Expanded — branding + toggle */
+            <div className="flex items-center gap-2 px-3 py-3">
+              <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-50 ring-1 ring-blue-100 shrink-0">
+                <img src="/images/erc-logo.png" className="w-5 h-5" alt="ERC" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-blue-600 truncate">
+                  Asset Management
+                </p>
+                <p className="text-[10px] text-slate-400 truncate tracking-wide">
+                  System
+                </p>
+              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => onOpenChange?.(false)}
+                    className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white shadow-md shadow-blue-200 transition-all duration-200 shrink-0"
+                    aria-label="Collapse sidebar"
+                  >
+                    <PanelLeftClose className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs font-medium">Collapse sidebar</TooltipContent>
+              </Tooltip>
+            </div>
+          )}
+        </SidebarHeader>
 
-      <SidebarContent>
-        <nav className="space-y-3 px-4 py-4">
-          {navigationGroups.map((group) => (
-            <SidebarGroup key={group.title}>
-              <SidebarGroupLabel className="text-xs font-semibold text-slate-500 px-2 mb-1">
-                {group.title}
-              </SidebarGroupLabel>
+        {/* ── Navigation ── */}
+        <SidebarContent className="overflow-y-auto">
+          <nav className={`py-3 ${collapsed ? 'px-2 space-y-0.5' : 'px-3 space-y-4'}`}>
+            {navigationGroups.map((group, gIdx) => (
+              <SidebarGroup key={group.title} className="p-0">
+                {/* Group label — expanded only */}
+                {!collapsed && (
+                  <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 px-2 mb-1">
+                    {group.title}
+                  </SidebarGroupLabel>
+                )}
+                {/* Thin divider between groups in collapsed rail */}
+                {collapsed && gIdx > 0 && (
+                  <div className="h-px bg-slate-100 my-2" />
+                )}
 
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {group.items.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        onClick={() => handleClick(item)}
-                        isActive={activeModule === item.id}
-                        className={`flex items-center gap-3 px-4 py-2 rounded-md text-sm hover:bg-slate-100 truncate ${
-                          activeModule === item.id
-                            ? "bg-blue-50 text-blue-600 font-semibold"
-                            : "text-slate-700"
-                        }`}
-                      >
-                        <item.icon className="size-4 shrink-0" />
-                        <span className="truncate">{item.title}</span>
-
-                        {!item.implemented && (
-                          <Badge variant="secondary" className="ml-auto text-xs">
-                            Soon
-                          </Badge>
+                <SidebarGroupContent>
+                  <SidebarMenu className={collapsed ? 'space-y-1' : 'space-y-0.5'}>
+                    {group.items.map((item) => (
+                      <SidebarMenuItem key={item.id}>
+                        {collapsed ? (
+                          /* ── Icon-only rail item ── */
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <SidebarMenuButton
+                                onClick={() => handleClick(item)}
+                                isActive={activeModule === item.id}
+                                className={`flex items-center justify-center w-full h-10 rounded-xl transition-all duration-150 ${
+                                  activeModule === item.id
+                                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
+                                    : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
+                                }`}
+                              >
+                                <item.icon className="size-[18px] shrink-0" />
+                              </SidebarMenuButton>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="text-xs font-medium">
+                              {item.title}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          /* ── Full row item ── */
+                          <SidebarMenuButton
+                            onClick={() => handleClick(item)}
+                            isActive={activeModule === item.id}
+                            className={`group flex items-center gap-2.5 w-full px-2 py-2 rounded-lg text-sm transition-all duration-150 ${
+                              activeModule === item.id
+                                ? 'bg-blue-50 text-blue-700 font-semibold'
+                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                            }`}
+                          >
+                            <span
+                              className={`flex items-center justify-center w-7 h-7 rounded-lg shrink-0 transition-colors duration-150 ${
+                                activeModule === item.id
+                                  ? 'bg-blue-100 text-blue-700'
+                                  : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-700'
+                              }`}
+                            >
+                              <item.icon className="size-3.5" />
+                            </span>
+                            <span className="truncate flex-1 text-[13px]">{item.title}</span>
+                            {!item.implemented && (
+                              <Badge
+                                variant="secondary"
+                                className="ml-auto text-[10px] px-1.5 py-0 h-4 font-medium shrink-0"
+                              >
+                                Soon
+                              </Badge>
+                            )}
+                          </SidebarMenuButton>
                         )}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          ))}
-        </nav>
-      </SidebarContent>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ))}
+          </nav>
+        </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
-        <div className="flex items-center space-x-2 px-4 py-3">
-          <Building className="w-4 h-4 text-muted-foreground" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs truncate">
-              Energy Regulatory Commission
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Republic of the Philippines
-            </p>
-          </div>
-        </div>
-      </SidebarFooter>
-    </Sidebar>
+        {/* ── Footer ── */}
+        <SidebarFooter className="border-t border-slate-100 p-0">
+          {collapsed ? (
+            <div className="flex justify-center py-3">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50 ring-1 ring-blue-100">
+                    <img src="/images/erc-logo.png" className="w-5 h-5" alt="ERC" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="text-xs font-medium">Energy Regulatory Commission</TooltipContent>
+              </Tooltip>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5 px-3 py-3">
+              <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50 ring-1 ring-blue-100 shrink-0">
+                <img src="/images/erc-logo.png" className="w-5 h-5" alt="ERC" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-medium text-slate-700 truncate">Energy Regulatory Commission</p>
+                <p className="text-[10px] text-slate-400">Republic of the Philippines</p>
+              </div>
+              <span className="text-[9px] text-slate-600 shrink-0 self-end pb-0.5">
+                v{process.env.REACT_APP_Version}
+              </span>
+            </div>
+          )}
+        </SidebarFooter>
+      </Sidebar>
+    </TooltipProvider>
   );
 }
