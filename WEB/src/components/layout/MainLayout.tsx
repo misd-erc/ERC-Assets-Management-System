@@ -25,6 +25,7 @@ import AssetTaggingPage from "@/pages/AssetTaggingPage";
 
 export default function MainLayout() {
   const [activeModule, setActiveModule] = useState("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const renderPage = () => {
     switch (activeModule) {
@@ -86,10 +87,19 @@ export default function MainLayout() {
 
   return (
     <SidebarProvider>
-      <AppSidebar activeModule={activeModule} onModuleChange={setActiveModule} />
+      <AppSidebar
+        activeModule={activeModule}
+        onModuleChange={setActiveModule}
+        open={sidebarOpen}
+        onOpenChange={setSidebarOpen}
+      />
 
-      <div className="flex flex-col flex-1 overflow-hidden ml-64">
-        <TopBar onNavigate={setActiveModule} />
+      <div className={`flex flex-col flex-1 overflow-hidden transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+        <TopBar
+          onNavigate={setActiveModule}
+          sidebarOpen={sidebarOpen}
+          onMenuClick={() => setSidebarOpen(o => !o)}
+        />
 
         <div className="flex-1 overflow-auto p-6">
           {renderPage()}

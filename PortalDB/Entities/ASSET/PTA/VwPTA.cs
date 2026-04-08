@@ -88,9 +88,9 @@ namespace PortalDB.Entities.ASSET.PTA
         [Column("PTAUnitValue")]
         public string? UnitValueEncrypted { get; set; }
         [NotMapped]
-        public long? UnitValue
+        public double? UnitValue
         {
-            get => string.IsNullOrEmpty(UnitValueEncrypted) ? null : long.Parse(EncryptionHelper.Decrypt(UnitValueEncrypted));
+            get => string.IsNullOrEmpty(UnitValueEncrypted) ? null : double.Parse(EncryptionHelper.Decrypt(UnitValueEncrypted));
             set => UnitValueEncrypted = string.IsNullOrEmpty(value.ToString()) ? null : EncryptionHelper.Encrypt(value.ToString());
         }
 
