@@ -182,12 +182,12 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
   return (
     <TooltipProvider delayDuration={0}>
       <Sidebar
-        className={`shrink-0 bg-white fixed top-0 left-0 h-full z-40 transition-all duration-300 overflow-hidden border-r border-slate-100 shadow-[1px_0_8px_0_rgba(0,0,0,0.04)] ${
+        className={`shrink-0 bg-white dark:bg-slate-900 fixed top-0 left-0 h-full z-40 transition-all duration-300 overflow-hidden border-r border-slate-100 dark:border-slate-800 shadow-[1px_0_8px_0_rgba(0,0,0,0.04)] ${
           collapsed ? 'w-16' : 'w-64'
         }`}
       >
         {/* ── Header ── */}
-        <SidebarHeader className="p-0 border-b border-slate-100">
+        <SidebarHeader className="p-0 border-b border-slate-100 dark:border-slate-800">
           {collapsed ? (
             /* Collapsed — just the toggle */
             <div className="flex justify-center py-3">
@@ -207,14 +207,14 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
           ) : (
             /* Expanded — branding + toggle */
             <div className="flex items-center gap-2 px-3 py-3">
-              <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-50 ring-1 ring-blue-100 shrink-0">
+              <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-100 dark:ring-blue-800 shrink-0">
                 <img src="/images/erc-logo.png" className="w-5 h-5" alt="ERC" />
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-blue-600 truncate">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 truncate">
                   Asset Management
                 </p>
-                <p className="text-[10px] text-slate-400 truncate tracking-wide">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate tracking-wide">
                   System
                 </p>
               </div>
@@ -241,13 +241,13 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
               <SidebarGroup key={group.title} className="p-0">
                 {/* Group label — expanded only */}
                 {!collapsed && (
-                  <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 px-2 mb-1">
+                  <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 mb-1">
                     {group.title}
                   </SidebarGroupLabel>
                 )}
                 {/* Thin divider between groups in collapsed rail */}
                 {collapsed && gIdx > 0 && (
-                  <div className="h-px bg-slate-100 my-2" />
+                  <div className="h-px bg-slate-100 dark:bg-slate-800 my-2" />
                 )}
 
                 <SidebarGroupContent>
@@ -264,7 +264,7 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
                                 className={`flex items-center justify-center w-full h-10 rounded-xl transition-all duration-150 ${
                                   activeModule === item.id
                                     ? 'bg-blue-600 text-white shadow-sm shadow-blue-200'
-                                    : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
+                                    : 'text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200'
                                 }`}
                               >
                                 <item.icon className="size-[18px] shrink-0" />
@@ -281,15 +281,15 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
                             isActive={activeModule === item.id}
                             className={`group flex items-center gap-2.5 w-full px-2 py-2 rounded-lg text-sm transition-all duration-150 ${
                               activeModule === item.id
-                                ? 'bg-blue-50 text-blue-700 font-semibold'
-                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-semibold'
+                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
                             }`}
                           >
                             <span
                               className={`flex items-center justify-center w-7 h-7 rounded-lg shrink-0 transition-colors duration-150 ${
                                 activeModule === item.id
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-700'
+                                  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-slate-700 group-hover:text-slate-700 dark:group-hover:text-slate-200'
                               }`}
                             >
                               <item.icon className="size-3.5" />
@@ -315,12 +315,12 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
         </SidebarContent>
 
         {/* ── Footer ── */}
-        <SidebarFooter className="border-t border-slate-100 p-0">
+        <SidebarFooter className="border-t border-slate-100 dark:border-slate-800 p-0">
           {collapsed ? (
             <div className="flex justify-center py-3">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50 ring-1 ring-blue-100">
+                  <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-100 dark:ring-blue-800">
                     <img src="/images/erc-logo.png" className="w-5 h-5" alt="ERC" />
                   </span>
                 </TooltipTrigger>
@@ -329,14 +329,14 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
             </div>
           ) : (
             <div className="flex items-center gap-2.5 px-3 py-3">
-              <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50 ring-1 ring-blue-100 shrink-0">
+              <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-100 dark:ring-blue-800 shrink-0">
                 <img src="/images/erc-logo.png" className="w-5 h-5" alt="ERC" />
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-medium text-slate-700 truncate">Energy Regulatory Commission</p>
-                <p className="text-[10px] text-slate-400">Republic of the Philippines</p>
+                <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate">Energy Regulatory Commission</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500">Republic of the Philippines</p>
               </div>
-              <span className="text-[9px] text-slate-600 shrink-0 self-end pb-0.5">
+              <span className="text-[9px] text-slate-400 dark:text-slate-600 shrink-0 self-end pb-0.5">
                 v{process.env.REACT_APP_Version}
               </span>
             </div>
