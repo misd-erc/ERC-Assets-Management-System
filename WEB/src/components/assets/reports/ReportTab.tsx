@@ -79,6 +79,7 @@ export function ReportTab() {
   const [showRSMI, setShowRSMI] = useState(false);
   const [showRegistrySPI, setShowRegistrySPI] = useState(false);
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
+  const [registrySPIAssets, setRegistrySPIAssets] = useState<any[]>([]);
   const [customNumber, setCustomNumber] = useState('');
   const [signatureDate, setSignatureDate] = useState(new Date().toISOString().slice(0, 10));
   const [searchTerm, setSearchTerm] = useState('');
@@ -186,7 +187,7 @@ export function ReportTab() {
 
     if (selectedReport === 'SESPI') {
       if (registrySPIEmployee) {
-        await RegistrySPIByEmployeeGenerator.generate(registrySPIEmployee, sespiDate!);
+        await RegistrySPIByEmployeeGenerator.generate(registrySPIEmployee, sespiDate!, registrySPIAssets.length ? registrySPIAssets : undefined);
         toast.success('Registry SPI PDF generated');
       } else {
         await SESPIExcelGenerator.generate(sespiDate!, sespiEmployee!.id);
@@ -248,6 +249,7 @@ export function ReportTab() {
     setSelectedMovement(null);
     setCustomNumber('');
     setRegistrySPIEmployee(null);
+    setRegistrySPIAssets([]);
   };
 
   const handleRPCPPEGenerate = async (asOfDate: Date, categoryId?: number) => {
@@ -303,14 +305,15 @@ export function ReportTab() {
     setShowSESPI(false);
   };
 
-  const handleRegistrySPIGenerate = async (employee: import('@/types/asset/UnifiedAsset').NormalizedEmployee, date: Date) => {
+  const handleRegistrySPIGenerate = async (employee: import('@/types/asset/UnifiedAsset').NormalizedEmployee, date: Date, assets?: any[]) => {
     setShowRegistrySPI(false);
     try {
       setLoadingPreview(true);
-      const url = await RegistrySPIByEmployeeGenerator.generatePreview(employee, date);
+      const url = await RegistrySPIByEmployeeGenerator.generatePreview(employee, date, assets);
       setPreviewUrl(url);
       setLoadingPreview(false);
       setRegistrySPIEmployee(employee);
+      setRegistrySPIAssets(assets ?? []);
       setSespiDate(date);
       setSelectedReport('SESPI');
       setShowPreview(true);

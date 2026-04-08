@@ -10,7 +10,7 @@ import { SupplyUnit } from '@/types';
 
 export const SupplyUnitTabContent = () => {
   const { units, loading: unitsLoading, fetchSupplyUnits } = useSupplyUnit();
-  const { vwSupplies, fetchSupplyItems } = useSupplyItem(); 
+  const { vwSupplies } = useSupplyItem();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -22,7 +22,6 @@ export const SupplyUnitTabContent = () => {
 
   useEffect(() => { 
     fetchSupplyUnits();
-    fetchSupplyItems(); 
   }, []);
 
   const usageCounts = useMemo(() => {

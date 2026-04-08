@@ -10,7 +10,7 @@ import { SupplyStorageLocation } from '@/types';
 
 export const SupplyStorageTabContent = () => {
   const { storagelocations, loading, fetchSupplyStorageLocations } = useSupplyStorageLocation();
-  const { vwSupplies, fetchSupplyItems } = useSupplyItem();
+  const { vwSupplies } = useSupplyItem();
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -21,8 +21,7 @@ export const SupplyStorageTabContent = () => {
   const [mode, setMode] = useState<'add'|'edit'>('add');
 
   useEffect(() => { 
-    fetchSupplyStorageLocations(); 
-    fetchSupplyItems();
+    fetchSupplyStorageLocations();
   }, []);
 
   // Calculate usage counts

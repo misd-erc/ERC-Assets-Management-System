@@ -16,3 +16,5 @@ export { useSupplyStorageLocation } from '@/hooks/supply/useSupplyStorageLocatio
 export { useSupplyUnit } from '@/hooks/supply/useSupplyUnit';
 export { useSupplyIAR } from '@/hooks/supply/useIAR';
 
+export { useDarkMode } from '@/hooks/ui/useDarkMode';
+
