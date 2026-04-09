@@ -79,13 +79,24 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord 
               <div className="col-span-2 border-t pt-4"></div>
 
               <div>
-                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Vendor / Supplier</Label>
-                <div className="font-medium text-slate-900">{record.vendor?.name || '-'}</div>
+                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Entity Name</Label>
+                <div className="font-medium text-slate-900">{(record as any).entityName || 'Energy Regulatory Commission'}</div>
               </div>
               <div>
                 <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Fund Cluster</Label>
                 <div className="font-medium text-slate-900">{record.fundCluster || '-'}</div>
               </div>
+
+              <div>
+                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Vendor / Supplier</Label>
+                <div className="font-medium text-slate-900">{record.vendor?.name || '-'}</div>
+              </div>
+              <div>
+                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">RCC Code</Label>
+                <div className="font-medium text-slate-900">{record.centerCode || '-'}</div>
+              </div>
+
+              <div className="col-span-2 border-t pt-4"></div>
 
               <div>
                 <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Requisitioning Office</Label>
@@ -110,11 +121,6 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord 
               <div>
                 <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Actual Delivery Date</Label>
                 <div className="font-medium text-slate-900">{record.actualDeliveryDate ? formatDate(record.actualDeliveryDate) : '-'}</div>
-              </div>
-
-              <div>
-                <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">RCC Code</Label>
-                <div className="font-medium text-slate-900">{record.centerCode || '-'}</div>
               </div>
               <div>
                 <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">Approval Status</Label>
@@ -177,16 +183,15 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord 
                                 )}
                               </div>
                               <div className="text-right">
-                                <div className="font-semibold">{formatCurrency(item.itemQuantity * item.unitCost)}</div>
+                                <div className="font-semibold">{formatCurrency((item.itemQuantity || 0) * (item.unitCost || 0))}</div>
                                 <div className="text-xs text-muted-foreground mt-1">
-                                  {item.itemQuantity} {item.measurementUnit?.name} @ {formatCurrency(item.unitCost)}
+                                  {item.itemQuantity} {item.measurementUnit?.name} @ {formatCurrency(item.unitCost || 0)}
                                 </div>
                               </div>
                             </div>
                           </div>
                       ))}
                     </div>
-
                     <div className="mt-4 flex justify-end items-center gap-4 p-4 border rounded-lg bg-blue-50/30 border-slate-200">
                       <span className="text-sm font-bold text-slate-600 uppercase tracking-wider">Total Value:</span>
                       <span className="text-xl font-bold text-blue-700">{formatCurrency(totalItemsValue)}</span>
