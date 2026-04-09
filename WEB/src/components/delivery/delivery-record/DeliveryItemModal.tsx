@@ -582,12 +582,22 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
               </div>
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
-                  <Label>Reorder Point</Label>
-                  <Input 
-                    type="number" 
-                    value={item.reorderPoint} 
-                    onChange={e => setItem({...item, reorderPoint: Number(e.target.value)})} 
-                    required={isSupply} 
+                  <Label htmlFor="reorderPoint" className="text-slate-700 font-medium">Reorder Point</Label>
+                  <Input
+                      id="reorderPoint"
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      required={isSupply}
+
+                      value={item.reorderPoint === 0 ? "" : item.reorderPoint}
+
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setItem({ ...item, reorderPoint: val === "" ? 0 : Number(val) });
+                      }}
+                      onKeyDown={(e) => ["e", "E", "+", "-", "."].includes(e.key) && e.preventDefault()}
+                      className="bg-white border-slate-200 focus:ring-blue-500 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                 </div>
               </div>
@@ -606,7 +616,6 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
 
                   onChange={(e) => {
                     const val = e.target.value;
-                    // Convert empty string back to 0, otherwise convert to Number
                     setItem({ ...item, itemQuantity: val === "" ? 0 : Number(val) });
                   }}
 
@@ -687,8 +696,24 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label>Unit Cost</Label>
-              <Input type="number" min="0" step="0.01" value={item.unitCost} onChange={e => setItem({...item, unitCost: Number(e.target.value)})} required />
+              <Label htmlFor="unitCost" className="text-slate-700 font-medium">Unit Cost</Label>
+              <Input
+                  id="unitCost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  required
+                  value={item.unitCost === 0 ? "" : item.unitCost}
+
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setItem({ ...item, unitCost: val === "" ? 0 : Number(val) });
+                  }}
+                  onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+
+                  className="bg-white border-slate-200 focus:ring-blue-500 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
             </div>
           </div>
 

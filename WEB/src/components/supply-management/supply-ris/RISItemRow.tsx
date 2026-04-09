@@ -168,25 +168,40 @@ export const RISItemRow = ({
           )}
         </div>
         <div className="space-y-2">
-          <Label>Requisition Quantity</Label>
+          <Label htmlFor="requisitionQuantity" className="text-slate-700 font-medium">Requisition Quantity</Label>
           <Input
-            type="number"
-            value={item.requisitionQuantity}
-            disabled
-            className="bg-slate-50 text-slate-700"
+              id="requisitionQuantity"
+              type="number"
+              placeholder="0"
+              disabled
+
+              value={item.requisitionQuantity === 0 ? "" : item.requisitionQuantity}
+
+              className="bg-slate-50 border-slate-200 text-slate-700 cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </div>
         <div className="space-y-2">
-          <Label>Issue Quantity</Label>
+          <Label htmlFor={`issueQuantity-${index}`} className="text-slate-700 font-medium">Issue Quantity</Label>
           <Input
-            type="number"
-            value={item.issueQuantity}
-            onChange={(e) => onUpdate(index, 'issueQuantity', Number(e.target.value))}
-            min={0}
-            max={item.requisitionQuantity}
-            required
-            disabled={isViewMode}
-            className={isViewMode ? "bg-slate-50" : ""}
+              id={`issueQuantity-${index}`}
+              type="number"
+              min={0}
+              max={item.requisitionQuantity}
+              placeholder="0"
+              required
+              disabled={isViewMode}
+              value={item.issueQuantity === 0 ? "" : item.issueQuantity}
+
+              onChange={(e) => {
+                const val = e.target.value;
+                onUpdate(index, 'issueQuantity', val === "" ? 0 : Number(val));
+              }}
+              onKeyDown={(e) => ["e", "E", "+", "-", "."].includes(e.key) && e.preventDefault()}
+              className={`border-slate-200 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                  isViewMode
+                      ? "bg-slate-50 text-slate-700 cursor-not-allowed"
+                      : "bg-white focus:ring-blue-500"
+              }`}
           />
         </div>
       </div>
