@@ -76,8 +76,9 @@ export const DeliveryRecordViewModal = ({ open, onOpenChange, record }: Props) =
                 </div>
               ))}
             </div>
-            <div className="flex justify-end mt-4 pt-4 border-t">
-              <span className="font-bold text-lg text-green-700">Total: {formatCurrency(totalValue)}</span>
+            <div className="mt-4 flex justify-end items-center gap-4 p-4 border rounded-lg bg-blue-50/30 border-slate-200">
+              <span className="text-sm font-bold text-slate-600 uppercase tracking-wider">Total Value:</span>
+              <span className="text-xl font-bold text-blue-700">{formatCurrency(totalValue)}</span>
             </div>
           </div>
           
