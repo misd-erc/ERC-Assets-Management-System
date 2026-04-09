@@ -54,8 +54,8 @@ namespace API.Controllers
                 DashboardPTAResponseModel ptaDash = new DashboardPTAResponseModel();
                 ptaDash.TotalPPE = ptas.Where(x => x.Group == TblPTA.PPE && x.IsActive).Count();
                 ptaDash.TotalSE = ptas.Where(x => x.Group == TblPTA.SE && x.IsActive).Count();
-                ptaDash.TotalPPEValue = ptas.Where(x => x.Group == TblPTA.PPE && x.IsActive).Sum(x => x.UnitValue) ?? 0;
-                ptaDash.TotalSEValue = ptas.Where(x => x.Group == TblPTA.SE && x.IsActive).Sum(x => x.UnitValue) ?? 0;
+                ptaDash.TotalPPEValue = (decimal)(ptas.Where(x => x.Group == TblPTA.PPE && x.IsActive).Sum(x => x.UnitValue) ?? 0);
+                ptaDash.TotalSEValue = (decimal)(ptas.Where(x => x.Group == TblPTA.SE && x.IsActive).Sum(x => x.UnitValue) ?? 0);
                 ptaDash.TotalPPEValuePercentage = ptaDash.TotalPPEValue + ptaDash.TotalSEValue == 0 ? 0 :
                     Math.Round(((decimal)ptaDash.TotalPPEValue / (ptaDash.TotalPPEValue + ptaDash.TotalSEValue)) * 100, 2);
                 ptaDash.TotalSEValuePercentage = ptaDash.TotalPPEValue + ptaDash.TotalSEValue == 0 ? 0 :
@@ -129,7 +129,7 @@ namespace API.Controllers
                     {
                         Name = g.Key,
                         Count = g.Count(),
-                        Value = g.Sum(x => x.UnitValue ?? 0)
+                        Value = (decimal)g.Sum(x => x.UnitValue ?? 0)
                     })
                     .OrderByDescending(x => x.Count)
                     .ToList();

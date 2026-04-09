@@ -143,18 +143,27 @@ interface SESPIFilterModalProps {
   onGenerate: (date: Date, employee: NormalizedEmployee) => void;
 }
 
+interface DateGroup {
+  dateLabel: string;    // e.g. "April 4, 2026"
+  dateValue: string;    // "YYYY-MM-DD"
+  assetCount: number;
+}
+
 export function SESPIFilterModal({ isOpen, onClose, employees, onGenerate }: SESPIFilterModalProps) {
   const [step, setStep] = useState<'employee' | 'date'>('employee');
   const [search, setSearch] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<NormalizedEmployee | null>(null);
-  const [asOfDate, setAsOfDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dateGroups, setDateGroups] = useState<DateGroup[]>([]);
+  const [loadingDates, setLoadingDates] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
       setStep('employee');
       setSearch('');
       setSelectedEmployee(null);
-      setAsOfDate('');
+      setSelectedDate(null);
+      setDateGroups([]);
     }
   }, [isOpen]);
 
@@ -163,13 +172,45 @@ export function SESPIFilterModal({ isOpen, onClose, employees, onGenerate }: SES
     e.employeeIdOriginal?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const handleGenerate = () => {
-    if (!asOfDate) {
-      toast.error('Please select a date');
-      return;
-    }
+  const handleEmployeeNext = async () => {
     if (!selectedEmployee) return;
-    onGenerate(new Date(asOfDate), selectedEmployee);
+    setLoadingDates(true);
+    try {
+      const assets = await PTAService.getAllForSEByEmployee(selectedEmployee.id);
+      // Group by current movement's dateAssigned (YYYY-MM-DD) — matches backend filter logic
+      const map = new Map<string, number>();
+      for (const asset of assets) {
+        const currentMovement = asset.movements?.find(m => m.isActive) || asset.movements?.[0];
+        const dateKey = currentMovement?.dateAssigned?.split('T')[0];
+        if (!dateKey) continue;
+        map.set(dateKey, (map.get(dateKey) ?? 0) + 1);
+      }
+      const groups: DateGroup[] = Array.from(map.entries())
+        .sort((a, b) => b[0].localeCompare(a[0])) // newest first
+        .map(([dateValue, assetCount]) => ({
+          dateValue,
+          dateLabel: new Date(dateValue + 'T00:00:00').toLocaleDateString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric',
+          }),
+          assetCount,
+        }));
+      if (groups.length === 0) {
+        toast.error('No SE assets found for this employee.');
+        return;
+      }
+      setDateGroups(groups);
+      setSelectedDate(null);
+      setStep('date');
+    } catch {
+      toast.error('Failed to load assets for this employee.');
+    } finally {
+      setLoadingDates(false);
+    }
+  };
+
+  const handleGenerate = () => {
+    if (!selectedDate || !selectedEmployee) return;
+    onGenerate(new Date(selectedDate + 'T00:00:00'), selectedEmployee);
   };
 
   return (
@@ -212,18 +253,35 @@ export function SESPIFilterModal({ isOpen, onClose, employees, onGenerate }: SES
             </ScrollArea>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="text-sm text-muted-foreground">
               Employee: <span className="font-medium text-foreground">{selectedEmployee?.label}</span>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Input
-                type="date"
-                value={asOfDate}
-                onChange={(e) => setAsOfDate(e.target.value)}
-                className="col-span-4"
-              />
-            </div>
+            <p className="text-xs text-muted-foreground">Select a date to generate the report for assets acquired on that date.</p>
+            <ScrollArea className="h-64 border rounded-md">
+              <div className="p-2 space-y-1">
+                {dateGroups.map(group => (
+                  <button
+                    key={group.dateValue}
+                    onClick={() => setSelectedDate(group.dateValue)}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
+                      selectedDate === group.dateValue
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted'
+                    }`}
+                  >
+                    <span className="font-medium">{group.dateLabel}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      selectedDate === group.dateValue
+                        ? 'bg-primary-foreground/20 text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {group.assetCount} {group.assetCount === 1 ? 'item' : 'items'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         )}
 
@@ -232,11 +290,11 @@ export function SESPIFilterModal({ isOpen, onClose, employees, onGenerate }: SES
             {step === 'date' ? 'Back' : 'Cancel'}
           </Button>
           {step === 'employee' ? (
-            <Button onClick={() => setStep('date')} disabled={!selectedEmployee}>
-              Next
+            <Button onClick={handleEmployeeNext} disabled={!selectedEmployee || loadingDates}>
+              {loadingDates ? 'Loading...' : 'Next'}
             </Button>
           ) : (
-            <Button onClick={handleGenerate} disabled={!asOfDate}>
+            <Button onClick={handleGenerate} disabled={!selectedDate}>
               Generate Report
             </Button>
           )}

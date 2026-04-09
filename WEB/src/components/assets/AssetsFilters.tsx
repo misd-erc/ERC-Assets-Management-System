@@ -4,10 +4,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Search, Filter, X } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Search, Filter, X, ChevronsUpDown, Check } from 'lucide-react';
+import { cn } from '@/components/ui/utils';
 import { getDivisions } from '@/api/office-management/divisionApi';
 import { getOffices } from '@/api/office-management/officeApi';
 import { getCategories, getConditions } from '@/api/asset/inventoryApi';
+import { getEmployees } from '@/api/user-management/userApi';
 import { VwDivision, Office } from '@/types/office';
 
 interface AssetsFiltersProps {
@@ -21,6 +25,8 @@ interface AssetsFiltersProps {
   onOfficeFilterChange: (value: string) => void;
   divisionFilter: string;
   onDivisionFilterChange: (value: string) => void;
+  employeeFilter: string;
+  onEmployeeFilterChange: (value: string) => void;
   startDate: string;
   onStartDateChange: (value: string) => void;
   endDate: string;
@@ -40,6 +46,8 @@ export function AssetsFilters({
   onOfficeFilterChange,
   divisionFilter,
   onDivisionFilterChange,
+  employeeFilter,
+  onEmployeeFilterChange,
   startDate,
   onStartDateChange,
   endDate,
@@ -51,20 +59,29 @@ export function AssetsFilters({
   const [conditions, setConditions] = useState<string[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
+  const [employees, setEmployees] = useState<{ id: number; label: string }[]>([]);
+  const [employeePopoverOpen, setEmployeePopoverOpen] = useState(false);
 
   useEffect(() => {
     const loadFilters = async () => {
       try {
-        const [categoriesData, conditionsData, officesData, divisionsData] = await Promise.all([
+        const [categoriesData, conditionsData, officesData, divisionsData, employeesData] = await Promise.all([
           getCategories(),
           getConditions(),
           getOffices(),
           getDivisions(),
+          getEmployees(1, 10000),
         ]);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
         setConditions(Array.isArray(conditionsData) ? conditionsData : []);
         setOffices(Array.isArray(officesData) ? officesData : []);
         setDivisions(Array.isArray(divisionsData) ? divisionsData : []);
+        const empItems = employeesData?.data?.items ?? [];
+        setEmployees(empItems.map((e: any) => ({
+          id: e.id,
+          label: [e.lastName, e.firstName, e.middleName].filter(Boolean).join(', ') +
+            (e.employeeIdOriginal ? ` — ${e.employeeIdOriginal}` : ''),
+        })));
       } catch (error) {
         console.error('Failed to load filters:', error);
       }
@@ -109,7 +126,7 @@ export function AssetsFilters({
               <SelectTrigger>
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-60 overflow-y-auto">
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category.id} value={category.id.toString()}>
@@ -127,7 +144,7 @@ export function AssetsFilters({
               <SelectTrigger>
                 <SelectValue placeholder="All Conditions" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-60 overflow-y-auto">
                 <SelectItem value="all">All Conditions</SelectItem>
                 {conditions.map(condition => (
                   <SelectItem key={condition} value={condition}>
@@ -145,7 +162,7 @@ export function AssetsFilters({
               <SelectTrigger>
                 <SelectValue placeholder="All Offices" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-60 overflow-y-auto">
                 <SelectItem value="all">All Offices</SelectItem>
                 {offices.map(office => (
                   <SelectItem key={office.id} value={office.id.toString()}>
@@ -163,7 +180,7 @@ export function AssetsFilters({
               <SelectTrigger>
                 <SelectValue placeholder="All Divisions" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-60 overflow-y-auto">
                 <SelectItem value="all">All Divisions</SelectItem>
                 {divisions.map(division => (
                   <SelectItem key={division.id} value={division.id.toString()}>
@@ -172,6 +189,55 @@ export function AssetsFilters({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Employee Filter */}
+          <div className="space-y-2">
+            <Label>Employee</Label>
+            <Popover open={employeePopoverOpen} onOpenChange={setEmployeePopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={employeePopoverOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  <span className="truncate">
+                    {employeeFilter && employeeFilter !== 'all'
+                      ? employees.find(e => e.id.toString() === employeeFilter)?.label ?? 'All Employees'
+                      : 'All Employees'}
+                  </span>
+                  <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search employee..." />
+                  <CommandList className="max-h-60">
+                    <CommandEmpty>No employee found.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="all"
+                        onSelect={() => { onEmployeeFilterChange('all'); setEmployeePopoverOpen(false); }}
+                      >
+                        <Check className={cn('mr-2 size-4', employeeFilter === 'all' || !employeeFilter ? 'opacity-100' : 'opacity-0')} />
+                        All Employees
+                      </CommandItem>
+                      {employees.map(emp => (
+                        <CommandItem
+                          key={emp.id}
+                          value={emp.label}
+                          onSelect={() => { onEmployeeFilterChange(emp.id.toString()); setEmployeePopoverOpen(false); }}
+                        >
+                          <Check className={cn('mr-2 size-4', employeeFilter === emp.id.toString() ? 'opacity-100' : 'opacity-0')} />
+                          {emp.label}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Date Range */}

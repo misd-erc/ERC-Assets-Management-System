@@ -19,7 +19,7 @@ namespace PortalDB.Models.ResponseModels.PTA
         public string SerialNumber { get; set; } = string.Empty;
         public List<PTAPartResponseModel>? Parts { get; set; }
         public string UnitOfMeasurement { get; set; } = string.Empty;
-        public long? UnitValue { get; set; }
+        public double? UnitValue { get; set; }
         public DateTime? DateAcquired { get; set; }
         public List<PTAMovementResponseModel>? Movements { get; set; }
         public long? EstimatedUsefulLife { get; set; }

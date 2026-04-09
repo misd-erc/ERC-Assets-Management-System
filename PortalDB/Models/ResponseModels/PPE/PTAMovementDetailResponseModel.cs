@@ -61,7 +61,7 @@ namespace PortalDB.Models.ResponseModels.PTA
         public string? SerialNumber { get; set; }
         public string? Category { get; set; }
         public string? UnitOfMeasurement { get; set; }
-        public long? UnitValue { get; set; }
+        public double? UnitValue { get; set; }
         public DateTime? DateAcquired { get; set; }
         public string? Group { get; set; } // SE or PPE
     }

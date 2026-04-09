@@ -247,7 +247,7 @@ namespace PortalTools.Services
                 item.SerialNumber = Get(map, "Serial Number", "serial_number", "sn");
                 item.UnitOfMeasurement = Get(map, "Unit of Measurement", "unit_of_measurement", "uom");
 
-                item.UnitValue = ParseLong(Get(map, "Unit Value (PHP)", "unit_value", "Unit Value")) ?? 0;
+                item.UnitValue = ParseDouble(Get(map, "Unit Value (PHP)", "unit_value", "Unit Value")) ?? 0;
                 item.EstimatedUsefulLife = ParseLong(Get(map,
                     "Estimated Useful Life (Years)",
                     "estimated_useful_life",
@@ -328,6 +328,15 @@ namespace PortalTools.Services
                 : double.TryParse(cleaned, NumberStyles.Any, CultureInfo.InvariantCulture, out var d)
                     ? (long)Math.Round(d)
                     : null;
+        }
+
+        private static double? ParseDouble(string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return null;
+            var cleaned = input.Replace(",", "").Replace("₱", "").Replace("$", "").Replace("PHP", "").Trim();
+            return double.TryParse(cleaned, NumberStyles.Any, CultureInfo.InvariantCulture, out var result)
+                ? result
+                : null;
         }
 
         private static List<PTAPart> ParsePtaParts(string input)

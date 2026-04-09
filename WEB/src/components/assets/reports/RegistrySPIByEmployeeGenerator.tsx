@@ -115,7 +115,13 @@ interface RegistrySPIEmployeeFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
   employees: NormalizedEmployee[];
-  onGenerate: (employee: NormalizedEmployee, date: Date) => void;
+  onGenerate: (employee: NormalizedEmployee, date: Date, assets: any[]) => void;
+}
+
+interface DateGroup {
+  dateLabel: string;
+  dateValue: string;
+  assetCount: number;
 }
 
 export function RegistrySPIEmployeeFilterModal({
@@ -127,14 +133,19 @@ export function RegistrySPIEmployeeFilterModal({
   const [step, setStep] = useState<'employee' | 'date'>('employee');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<NormalizedEmployee | null>(null);
-  const [asOfDate, setAsOfDate] = useState('');
+  const [dateGroups, setDateGroups] = useState<DateGroup[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [loadingDates, setLoadingDates] = useState(false);
+  const [fetchedAssets, setFetchedAssets] = useState<any[]>([]);
 
   useEffect(() => {
     if (!isOpen) {
       setStep('employee');
       setSearch('');
       setSelected(null);
-      setAsOfDate('');
+      setDateGroups([]);
+      setSelectedDate(null);
+      setFetchedAssets([]);
     }
   }, [isOpen]);
 
@@ -142,6 +153,42 @@ export function RegistrySPIEmployeeFilterModal({
     e.label.toLowerCase().includes(search.toLowerCase()) ||
     e.employeeIdOriginal?.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleEmployeeNext = async () => {
+    if (!selected) return;
+    setLoadingDates(true);
+    try {
+      const assets = await PTAService.getAllForSEByEmployee(selected.id);
+      const map = new Map<string, number>();
+      for (const asset of assets) {
+        const currentMovement = asset.movements?.find(m => m.isActive) || asset.movements?.[0];
+        const dateKey = currentMovement?.dateAssigned?.split('T')[0];
+        if (!dateKey) continue;
+        map.set(dateKey, (map.get(dateKey) ?? 0) + 1);
+      }
+      const groups: DateGroup[] = Array.from(map.entries())
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .map(([dateValue, assetCount]) => ({
+          dateValue,
+          dateLabel: new Date(dateValue + 'T00:00:00').toLocaleDateString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric',
+          }),
+          assetCount,
+        }));
+      if (groups.length === 0) {
+        toast.error('No SE assets found for this employee.');
+        return;
+      }
+      setFetchedAssets(assets);
+      setDateGroups(groups);
+      setSelectedDate(null);
+      setStep('date');
+    } catch {
+      toast.error('Failed to load assets for this employee.');
+    } finally {
+      setLoadingDates(false);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -183,18 +230,35 @@ export function RegistrySPIEmployeeFilterModal({
             </ScrollArea>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="text-sm text-muted-foreground">
               Employee: <span className="font-medium text-foreground">{selected?.label}</span>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Input
-                type="date"
-                value={asOfDate}
-                onChange={e => setAsOfDate(e.target.value)}
-                className="col-span-4"
-              />
-            </div>
+            <p className="text-xs text-muted-foreground">Select a date to generate the report for assets acquired on that date.</p>
+            <ScrollArea className="h-64 border rounded-md">
+              <div className="p-2 space-y-1">
+                {dateGroups.map(group => (
+                  <button
+                    key={group.dateValue}
+                    onClick={() => setSelectedDate(group.dateValue)}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
+                      selectedDate === group.dateValue
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted'
+                    }`}
+                  >
+                    <span className="font-medium">{group.dateLabel}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      selectedDate === group.dateValue
+                        ? 'bg-primary-foreground/20 text-primary-foreground'
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {group.assetCount} {group.assetCount === 1 ? 'item' : 'items'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         )}
 
@@ -203,13 +267,20 @@ export function RegistrySPIEmployeeFilterModal({
             {step === 'date' ? 'Back' : 'Cancel'}
           </Button>
           {step === 'employee' ? (
-            <Button onClick={() => setStep('date')} disabled={!selected}>
-              Next
+            <Button onClick={handleEmployeeNext} disabled={!selected || loadingDates}>
+              {loadingDates ? 'Loading...' : 'Next'}
             </Button>
           ) : (
             <Button
-              onClick={() => selected && asOfDate && onGenerate(selected, new Date(asOfDate))}
-              disabled={!asOfDate}
+              onClick={() => {
+                if (!selected || !selectedDate) return;
+                const filtered = fetchedAssets.filter(asset => {
+                  const mv = asset.movements?.find((m: any) => m.isActive) || asset.movements?.[0];
+                  return mv?.dateAssigned?.split('T')[0] === selectedDate;
+                });
+                onGenerate(selected, new Date(selectedDate + 'T00:00:00'), filtered);
+              }}
+              disabled={!selectedDate}
             >
               Generate Report
             </Button>
@@ -225,8 +296,8 @@ export function RegistrySPIEmployeeFilterModal({
 // ─────────────────────────────────────────────────────────────────────────────
 export class RegistrySPIByEmployeeGenerator {
 
-  static async generatePreview(employee: NormalizedEmployee, date: Date): Promise<string> {
-    const assets = await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
+  static async generatePreview(employee: NormalizedEmployee, date: Date, preloadedAssets?: any[]): Promise<string> {
+    const assets = preloadedAssets ?? await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
     if (!assets.length) {
       throw new Error(`No SE assets found issued to ${employee.label} for the selected date.`);
     }
@@ -235,8 +306,8 @@ export class RegistrySPIByEmployeeGenerator {
     return URL.createObjectURL(blob);
   }
 
-  static async generate(employee: NormalizedEmployee, date: Date) {
-    const assets = await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
+  static async generate(employee: NormalizedEmployee, date: Date, preloadedAssets?: any[]) {
+    const assets = preloadedAssets ?? await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
     const doc = this.buildDocument(assets, employee);
     const blob = await pdf(doc).toBlob();
     const url = URL.createObjectURL(blob);

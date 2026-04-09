@@ -21,7 +21,7 @@ namespace PortalDB.Models.QueryParams.PTA
         [Required] public string Model { get; set; } = string.Empty;
         [Required] public string SerialNumber { get; set; } = string.Empty;
         [Required] public string UnitOfMeasurement { get; set; } = string.Empty;
-        [Required] public long UnitValue { get; set; }
+        [Required] public double UnitValue { get; set; }
         [Required] public DateTime DateAcquired { get; set; }
         public long EstimatedUsefulLife { get; set; }
         [Required] public DateTime FiscalDate { get; set; }
