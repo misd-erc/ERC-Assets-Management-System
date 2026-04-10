@@ -189,7 +189,7 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
 
       <DeliveryItemModal 
         open={isItemModalOpen} 
-        onOpenChange={setIsItemModalOpen} 
+        onOpenChange={setIsItemModalOpen}
         onSave={handleAddItem}
       />
     </>

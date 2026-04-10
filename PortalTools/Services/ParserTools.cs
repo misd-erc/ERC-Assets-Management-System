@@ -367,9 +367,7 @@ namespace PortalTools.Services
             {
                 try
                 {
-                    var days = (int)serial;
-                    if (days > 60) days--; // Excel leap year bug
-                    return ExcelEpoch.AddDays(days);
+                    return DateTime.FromOADate(serial);
                 }
                 catch { }
             }

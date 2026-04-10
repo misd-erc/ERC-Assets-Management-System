@@ -292,5 +292,8 @@ namespace PortalDB.Entities.ASSET.PTA
         [Column("PTACreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [Column("PTAUpdatedAt")]
+        public DateTime? UpdatedAt { get; set; }
+
     }
 }
