@@ -282,7 +282,7 @@ namespace API.Controllers
                     int skip = (model.PageNumber - 1) * model.PageSize;
 
                     var ptasList = ptas
-                        .OrderByDescending(x => x.CreatedAt)
+                        .OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt)
                         .Skip(skip)
                         .Take(model.PageSize)
                         .ToList();
@@ -320,7 +320,8 @@ namespace API.Controllers
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
                                 Movements = (await movements.ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                                 IsActive = x.IsActive,
-                                CreatedAt = x.CreatedAt
+                                CreatedAt = x.CreatedAt,
+                                UpdatedAt = x.UpdatedAt
                             };
 
                             ptasResponses.Add(ppeModel);
@@ -346,7 +347,8 @@ namespace API.Controllers
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
                                 Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                                 IsActive = x.IsActive,
-                                CreatedAt = x.CreatedAt
+                                CreatedAt = x.CreatedAt,
+                                UpdatedAt = x.UpdatedAt
                             };
 
                             ptasResponses.Add(ppeModel);
@@ -410,7 +412,7 @@ namespace API.Controllers
                         ptasQuery = ptasQuery.Where(x => x.DateAcquired <= model.AsOfDate.Value);
                     }
 
-                    // Get distinct employees who have at least one PTA, ordered latest to oldest by DateAcquired (fallback to CreatedAt)
+                    // Get distinct employees who have at least one PTA, ordered latest to oldest by UpdatedAt/CreatedAt
                     var employeeGroups = ptasQuery
                         .Where(x => x.NonPlantillaEmployeeId.HasValue || x.PlantillaEmployeeId.HasValue)
                         .GroupBy(x => x.NonPlantillaEmployeeId.HasValue ? x.NonPlantillaEmployeeId.Value : x.PlantillaEmployeeId.Value)
@@ -418,7 +420,7 @@ namespace API.Controllers
                         {
                             EmployeeId = g.Key,
                             PTAIds = g.Select(p => p.Id).ToList(),
-                            LatestDateAcquired = g.Max(p => p.DateAcquired ?? p.CreatedAt)
+                            LatestDateAcquired = g.Max(p => p.UpdatedAt ?? p.CreatedAt)
                         })
                         .AsEnumerable()
                         .OrderByDescending(g => g.LatestDateAcquired); // Switch to client-side for complex grouping logic
@@ -476,7 +478,7 @@ namespace API.Controllers
                         // Get all PTAs for this employee (filtered already by search/date)
                         var employeePtaList = ptasQuery
                             .Where(x => (isPlantilla ? x.PlantillaEmployeeId : x.NonPlantillaEmployeeId) == employeeId)
-                            .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt)
+                            .OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt)
                             .ToList();
 
                         var ptaResponseModels = new List<PTAResponseModel>();
@@ -501,7 +503,8 @@ namespace API.Controllers
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
                                 Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                                 IsActive = x.IsActive,
-                                CreatedAt = x.CreatedAt
+                                CreatedAt = x.CreatedAt,
+                                UpdatedAt = x.UpdatedAt
                             };
                             ptaResponseModels.Add(ptaModel);
                         }
@@ -573,7 +576,7 @@ namespace API.Controllers
                         ptasQuery = ptasQuery.Where(x => x.DateAcquired <= model.AsOfDate.Value);
                     }
 
-                    // Get distinct conditions ordered latest to oldest by DateAcquired (fallback to CreatedAt)
+                    // Get distinct conditions ordered latest to oldest by UpdatedAt/CreatedAt
                     var conditionGroups = ptasQuery
                         .Where(x => x.RemarksEncrypted != null && x.RemarksEncrypted != "")
                         .ToList()
@@ -581,7 +584,7 @@ namespace API.Controllers
                         .Select(g => new
                         {
                             Remarks = g.Key,
-                            LatestDateAcquired = g.Max(p => p.DateAcquired ?? p.CreatedAt)
+                            LatestDateAcquired = g.Max(p => p.UpdatedAt ?? p.CreatedAt)
                         })
                         .OrderByDescending(g => g.LatestDateAcquired)
                         .AsEnumerable(); // Switch to client-side for complex grouping logic
@@ -604,7 +607,7 @@ namespace API.Controllers
                             .Where(x => x.RemarksEncrypted != null && x.RemarksEncrypted != "")
                             .ToList()
                             .Where(x => x.Remarks.ToLower() == condition.ToLower())
-                            .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt);
+                            .OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt);
 
                         var ptaResponseModels = new List<PTAResponseModel>();
 
@@ -628,7 +631,8 @@ namespace API.Controllers
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
                                 Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                                 IsActive = x.IsActive,
-                                CreatedAt = x.CreatedAt
+                                CreatedAt = x.CreatedAt,
+                                UpdatedAt = x.UpdatedAt
                             };
                             ptaResponseModels.Add(ptaModel);
                         }
@@ -693,14 +697,14 @@ namespace API.Controllers
                         ptasQuery = ptasQuery.Where(x => x.DateAcquired <= model.AsOfDate.Value);
                     }
 
-                    // Get distinct divisions ordered latest to oldest by DateAcquired (fallback to CreatedAt)
+                    // Get distinct divisions ordered latest to oldest by UpdatedAt/CreatedAt
                     var divisionGroups = ptasQuery
                         .Where(x => x.ActualDivisionId != null)
                         .GroupBy(x => x.ActualDivisionId)
                         .Select(g => new
                         {
                             DivisionId = g.Key,
-                            LatestDateAcquired = g.Max(p => p.DateAcquired ?? p.CreatedAt)
+                            LatestDateAcquired = g.Max(p => p.UpdatedAt ?? p.CreatedAt)
                         })
                         .AsEnumerable()
                         .OrderByDescending(g => g.LatestDateAcquired); // Switch to client-side for complex grouping logic
@@ -721,7 +725,7 @@ namespace API.Controllers
 
                         var divisionPtaList = ptasQuery
                             .Where(x => x.ActualDivisionId == divisionId)
-                            .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt)
+                            .OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt)
                             .ToList();
 
                         var ptaResponseModels = new List<PTAResponseModel>();
@@ -746,7 +750,8 @@ namespace API.Controllers
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
                                 Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                                 IsActive = x.IsActive,
-                                CreatedAt = x.CreatedAt
+                                CreatedAt = x.CreatedAt,
+                                UpdatedAt = x.UpdatedAt
                             };
                             ptaResponseModels.Add(ptaModel);
                         }
@@ -826,7 +831,8 @@ namespace API.Controllers
                     Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(pta.Id, context).ToListAsync(),
                     Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(pta.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                     IsActive = pta.IsActive,
-                    CreatedAt = pta.CreatedAt
+                    CreatedAt = pta.CreatedAt,
+                    UpdatedAt = pta.UpdatedAt
                 };
                 ptaResponses.Add(ptaModel);
 
@@ -903,7 +909,7 @@ namespace API.Controllers
                 int skip = (model.PageNumber - 1) * model.PageSize;
 
                 var ptaList = ptas
-                    .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt)
+                    .OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt)
                     .Skip(skip)
                     .Take(model.PageSize)
                     .ToList();
@@ -930,7 +936,8 @@ namespace API.Controllers
                         FiscalDate = x.FiscalDate,
                         Movements = new List<PTAMovementResponseModel>(),
                         IsActive = x.IsActive,
-                        CreatedAt = x.CreatedAt
+                        CreatedAt = x.CreatedAt,
+                        UpdatedAt = x.UpdatedAt
                     };
                     ptasResponses.Add(ptaModel);
                 }
@@ -1022,7 +1029,7 @@ namespace API.Controllers
                 int skip = (model.PageNumber - 1) * model.PageSize;
 
                 var ptaList = ptas
-                    .OrderByDescending(x => x.DateAcquired ?? x.CreatedAt)
+                    .OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt)
                     .Skip(skip)
                     .Take(model.PageSize)
                     .ToList();
@@ -1050,7 +1057,8 @@ namespace API.Controllers
                         Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
                         Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
                         IsActive = x.IsActive,
-                        CreatedAt = x.CreatedAt
+                        CreatedAt = x.CreatedAt,
+                        UpdatedAt = x.UpdatedAt
                     };
                     ptasResponses.Add(ptaModel);
                 }
@@ -1165,11 +1173,10 @@ namespace API.Controllers
                         }
 
                         // UPSERT LOGIC FOR ASSET: Check if Property Number exists
-                        // Load all assets of this group first, then filter in memory
-                        var allPTAsOfGroup = await _getTools.PTA.GetTblPTAsByGroup(item.UnitValue <= 49999.99 ? TblPTA.SE : TblPTA.PPE, context)
-                            .ToListAsync();
+                        // Search ALL non-deleted PTAs (across both SE and PPE groups) to avoid duplicates when group changes
+                        var allPTAs = await _getTools.PTA.GetTblPTAs(context).ToListAsync();
                         
-                        TblPTA? existingPTA = allPTAsOfGroup
+                        TblPTA? existingPTA = allPTAs
                             .FirstOrDefault(x => x.PropertyNumber == item.PropertyNumber);
 
                         if (existingPTA != null)
@@ -1232,17 +1239,31 @@ namespace API.Controllers
                             isAssetUpsertInsert = true;
                         }
 
-                        // Handle parts - only insert new parts, don't update existing
-                        foreach (PTAPart part in item?.Parts ?? Enumerable.Empty<PTAPart>())
+                        // Handle parts - skip parts that already exist for this asset
+                        if (item?.Parts != null && item.Parts.Any())
                         {
-                            TblPTAPart newPart = new()
-                            {
-                                PTAId = ppeId,
-                                Name = part.PartName,
-                                SerialNumber = part.PartSerialNumber
-                            };
+                            var existingParts = await context.Set<TblPTAPart>()
+                                .Where(p => p.PTAId == ppeId && !p.IsDeleted)
+                                .ToListAsync();
 
-                            await _editTools.PTA.EditTblPTAPartAsync(newPart, model.ActionBySystemUserId, context, true);
+                            foreach (PTAPart part in item.Parts)
+                            {
+                                bool partExists = existingParts.Any(ep =>
+                                    ep.SerialNumber == part.PartSerialNumber &&
+                                    ep.Name == part.PartName);
+
+                                if (!partExists)
+                                {
+                                    TblPTAPart newPart = new()
+                                    {
+                                        PTAId = ppeId,
+                                        Name = part.PartName,
+                                        SerialNumber = part.PartSerialNumber
+                                    };
+
+                                    await _editTools.PTA.EditTblPTAPartAsync(newPart, model.ActionBySystemUserId, context, true);
+                                }
+                            }
                         }
 
                         // Collect all movements for this item to determine which is current
@@ -1250,6 +1271,11 @@ namespace API.Controllers
                         Console.WriteLine($"[BATCH_UPLOAD] Found {movementsForItem.Count()} movements for asset {item.PropertyNumber}");
                         
                         var movementList = new List<(PTAAnnualCount movement, TblPTAMovement tbpMovement, bool isInsert)>();
+
+                        // Load all existing movements for this PTA once (outside the loop)
+                        var allMovementsForPTA = await context.Set<TblPTAMovement>()
+                            .Where(m => m.PTAId == ppeId && !m.IsDeleted)
+                            .ToListAsync();
 
                         // First pass: prepare all movements
                         foreach (PTAAnnualCount movement in movementsForItem)
@@ -1328,14 +1354,9 @@ namespace API.Controllers
                             }
 
                             // UPSERT LOGIC FOR MOVEMENT: Check if movement exists using composite key
-                            // Load all movements for this PTA first, then filter in memory
-                            var allMovementsForPTA = await context.Set<TblPTAMovement>()
-                                .Where(m => m.PTAId == ppeId)
-                                .ToListAsync();
-                            
                             var existingMovement = allMovementsForPTA
                                 .FirstOrDefault(m => 
-                                    m.DateAssigned == movement.DateAssigned &&
+                                    m.DateAssigned?.Date == movement.DateAssigned?.Date &&
                                     (
                                         (m.PlantillaEmployeeId == plantillaEmployeeId && plantillaEmployeeId.HasValue) ||
                                         (m.NonPlantillaEmployeeId == nonPlantillaEmployeeId && nonPlantillaEmployeeId.HasValue)
