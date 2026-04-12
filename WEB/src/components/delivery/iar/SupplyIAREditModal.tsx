@@ -398,10 +398,10 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
               </Popover>
             </div>
             
-            <div className="space-y-2"><Label>PO Number</Label><Input value={formData.poNumber || ''} onChange={e => setFormData({...formData, poNumber: e.target.value})} required /></div>
+            <div className="space-y-2"><Label>PO Number</Label><Input value={formData.poNumber || ''} onChange={e => setFormData({...formData, poNumber: e.target.value})}/></div>
             <div className="space-y-2"><Label>PO Date</Label><Input type="date" value={formData.poDate || ''} onChange={e => setFormData({...formData, poDate: e.target.value})} /></div>
             
-            <div className="space-y-2"><Label>Actual Delivery Date</Label><Input type="date" value={formData.actualDeliveryDate || ''} onChange={e => setFormData({...formData, actualDeliveryDate: e.target.value})} /></div>
+            <div className="space-y-2"><Label>Actual Delivery Date</Label><Input type="date" value={formData.actualDeliveryDate || ''} onChange={e => setFormData({...formData, actualDeliveryDate: e.target.value})} required/></div>
             
             <div className="space-y-2"><Label>Invoice Number</Label><Input value={formData.iarInvoiceNumber || ''} onChange={e => setFormData({...formData, iarInvoiceNumber: e.target.value})} /></div>
             <div className="space-y-2"><Label>Invoice Date</Label><Input type="date" value={formData.iarInvoiceNumberDate || ''} onChange={e => setFormData({...formData, iarInvoiceNumberDate: e.target.value})} /></div>
