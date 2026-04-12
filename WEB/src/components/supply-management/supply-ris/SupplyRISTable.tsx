@@ -25,7 +25,8 @@ import {
   ChevronRight,
   Plus,
   FileText,
-  SearchX
+  SearchX,
+  CheckCircle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { formatDate } from '@/utils/dateUtils';
@@ -37,6 +38,7 @@ interface Props {
   onEdit: (ris: VwSupplyRIS) => void;
   onView: (ris: VwSupplyRIS) => void;
   onDelete: (ris: VwSupplyRIS) => void;
+  onApprove: (ris: VwSupplyRIS) => void;
   loading?: boolean;
 }
 
@@ -48,6 +50,7 @@ export const SupplyRISTable = ({
                                  onEdit,
                                  onView,
                                  onDelete,
+                                 onApprove,
                                  loading = false,
                                }: Props) => {
   const [page, setPage] = useState(1);
@@ -176,6 +179,13 @@ export const SupplyRISTable = ({
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-40">
+                                  {!isApproved && (
+                                      <DropdownMenuItem onClick={() => onApprove(ris)} className="cursor-pointer">
+                                        <CheckCircle className={`w-4 h-4 mr-2 ${isApproved ? 'text-amber-500' : 'text-emerald-500'}`} />
+                                        Approve RIS
+                                      </DropdownMenuItem>
+                                  )}
+
                                   <DropdownMenuItem onClick={() => onView(ris)} className="cursor-pointer">
                                     <Eye className="w-4 h-4 mr-2 text-slate-500" /> View Details
                                   </DropdownMenuItem>
