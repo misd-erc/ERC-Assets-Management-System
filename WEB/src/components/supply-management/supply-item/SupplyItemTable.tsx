@@ -51,9 +51,9 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
   }, [filteredData, page]);
 
   const getStockStatus = (item: VwSupplyItem) => {
-    if (item.currentStock == 0)
+    if (item.quantity == 0)
       return { label: 'Out of Stock', classes: 'bg-red-50 text-red-700 border-red-200' };
-    else if (item.currentStock <= item.reorderPoint)
+    else if (item.quantity <= item.reorderPoint)
       return { label: 'Low Stock', classes: 'bg-amber-50 text-amber-700 border-amber-200' };
     else
       return { label: 'Available', classes: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
@@ -142,8 +142,8 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1.5 font-medium">
                                 {isLowStock && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
-                                <span className={item.currentStock == 0 ? 'text-red-600' : 'text-slate-900'}>
-                                  {item.currentStock ?? 0}
+                                <span className={item.quantity == 0 ? 'text-red-600' : 'text-slate-900'}>
+                                  {item.quantity ?? 0}
                                 </span>
                               </div>
                             </TableCell>

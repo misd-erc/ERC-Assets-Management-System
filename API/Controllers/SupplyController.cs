@@ -518,45 +518,104 @@ namespace API.Controllers
                 string targetCode = targetItem.Code ?? string.Empty;
                 string targetDescription = targetItem.Description ?? string.Empty;
 
-                // 2. Fetch all supply items
-                IEnumerable<TblSupplyItem> allItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+                // ===== 2. Fetch and decrypt supply items (Additions) =====
+                var supplyItemsQuery = _getTools.Supply.GetTblSupplyItems(context);
+                var allSupplyItems = supplyItemsQuery != null
+                    ? await supplyItemsQuery.ToListAsync()
+                    : new List<TblSupplyItem>();
 
-                // 3. Filter by matching Code and Description
-                var filteredItems = allItems.Where(x =>
-                    (x.Code ?? string.Empty).Equals(targetCode, StringComparison.OrdinalIgnoreCase) &&
-                    (x.Description ?? string.Empty).Equals(targetDescription, StringComparison.OrdinalIgnoreCase));
+                // Sort by CreatedAt Ascending (Oldest First) to prepare for FIFO deduction
+                var matchedSupplyItems = allSupplyItems
+                    .Where(x => (x.Code ?? string.Empty).Equals(targetCode, StringComparison.OrdinalIgnoreCase) &&
+                                (x.Description ?? string.Empty).Equals(targetDescription, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(x => x.CreatedAt)
+                    .ToList();
 
-                // 4. Apply search filter if provided (search across Code and Description)
+                // ===== 3. Fetch Fully Completed RIS Items & Calculate Total Issued =====
+                var fullyCompletedRisIds = await context.Set<TblSupplyRIS>()
+                    .Where(r => r.RISRequestedBySystemUserId != null &&
+                                r.RISRequestedDate != null &&
+                                r.RISApprovedBySystemUserId != null &&
+                                r.RISApprovedDate != null &&
+                                r.RISIssuedBySystemUserId != null &&
+                                r.RISIssuedDate != null &&
+                                r.RISReceivedBySystemUserId != null &&
+                                r.RISReceivedDate != null)
+                    .Select(r => r.Id)
+                    .ToListAsync();
+
+                var risItemsQuery = _getTools.Supply.GetTblSupplyRISItems(context);
+                var filteredRisItems = risItemsQuery != null
+                    ? await risItemsQuery
+                        .Where(x => x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value))
+                        .ToListAsync()
+                    : new List<TblSupplyRISItem>();
+
+                long totalIssuedQuantity = filteredRisItems
+                    .Where(x => x.StockNumber == targetCode && x.ItemDescription == targetDescription)
+                    .Sum(x => x.IssueQuantity);
+
+                // ===== 4. Apply FIFO (First-In, First-Out) Deduction =====
+                // We deduct the total issued quantity from the oldest batches first.
+                var itemsWithRemainingQty = new List<dynamic>();
+                long remainingToDeduct = totalIssuedQuantity;
+
+                foreach (var item in matchedSupplyItems)
+                {
+                    long batchOriginalQty = item.Quantity ?? 0;
+                    long batchRemainingQty = batchOriginalQty;
+
+                    if (remainingToDeduct > 0)
+                    {
+                        if (remainingToDeduct >= batchOriginalQty)
+                        {
+                            // This whole batch is used up
+                            batchRemainingQty = 0;
+                            remainingToDeduct -= batchOriginalQty;
+                        }
+                        else
+                        {
+                            // Only part of this batch is used up
+                            batchRemainingQty = batchOriginalQty - remainingToDeduct;
+                            remainingToDeduct = 0;
+                        }
+                    }
+
+                    itemsWithRemainingQty.Add(new { Item = item, RemainingQty = batchRemainingQty });
+                }
+
+                // ===== 5. Apply Search & Date Filters =====
+                var filteredItems = itemsWithRemainingQty.AsEnumerable();
+
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
                     string searchLower = model.SearchString.ToLower();
                     filteredItems = filteredItems.Where(x =>
-                        (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
+                        (x.Item.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Item.Description ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
-                // 5. Apply date filters
                 if (model.StartDate.HasValue)
-                    filteredItems = filteredItems.Where(x => x.CreatedAt >= model.StartDate.Value);
+                    filteredItems = filteredItems.Where(x => x.Item.CreatedAt >= model.StartDate.Value);
 
                 if (model.EndDate.HasValue)
-                    filteredItems = filteredItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+                    filteredItems = filteredItems.Where(x => x.Item.CreatedAt <= model.EndDate.Value);
 
-                // 6. Count total items before pagination
+                // ===== 6. Count, Paginate & Re-sort (Newest First for UI) =====
                 int totalCount = filteredItems.Count();
-
-                // 7. Apply pagination and ordering
                 int skip = (model.PageNumber - 1) * model.PageSize;
+
                 var pagedItems = filteredItems
-                    .OrderByDescending(x => x.CreatedAt)
+                    .OrderByDescending(x => x.Item.CreatedAt)
                     .Skip(skip)
                     .Take(model.PageSize)
                     .ToList();
 
-                // 8. Map to response model (including related entities)
+                // ===== 7. Map to Response Model =====
                 var supplyItemsResponses = new List<SupplyItemResponseModel>();
-                foreach (var item in pagedItems)
+                foreach (var x in pagedItems)
                 {
+                    TblSupplyItem item = x.Item;
                     var response = new SupplyItemResponseModel
                     {
                         Id = item.Id,
@@ -565,7 +624,10 @@ namespace API.Controllers
                         Category = await _getTools.PTA.GetTblPTACategoryAsync(item.CategoryId, context),
                         MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(item.MeasurementUnitId, context),
                         Description = item.Description ?? string.Empty,
-                        Quantity = item.Quantity,
+
+                        // MAP THE CALCULATED FIFO QUANTITY HERE
+                        Quantity = x.RemainingQty,
+
                         UnitCost = item.UnitCost,
                         ReorderPoint = item.ReorderPoint,
                         StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(item.StorageLocationId, context),
@@ -576,14 +638,11 @@ namespace API.Controllers
                     supplyItemsResponses.Add(response);
                 }
 
-                // 9. Commit transaction (no changes, but consistent with pattern)
+                // ===== 8. Commit & Log =====
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-
-                // 10. Log activity
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed grouped supply items for Code: {targetCode}, Description: {targetDescription}", actionBy: model.ActionBySystemUserId);
 
-                // 11. Return paginated result
                 return Ok(ApiResponse<SupplyItemResponseModel>.OkPaginated(
                     supplyItemsResponses,
                     model.PageNumber,
