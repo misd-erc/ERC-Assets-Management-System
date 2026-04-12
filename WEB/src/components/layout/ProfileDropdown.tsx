@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿// ProfileDropdown.tsx
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, LogOut, ChevronDown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -25,6 +26,7 @@ import { decrypt, encrypt } from '@/utils/encryption';
 
 import { useAuthStore } from '@/store/auth';
 import { secureStorage } from '@/utils/secureStorage';
+import { useMediaQuery } from "@/hooks";
 
 interface ProfileDropdownProps {
   onNavigate?: (module: string) => void;
@@ -46,6 +48,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { systemUserId } = useAuthStore();
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [isFetchingProfile, setIsFetchingProfile] = useState(false);
@@ -97,16 +100,13 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       try {
         const decrypted = decrypt(stored);
         const parsed = JSON.parse(decrypted);
-        console.log("[ProfileDropdown] Retrieving photo for:", parsed?.profilePictureStorageFileId);
         if (parsed?.profilePictureStorageFileId) {
           const fileId = String(parsed.profilePictureStorageFileId);
           const userId = parsed?.id || systemUserId;
-          console.log('[ProfileDropdown] Loading profile picture from localStorage');
           const photoResponse = await getUserPhoto(fileId, userId);
           const imageUrl = URL.createObjectURL(photoResponse.data);
           setUser(prev => ({ ...prev, imageUrl }));
           setPhotoFetched(true);
-          console.log('[ProfileDropdown] Profile picture loaded from localStorage');
         }
       } catch (error) {
         console.warn('Failed to load profile picture from localStorage:', error);
@@ -115,9 +115,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
 
     loadProfilePicture();
 
-    // Listen for profile picture updates
     const handleProfilePictureUpdate = () => {
-      console.log('[ProfileDropdown] Profile picture update event received');
       loadProfilePicture();
     };
 
@@ -131,40 +129,31 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   // Fetch user details only when landing on the dashboard
   useEffect(() => {
     const fetchUserData = async () => {
-      console.log('[ProfileDropdown] Starting to fetch user data');
       try {
         const systemUserId = secureStorage.getItem('systemUserId');
         const token = secureStorage.getItem('sessionToken');
 
-        console.log('[ProfileDropdown] Retrieved tokens:', { systemUserId: !!systemUserId, sessionToken: !!token });
-
         if (!systemUserId || !token) {
-          console.warn('Missing tokens in localStorage');
           return;
         }
 
-        console.log('[ProfileDropdown] Calling getUserDetails API');
         const stored = secureStorage.getItem('userDetails') || '{}';
         const decrypted = decrypt(stored);
         const parsed = JSON.parse(decrypted);
         const userDetails = parsed;
-        console.log('[ProfileDropdown] getUserDetails response:', userDetails);
 
         if (userDetails) {
           const { firstName, lastName, role, profilePictureStorageFileId } = userDetails;
-
           
           let localProfilePictureStorageFileId: string | undefined;
           if (stored) {
             try {
-           
               localProfilePictureStorageFileId = parsed?.profilePictureStorageFile.id;
             } catch (error) {
               console.warn('Failed to parse localStorage for profilePictureStorageFileId:', error);
             }
           }
 
-          // Use localStorage value if available, otherwise from API
           const fileIdToUse = localProfilePictureStorageFileId || profilePictureStorageFileId;
 
           let imageUrl: string | undefined;
@@ -172,11 +161,9 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
             try {
               const fileId = String(fileIdToUse);
               const userId = String(userDetails.id) || systemUserId;
-              console.log('[ProfileDropdown] Calling getUserPhoto API');
               const photoResponse = await getUserPhoto(fileId, userId);
               imageUrl = URL.createObjectURL(photoResponse.data);
               setPhotoFetched(true);
-              console.log('[ProfileDropdown] getUserPhoto success');
             } catch (photoError) {
               console.warn('Failed to fetch profile picture:', photoError);
             }
@@ -191,7 +178,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
 
           setUser(updatedUser);
 
-          // Update localStorage with the latest user data including profilePictureStorageFileId only if it has changed
           if (stored) {
             try {
               const decrypted = decrypt(stored);
@@ -204,7 +190,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                 const encrypted = JSON.stringify(updatedParsed);
                 const reEncrypted = encrypt(encrypted);
                 secureStorage.setItem('userDetails', reEncrypted);
-                console.log('[ProfileDropdown] Updated localStorage with profilePictureStorageFileId');
               }
             } catch (error) {
               console.error('Failed to update localStorage:', error);
@@ -219,9 +204,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       }
     };
 
-    // âœ… Trigger API calls only when landing on the dashboard
     if (location.pathname.startsWith('/dashboard')) {
-      console.log('[ProfileDropdown] User landed on dashboard â€” triggering API calls');
       fetchUserData();
     }
   }, [propUser, location.pathname, user.imageUrl, photoFetched, systemUserId]);
@@ -253,7 +236,6 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     switch (role) {
       case 'administrator':
         return 'bg-red-100 text-red-800 border-red-200';
-
       default:
         return 'bg-blue-100 text-blue-800 border-blue-200';
     }
@@ -265,10 +247,8 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   };
 
   const handleMyProfileClick = async () => {
-    // Navigate immediately to profile
     onNavigate?.('profile');
 
-    // Fetch user data asynchronously in the background
     if (systemUserId) {
       setIsFetchingProfile(true);
       try {
@@ -277,9 +257,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
           console.error('No token found in localStorage');
           return;
         }
-        console.log('[ProfileDropdown] Calling getUserDetails for profile click');
         const userData = await getUserDetails();
-        console.log('[ProfileDropdown] Profile click API response:', userData);
         secureStorage.setItem('userProfile', JSON.stringify(userData));
       } catch (error) {
         console.error('Failed to fetch user profile:', error);
@@ -295,61 +273,63 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex items-center gap-3 px-3 py-2 h-auto hover:bg-slate-100"
+            className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 h-auto hover:bg-slate-100"
           >
-            <Avatar className="w-8 h-8 border-2 border-blue-200">
+            <Avatar className="w-7 h-7 sm:w-8 sm:h-8 border-2 border-blue-200">
               <AvatarImage
                 src={user.imageUrl || undefined}
                 alt={`${user.firstName} ${user.lastName}`}
               />
-              <AvatarFallback className="text-sm font-semibold text-blue-700 bg-blue-50">
+              <AvatarFallback className="text-xs sm:text-sm font-semibold text-blue-700 bg-blue-50">
                 {getInitials(`${user.firstName} ${user.lastName}`)}
               </AvatarFallback>
             </Avatar>
-            <div className="flex flex-col items-start text-left">
-              <span className="text-sm font-medium text-slate-900 truncate max-w-32">
-                {`${user.firstName} ${user.lastName}`}
-              </span>
-              <div className="flex items-center gap-2">
-                <Badge
-                  className={`text-xs px-2 py-0.5 border ${getRoleBadgeColor(
-                    user.systemRoleName.toLowerCase()
-                  )}`}
-                >
-                  {user.systemRoleName.toUpperCase()}
-                </Badge>
+            {!isMobile && (
+              <div className="flex flex-col items-start text-left">
+                <span className="text-sm font-medium text-slate-900 truncate max-w-32">
+                  {`${user.firstName} ${user.lastName}`}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Badge
+                    className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 border ${getRoleBadgeColor(
+                      user.systemRoleName.toLowerCase()
+                    )}`}
+                  >
+                    {user.systemRoleName.toUpperCase()}
+                  </Badge>
+                </div>
               </div>
-            </div>
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+            )}
+            <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
           </Button>
         </DropdownMenuTrigger>
 
         <AnimatePresence>
-          <DropdownMenuContent align="end" className="w-64 p-2" asChild>
+          <DropdownMenuContent align="end" className="w-56 sm:w-64 p-2" asChild>
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="px-3 py-4 border-b border-slate-200">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-12 h-12 border-2 border-blue-200">
+              <div className="px-2 sm:px-3 py-3 sm:py-4 border-b border-slate-200">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <Avatar className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-blue-200">
                     <AvatarImage
                       src={user.imageUrl || undefined}
                       alt={`${user.firstName} ${user.lastName}`}
                     />
-                    <AvatarFallback className="text-lg font-semibold text-blue-700 bg-blue-50">
+                    <AvatarFallback className="text-base sm:text-lg font-semibold text-blue-700 bg-blue-50">
                       {getInitials(`${user.firstName} ${user.lastName}`)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 truncate">
+                    <p className="text-xs sm:text-sm font-semibold text-slate-900 truncate">
                       {`${user.firstName} ${user.lastName}`}
                     </p>
-                    <p className="text-xs text-slate-500 truncate">@{userEmail}</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 truncate">@{userEmail}</p>
                     <Badge
-                      className={`text-xs px-2 py-0.5 mt-1 border ${getRoleBadgeColor(
+                      className={`text-[9px] sm:text-xs px-1.5 sm:px-2 py-0.5 mt-1 border ${getRoleBadgeColor(
                         user.systemRoleName.toLowerCase()
                       )}`}
                     >
@@ -360,31 +340,31 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
               </div>
 
               <DropdownMenuItem
-                className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-slate-50"
+                className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-3 cursor-pointer hover:bg-slate-50"
                 onClick={handleMyProfileClick}
                 disabled={isFetchingProfile}
               >
-                <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <User className="w-4 h-4 text-blue-600" />
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">My Profile</p>
-                  <p className="text-xs text-slate-500">View and edit your profile</p>
+                  <p className="text-xs sm:text-sm font-medium text-slate-900">My Profile</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500">View and edit your profile</p>
                 </div>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator className="my-2" />
 
               <DropdownMenuItem
-                className="flex items-center gap-3 px-3 py-3 cursor-pointer hover:bg-red-50 text-red-700"
+                className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-2 sm:py-3 cursor-pointer hover:bg-red-50 text-red-700"
                 onClick={() => setLogoutDialogOpen(true)}
               >
-                <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-                  <LogOut className="w-4 h-4 text-red-600" />
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-red-50 flex items-center justify-center">
+                  <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Sign Out</p>
-                  <p className="text-xs text-red-500">Log out of your account</p>
+                  <p className="text-xs sm:text-sm font-medium">Sign Out</p>
+                  <p className="text-[10px] sm:text-xs text-red-500">Log out of your account</p>
                 </div>
               </DropdownMenuItem>
             </motion.div>
@@ -393,20 +373,20 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
       </DropdownMenu>
 
       <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-md mx-auto">
           <DialogHeader>
             <DialogTitle>Confirm Sign Out</DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-slate-600">
+          <div className="py-3 sm:py-4">
+            <p className="text-xs sm:text-sm text-slate-600">
               Are you sure you want to sign out? Any unsaved changes will be lost.
             </p>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setLogoutDialogOpen(false)} size="sm" className="sm:size-default">
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleLogout}>
+            <Button variant="destructive" onClick={handleLogout} size="sm" className="sm:size-default">
               Sign Out
             </Button>
           </div>
@@ -415,9 +395,3 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     </>
   );
 };
-
-
-
-
-
-

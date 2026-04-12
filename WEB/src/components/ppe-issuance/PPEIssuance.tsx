@@ -442,7 +442,7 @@ export function PPEIssuance() {
   };
 
   return (
-    <div className="p-6 pt-20 space-y-6">
+    <div className="p-2 pt-5 md:pt-20 space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl font-semibold">PPE/SE Issuance</h1>

@@ -140,7 +140,7 @@ function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-6 pt-20 space-y-6">
+      <div className="p-2 pt-5 md:pt-20 space-y-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -152,7 +152,7 @@ function Dashboard() {
   }
 
   return (
-    <div className="p-6 pt-20 space-y-6">
+    <div className="p-2 pt-5 md:pt-20 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

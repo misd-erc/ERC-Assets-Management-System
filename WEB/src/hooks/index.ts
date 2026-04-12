@@ -18,3 +18,5 @@ export { useSupplyIAR } from '@/hooks/supply/useIAR';
 
 export { useDarkMode } from '@/hooks/ui/useDarkMode';
 
+export { useMediaQuery } from '@/hooks/useMediaQuery';
+

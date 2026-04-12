@@ -82,7 +82,7 @@ const AuditLogs: React.FC = () => {
   };
 
   return (
-    <div className="p-6 pt-20 space-y-6">
+    <div className="p-2 pt-5 md:pt-20 space-y-6">
       <AuditLogsHeader
         totalLogs={totalLogs}
         todayLogs={todayLogs}

@@ -159,7 +159,7 @@ export default function AssetTaggingPage() {
   const activeTemplate = (TAG_TEMPLATES.find((t) => t.id === tagTemplate) || TAG_TEMPLATES[0]) as TagTemplate;
 
   return (
-    <div className="p-6 pt-20 space-y-6">
+    <div className="p-2 pt-5 md:pt-20 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-semibold">Asset Tag Generator</h2>
