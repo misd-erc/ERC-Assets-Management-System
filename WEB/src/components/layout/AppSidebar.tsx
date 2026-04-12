@@ -24,7 +24,6 @@ import {
 } from "@/utils/moduleConfig";
 
 import { getUserDetails } from "@/api/user-management/authApi";
-
 import { Building, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 interface NavigationItem {
@@ -44,14 +43,10 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
   const [userDetails, setUserDetails] = useState<any>(null);
   const navigate = useNavigate();
 
-  // ----------------------
-  // LOAD USER DETAILS
-  // ----------------------
   useEffect(() => {
     let isActive = true;
 
     const loadUserDetails = async () => {
-      // Try local cache first
       const encrypted = localStorage.getItem("userDetails");
       if (encrypted) {
         try {
@@ -59,11 +54,10 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
           if (isActive) setUserDetails(parsed);
           return;
         } catch (err) {
-          console.warn("[Sidebar] Failed to decrypt cached user details, refetching", err);
+          console.warn("[Sidebar] Failed to decrypt cached user details", err);
         }
       }
 
-      // Fallback: fetch fresh details and cache them
       try {
         const fresh = await getUserDetails();
         const encryptedFresh = encrypt(JSON.stringify(fresh));
@@ -81,43 +75,16 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
     };
   }, []);
 
-  // ----------------------
-  // EXTRACT SCOPES (ACRONYM-BASED)
-  // ----------------------
-  const { acronyms } = useMemo(() => {
-    if (!userDetails) return { acronyms: [] };
-
-    const list: string[] = [];
-
-    userDetails.systemRole?.forEach((role: any) => {
-      role.scope?.forEach((s: any) => {
-        if (s.module?.acronym) list.push(s.module.acronym);
-      });
-    });
-
-    return { acronyms: list };
-  }, [userDetails]);
-
-  const effectiveAcronyms = useMemo(() => {
-    const set = new Set(acronyms);
-    // Always surface PPE/SE Issuance while backend scopes are being rolled out
-    set.add("PPEISS");
-    return Array.from(set);
-  }, [acronyms]);
-
-  // ----------------------
-  // BUILD NAVIGATION GROUPS
-  // ----------------------
   const navigationGroups: NavigationGroup[] = useMemo(() => {
     const grouped: Record<string, NavigationItem[]> = {};
 
-    effectiveAcronyms.forEach((acronym) => {
+    adminOverrideModules.forEach((acronym) => {
       const config = moduleConfig[acronym] || {
         ...fallbackModule,
         id: acronym.toLowerCase(),
         title: acronym,
         icon: Building,
-        implemented: false,
+        implemented: true,
       };
 
       const item: NavigationItem = {
@@ -132,7 +99,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
       grouped[config.group].push(item);
     });
 
-    // Sidebar group order
     const groupOrder = [
       'Overview',
       'Core Operations',
@@ -141,7 +107,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
       'Administration',
     ];
 
-    // Always put Dashboard at the top
     let dashboardGroup: NavigationGroup | undefined;
     let otherGroups: NavigationGroup[] = [];
 
@@ -153,7 +118,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
       }
     });
 
-    // Sort other groups by groupOrder
     otherGroups.sort((a, b) => {
       const idxA = groupOrder.indexOf(a.title);
       const idxB = groupOrder.indexOf(b.title);
@@ -161,11 +125,8 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
     });
 
     return dashboardGroup ? [dashboardGroup, ...otherGroups] : otherGroups;
-  }, [acronyms]);
+  }, []);
 
-  // ----------------------
-  // CLICK HANDLER
-  // ----------------------
   const handleClick = (item: NavigationItem) => {
     if (item.implemented) {
       onModuleChange(item.id);
@@ -174,9 +135,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
     }
   };
 
-  // ----------------------
-  // RENDER UI
-  // ----------------------
   const collapsed = !open;
 
   return (
@@ -186,10 +144,8 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
           collapsed ? 'w-16' : 'w-64'
         }`}
       >
-        {/* ── Header ── */}
         <SidebarHeader className="p-0 border-b border-slate-100 dark:border-slate-800">
           {collapsed ? (
-            /* Collapsed — just the toggle */
             <div className="flex justify-center py-3">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -205,7 +161,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
               </Tooltip>
             </div>
           ) : (
-            /* Expanded — branding + toggle */
             <div className="flex items-center gap-2 px-3 py-3">
               <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 ring-1 ring-blue-100 dark:ring-blue-800 shrink-0">
                 <img src="/images/erc-logo.png" className="w-5 h-5" alt="ERC" />
@@ -234,18 +189,15 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
           )}
         </SidebarHeader>
 
-        {/* ── Navigation ── */}
         <SidebarContent className="overflow-y-auto">
           <nav className={`py-3 ${collapsed ? 'px-2 space-y-0.5' : 'px-3 space-y-4'}`}>
             {navigationGroups.map((group, gIdx) => (
               <SidebarGroup key={group.title} className="p-0">
-                {/* Group label — expanded only */}
                 {!collapsed && (
                   <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-2 mb-1">
                     {group.title}
                   </SidebarGroupLabel>
                 )}
-                {/* Thin divider between groups in collapsed rail */}
                 {collapsed && gIdx > 0 && (
                   <div className="h-px bg-slate-100 dark:bg-slate-800 my-2" />
                 )}
@@ -255,7 +207,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
                     {group.items.map((item) => (
                       <SidebarMenuItem key={item.id}>
                         {collapsed ? (
-                          /* ── Icon-only rail item ── */
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <SidebarMenuButton
@@ -275,7 +226,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
                             </TooltipContent>
                           </Tooltip>
                         ) : (
-                          /* ── Full row item ── */
                           <SidebarMenuButton
                             onClick={() => handleClick(item)}
                             isActive={activeModule === item.id}
@@ -314,7 +264,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
           </nav>
         </SidebarContent>
 
-        {/* ── Footer ── */}
         <SidebarFooter className="border-t border-slate-100 dark:border-slate-800 p-0">
           {collapsed ? (
             <div className="flex justify-center py-3">

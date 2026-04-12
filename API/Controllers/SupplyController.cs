@@ -18,6 +18,7 @@ using PortalDB.Models.Responses;
 using PortalDB.Services;
 using PortalTools.Composition;
 using PortalTools.Services;
+using System.Text;
 using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace API.Controllers
@@ -588,10 +589,16 @@ namespace API.Controllers
                 await using var context = new PortalDbContext(_options);
                 await using var transaction = await context.Database.BeginTransactionAsync();
 
-                try
+                byte[] decodedStockNumberBytes = Convert.FromBase64String(stockNumber);
+                byte[] decodedDescriptionBytes = Convert.FromBase64String(description);
+
+                string decodedStockNumber = Encoding.UTF8.GetString(decodedStockNumberBytes);
+                string decodedDescription = Encoding.UTF8.GetString(decodedDescriptionBytes);
+
+            try
                 {
-                    string targetCode = stockNumber ?? string.Empty;
-                    string targetDesc = description ?? string.Empty;
+                    string targetCode = decodedStockNumber ?? string.Empty;
+                    string targetDesc = decodedDescription ?? string.Empty;
 
                     // ===== 1. Fetch and decrypt supply items (additions) =====
                     var allSupplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
