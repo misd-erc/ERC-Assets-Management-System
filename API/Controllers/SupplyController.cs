@@ -671,10 +671,16 @@ namespace API.Controllers
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
 
-                try
+            byte[] stockNumberBytes = Convert.FromBase64String(stockNumber);
+            byte[] descriptionBytes = Convert.FromBase64String(description);
+
+            string stockNumberString = Encoding.UTF8.GetString(stockNumberBytes);
+            string descriptionString = Encoding.UTF8.GetString(descriptionBytes);
+
+            try
                 {
-                    string targetCode = stockNumber ?? string.Empty;
-                    string targetDesc = description ?? string.Empty;
+                    string targetCode = stockNumberString ?? string.Empty;
+                    string targetDesc = descriptionString ?? string.Empty;
 
                 // ===== 1. Fetch and decrypt supply items (additions) =====
                 var supplyItemsQuery = _getTools.Supply.GetTblSupplyItems(context);
