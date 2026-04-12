@@ -133,7 +133,7 @@ export const SupplyRISTable = ({
                 ) : paginatedData.length > 0 ? (
                     // NORMAL DATA RENDERING
                     paginatedData.map((ris) => {
-                      const isApproved = !!ris.risApprovedDate;
+                      const isApproved = ris.isApproved;
                       const statusLabel = isApproved ? 'Approved' : 'Pending';
                       const statusClasses = isApproved
                           ? 'bg-emerald-50 text-emerald-700 border-emerald-200'

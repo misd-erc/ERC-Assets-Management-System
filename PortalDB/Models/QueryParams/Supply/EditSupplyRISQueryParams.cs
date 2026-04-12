@@ -25,6 +25,7 @@ namespace PortalDB.Models.QueryParams.Supply
         public DateTime? RISIssuedDate { get; set; }
         public long? RISReceivedBySystemUserId { get; set; }
         public DateTime? RISReceivedDate { get; set; }
+        [Required] public bool IsApproved { get; set; }
         [Required] public bool IsActive { get; set; } = true;
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;

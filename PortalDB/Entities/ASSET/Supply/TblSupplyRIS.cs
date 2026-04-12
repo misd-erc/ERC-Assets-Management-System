@@ -91,6 +91,9 @@ namespace PortalDB.Entities.ASSET.Supply
         [Column("SupplyRISReceivedDate")]
         public DateTime? RISReceivedDate { get; set; }
 
+        [Column("SupplyRISIsApproved")]
+        public bool IsApproved { get; set; } = false;
+
         [Column("SupplyRISIsActive")]
         public bool IsActive { get; set; } = true;
 
