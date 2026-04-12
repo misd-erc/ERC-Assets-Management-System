@@ -29,58 +29,91 @@ import {
 } from '@react-pdf/renderer';
 
 const pdfStyles = StyleSheet.create({
-    page: { padding: 20, fontSize: 8, fontFamily: 'Helvetica', orientation: 'landscape' },
-    
-    headerContainer: { marginBottom: 10, borderBottomWidth: 1, borderBottomColor: '#000', paddingBottom: 5 },
-    headerTitle: { textAlign: 'center', fontFamily: 'Helvetica-Bold', fontSize: 11, marginBottom: 2 },
-    headerAgency: { textAlign: 'center', fontSize: 9, marginBottom: 3 },
-    headerUnitsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
-    headerUnitLeft: { fontSize: 7, width: '50%', textAlign: 'left' },
-    headerUnitRight: { fontSize: 7, width: '50%', textAlign: 'right' },
-    headerMetaRow: { flexDirection: 'row', justifyContent: 'flex-end' },
-    headerMeta: { fontSize: 8 },
-    
-    table: { width: '100%', borderStyle: 'solid', borderWidth: 1, borderColor: '#000', marginBottom: 15 },
+    page: { padding: 30, fontSize: 9, fontFamily: 'Helvetica' },
+
+    // Header Styles
+    headerContainer: { marginBottom: 10 },
+    headerTitle: { fontSize: 12, fontFamily: 'Helvetica-Bold', textAlign: 'center' },
+    headerAgency: { fontSize: 10, textAlign: 'center', marginBottom: 10 },
+
+    headerCombinedRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-end',
+        marginTop: 5
+    },
+    headerUnitLeft: { fontSize: 10, fontStyle: 'italic' },
+    headerMeta: { fontSize: 10 },
+
+    // Table Styles
+    table: { width: '100%', borderStyle: 'solid', borderWidth: 1, borderColor: '#000', marginBottom: 20, marginTop: 5 },
     tableRow: { flexDirection: 'row' },
-    tableHeaderRow: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderBottomWidth: 1, borderBottomColor: '#000' },
-    
-    colStock: { width: '14%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
-    colItem: { width: '26%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
-    colRis: { width: '11%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
-    colRc: { width: '8%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
-    colQty: { width: '9%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
-    colUnitCost: { width: '9%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
-    colTotalCost: { width: '10%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
-    colAccount: { width: '13%', padding: 3 },
-    
-    cellHeader: { fontFamily: 'Helvetica-Bold', textAlign: 'center', fontSize: 8 },
-    cellText: { fontSize: 7.5 },
-    cellTextCenter: { fontSize: 7.5, textAlign: 'center' },
-    cellTextRight: { fontSize: 7.5, textAlign: 'right' },
-    
-    rowBorderBottom: { borderBottomWidth: 0.3, borderBottomColor: '#94a3b8' },
-    
-    subtotalRow: { flexDirection: 'row', borderBottomWidth: 0.5, borderBottomColor: '#000', borderTopWidth: 0.5, borderTopColor: '#000', backgroundColor: '#f8fafc' },
-    subtotalSpacer: { width: '77%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3 },
-    subtotalLabel: { width: '10%', borderRightWidth: 0.5, borderRightColor: '#000', padding: 3, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
-    subtotalText: { fontFamily: 'Helvetica-Bold', fontSize: 8, textAlign: 'right' },
-    subtotalValue: { width: '13%', padding: 3, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
-    subtotalNumber: { fontFamily: 'Helvetica-Bold', fontSize: 8, textAlign: 'right' },
-    
-    markerRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderTopWidth: 0.5, borderTopColor: '#000' },
-    markerText: { width: '100%', fontFamily: 'Helvetica-Oblique', fontSize: 8, textAlign: 'center', padding: 5 },
-    
-    certSection: { marginTop: 15, marginBottom: 20 },
-    certText: { textAlign: 'left', fontSize: 8.5, marginBottom: 3 },
-    postedBy: { fontSize: 8, color: '#475569', marginBottom: 25 },
-    
-    sigContainer: { flexDirection: 'row', width: '100%', marginTop: 5 },
-    sigBlock: { width: '50%', alignItems: 'flex-start' },
-    sigName: { fontFamily: 'Helvetica-Bold', fontSize: 8.5, textDecoration: 'underline', marginBottom: 1 },
-    sigTitle: { fontSize: 7.5 },
-    sigSection: { fontSize: 7.5, marginTop: 1 },
-    approvedBy: { fontSize: 7.5, marginTop: 15 },
-    sigLine: { width: 160, borderBottomWidth: 1, borderBottomColor: '#000', marginBottom: 2, marginTop: 8 }
+    tableHeaderRow: { flexDirection: 'row', backgroundColor: '#f8fafc', borderBottomWidth: 1, borderBottomColor: '#000' },
+
+    colStock: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
+    colItem: { width: '40%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
+    colRis: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
+    colRc: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
+    colQty: { width: '15%', padding: 4 },
+
+    cellHeader: { fontFamily: 'Helvetica-Bold', textAlign: 'center', fontSize: 9 },
+    cellText: { fontSize: 9 },
+    cellTextCenter: { fontSize: 9, textAlign: 'center' },
+    cellTextRight: { fontSize: 9, textAlign: 'right' },
+    rowBorderBottom: { borderBottomWidth: 0.5, borderBottomColor: '#cbd5e1' },
+
+    markerRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000' },
+    markerText: { width: '100%', fontFamily: 'Helvetica-Oblique', fontSize: 9, textAlign: 'center', padding: 6 },
+
+    // --- BOTTOM SECTION ---
+    bottomSection: {
+        flexDirection: 'row',
+        paddingHorizontal: 10,
+        marginTop: 15,
+        height: 70 // Fixed height allows top text to stay up, and bottom signatures to drop down
+    },
+    bottomColLeft: {
+        width: '50%',
+        justifyContent: 'space-between', // Pushes Cert to top, Signature to bottom
+        alignItems: 'flex-start'
+    },
+    bottomColRight: {
+        width: '50%',
+        justifyContent: 'space-between', // Pushes Posted By to top, Approved By to bottom
+        alignItems: 'flex-end' // Aligns right column items to the far right edge
+    },
+
+    // Left Column Elements
+    certText: { fontSize: 10 },
+    sigBlockLeft: {
+        alignItems: 'center',
+        width: '80%'
+    },
+    sigName: { fontFamily: 'Helvetica-Bold', fontSize: 10, textDecoration: 'underline', marginBottom: 2 },
+    sigTitle: { fontSize: 10, textAlign: 'center' },
+    sigSection: { fontSize: 10, textAlign: 'center' },
+
+    // Right Column Elements
+    postedByText: {
+        fontSize: 10,
+        width: 150, // Explicit width matches sigBlockRight for perfect X-Axis alignment
+        textAlign: 'left'
+    },
+    sigBlockRight: {
+        width: 150,
+        alignItems: 'center' // Centers "Approved By" perfectly under the 150px line
+    },
+    sigLineRight: {
+        width: '100%',
+        borderBottomWidth: 1,
+        borderBottomColor: '#000',
+        marginBottom: 2,
+        height: 10
+    },
+    approvedBy: {
+        fontSize: 10,
+        textAlign: 'center'
+    }
 });
 
 interface RSMIPDFDocumentProps {
@@ -92,18 +125,20 @@ interface RSMIPDFDocumentProps {
 const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsmiNumber }) => (
     <Document>
         <Page size="A4" style={pdfStyles.page} orientation="landscape">
+
+            {/* HEADER */}
             <View style={pdfStyles.headerContainer}>
                 <Text style={pdfStyles.headerTitle}>REPORT OF SUPPLIES AND MATERIALS ISSUED</Text>
                 <Text style={pdfStyles.headerAgency}>ENERGY REGULATORY COMMISSION Agency</Text>
-                <View style={pdfStyles.headerMetaRow}>
-                    <Text style={pdfStyles.headerMeta}>Date: {reportDate} RSMI: {rsmiNumber}</Text>
-                </View>
-                <View style={pdfStyles.headerUnitsRow}>
+
+                {/* Combined Row for Y-Axis alignment */}
+                <View style={pdfStyles.headerCombinedRow}>
                     <Text style={pdfStyles.headerUnitLeft}>To be filled up in the Supply & Property Unit</Text>
-                    <Text style={pdfStyles.headerUnitRight}>To be filled up in the Accounting Unit</Text>
+                    <Text style={pdfStyles.headerMeta}>Date: {reportDate}   RSMI: {rsmiNumber}</Text>
                 </View>
             </View>
 
+            {/* TABLE */}
             <View style={pdfStyles.table}>
                 <View style={pdfStyles.tableHeaderRow}>
                     <View style={pdfStyles.colStock}><Text style={pdfStyles.cellHeader}>Stock No</Text></View>
@@ -111,18 +146,14 @@ const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsm
                     <View style={pdfStyles.colRis}><Text style={pdfStyles.cellHeader}>RIS No</Text></View>
                     <View style={pdfStyles.colRc}><Text style={pdfStyles.cellHeader}>RC Code</Text></View>
                     <View style={pdfStyles.colQty}><Text style={pdfStyles.cellHeader}>Qty. Issued</Text></View>
-                    <View style={pdfStyles.colUnitCost}><Text style={pdfStyles.cellHeader}>Unit Cost</Text></View>
-                    <View style={pdfStyles.colTotalCost}><Text style={pdfStyles.cellHeader}>Total Cost</Text></View>
-                    <View style={pdfStyles.colAccount}><Text style={pdfStyles.cellHeader}>Account Code</Text></View>
                 </View>
 
                 {data.map((group: any, gIdx: number) => (
                     <React.Fragment key={gIdx}>
                         {(group.items || []).map((item: any, iIdx: number) => {
                             const showStock = iIdx === 0;
-                            const unitCost = item.unitCost ?? 0;
                             const qty = item.issueQuantity ?? 0;
-                            const totalCost = unitCost * qty;
+
                             return (
                                 <View key={iIdx} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
                                     <View style={pdfStyles.colStock}>
@@ -140,28 +171,9 @@ const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsm
                                     <View style={pdfStyles.colQty}>
                                         <Text style={pdfStyles.cellTextRight}>{qty}</Text>
                                     </View>
-                                    <View style={pdfStyles.colUnitCost}>
-                                        <Text style={pdfStyles.cellTextRight}>{unitCost > 0 ? unitCost.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</Text>
-                                    </View>
-                                    <View style={pdfStyles.colTotalCost}>
-                                        <Text style={pdfStyles.cellTextRight}>{totalCost > 0 ? totalCost.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}</Text>
-                                    </View>
-                                    <View style={pdfStyles.colAccount}>
-                                        <Text style={pdfStyles.cellText}>{item.accountCode ?? group.accountCode ?? ''}</Text>
-                                    </View>
                                 </View>
                             );
                         })}
-
-                        <View style={pdfStyles.subtotalRow}>
-                            <View style={pdfStyles.subtotalSpacer}><Text>{''}</Text></View>
-                            <View style={pdfStyles.subtotalLabel}>
-                                <Text style={pdfStyles.subtotalText}>Total Issued:</Text>
-                            </View>
-                            <View style={pdfStyles.subtotalValue}>
-                                <Text style={pdfStyles.subtotalNumber}>{group.total ?? 0}</Text>
-                            </View>
-                        </View>
                     </React.Fragment>
                 ))}
 
@@ -170,22 +182,36 @@ const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsm
                 </View>
             </View>
 
-            <View style={pdfStyles.certSection}>
-                <Text style={pdfStyles.certText}>I hereby certify to the correctness of the above information</Text>
-                <Text style={pdfStyles.postedBy}>Posted By/Date:</Text>
+            {/* BOTTOM SECTION (Column Layout for perfect alignment) */}
+            <View style={pdfStyles.bottomSection}>
+
+                {/* LEFT COLUMN */}
+                <View style={pdfStyles.bottomColLeft}>
+                    {/* Stuck to top (Y-Axis matched with Posted By) */}
+                    <Text style={pdfStyles.certText}>I hereby certify to the correctness of the above information</Text>
+
+                    {/* Stuck to bottom */}
+                    <View style={pdfStyles.sigBlockLeft}>
+                        <Text style={pdfStyles.sigName}>MS. ROSELLE MALAKI GUINTU</Text>
+                        <Text style={pdfStyles.sigTitle}>Administrative Officer III</Text>
+                        <Text style={pdfStyles.sigSection}>Accounting Section</Text>
+                    </View>
+                </View>
+
+                {/* RIGHT COLUMN */}
+                <View style={pdfStyles.bottomColRight}>
+                    {/* Stuck to top (Y-Axis matched with Cert Text) */}
+                    <Text style={pdfStyles.postedByText}>Posted By/Date:</Text>
+
+                    {/* Stuck to bottom (Dropped down to Administrative Officer level) */}
+                    <View style={pdfStyles.sigBlockRight}>
+                        <View style={pdfStyles.sigLineRight}></View>
+                        <Text style={pdfStyles.approvedBy}>Approved By:</Text>
+                    </View>
+                </View>
+
             </View>
 
-            <View style={pdfStyles.sigContainer}>
-                <View style={pdfStyles.sigBlock}>
-                    <Text style={pdfStyles.sigName}>MS. ROSELLE MALAKI GUINTU</Text>
-                    <Text style={pdfStyles.sigTitle}>Administrative Officer III</Text>
-                    <Text style={pdfStyles.sigSection}>Accounting Section</Text>
-                </View>
-                <View style={pdfStyles.sigBlock}>
-                    <View style={pdfStyles.sigLine}></View>
-                    <Text style={pdfStyles.approvedBy}>Approved By:</Text>
-                </View>
-            </View>
         </Page>
     </Document>
 );

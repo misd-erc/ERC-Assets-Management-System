@@ -13,14 +13,14 @@ namespace PortalDB.Models.QueryParams.Supply
         [Required] public string EntityName { get; set; } = string.Empty;
         [Required] public string FundCluster { get; set; } = string.Empty;
         [Required] public long VendorId { get; set; }
-        [Required] public string PONumber { get; set; } = string.Empty;
+        public string? PONumber { get; set; } = string.Empty;
         [Required] public long OfficeId { get; set; }
         [Required] public long DivisionId { get; set; }
         [Required] public string IARNumber { get; set; } = string.Empty;
         [Required] public DateTime? IARNumberDate { get; set; }
-        [Required] public string IARInvoiceNumber { get; set; } = string.Empty;
-        [Required] public DateTime? IARInvoiceNumberDate { get; set; }
-        [Required] public DateTime? PODate { get; set; }
+        public string? IARInvoiceNumber { get; set; } = string.Empty;
+        public DateTime? IARInvoiceNumberDate { get; set; }
+        public DateTime? PODate { get; set; }
         [Required] public bool IsActive { get; set; } = true;
         [Required] public bool IsApproved { get; set; } = false;
         public DateTime? ApprovedOn { get; set; }
