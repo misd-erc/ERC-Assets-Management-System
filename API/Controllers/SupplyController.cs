@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
+using Org.BouncyCastle.Utilities;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
 using PortalDB.Entities.ASSET.Delivery;
@@ -412,14 +413,7 @@ namespace API.Controllers
 
                 // 4a. Get the IDs of fully completed RIS records (Runs highly efficiently in SQL)
                 var fullyCompletedRisIds = await context.Set<TblSupplyRIS>()
-                    .Where(r => r.RISRequestedBySystemUserId != null &&
-                        r.RISRequestedDate != null &&
-                        r.RISApprovedBySystemUserId != null &&
-                        r.RISApprovedDate != null &&
-                        r.RISIssuedBySystemUserId != null &&
-                        r.RISIssuedDate != null &&
-                        r.RISReceivedBySystemUserId != null &&
-                        r.RISReceivedDate != null)
+                    .Where(r => r.IsApproved)
                     .Select(r => r.Id)
                     .ToListAsync();
 
@@ -534,14 +528,7 @@ namespace API.Controllers
 
                 // ===== 3. Fetch Fully Completed RIS Items & Calculate Total Issued =====
                 var fullyCompletedRisIds = await context.Set<TblSupplyRIS>()
-                    .Where(r => r.RISRequestedBySystemUserId != null &&
-                                r.RISRequestedDate != null &&
-                                r.RISApprovedBySystemUserId != null &&
-                                r.RISApprovedDate != null &&
-                                r.RISIssuedBySystemUserId != null &&
-                                r.RISIssuedDate != null &&
-                                r.RISReceivedBySystemUserId != null &&
-                                r.RISReceivedDate != null)
+                    .Where(r => r.IsApproved)
                     .Select(r => r.Id)
                     .ToListAsync();
 
@@ -570,13 +557,13 @@ namespace API.Controllers
                     {
                         if (remainingToDeduct >= batchOriginalQty)
                         {
-                            // This whole batch is used up
+                            //This whole batch is used up
                             batchRemainingQty = 0;
                             remainingToDeduct -= batchOriginalQty;
                         }
                         else
                         {
-                            // Only part of this batch is used up
+                            //Only part of this batch is used up
                             batchRemainingQty = batchOriginalQty - remainingToDeduct;
                             remainingToDeduct = 0;
                         }
@@ -668,19 +655,23 @@ namespace API.Controllers
             string stockNumber,
             string description)
         {
+            
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
 
             byte[] stockNumberBytes = Convert.FromBase64String(stockNumber);
             byte[] descriptionBytes = Convert.FromBase64String(description);
 
-            string stockNumberString = Encoding.UTF8.GetString(stockNumberBytes);
-            string descriptionString = Encoding.UTF8.GetString(descriptionBytes);
+            string rawStockNumber = Encoding.UTF8.GetString(stockNumberBytes);
+            string rawDescription = Encoding.UTF8.GetString(descriptionBytes);
 
+
+            string stockNumberString = System.Net.WebUtility.UrlDecode(rawStockNumber);
+            string descriptionString = System.Net.WebUtility.UrlDecode(rawDescription);
             try
-                {
-                    string targetCode = stockNumberString ?? string.Empty;
-                    string targetDesc = descriptionString ?? string.Empty;
+            {
+                string targetCode = stockNumberString ?? string.Empty;
+                string targetDesc = descriptionString ?? string.Empty;
 
                 // ===== 1. Fetch and decrypt supply items (additions) =====
                 var supplyItemsQuery = _getTools.Supply.GetTblSupplyItems(context);
@@ -708,14 +699,7 @@ namespace API.Controllers
 
                 // This runs purely in SQL (Extremely Fast) because these columns are NOT encrypted
                 var fullyCompletedRisIds = await context.Set<TblSupplyRIS>()
-                    .Where(r => r.RISRequestedBySystemUserId != null &&
-                        r.RISRequestedDate != null &&
-                        r.RISApprovedBySystemUserId != null &&
-                        r.RISApprovedDate != null &&
-                        r.RISIssuedBySystemUserId != null &&
-                        r.RISIssuedDate != null &&
-                        r.RISReceivedBySystemUserId != null &&
-                        r.RISReceivedDate != null)
+                    .Where(r => r.IsApproved)
                     .Select(r => r.Id)
                     .ToListAsync();
 
@@ -770,6 +754,11 @@ namespace API.Controllers
                 int skip = (model.PageNumber - 1) * model.PageSize;
                 var pagedEvents = allEvents.Skip(skip).Take(model.PageSize).ToList();
 
+                string debugJson = System.Text.Json.JsonSerializer.Serialize(pagedEvents, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
+
                 // ===== 6. Compute running balance before the first event in the page =====
                 long previousBalance = 0;
                 if (skip > 0)
@@ -787,7 +776,6 @@ namespace API.Controllers
                 // ===== 7. Build response models for the paged events =====
                 var responseItems = new List<SupplyStockCardItemViewModel>();
                 long currentBalance = previousBalance;
-
                 foreach (var evt in pagedEvents)
                 {
                     long added = 0, issued = 0;
@@ -848,6 +836,7 @@ namespace API.Controllers
                     actionBy: model.ActionBySystemUserId);
 
                 // ===== 9. Return paginated result =====
+                
                 return Ok(ApiResponse<SupplyStockCardItemViewModel>.OkPaginated(
                     responseItems,
                     model.PageNumber,
@@ -1180,6 +1169,7 @@ namespace API.Controllers
                         RISIssuedDate = x.RISIssuedDate,
                         ReceivedBySystemUser = receivedByUser,
                         RISReceivedDate = x.RISReceivedDate,
+                        IsApproved = x.IsApproved,
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
@@ -1800,6 +1790,7 @@ namespace API.Controllers
                     RISIssuedDate = model.RISIssuedDate,
                     RISReceivedBySystemUserId = model.RISReceivedBySystemUserId,
                     RISReceivedDate = model.RISReceivedDate,
+                    IsApproved = model.IsApproved,
                     IsActive = model.IsActive,
                     //IsApproved = model.IsApproved
                 };

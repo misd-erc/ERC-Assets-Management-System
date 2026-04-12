@@ -552,6 +552,43 @@ export const RISHeader = ({
           </SelectContent>
         </Select>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Status Dropdown */}
+        <div className="space-y-2">
+          <Label>Status</Label>
+          <Select
+              value={header.isActive ? 'active' : 'inactive'}
+              onValueChange={(val) => handleChange('isActive', val === 'active')}
+              disabled={isViewMode}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Approval Status Dropdown */}
+        <div className="space-y-2">
+          <Label>Approval Status</Label>
+          <Select
+              value={header.isApproved ? 'approved' : 'unapproved'}
+              onValueChange={(val) => handleChange('isApproved', val === 'approved')}
+              disabled={isViewMode}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Approval Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="unapproved">Not Approved</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
     </div>
   );
 };

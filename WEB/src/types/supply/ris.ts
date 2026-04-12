@@ -71,6 +71,7 @@ export interface VwSupplyRIS {
   risIssuedDate?: string;
   receivedBySystemUser?: User;
   risReceivedDate?: string;
+  isApproved: boolean;
   isActive: boolean;
   createdAt?: string;
   items?: VwSupplyRISItem[]; // optional, for detailed view
@@ -94,6 +95,7 @@ export interface EditSupplyRIS {
   risIssuedDate?: string;
   risReceivedBySystemUserId?: number;
   risReceivedDate?: string;
+  isApproved: boolean;
   isActive: boolean;
   // Note: RIS items are handled separately
 }

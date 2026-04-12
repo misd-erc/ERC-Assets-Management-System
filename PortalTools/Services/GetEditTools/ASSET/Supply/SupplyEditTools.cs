@@ -449,6 +449,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                             .SetProperty(x => x.RISIssuedDate, model.RISIssuedDate)
                             .SetProperty(x => x.RISReceivedBySystemUserId, model.RISReceivedBySystemUserId)
                             .SetProperty(x => x.RISReceivedDate, model.RISReceivedDate)
+                            .SetProperty(x => x.IsApproved, model.IsApproved)
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 

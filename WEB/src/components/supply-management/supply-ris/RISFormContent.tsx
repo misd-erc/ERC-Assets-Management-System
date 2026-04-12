@@ -53,6 +53,7 @@ export const RISFormContent = ({
     risIssuedDate: undefined,
     risReceivedBySystemUserId: undefined,
     risReceivedDate: undefined,
+    isApproved: false,
     isActive: true,
   });
 
@@ -79,6 +80,7 @@ export const RISFormContent = ({
         risIssuedDate: ris.risIssuedDate,
         risReceivedBySystemUserId: ris.receivedBySystemUser?.id,
         risReceivedDate: ris.risReceivedDate,
+        isApproved: ris.isApproved,
         isActive: ris.isActive,
       });
     } else if (isAddMode) {
@@ -100,6 +102,7 @@ export const RISFormContent = ({
         risIssuedDate: undefined,
         risReceivedBySystemUserId: undefined,
         risReceivedDate: undefined,
+        isApproved: false,
         isActive: true,
       }));
     }
