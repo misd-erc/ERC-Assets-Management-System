@@ -35,6 +35,7 @@ import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { encrypt, decrypt } from '@/utils/encryption';
 import { getUserDetails } from '@/api/user-management/authApi';
+import { secureStorage } from '@/utils/secureStorage';
 
 
 export const MyProfile = () => {
@@ -53,8 +54,8 @@ export const MyProfile = () => {
   // Load user details and profile picture on mount
   React.useEffect(() => {
     const loadUserDetails = async () => {
-      const stored = localStorage.getItem('userDetails');
-      const token = localStorage.getItem('sessionToken');
+      const stored = secureStorage.getItem('userDetails');
+      const token = secureStorage.getItem('sessionToken');
 
       if (!stored) {
         setLoading(false);
@@ -123,12 +124,12 @@ export const MyProfile = () => {
   }, [auditTrailPage]);
 
   const fetchActivities = async () => {
-    const userId = systemUserId || localStorage.getItem('systemUserId');
+    const userId = systemUserId || secureStorage.getItem('systemUserId');
     if (!userId) {
       setActivityError('User ID not available');
       return;
     }
-    const sessionKey = localStorage.getItem('sessionToken') || '';
+    const sessionKey = secureStorage.getItem('sessionToken') || '';
     setActivityLoading(true);
     setActivityError(null);
     try {
@@ -148,12 +149,12 @@ export const MyProfile = () => {
   };
 
   const fetchAuditTrailForAuditTab = async () => {
-    const userId = systemUserId || localStorage.getItem('systemUserId');
+    const userId = systemUserId || secureStorage.getItem('systemUserId');
     if (!userId) {
       setAuditTrailError('User ID not available');
       return;
     }
-    const sessionKey = localStorage.getItem('sessionToken') || '';
+    const sessionKey = secureStorage.getItem('sessionToken') || '';
     setAuditTrailLoading(true);
     setAuditTrailError(null);
     try {
@@ -218,20 +219,20 @@ export const MyProfile = () => {
       return;
     }
 
-    const id = systemUserId || localStorage.getItem("systemUserId");
+    const id = systemUserId || secureStorage.getItem("systemUserId");
     if (!id) { toast.error("User ID missing â€” please re-login."); return; }
 
     setUploadingPicture(true);
     console.log("[MyProfile] Uploading profile picture...");
     try {
-      const token = localStorage.getItem("sessionToken") || localStorage.getItem("sessionKey");
+      const token = secureStorage.getItem("sessionToken") || secureStorage.getItem("sessionKey");
       const fileStorageId = await uploadProfilePicture(file);
       const newUrl = await retrieveFile(fileStorageId);
       if (newUrl.includes('blob:')) {
 
         const res = await getUserDetails();
         if (res) {
-          localStorage.setItem('userDetails', encrypt(JSON.stringify(res)));
+          secureStorage.setItem('userDetails', encrypt(JSON.stringify(res)));
         }
       }
 
@@ -473,7 +474,7 @@ export const MyProfile = () => {
                   <Building className="w-4 h-4 text-gray-400" />
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Employee ID</Label>
-                    <p className="text-gray-900">{localStorage.getItem('employeeId') || 'N/A'}</p>
+                    <p className="text-gray-900">{secureStorage.getItem('employeeId') || 'N/A'}</p>
                   </div>
                 </div>
               </CardContent>

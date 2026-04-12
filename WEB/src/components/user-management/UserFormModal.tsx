@@ -8,6 +8,7 @@ import { createUser, updateUser, editUser } from '@/api/user-management/userApi'
 import { User } from '@/types/user';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth';
+import { secureStorage } from '@/utils/secureStorage';
 
 
 interface UserFormModalProps {
@@ -80,7 +81,7 @@ export const UserFormModal = ({
     try {
       if (user) {
         // Update existing user
-        const token = localStorage.getItem('ActionBySystemUserId') || '';
+        const token = secureStorage.getItem('ActionBySystemUserId') || '';
         const statusId = formData.status === 'Active' ? '0' : formData.status === 'Inactive' ? '1' : '2';
         await editUser({
           systemUserId: parseInt(user.id.toString(), 10),

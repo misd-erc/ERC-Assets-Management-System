@@ -12,6 +12,7 @@ import AssetInfoPage from '@/pages/AssetInfoPage';
 import { initUserSync } from '@/utils/userSync';
 
 import { decrypt } from '@/utils/encryption';
+import { secureStorage } from './utils/secureStorage';
 
 
 // Protected Route Component
@@ -37,7 +38,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   // Check user role access
-  const encryptedUserDetails = localStorage.getItem('userDetails');
+  const encryptedUserDetails = secureStorage.getItem('userDetails');
   if (encryptedUserDetails) {
     try {
       const userDetails = JSON.parse(decrypt(encryptedUserDetails));

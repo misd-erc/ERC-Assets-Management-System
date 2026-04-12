@@ -24,6 +24,7 @@ import { getUserPhoto } from '@/api/user-management/userApi';
 import { decrypt, encrypt } from '@/utils/encryption';
 
 import { useAuthStore } from '@/store/auth';
+import { secureStorage } from '@/utils/secureStorage';
 
 interface ProfileDropdownProps {
   onNavigate?: (module: string) => void;
@@ -56,7 +57,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     systemRoleName: string;
     imageUrl?: string;
   }>((() => {
-    const stored = localStorage.getItem('userDetails');
+    const stored = secureStorage.getItem('userDetails');
     if (!stored) {
       return {
         firstName: 'User',
@@ -88,8 +89,8 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   // Load profile picture from localStorage on mount
   useEffect(() => {
     const loadProfilePicture = async () => {
-      const stored = localStorage.getItem('userDetails');
-      const token = localStorage.getItem('sessionToken');
+      const stored = secureStorage.getItem('userDetails');
+      const token = secureStorage.getItem('sessionToken');
 
       if (!stored || !token) return;
 
@@ -132,8 +133,8 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     const fetchUserData = async () => {
       console.log('[ProfileDropdown] Starting to fetch user data');
       try {
-        const systemUserId = localStorage.getItem('systemUserId');
-        const token = localStorage.getItem('sessionToken');
+        const systemUserId = secureStorage.getItem('systemUserId');
+        const token = secureStorage.getItem('sessionToken');
 
         console.log('[ProfileDropdown] Retrieved tokens:', { systemUserId: !!systemUserId, sessionToken: !!token });
 
@@ -143,7 +144,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         }
 
         console.log('[ProfileDropdown] Calling getUserDetails API');
-        const stored = localStorage.getItem('userDetails') || '{}';
+        const stored = secureStorage.getItem('userDetails') || '{}';
         const decrypted = decrypt(stored);
         const parsed = JSON.parse(decrypted);
         const userDetails = parsed;
@@ -202,7 +203,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
                 };
                 const encrypted = JSON.stringify(updatedParsed);
                 const reEncrypted = encrypt(encrypted);
-                localStorage.setItem('userDetails', reEncrypted);
+                secureStorage.setItem('userDetails', reEncrypted);
                 console.log('[ProfileDropdown] Updated localStorage with profilePictureStorageFileId');
               }
             } catch (error) {
@@ -226,7 +227,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   }, [propUser, location.pathname, user.imageUrl, photoFetched, systemUserId]);
 
   const getUserEmailFromStorage = () => {
-    const stored = localStorage.getItem('userDetails');
+    const stored = secureStorage.getItem('userDetails');
     if (!stored) return 'user@example.com';
     try {
       const decrypted = decrypt(stored);
@@ -271,7 +272,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     if (systemUserId) {
       setIsFetchingProfile(true);
       try {
-        const token = localStorage.getItem('sessionToken');
+        const token = secureStorage.getItem('sessionToken');
         if (!token) {
           console.error('No token found in localStorage');
           return;
@@ -279,7 +280,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         console.log('[ProfileDropdown] Calling getUserDetails for profile click');
         const userData = await getUserDetails();
         console.log('[ProfileDropdown] Profile click API response:', userData);
-        localStorage.setItem('userProfile', JSON.stringify(userData));
+        secureStorage.setItem('userProfile', JSON.stringify(userData));
       } catch (error) {
         console.error('Failed to fetch user profile:', error);
       } finally {

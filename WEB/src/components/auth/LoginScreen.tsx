@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks';
 import { PublicClientApplication, AuthenticationResult, AccountInfo, BrowserAuthError } from '@azure/msal-browser';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { secureStorage } from '@/utils/secureStorage';
 
 const ercLogo = '/images/erc-logo.png';
 const microsoftLogo = '/images/microsoft-logo.svg';
@@ -68,7 +69,7 @@ export function LoginScreen() {
                 },
               });
               employeeId = graphResponse.data.employeeId || '';
-              localStorage.setItem('employeeId', employeeId);
+              secureStorage.setItem('employeeId', employeeId);
             } catch (graphError) {
               console.warn('Failed to fetch employeeId from Microsoft Graph:', graphError);
             }

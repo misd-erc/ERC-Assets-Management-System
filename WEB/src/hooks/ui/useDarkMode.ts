@@ -1,3 +1,4 @@
+import { secureStorage } from '@/utils/secureStorage';
 import { useState, useEffect } from 'react';
 
 const STORAGE_KEY = 'ams-dark-mode';
@@ -5,7 +6,7 @@ const STORAGE_KEY = 'ams-dark-mode';
 export function useDarkMode() {
   const [isDark, setIsDark] = useState<boolean>(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = secureStorage.getItem(STORAGE_KEY);
       if (stored !== null) return stored === 'true';
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
     } catch {
@@ -20,7 +21,7 @@ export function useDarkMode() {
     } else {
       root.classList.remove('dark');
     }
-    localStorage.setItem(STORAGE_KEY, String(isDark));
+    secureStorage.setItem(STORAGE_KEY, String(isDark));
   }, [isDark]);
 
   const toggle = () => setIsDark(prev => !prev);

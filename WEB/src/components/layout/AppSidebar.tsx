@@ -25,6 +25,7 @@ import {
 
 import { getUserDetails } from "@/api/user-management/authApi";
 import { Building, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { secureStorage } from "@/utils/secureStorage";
 
 interface NavigationItem {
   id: string;
@@ -47,7 +48,7 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
     let isActive = true;
 
     const loadUserDetails = async () => {
-      const encrypted = localStorage.getItem("userDetails");
+      const encrypted = secureStorage.getItem("userDetails");
       if (encrypted) {
         try {
           const parsed = JSON.parse(decrypt(encrypted));
@@ -61,7 +62,7 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
       try {
         const fresh = await getUserDetails();
         const encryptedFresh = encrypt(JSON.stringify(fresh));
-        localStorage.setItem("userDetails", encryptedFresh);
+        secureStorage.setItem("userDetails", encryptedFresh);
         if (isActive) setUserDetails(fresh);
       } catch (err) {
         console.error("[Sidebar] Unable to load user details", err);

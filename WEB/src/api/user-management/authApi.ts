@@ -4,6 +4,7 @@ import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenVali
 
 import { guidToLongId } from '@/utils/guidUtils';
 import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
+import { secureStorage } from '@/utils/secureStorage';
 
 
 export interface UserDetails {
@@ -33,20 +34,20 @@ export interface EditUserPayload {
 
 export const getUserDetails = async (): Promise<UserDetails> => {
   // Retrieve tokens directly from localStorage to ensure we use the latest synced values
-  const currentSystemId = String(localStorage.getItem('systemUserId'));
+  const currentSystemId = String(secureStorage.getItem('systemUserId'));
 
 
   if (currentSystemId !== currentSystemId) {
     console.warn('[AuthAPI] Token mismatch detected! Syncing before API call.');
     // Auto-correct by syncing them
     if (currentSystemId) {
-      localStorage.setItem('systemUserId', currentSystemId);
+      secureStorage.setItem('systemUserId', currentSystemId);
       console.log('[AuthAPI] Synced systemUserId with ActionBySystemUserIdEncrypted');
     }
   }
 
   // Get session key from localStorage
-  const sessionKey = localStorage.getItem('sessionToken') || '';
+  const sessionKey = secureStorage.getItem('sessionToken') || '';
 
   const response = await axiosInstance.get<ApiResponse<UserDetails>>(
     `/Users/all/${encodeURIComponent(currentSystemId)}?ActionBySystemUserId=${encodeURIComponent(currentSystemId)}&SessionKey=${encodeURIComponent(sessionKey)}`
@@ -139,8 +140,8 @@ export const validateOTP = async (systemUserId: string, otp: string): Promise<{ 
   const sessionKey = data.sessionKey || '';
 
   // Save session key and systemUserId to localStorage
-  localStorage.setItem('sessionToken', sessionKey);
-  localStorage.setItem('systemUserId', data.systemUserId.toString());
+  secureStorage.setItem('sessionToken', sessionKey);
+  secureStorage.setItem('systemUserId', data.systemUserId.toString());
 
   return { systemUserId: data.systemUserId.toString(), sessionKey };
 };
@@ -186,10 +187,10 @@ export const validateSessionToken = async (token: string, systemUserId: string):
 
 export const logout = async (): Promise<void> => {
   // Clear local storage
-  localStorage.removeItem('authToken');
-  localStorage.removeItem('user');
-  localStorage.removeItem('systemUserIdEncrypted');
-  localStorage.removeItem('systemUserId');
+  secureStorage.removeItem('authToken');
+  secureStorage.removeItem('user');
+  secureStorage.removeItem('systemUserIdEncrypted');
+  secureStorage.removeItem('systemUserId');
   return Promise.resolve();
 };
 

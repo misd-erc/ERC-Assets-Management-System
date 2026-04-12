@@ -3,6 +3,7 @@ import { seApi } from '@/api/asset/se';
 import { Asset, UnifiedMovement, AssetGroup } from '@/types/asset/UnifiedAsset';
 import { SEAsset } from '@/types/supply/se';
 import { normalizeMovement } from '@/utils/normalizer';
+import { secureStorage } from '@/utils/secureStorage';
 
 
 export class UnifiedAssetService {
@@ -11,8 +12,8 @@ export class UnifiedAssetService {
     // Null-safety: return null if entry is undefined/null
     if (!entry) return null;
 
-    const actionBySystemUserId = parseInt(localStorage.getItem('systemUserId') || '0');
-    const sessionKey = localStorage.getItem('sessionToken') || '';
+    const actionBySystemUserId = parseInt(secureStorage.getItem('systemUserId') || '0');
+    const sessionKey = secureStorage.getItem('sessionToken') || '';
     const isCurrent = entry.isCurrent !== undefined ? entry.isCurrent : false;
 
     return {
@@ -38,8 +39,8 @@ export class UnifiedAssetService {
 
   // Helper function to normalize part payload for backend
   private static normalizePart(part: any, mode: 'create' | 'edit', assetId?: number): any {
-    const actionBySystemUserId = parseInt(localStorage.getItem('systemUserId') || '0');
-    const sessionKey = localStorage.getItem('sessionToken') || '';
+    const actionBySystemUserId = parseInt(secureStorage.getItem('systemUserId') || '0');
+    const sessionKey = secureStorage.getItem('sessionToken') || '';
 
     return {
       id: mode === 'create' ? 0 : (part.id || 0),
@@ -128,8 +129,8 @@ export class UnifiedAssetService {
     EmployeeId?: number;
   }): Promise<{ items: Asset[]; totalCount: number }> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       const pageNumber = filters?.PageNumber || 1;
       const pageSize = Math.min(filters?.PageSize || 10, 100); // hard cap at 100
@@ -220,8 +221,8 @@ export class UnifiedAssetService {
 
   static async getById(id: number): Promise<Asset> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       // Fallback: First try PPE API
       try {
@@ -256,8 +257,8 @@ export class UnifiedAssetService {
 
   static async create(data: Omit<Asset, 'id'> & { id?: number }): Promise<Asset> {
     try {
-      const actionBySystemUserId = parseInt(localStorage.getItem('systemUserId') || '0');
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = parseInt(secureStorage.getItem('systemUserId') || '0');
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       const categoryId = (data as any).categoryId ?? (typeof data.category === 'object' && data.category ? (data.category as any).id : 0);
       const legendId = (data as any).legendId ?? (typeof data.legend === 'object' && data.legend ? (data.legend as any).id : 0);
@@ -380,8 +381,8 @@ export class UnifiedAssetService {
 
   static async update(id: number, data: Partial<Asset>): Promise<{ success: boolean; ptaId: number | null }> {
     try {
-      const actionBySystemUserId = parseInt(localStorage.getItem('systemUserId') || '0');
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = parseInt(secureStorage.getItem('systemUserId') || '0');
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       // Get current asset to determine group
       const currentAsset = await this.getById(id);
@@ -450,8 +451,8 @@ export class UnifiedAssetService {
 
   static async delete(id: number): Promise<void> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       // Get current asset to determine group
       const currentAsset = await this.getById(id);

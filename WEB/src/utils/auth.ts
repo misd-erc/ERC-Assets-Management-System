@@ -1,7 +1,8 @@
 ﻿import { decrypt } from '@/utils/encryption';
+import { secureStorage } from './secureStorage';
 
 export const checkUserAccess = () => {
-  const encryptedUserDetails = localStorage.getItem('userDetails');
+  const encryptedUserDetails = secureStorage.getItem('userDetails');
   if (!encryptedUserDetails) {
     console.warn('[checkUserAccess] No user details found');
     return;
@@ -20,8 +21,8 @@ export const checkUserAccess = () => {
 };
 
 export const getAuthParams = () => {
-  const systemUserId = Number(localStorage.getItem('systemUserId') || '0');
-  const sessionKey = localStorage.getItem('sessionToken') || '';
+  const systemUserId = Number(secureStorage.getItem('systemUserId') || '0');
+  const sessionKey = secureStorage.getItem('sessionToken') || '';
   return { systemUserId, sessionKey };
 };
 

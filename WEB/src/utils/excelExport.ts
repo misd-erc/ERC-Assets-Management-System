@@ -3,6 +3,7 @@ import { PPEAsset } from '@/types/asset/PPEAsset';
 import { SEAsset } from '@/types/supply';
 import { ppeApi } from '@/api/asset/ppe';
 import { seApi } from '@/api/asset/se';
+import { secureStorage } from './secureStorage';
 
 export interface ExportOptions {
   startDate?: string;
@@ -13,8 +14,8 @@ export interface ExportOptions {
 export class ExcelExportService {
   private static async fetchAllAssets(options: ExportOptions): Promise<any[]> {
     const { startDate, endDate, groupName } = options;
-    const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-    const sessionKey = localStorage.getItem('sessionToken') || '';
+    const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+    const sessionKey = secureStorage.getItem('sessionToken') || '';
 
     if (!actionBySystemUserId || !sessionKey) {
       throw new Error('Authentication required');

@@ -1,5 +1,6 @@
 import { getUserDetails } from '@/api/user-management/authApi';
 import { encrypt } from '@/utils/encryption';
+import { secureStorage } from './secureStorage';
 
 let syncInterval: NodeJS.Timeout | null = null;
 
@@ -12,8 +13,8 @@ export const initUserSync = () => {
   // Function to sync user details
   const syncUserDetails = async () => {
     try {
-      const systemUserId = localStorage.getItem('systemUserId');
-      const sessionToken = localStorage.getItem('sessionToken');
+      const systemUserId = secureStorage.getItem('systemUserId');
+      const sessionToken = secureStorage.getItem('sessionToken');
 
       // Check if required tokens exist
       if (!systemUserId || !sessionToken) {
@@ -26,14 +27,14 @@ export const initUserSync = () => {
 
       // Encrypt and save to localStorage
       const encryptedDetails = encrypt(JSON.stringify(userDetails));
-      localStorage.setItem('userDetails', encryptedDetails);
+      secureStorage.setItem('userDetails', encryptedDetails);
 
       console.log('[UserSync] Updated from API');
     } catch (error) {
       if (error instanceof Error && error.message === 'Session expired') {
         console.log('[UserSync] Session expired');
         // Clear userDetails on session expiry
-        localStorage.removeItem('userDetails');
+        secureStorage.removeItem('userDetails');
       } else {
         console.error('[UserSync] Sync failed:', error);
       }

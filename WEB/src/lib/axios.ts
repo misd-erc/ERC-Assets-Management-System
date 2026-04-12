@@ -1,5 +1,6 @@
 ﻿import axios, { type AxiosInstance, type AxiosResponse, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { getSessionToken, handleSessionExpired, isSessionError } from '@/utils/sessionUtils';
+import { secureStorage } from '@/utils/secureStorage';
 
 const baseURL = process.env.REACT_APP_API_URL || 'https://localhost:7702/api';
 
@@ -15,7 +16,7 @@ const axiosInstance: AxiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Add session token for authentication
-    const sessionToken = localStorage.getItem('sessionToken');
+    const sessionToken = secureStorage.getItem('sessionToken');
     if (sessionToken && !config.url?.includes('/Users/validation')) {
       config.headers.Authorization = `Bearer ${sessionToken}`;
       // Also add as custom header for backend compatibility

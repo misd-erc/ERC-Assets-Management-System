@@ -1,5 +1,6 @@
 import { seApi } from '@/api/asset/se';
 import { SEAsset } from '@/types/supply/se';
+import { secureStorage } from '@/utils/secureStorage';
 
 export class SEService {
   static async getAll(filters?: {
@@ -11,8 +12,8 @@ export class SEService {
     EmployeeId?: number;
   }): Promise<{ items: SEAsset[]; totalCount: number }> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       const response = await seApi.list({
         SearchString: filters?.search || '',
@@ -35,8 +36,8 @@ export class SEService {
 
   static async getById(id: string): Promise<SEAsset> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
       
       const response = await seApi.getById(id, actionBySystemUserId, sessionKey);
 
@@ -53,8 +54,8 @@ export class SEService {
 
   static async create(data: Partial<SEAsset>): Promise<SEAsset> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       const apiData: Partial<SEAsset> = {
         propertyNumber: data.propertyNumber,
@@ -91,8 +92,8 @@ export class SEService {
 
   static async update(id: string, data: Partial<SEAsset>): Promise<SEAsset> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       const apiData: Partial<SEAsset> = {
         propertyNumber: data.propertyNumber,

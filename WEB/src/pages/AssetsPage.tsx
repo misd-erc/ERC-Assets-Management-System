@@ -21,6 +21,7 @@ import { Asset } from '@/types/asset/UnifiedAsset';
 import { ExcelExportService } from '@/utils/excelExport';
 import { ReportTab } from '@/components/assets/reports/ReportTab';
 import * as XLSX from 'xlsx';
+import { secureStorage } from '@/utils/secureStorage';
 
 export function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -422,8 +423,8 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
         return;
       }
 
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       if (!actionBySystemUserId || !sessionKey) {
         toast.error('Authentication required for batch upload');

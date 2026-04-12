@@ -39,6 +39,7 @@ import {
 import { UserEditModal } from '@/components/user-management/UserEditModal';
 import { getStatusColor } from '@/utils/colorUtils';
 import { Navigate } from 'react-router-dom';
+import { secureStorage } from '@/utils/secureStorage';
 
 interface UserListProps {
   onAddUser?: () => void;
@@ -117,7 +118,7 @@ export const UserList: React.FC<UserListProps> = ({
 
   const handleChangeRole = async (userId: string, newRole: string) => {
     try {
-      const token = localStorage.getItem('systemUserId') || '';
+      const token = secureStorage.getItem('systemUserId') || '';
       const user = users.find(u => u.id === parseInt(userId, 10));
       if (!user) {
         toast.error('User not found');

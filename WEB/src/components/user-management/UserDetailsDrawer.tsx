@@ -9,6 +9,7 @@ import { User } from '@/types/user';
 import { Mail, Building, Briefcase, Calendar, User as UserIcon, MapPin, Users, IdCard } from 'lucide-react';
 import { getUserPhoto, getUsersDetails } from '@/api/user-management/userApi';
 import { getStatusColor } from '@/utils/colorUtils';
+import { secureStorage } from '@/utils/secureStorage';
 
 
 interface UserDetailsDrawerProps {
@@ -30,7 +31,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
       if (!user?.profilePictureStorageFile?.id) return;
 
       try {
-        const systemUserId = localStorage.getItem('systemUserId') || '';
+        const systemUserId = secureStorage.getItem('systemUserId') || '';
 
         const fileId = String(user.profilePictureStorageFile.id);
         const photoResponse = await getUserPhoto(fileId, systemUserId);

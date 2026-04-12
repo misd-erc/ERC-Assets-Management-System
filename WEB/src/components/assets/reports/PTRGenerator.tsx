@@ -12,6 +12,7 @@ import {
 import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { ppeApi } from "@/api/asset/ppe";
 import { seApi } from "@/api/asset/se";
+import { secureStorage } from "@/utils/secureStorage";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -548,8 +549,8 @@ export class PTRGenerator {
           actualOfficeId: latestMovement?.actualOfficeId || 0,
           actualDivisionId: latestMovement?.actualDivisionId || 0,
           isActive: true,
-          actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
-          sessionKey: localStorage.getItem("sessionToken") || "",
+          actionBySystemUserId: Number(secureStorage.getItem("systemUserId")),
+          sessionKey: secureStorage.getItem("sessionToken") || "",
           model: item.model || "",
         });
       } else {
@@ -564,8 +565,8 @@ export class PTRGenerator {
           actualOfficeId: latestMovement?.actualOfficeId || 0,
           actualDivisionId: latestMovement?.actualDivisionId || 0,
           isActive: true,
-          actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
-          sessionKey: localStorage.getItem("sessionToken") || "",
+          actionBySystemUserId: Number(secureStorage.getItem("systemUserId")),
+          sessionKey: secureStorage.getItem("sessionToken") || "",
           model: item.model || "",
         });
       }
@@ -634,8 +635,8 @@ export class PTRGenerator {
         actualOfficeId: latestMovement?.actualOfficeId || 0,
         actualDivisionId: latestMovement?.actualDivisionId || 0,
         isActive: true,
-        actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
-        sessionKey: localStorage.getItem("sessionToken") || "",
+        actionBySystemUserId: Number(secureStorage.getItem("systemUserId")),
+        sessionKey: secureStorage.getItem("sessionToken") || "",
         model: item.model || "",
       });
     } else {
@@ -650,8 +651,8 @@ export class PTRGenerator {
         actualOfficeId: latestMovement?.actualOfficeId || 0,
         actualDivisionId: latestMovement?.actualDivisionId || 0,
         isActive: true,
-        actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
-        sessionKey: localStorage.getItem("sessionToken") || "",
+        actionBySystemUserId: Number(secureStorage.getItem("systemUserId")),
+        sessionKey: secureStorage.getItem("sessionToken") || "",
         model: item.model || "",
       });
     }

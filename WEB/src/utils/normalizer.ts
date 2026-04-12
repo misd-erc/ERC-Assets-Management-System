@@ -3,6 +3,8 @@
  * Ensures employee IDs are strings and office/division IDs are numbers.
  */
 
+import { secureStorage } from "./secureStorage";
+
 // Helper function to parse employee ID safely
 export function parseEmployeeIdSafe(val: any): string | null {
   if (val === null || val === undefined || val === '') return null;
@@ -24,8 +26,8 @@ export function normalizeMovement(entry: any, assetModel: string, ptaId: number)
     actualDivisionId: parseInt(entry.divisionId || '0', 10),
     isActive: true,
     condition: entry.condition || 'Working',
-    actionBySystemUserId: parseInt(localStorage.getItem('systemUserId') || '0'),
-    sessionKey: localStorage.getItem('sessionToken') || '',
+    actionBySystemUserId: parseInt(secureStorage.getItem('systemUserId') || '0'),
+    sessionKey: secureStorage.getItem('sessionToken') || '',
     model: assetModel || '',
   };
 }
