@@ -19,6 +19,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@components/ui/select";
 
 interface Props {
   header: EditSupplyRIS;
@@ -314,6 +315,23 @@ export const RISHeader = ({
             <Label className="text-slate-700 font-medium">Received Date</Label>
             <Input type="date" value={header.risReceivedDate?.slice(0, 10) || ''} onChange={(e) => handleChange('risReceivedDate', e.target.value || undefined)} disabled={isViewMode} />
           </div>
+
+        </div>
+        <div className="space-y-2">
+          <Label>Status</Label>
+          <Select
+              value={header.isActive ? 'active' : 'inactive'}
+              onValueChange={(val) => handleChange('isActive', val === 'active')}
+              disabled={isViewMode}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
   );
