@@ -19,7 +19,7 @@ export const DeliveryRecordViewModal = ({ open, onOpenChange, record }: Props) =
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Delivery Details</DialogTitle>
           <DialogDescription>Reference: {record.drNumber}</DialogDescription>
@@ -27,7 +27,7 @@ export const DeliveryRecordViewModal = ({ open, onOpenChange, record }: Props) =
 
         <div className="space-y-6">
           {/* Header Info */}
-          <div className="grid grid-cols-2 gap-4 border-b pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-b pb-4">
             <div>
               <Label className="text-muted-foreground text-xs">Delivery Date</Label>
               <div className="font-medium">{formatDate(record.deliveryDate)}</div>

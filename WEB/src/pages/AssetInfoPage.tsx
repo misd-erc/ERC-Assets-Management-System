@@ -93,16 +93,16 @@ export default function AssetInfoPage() {
   const personFull = [officeName, personAccountable].filter(s => s && s !== '—').join(' — ');
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-2 sm:p-4">
+      <div className="w-full max-w-xl bg-white rounded-xl sm:rounded-2xl shadow-xl overflow-hidden">
 
         {/* Header */}
-        <div className="bg-blue-700 text-white text-center px-6 py-5">
-          <div className="flex items-center justify-center gap-3 mb-1">
-            <img src="/images/erc-logo.png" alt="ERC" className="h-10 w-10 rounded-full bg-white p-0.5" />
+        <div className="bg-blue-700 text-white text-center px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-1">
+            <img src="/images/erc-logo.png" alt="ERC" className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-white p-0.5" />
             <div>
-              <p className="font-bold text-base leading-tight">ENERGY REGULATORY COMMISSION</p>
-              <p className="text-blue-200 text-xs tracking-widest">PROPERTY INVENTORY STICKER</p>
+              <p className="font-bold text-sm sm:text-base leading-tight">ENERGY REGULATORY COMMISSION</p>
+              <p className="text-blue-200 text-[10px] sm:text-xs tracking-widest">PROPERTY INVENTORY STICKER</p>
             </div>
           </div>
         </div>
@@ -123,16 +123,17 @@ export default function AssetInfoPage() {
         )}
 
         {!loading && !error && asset && (
-          <div className="px-6 py-5 space-y-3">
+          <div className="px-4 py-4 sm:px-6 sm:py-5 space-y-3">
 
             {/* Group badge */}
             <div className="flex justify-end">
-              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
+              <span className={`text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-1 rounded-full text-center ${
                 asset.group?.toUpperCase() === 'PPE'
                   ? 'bg-blue-100 text-blue-700'
                   : 'bg-emerald-100 text-emerald-700'
               }`}>
-                {asset.group?.toUpperCase() === 'PPE' ? 'PPE — Property, Plant & Equipment' : 'SE — Semi-Expendable'}
+                <span className="hidden sm:inline">{asset.group?.toUpperCase() === 'PPE' ? 'PPE — Property, Plant & Equipment' : 'SE — Semi-Expendable'}</span>
+                <span className="sm:hidden">{asset.group?.toUpperCase() === 'PPE' ? 'PPE' : 'SE'}</span>
               </span>
             </div>
 

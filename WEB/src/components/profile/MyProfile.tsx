@@ -289,8 +289,8 @@ export const MyProfile = () => {
   return (
       <div className="space-y-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">My Profile</h1>
-          <p className="text-sm text-gray-500 mt-1">Loading profile information...</p>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">My Profile</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Loading profile information...</p>
         </div>
       </div>
     );
@@ -300,8 +300,8 @@ export const MyProfile = () => {
     return (
       <div className="space-y-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">My Profile</h1>
-          <p className="text-sm text-gray-500 mt-1">No user data available.</p>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">My Profile</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">No user data available.</p>
         </div>
       </div>
     );
@@ -318,8 +318,8 @@ export const MyProfile = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">My Profile</h1>
-        <p className="text-sm text-gray-500 mt-1">View and manage your profile information</p>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">My Profile</h1>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">View and manage your profile information</p>
       </div>
 
       {/* Persistent Profile Card */}
@@ -369,8 +369,8 @@ export const MyProfile = () => {
                 />
               </div>
               <div>
-                <h3 className="text-xl font-semibold text-gray-900">{fullName}</h3>
-                <p className="text-gray-500">@{userDetails.email ? userDetails.email.split('@')[0] : 'unknown'}</p>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">{fullName}</h3>
+                <p className="text-gray-500 dark:text-slate-400">@{userDetails.email ? userDetails.email.split('@')[0] : 'unknown'}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge className={`rounded-full px-3 py-1 bg-blue-100 text-blue-800 border-blue-200`}>{roleBadge}</Badge>
                   <Badge className={`rounded-full px-3 py-1 ${userDetails.isActive ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'}`}>{statusBadge}</Badge>

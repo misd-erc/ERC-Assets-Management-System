@@ -621,35 +621,37 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
   };
 
   return (
-    <div className="p-2 pt-5 md:pt-20 space-y-6">
+    <div className="p-2 pt-5 md:pt-20 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
+          <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white">
             Assets Management
           </h1>
-          <p className="text-slate-600">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
             Manage and track your PPE and SE assets
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button 
             variant="outline" 
             onClick={() => setShowFilters(!showFilters)} 
-            className="gap-2"
+            className="gap-2 text-xs sm:text-sm"
           >
             {showFilters ? '✕ Hide Filters' : '⊕ Show Filters'}
           </Button>
 
-          <Button variant="outline" onClick={() => setExportModalOpen(true)} className="gap-2">
+          <Button variant="outline" onClick={() => setExportModalOpen(true)} className="gap-2 text-xs sm:text-sm">
             <Download className="size-4" />
-            Export To Excel ({activeTab === 'all' ? 'ALL' : activeTab})
+            <span className="hidden sm:inline">Export To Excel ({activeTab === 'all' ? 'ALL' : activeTab})</span>
+            <span className="sm:hidden">Export</span>
           </Button>
 
-          <Button variant="outline" onClick={handleDownloadTemplate} className="gap-2">
+          <Button variant="outline" onClick={handleDownloadTemplate} className="gap-2 text-xs sm:text-sm">
             <Download className="size-4" />
-            Download Template
+            <span className="hidden sm:inline">Download Template</span>
+            <span className="sm:hidden">Template</span>
           </Button>
 
           <div className="flex items-center gap-2">
@@ -661,24 +663,27 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
               id="batch-upload"
             />
             <Label htmlFor="batch-upload" className="cursor-pointer">
-              <Button variant="outline" asChild className="gap-2">
+              <Button variant="outline" asChild className="gap-2 text-xs sm:text-sm">
                 <span>
                   <Upload className="size-4" />
-                  Batch Upload
+                  <span className="hidden sm:inline">Batch Upload</span>
+                  <span className="sm:hidden">Upload</span>
                 </span>
               </Button>
             </Label>
             {uploadFile && (
-              <Button onClick={() => setUploadConfirmDialogOpen(true)} className="gap-2">
+              <Button onClick={() => setUploadConfirmDialogOpen(true)} className="gap-2 text-xs sm:text-sm">
                 <FileText className="size-4" />
-                Upload {uploadFile.name}
+                <span className="hidden sm:inline">Upload {uploadFile.name}</span>
+                <span className="sm:hidden">Upload</span>
               </Button>
             )}
           </div>
 
-          <Button onClick={() => setAddDialogOpen(true)} className="gap-2">
+          <Button onClick={() => setAddDialogOpen(true)} className="gap-2 text-xs sm:text-sm">
             <Plus className="size-4" />
-            Add Asset
+            <span className="hidden sm:inline">Add Asset</span>
+            <span className="sm:hidden">Add</span>
           </Button>
         </div>
       </div>
@@ -807,7 +812,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
 
       {/* Add Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="w-[85vw] !max-w-none max-h-[90vh] overflow-y-auto p-5 md:p-6 lg:p-8">
+        <DialogContent className="w-[95vw] sm:w-[85vw] !max-w-none max-h-[90vh] overflow-y-auto p-3 sm:p-5 md:p-6 lg:p-8">
           <DialogHeader>
             <DialogTitle>Add New Asset</DialogTitle>
             <DialogDescription>
@@ -823,7 +828,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="w-[85vw] !max-w-none max-h-[90vh] overflow-y-auto p-5 md:p-6 lg:p-8">
+        <DialogContent className="w-[95vw] sm:w-[85vw] !max-w-none max-h-[90vh] overflow-y-auto p-3 sm:p-5 md:p-6 lg:p-8">
           <DialogHeader>
             <DialogTitle>Edit Asset</DialogTitle>
             <DialogDescription>
@@ -846,7 +851,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
 
       {/* View Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="w-[95vw] !max-w-none max-h-[90vh] overflow-y-auto p-5 md:p-6 lg:p-8">
+        <DialogContent className="w-[98vw] sm:w-[95vw] !max-w-none max-h-[90vh] overflow-y-auto p-3 sm:p-5 md:p-6 lg:p-8">
           <DialogHeader>
             <DialogTitle>Asset Details</DialogTitle>
           </DialogHeader>

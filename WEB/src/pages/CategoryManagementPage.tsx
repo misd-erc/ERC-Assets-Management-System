@@ -6,14 +6,14 @@ export default function CategoryManagementPage() {
   const [activeTab, setActiveTab] = useState('categories');
 
   return (
-    <div className="p-2 pt-5 md:pt-20 space-y-6">
+    <div className="p-2 pt-5 md:pt-20 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
+          <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white">
             {activeTab === 'categories' ? 'Category Management' : 'Legends Management'}
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-sm text-gray-600 dark:text-slate-400 mt-1">
             {activeTab === 'categories' 
               ? 'Manage categories for your assets' 
               : 'Manage legends and folder paths'}

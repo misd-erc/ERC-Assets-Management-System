@@ -85,7 +85,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="sm:max-w-[500px] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className='text-3xl font-semibold text-slate-900'>User Details</SheetTitle>
+          <SheetTitle className='text-3xl font-semibold text-slate-900 dark:text-white'>User Details</SheetTitle>
           <SheetDescription>
             View detailed information about this user
           </SheetDescription>
@@ -93,7 +93,7 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
 
         <div className="space-y-6 mt-6 pb-6">
           {/* User Header */}
-          <Card className="shadow-sm border-0 bg-gradient-to-r from-slate-50 to-white">
+          <Card className="shadow-sm border-0 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900">
             <CardContent className="p-6">
               <div className="flex items-start gap-4">
                 <Avatar className="w-20 h-20 border-4 border-white shadow-lg">
@@ -106,13 +106,13 @@ export const UserDetailsDrawer: React.FC<UserDetailsDrawerProps> = ({
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-slate-900">{`${user.firstName} ${user.lastName}`}</h3>
-                  <p className="text-slate-600 font-medium">@{user.employeeId}</p>
+                  <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{`${user.firstName} ${user.lastName}`}</h3>
+                  <p className="text-slate-600 dark:text-slate-400 font-medium">@{user.employeeId}</p>
                   <div className="flex flex-wrap items-center gap-2 mt-3">
                     <Badge className={`rounded-full px-4 py-2 text-sm font-semibold shadow-sm ${getStatusColor(user.systemUserStatus.name)}`}>
                       {user.systemUserStatus.name}
                     </Badge>
-                    <Badge className="rounded-full px-4 py-2 text-sm font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                    <Badge className="rounded-full px-4 py-2 text-sm font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
                       {user.systemRole[0]?.roleName || 'No Role'}
                     </Badge>
                   </div>

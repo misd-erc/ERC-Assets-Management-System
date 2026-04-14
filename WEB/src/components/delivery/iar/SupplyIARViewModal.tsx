@@ -28,7 +28,7 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord 
 
   return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="!max-w-7xl !w-[60vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:w-[85vw] md:!w-[60vw] !max-w-7xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center gap-2 text-blue-600">
               <ClipboardCheck className="h-5 w-5" />
@@ -39,7 +39,7 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord 
 
           <div className="space-y-6">
             {/* Header Information Grid */}
-            <div className="grid grid-cols-2 gap-y-4 gap-x-8 border-b pb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 border-b pb-6">
               <div>
                 <Label className="text-muted-foreground text-[10px] uppercase font-bold tracking-wider">IAR Number</Label>
                 <div className="font-semibold text-blue-700 text-base">{record.iarNumber}</div>
@@ -58,7 +58,7 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord 
                         <Package className="h-4 w-4 text-blue-600" />
                         <Label className="text-[10px] uppercase font-bold tracking-wider text-blue-700">Linked Delivery Record</Label>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                         <div>
                           <span className="text-muted-foreground text-xs">DR Number:</span>
                           <div className="font-medium text-blue-700">{deliveryRecord.drNumber}</div>

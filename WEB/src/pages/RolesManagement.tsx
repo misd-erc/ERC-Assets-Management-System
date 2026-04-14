@@ -237,7 +237,7 @@ export function RolesManagement() {
 
   if (loading) {
     return (
-      <div className="pl-64 pt-16 flex items-center justify-center min-h-screen">
+      <div className="pt-16 md:pl-64 flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading roles...</div>
       </div>
     );
@@ -245,14 +245,14 @@ export function RolesManagement() {
 
   if (error) {
     return (
-      <div className="pl-64 pt-16 flex items-center justify-center min-h-screen">
+      <div className="pt-16 md:pl-64 flex items-center justify-center min-h-screen">
         <div className="text-red-500">Error: {error}</div>
       </div>
     );
   }
 
   return (
-    <div className="p-2 pt-5 md:pt-20 space-y-6">
+    <div className="p-2 pt-5 md:pt-20 space-y-4 sm:space-y-6">
       <RolesHeader onAddRole={() => setShowAddRole(true)} />
 
       <SearchAndSummary
