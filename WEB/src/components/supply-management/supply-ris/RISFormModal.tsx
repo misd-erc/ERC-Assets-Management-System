@@ -77,7 +77,7 @@ export const RISFormModal = ({ open, onOpenChange, mode, ris }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-7xl !w-[60vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:w-[85vw] md:!w-[60vw] !max-w-7xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {mode === 'add' && 'Create New RIS'}

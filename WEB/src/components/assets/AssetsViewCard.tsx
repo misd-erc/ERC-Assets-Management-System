@@ -107,14 +107,14 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
   if (asset.group === 'PPE') {
     const ppeAsset = asset as unknown as PPEAsset;
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">{ppeAsset.propertyNumber}</h2>
-            <p className="text-slate-600">{ppeAsset.description}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 break-all">{ppeAsset.propertyNumber}</h2>
+            <p className="text-sm sm:text-base text-slate-600 break-words">{ppeAsset.description}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <Button variant="outline" onClick={() => onEdit(asset)} className="gap-2">
               <Edit className="size-4" />
               Edit
@@ -216,20 +216,20 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <div>
                 <Label className="text-sm font-medium text-slate-600">Unit Value</Label>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(ppeAsset.unitValue)}</p>
+                <p className="text-lg sm:text-2xl font-bold text-slate-900">{formatCurrency(ppeAsset.unitValue)}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Date Acquired</Label>
-                <p className="text-lg text-slate-900">{formatDate(ppeAsset.dateAcquired)}</p>
+                <p className="text-base sm:text-lg text-slate-900">{formatDate(ppeAsset.dateAcquired)}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Estimated Useful Life</Label>
-                <p className="text-lg text-slate-900">{ppeAsset.estimatedUsefulLife} years</p>
+                <p className="text-base sm:text-lg text-slate-900">{ppeAsset.estimatedUsefulLife} years</p>
               </div>
             </div>
           </CardContent>
@@ -245,6 +245,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
           </CardHeader>
           <CardContent>
             {ppeAsset.movements && ppeAsset.movements.filter(m => m.isActive !== false).length > 0 ? (
+              <div className="overflow-x-auto -mx-2 px-2">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -286,9 +287,11 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   ))}
                 </TableBody>
               </Table>
+              </div>
             ) : (
               <p className="text-slate-500">No accountability information available</p>
-            )}
+            )
+          }
           </CardContent>
         </Card>
 
@@ -350,14 +353,14 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
   } else {
     // SE Asset using unified Asset type
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">{asset.propertyNumber}</h2>
-            <p className="text-slate-600">{asset.description}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 break-all">{asset.propertyNumber}</h2>
+            <p className="text-sm sm:text-base text-slate-600 break-words">{asset.description}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <Button variant="outline" onClick={() => onEdit(asset)} className="gap-2">
               <Edit className="size-4" />
               Edit
@@ -459,20 +462,20 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <div>
                 <Label className="text-sm font-medium text-slate-600">Unit Value</Label>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(asset.unitValue)}</p>
+                <p className="text-lg sm:text-2xl font-bold text-slate-900">{formatCurrency(asset.unitValue)}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Date Acquired</Label>
-                <p className="text-lg text-slate-900">{formatDate(asset.dateAcquired)}</p>
+                <p className="text-base sm:text-lg text-slate-900">{formatDate(asset.dateAcquired)}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Estimated Useful Life</Label>
-                <p className="text-lg text-slate-900">{asset.estimatedUsefulLife} years</p>
+                <p className="text-base sm:text-lg text-slate-900">{asset.estimatedUsefulLife} years</p>
               </div>
             </div>
           </CardContent>
@@ -488,6 +491,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
           </CardHeader>
           <CardContent>
             {asset.movements && asset.movements.filter(m => m.isActive !== false).length > 0 ? (
+              <div className="overflow-x-auto -mx-2 px-2">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -527,6 +531,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   ))}
                 </TableBody>
               </Table>
+              </div>
             ) : (
               <p className="text-slate-500">No accountability information available</p>
             )}

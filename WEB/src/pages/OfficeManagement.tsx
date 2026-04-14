@@ -192,7 +192,7 @@ const OfficeManagement = () => {
   };
 
   return (
-    <div className="p-2 pt-5 md:pt-20 space-y-8">
+    <div className="p-2 pt-5 md:pt-20 space-y-4 sm:space-y-8">
       <OfficeGeneralHeader />
 
       <Tabs defaultValue="office">

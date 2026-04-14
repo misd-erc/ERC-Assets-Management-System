@@ -667,7 +667,7 @@ export function Disposals() {
 
       {/* View Disposal Dialog */}
       <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
-        <DialogContent className="!max-w-[82vw] w-[82vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[82vw] !max-w-[82vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl">Disposal Details</DialogTitle>
@@ -683,7 +683,7 @@ export function Disposals() {
             <div className="space-y-6 pt-2">
 
               {/* Info grid */}
-              <div className="grid grid-cols-3 gap-x-8 gap-y-4 bg-slate-50 dark:bg-slate-800 rounded-xl p-5 border dark:border-slate-700">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4 bg-slate-50 dark:bg-slate-800 rounded-xl p-3 sm:p-5 border dark:border-slate-700">
                 <div>
                   <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Reason</p>
                   <p className="text-sm font-medium text-slate-800 mt-0.5">{selectedDisposal.reason}</p>
@@ -748,8 +748,8 @@ export function Disposals() {
               {/* Assets table */}
               <div>
                 <p className="text-sm font-semibold text-slate-700 mb-2">Assets <span className="text-slate-400 font-normal">({selectedDisposal.assets.length})</span></p>
-                <div className="border rounded-xl overflow-hidden">
-                  <table className="w-full text-sm">
+                <div className="border rounded-xl overflow-hidden overflow-x-auto">
+                  <table className="w-full text-sm min-w-[600px]">
                     <thead>
                       <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                         <th className="px-4 py-3 text-left font-medium">Code</th>

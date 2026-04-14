@@ -11,63 +11,63 @@ export const OfficeGeneralHeader = () => {
   const { totalPositions } = usePosition();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Title + Add Button */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Office Management</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">Office Management</h1>
+          <p className="text-sm text-muted-foreground">
             Manage offices, divisions, employment types, and positions
           </p>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Offices</p>
-                <p className="text-2xl font-bold mt-1">{totalOffices}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Total Offices</p>
+                <p className="text-lg sm:text-2xl font-bold mt-1">{totalOffices}</p>
               </div>
-              <Building2 className="w-8 h-8 text-blue-600" />
+              <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Divisions</p>
-                <p className="text-2xl font-bold mt-1">{totalDivisions}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Total Divisions</p>
+                <p className="text-lg sm:text-2xl font-bold mt-1">{totalDivisions}</p>
               </div>
-              <Users className="w-8 h-8 text-green-600" />
+              <Users className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Employment Types</p>
-                <p className="text-2xl font-bold mt-1">{totalEmploymentTypes}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Employment Types</p>
+                <p className="text-lg sm:text-2xl font-bold mt-1">{totalEmploymentTypes}</p>
               </div>
-              <Briefcase className="w-8 h-8 text-purple-600" />
+              <Briefcase className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Positions</p>
-                <p className="text-2xl font-bold mt-1">{totalPositions}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Total Positions</p>
+                <p className="text-lg sm:text-2xl font-bold mt-1">{totalPositions}</p>
               </div>
-              <UserCheck className="w-8 h-8 text-orange-600" />
+              <UserCheck className="w-6 h-6 sm:w-8 sm:h-8 text-orange-600" />
             </div>
           </CardContent>
         </Card>

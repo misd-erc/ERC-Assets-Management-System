@@ -30,7 +30,7 @@ export function ReportPreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-9xl max-h-[95vh] flex flex-col">
+      <DialogContent className="w-[98vw] sm:w-[95vw] max-w-9xl max-h-[95vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download className="size-5" />
@@ -49,7 +49,7 @@ export function ReportPreviewModal({
           ) : pdfUrl ? (
             <iframe
               src={pdfUrl}
-              className="w-full h-[800px] border rounded-lg"
+              className="w-full h-[60vh] sm:h-[800px] border rounded-lg"
               title={`${reportType} Preview`}
             />
           ) : (
