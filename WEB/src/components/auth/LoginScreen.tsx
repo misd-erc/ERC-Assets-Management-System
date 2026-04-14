@@ -131,7 +131,7 @@ export function LoginScreen() {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 px-4">
       <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center space-y-4">
@@ -143,9 +143,9 @@ export function LoginScreen() {
             />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Energy Regulatory Commission</h1>
-            <p className="text-slate-600 mt-1">Asset Management System</p>
-            <p className='text-slate-600 mt-1'>{process.env.REACT_APP_Deployment_Type} ver. {process.env.REACT_APP_Version}</p>
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Energy Regulatory Commission</h1>
+            <p className="text-slate-600 dark:text-slate-400 mt-1">Asset Management System</p>
+            <p className='text-slate-600 dark:text-slate-400 mt-1'>{process.env.REACT_APP_Deployment_Type} ver. {process.env.REACT_APP_Version}</p>
           </div>
         </div>
 
@@ -166,7 +166,7 @@ export function LoginScreen() {
 
             <Button
               onClick={handleMicrosoftLogin}
-              className="w-full flex items-center justify-center gap-2 bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50"
               disabled={isLoading}
             >
               {isLoading ? (

@@ -93,7 +93,7 @@ export function AuditLogsTable({
                 </TableRow>
               ) : (
                 auditLogs.map((log, index) => (
-                  <TableRow key={`${log.table}-${log.recordId}-${index}`} className="hover:bg-gray-50">
+                  <TableRow key={`${log.table}-${log.recordId}-${index}`} className="hover:bg-gray-50 dark:hover:bg-slate-700/60">
                     <TableCell className="font-mono text-sm">{log.table}</TableCell>
                     <TableCell className="font-mono text-sm">{log.recordId}</TableCell>
                     <TableCell>

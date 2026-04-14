@@ -305,7 +305,7 @@ export function Disposals() {
       label: 'Reason', 
       sortable: true,
       render: (value: string) => (
-        <Badge className="bg-slate-100 text-slate-800 border-0">{value}</Badge>
+        <Badge className="bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200 border-0">{value}</Badge>
       )
     },
     { key: 'method', label: 'Method', sortable: true },
@@ -376,8 +376,8 @@ export function Disposals() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold text-slate-900">Disposal of Properties</h1>
-          <p className="text-slate-600 mt-1">
+          <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">Disposal of Properties</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
             Manage asset disposal evaluation, memo generation, and tracking processes
           </p>
         </div>
@@ -486,10 +486,10 @@ export function Disposals() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'PPE' | 'SE')}>
-            <TabsList className="w-full h-auto p-1 bg-slate-100 rounded-xl mb-5 grid grid-cols-2 gap-1">
+            <TabsList className="w-full h-auto p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-5 grid grid-cols-2 gap-1">
               <TabsTrigger
                 value="PPE"
-                className="rounded-lg py-3 px-4 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-500"
+                className="rounded-lg py-3 px-4 text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=inactive]:text-slate-500 dark:data-[state=inactive]:text-slate-400"
               >
                 <span className="flex flex-col items-center gap-0.5">
                   <span className="font-semibold">PPE</span>
@@ -498,7 +498,7 @@ export function Disposals() {
               </TabsTrigger>
               <TabsTrigger
                 value="SE"
-                className="rounded-lg py-3 px-4 text-sm font-medium transition-all data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-slate-900 data-[state=inactive]:text-slate-500"
+                className="rounded-lg py-3 px-4 text-sm font-medium transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=inactive]:text-slate-500 dark:data-[state=inactive]:text-slate-400"
               >
                 <span className="flex flex-col items-center gap-0.5">
                   <span className="font-semibold">SE</span>
@@ -617,7 +617,7 @@ export function Disposals() {
                     <p className="text-sm text-slate-500 text-center py-4">No assets available for disposal.</p>
                   ) : (
                     availableAssets.filter(a => a.group === formData.group).map((asset) => (
-                    <div key={asset.id} className="flex items-center space-x-2 p-3 border rounded hover:bg-slate-50">
+                    <div key={asset.id} className="flex items-center space-x-2 p-3 border dark:border-slate-700 rounded hover:bg-slate-50 dark:hover:bg-slate-700/60">
                       <Checkbox
                         checked={selectedAssets.includes(asset.id)}
                         onCheckedChange={() => toggleAssetSelection(asset.id)}
@@ -683,7 +683,7 @@ export function Disposals() {
             <div className="space-y-6 pt-2">
 
               {/* Info grid */}
-              <div className="grid grid-cols-3 gap-x-8 gap-y-4 bg-slate-50 rounded-xl p-5 border">
+              <div className="grid grid-cols-3 gap-x-8 gap-y-4 bg-slate-50 dark:bg-slate-800 rounded-xl p-5 border dark:border-slate-700">
                 <div>
                   <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Reason</p>
                   <p className="text-sm font-medium text-slate-800 mt-0.5">{selectedDisposal.reason}</p>
@@ -751,7 +751,7 @@ export function Disposals() {
                 <div className="border rounded-xl overflow-hidden">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-slate-100 text-slate-600">
+                      <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
                         <th className="px-4 py-3 text-left font-medium">Code</th>
                         <th className="px-4 py-3 text-left font-medium">Description</th>
                         <th className="px-4 py-3 text-left font-medium">Category</th>
@@ -761,7 +761,7 @@ export function Disposals() {
                     </thead>
                     <tbody>
                       {selectedDisposal.assets.map((asset, idx) => (
-                        <tr key={asset.id} className={`border-t ${idx % 2 === 1 ? 'bg-slate-50' : 'bg-white'}`}>
+                        <tr key={asset.id} className={`border-t dark:border-slate-700 ${idx % 2 === 1 ? 'bg-slate-50 dark:bg-slate-800/50' : 'bg-white dark:bg-transparent'}`}>
                           <td className="px-4 py-3 font-mono text-xs text-slate-700">{asset.code}</td>
                           <td className="px-4 py-3 text-slate-800">{asset.description}</td>
                           <td className="px-4 py-3 text-slate-600">{asset.category}</td>

@@ -181,8 +181,8 @@ export function AssetsTable({
         <CardContent className="flex items-center justify-center py-8">
           <div className="text-center">
             <Package className="size-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No assets found</h3>
-            <p className="text-gray-600">There are no assets matching your current filters.</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No assets found</h3>
+            <p className="text-gray-600 dark:text-slate-400">There are no assets matching your current filters.</p>
           </div>
         </CardContent>
       </Card>

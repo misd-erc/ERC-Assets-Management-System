@@ -341,20 +341,20 @@ export function GlobalSearch({ open, onOpenChange, onNavigate }: GlobalSearchPro
 
           {/* Footer */}
           {!selectedResult && (
-            <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50 px-3 sm:px-4 py-2 text-[10px] sm:text-[11px] text-gray-400 rounded-b-xl">
+            <div className="flex items-center justify-between border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 sm:px-4 py-2 text-[10px] sm:text-[11px] text-gray-400 dark:text-slate-500 rounded-b-xl">
               <div className="flex items-center gap-2 sm:gap-3">
                 <span className="flex items-center gap-1">
-                  <kbd className="rounded bg-white border border-gray-200 px-1 py-0.5 font-mono text-[9px] sm:text-[10px] shadow-sm">↑</kbd>
-                  <kbd className="rounded bg-white border border-gray-200 px-1 py-0.5 font-mono text-[9px] sm:text-[10px] shadow-sm">↓</kbd>
+                  <kbd className="rounded bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-1 py-0.5 font-mono text-[9px] sm:text-[10px] shadow-sm">↑</kbd>
+                  <kbd className="rounded bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-1 py-0.5 font-mono text-[9px] sm:text-[10px] shadow-sm">↓</kbd>
                   <span className="hidden sm:inline">navigate</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <kbd className="rounded bg-white border border-gray-200 px-1 py-0.5 font-mono text-[9px] sm:text-[10px] shadow-sm">↵</kbd>
+                  <kbd className="rounded bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-1 py-0.5 font-mono text-[9px] sm:text-[10px] shadow-sm">↵</kbd>
                   <span className="hidden sm:inline">view details</span>
                 </span>
               </div>
               <span className="flex items-center gap-1">
-                <kbd className="rounded bg-white border border-gray-200 px-1 py-0.5 font-mono text-[9px] sm:text-[10px] shadow-sm">Esc</kbd>
+                <kbd className="rounded bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-1 py-0.5 font-mono text-[9px] sm:text-[10px] shadow-sm">Esc</kbd>
                 <span className="hidden sm:inline">close</span>
               </span>
             </div>

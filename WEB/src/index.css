@@ -57,3 +57,104 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── Dark-mode global overrides ───────────────────────────────────── */
+@layer components {
+  /* Table header backgrounds */
+  .dark table thead,
+  .dark table thead tr {
+    @apply bg-slate-800/60;
+  }
+
+  /* Table body rows – remove any leftover white bg */
+  .dark table tbody {
+    background: transparent;
+  }
+  .dark table tbody tr {
+    @apply bg-transparent border-slate-700/50;
+  }
+
+  /* Row hover – clearly visible in dark mode */
+  .dark table tbody tr:hover {
+    @apply bg-slate-700/60;
+  }
+
+  /* Table header text */
+  .dark table th {
+    @apply text-slate-300;
+  }
+
+  /* Table cell text */
+  .dark table td {
+    @apply text-slate-300;
+  }
+
+  /* Table borders */
+  .dark table,
+  .dark table thead,
+  .dark table tbody {
+    @apply divide-slate-700/50;
+  }
+
+  /* Module titles – ensure visibility */
+  .dark h1,
+  .dark h2,
+  .dark h3 {
+    color: hsl(210 40% 98%);
+  }
+
+  /* Subtitle / description text */
+  .dark .text-slate-600,
+  .dark .text-gray-600 {
+    @apply text-slate-400;
+  }
+
+  /* Common bg-white containers in dark mode */
+  .dark .bg-white {
+    @apply bg-slate-900;
+  }
+
+  /* Common bg-slate-50/bg-gray-50 surfaces */
+  .dark .bg-slate-50,
+  .dark .bg-gray-50 {
+    @apply bg-slate-800;
+  }
+
+  /* Row hover overrides for hardcoded light hover */
+  .dark .hover\:bg-gray-50:hover,
+  .dark .hover\:bg-slate-50:hover {
+    @apply bg-slate-700/60;
+  }
+
+  /* Divide colors */
+  .dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+  .dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+    @apply border-slate-700/50;
+  }
+
+  /* Common border overrides */
+  .dark .border-slate-200,
+  .dark .border-slate-100,
+  .dark .border-gray-200,
+  .dark .border-gray-100 {
+    @apply border-slate-700;
+  }
+
+  /* Text colors that are too dark */
+  .dark .text-slate-700,
+  .dark .text-gray-700 {
+    @apply text-slate-300;
+  }
+  .dark .text-slate-900,
+  .dark .text-gray-900 {
+    @apply text-slate-50;
+  }
+  .dark .text-gray-800,
+  .dark .text-slate-800 {
+    @apply text-slate-200;
+  }
+  .dark .text-gray-500,
+  .dark .text-slate-500 {
+    @apply text-slate-400;
+  }
+}

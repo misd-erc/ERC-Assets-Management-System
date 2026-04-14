@@ -625,10 +625,10 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">
             Assets Management
           </h1>
-          <p className="text-slate-600">
+          <p className="text-slate-600 dark:text-slate-400">
             Manage and track your PPE and SE assets
           </p>
         </div>

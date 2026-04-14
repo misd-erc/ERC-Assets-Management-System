@@ -49,15 +49,15 @@ export function MFAVerification() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
       <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="mx-auto w-16 h-16 bg-primary rounded-lg flex items-center justify-center">
             <Shield className="w-8 h-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-semibold text-slate-900">Two-Factor Authentication</h1>
-          <p className="text-slate-600">Enter the verification code sent to your email</p>
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Two-Factor Authentication</h1>
+          <p className="text-slate-600 dark:text-slate-400">Enter the verification code sent to your email</p>
         </div>
 
         {/* MFA Form */}

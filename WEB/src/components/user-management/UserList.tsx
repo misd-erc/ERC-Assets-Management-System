@@ -157,7 +157,7 @@ export const UserList: React.FC<UserListProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">User Management</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">User Management</h1>
           <p className="text-muted-foreground">
             Manage user accounts, assign roles, and control system access
           </p>
@@ -237,7 +237,7 @@ export const UserList: React.FC<UserListProps> = ({
               </TableHeader>
               <TableBody>
                 {paginatedUsers.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-gray-50">
+                  <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/60">
                     <TableCell>
                       <div>
                         <p className="font-medium">{`${user.firstName} ${user.lastName}`}</p>

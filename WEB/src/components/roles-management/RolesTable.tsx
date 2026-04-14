@@ -41,7 +41,7 @@ export function RolesTable({ roles, onEditRole, onDeleteRole }: RolesTableProps)
             </thead>
             <tbody>
               {roles.map((role) => (
-                <tr key={role.id} className="border-b hover:bg-gray-50">
+                <tr key={role.id} className="border-b dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/60">
                   <td className="p-3 font-mono text-sm">{role.id}</td>
                   <td className="p-3 font-medium">{role.roleName}</td>
                   <td className="p-3 text-sm text-muted-foreground">{role.description}</td>

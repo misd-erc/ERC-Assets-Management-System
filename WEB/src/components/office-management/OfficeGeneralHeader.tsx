@@ -15,7 +15,7 @@ export const OfficeGeneralHeader = () => {
       {/* Title + Add Button */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Office Management</h1>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Office Management</h1>
           <p className="text-muted-foreground">
             Manage offices, divisions, employment types, and positions
           </p>
