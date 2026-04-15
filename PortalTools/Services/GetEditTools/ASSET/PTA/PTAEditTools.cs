@@ -206,6 +206,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                             .SetProperty(x => x.PTAId, model.PTAId)
                             .SetProperty(x => x.DateAssignedEncrypted, model.DateAssignedEncrypted)
                             .SetProperty(x => x.PTRITRNumberEncrypted, model.PTRITRNumberEncrypted)
+                            .SetProperty(x => x.RRPPERRSPNumberEncrypted, model.RRPPERRSPNumberEncrypted)
                             .SetProperty(x => x.PARICSNumberEncrypted, model.PARICSNumberEncrypted)
                             .SetProperty(x => x.PlantillaEmployeeId, model.PlantillaEmployeeId)
                             .SetProperty(x => x.NonPlantillaEmployeeId, model.NonPlantillaEmployeeId)

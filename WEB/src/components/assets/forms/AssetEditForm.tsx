@@ -173,6 +173,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         dateAssigned: movement.dateAssigned || new Date().toISOString(),
         ptrItrNumber: movement.ptrItrNumber || '',
         parIcsNumber: movement.parIcsNumber || '',
+        rrppeRrspNumber: movement.rrppeRrspNumber || '',
         plantillaEmployeeId: movement.plantillaEmployeeId || 0,
         nonPlantillaEmployeeId: movement.nonPlantillaEmployeeId || 0,
         actualOfficeId: movement.actualOfficeId || 0,

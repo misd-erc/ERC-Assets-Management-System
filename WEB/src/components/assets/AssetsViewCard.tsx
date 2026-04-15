@@ -54,8 +54,9 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
   };
 
   const getConditionBadge = (condition: string) => {
-    const styles = {
+    const styles: Record<string, string> = {
       Working: 'bg-green-100 text-green-800 border-green-200',
+      Serviceable: 'bg-green-100 text-green-800 border-green-200',
       'Not Working': 'bg-red-100 text-red-800 border-red-200',
       IIRUP: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       Disposed: 'bg-gray-100 text-gray-800 border-gray-200',
@@ -72,6 +73,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
   const getConditionIcon = (condition: string) => {
     switch (condition) {
       case 'Working':
+      case 'Serviceable':
         return <CheckCircle className="size-4 text-green-600" />;
       case 'Not Working':
       case 'Unserviceable':
@@ -252,6 +254,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                     <TableHead>Date Assigned</TableHead>
                     <TableHead>PAR/ICS No.</TableHead>
                     <TableHead>PTR/ITR No.</TableHead>
+                    <TableHead>RRPPE/RRSP No.</TableHead>
                     <TableHead>Employee (Plantilla)</TableHead>
                     <TableHead>Employee (Non-Plantilla)</TableHead>
                     <TableHead>Service/Office</TableHead>
@@ -265,6 +268,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
                       <TableCell>{movement.parIcsNumber || '-'}</TableCell>
                       <TableCell>{movement.ptrItrNumber || '-'}</TableCell>
+                      <TableCell>{(movement as any).rrppeRrspNumber || '-'}</TableCell>
                       <TableCell>
                         {movement.plantillaEmployeeId
                           ? getEmployeeName(movement.plantillaEmployeeId)
@@ -497,6 +501,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   <TableRow>
                     <TableHead>Date Assigned</TableHead>
                     <TableHead>PAR/ITR Number</TableHead>
+                    <TableHead>RRPPE/RRSP No.</TableHead>
                     <TableHead>Employee (Plantilla)</TableHead>
                     <TableHead>Employee (Non-Plantilla)</TableHead>
                     <TableHead>Office</TableHead>
@@ -509,6 +514,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                     <TableRow key={movement.id}>
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
                       <TableCell>{movement.ptrItrNumber || '-'}</TableCell>
+                      <TableCell>{movement.rrppeRrspNumber || '-'}</TableCell>
                       <TableCell>
                         {movement.plantillaEmployeeId
                           ? getEmployeeName(movement.plantillaEmployeeId)
