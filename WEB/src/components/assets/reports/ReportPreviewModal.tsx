@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Download, X } from 'lucide-react';
+import { Loader2, Download, X, Printer } from 'lucide-react';
 
 interface ReportPreviewModalProps {
   isOpen: boolean;
@@ -64,9 +64,21 @@ export function ReportPreviewModal({
             <X className="size-4 mr-2" />
             Cancel
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (!pdfUrl) return;
+              const w = window.open(pdfUrl);
+              if (w) { w.addEventListener('load', () => w.print()); }
+            }}
+            disabled={isLoading || !pdfUrl}
+          >
+            <Printer className="size-4 mr-2" />
+            Print
+          </Button>
           <Button onClick={onConfirm} disabled={isLoading || !pdfUrl}>
             <Download className="size-4 mr-2" />
-            Confirm Download
+            Save as PDF
           </Button>
         </DialogFooter>
       </DialogContent>

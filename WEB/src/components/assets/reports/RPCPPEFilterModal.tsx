@@ -41,7 +41,7 @@ export function RPCPPEFilterModal({ isOpen, onClose, onGenerate }: RPCPPEFilterM
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Generate RPCPPE Excel</DialogTitle>
+          <DialogTitle>Generate RPCPPE REPORT</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -75,7 +75,7 @@ export function RPCPPEFilterModal({ isOpen, onClose, onGenerate }: RPCPPEFilterM
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleGenerate}>Generate Excel</Button>
+          <Button onClick={handleGenerate}>Generate Report</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

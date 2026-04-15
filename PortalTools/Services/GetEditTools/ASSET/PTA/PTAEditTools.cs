@@ -61,7 +61,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                             .SetProperty(x => x.UnitOfMeasurementEncrypted, model.UnitOfMeasurementEncrypted)
                             .SetProperty(x => x.UnitValueEncrypted, model.UnitValueEncrypted)
                             .SetProperty(x => x.DateAcquiredEncrypted, model.DateAcquiredEncrypted)
-                            .SetProperty(x => x.EstimatedUsefulLifeEncrypted, model.Group == TblPTA.PPE ? model.EstimatedUsefulLifeEncrypted : null)
+                            .SetProperty(x => x.EstimatedUsefulLifeEncrypted, model.EstimatedUsefulLifeEncrypted)
                             .SetProperty(x => x.FiscalDate, model.FiscalDate)
                             .SetProperty(x => x.IsActive, model.IsActive)
                             .SetProperty(x => x.UpdatedAt, DateTime.UtcNow));
@@ -206,6 +206,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                             .SetProperty(x => x.PTAId, model.PTAId)
                             .SetProperty(x => x.DateAssignedEncrypted, model.DateAssignedEncrypted)
                             .SetProperty(x => x.PTRITRNumberEncrypted, model.PTRITRNumberEncrypted)
+                            .SetProperty(x => x.RRPPERRSPNumberEncrypted, model.RRPPERRSPNumberEncrypted)
                             .SetProperty(x => x.PARICSNumberEncrypted, model.PARICSNumberEncrypted)
                             .SetProperty(x => x.PlantillaEmployeeId, model.PlantillaEmployeeId)
                             .SetProperty(x => x.NonPlantillaEmployeeId, model.NonPlantillaEmployeeId)

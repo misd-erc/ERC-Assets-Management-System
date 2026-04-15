@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Search, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Search, FileText, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
 import { getRRPPEMovements, getRRSPMovements } from '@/api/asset/transferApi';
 import { ReturnReceiptGenerator } from './ReturnReceiptGenerator';
 
@@ -357,9 +357,21 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
                 <ChevronLeft className="w-4 h-4 mr-2" />
                 Cancel
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (!previewUrl) return;
+                  const w = window.open(previewUrl);
+                  if (w) { w.addEventListener('load', () => w.print()); }
+                }}
+                disabled={loadingPreview || !previewUrl}
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                Print
+              </Button>
               <Button onClick={download} disabled={loadingPreview || !previewUrl}>
                 <FileText className="w-4 h-4 mr-2" />
-                Download PDF
+                Save as PDF
               </Button>
             </div>
           </div>

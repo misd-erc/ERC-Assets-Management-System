@@ -66,6 +66,7 @@ export class UnifiedAssetService {
       dateAssigned: mv.dateAssigned || mv.createdAt || '',
       ptrItrNumber: mv.ptrItrNumber || '',
       parIcsNumber: mv.parIcsNumber || '',
+      rrppeRrspNumber: mv.rrppeRrspNumber || '',
       plantillaEmployeeId: mv.plantillaEmployeeId || null,
       nonPlantillaEmployeeId: mv.nonPlantillaEmployeeId || null,
       plantillaEmployeeIdOriginal: mv.plantillaEmployeeIdOriginal || undefined,

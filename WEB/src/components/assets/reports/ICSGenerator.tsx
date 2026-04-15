@@ -235,7 +235,7 @@ const ICSDocument = ({
         {/* RECEIVED BY */}
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Received by:</Text>
-          <Text style={[styles.sigName, { marginTop: 25, marginBottom: -8 }]}>{employeeName}</Text>
+          <Text style={[styles.sigName, { marginTop: 25, marginBottom: -8 }]}>{employeeName?.toUpperCase()}</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature over Printed Name of End User</Text>
           <Text style={[styles.sigTopText, { marginBottom: 0, marginTop: 6 }]}>{position} - {office}</Text>
@@ -318,7 +318,7 @@ export class ICSGenerator {
         const npResp = await getEmployeeById(movement.nonPlantillaEmployeeId);
         if (npResp.success && npResp.data.length > 0) {
           const npData = npResp.data[0];
-          nonPlantillaEmployeeName = `${npData.lastName}, ${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
+          nonPlantillaEmployeeName = `${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''} ${npData.lastName}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
         }
       }
     }
@@ -371,7 +371,7 @@ export class ICSGenerator {
         const empResp = await getEmployeeById(employeeId);
         if (empResp.success && empResp.data.length > 0) {
           const empData = empResp.data[0];
-          employeeName = `${empData.lastName}, ${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
           office = empData.office?.name || 'N/A';
         }
@@ -380,7 +380,7 @@ export class ICSGenerator {
         const npResp = await getEmployeeById(movement.nonPlantillaEmployeeId);
         if (npResp.success && npResp.data.length > 0) {
           const npData = npResp.data[0];
-          nonPlantillaEmployeeName = `${npData.lastName}, ${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
+          nonPlantillaEmployeeName = `${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''} ${npData.lastName}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
         }
       }
     }
@@ -429,7 +429,7 @@ export class ICSGenerator {
         const empResp = await getEmployeeById(first.employeeId);
         if (empResp.success && empResp.data.length > 0) {
           const empData = empResp.data[0];
-          employeeName = `${empData.lastName}, ${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
           office = empData.office?.name || first.officeName || 'N/A';
         }
@@ -441,7 +441,7 @@ export class ICSGenerator {
         const npResp = await getEmployeeById(first.subEmployeeId);
         if (npResp.success && npResp.data.length > 0) {
           const npData = npResp.data[0];
-          nonPlantillaEmployeeName = `${npData.lastName}, ${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
+          nonPlantillaEmployeeName = `${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''} ${npData.lastName}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
         }
       } catch { /* use fallback */ }
     }
@@ -474,5 +474,66 @@ export class ICSGenerator {
     link.download = `ICS_${first.parIcsNumber}_${Date.now()}.pdf`;
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  /** Generate an ICS PDF preview (returns blob URL) from issuance records. */
+  static async generatePreviewFromIssuanceRecords(
+    records: IssuanceRecord[],
+    signatureDate?: string
+  ): Promise<string> {
+    if (!records.length) throw new Error('No records provided');
+    const first = records[0];
+
+    let employeeName = first.employeeName || 'N/A';
+    let position = 'N/A';
+    let office = first.officeName || 'N/A';
+    let nonPlantillaEmployeeName = first.subEmployeeName || '';
+
+    if (first.employeeId) {
+      try {
+        const empResp = await getEmployeeById(first.employeeId);
+        if (empResp.success && empResp.data.length > 0) {
+          const empData = empResp.data[0];
+          employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          position = empData.position?.name || 'N/A';
+          office = empData.office?.name || first.officeName || 'N/A';
+        }
+      } catch { /* use fallback values */ }
+    }
+
+    if (first.subEmployeeId && !nonPlantillaEmployeeName) {
+      try {
+        const npResp = await getEmployeeById(first.subEmployeeId);
+        if (npResp.success && npResp.data.length > 0) {
+          const npData = npResp.data[0];
+          nonPlantillaEmployeeName = `${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''} ${npData.lastName}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
+        }
+      } catch { /* use fallback */ }
+    }
+
+    const rows: ICSRow[] = records.map((r) => ({
+      qty: 1,
+      unit: r.unitOfMeasurement ?? 'Unit',
+      description: r.itemName ?? '',
+      propertyNo: r.propertyNumber ?? '',
+      dateAcquired: r.dateAcquired
+        ? new Date(r.dateAcquired).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })
+        : '',
+      value: r.unitValue ?? null,
+    }));
+
+    const blob = await pdf(
+      <ICSDocument
+        rows={rows}
+        employeeName={employeeName}
+        position={position}
+        office={office}
+        icsNumber={first.parIcsNumber}
+        nonPlantillaEmployeeName={nonPlantillaEmployeeName}
+        signatureDate={signatureDate}
+      />
+    ).toBlob();
+
+    return URL.createObjectURL(blob);
   }
 }

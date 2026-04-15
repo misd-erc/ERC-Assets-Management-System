@@ -38,7 +38,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
     unitOfMeasurement: asset.unitOfMeasurement || '',
     unitValue: asset.unitValue || 0,
     dateAcquired: asset.dateAcquired || '',
-    estimatedUsefulLife: asset.estimatedUsefulLife || 5,
+    estimatedUsefulLife: asset.estimatedUsefulLife ?? 0,
     fiscalDate: asset.fiscalDate || (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
     condition: asset.condition || 'Working',
     movements: asset.movements || [],
@@ -95,7 +95,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         unitOfMeasurement: asset.unitOfMeasurement || '',
         unitValue: asset.unitValue || 0,
         dateAcquired: asset.dateAcquired || '',
-        estimatedUsefulLife: asset.estimatedUsefulLife || 5,
+        estimatedUsefulLife: asset.estimatedUsefulLife ?? 0,
         fiscalDate: asset.fiscalDate || (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
         condition: asset.condition || 'Working',
         movements: asset.movements || [],
@@ -145,8 +145,8 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
       toast.error('Date Acquired is required');
       return;
     }
-    if (!formData.estimatedUsefulLife || formData.estimatedUsefulLife <= 0) {
-      toast.error('Estimated Useful Life is required and must be greater than 0');
+    if (formData.estimatedUsefulLife == null || formData.estimatedUsefulLife < 0) {
+      toast.error('Estimated Useful Life is required and must be 0 or greater');
       return;
     }
 
@@ -173,6 +173,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         dateAssigned: movement.dateAssigned || new Date().toISOString(),
         ptrItrNumber: movement.ptrItrNumber || '',
         parIcsNumber: movement.parIcsNumber || '',
+        rrppeRrspNumber: movement.rrppeRrspNumber || '',
         plantillaEmployeeId: movement.plantillaEmployeeId || 0,
         nonPlantillaEmployeeId: movement.nonPlantillaEmployeeId || 0,
         actualOfficeId: movement.actualOfficeId || 0,

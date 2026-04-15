@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, ChevronRight, Search, FileText, Users, Package } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, FileText, Users, Package, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -480,9 +480,21 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
                 <ChevronLeft className="size-4 mr-2" />
                 Cancel
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (!previewUrl) return;
+                  const w = window.open(previewUrl);
+                  if (w) { w.addEventListener('load', () => w.print()); }
+                }}
+                disabled={loadingPreview || !previewUrl}
+              >
+                <Printer className="size-4 mr-2" />
+                Print
+              </Button>
               <Button onClick={handleDownload} disabled={loadingPreview || !previewUrl} className="bg-teal-600 hover:bg-teal-700">
                 <ChevronRight className="size-4 mr-2" />
-                Download Report
+                Save as PDF
               </Button>
             </div>
           </div>
