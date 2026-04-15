@@ -84,6 +84,7 @@ export function PPEIssuance() {
   });
   const [saving, setSaving] = useState(false);
   const [detailRecords, setDetailRecords] = useState<IssuanceRecord[] | null>(null);
+  const [detailSignatureDate, setDetailSignatureDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Filters & pagination
   const [searchEmployee, setSearchEmployee] = useState('');
@@ -613,18 +614,30 @@ export function PPEIssuance() {
           </DialogHeader>
           {detailRecords && (
             <>
-              <div className="flex justify-end">
+              <div className="flex items-end justify-end gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Signature Date</span>
+                  <Input
+                    type="date"
+                    value={detailSignatureDate}
+                    onChange={(e) => setDetailSignatureDate(e.target.value)}
+                    className="h-8 w-[160px]"
+                  />
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={async () => {
                     if (!detailRecords.length) return;
                     try {
+                      let url: string;
                       if (detailRecords[0].itemGroup === 'PPE') {
-                        await PARGenerator.generateFromIssuanceRecords(detailRecords);
+                        url = await PARGenerator.generatePreviewFromIssuanceRecords(detailRecords, detailSignatureDate);
                       } else {
-                        await ICSGenerator.generateFromIssuanceRecords(detailRecords);
+                        url = await ICSGenerator.generatePreviewFromIssuanceRecords(detailRecords, detailSignatureDate);
                       }
+                      const w = window.open(url);
+                      if (w) { w.addEventListener('load', () => w.print()); }
                     } catch (err) {
                       console.error('Print failed', err);
                       toast.error('Failed to generate PDF');

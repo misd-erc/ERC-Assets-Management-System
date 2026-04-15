@@ -45,6 +45,7 @@ import { ReturnReceiptGenerationModal } from './ReturnReceiptGenerationModal';
 import { IIRUPGenerationModal } from './IIRUPGenerator';
 import { toast } from 'sonner';
 import { RSMIReportModal } from "./RSMIReportModal";
+import { PARICSListModal } from "./PARICSListModal";
 
 
 export function ReportTab() {
@@ -78,6 +79,8 @@ export function ReportTab() {
   const [showIIRUSP, setShowIIRUSP] = useState(false);
   const [showRSMI, setShowRSMI] = useState(false);
   const [showRegistrySPI, setShowRegistrySPI] = useState(false);
+  const [showPARList, setShowPARList] = useState(false);
+  const [showICSList, setShowICSList] = useState(false);
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [registrySPIAssets, setRegistrySPIAssets] = useState<any[]>([]);
   const [customNumber, setCustomNumber] = useState('');
@@ -372,7 +375,7 @@ export function ReportTab() {
       subtitle: 'Property Acknowledgement',
       icon: FileCheck,
       bgColor: 'bg-green-600',
-      action: () => { setSelectedReport('PAR'); setShowItemSelectModal(true); }
+      action: () => setShowPARList(true)
     },
     {
       title: 'PTR',
@@ -414,7 +417,7 @@ export function ReportTab() {
       subtitle: 'Inventory Custodian Slip',
       icon: ClipboardList,
       bgColor: 'bg-red-600',
-      action: () => { setSelectedReport('ICS'); setShowItemSelectModal(true); }
+      action: () => setShowICSList(true)
     },
     {
       title: 'ITR',
@@ -685,6 +688,18 @@ export function ReportTab() {
         <RSMIReportModal
             isOpen={showRSMI}
             onClose={() => setShowRSMI(false)}
+        />
+
+        <PARICSListModal
+            isOpen={showPARList}
+            onClose={() => setShowPARList(false)}
+            reportType="PAR"
+        />
+
+        <PARICSListModal
+            isOpen={showICSList}
+            onClose={() => setShowICSList(false)}
+            reportType="ICS"
         />
 
       </div>
