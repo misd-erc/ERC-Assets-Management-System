@@ -357,9 +357,9 @@ export function SharedAssetFields({
                 id="estimatedUsefulLife"
                 type="number"
                 value={formData.estimatedUsefulLife ?? ''}
-                onChange={(e) => handleInputChange('estimatedUsefulLife', parseInt(e.target.value) || 5)}
-                required={mode === 'create'}
-                className={err(submitted && (!formData.estimatedUsefulLife || formData.estimatedUsefulLife <= 0))}
+                min={0}
+                onChange={(e) => handleInputChange('estimatedUsefulLife', e.target.value === '' ? 0 : parseInt(e.target.value))}
+                className={err(submitted && (formData.estimatedUsefulLife == null || formData.estimatedUsefulLife < 0))}
               />
             </div>
           </div>

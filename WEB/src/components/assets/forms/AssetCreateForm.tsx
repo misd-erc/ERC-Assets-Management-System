@@ -141,8 +141,8 @@ export function AssetCreateForm({ onSubmit, onCancel }: AssetCreateFormProps) {
       toast.error('Date Acquired is required');
       return;
     }
-    if (!formData.estimatedUsefulLife || formData.estimatedUsefulLife <= 0) {
-      toast.error('Estimated Useful Life is required and must be greater than 0');
+    if (formData.estimatedUsefulLife == null || formData.estimatedUsefulLife < 0) {
+      toast.error('Estimated Useful Life is required and must be 0 or greater');
       return;
     }
 
