@@ -2,7 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Download, X, Recycle } from 'lucide-react';
+import { Loader2, Download, X, Recycle, Printer } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import {
@@ -599,9 +599,21 @@ export function ReportTab() {
                     <X className="size-4 mr-2" />
                     Cancel
                   </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      if (!previewUrl) return;
+                      const w = window.open(previewUrl);
+                      if (w) { w.addEventListener('load', () => w.print()); }
+                    }}
+                    disabled={loadingPreview || !previewUrl}
+                  >
+                    <Printer className="size-4 mr-2" />
+                    Print
+                  </Button>
                   <Button onClick={handlePreviewConfirm} disabled={loadingPreview || !previewUrl}>
                     <Download className="size-4 mr-2" />
-                    Confirm Download
+                    Save as PDF
                   </Button>
                 </div>
               </div>

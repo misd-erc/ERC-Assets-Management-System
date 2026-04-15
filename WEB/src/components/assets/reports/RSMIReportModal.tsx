@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Filter, FileText, ChevronDown, ChevronRight, Download, AlertCircle } from 'lucide-react';
+import { Loader2, Filter, FileText, ChevronDown, ChevronRight, Download, AlertCircle, Printer } from 'lucide-react';
 
 import { useRSMIReport } from '@/hooks/supply/useRSMIReport';
 import { getCategories } from '@/api/asset/inventoryApi';
@@ -309,6 +309,30 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
         }
     };
 
+    const handlePrintPDF = async () => {
+        if (selectedItems.size === 0) return;
+        setIsGeneratingPDF(true);
+
+        try {
+            const selectedData = data.filter((group: any, index: number) =>
+                selectedItems.has(group.stockNumber ?? `unknown-stock-${index}`)
+            );
+
+            const reportDate = startDate ? new Date(startDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' }) : new Date().toLocaleDateString('en-PH');
+            const rsmiNumber = `RSMI-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+
+            const blob = await pdf(<RSMIPDFDocument data={selectedData} reportDate={reportDate} rsmiNumber={rsmiNumber} />).toBlob();
+            const url = URL.createObjectURL(blob);
+            const w = window.open(url);
+            if (w) { w.addEventListener('load', () => w.print()); }
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
+        } catch (err) {
+            console.error("Failed to print PDF", err);
+        } finally {
+            setIsGeneratingPDF(false);
+        }
+    };
+
     const isAllSelected = data.length > 0 && selectedItems.size === data.length;
 
     return (
@@ -326,6 +350,16 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                 Generate issuance reports filtered by category and date range.
                             </DialogDescription>
                         </div>
+                        <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            className="shadow-sm"
+                            disabled={selectedItems.size === 0 || isGeneratingPDF}
+                            onClick={handlePrintPDF}
+                        >
+                            <Printer className="w-4 h-4 mr-2" />
+                            Print
+                        </Button>
                         <Button
                             variant="outline"
                             className="shadow-sm bg-blue-50 hover:bg-blue-100 border-blue-200"
@@ -333,8 +367,9 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                             onClick={handleExportPDF}
                         >
                             {isGeneratingPDF ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-                            {isGeneratingPDF ? 'Generating...' : 'Export PDF'}
+                            {isGeneratingPDF ? 'Generating...' : 'Save as PDF'}
                         </Button>
+                        </div>
                     </div>
                 </DialogHeader>
 

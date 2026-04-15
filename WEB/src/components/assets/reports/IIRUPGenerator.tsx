@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, FileText, Download, X } from 'lucide-react';
+import { Loader2, Search, FileText, Download, X, Printer } from 'lucide-react';
 import { toast } from 'sonner';
 
 import {
@@ -701,9 +701,21 @@ export function IIRUPGenerationModal({ isOpen, onClose, reportType }: IIRUPGener
                 <X className="size-4 mr-2" />
                 Back to List
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (!previewUrl) return;
+                  const w = window.open(previewUrl);
+                  if (w) { w.addEventListener('load', () => w.print()); }
+                }}
+                disabled={loadingPreview || !previewUrl}
+              >
+                <Printer className="size-4 mr-2" />
+                Print
+              </Button>
               <Button onClick={handleDownload} disabled={loadingPreview || !previewUrl}>
                 <Download className="size-4 mr-2" />
-                Download PDF
+                Save as PDF
               </Button>
             </div>
           </div>
