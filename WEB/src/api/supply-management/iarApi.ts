@@ -102,17 +102,20 @@ export const editSupplyIAR = async (payload: SupplyIAR): Promise<{ message: stri
     EntityName: payload.entityName,
     FundCluster: payload.fundCluster,
     VendorId: payload.vendorId,
-    PONumber: payload.poNumber,
     OfficeId: payload.officeId,
     DivisionId: payload.divisionId,
     IARNumber: payload.iarNumber,
     IARNumberDate: payload.iarNumberDate,
-    IARInvoiceNumber: payload.iarInvoiceNumber,
-    IARInvoiceNumberDate: payload.iarInvoiceNumberDate,
-    PODate: payload.poDate,
+
+    PONumber: payload.poNumber?.trim() === '' ? null : payload.poNumber,
+    PODate: payload.poDate === '' ? null : payload.poDate,
+    IARInvoiceNumber: payload.iarInvoiceNumber?.trim() === '' ? null : payload.iarInvoiceNumber,
+    IARInvoiceNumberDate: payload.iarInvoiceNumberDate === '' ? null : payload.iarInvoiceNumberDate,
+
     IsActive: payload.isActive,
     isApproved: payload.isApproved,
     ActualDeliveryDate: payload.actualDeliveryDate,
+
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,
   };

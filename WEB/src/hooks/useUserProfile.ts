@@ -3,6 +3,7 @@ import { useAuthStore } from '@/store/auth';
 import { getUserDetails } from '@/api/user-management/authApi';
 import { UserDetails, SystemRole, SystemRoleScope } from '@/types/user';
 import { handleSessionExpired, getSessionToken } from '@/utils/sessionUtils';
+import { secureStorage } from '@/utils/secureStorage';
 
 export const useUserProfile = () => {
   const { systemUserId } = useAuthStore();
@@ -27,11 +28,11 @@ export const useUserProfile = () => {
 
       if (isMounted) {
         // Include profilePictureId from separate localStorage key
-        const profilePictureId = localStorage.getItem('profilePictureId');
+        const profilePictureId = secureStorage.getItem('profilePictureId');
         if (profilePictureId) {
           (data as any).profilePictureId = profilePictureId;
         }
-        localStorage.setItem('userProfile', JSON.stringify(data));
+        secureStorage.setItem('userProfile', JSON.stringify(data));
         setUserProfile(data as UserDetails);
         setLoading(false);
         console.log('[useUserProfile] Profile loaded successfully');
@@ -63,7 +64,7 @@ export const useUserProfile = () => {
     try {
       console.log('[useUserProfile] Refreshing profile...');
       const data = await getUserDetails();
-      localStorage.setItem('userProfile', JSON.stringify(data));
+      secureStorage.setItem('userProfile', JSON.stringify(data));
      setUserProfile(data as UserDetails);
       console.log('[useUserProfile] Profile refreshed successfully');
     } catch (error) {

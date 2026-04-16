@@ -58,12 +58,12 @@ export function RecentActivitiesCard() {
               {activities.map((activity) => {
                 const { icon: Icon, color } = getActivityMeta(activity.action ?? '');
                 return (
-                  <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                  <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors">
                     <div className={`p-2 rounded-full flex-shrink-0 ${color}`}>
                       <Icon className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">{activity.action}</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{activity.action}</p>
                       <div className="flex items-center space-x-1 mt-0.5">
                         <User className="w-3 h-3 text-slate-400" />
                         <p className="text-xs text-slate-500 truncate">{activity.performedBy}</p>

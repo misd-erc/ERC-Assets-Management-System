@@ -84,6 +84,7 @@ export function PPEIssuance() {
   });
   const [saving, setSaving] = useState(false);
   const [detailRecords, setDetailRecords] = useState<IssuanceRecord[] | null>(null);
+  const [detailSignatureDate, setDetailSignatureDate] = useState(new Date().toISOString().split('T')[0]);
 
   // Filters & pagination
   const [searchEmployee, setSearchEmployee] = useState('');
@@ -442,11 +443,11 @@ export function PPEIssuance() {
   };
 
   return (
-    <div className="p-6 pt-20 space-y-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+    <div className="p-2 pt-5 md:pt-20 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold">PPE/SE Issuance</h1>
-          <p className="text-muted-foreground">Issue and renew PPE/SE items per employee with active tracking.</p>
+          <h1 className="text-xl sm:text-2xl font-semibold">PPE/SE Issuance</h1>
+          <p className="text-sm text-muted-foreground">Issue and renew PPE/SE items per employee with active tracking.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button onClick={openNewDialog}>
@@ -460,9 +461,9 @@ export function PPEIssuance() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-4 flex items-center justify-between">
+          <CardContent className="p-3 sm:p-4 flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Total Active Issued Items</p>
               <p className="text-2xl font-semibold">{loading ? '...' : stats.totalActive}</p>
@@ -613,18 +614,30 @@ export function PPEIssuance() {
           </DialogHeader>
           {detailRecords && (
             <>
-              <div className="flex justify-end">
+              <div className="flex items-end justify-end gap-3">
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Signature Date</span>
+                  <Input
+                    type="date"
+                    value={detailSignatureDate}
+                    onChange={(e) => setDetailSignatureDate(e.target.value)}
+                    className="h-8 w-[160px]"
+                  />
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={async () => {
                     if (!detailRecords.length) return;
                     try {
+                      let url: string;
                       if (detailRecords[0].itemGroup === 'PPE') {
-                        await PARGenerator.generateFromIssuanceRecords(detailRecords);
+                        url = await PARGenerator.generatePreviewFromIssuanceRecords(detailRecords, detailSignatureDate);
                       } else {
-                        await ICSGenerator.generateFromIssuanceRecords(detailRecords);
+                        url = await ICSGenerator.generatePreviewFromIssuanceRecords(detailRecords, detailSignatureDate);
                       }
+                      const w = window.open(url);
+                      if (w) { w.addEventListener('load', () => w.print()); }
                     } catch (err) {
                       console.error('Print failed', err);
                       toast.error('Failed to generate PDF');

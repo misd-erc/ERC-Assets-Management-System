@@ -181,8 +181,8 @@ export function AssetsTable({
         <CardContent className="flex items-center justify-center py-8">
           <div className="text-center">
             <Package className="size-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No assets found</h3>
-            <p className="text-gray-600">There are no assets matching your current filters.</p>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No assets found</h3>
+            <p className="text-gray-600 dark:text-slate-400">There are no assets matching your current filters.</p>
           </div>
         </CardContent>
       </Card>
@@ -283,13 +283,13 @@ export function AssetsTable({
 
         {/* Pagination */}
         {assets.length > 0 && (
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
+            <div className="text-xs sm:text-sm text-muted-foreground">
               Showing {totalCount === 0 ? 0 : ((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} assets
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium">Page Size:</label>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <label className="text-xs sm:text-sm font-medium whitespace-nowrap">Size:</label>
                 <select
                   value={pageSize}
                   onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -302,6 +302,9 @@ export function AssetsTable({
                   <option value={100}>100</option>
                 </select>
               </div>
+              <span className="text-xs sm:text-sm whitespace-nowrap">
+                Page {currentPage} of {totalPages}
+              </span>
               <Button
                 variant="outline"
                 size="sm"
@@ -310,9 +313,6 @@ export function AssetsTable({
               >
                 Previous
               </Button>
-              <span className="text-sm">
-                Page {currentPage} of {totalPages}
-              </span>
               <Button
                 variant="outline"
                 size="sm"

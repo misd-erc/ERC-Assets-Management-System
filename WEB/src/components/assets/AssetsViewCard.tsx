@@ -54,8 +54,9 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
   };
 
   const getConditionBadge = (condition: string) => {
-    const styles = {
+    const styles: Record<string, string> = {
       Working: 'bg-green-100 text-green-800 border-green-200',
+      Serviceable: 'bg-green-100 text-green-800 border-green-200',
       'Not Working': 'bg-red-100 text-red-800 border-red-200',
       IIRUP: 'bg-yellow-100 text-yellow-800 border-yellow-200',
       Disposed: 'bg-gray-100 text-gray-800 border-gray-200',
@@ -72,6 +73,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
   const getConditionIcon = (condition: string) => {
     switch (condition) {
       case 'Working':
+      case 'Serviceable':
         return <CheckCircle className="size-4 text-green-600" />;
       case 'Not Working':
       case 'Unserviceable':
@@ -107,14 +109,14 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
   if (asset.group === 'PPE') {
     const ppeAsset = asset as unknown as PPEAsset;
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">{ppeAsset.propertyNumber}</h2>
-            <p className="text-slate-600">{ppeAsset.description}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 break-all">{ppeAsset.propertyNumber}</h2>
+            <p className="text-sm sm:text-base text-slate-600 break-words">{ppeAsset.description}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <Button variant="outline" onClick={() => onEdit(asset)} className="gap-2">
               <Edit className="size-4" />
               Edit
@@ -216,20 +218,20 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <div>
                 <Label className="text-sm font-medium text-slate-600">Unit Value</Label>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(ppeAsset.unitValue)}</p>
+                <p className="text-lg sm:text-2xl font-bold text-slate-900">{formatCurrency(ppeAsset.unitValue)}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Date Acquired</Label>
-                <p className="text-lg text-slate-900">{formatDate(ppeAsset.dateAcquired)}</p>
+                <p className="text-base sm:text-lg text-slate-900">{formatDate(ppeAsset.dateAcquired)}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Estimated Useful Life</Label>
-                <p className="text-lg text-slate-900">{ppeAsset.estimatedUsefulLife} years</p>
+                <p className="text-base sm:text-lg text-slate-900">{ppeAsset.estimatedUsefulLife} years</p>
               </div>
             </div>
           </CardContent>
@@ -245,12 +247,14 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
           </CardHeader>
           <CardContent>
             {ppeAsset.movements && ppeAsset.movements.filter(m => m.isActive !== false).length > 0 ? (
+              <div className="overflow-x-auto -mx-2 px-2">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date Assigned</TableHead>
                     <TableHead>PAR/ICS No.</TableHead>
                     <TableHead>PTR/ITR No.</TableHead>
+                    <TableHead>RRPPE/RRSP No.</TableHead>
                     <TableHead>Employee (Plantilla)</TableHead>
                     <TableHead>Employee (Non-Plantilla)</TableHead>
                     <TableHead>Service/Office</TableHead>
@@ -264,6 +268,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
                       <TableCell>{movement.parIcsNumber || '-'}</TableCell>
                       <TableCell>{movement.ptrItrNumber || '-'}</TableCell>
+                      <TableCell>{(movement as any).rrppeRrspNumber || '-'}</TableCell>
                       <TableCell>
                         {movement.plantillaEmployeeId
                           ? getEmployeeName(movement.plantillaEmployeeId)
@@ -286,9 +291,11 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   ))}
                 </TableBody>
               </Table>
+              </div>
             ) : (
               <p className="text-slate-500">No accountability information available</p>
-            )}
+            )
+          }
           </CardContent>
         </Card>
 
@@ -350,14 +357,14 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
   } else {
     // SE Asset using unified Asset type
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">{asset.propertyNumber}</h2>
-            <p className="text-slate-600">{asset.description}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 break-all">{asset.propertyNumber}</h2>
+            <p className="text-sm sm:text-base text-slate-600 break-words">{asset.description}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <Button variant="outline" onClick={() => onEdit(asset)} className="gap-2">
               <Edit className="size-4" />
               Edit
@@ -459,20 +466,20 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               <div>
                 <Label className="text-sm font-medium text-slate-600">Unit Value</Label>
-                <p className="text-2xl font-bold text-slate-900">{formatCurrency(asset.unitValue)}</p>
+                <p className="text-lg sm:text-2xl font-bold text-slate-900">{formatCurrency(asset.unitValue)}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Date Acquired</Label>
-                <p className="text-lg text-slate-900">{formatDate(asset.dateAcquired)}</p>
+                <p className="text-base sm:text-lg text-slate-900">{formatDate(asset.dateAcquired)}</p>
               </div>
 
               <div>
                 <Label className="text-sm font-medium text-slate-600">Estimated Useful Life</Label>
-                <p className="text-lg text-slate-900">{asset.estimatedUsefulLife} years</p>
+                <p className="text-base sm:text-lg text-slate-900">{asset.estimatedUsefulLife} years</p>
               </div>
             </div>
           </CardContent>
@@ -488,11 +495,13 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
           </CardHeader>
           <CardContent>
             {asset.movements && asset.movements.filter(m => m.isActive !== false).length > 0 ? (
+              <div className="overflow-x-auto -mx-2 px-2">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date Assigned</TableHead>
                     <TableHead>PAR/ITR Number</TableHead>
+                    <TableHead>RRPPE/RRSP No.</TableHead>
                     <TableHead>Employee (Plantilla)</TableHead>
                     <TableHead>Employee (Non-Plantilla)</TableHead>
                     <TableHead>Office</TableHead>
@@ -505,6 +514,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                     <TableRow key={movement.id}>
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
                       <TableCell>{movement.ptrItrNumber || '-'}</TableCell>
+                      <TableCell>{movement.rrppeRrspNumber || '-'}</TableCell>
                       <TableCell>
                         {movement.plantillaEmployeeId
                           ? getEmployeeName(movement.plantillaEmployeeId)
@@ -527,6 +537,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   ))}
                 </TableBody>
               </Table>
+              </div>
             ) : (
               <p className="text-slate-500">No accountability information available</p>
             )}

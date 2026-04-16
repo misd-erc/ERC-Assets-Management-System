@@ -4,6 +4,7 @@ import { Employee, ApiEmployee } from '@/types/asset/UnifiedAsset';
 import { UserDetails, getUserDetails } from '@/api/user-management/authApi';
 import { getAuditTrail } from '@/api/audit/auditApi';
 import { getAuthParams } from '@/utils/auth';
+import { secureStorage } from '@/utils/secureStorage';
 
 export interface UserListResponse {
   success: boolean;
@@ -18,8 +19,8 @@ export interface UserListResponse {
 
 export const getUsers = async (page: number = 1, pageSize: number = 10): Promise<UserListResponse> => {
   // Get system user ID and session key from localStorage
-  const systemUserId = localStorage.getItem('systemUserId') || '';
-  const sessionKey = localStorage.getItem('sessionToken') || '';
+  const systemUserId = secureStorage.getItem('systemUserId') || '';
+  const sessionKey = secureStorage.getItem('sessionToken') || '';
 
   const response = await axiosInstance.get<UserListResponse>(
     `/Users/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}&pageNumber=${page}&pageSize=${pageSize}`
@@ -110,8 +111,8 @@ export const validateUserSession = async (): Promise<UserDetails> => {
  */
 export const getUserAuditTrail = async (page: number = 1, pageSize: number = 10) => {
   // Get system user ID and session key from localStorage
-  const systemUserId = localStorage.getItem('systemUserId') || '';
-  const sessionKey = localStorage.getItem('sessionToken') || '';
+  const systemUserId = secureStorage.getItem('systemUserId') || '';
+  const sessionKey = secureStorage.getItem('sessionToken') || '';
 
   return getAuditTrail(systemUserId, sessionKey, page, pageSize);
 };
@@ -127,8 +128,8 @@ export const editUser = async (payload: {
   isActive: boolean;
   actionBySystemUserId: number;
 }): Promise<{ message: string }> => {
-  const sessionKey = localStorage.getItem('sessionToken') || '';
-  const systemUserId = localStorage.getItem('systemUserId') || '';
+  const sessionKey = secureStorage.getItem('sessionToken') || '';
+  const systemUserId = secureStorage.getItem('systemUserId') || '';
   const requestPayload = {
 
       systemUserId: payload.systemUserId,
@@ -203,7 +204,7 @@ export const editUser = async (payload: {
  */
 export const getUserPhoto = async (fileId: string, userId: string) => {
   // Get session key from localStorage
-  const sessionKey = localStorage.getItem('sessionToken') || '';
+  const sessionKey = secureStorage.getItem('sessionToken') || '';
 
   const response = await axiosInstance.get(
     `/Storage/retrieve/${fileId}?ActionBySystemUserId=${encodeURIComponent(userId)}&SessionKey=${encodeURIComponent(sessionKey)}`,
@@ -216,20 +217,20 @@ export const getUserPhoto = async (fileId: string, userId: string) => {
 
 export const getUsersDetails = async (userId: string): Promise<UserDetails> => {
   // Retrieve tokens directly from localStorage to ensure we use the latest synced values
-  const currentSystemId = String(localStorage.getItem('systemUserId'));
+  const currentSystemId = String(secureStorage.getItem('systemUserId'));
 
 
   if (currentSystemId !== currentSystemId) {
     console.warn('[AuthAPI] Token mismatch detected! Syncing before API call.');
     // Auto-correct by syncing them
     if (userId) {
-      localStorage.setItem('systemUserId', currentSystemId);
+      secureStorage.setItem('systemUserId', currentSystemId);
       console.log('[AuthAPI] Synced systemUserId with ActionBySystemUserIdEncrypted');
     }
   }
 
   // Get session key from localStorage
-  const sessionKey = localStorage.getItem('sessionToken') || '';
+  const sessionKey = secureStorage.getItem('sessionToken') || '';
 
   const response = await axiosInstance.get<ApiResponse<UserDetails>>(
     `/Users/all/${encodeURIComponent(userId)}?ActionBySystemUserId=${encodeURIComponent(currentSystemId)}&SessionKey=${encodeURIComponent(sessionKey)}`
@@ -285,8 +286,8 @@ export interface EmployeeUpdatePayload {
  * @returns Promise with success message
  */
 export const batchUpdateEmployees = async (employees: EmployeeUpdatePayload[]): Promise<ApiResponse<any>> => {
-  const systemUserId = localStorage.getItem('systemUserId') || '';
-  const sessionKey = localStorage.getItem('sessionToken') || '';
+  const systemUserId = secureStorage.getItem('systemUserId') || '';
+  const sessionKey = secureStorage.getItem('sessionToken') || '';
 
   // Remove actionBySystemUserId and sessionKey from individual employees
   const model = employees.map(emp => ({

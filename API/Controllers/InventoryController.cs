@@ -1535,11 +1535,9 @@ namespace API.Controllers
                     UnitValue = model.UnitValue,
                     DateAcquired = model.DateAcquired,
                     FiscalDate = model.FiscalDate,
+                    EstimatedUsefulLife = model.EstimatedUsefulLife,
                     IsActive = model.IsActive
                 };
-
-                if (model.Group == TblPTA.PPE)
-                    pta.EstimatedUsefulLife = model.EstimatedUsefulLife;
 
                 long ptaId = await _editTools.PTA.EditTblPTAAsync(pta, model.ActionBySystemUserId, context);
 

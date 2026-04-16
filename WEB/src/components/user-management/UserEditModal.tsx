@@ -40,6 +40,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { secureStorage } from '@/utils/secureStorage';
 
 // --- Reusable Searchable Select Component ---
 interface SearchableSelectProps {
@@ -248,7 +249,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
 
     try {
       setSaving(true);
-      const token = localStorage.getItem('systemUserId') || '';
+      const token = secureStorage.getItem('systemUserId') || '';
 
       const payload = {
         systemUserId: selectedUser.id,

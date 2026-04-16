@@ -16,6 +16,7 @@ export interface Movement {
   ptaId: number;
   dateAssigned: string;
   ptrItrNumber: string;
+  rrppeRrspNumber?: string;
   parIcsNumber: string;
   plantillaEmployeeId: number | null;
   nonPlantillaEmployeeId: number | null;

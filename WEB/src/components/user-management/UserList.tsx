@@ -39,6 +39,7 @@ import {
 import { UserEditModal } from '@/components/user-management/UserEditModal';
 import { getStatusColor } from '@/utils/colorUtils';
 import { Navigate } from 'react-router-dom';
+import { secureStorage } from '@/utils/secureStorage';
 
 interface UserListProps {
   onAddUser?: () => void;
@@ -117,7 +118,7 @@ export const UserList: React.FC<UserListProps> = ({
 
   const handleChangeRole = async (userId: string, newRole: string) => {
     try {
-      const token = localStorage.getItem('systemUserId') || '';
+      const token = secureStorage.getItem('systemUserId') || '';
       const user = users.find(u => u.id === parseInt(userId, 10));
       if (!user) {
         toast.error('User not found');
@@ -152,12 +153,12 @@ export const UserList: React.FC<UserListProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">User Management</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">User Management</h1>
+          <p className="text-sm text-muted-foreground">
             Manage user accounts, assign roles, and control system access
           </p>
         </div>
@@ -165,7 +166,7 @@ export const UserList: React.FC<UserListProps> = ({
 
       {/* Search and Filters */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-3 sm:p-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2">
               <Label htmlFor="search">Search Users</Label>
@@ -236,7 +237,7 @@ export const UserList: React.FC<UserListProps> = ({
               </TableHeader>
               <TableBody>
                 {paginatedUsers.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-gray-50">
+                  <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/60">
                     <TableCell>
                       <div>
                         <p className="font-medium">{`${user.firstName} ${user.lastName}`}</p>
@@ -285,7 +286,7 @@ export const UserList: React.FC<UserListProps> = ({
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-6">
               <p className="text-sm text-muted-foreground">
                 Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredUsers.length)} of {filteredUsers.length} users
               </p>

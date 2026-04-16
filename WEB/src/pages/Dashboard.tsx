@@ -140,7 +140,7 @@ function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="p-6 pt-20 space-y-6">
+      <div className="p-2 pt-5 md:pt-20 space-y-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -152,16 +152,16 @@ function Dashboard() {
   }
 
   return (
-    <div className="p-6 pt-20 space-y-6">
+    <div className="p-2 pt-5 md:pt-20 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold text-slate-900">Dashboard Overview</h1>
-          <p className="text-slate-600 mt-1">
+          <h1 className="text-3xl font-semibold text-slate-900 dark:text-white">Dashboard Overview</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
             Welcome back, {user?.firstName || 'User'}. Monitor your asset management operations at a glance.
           </p>
         </div>
-        <div className="text-sm text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border">
+        <div className="text-sm text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 px-3 py-2 rounded-lg border dark:border-slate-700">
           <Clock className="w-4 h-4 inline mr-1" />
           Last updated: {new Date().toLocaleTimeString()}
         </div>
@@ -175,14 +175,14 @@ function Dashboard() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-slate-600">{kpi.title}</p>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{kpi.title}</p>
                     <div className={`p-2 rounded-lg ${kpi.color.split(' border')[0]}`}>
                       <kpi.icon className="w-5 h-5" />
                     </div>
                   </div>
-                  <p className="text-3xl font-bold text-slate-900 mb-1">{kpi.value}</p>
-                  <p className="text-xs text-slate-600 font-medium mb-1">{kpi.count}</p>
-                  <p className="text-xs text-slate-500 mb-2">{kpi.description}</p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{kpi.value}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">{kpi.count}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">{kpi.description}</p>
                   <div className="flex items-center">
                     {kpi.changeType === 'neutral' && supplyStats?.lowStockCount
                       ? <AlertTriangle className="w-3 h-3 text-amber-500 mr-1" />

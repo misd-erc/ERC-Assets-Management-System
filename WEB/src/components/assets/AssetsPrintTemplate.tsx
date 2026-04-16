@@ -258,6 +258,7 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>Date Assigned</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>PAR/ICS No.</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>PTR/ITR No.</th>
+                  <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>RRPPE/RRSP No.</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>Employee</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>Service/Office</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>Division</th>
@@ -270,6 +271,7 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
                     <td style={{ padding: '10px' }}>{formatDate(movement.dateAssigned)}</td>
                     <td style={{ padding: '10px' }}>{movement.parIcsNumber || '-'}</td>
                     <td style={{ padding: '10px' }}>{movement.ptrItrNumber || '-'}</td>
+                    <td style={{ padding: '10px' }}>{(movement as any).rrppeRrspNumber || '-'}</td>
                     <td style={{ padding: '10px' }}>
                       {movement.plantillaEmployeeId
                         ? getEmployeeName(movement.plantillaEmployeeId)
@@ -292,50 +294,6 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
             </table>
           </div>
         )}
-
-        {/* History */}
-          {ppeAsset.movements && ppeAsset.movements.length > 0 && (
-            <div style={{ marginBottom: '30px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '15px', color: '#1e40af', borderBottom: '2px solid #e0e7ff', paddingBottom: '8px' }}>
-                ACCOUNTABILITY HISTORY
-              </h2>
-              <div>
-                {ppeAsset.movements.map((entry: any, index: number) => (
-                  <div key={entry.id} style={{ marginBottom: '20px', paddingLeft: '15px', borderLeft: '3px solid #bfdbfe', pageBreakInside: 'avoid' }}>
-                    <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 'bold', color: '#1e40af' }}>
-                      {formatDate(entry.dateAssigned)}
-                    </p>
-                    <table style={{ width: '100%', fontSize: '12px', marginTop: '8px' }}>
-                      <tbody>
-                        <tr>
-                          <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>PTR/ITR Number:</td>
-                          <td style={{ padding: '4px 0', color: '#000' }}>{entry.ptrItrNumber || '-'}</td>
-                        </tr>
-                         <tr>
-                          <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>PAR/ICS Number:</td>
-                          <td style={{ padding: '4px 0', color: '#000' }}>{entry.parIcsNumber || '-'}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>Employee:</td>
-                          <td style={{ padding: '4px 0', color: '#000' }}>{entry.employee?.[0]?.employeeIdOriginal || '-'}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>Division:</td>
-                          <td style={{ padding: '4px 0', color: '#000' }}>
-                            {entry.employee?.[0]?.division?.name || '-'}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style={{ padding: '4px 0', fontWeight: 'bold', color: '#374151', width: '150px' }}>Condition:</td>
-                          <td style={{ padding: '4px 0', color: '#000' }}>{entry.condition || '-'}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
         {/* Footer */}
         <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '2px solid #e5e7eb', fontSize: '11px', color: '#666' }}>
@@ -504,6 +462,7 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
                 <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #d1d5db' }}>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>Date Assigned</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>PAR/ITR</th>
+                  <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>RRPPE/RRSP No.</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>Employee</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>Office</th>
                   <th style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#374151' }}>Division</th>
@@ -515,6 +474,7 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
                   <tr key={movement.id} style={{ borderBottom: '1px solid #e5e7eb', backgroundColor: index % 2 === 0 ? '#fff' : '#f9fafb' }}>
                     <td style={{ padding: '10px' }}>{formatDate(movement.dateAssigned)}</td>
                     <td style={{ padding: '10px' }}>{movement.ptrItrNumber || '-'}</td>
+                    <td style={{ padding: '10px' }}>{(movement as any).rrppeRrspNumber || '-'}</td>
                     <td style={{ padding: '10px' }}>
                       {movement.plantillaEmployeeId
                         ? getEmployeeName(movement.plantillaEmployeeId)

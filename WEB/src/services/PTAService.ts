@@ -1,4 +1,5 @@
 import { Asset } from '@/types/asset/UnifiedAsset';
+import { secureStorage } from '@/utils/secureStorage';
 
 export interface PTAData {
   id: number;
@@ -31,8 +32,8 @@ export interface PTAData {
 export class PTAService {
   static async getAllForRPCPPE(Date: Date, categoryId?: number): Promise<Asset[]> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
@@ -70,8 +71,8 @@ export class PTAService {
 
   static async getAllForSE(Date: Date): Promise<Asset[]> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
@@ -103,8 +104,8 @@ export class PTAService {
 
   static async getAllForSEByEmployee(employeeId: number): Promise<Asset[]> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
       const API_BASE_URL = process.env.REACT_APP_API_URL || '';
       const pageSize = 1000;
       const url = `${API_BASE_URL}/Inventory/pta/se-ppe/all?PageSize=${pageSize}&GroupName=se&EmployeeId=${employeeId}&ActionBySystemUserId=${actionBySystemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
@@ -123,8 +124,8 @@ export class PTAService {
 
   static async getAllForSEByEmployeeAndDate(employeeId: number, date: Date): Promise<Asset[]> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
       const API_BASE_URL = process.env.REACT_APP_API_URL || '';
       const pageSize = 1000;
       const asOfDate = date.toISOString().split('T')[0];

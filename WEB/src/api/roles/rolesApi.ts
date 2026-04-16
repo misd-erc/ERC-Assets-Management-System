@@ -1,5 +1,6 @@
 ﻿import axiosInstance from '@/lib/axios';
 import { ApiResponse } from '@/types';
+import { secureStorage } from '@/utils/secureStorage';
 
 export interface SystemRoleScope {
   module: {
@@ -73,8 +74,8 @@ export const getAllSystemRoles = async (params: PaginationGenericQueryParams): P
   pageNumber: number;
   pageSize: number;
 }> => {
-  const sessionKey = localStorage.getItem('sessionToken') || '';
-  params.actionBySystemUserId = localStorage.getItem('systemUserId') || '';
+  const sessionKey = secureStorage.getItem('sessionToken') || '';
+  params.actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
   const queryParams = new URLSearchParams({
     PageNumber: params.pageNumber.toString(),
     PageSize: params.pageSize.toString(),
@@ -103,8 +104,8 @@ export const getAllSystemRoles = async (params: PaginationGenericQueryParams): P
 };
 
 export const getSystemRoles = async (): Promise<SystemRoleResponseModel[]> => {
-      const systemUserId = localStorage.getItem('systemUserId') || '';
-const sessionKey = localStorage.getItem('sessionToken') || '';
+      const systemUserId = secureStorage.getItem('systemUserId') || '';
+const sessionKey = secureStorage.getItem('sessionToken') || '';
   const response = await axiosInstance.get<ApiResponse<SystemRoleResponseModel[]>>(
     `/Roles/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}`
   );
@@ -115,7 +116,7 @@ export const getSystemRoleById = async (
   systemRoleId: number,
   params: SoloQueryParams
 ): Promise<SystemRoleResponseModel> => {
-  const sessionKey = localStorage.getItem('sessionToken') || '';
+  const sessionKey = secureStorage.getItem('sessionToken') || '';
 
   const queryParams = new URLSearchParams({
     ActionBySystemUserId: params.actionBySystemUserId,
@@ -134,7 +135,7 @@ export const getSystemRoleById = async (
 };
 
 export const editSystemRole = async (params: EditSystemRoleQueryParams): Promise<{ systemRoleId: number }> => {
-  const sessionKey = localStorage.getItem('sessionToken') || '';
+  const sessionKey = secureStorage.getItem('sessionToken') || '';
 
   const payload = {
     SystemRoleId: params.systemRoleId,
@@ -159,7 +160,7 @@ export const editSystemRole = async (params: EditSystemRoleQueryParams): Promise
 };
 
 export const deleteSystemRole = async (roleId: number, actionBySystemUserId: string): Promise<void> => {
-  const sessionKey = localStorage.getItem('sessionToken') || '';
+  const sessionKey = secureStorage.getItem('sessionToken') || '';
 
   const queryParams = new URLSearchParams({
     ActionBySystemUserId: actionBySystemUserId,

@@ -208,7 +208,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem, grou
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl overflow-y-auto max-h-[90vh]">
+      <DialogContent className="w-[95vw] sm:max-w-2xl overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{getTitle()}</DialogTitle>
           <DialogDescription>
@@ -216,7 +216,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem, grou
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Item Code</Label>
               <Input
@@ -249,7 +249,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem, grou
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Quantity</Label>
               <Input
@@ -280,7 +280,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem, grou
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Category</Label>
               <SearchableSelect
@@ -304,7 +304,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem, grou
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Storage Location</Label>
               <SearchableSelect

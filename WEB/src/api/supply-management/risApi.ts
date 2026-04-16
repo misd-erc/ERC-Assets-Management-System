@@ -26,6 +26,7 @@ const mapVwSupplyRIS = (raw: any): VwSupplyRIS => ({
   risIssuedDate: raw.risIssuedDate,
   receivedBySystemUser: raw.receivedBySystemUser,
   risReceivedDate: raw.risReceivedDate,
+  isApproved: raw.isApproved,
   isActive: raw.isActive ?? true,
   createdAt: raw.createdAt,
   items: raw.items?.map(mapVwSupplyRISItem) // if included

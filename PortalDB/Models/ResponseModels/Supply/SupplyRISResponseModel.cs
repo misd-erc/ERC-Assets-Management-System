@@ -29,6 +29,7 @@ namespace PortalDB.Models.ResponseModels.Supply
         public DateTime? RISIssuedDate { get; set; }
         public UserBasicResponseModel? ReceivedBySystemUser { get; set; }
         public DateTime? RISReceivedDate { get; set; }
+        public bool IsApproved { get; set; } = false;
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; }
 

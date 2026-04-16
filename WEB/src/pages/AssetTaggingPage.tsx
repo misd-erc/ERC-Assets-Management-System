@@ -159,18 +159,18 @@ export default function AssetTaggingPage() {
   const activeTemplate = (TAG_TEMPLATES.find((t) => t.id === tagTemplate) || TAG_TEMPLATES[0]) as TagTemplate;
 
   return (
-    <div className="p-6 pt-20 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-2 pt-5 md:pt-20 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
         <div>
-          <h2 className="text-3xl font-semibold">Asset Tag Generator</h2>
-          <p className="text-muted-foreground">Generate QR-ready labels for PPE and SE assets</p>
+          <h2 className="text-2xl sm:text-3xl font-semibold">Asset Tag Generator</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">Generate QR-ready labels for PPE and SE assets</p>
         </div>
         <div className="flex gap-2">
          
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-3">
         <TagConfigurationCard
           tagTemplate={tagTemplate}
           tagTemplates={TAG_TEMPLATES}

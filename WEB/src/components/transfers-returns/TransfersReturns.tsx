@@ -75,11 +75,11 @@ export function TransfersReturns() {
   };
 
   return (
-    <div className="p-6 pt-20 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-2 pt-5 md:pt-20 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
-          <h1 className="text-2xl">Transfers & Returns</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl">Transfers & Returns</h1>
+          <p className="text-sm text-muted-foreground">
             Manage property transfers (PTR/ITR) and returns (RRPE/RRSP)
           </p>
         </div>
@@ -87,56 +87,56 @@ export function TransfersReturns() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Active PTR</p>
-                <p className="text-2xl mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground">Active PTR</p>
+                <p className="text-lg sm:text-2xl mt-1">
                   {statsLoading ? '...' : statistics.activePTR}
                 </p>
               </div>
-              <Package className="w-8 h-8 text-blue-600" />
+              <Package className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Active ITR</p>
-                <p className="text-2xl mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground">Active ITR</p>
+                <p className="text-lg sm:text-2xl mt-1">
                   {statsLoading ? '...' : statistics.activeITR}
                 </p>
               </div>
-              <Package className="w-8 h-8 text-purple-600" />
+              <Package className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" />
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Active Returns PPE</p>
-                <p className="text-2xl mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground">Active Returns PPE</p>
+                <p className="text-lg sm:text-2xl mt-1">
                   {statsLoading ? '...' : statistics.activeReturnsPPE}
                 </p>
               </div>
-              <RefreshCw className="w-8 h-8 text-amber-600" />
+              <RefreshCw className="w-6 h-6 sm:w-8 sm:h-8 text-amber-600" />
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Active Returns SE</p>
-                <p className="text-2xl mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground">Active Returns SE</p>
+                <p className="text-lg sm:text-2xl mt-1">
                   {statsLoading ? '...' : statistics.activeReturnsSE}
                 </p>
               </div>
-              <RefreshCw className="w-8 h-8 text-green-600" />
+              <RefreshCw className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -152,7 +152,7 @@ export function TransfersReturns() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="ptr" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
               <TabsTrigger value="ptr">PTR (PPE)</TabsTrigger>
               <TabsTrigger value="itr">ITR (SE)</TabsTrigger>
               <TabsTrigger value="rrpe">RRPE</TabsTrigger>

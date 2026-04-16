@@ -60,6 +60,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                         PTAId = temp.movement.PTAId,
                         DateAssigned = temp.movement.DateAssigned,
                         PtrItrNumber = temp.movement.PTRITRNumber ?? string.Empty,
+                        RrppeRrspNumber = temp.movement.RRPPERRSPNumber ?? string.Empty,
                         ParIcsNumber = temp.movement.PARICSNumber ?? string.Empty,
                         PlantillaEmployeeId = temp.movement.PlantillaEmployeeId,
                         NonPlantillaEmployeeId = temp.movement.NonPlantillaEmployeeId,

@@ -4,6 +4,7 @@ import { getAllAuditTrail } from '@/api/audit/auditApi';
 import { AuditTrailItem } from '@/types/audit';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth';
+import { secureStorage } from '@/utils/secureStorage';
 
 const AuditLogs: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<AuditTrailItem[]>([]);
@@ -31,8 +32,8 @@ const AuditLogs: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const token = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       if (!token || !sessionKey) {
         setError('Authentication required');
@@ -81,7 +82,7 @@ const AuditLogs: React.FC = () => {
   };
 
   return (
-    <div className="p-6 pt-20 space-y-6">
+    <div className="p-2 pt-5 md:pt-20 space-y-4 sm:space-y-6">
       <AuditLogsHeader
         totalLogs={totalLogs}
         todayLogs={todayLogs}

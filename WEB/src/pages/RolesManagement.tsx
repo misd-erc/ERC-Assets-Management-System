@@ -10,6 +10,7 @@ import { RoleDialog } from '@/components/roles-management/RoleDialog';
 import { DeleteRoleDialog } from '@/components/roles-management/DeleteRoleDialog';
 import { getSystemRoleById, deleteSystemRole } from '@/api/roles/rolesApi';
 import { toast } from 'sonner';
+import { secureStorage } from '@/utils/secureStorage';
 
 export function RolesManagement() {
   const { systemUserId } = useAuthStore();
@@ -32,7 +33,7 @@ export function RolesManagement() {
       });
     } else {
       console.log('[RolesManagement] No systemUserId available, checking localStorage...');
-      const storedSystemUserId = localStorage.getItem('systemUserId');
+      const storedSystemUserId = secureStorage.getItem('systemUserId');
       if (storedSystemUserId) {
         console.log('[RolesManagement] Found systemUserId in localStorage:', storedSystemUserId);
         fetchRoles({
@@ -66,7 +67,7 @@ export function RolesManagement() {
   );
 
   const handleAddRole = async (roleData: Omit<Role, 'id' | 'userCount' | 'createdAt' | 'isActive' | 'isDeleted'>) => {
-    const userId = systemUserId || localStorage.getItem('systemUserId');
+    const userId = systemUserId || secureStorage.getItem('systemUserId');
     if (!userId) {
       console.error('[RolesManagement] No systemUserId available for creating role');
       return;
@@ -117,7 +118,7 @@ export function RolesManagement() {
   const handleEditRole = async (roleData: Omit<Role, 'id' | 'userCount' | 'createdAt' | 'isActive' | 'isDeleted'>) => {
     if (!editingRole) return;
 
-    const userId = systemUserId || localStorage.getItem('systemUserId');
+    const userId = systemUserId || secureStorage.getItem('systemUserId');
     if (!userId) {
       console.error('[RolesManagement] No systemUserId available for editing role');
       return;
@@ -167,7 +168,7 @@ export function RolesManagement() {
   };
 
   const handleDeleteRole = async (roleId: number) => {
-    const userId = systemUserId || localStorage.getItem('systemUserId');
+    const userId = systemUserId || secureStorage.getItem('systemUserId');
     if (!userId) {
       console.error('[RolesManagement] No systemUserId available for deleting role');
       return;
@@ -195,7 +196,7 @@ export function RolesManagement() {
   const handleEditRoleClick = async (role: Role) => {
     setEditingLoading(true);
     try {
-      const userId = systemUserId || localStorage.getItem('systemUserId');
+      const userId = systemUserId || secureStorage.getItem('systemUserId');
       if (!userId) {
         toast.error('No user ID available');
         return;
@@ -236,7 +237,7 @@ export function RolesManagement() {
 
   if (loading) {
     return (
-      <div className="pl-64 pt-16 flex items-center justify-center min-h-screen">
+      <div className="pt-16 md:pl-64 flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading roles...</div>
       </div>
     );
@@ -244,14 +245,14 @@ export function RolesManagement() {
 
   if (error) {
     return (
-      <div className="pl-64 pt-16 flex items-center justify-center min-h-screen">
+      <div className="pt-16 md:pl-64 flex items-center justify-center min-h-screen">
         <div className="text-red-500">Error: {error}</div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 pt-20 space-y-6">
+    <div className="p-2 pt-5 md:pt-20 space-y-4 sm:space-y-6">
       <RolesHeader onAddRole={() => setShowAddRole(true)} />
 
       <SearchAndSummary

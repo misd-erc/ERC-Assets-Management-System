@@ -1,5 +1,6 @@
 ﻿import { toast } from 'sonner';
 import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
+import { secureStorage } from './secureStorage';
 
 /**
  * Session Management Utilities
@@ -11,7 +12,7 @@ import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
  * @returns The systemUserId token or null if not found
  */
 export const getSessionToken = (): string | null => {
-  return localStorage.getItem('systemUserId');
+  return secureStorage.getItem('systemUserId');
 };
 
 /**
@@ -38,7 +39,7 @@ export const clearSession = (): void => {
   ];
 
   sessionKeys.forEach(key => {
-    localStorage.removeItem(key);
+    secureStorage.removeItem(key);
   });
 
   console.log('[Session] All session data cleared');
@@ -104,12 +105,12 @@ export const isSessionError = (response: any): boolean => {
  */
 export const setSessionToken = (): void => {
   try {
-    const userRaw = localStorage.getItem('user');
+    const userRaw = secureStorage.getItem('user');
     const parsedUser = userRaw ? JSON.parse(userRaw) : null;
     const userId = typeof parsedUser?.id === 'string' ? parsedUser.id.trim() : null;
 
     if (userId) {
-      localStorage.setItem('systemUserId', userId);
+      secureStorage.setItem('systemUserId', userId);
       console.log('[Session] Token updated from user.id');
     } else {
       console.warn('[Session] No valid user.id found, keeping previous token');
@@ -124,11 +125,11 @@ export const setSessionToken = (): void => {
  * Ensures both tokens are identical, using ActionBySystemUserId as the source of truth
  */
 export const syncSessionIds = (): void => {
-  const systemId = localStorage.getItem('systemUserId');
-  const actionId = localStorage.getItem('ActionBySystemUserId');
+  const systemId = secureStorage.getItem('systemUserId');
+  const actionId = secureStorage.getItem('ActionBySystemUserId');
 
   if (actionId && systemId !== actionId) {
-    localStorage.setItem('systemUserId', actionId);
+    secureStorage.setItem('systemUserId', actionId);
     console.log('[Session] Synced systemUserId with ActionBySystemUserId');
   }
 };
@@ -138,7 +139,7 @@ export const syncSessionIds = (): void => {
  * @param sessionKey The session key to store
  */
 export const setSessionKey = (sessionKey: string): void => {
-  localStorage.setItem('sessionToken', sessionKey);
+  secureStorage.setItem('sessionToken', sessionKey);
   console.log('[Session] Session key stored in localStorage');
 };
 
@@ -147,7 +148,7 @@ export const setSessionKey = (sessionKey: string): void => {
  * @returns true if session is expired or invalid, false otherwise
  */
 export const isSessionExpired = (): boolean => {
-  const expiresAt = localStorage.getItem('expiresAt');
+  const expiresAt = secureStorage.getItem('expiresAt');
   if (!expiresAt) {
     return true; // No expiration time means invalid session
   }
@@ -168,14 +169,14 @@ export const isSessionExpired = (): boolean => {
  */
 export const getSessionDebugInfo = (): Record<string, string | null> => {
   return {
-    systemUserId: localStorage.getItem('systemUserId'),
-    userProfile: localStorage.getItem('userProfile'),
-    userDetails: localStorage.getItem('userDetails'),
-    token: localStorage.getItem('token'),
-    authToken: localStorage.getItem('authToken'),
-    user: localStorage.getItem('user'),
-    sessionToken: localStorage.getItem('sessionToken'),
-    expiresAt: localStorage.getItem('expiresAt'),
+    systemUserId: secureStorage.getItem('systemUserId'),
+    userProfile: secureStorage.getItem('userProfile'),
+    userDetails: secureStorage.getItem('userDetails'),
+    token: secureStorage.getItem('token'),
+    authToken: secureStorage.getItem('authToken'),
+    user: secureStorage.getItem('user'),
+    sessionToken: secureStorage.getItem('sessionToken'),
+    expiresAt: secureStorage.getItem('expiresAt'),
   };
 };
 

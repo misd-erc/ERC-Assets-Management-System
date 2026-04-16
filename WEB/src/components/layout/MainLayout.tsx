@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+// MainLayout.tsx
+import React, { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 // PAGES
 import Dashboard from "@/pages/Dashboard";
@@ -26,6 +28,16 @@ import AssetTaggingPage from "@/pages/AssetTaggingPage";
 export default function MainLayout() {
   const [activeModule, setActiveModule] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
+  // On mobile, sidebar starts closed; on desktop, starts expanded
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    } else {
+      setSidebarOpen(true);
+    }
+  }, [isMobile]);
 
   const renderPage = () => {
     switch (activeModule) {
@@ -85,6 +97,14 @@ export default function MainLayout() {
     }
   };
 
+  // Calculate margin based on sidebar state (desktop only)
+  const getContentMargin = () => {
+    if (isMobile) {
+      return 0; // No margin on mobile
+    }
+    return sidebarOpen ? 'ml-64' : 'ml-16';
+  };
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -94,14 +114,15 @@ export default function MainLayout() {
         onOpenChange={setSidebarOpen}
       />
 
-      <div className={`flex flex-col flex-1 overflow-hidden transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+      <div className={`flex flex-col flex-1 overflow-hidden transition-all duration-300 ${getContentMargin()}`}>
         <TopBar
           onNavigate={setActiveModule}
           sidebarOpen={sidebarOpen}
           onMenuClick={() => setSidebarOpen(o => !o)}
+          isMobile={isMobile}
         />
 
-        <div className="flex-1 overflow-auto p-6">
+        <div className={`flex-1 overflow-auto ${isMobile ? 'pt-16' : 'pt-16'} p-4 sm:p-6`}>
           {renderPage()}
         </div>
       </div>

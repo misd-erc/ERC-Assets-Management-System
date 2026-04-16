@@ -1,6 +1,7 @@
 ﻿import { ppeApi } from '@/api/asset/ppe';
 import { PPEAsset, Movement } from '@/types/asset/PPEAsset';
 import { normalizeMovement } from '@/utils/normalizer';
+import { secureStorage } from '@/utils/secureStorage';
 
 export class PPEService {
   // Mocked data for testing and to prevent errors
@@ -73,8 +74,8 @@ export class PPEService {
     endDate?: string;
   }): Promise<{ items: PPEAsset[]; totalCount: number }> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       // Call API with pagination parameters hardcoded here for example,
       // ideally you'd pass them from PPEList or elsewhere
@@ -115,8 +116,8 @@ export class PPEService {
 
   static async getById(id: string): Promise<PPEAsset> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
       const response: any = await ppeApi.getById(id, actionBySystemUserId, sessionKey);
       
       let apiItem = response?.data;
@@ -137,8 +138,8 @@ export class PPEService {
 
   static async create(data: Omit<PPEAsset, 'id' | 'dateEncoded'>): Promise<PPEAsset> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       const apiData = {
         propertyNumber: data.propertyNumber,
@@ -261,8 +262,8 @@ export class PPEService {
 
   static async update(id: string, data: Partial<PPEAsset>): Promise<PPEAsset> {
     try {
-      const actionBySystemUserId = localStorage.getItem('systemUserId') || '';
-      const sessionKey = localStorage.getItem('sessionToken') || '';
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
 
       const apiData = {
         id,

@@ -5,6 +5,7 @@ import { generateSessionToken, saveSession, loadSession, clearSession as clearAu
 import { clearSession, setSessionToken, syncSessionIds, setSessionKey, getSessionToken } from '@/utils/sessionUtils';
 import { encrypt, decrypt } from '@/utils/encryption';
 import { toast } from 'sonner';
+import { secureStorage } from '@/utils/secureStorage';
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   // Initialize from localStorage
@@ -35,13 +36,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         console.log('[AuthStore] Session found, validating...');
 
         // Check if userDetails exist in localStorage
-        const storedUserDetails = localStorage.getItem('userDetails');
+        const storedUserDetails = secureStorage.getItem('userDetails');
         if (!storedUserDetails && session.systemUserId) {
           console.log('[AuthStore] Fetching user details...');
           // Fetch user details if not present
           const userDetails = await getUserDetails();
           const encryptedUserDetails = encrypt(JSON.stringify(userDetails));
-          localStorage.setItem('userDetails', encryptedUserDetails);
+          secureStorage.setItem('userDetails', encryptedUserDetails);
 
           // Check user access after fetching details
           const { checkUserAccess } = await import('../../utils/auth');
@@ -92,7 +93,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       console.log('[AuthStore] Validating user...');
       const result = await validateUser(userInfo);
 
-      localStorage.setItem('systemUserId', JSON.stringify(result.systemUserId));
+      secureStorage.setItem('systemUserId', JSON.stringify(result.systemUserId));
 
       setSessionToken();
 
@@ -129,7 +130,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // Fetch and store user details
       const userDetails = await getUserDetails();
       const encryptedUserDetails = encrypt(JSON.stringify(userDetails));
-      localStorage.setItem('userDetails', encryptedUserDetails);
+      secureStorage.setItem('userDetails', encryptedUserDetails);
 
       // Use the sessionKey from the API response instead of generating a random one
       const sessionToken = result.sessionKey;
@@ -165,7 +166,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       setSessionKey(sessionToken);
 
       // Remove user from localStorage as requested
-      localStorage.removeItem('user');
+      secureStorage.removeItem('user');
 
       set({
         isAuthenticated: true,
@@ -210,8 +211,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       });
 
       // Update stored token
-      localStorage.setItem('authToken', result.token);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      secureStorage.setItem('authToken', result.token);
+      secureStorage.setItem('user', JSON.stringify(updatedUser));
 
       // Update session token using the correct user.id
       setSessionToken();

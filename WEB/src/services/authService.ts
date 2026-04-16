@@ -1,5 +1,6 @@
 ﻿import { User } from '@/types';
 import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
+import { secureStorage } from '@/utils/secureStorage';
 
 export interface SessionData {
   sessionToken: string;
@@ -23,7 +24,7 @@ export const generateSessionToken = (): string => {
  * Retrieves systemUserId from localStorage
  */
 export const getSystemUserId = (): string | null => {
-  return localStorage.getItem('systemUserId');
+  return secureStorage.getItem('systemUserId');
 };
 
 /**
@@ -35,10 +36,10 @@ export const saveSession = (sessionData: SessionData): void => {
     ...sessionData.user,
     id: sessionData.systemUserId
   };
-  localStorage.setItem('sessionToken', sessionData.sessionToken);
-  localStorage.setItem('systemUserId', sessionData.systemUserId);
-  localStorage.setItem('expiresAt', sessionData.expiresAt);
-  localStorage.setItem('user', JSON.stringify(updatedUser));
+  secureStorage.setItem('sessionToken', sessionData.sessionToken);
+  secureStorage.setItem('systemUserId', sessionData.systemUserId);
+  secureStorage.setItem('expiresAt', sessionData.expiresAt);
+  secureStorage.setItem('user', JSON.stringify(updatedUser));
 };
 
 /**
@@ -46,10 +47,10 @@ export const saveSession = (sessionData: SessionData): void => {
  * Returns null if session is invalid or expired
  */
 export const loadSession = (): SessionData | null => {
-  const sessionToken = localStorage.getItem('sessionToken');
-  const systemUserId = localStorage.getItem('systemUserId');
-  const expiresAt = localStorage.getItem('expiresAt');
-  const userStr = localStorage.getItem('user');
+  const sessionToken = secureStorage.getItem('sessionToken');
+  const systemUserId = secureStorage.getItem('systemUserId');
+  const expiresAt = secureStorage.getItem('expiresAt');
+  const userStr = secureStorage.getItem('user');
 
   if (!sessionToken || !systemUserId || !expiresAt || !userStr) {
     return null;
@@ -83,13 +84,13 @@ export const loadSession = (): SessionData | null => {
  * Clears all session data from localStorage
  */
 export const clearSession = (): void => {
-  localStorage.removeItem('sessionToken');
-  localStorage.removeItem('systemUserIdEncrypted');
-  localStorage.removeItem('systemUserId');
-  localStorage.removeItem('ActionBySystemUserIdEncrypted');
-  localStorage.removeItem('ActionBySystemUserId');
-  localStorage.removeItem('expiresAt');
-  localStorage.removeItem('user');
+  secureStorage.removeItem('sessionToken');
+  secureStorage.removeItem('systemUserIdEncrypted');
+  secureStorage.removeItem('systemUserId');
+  secureStorage.removeItem('ActionBySystemUserIdEncrypted');
+  secureStorage.removeItem('ActionBySystemUserId');
+  secureStorage.removeItem('expiresAt');
+  secureStorage.removeItem('user');
 };
 
 

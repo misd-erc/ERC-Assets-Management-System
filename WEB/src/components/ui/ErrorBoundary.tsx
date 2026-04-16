@@ -36,10 +36,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong</h1>
-            <p className="text-gray-600 mb-4">Please refresh the page or contact support if the problem persists.</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Something went wrong</h1>
+            <p className="text-gray-600 dark:text-slate-400 mb-4">Please refresh the page or contact support if the problem persists.</p>
             <button
               onClick={this.resetError}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mr-4"

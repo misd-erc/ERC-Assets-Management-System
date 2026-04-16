@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
+using Org.BouncyCastle.Utilities;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
 using PortalDB.Entities.ASSET.Delivery;
@@ -18,6 +19,7 @@ using PortalDB.Models.Responses;
 using PortalDB.Services;
 using PortalTools.Composition;
 using PortalTools.Services;
+using System.Text;
 using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace API.Controllers
@@ -407,9 +409,25 @@ namespace API.Controllers
                         };
                     });
 
-                // 4. Fetch all RIS items and sum IssueQuantity per group (code/description)
-                var risItems = await _getTools.Supply.GetTblSupplyRISItems(context).ToListAsync();
-                var issuedStockGroup = risItems
+                // ===== 4. Fetch fully completed RIS IDs & sum IssueQuantity =====
+
+                // 4a. Get the IDs of fully completed RIS records (Runs highly efficiently in SQL)
+                var fullyCompletedRisIds = await context.Set<TblSupplyRIS>()
+                    .Where(r => r.IsApproved)
+                    .Select(r => r.Id)
+                    .ToListAsync();
+
+                var risItemsQuery = _getTools.Supply.GetTblSupplyRISItems(context);
+
+                // 4b. Filter RIS items by those valid IDs at the DB level, then pull to memory
+                var filteredRisItems = risItemsQuery != null
+                    ? await risItemsQuery
+                        .Where(x => x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value))
+                        .ToListAsync()
+                    : new List<TblSupplyRISItem>();
+
+                // 4c. Group by Code/Description and sum the issued quantities (Runs safely in C# memory for decrypted fields)
+                var issuedStockGroup = filteredRisItems
                     .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.ItemDescription))
                     .GroupBy(x => new { x.StockNumber, x.ItemDescription })
                     .Select(g => new
@@ -495,45 +513,97 @@ namespace API.Controllers
                 string targetCode = targetItem.Code ?? string.Empty;
                 string targetDescription = targetItem.Description ?? string.Empty;
 
-                // 2. Fetch all supply items
-                IEnumerable<TblSupplyItem> allItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+                // ===== 2. Fetch and decrypt supply items (Additions) =====
+                var supplyItemsQuery = _getTools.Supply.GetTblSupplyItems(context);
+                var allSupplyItems = supplyItemsQuery != null
+                    ? await supplyItemsQuery.ToListAsync()
+                    : new List<TblSupplyItem>();
 
-                // 3. Filter by matching Code and Description
-                var filteredItems = allItems.Where(x =>
-                    (x.Code ?? string.Empty).Equals(targetCode, StringComparison.OrdinalIgnoreCase) &&
-                    (x.Description ?? string.Empty).Equals(targetDescription, StringComparison.OrdinalIgnoreCase));
+                // Sort by CreatedAt Ascending (Oldest First) to prepare for FIFO deduction
+                var matchedSupplyItems = allSupplyItems
+                    .Where(x => (x.Code ?? string.Empty).Equals(targetCode, StringComparison.OrdinalIgnoreCase) &&
+                                (x.Description ?? string.Empty).Equals(targetDescription, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(x => x.CreatedAt)
+                    .ToList();
 
-                // 4. Apply search filter if provided (search across Code and Description)
+                // ===== 3. Fetch Fully Completed RIS Items & Calculate Total Issued =====
+                var fullyCompletedRisIds = await context.Set<TblSupplyRIS>()
+                    .Where(r => r.IsApproved)
+                    .Select(r => r.Id)
+                    .ToListAsync();
+
+                var risItemsQuery = _getTools.Supply.GetTblSupplyRISItems(context);
+                var filteredRisItems = risItemsQuery != null
+                    ? await risItemsQuery
+                        .Where(x => x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value))
+                        .ToListAsync()
+                    : new List<TblSupplyRISItem>();
+
+                long totalIssuedQuantity = filteredRisItems
+                    .Where(x => x.StockNumber == targetCode && x.ItemDescription == targetDescription)
+                    .Sum(x => x.IssueQuantity);
+
+                // ===== 4. Apply FIFO (First-In, First-Out) Deduction =====
+                // We deduct the total issued quantity from the oldest batches first.
+                var itemsWithRemainingQty = new List<dynamic>();
+                long remainingToDeduct = totalIssuedQuantity;
+
+                foreach (var item in matchedSupplyItems)
+                {
+                    long batchOriginalQty = item.Quantity ?? 0;
+                    long batchRemainingQty = batchOriginalQty;
+
+                    if (remainingToDeduct > 0)
+                    {
+                        if (remainingToDeduct >= batchOriginalQty)
+                        {
+                            //This whole batch is used up
+                            batchRemainingQty = 0;
+                            remainingToDeduct -= batchOriginalQty;
+                        }
+                        else
+                        {
+                            //Only part of this batch is used up
+                            batchRemainingQty = batchOriginalQty - remainingToDeduct;
+                            remainingToDeduct = 0;
+                        }
+                    }
+
+                    itemsWithRemainingQty.Add(new { Item = item, RemainingQty = batchRemainingQty });
+                }
+
+                // ===== 5. Apply Search & Date Filters =====
+                var filteredItems = itemsWithRemainingQty.AsEnumerable();
+
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
                     string searchLower = model.SearchString.ToLower();
                     filteredItems = filteredItems.Where(x =>
-                        (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
+                        (x.Item.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Item.Description ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
-                // 5. Apply date filters
                 if (model.StartDate.HasValue)
-                    filteredItems = filteredItems.Where(x => x.CreatedAt >= model.StartDate.Value);
+                    filteredItems = filteredItems.Where(x => x.Item.CreatedAt >= model.StartDate.Value);
 
                 if (model.EndDate.HasValue)
-                    filteredItems = filteredItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+                    filteredItems = filteredItems.Where(x => x.Item.CreatedAt <= model.EndDate.Value);
 
-                // 6. Count total items before pagination
+                // ===== 6. Count, Paginate & Re-sort (Newest First for UI) =====
                 int totalCount = filteredItems.Count();
-
-                // 7. Apply pagination and ordering
                 int skip = (model.PageNumber - 1) * model.PageSize;
+
                 var pagedItems = filteredItems
-                    .OrderByDescending(x => x.CreatedAt)
+                    .OrderByDescending(x => x.Item.CreatedAt)
                     .Skip(skip)
                     .Take(model.PageSize)
                     .ToList();
 
-                // 8. Map to response model (including related entities)
+                // ===== 7. Map to Response Model =====
                 var supplyItemsResponses = new List<SupplyItemResponseModel>();
-                foreach (var item in pagedItems)
+                foreach (var x in pagedItems)
                 {
+                    TblSupplyItem item = x.Item;
                     var response = new SupplyItemResponseModel
                     {
                         Id = item.Id,
@@ -542,7 +612,10 @@ namespace API.Controllers
                         Category = await _getTools.PTA.GetTblPTACategoryAsync(item.CategoryId, context),
                         MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(item.MeasurementUnitId, context),
                         Description = item.Description ?? string.Empty,
-                        Quantity = item.Quantity,
+
+                        // MAP THE CALCULATED FIFO QUANTITY HERE
+                        Quantity = x.RemainingQty,
+
                         UnitCost = item.UnitCost,
                         ReorderPoint = item.ReorderPoint,
                         StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(item.StorageLocationId, context),
@@ -553,14 +626,11 @@ namespace API.Controllers
                     supplyItemsResponses.Add(response);
                 }
 
-                // 9. Commit transaction (no changes, but consistent with pattern)
+                // ===== 8. Commit & Log =====
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-
-                // 10. Log activity
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed grouped supply items for Code: {targetCode}, Description: {targetDescription}", actionBy: model.ActionBySystemUserId);
 
-                // 11. Return paginated result
                 return Ok(ApiResponse<SupplyItemResponseModel>.OkPaginated(
                     supplyItemsResponses,
                     model.PageNumber,
@@ -581,172 +651,208 @@ namespace API.Controllers
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetSupplyStockCardItems(
-        [FromQuery] PaginationGenericQueryParams model,
-        string stockNumber,
-        string description)
+            [FromQuery] PaginationGenericQueryParams model,
+            string stockNumber,
+            string description)
+        {
+            
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            byte[] stockNumberBytes = Convert.FromBase64String(stockNumber);
+            byte[] descriptionBytes = Convert.FromBase64String(description);
+
+            string rawStockNumber = Encoding.UTF8.GetString(stockNumberBytes);
+            string rawDescription = Encoding.UTF8.GetString(descriptionBytes);
+
+
+            string stockNumberString = System.Net.WebUtility.UrlDecode(rawStockNumber);
+            string descriptionString = System.Net.WebUtility.UrlDecode(rawDescription);
+            try
             {
-                await using var context = new PortalDbContext(_options);
-                await using var transaction = await context.Database.BeginTransactionAsync();
+                string targetCode = stockNumberString ?? string.Empty;
+                string targetDesc = descriptionString ?? string.Empty;
 
-                try
+                // ===== 1. Fetch and decrypt supply items (additions) =====
+                var supplyItemsQuery = _getTools.Supply.GetTblSupplyItems(context);
+                var allSupplyItems = supplyItemsQuery != null
+                    ? await supplyItemsQuery.ToListAsync()
+                    : new List<TblSupplyItem>();
+
+                // Now filter in memory (Client-side evaluation) to safely use decrypted properties
+                var additionEvents = allSupplyItems
+                    .Where(x => x.Code == targetCode && x.Description == targetDesc)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        Quantity = x.Quantity,
+                        x.CreatedAt,
+                        x.IsActive,
+                        ItemRemarks = (string?)null,
+                        UnitId = x.MeasurementUnitId,
+                        Type = "Addition",
+                        SupplyRISId = (long?)null
+                    })
+                    .ToList();
+
+                // ===== 2. Fetch all issuance events (RIS Items) =====
+
+                // This runs purely in SQL (Extremely Fast) because these columns are NOT encrypted
+                var fullyCompletedRisIds = await context.Set<TblSupplyRIS>()
+                    .Where(r => r.IsApproved)
+                    .Select(r => r.Id)
+                    .ToListAsync();
+
+                var risItemsQuery = _getTools.Supply.GetTblSupplyRISItems(context);
+
+                // Optimization: Filter out unapproved RIS items at the SQL level FIRST
+                var filteredRisItems = risItemsQuery != null
+                    ? await risItemsQuery
+                        .Where(x => x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value))
+                        .ToListAsync()
+                    : new List<TblSupplyRISItem>();
+
+                // Now filter by the [NotMapped] decrypted properties in memory
+                var issuanceEvents = filteredRisItems
+                    .Where(x => x.StockNumber == targetCode && x.ItemDescription == targetDesc)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        Quantity = x.IssueQuantity,
+                        x.CreatedAt,
+                        x.IsActive,
+                        x.ItemRemarks,
+                        UnitId = x.UnitId,
+                        Type = "Issuance",
+                        SupplyRISId = x.SupplyRISId
+                    })
+                    .ToList();
+
+                // ===== 3. Combine and sort chronologically =====
+                var allEvents = additionEvents.Cast<dynamic>()
+                    .Concat(issuanceEvents.Cast<dynamic>())
+                    .OrderBy(e => e.CreatedAt)
+                    .ToList();
+
+                // ===== 4. Efficient unit loading =====
+                var unitIds = allEvents
+                    .Select(e => (long?)e.UnitId)
+                    .Where(id => id.HasValue)
+                    .Select(id => id.Value)
+                    .Distinct()
+                    .ToList();
+
+                var units = new Dictionary<long, TblSupplyUnit>();
+                if (unitIds.Any())
                 {
-                    string targetCode = stockNumber ?? string.Empty;
-                    string targetDesc = description ?? string.Empty;
+                    var unitEntities = await _getTools.Supply.GetTblSupplyUnitsByIds(context, unitIds);
+                    units = unitEntities.ToDictionary(u => u.Id);
+                }
 
-                    // ===== 1. Fetch and decrypt supply items (additions) =====
-                    var allSupplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
-                    var additionEvents = allSupplyItems
-                        .Where(x => x.Code == targetCode && x.Description == targetDesc)
-                        .Select(x => new
-                        {
-                            x.Id,
-                            Quantity = x.Quantity,
-                            x.CreatedAt,
-                            x.IsActive,
-                            ItemRemarks = (string?)null,
-                            UnitId = x.MeasurementUnitId,
-                            Type = "Addition",
-                            SupplyRISId = (long?)null // <-- ADDED: Placeholder for additions
-                        })
-                        .ToList();
+                // ===== 5. Pagination =====
+                int totalCount = allEvents.Count;
+                int skip = (model.PageNumber - 1) * model.PageSize;
+                var pagedEvents = allEvents.Skip(skip).Take(model.PageSize).ToList();
 
-                    // ===== 2. Fetch all issuance events (RIS Items) =====
-                    var allRISItems = await _getTools.Supply.GetTblSupplyRISItems(context).ToListAsync();
-                    var issuanceEvents = allRISItems
-                        .Where(x => x.StockNumber == targetCode && x.ItemDescription == targetDesc)
-                        .Select(x => new
-                        {
-                            x.Id,
-                            Quantity = x.IssueQuantity,
-                            x.CreatedAt,
-                            x.IsActive,
-                            x.ItemRemarks,
-                            UnitId = x.UnitId,
-                            Type = "Issuance",
-                            SupplyRISId = x.SupplyRISId // <-- ADDED: Carry over the RIS ID
-                        })
-                        .ToList();
+                string debugJson = System.Text.Json.JsonSerializer.Serialize(pagedEvents, new System.Text.Json.JsonSerializerOptions
+                {
+                    WriteIndented = true
+                });
 
-                    // ===== 3. Combine and sort chronologically =====
-                    var allEvents = additionEvents.Cast<dynamic>()
-                        .Concat(issuanceEvents.Cast<dynamic>())
-                        .OrderBy(e => e.CreatedAt)
-                        .ToList();
-
-                    // ===== 4. Efficient unit loading =====
-                    var unitIds = allEvents
-                        .Select(e => (long?)e.UnitId)
-                        .Where(id => id.HasValue)
-                        .Select(id => id.Value)
-                        .Distinct()
-                        .ToList();
-
-                    var units = new Dictionary<long, TblSupplyUnit>();
-                    if (unitIds.Any())
+                // ===== 6. Compute running balance before the first event in the page =====
+                long previousBalance = 0;
+                if (skip > 0)
+                {
+                    var eventsBeforePage = allEvents.Take(skip);
+                    foreach (var evt in eventsBeforePage)
                     {
-                        var unitEntities = await _getTools.Supply.GetTblSupplyUnitsByIds(context, unitIds);
-                        units = unitEntities.ToDictionary(u => u.Id);
-                    }
-
-                    // ===== 5. Pagination =====
-                    int totalCount = allEvents.Count;
-                    int skip = (model.PageNumber - 1) * model.PageSize;
-                    var pagedEvents = allEvents.Skip(skip).Take(model.PageSize).ToList();
-
-                    // ===== 6. Compute running balance before the first event in the page =====
-                    long previousBalance = 0;
-                    if (skip > 0)
-                    {
-                        var eventsBeforePage = allEvents.Take(skip);
-                        foreach (var evt in eventsBeforePage)
-                        {
-                            if (evt.Type == "Addition")
-                                previousBalance += evt.Quantity;
-                            else if (evt.Type == "Issuance")
-                                previousBalance -= evt.Quantity;
-                        }
-                    }
-
-                    // ===== 7. Build response models for the paged events =====
-                    var responseItems = new List<SupplyStockCardItemViewModel>();
-                    long currentBalance = previousBalance;
-
-                    foreach (var evt in pagedEvents)
-                    {
-                        long added = 0, issued = 0;
-                        long newBalance = currentBalance;
-
                         if (evt.Type == "Addition")
-                        {
-                            added = evt.Quantity;
-                            newBalance = currentBalance + added;
-                        }
+                            previousBalance += evt.Quantity;
                         else if (evt.Type == "Issuance")
-                        {
-                            issued = evt.Quantity;
-                            newBalance = currentBalance - issued;
-                        }
+                            previousBalance -= evt.Quantity;
+                    }
+                }
 
-                        var unit = evt.UnitId != null && units.ContainsKey(evt.UnitId)
-                            ? units[evt.UnitId]
-                            : null;
+                // ===== 7. Build response models for the paged events =====
+                var responseItems = new List<SupplyStockCardItemViewModel>();
+                long currentBalance = previousBalance;
+                foreach (var evt in pagedEvents)
+                {
+                    long added = 0, issued = 0;
+                    long newBalance = currentBalance;
 
-                        // --- ADDED: Fetch Parent RIS, Office, and Division logic ---
-                        long? risId = evt.SupplyRISId;
-                        var parentRIS = risId.HasValue
-                            ? await _getTools.Supply.GetTblSupplyRISAsync(risId.Value, context)
-                            : null;
-
-                        responseItems.Add(new SupplyStockCardItemViewModel
-                        {
-                            Id = evt.Id,
-                            StockNumber = targetCode,
-                            Unit = unit,
-                            ItemDescription = targetDesc,
-                            CurrentStockQuantity = currentBalance,
-                            AddedStockQuantity = added,
-                            IssuedStockQuantity = issued,
-                            NewStockQuantity = newBalance,
-                            ItemRemarks = evt.ItemRemarks,
-                            IsActive = evt.IsActive,
-                            CreatedAt = evt.CreatedAt,
-
-                            // --- ADDED: Map Office and Division safely ---
-                            Office = parentRIS != null
-                                ? await _getTools.Office.GetTblOfficeAsync(parentRIS.OfficeId, context)
-                                : null,
-                            Division = parentRIS != null
-                                ? await _getTools.Office.GetTblDivisionAsync(parentRIS.DivisionId, context)
-                                : null
-                        });
-
-                        currentBalance = newBalance;
+                    if (evt.Type == "Addition")
+                    {
+                        added = evt.Quantity;
+                        newBalance = currentBalance + added;
+                    }
+                    else if (evt.Type == "Issuance")
+                    {
+                        issued = evt.Quantity;
+                        newBalance = currentBalance - issued;
                     }
 
-                    // ===== 8. Commit and log =====
-                    await context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-                    await AuditTrailTool.LogActivityAsync(_options,
-                        $"Viewed stock card for {targetCode} - {targetDesc}",
-                        actionBy: model.ActionBySystemUserId);
+                    var unit = evt.UnitId != null && units.ContainsKey(evt.UnitId)
+                        ? units[evt.UnitId]
+                        : null;
 
-                    // ===== 9. Return paginated result =====
-                    return Ok(ApiResponse<SupplyStockCardItemViewModel>.OkPaginated(
-                        responseItems,
-                        model.PageNumber,
-                        model.PageSize,
-                        totalCount,
-                        "Stock card items retrieved"
-                    ));
+                    // --- ADDED: Fetch Parent RIS, Office, and Division logic ---
+                    long? risId = evt.SupplyRISId;
+                    var parentRIS = risId.HasValue
+                        ? await _getTools.Supply.GetTblSupplyRISAsync(risId.Value, context)
+                        : null;
+
+                    responseItems.Add(new SupplyStockCardItemViewModel
+                    {
+                        Id = evt.Id,
+                        StockNumber = targetCode,
+                        Unit = unit,
+                        ItemDescription = targetDesc,
+                        CurrentStockQuantity = currentBalance,
+                        AddedStockQuantity = added,
+                        IssuedStockQuantity = issued,
+                        NewStockQuantity = newBalance,
+                        ItemRemarks = evt.ItemRemarks,
+                        IsActive = evt.IsActive,
+                        CreatedAt = evt.CreatedAt,
+
+                        // --- ADDED: Map Office and Division safely ---
+                        Office = parentRIS != null
+                            ? await _getTools.Office.GetTblOfficeAsync(parentRIS.OfficeId, context)
+                            : null,
+                        Division = parentRIS != null
+                            ? await _getTools.Office.GetTblDivisionAsync(parentRIS.DivisionId, context)
+                            : null
+                    });
+
+                    currentBalance = newBalance;
                 }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
-                    return StatusCode(ApiStatusCode.InternalServerError,
-                        ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
-                }
+
+                // ===== 8. Commit and log =====
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options,
+                    $"Viewed stock card for {targetCode} - {targetDesc}",
+                    actionBy: model.ActionBySystemUserId);
+
+                // ===== 9. Return paginated result =====
+                
+                return Ok(ApiResponse<SupplyStockCardItemViewModel>.OkPaginated(
+                    responseItems,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
+                    "Stock card items retrieved"
+                ));
             }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError,
+                    ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
 
         [HttpGet("item/unique/all")]
         [ValidateSessionToken]
@@ -1063,6 +1169,7 @@ namespace API.Controllers
                         RISIssuedDate = x.RISIssuedDate,
                         ReceivedBySystemUser = receivedByUser,
                         RISReceivedDate = x.RISReceivedDate,
+                        IsApproved = x.IsApproved,
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
@@ -1636,6 +1743,7 @@ namespace API.Controllers
                     }
                 }
 
+
                 long supplyIARId = await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
 
                 
@@ -1682,6 +1790,7 @@ namespace API.Controllers
                     RISIssuedDate = model.RISIssuedDate,
                     RISReceivedBySystemUserId = model.RISReceivedBySystemUserId,
                     RISReceivedDate = model.RISReceivedDate,
+                    IsApproved = model.IsApproved,
                     IsActive = model.IsActive,
                     //IsApproved = model.IsApproved
                 };

@@ -1,5 +1,6 @@
 ﻿import axiosInstance from '@/lib/axios';
 import { ApiResponse } from '@/types/auth';
+import { secureStorage } from '@/utils/secureStorage';
 
 export interface UploadProfilePictureResponse {
   fileStorageIdEncrypted: string;
@@ -8,8 +9,8 @@ export interface UploadProfilePictureResponse {
 export const uploadProfilePicture = async (
   file: File,
 ): Promise<string> => {
-  const token = localStorage.getItem('sessionToken') || '';
-  const systemUserId = localStorage.getItem('systemUserId') || '';
+  const token = secureStorage.getItem('sessionToken') || '';
+  const systemUserId = secureStorage.getItem('systemUserId') || '';
   const formData = new FormData();
   formData.append('file', file);
   formData.append('ActionBySystemUserId', systemUserId);
@@ -34,8 +35,8 @@ export const uploadProfilePicture = async (
 
 export const retrieveFile = async (fileId: string): Promise<string> => {
   // Get session key from localStorage
-  const token = localStorage.getItem('sessionToken') || '';
-  const systemUserId = localStorage.getItem('systemUserId') || '';
+  const token = secureStorage.getItem('sessionToken') || '';
+  const systemUserId = secureStorage.getItem('systemUserId') || '';
 
   const response = await axiosInstance.get(
     `/Storage/retrieve/${fileId}?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(token)}`,

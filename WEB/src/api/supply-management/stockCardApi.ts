@@ -22,7 +22,7 @@ export const getStockCardItems = async (
   const { systemUserId, sessionKey } = getAuthParams();
 
   const response = await axiosInstance.get<StockCardApiResponse>(
-    `/Supply/item/grouped/stock-card/all/${encodeURIComponent(stockNumber)}/${encodeURIComponent(description)}`,
+    `/Supply/item/grouped/stock-card/all/${btoa(encodeURIComponent(stockNumber))}/${btoa(encodeURIComponent(description))}`,
     {
       params: {
         ActionBySystemUserId: systemUserId,

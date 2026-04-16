@@ -11,6 +11,7 @@ import {
 } from "@react-pdf/renderer";
 import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { seApi } from "@/api/asset/se";
+import { secureStorage } from "@/utils/secureStorage";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -555,8 +556,8 @@ export class ITRGenerator {
       actualOfficeId: latestMovement?.actualOfficeId || 0,
         actualDivisionId: latestMovement?.actualDivisionId || 0,
         isActive: true,
-        actionBySystemUserId: Number(localStorage.getItem("systemUserId")),
-        sessionKey: localStorage.getItem("sessionToken") || "",
+        actionBySystemUserId: Number(secureStorage.getItem("systemUserId")),
+        sessionKey: secureStorage.getItem("sessionToken") || "",
         model: item.model || "",
       });
 

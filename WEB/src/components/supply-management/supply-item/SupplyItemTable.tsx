@@ -17,7 +17,7 @@ import { formatCurrency } from '@/utils/formatters';
 
 interface Props {
   data: VwSupplyItem[];
-  isLoading?: boolean; // ✅ 1. Add isLoading prop
+  isLoading?: boolean;
   onAdd: () => void;
   onView: (item: VwSupplyItem) => void;
   onEdit: (item: VwSupplyItem) => void;
@@ -51,9 +51,12 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
   }, [filteredData, page]);
 
   const getStockStatus = (item: VwSupplyItem) => {
-    if (item.currentStock === 0) return { label: 'Out of Stock', classes: 'bg-red-50 text-red-700 border-red-200' };
-    if (item.currentStock <= item.reorderPoint) return { label: 'Low Stock', classes: 'bg-amber-50 text-amber-700 border-amber-200' };
-    return { label: 'Available', classes: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    if (item.quantity == 0)
+      return { label: 'Out of Stock', classes: 'bg-red-50 text-red-700 border-red-200' };
+    else if (item.quantity <= item.reorderPoint)
+      return { label: 'Low Stock', classes: 'bg-amber-50 text-amber-700 border-amber-200' };
+    else
+      return { label: 'Available', classes: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
   };
 
   return (
@@ -97,7 +100,7 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* ✅ 2. INTERCEPT RENDERING IF LOADING */}
+                {/* INTERCEPT RENDERING IF LOADING */}
                 {isLoading ? (
                     // Render 5 Skeleton Rows while fetching
                     Array.from({ length: 5 }).map((_, index) => (
@@ -110,7 +113,6 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
                         </TableRow>
                     ))
                 ) : paginatedData.length > 0 ? (
-                    // ✅ 3. NORMAL RENDERING (if not loading and has data)
                     paginatedData.map((item) => {
                       const status = getStockStatus(item);
                       const isLowStock = item.currentStock > 0 && item.currentStock <= item.reorderPoint;
@@ -140,9 +142,9 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1.5 font-medium">
                                 {isLowStock && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
-                                <span className={item.currentStock === 0 ? 'text-red-600' : 'text-slate-900'}>
-                            {item.quantity ?? 0}
-                          </span>
+                                <span className={item.quantity == 0 ? 'text-red-600' : 'text-slate-900'}>
+                                  {item.quantity ?? 0}
+                                </span>
                               </div>
                             </TableCell>
                             <TableCell className="text-right text-slate-600">{item.reorderPoint}</TableCell>
@@ -180,7 +182,6 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
                       );
                     })
                 ) : (
-                    // ✅ 4. EMPTY STATE (if not loading and array is empty)
                     <TableRow>
                       <TableCell colSpan={10} className="h-48 text-center">
                         <div className="flex flex-col items-center justify-center text-slate-500 space-y-3">

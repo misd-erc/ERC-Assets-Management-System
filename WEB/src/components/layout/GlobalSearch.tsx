@@ -1,4 +1,5 @@
-﻿import { useState, useEffect, useRef } from "react";
+﻿// GlobalSearch.tsx
+import { useState, useEffect, useRef } from "react";
 import {
   Command,
   CommandInput,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 import { globalSearch, GlobalSearchResultItem } from "@/api/search/searchApi";
 import { cn } from "@/components/ui/utils";
+import { useMediaQuery } from "@/hooks";
 
 interface GlobalSearchProps {
   open: boolean;
@@ -55,7 +57,7 @@ const SUGGESTIONS = [
   { label: "Employees",                    icon: Users,        module: "office-management", color: "text-orange-500",  bg: "bg-orange-50" },
 ];
 
-// ── Detail preview panel ──────────────────────────────────────────────────────
+// Detail preview panel
 function DetailPanel({
   result,
   searchQuery,
@@ -93,11 +95,11 @@ function DetailPanel({
   };
 
   return (
-    <div className="px-5 py-4 space-y-4">
+    <div className="px-4 py-3 sm:px-5 sm:py-4 space-y-3 sm:space-y-4">
       {/* Item card */}
-      <div className={cn("flex items-start gap-4 rounded-xl border p-4", cfg.border, cfg.bg)}>
-        <span className={cn("flex h-11 w-11 items-center justify-center rounded-lg bg-white shadow-sm shrink-0")}>
-          <Icon className={cn("h-5 w-5", cfg.color)} />
+      <div className={cn("flex items-start gap-3 sm:gap-4 rounded-xl border p-3 sm:p-4", cfg.border, cfg.bg)}>
+        <span className={cn("flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-lg bg-white shadow-sm shrink-0")}>
+          <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", cfg.color)} />
         </span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 leading-snug break-words">
@@ -145,13 +147,14 @@ function DetailPanel({
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// Main component
 export function GlobalSearch({ open, onOpenChange, onNavigate }: GlobalSearchProps) {
   const [searchQuery, setSearchQuery]       = useState("");
   const [results, setResults]               = useState<GlobalSearchResultItem[]>([]);
   const [isLoading, setIsLoading]           = useState(false);
   const [selectedResult, setSelectedResult] = useState<GlobalSearchResultItem | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMobile = useMediaQuery("(max-width: 640px)");
 
   // Reset when dialog closes
   useEffect(() => {
@@ -215,38 +218,38 @@ export function GlobalSearch({ open, onOpenChange, onNavigate }: GlobalSearchPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="overflow-hidden p-0 gap-0 shadow-2xl rounded-xl border-0 sm:max-w-xl">
+      <DialogContent className="overflow-hidden p-0 gap-0 shadow-2xl rounded-xl border-0 sm:max-w-xl max-w-[calc(100%-1rem)] mx-auto">
         <DialogTitle className="sr-only">Global Search</DialogTitle>
         <DialogDescription className="sr-only">
           Search across assets, supply items, and employees
         </DialogDescription>
 
         <Command shouldFilter={false} className="rounded-xl">
-          {/* ── Input row ── */}
-          <div className="flex items-center border-b border-gray-100 px-4">
+          {/* Input row */}
+          <div className="flex items-center border-b border-gray-100 px-3 sm:px-4">
             {selectedResult ? (
               <button
                 onClick={() => setSelectedResult(null)}
-                className="mr-3 rounded p-0.5 hover:bg-gray-100 transition-colors"
+                className="mr-2 sm:mr-3 rounded p-0.5 hover:bg-gray-100 transition-colors"
                 aria-label="Back to results"
               >
                 <ChevronLeft className="h-4 w-4 text-gray-400" />
               </button>
             ) : (
-              <Search className="mr-3 h-4 w-4 shrink-0 text-gray-400" />
+              <Search className="mr-2 sm:mr-3 h-4 w-4 shrink-0 text-gray-400" />
             )}
             <CommandInput
-              placeholder="Search assets, supply, employees..."
+              placeholder={isMobile ? "Search..." : "Search assets, supply, employees..."}
               value={searchQuery}
               onValueChange={setSearchQuery}
-              className="h-12 flex-1 border-0 bg-transparent text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-0"
+              className="h-10 sm:h-12 flex-1 border-0 bg-transparent text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-0"
             />
             {isLoading && (
               <Loader2 className="ml-2 h-4 w-4 animate-spin text-blue-500 shrink-0" />
             )}
           </div>
 
-          {/* ── Detail panel ── */}
+          {/* Detail panel */}
           {selectedResult ? (
             <DetailPanel
               result={selectedResult}
@@ -255,7 +258,7 @@ export function GlobalSearch({ open, onOpenChange, onNavigate }: GlobalSearchPro
               onOpen={handleOpenInModule}
             />
           ) : (
-            <CommandList className="max-h-[400px] overflow-y-auto">
+            <CommandList className="max-h-[350px] sm:max-h-[400px] overflow-y-auto">
               {/* Browse modules (idle) */}
               {showSuggestions && (
                 <CommandGroup heading="Browse Modules">
@@ -264,12 +267,12 @@ export function GlobalSearch({ open, onOpenChange, onNavigate }: GlobalSearchPro
                       key={s.module}
                       value={s.module}
                       onSelect={() => { onNavigate?.(s.module); onOpenChange(false); }}
-                      className="group mx-1 my-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5"
+                      className="group mx-1 my-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5"
                     >
-                      <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg shrink-0", s.bg)}>
-                        <s.icon className={cn("h-4 w-4", s.color)} />
+                      <span className={cn("flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg shrink-0", s.bg)}>
+                        <s.icon className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", s.color)} />
                       </span>
-                      <span className="flex-1 text-sm font-medium text-gray-700">{s.label}</span>
+                      <span className="flex-1 text-xs sm:text-sm font-medium text-gray-700">{s.label}</span>
                       <ArrowRight className="h-4 w-4 text-gray-300 shrink-0 opacity-0 group-data-[selected=true]:opacity-100 transition-opacity" />
                     </CommandItem>
                   ))}
@@ -278,7 +281,7 @@ export function GlobalSearch({ open, onOpenChange, onNavigate }: GlobalSearchPro
 
               {/* Loading */}
               {isLoading && (
-                <div className="flex flex-col items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+                <div className="flex flex-col items-center justify-center gap-2 py-8 sm:py-10 text-sm text-muted-foreground">
                   <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
                   <span>Searching across all modules...</span>
                 </div>
@@ -286,9 +289,9 @@ export function GlobalSearch({ open, onOpenChange, onNavigate }: GlobalSearchPro
 
               {/* No results */}
               {isEmpty && (
-                <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
-                    <Search className="h-5 w-5 text-gray-400" />
+                <div className="flex flex-col items-center justify-center gap-3 py-8 sm:py-10 text-center">
+                  <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-gray-100">
+                    <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-700">No results found</p>
@@ -318,13 +321,13 @@ export function GlobalSearch({ open, onOpenChange, onNavigate }: GlobalSearchPro
                           key={result.id}
                           value={result.id}
                           onSelect={() => setSelectedResult(result)}
-                          className="group mx-1 my-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5"
+                          className="group mx-1 my-0.5 flex cursor-pointer items-center gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5"
                         >
-                          <span className={cn("flex h-8 w-8 items-center justify-center rounded-lg shrink-0", cfg.bg)}>
-                            <Icon className={cn("h-4 w-4", cfg.color)} />
+                          <span className={cn("flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg shrink-0", cfg.bg)}>
+                            <Icon className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", cfg.color)} />
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-800 truncate">{result.title}</p>
+                            <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">{result.title}</p>
                             <p className="text-xs text-muted-foreground truncate">{result.description}</p>
                           </div>
                           <ArrowRight className="h-4 w-4 text-gray-300 shrink-0 opacity-0 group-data-[selected=true]:opacity-100 transition-opacity" />
@@ -336,23 +339,23 @@ export function GlobalSearch({ open, onOpenChange, onNavigate }: GlobalSearchPro
             </CommandList>
           )}
 
-          {/* ── Footer ── */}
+          {/* Footer */}
           {!selectedResult && (
-            <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50 px-4 py-2 text-[11px] text-gray-400 rounded-b-xl">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between border-t border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 px-3 sm:px-4 py-2 text-[10px] sm:text-[11px] text-gray-400 dark:text-slate-500 rounded-b-xl">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <span className="flex items-center gap-1">
-                  <kbd className="rounded bg-white border border-gray-200 px-1.5 py-0.5 font-mono text-[10px] shadow-sm">&#x2191;</kbd>
-                  <kbd className="rounded bg-white border border-gray-200 px-1.5 py-0.5 font-mono text-[10px] shadow-sm">&#x2193;</kbd>
-                  navigate
+                  <kbd className="rounded bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-1 py-0.5 font-mono text-[9px] sm:text-[10px] shadow-sm">↑</kbd>
+                  <kbd className="rounded bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-1 py-0.5 font-mono text-[9px] sm:text-[10px] shadow-sm">↓</kbd>
+                  <span className="hidden sm:inline">navigate</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <kbd className="rounded bg-white border border-gray-200 px-1.5 py-0.5 font-mono text-[10px] shadow-sm">&#x23CE;</kbd>
-                  view details
+                  <kbd className="rounded bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-1 py-0.5 font-mono text-[9px] sm:text-[10px] shadow-sm">↵</kbd>
+                  <span className="hidden sm:inline">view details</span>
                 </span>
               </div>
               <span className="flex items-center gap-1">
-                <kbd className="rounded bg-white border border-gray-200 px-1.5 py-0.5 font-mono text-[10px] shadow-sm">Esc</kbd>
-                close
+                <kbd className="rounded bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-1 py-0.5 font-mono text-[9px] sm:text-[10px] shadow-sm">Esc</kbd>
+                <span className="hidden sm:inline">close</span>
               </span>
             </div>
           )}
