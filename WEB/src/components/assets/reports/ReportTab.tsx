@@ -60,6 +60,7 @@ export function ReportTab() {
   const [rpcppeDate, setRpcppeDate] = useState<Date | null>(null);
   const [rpcppeCategoryId, setRpcppeCategoryId] = useState<number | undefined>(undefined);
   const [sespiDate, setSespiDate] = useState<Date | null>(null);
+  const [sePropertyReportSerialNo, setSePropertyReportSerialNo] = useState('');
   const [sespiEmployee, setSespiEmployee] = useState<NormalizedEmployee | null>(null);
 
   // Item-centric flow states
@@ -205,7 +206,7 @@ export function ReportTab() {
         toast.success('Register SPI PDF generated');
       }
     } else if (selectedReport === 'SESPI-REPORT') {
-      await SEPropertyReportGenerator.generate(sespiDate!);
+      await SEPropertyReportGenerator.generate({ asOfDate: sespiDate!, serialNo: sePropertyReportSerialNo });
       toast.success('Report of Semi-Expandable Property Issued PDF generated');
     } else if (selectedReport === 'RPCPPE') {
       try {
@@ -334,14 +335,15 @@ export function ReportTab() {
     }
   };
 
-  const handleSEPropertyReportGenerate = async (asOfDate: Date) => {
+  const handleSEPropertyReportGenerate = async ({ asOfDate, serialNo }: { asOfDate: Date; serialNo?: string }) => {
     try {
       setLoadingPreview(true);
-      const url = await SEPropertyReportGenerator.generatePreview(asOfDate);
+      const url = await SEPropertyReportGenerator.generatePreview({ asOfDate, serialNo });
       setPreviewUrl(url);
       setLoadingPreview(false);
 
       setSespiDate(asOfDate);
+      setSePropertyReportSerialNo(serialNo ?? '');
       setSelectedReport('SESPI-REPORT');
       setShowPreview(true);
     } catch (error) {
