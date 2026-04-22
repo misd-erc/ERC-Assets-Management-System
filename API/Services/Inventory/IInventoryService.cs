@@ -43,6 +43,8 @@ namespace API.Services.Inventory
 
         Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQueryParams model);
 
+        Task<IActionResult> GetPTATransferList([FromQuery] PTATransferListQueryParams model);
+
         Task<IActionResult> GetPTATransferDetails([FromQuery] string transferNumber, [FromQuery] SoloQueryParams model);
 
         Task<IActionResult> EditPTACategory([FromBody] EditPTACategoryQueryParams model);

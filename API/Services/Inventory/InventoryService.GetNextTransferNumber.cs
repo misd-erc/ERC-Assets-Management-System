@@ -35,7 +35,7 @@ namespace API.Services.Inventory
 {
     public partial class InventoryService
     {
-public async Task<IActionResult> GetNextTransferNumber([FromQuery] string transferType = "PTR", [FromQuery] SoloQueryParams model = null)
+public async Task<IActionResult> GetNextTransferNumber([FromQuery] string transferType = "PTR", [FromQuery] SoloQueryParams? model = null)
         {
             await using var context = new PortalDbContext(_options);
 
@@ -53,36 +53,39 @@ public async Task<IActionResult> GetNextTransferNumber([FromQuery] string transf
                 var month = now.Month.ToString("D2");
                 var yearMonth = $"{year}-{month}";
 
-                // Get all movements for the current month and type
+                // Keep validating the requested transfer type, but numbering is now shared
+                // across transfer records and no longer includes a PTR/ITR prefix.
                 var movements = await _getTools.PTA.GetTblPTAMovements(context).ToListAsync();
 
-                // Filter for current month and transfer type
-                var currentMonthMovements = movements
-                    .Where(x => !string.IsNullOrEmpty(x.PTRITRNumber) && 
-                                x.PTRITRNumber.ToUpper().StartsWith(transferType.ToUpper()) &&
-                                x.PTRITRNumber.Contains(yearMonth))
-                    .ToList();
-
-                // Extract sequence numbers from the PTR/ITR numbers (format: PTR-yyyy-mm-001)
-                var sequenceNumbers = currentMonthMovements
+                // Extract sequence numbers from legacy and new formats:
+                // PTR-yyyy-mm-001, ITR-yyyy-mm-001, yyyy-mm-001
+                var sequenceNumbers = movements
+                    .Where(x => !string.IsNullOrWhiteSpace(x.PTRITRNumber))
                     .Select(x =>
                     {
-                        var parts = x.PTRITRNumber.Split('-');
-                        if (parts.Length >= 4 && int.TryParse(parts[3], out var sequence))
+                        var transferNumber = x.PTRITRNumber;
+                        if (string.IsNullOrWhiteSpace(transferNumber))
+                        {
+                            return 0;
+                        }
+
+                        var parts = transferNumber.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        var sequencePart = parts.Length >= 3 ? parts[^1] : null;
+
+                        if (sequencePart != null && int.TryParse(sequencePart, out var sequence))
                         {
                             return sequence;
                         }
+
                         return 0;
                     })
                     .Where(x => x > 0)
                     .ToList();
 
-                // Get the maximum sequence number, default to 0 if none found
                 var maxSequence = sequenceNumbers.Any() ? sequenceNumbers.Max() : 0;
                 var nextSequence = maxSequence + 1;
 
-                // Format the new transfer number
-                var nextNumber = $"{transferType.ToUpper()}-{yearMonth}-{nextSequence:D3}";
+                var nextNumber = $"{yearMonth}-{nextSequence:D3}";
 
                 Console.WriteLine($"[NEXT_NUMBER] Type: {transferType}, Year-Month: {yearMonth}, Max Sequence: {maxSequence}, Next: {nextNumber}");
 

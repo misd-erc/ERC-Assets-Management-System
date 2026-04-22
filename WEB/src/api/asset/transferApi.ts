@@ -558,10 +558,67 @@ export const generateParIcsNumber = async (parType: 'PAR' | 'ICS'): Promise<stri
 };
 
 /**
+ * Get PTR/ITR transfer list with filters and pagination
+ * Returns only movements that have a PTR/ITR number assigned
+ * @param params - Query parameters for filtering
+ * @returns Promise with paginated PTR/ITR transfer records
+ */
+export const getPTATransferList = async (params: {
+  group?: 'PPE' | 'SE';
+  searchEmployee?: string;
+  ptrItrFilter?: string;
+  officeId?: number;
+  divisionId?: number;
+  startDate?: string;
+  endDate?: string;
+  pageNumber?: number;
+  pageSize?: number;
+}): Promise<{ items: any[]; totalCount: number; pageNumber: number; pageSize: number }> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
+    const pageNumber = params.pageNumber ?? 1;
+    const pageSize = params.pageSize ?? 50;
+
+    let url = `${API_BASE_URL}/Inventory/pta/transfer/list?PageNumber=${pageNumber}&PageSize=${pageSize}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+
+    if (params.group) url += `&Group=${encodeURIComponent(params.group)}`;
+    if (params.ptrItrFilter) url += `&PtrItrFilter=${encodeURIComponent(params.ptrItrFilter)}`;
+    if (params.searchEmployee) url += `&SearchEmployee=${encodeURIComponent(params.searchEmployee)}`;
+    if (params.officeId) url += `&OfficeId=${params.officeId}`;
+    if (params.divisionId) url += `&DivisionId=${params.divisionId}`;
+    if (params.startDate) url += `&StartDate=${encodeURIComponent(params.startDate)}`;
+    if (params.endDate) url += `&EndDate=${encodeURIComponent(params.endDate)}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch PTR/ITR transfer list: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      items: data.data?.items || [],
+      totalCount: data.data?.totalCount || 0,
+      pageNumber,
+      pageSize,
+    };
+  } catch (error) {
+    console.error('Error fetching PTR/ITR transfer list:', error);
+    throw error;
+  }
+};
+
+/**
  * Generate PTR/ITR number based on type and current date
  * Calls the backend API endpoint to get the next sequence number
  * @param transferType - 'PTR' for Property Transfer Record or 'ITR' for Inventory Transfer Record
- * @returns Promise resolving to generated PTR/ITR number in format: PTR-yyyy-mm-001
+ * @returns Promise resolving to generated transfer number in format: yyyy-mm-001
  */
 export const generateTransferNumber = async (transferType: 'PTR' | 'ITR'): Promise<string> => {
   try {
@@ -591,15 +648,15 @@ export const generateTransferNumber = async (transferType: 'PTR' | 'ITR'): Promi
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const yearMonth = `${year}-${month}`;
-      const key = `${transferType}-${yearMonth}`;
+      const key = 'transfer';
 
-      // Call the movement list endpoint to get ALL movements for this type and month
+      // Call the movement list endpoint to get all transfer movements and continue the
+      // sequence globally, regardless of month or transfer type.
       const { systemUserId, sessionKey } = getAuthParams();
       const fallbackResponse = await axiosInstance.get('/inventory/pta/movement/list', {
         params: {
           pageNumber: 1,
           pageSize: 10000, // Get all records for this month
-          ptrItrFilter: transferType.toUpperCase(),
           ActionBySystemUserId: systemUserId,
           SessionKey: sessionKey,
         },
@@ -608,37 +665,37 @@ export const generateTransferNumber = async (transferType: 'PTR' | 'ITR'): Promi
       // Extract movements from response
       const movements = fallbackResponse.data?.data?.items || [];
       
-      // Filter for current month and year, extract sequence numbers
-      const currentMonthSequences: number[] = movements
+      // Extract sequence numbers from legacy and new formats:
+      // PTR-yyyy-mm-001, ITR-yyyy-mm-001, yyyy-mm-001
+      const allSequences: number[] = movements
         .map((m: any) => {
           const ptrItrNumber = m.ptrItrNumber || m.PTRITRNumber || m.transferNumber || '';
-          // Check if this movement belongs to current year-month
-          if (!ptrItrNumber.includes(yearMonth)) {
+          if (!ptrItrNumber) {
             return null;
           }
-          // Extract sequence number from format: PTR-yyyy-mm-001
-          const parts = ptrItrNumber.split('-');
+
+          const parts = String(ptrItrNumber)
+            .split('-')
+            .map((part) => part.trim())
+            .filter(Boolean);
+
           const sequence = parseInt(parts[parts.length - 1], 10);
           return (!isNaN(sequence) && sequence > 0) ? sequence : null;
         })
         .filter((seq: number | null) => seq !== null) as number[];
 
-      // Find the highest sequence number from API
-      const maxApiSequence = currentMonthSequences.length > 0 
-        ? Math.max(...currentMonthSequences)
+      const maxApiSequence = allSequences.length > 0 
+        ? Math.max(...allSequences)
         : 0;
       
-      // For additional safety, also check the in-memory tracking
       const maxTrackedSequence = lastGeneratedSequenceTransfer[key] || 0;
       const maxSequence = Math.max(maxApiSequence, maxTrackedSequence);
       
       const nextSequence = maxSequence + 1;
 
-      // Store this sequence to ensure the next call gets a higher number (in-memory protection)
       lastGeneratedSequenceTransfer[key] = nextSequence;
 
-      // Generate the new number in format: PTR-yyyy-mm-001
-      const generatedNumber = `${transferType}-${yearMonth}-${String(nextSequence).padStart(3, '0')}`;
+      const generatedNumber = `${yearMonth}-${String(nextSequence).padStart(3, '0')}`;
 
       console.log(`Fallback generated ${transferType} number: ${generatedNumber} (API max: ${maxApiSequence}, Tracked max: ${maxTrackedSequence}, Next: ${nextSequence})`);
 

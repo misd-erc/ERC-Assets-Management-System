@@ -5,7 +5,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Loader2, Search, Eye, User, Package } from 'lucide-react';
 import { toast } from 'sonner';
-import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements } from '@/api/asset/transferApi';
+import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements, getPTATransferList } from '@/api/asset/transferApi';
 import { PTRGenerator } from '@/components/assets/reports/PTRGenerator';
 import { ITRGenerator } from '@/components/assets/reports/ITRGenerator';
 import { ReturnReceiptGenerator } from '@/components/assets/reports/ReturnReceiptGenerator';
@@ -65,6 +65,31 @@ interface Movement {
   createdAt?: string;
 }
 
+// Normalize a single item from the new getPTATransferList response shape into Movement
+const normalizeTransferListItem = (raw: any): Movement => ({
+  id: raw.id,
+  movementId: raw.id,
+  ptaId: raw.ptaId,
+  ptritrNumber: raw.ptrItrNumber,
+  paricsNumber: raw.parIcsNumber,
+  dateAssigned: raw.dateAssigned,
+  status: raw.status,
+  remarks: raw.remarks,
+  isActive: raw.isActive,
+  createdAt: raw.createdAt,
+  office: raw.office,
+  division: raw.division,
+  employee: [
+    ...(raw.plantillaEmployeeName || raw.plantillaEmployeeId
+      ? [{ id: raw.plantillaEmployeeId ?? 0, fullName: raw.plantillaEmployeeName, employeeIdOriginal: raw.plantillaEmployeeIdOriginal, employeeType: 'Plantilla' }]
+      : []),
+    ...(raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
+      ? [{ id: raw.nonPlantillaEmployeeId ?? 0, fullName: raw.nonPlantillaEmployeeName, employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal, employeeType: 'Non-Plantilla' }]
+      : []),
+  ],
+  items: raw.item ? [raw.item] : [],
+});
+
 // Merge movements that share the same transfer number so UI shows a single row per PTR/ITR
 const mergeMovementsByTransfer = (items: Movement[]): Movement[] => {
   const map = new Map<string, Movement>();
@@ -122,29 +147,38 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   const [generating, setGenerating] = useState(false);
   const [pageNumber, setPageNumber] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   // Load movements
-  const loadMovements = async (search?: string, page: number = 1) => {
+  const loadMovements = async (search?: string, page: number = 1, size: number = pageSize) => {
     try {
       setLoading(true);
       
       let result;
-      if (transferType === 'PTR') {
-        result = await getPTRMovements(search, page, pageSize);
-      } else if (transferType === 'ITR') {
-        result = await getITRMovements(search, page, pageSize);
+      if (transferType === 'PTR' || transferType === 'ITR') {
+        const group = transferType === 'PTR' ? 'PPE' : 'SE';
+        const raw = await getPTATransferList({
+          group: group as 'PPE' | 'SE',
+          ptrItrFilter: search || undefined,
+          pageNumber: page,
+          pageSize: size,
+        });
+        result = {
+          items: raw.items.map(normalizeTransferListItem),
+          totalCount: raw.totalCount,
+        };
       } else if (transferType === 'RRPPE') {
-        result = await getRRPPEMovements(search, page, pageSize);
+        result = await getRRPPEMovements(search, page, size);
       } else if (transferType === 'RRSP') {
-        result = await getRRSPMovements(search, page, pageSize);
+        result = await getRRSPMovements(search, page, size);
       } else {
-        result = await getMovementsList(search, undefined, undefined, page, pageSize);
+        result = await getMovementsList(search, undefined, undefined, page, size);
       }
 
+      const serverTotal = result.totalCount ?? 0;
       const mergedItems = mergeMovementsByTransfer(result.items || []);
       setMovements(mergedItems);
-      setTotalCount(mergedItems.length);
+      setTotalCount(serverTotal);
       setPageNumber(page);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load movements';
@@ -157,7 +191,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
 
   // Expose loadMovements via ref
   useImperativeHandle(ref, () => ({
-    loadMovements,
+    loadMovements: (search?: string, page?: number) => loadMovements(search, page),
   }));
 
   // Initial load
@@ -415,31 +449,43 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-between items-center mt-4">
-                  <div className="text-sm text-muted-foreground">
-                    Page {pageNumber} of {totalPages}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={pageNumber === 1 || loading}
-                      onClick={() => loadMovements(searchInput, pageNumber - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={pageNumber === totalPages || loading}
-                      onClick={() => loadMovements(searchInput, pageNumber + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
+              <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Size:</span>
+                  <select
+                    className="border rounded px-2 py-1 text-sm bg-background"
+                    value={pageSize}
+                    onChange={(e) => {
+                      const newSize = Number(e.target.value);
+                      setPageSize(newSize);
+                      loadMovements(searchInput, 1, newSize);
+                    }}
+                  >
+                    {[5, 10, 25, 50, 100].map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <span>Page {pageNumber} of {totalPages || 1}</span>
                 </div>
-              )}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pageNumber === 1 || loading}
+                    onClick={() => loadMovements(searchInput, pageNumber - 1)}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pageNumber >= (totalPages || 1) || loading}
+                    onClick={() => loadMovements(searchInput, pageNumber + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
             </>
           )}
         </CardContent>
