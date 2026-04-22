@@ -36,6 +36,7 @@ namespace PortalDB.Models.ResponseModels.Supply
         public string Description { get; set; } = string.Empty;
         public int? TotalCurrentStock { get; set; }
         public int? TotalStockCost { get; set; }
+        public int? ReorderPoint { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime? CreatedAt { get; set; }
 

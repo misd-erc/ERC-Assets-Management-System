@@ -72,8 +72,6 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
     set({ loading: true });
     try {
       const vwSupplies = await getSupplyItems();
-      // console.log("Here is the response:");
-      // console.log(vwSupplies);
       set({ vwSupplies });
     } catch {
       toast.error('Failed to load supplies');

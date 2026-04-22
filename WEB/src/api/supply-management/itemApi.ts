@@ -37,6 +37,7 @@
     description: raw.description,
     totalCurrentStock: raw.totalCurrentStock,
     totalStockCost: raw.totalStockCost,
+    reorderPoint: raw.reorderPoint,
     isActive: raw.isActive ?? true,
     createdAt: raw.createdAt,
   });

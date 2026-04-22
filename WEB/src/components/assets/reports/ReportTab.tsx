@@ -20,13 +20,13 @@ import {
   X,
   Recycle,
   Printer,
+  Archive,
   type LucideIcon,
 } from 'lucide-react';
 
 import { getEmployees } from '@/api/user-management/userApi';
 import { normalizeEmployee } from '@/utils/employeeUtils';
 import { NormalizedEmployee, Asset, UnifiedMovement } from '@/types/asset/UnifiedAsset';
-import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { PTAService } from '@/services/PTAService';
 
 import { ReportPreviewModal } from './ReportPreviewModal';
@@ -48,6 +48,7 @@ import { IIRUPGenerationModal } from './IIRUPGenerator';
 import { toast } from 'sonner';
 import { RSMIReportModal } from "./RSMIReportModal";
 import { PARICSListModal } from "./PARICSListModal";
+import { StockCardReportModal } from "./StockCardReportModal";
 
 export function ReportTab() {
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
@@ -64,6 +65,7 @@ export function ReportTab() {
   const [selectedItem, setSelectedItem] = useState<Asset | null>(null);
   const [selectedMovement, setSelectedMovement] = useState<UnifiedMovement | null>(null);
 
+  // Modal States
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
   const [showItemSelectModal, setShowItemSelectModal] = useState(false);
   const [showItemMovementsModal, setShowItemMovementsModal] = useState(false);
@@ -82,6 +84,8 @@ export function ReportTab() {
   const [showRegistrySPI, setShowRegistrySPI] = useState(false);
   const [showPARList, setShowPARList] = useState(false);
   const [showICSList, setShowICSList] = useState(false);
+  const [showStockCardModal, setShowStockCardModal] = useState(false);
+
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [registrySPIAssets, setRegistrySPIAssets] = useState<any[]>([]);
   const [customNumber, setCustomNumber] = useState('');
@@ -110,6 +114,7 @@ export function ReportTab() {
     setShowIIRUSP(false);
     setShowRSMI(false);
     setShowRegistrySPI(false);
+    setShowStockCardModal(false);
     setSelectedReport(null);
     setSelectedItem(null);
     setSelectedMovement(null);
@@ -372,6 +377,15 @@ export function ReportTab() {
       bgColor: 'bg-indigo-600',
       action: () => { setSelectedReport('PAL'); setShowEmployeeModal(true); }
     },
+    // Stock Card Report
+    {
+      title: 'Stock Card',
+      subtitle: 'Item Stock Ledger & Movements',
+      category: 'Inventory & Physical Count',
+      icon: Archive,
+      bgColor: 'bg-indigo-500',
+      action: () => setShowStockCardModal(true)
+    },
     // --- Issuance & Accountability ---
     {
       title: 'PAR',
@@ -478,25 +492,15 @@ export function ReportTab() {
     }, {} as Record<string, ReportCard[]>);
   }, [filteredReports]);
 
-  // Animation variants
   const containerVariant: Variants = {
     hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.05 }
-    }
+    show: { opacity: 1, transition: { staggerChildren: 0.05 } }
   };
 
   const itemVariant: Variants = {
     hidden: { opacity: 0, y: 15 },
-    show: {
-      opacity: 1,
-      y: 0,
-      transition: { type: "spring", stiffness: 300, damping: 24 }
-    }
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   };
-
-
 
   return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-12">
@@ -536,7 +540,7 @@ export function ReportTab() {
               </div>
           ) : (
               <motion.div
-                  key={searchTerm} // ✅ THE FIX: Forces animation reset on search
+                  key={searchTerm}
                   variants={containerVariant}
                   initial="hidden"
                   animate="show"
@@ -550,12 +554,7 @@ export function ReportTab() {
                       </h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {items.map((r, i) => (
-                            <motion.div
-                                key={r.title}
-                                variants={itemVariant}
-                                layout // ✅ Bonus: smooth repositioning
-                                whileHover={{ y: -3 }}
-                            >
+                            <motion.div key={r.title} variants={itemVariant} layout whileHover={{ y: -3 }}>
                               <Card
                                   onClick={r.action}
                                   className="group cursor-pointer border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md transition-all duration-200 bg-white dark:bg-slate-800 h-full overflow-hidden"
@@ -583,36 +582,14 @@ export function ReportTab() {
           )}
         </div>
 
-        {/* Modals */}
-        <EmployeeSelectModal
-            isOpen={showEmployeeModal}
-            employees={employees}
-            onClose={() => setShowEmployeeModal(false)}
-            onSelect={handleEmployeeSelect}
-        />
+        {/* --- MODALS --- */}
+        <EmployeeSelectModal isOpen={showEmployeeModal} employees={employees} onClose={() => setShowEmployeeModal(false)} onSelect={handleEmployeeSelect} />
 
         {showItemSelectModal === true && selectedReport !== null && (
-            <ItemSelectModal
-                key={`item-select-modal-${selectedReport}`}
-                isOpen={true}
-                onClose={() => setShowItemSelectModal(false)}
-                onSelect={handleItemSelect}
-                groupType={selectedReport === 'ICS' ? 'SE' : 'PPE'}
-                title={`Select ${selectedReport === 'ICS' ? 'SE' : 'PPE'} Item`}
-            />
+            <ItemSelectModal key={`item-select-modal-${selectedReport}`} isOpen={true} onClose={() => setShowItemSelectModal(false)} onSelect={handleItemSelect} groupType={selectedReport === 'ICS' ? 'SE' : 'PPE'} title={`Select ${selectedReport === 'ICS' ? 'SE' : 'PPE'} Item`} />
         )}
 
-        <ItemMovementsModal
-            isOpen={showItemMovementsModal}
-            onClose={() => {
-              setShowItemMovementsModal(false);
-              setSelectedItem(null);
-              setSelectedMovement(null);
-              setShowItemSelectModal(false);
-            }}
-            item={selectedItem}
-            onConfirm={handleMovementSelect}
-        />
+        <ItemMovementsModal isOpen={showItemMovementsModal} onClose={() => { setShowItemMovementsModal(false); setSelectedItem(null); setSelectedMovement(null); setShowItemSelectModal(false); }} item={selectedItem} onConfirm={handleMovementSelect} />
 
         {/* Fullscreen Preview */}
         {showPreview && (
@@ -627,15 +604,10 @@ export function ReportTab() {
                       Preview Document
                     </span>
                   </div>
-                  <button
-                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
-                      onClick={() => setShowPreview(false)}
-                      disabled={loadingPreview}
-                  >
+                  <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800" onClick={() => setShowPreview(false)} disabled={loadingPreview}>
                     <X className="size-5" />
                   </button>
                 </div>
-
                 <div className="flex-1 min-h-0 bg-slate-100/50 dark:bg-black/20">
                   {loadingPreview ? (
                       <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -643,43 +615,29 @@ export function ReportTab() {
                         <p className="text-slate-500 font-medium">Compiling Report...</p>
                       </div>
                   ) : previewUrl ? (
-                      <iframe
-                          src={previewUrl}
-                          className="w-full h-full border-none"
-                          title="Report Preview"
-                      />
+                      <iframe src={previewUrl} className="w-full h-full border-none" title="Report Preview" />
                   ) : (
                       <div className="flex items-center justify-center h-full">
                         <p className="text-slate-500">No preview available</p>
                       </div>
                   )}
                 </div>
-
                 <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                   <Button variant="outline" onClick={() => setShowPreview(false)} disabled={loadingPreview}>
                     Cancel
                   </Button>
-                  <Button
-                      variant="outline"
-                      onClick={() => {
-                        if (!previewUrl) return;
-                        const w = window.open(previewUrl);
-                        if (w) { w.addEventListener('load', () => w.print()); }
-                      }}
-                      disabled={loadingPreview || !previewUrl}
-                  >
-                    <Printer className="size-4 mr-2" />
-                    Print
+                  <Button variant="outline" onClick={() => { if (!previewUrl) return; const w = window.open(previewUrl); if (w) { w.addEventListener('load', () => w.print()); } }} disabled={loadingPreview || !previewUrl}>
+                    <Printer className="size-4 mr-2" /> Print
                   </Button>
                   <Button onClick={handlePreviewConfirm} disabled={loadingPreview || !previewUrl} className="bg-blue-600 hover:bg-blue-700 text-white">
-                    <Download className="size-4 mr-2" />
-                    Download PDF
+                    <Download className="size-4 mr-2" /> Download PDF
                   </Button>
                 </div>
               </div>
             </div>
         )}
 
+        <StockCardReportModal isOpen={showStockCardModal} onClose={() => setShowStockCardModal(false)} />
         <RPCPPEFilterModal isOpen={showRPCPPE} onClose={() => setShowRPCPPE(false)} onGenerate={handleRPCPPEGenerate} />
         <PTRGenerationModal isOpen={showPTR} onClose={() => setShowPTR(false)} employees={employees} />
         <ITRGenerationModal isOpen={showITR} onClose={() => setShowITR(false)} employees={employees} />
