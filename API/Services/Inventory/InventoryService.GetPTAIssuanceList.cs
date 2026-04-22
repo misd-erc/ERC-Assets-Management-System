@@ -105,7 +105,7 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
 
                 var ptaLookup = ptaMap.ToDictionary(p => p.Id, p => p);
 
-                // 7. Employee search — resolve names in-memory for movements still in set
+                // 7. Employee search ï¿½ resolve names in-memory for movements still in set
                 //    Build a name/id-original lookup first to avoid per-row async calls during filter
                 var employeeIds = allMovements
                     .SelectMany(m => new[] { m.PlantillaEmployeeId, m.NonPlantillaEmployeeId })
@@ -155,10 +155,10 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
                     }).ToList();
                 }
 
-                // 8. Sort
+                // 8. Sort â€” newest created/updated first
                 allMovements = allMovements
-                    .OrderByDescending(x => x.DateAssigned)
-                    .ThenByDescending(x => x.CreatedAt)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .ThenByDescending(x => x.DateAssigned)
                     .ToList();
 
                 // 9. Pagination

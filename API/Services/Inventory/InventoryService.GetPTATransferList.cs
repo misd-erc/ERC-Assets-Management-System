@@ -135,10 +135,10 @@ namespace API.Services.Inventory
                     }).ToList();
                 }
 
-                // 8. Sort
+                // 8. Sort — newest created/updated first
                 allMovements = allMovements
-                    .OrderByDescending(x => x.DateAssigned)
-                    .ThenByDescending(x => x.CreatedAt)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .ThenByDescending(x => x.DateAssigned)
                     .ToList();
 
                 // 9. Pagination

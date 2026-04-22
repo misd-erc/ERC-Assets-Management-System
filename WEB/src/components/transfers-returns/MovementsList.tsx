@@ -55,6 +55,8 @@ interface Movement {
   rrppeRrspNumber?: string;
   rrpperrspNumber?: string;
   paricsNumber?: string;
+  plantillaEmployeeId?: number | null;
+  nonPlantillaEmployeeId?: number | null;
   employee?: EmployeeInfo[];
   office?: any;
   division?: any;
@@ -81,6 +83,8 @@ const normalizeTransferListItem = (raw: any): Movement => ({
   createdAt: raw.createdAt,
   office: raw.office,
   division: raw.division,
+  plantillaEmployeeId: raw.plantillaEmployeeId ?? null,
+  nonPlantillaEmployeeId: raw.nonPlantillaEmployeeId ?? null,
   employee: [
     ...(raw.plantillaEmployeeName || raw.plantillaEmployeeId
       ? [{ id: raw.plantillaEmployeeId ?? 0, fullName: raw.plantillaEmployeeName, employeeIdOriginal: raw.plantillaEmployeeIdOriginal, employeeType: 'Plantilla' }]
@@ -290,15 +294,25 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
           dateAssigned: editFields.dateAssigned
             ? new Date(editFields.dateAssigned).toISOString()
             : editingMovement.dateAssigned || new Date().toISOString(),
-          ptrItrNumber: isReturn ? '' : editFields.transferNumber,
+          ptrItrNumber: isReturn
+            ? (editingMovement.ptritrNumber || (editingMovement as any).ptrItrNumber || '')
+            : editFields.transferNumber,
           parIcsNumber: editFields.parIcsNumber,
-          rrppeRrspNumber: isReturn ? editFields.transferNumber : undefined,
+          rrppeRrspNumber: isReturn
+            ? editFields.transferNumber
+            : (editingMovement.rrppeRrspNumber || (editingMovement as any).rrppeRrspNumber || editingMovement.rrpperrspNumber || undefined),
           status: editFields.status,
           condition: editFields.condition,
-          actualOfficeId: null,
-          actualDivisionId: null,
-          plantillaEmployeeId: null,
-          nonPlantillaEmployeeId: null,
+          actualOfficeId: (editingMovement as any).actualOfficeId ?? null,
+          actualDivisionId: (editingMovement as any).actualDivisionId ?? null,
+          plantillaEmployeeId: editingMovement.plantillaEmployeeId
+            ?? editingMovement.employee?.find(e => e.employeeType === 'Plantilla')?.id
+            ?? (editingMovement as any).plantillaEmployeeId
+            ?? null,
+          nonPlantillaEmployeeId: editingMovement.nonPlantillaEmployeeId
+            ?? editingMovement.employee?.find(e => e.employeeType === 'Non-Plantilla')?.id
+            ?? (editingMovement as any).nonPlantillaEmployeeId
+            ?? null,
           isActive: editingMovement.isActive,
           isCurrent: true,
         });
