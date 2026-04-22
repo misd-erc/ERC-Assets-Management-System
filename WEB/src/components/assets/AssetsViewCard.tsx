@@ -500,11 +500,12 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date Assigned</TableHead>
-                    <TableHead>PAR/ITR Number</TableHead>
+                    <TableHead>PAR/ICS No.</TableHead>
+                    <TableHead>PTR/ITR No.</TableHead>
                     <TableHead>RRPPE/RRSP No.</TableHead>
                     <TableHead>Employee (Plantilla)</TableHead>
                     <TableHead>Employee (Non-Plantilla)</TableHead>
-                    <TableHead>Office</TableHead>
+                    <TableHead>Service/Office</TableHead>
                     <TableHead>Division</TableHead>
                     <TableHead>Condition</TableHead>
                   </TableRow>
@@ -513,6 +514,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   {asset.movements.filter(m => m.isActive !== false).map((movement) => (
                     <TableRow key={movement.id}>
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
+                      <TableCell>{movement.parIcsNumber || '-'}</TableCell>
                       <TableCell>{movement.ptrItrNumber || '-'}</TableCell>
                       <TableCell>{movement.rrppeRrspNumber || '-'}</TableCell>
                       <TableCell>
