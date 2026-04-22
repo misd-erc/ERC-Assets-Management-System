@@ -88,12 +88,18 @@ export function TagPreviewGrid({
           const asset = tag.asset;
           const latestMovement = getLatestMovement(asset.movements);
           const employee = latestMovement?.employee?.[0];
-          const divAcronym = employee?.division?.acronym || employee?.office?.acronym || "";
+          const officeAcronym = (employee?.office?.acronym || latestMovement?.office?.acronym || "").trim();
+          const divisionAcronym = (employee?.division?.acronym || latestMovement?.division?.acronym || "").trim();
+          const accountableAcronym = officeAcronym && divisionAcronym
+            ? officeAcronym.toUpperCase() === divisionAcronym.toUpperCase()
+              ? officeAcronym
+              : `${officeAcronym}-${divisionAcronym}`
+            : officeAcronym || divisionAcronym;
           const empName = employee
             ? [employee.firstName, employee.middleName, employee.lastName, employee.suffixName]
                 .filter(Boolean).join(" ").trim()
             : "Unassigned";
-          const personAccountable = divAcronym ? `${divAcronym} — ${empName}` : empName;
+          const personAccountable = accountableAcronym ? `${accountableAcronym} — ${empName}` : empName;
           const modelSerial = [asset.model, asset.serialNumber ? `SN: ${asset.serialNumber}` : null]
             .filter(Boolean).join(" / ") || "—";
           const acqDate = formatDate(asset.dateAcquired);
