@@ -10,6 +10,7 @@ using PortalDB.Models.QueryParams.Uploader;
 using PortalDB.Models.ResponseModels.Uploader;
 using PortalDB.Models.Responses;
 using PortalDB.Models.ViewModels.Account;
+using PortalDB.Models.ViewModels.Delivery;
 using PortalDB.Services;
 using PortalTools.Composition;
 using PortalTools.Services;
@@ -94,6 +95,56 @@ namespace API.Controllers
             {
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(StorageController));
                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("upload/delivery-record/proof")]
+        [RequestSizeLimit(10_000_000)] // 10MB limit for documents/images
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadDeliveryRecordProof(IFormFile file, [FromForm] UploadDeliveryProofViewModel model)
+        {
+            if (file == null || file.Length == 0)
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.UPLOAD_FAILED, "Upload failed. Please check your file"));
+
+            try
+            {
+                await using var context = new PortalDbContext(_options);
+                await using var transaction = await context.Database.BeginTransactionAsync();
+
+                await using var stream = file.OpenReadStream();
+
+                var fileId = await AzureTools.UploadFileAndSaveToDbAsync(
+                    _options,
+                    stream,
+                    file.FileName,
+                    file.ContentType,
+                    model.ActionBySystemUserId,
+                    TblFileStorage.DELIVERY_RECORD_PROOF
+                );
+
+                if (fileId == null)
+                    throw new Exception("Upload failed");
+
+                // NOTE: You will need to create this EditTool method to update the TblDeliveryRecord 
+                // with the returned fileId (e.g., saving it to a 'ProofFileStorageId' column).
+                await _editTools.Delivery.UpdateDeliveryRecordProofAsync(model.DeliveryRecordId, fileId.Value, context);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                UploaderResponseModel uploaderRM = new()
+                {
+                    FileId = fileId
+                };
+
+                return Ok(ApiResponse<object>.Ok(uploaderRM, $"Delivery proof has been successfully uploaded."));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(StorageController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
 

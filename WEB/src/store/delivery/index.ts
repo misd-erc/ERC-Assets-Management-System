@@ -1,7 +1,7 @@
 ﻿import { create } from 'zustand';
 import { toast } from 'sonner';
 import { DeliveryRecord, EditDeliveryRecord, VwDeliveryRecord } from '@/types/delivery/delivery';
-import { editDeliveryRecord, getDeliveryRecords } from '@/api/delivery/deliveryApi';
+import { editDeliveryRecord, getDeliveryRecords, uploadDeliveryProof } from '@/api/delivery/deliveryApi';
 import axiosInstance from '@/lib/axios';
 import { getAuthParams } from '@/utils/auth';
 
@@ -19,6 +19,7 @@ interface DeliveryRecordState {
   addDeliveryRecord: (record: EditDeliveryRecord) => Promise<void>;
   updateDeliveryRecord: (id: number, updates: EditDeliveryRecord) => Promise<void>;
   deleteDeliveryRecord: (id: number) => Promise<void>;
+  uploadProof: (id: number, file: File) => Promise<void>;
 }
 
 export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => ({
@@ -74,6 +75,19 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
       toast.success('Delivery record deleted');
     } catch {
       toast.error('Failed to delete delivery record');
+    }
+  },
+
+  uploadProof: async (id: number, file: File) => {
+    set({ loading: true });
+    try {
+      await uploadDeliveryProof(id, file);
+      toast.success('Delivery proof uploaded successfully');
+      await get().fetchDeliveryRecords(); // Refresh the table
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload proof');
+    } finally {
+      set({ loading: false });
     }
   },
 }));
