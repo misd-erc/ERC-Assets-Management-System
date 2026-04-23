@@ -48,6 +48,7 @@ import { toast } from 'sonner';
 import { RSMIReportModal } from "./RSMIReportModal";
 import { PARICSListModal } from "./PARICSListModal";
 import { StockCardReportModal } from "./StockCardReportModal";
+import { RISReportModal } from "./RISReportModal";
 
 
 export function ReportTab() {
@@ -80,6 +81,7 @@ export function ReportTab() {
   const [showIIRUP, setShowIIRUP] = useState(false);
   const [showIIRUSP, setShowIIRUSP] = useState(false);
   const [showRSMI, setShowRSMI] = useState(false);
+  const [showRISModal, setShowRISModal] = useState(false);
   const [showRegistrySPI, setShowRegistrySPI] = useState(false);
   const [showPARList, setShowPARList] = useState(false);
   const [showICSList, setShowICSList] = useState(false);
@@ -112,6 +114,7 @@ export function ReportTab() {
     setShowIIRUP(false);
     setShowIIRUSP(false);
     setShowRSMI(false);
+    setShowRISModal(false);
     setShowRegistrySPI(false);
     setShowStockCardModal(false);
     setSelectedReport(null);
@@ -460,6 +463,13 @@ export function ReportTab() {
       action: () => setShowRSMI(true)
     },
     {
+      title: 'RIS',
+      subtitle: 'Requisition and Issue Slip',
+      icon: FileText,
+      bgColor: 'bg-cyan-600',
+      action: () => setShowRISModal(true)
+    },
+    {
       title: 'Stock Card',
       subtitle: 'Item Stock Ledger & Movements',
       icon: Archive,
@@ -636,6 +646,12 @@ export function ReportTab() {
         <StockCardReportModal
             isOpen={showStockCardModal}
             onClose={() => setShowStockCardModal(false)}
+        />
+
+        {/* Added the RIS Report Modal to the component tree */}
+        <RISReportModal
+            isOpen={showRISModal}
+            onClose={() => setShowRISModal(false)}
         />
 
         <RPCPPEFilterModal
