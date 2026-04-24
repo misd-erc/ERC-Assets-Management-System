@@ -156,6 +156,27 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
             }
         }
 
+        public async Task<bool> UpdateDeliveryRecordProofAsync(long deliveryRecordId, long fileId, PortalDbContext context)
+        {
+            if (deliveryRecordId == 0 || fileId == 0)
+                return false;
+
+            try
+            {
+                var rowsAffected = await context.TblDeliveryRecords
+                    .Where(dr => dr.Id == deliveryRecordId && !dr.IsDeleted)
+                    .ExecuteUpdateAsync(u => u
+                        .SetProperty(x => x.FileId, fileId));
+
+                return rowsAffected > 0;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(DeliveryEditTools));
+                throw;
+            }
+        }
+
     }
 }
 

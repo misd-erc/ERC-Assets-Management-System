@@ -22,6 +22,7 @@ const mapVwDeliveryRecord = (raw: any): VwDeliveryRecord => ({
   deliveryDate: raw.deliveryDate,
   employee: raw.employee,
   remarks: raw.remarks,
+  fileId: raw.fileId,
   isReceived: raw.isReceived,
   items: raw.items,
   isActive: raw.isActive ?? true,
@@ -83,5 +84,26 @@ export const editDeliveryRecord = async (payload: EditDeliveryRecord): Promise<{
 
   const response = await axiosInstance.post<ApiResponse<any>>('/Delivery/record/edit', requestPayload);
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save delivery record');
+  return { message: response.data.message ?? 'Success' };
+};
+
+/* ------------------------------- UPLOAD ------------------------------- */
+
+export const uploadDeliveryProof = async (deliveryRecordId: number, file: File): Promise<{ message: string }> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('DeliveryRecordId', deliveryRecordId.toString());
+  formData.append('ActionBySystemUserId', systemUserId.toString());
+  formData.append('SessionKey', sessionKey);
+
+  const response = await axiosInstance.post<ApiResponse<any>>('/Storage/upload/delivery-record/proof', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  if (!response.data.success) throw new Error(response.data.message || 'Failed to upload delivery proof');
   return { message: response.data.message ?? 'Success' };
 };

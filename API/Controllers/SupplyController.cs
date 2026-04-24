@@ -369,6 +369,7 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetAllSupplyGroups([FromQuery] PaginationGenericQueryParams model)
         {
+
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
 
@@ -404,6 +405,7 @@ namespace API.Controllers
                             UnitCost = firstItem.UnitCost ?? 0, // <-- Capture UnitCost here instead of calculating total cost early
                             Id = firstItem.Id,
                             IARId = firstItem.IARId,
+                            ReorderPoint = firstItem.ReorderPoint,
                             IsActive = firstItem.IsActive,
                             CreatedAt = firstItem.CreatedAt
                         };
@@ -466,6 +468,7 @@ namespace API.Controllers
                         Description = x.Description ?? string.Empty,
                         TotalCurrentStock = (int?)finalCurrentStock,
                         TotalStockCost = (int?)(finalCurrentStock * x.UnitCost), // <-- Multiply updated stock by the item's unit cost
+                        ReorderPoint = (int?)x.ReorderPoint,
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };

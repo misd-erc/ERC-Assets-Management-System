@@ -39,6 +39,9 @@ namespace PortalDB.Entities.ASSET.Delivery
             set => RemarksEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
+        [Column("FileId")]
+        public long? FileId { get; set; }
+
         [Column("DeliveryRecordIsReceived")]
         public bool IsReceived { get; set; } = false;
 

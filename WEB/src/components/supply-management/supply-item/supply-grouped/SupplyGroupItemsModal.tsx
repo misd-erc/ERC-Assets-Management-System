@@ -1,4 +1,3 @@
-// src/components/supply-management/supply-grouped/SupplyGroupItemsModal.tsx
 import { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -24,6 +23,7 @@ interface Props {
 export const SupplyGroupItemsModal = ({ open, onOpenChange, groupedItem }: Props) => {
   const {
     vwSupplyGroupItems,
+    loading,
     fetchSupplyGroupedItemLists,
     fetchSupplyGroupedItems,
   } = useSupplyItem();
@@ -72,63 +72,64 @@ export const SupplyGroupItemsModal = ({ open, onOpenChange, groupedItem }: Props
   if (!groupedItem) return null;
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="!max-w-[95vw] !w-[95vw] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              Items in Group: {groupedItem.code} - {groupedItem.description}
-            </DialogTitle>
-            <DialogDescription>
-              List of all supply items with this code and description.
-              {!groupedItem.iarId && (
-                <span className="ml-2 text-sm text-muted-foreground">
+      <>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="!max-w-[95vw] !w-[95vw] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Items in Group: {groupedItem.code} - {groupedItem.description}
+              </DialogTitle>
+              <DialogDescription>
+                List of all supply items with this code and description.
+                {!groupedItem.iarId && (
+                    <span className="ml-2 text-sm text-muted-foreground">
                   (Add, edit, or delete items as needed)
                 </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
+                )}
+              </DialogDescription>
+            </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-muted-foreground">
-                Total Current Stock: <strong>{groupedItem.totalCurrentStock}</strong> &nbsp;|&nbsp;
-                Total Stock Cost: <strong>₱{groupedItem.totalStockCost?.toLocaleString()}</strong>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-muted-foreground">
+                  Total Current Stock: <strong>{groupedItem.totalCurrentStock}</strong> &nbsp;|&nbsp;
+                  Total Stock Cost: <strong>₱{groupedItem.totalStockCost?.toLocaleString()}</strong>
+                </div>
+                <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700">
+                  <Plus className="w-4 h-4 mr-2" /> Add New Item
+                </Button>
               </div>
-              <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="w-4 h-4 mr-2" /> Add New Item
-              </Button>
+
+              <div className="border rounded-md overflow-x-auto">
+                <SupplyItemTable
+                    data={vwSupplyGroupItems}
+                    loading={loading}
+                    onAdd={handleAdd}
+                    onView={handleView}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    hideAddButton
+                />
+              </div>
             </div>
+          </DialogContent>
+        </Dialog>
 
-            <div className="border rounded-md overflow-x-auto">
-              <SupplyItemTable
-                data={vwSupplyGroupItems}
-                onAdd={handleAdd}
-                onView={handleView}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                hideAddButton
-              />
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        <SupplyItemEditModal
+            open={editModalOpen}
+            onOpenChange={setEditModalOpen}
+            mode={modalMode}
+            supplyItem={selectedItem}
+            groupContext={groupedItem ? { code: groupedItem.code, description: groupedItem.description } : undefined}
+            onSuccess={refreshAfterChange}
+        />
 
-      <SupplyItemEditModal
-        open={editModalOpen}
-        onOpenChange={setEditModalOpen}
-        mode={modalMode}
-        supplyItem={selectedItem}
-        groupContext={groupedItem ? { code: groupedItem.code, description: groupedItem.description } : undefined}
-        onSuccess={refreshAfterChange}
-      />
-
-      <SupplyItemDeleteModal
-        open={deleteModalOpen}
-        onOpenChange={setDeleteModalOpen}
-        supplyItem={selectedItem}
-        onSuccess={refreshAfterChange}
-      />
-    </>
+        <SupplyItemDeleteModal
+            open={deleteModalOpen}
+            onOpenChange={setDeleteModalOpen}
+            supplyItem={selectedItem}
+            onSuccess={refreshAfterChange}
+        />
+      </>
   );
 };

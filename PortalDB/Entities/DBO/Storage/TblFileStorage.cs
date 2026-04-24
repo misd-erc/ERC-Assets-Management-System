@@ -14,6 +14,7 @@ namespace PortalDB.Entities.DBO.Storage
 
         #region Constants
         [NotMapped] public const string USER_PROFILE_PICTURE = "user/profile-picture";
+        [NotMapped] public const string DELIVERY_RECORD_PROOF = "delivery-and-receipt/delivery-record";
         #endregion
 
         [Key]

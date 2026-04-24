@@ -59,6 +59,7 @@ export interface VwDeliveryRecord {
   deliveryDate: string;
   employee: Employee;
   remarks: string;
+  fileId: number;
   isReceived: boolean;
   items: DeliveryRecordItem[];
   isActive: boolean;

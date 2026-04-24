@@ -18,6 +18,7 @@ namespace PortalDB.Models.ResponseModels.Delivery
         public DateTime? DeliveryDate { get; set; }
         public TblEmployee? Employee { get; set; }
         public string Remarks { get; set; } = string.Empty;
+        public long? FileId { get; set; }
         public bool IsReceived { get; set; } = false;
         public List<DeliveryRecordItemResponseModel>? Items { get; set; }
         public bool IsActive { get; set; } = true;

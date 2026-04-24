@@ -9,7 +9,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
-  Edit, Trash2, MoreHorizontal, Plus, AlertTriangle, ChevronLeft, ChevronRight, Eye, PackageSearch, Loader2
+  Edit, Trash2, MoreHorizontal, Plus, AlertTriangle, ChevronLeft, ChevronRight, Eye, PackageSearch
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { SupplyItemSearchBar } from './SupplyItemSearchBar';
@@ -17,7 +17,7 @@ import { formatCurrency } from '@/utils/formatters';
 
 interface Props {
   data: VwSupplyItem[];
-  isLoading?: boolean;
+  loading?: boolean;
   onAdd: () => void;
   onView: (item: VwSupplyItem) => void;
   onEdit: (item: VwSupplyItem) => void;
@@ -27,7 +27,7 @@ interface Props {
 
 const PAGE_SIZE = 10;
 
-export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit, onDelete, hideAddButton = false }: Props) => {
+export const SupplyItemTable = ({ data, loading = false, onAdd, onView, onEdit, onDelete, hideAddButton = false }: Props) => {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -62,7 +62,6 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
   return (
       <Card className="border-slate-200 shadow-sm">
         <CardHeader className="border-b border-slate-100 pb-4">
-          {/* Header content stays exactly the same */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <CardTitle className="text-xl text-slate-900">Inventory Items</CardTitle>
@@ -73,7 +72,7 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
                 <SupplyItemSearchBar value={searchQuery} onChange={setSearchQuery} />
               </div>
               {!hideAddButton && (
-                  <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700 shrink-0 shadow-sm" disabled={isLoading}>
+                  <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700 shrink-0 shadow-sm" disabled={loading}>
                     <Plus className="w-4 h-4 mr-2" /> Add Item
                   </Button>
               )}
@@ -85,7 +84,6 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-slate-50/80">
-                {/* Table Headers stay exactly the same */}
                 <TableRow>
                   <TableHead className="w-[150px]">Item Code</TableHead>
                   <TableHead className="min-w-[200px]">Description</TableHead>
@@ -100,11 +98,10 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* INTERCEPT RENDERING IF LOADING */}
-                {isLoading ? (
-                    // Render 5 Skeleton Rows while fetching
+                {loading ? (
                     Array.from({ length: 5 }).map((_, index) => (
                         <TableRow key={`skeleton-${index}`}>
+                          {/* 10 columns to match the 10 TableHead items */}
                           {Array.from({ length: 10 }).map((_, colIndex) => (
                               <TableCell key={`skel-col-${colIndex}`}>
                                 <div className="h-4 bg-slate-200 rounded animate-pulse w-full"></div>
@@ -113,19 +110,20 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
                         </TableRow>
                     ))
                 ) : paginatedData.length > 0 ? (
+                    // NORMAL DATA RENDERING
                     paginatedData.map((item) => {
                       const status = getStockStatus(item);
+                      // Using currentStock logic from your original code
                       const isLowStock = item.currentStock > 0 && item.currentStock <= item.reorderPoint;
 
                       return (
                           <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                            {/* Your existing row cells go here (Item Code, Description, etc.) */}
                             <TableCell>
                               <div className="font-medium text-slate-900">{item.code}</div>
                               {item.iarId && (
                                   <span className="inline-flex items-center px-1.5 py-0.5 mt-1 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
-                            IAR-{item.iarId}
-                          </span>
+                                    IAR-{item.iarId}
+                                  </span>
                               )}
                             </TableCell>
                             <TableCell>
@@ -138,7 +136,9 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
                             </TableCell>
                             <TableCell className="text-slate-600">{item.category?.name}</TableCell>
                             <TableCell className="text-slate-600">{item.storageLocation?.name}</TableCell>
-                            <TableCell className="text-slate-600 max-w-[150px] truncate" title={item.vendor?.name}>{item.vendor?.name}</TableCell>
+                            <TableCell className="text-slate-600 max-w-[150px] truncate" title={item.vendor?.name}>
+                              {item.vendor?.name}
+                            </TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1.5 font-medium">
                                 {isLowStock && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
@@ -182,6 +182,7 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
                       );
                     })
                 ) : (
+                    // EMPTY STATE
                     <TableRow>
                       <TableCell colSpan={10} className="h-48 text-center">
                         <div className="flex flex-col items-center justify-center text-slate-500 space-y-3">
@@ -200,10 +201,8 @@ export const SupplyItemTable = ({ data, isLoading = false, onAdd, onView, onEdit
             </Table>
           </div>
 
-          {/* Hide Pagination while loading or if no pages */}
-          {!isLoading && totalPages > 1 && (
+          {!loading && totalPages > 1 && (
               <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-                {/* ... Your pagination buttons ... */}
                 <p className="text-sm text-slate-500">
                   Showing <span className="font-medium text-slate-900">{(page - 1) * PAGE_SIZE + 1}</span> to <span className="font-medium text-slate-900">{Math.min(page * PAGE_SIZE, filteredData.length)}</span> of <span className="font-medium text-slate-900">{filteredData.length}</span> results
                 </p>
