@@ -42,13 +42,30 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
 
             try
             {
-                // 1. Load all current non-deleted movements that have a PAR/ICS number
+                // 1. Load all non-deleted movements and materialize so that
+                //    [NotMapped] decrypted properties (PARICSNumber, etc.) are accessible.
+                //    Do NOT filter by IsCurrent at the DB level — that flag can be unreliable.
                 var allMovements = await _getTools.PTA.GetTblPTAMovements(context)
-                    .Where(x => x.IsCurrent == true && !x.IsDeleted)
+                    .Where(x => !x.IsDeleted)
                     .ToListAsync();
 
+                // Keep only the single latest movement per PTA item.
+                // This is more reliable than trusting the IsCurrent flag.
                 allMovements = allMovements
-                    .Where(x => !string.IsNullOrEmpty(x.PARICSNumber))
+                    .GroupBy(x => x.PTAId ?? 0)
+                    .Select(g => g.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).First())
+                    .ToList();
+
+                // Keep rows that have a real PAR/ICS number (exclude nulls and known placeholders).
+                var invalidParValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "N/A", "NA", "n/a", "None", "none", "-", ""
+                };
+
+                allMovements = allMovements
+                    .Where(x =>
+                        !string.IsNullOrWhiteSpace(x.PARICSNumber) &&
+                        !invalidParValues.Contains(x.PARICSNumber.Trim()))
                     .ToList();
 
                 // 2. Date range filter
@@ -63,11 +80,11 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
                 {
                     string f = model.ParIcsFilter.Trim();
                     if (f.ToUpper() == "PAR")
-                        allMovements = allMovements.Where(x => x.PARICSNumber.ToUpper().StartsWith("PAR")).ToList();
+                        allMovements = allMovements.Where(x => (x.PARICSNumber ?? "").ToUpper().StartsWith("PAR")).ToList();
                     else if (f.ToUpper() == "ICS")
-                        allMovements = allMovements.Where(x => x.PARICSNumber.ToUpper().StartsWith("ICS")).ToList();
+                        allMovements = allMovements.Where(x => (x.PARICSNumber ?? "").ToUpper().StartsWith("ICS")).ToList();
                     else
-                        allMovements = allMovements.Where(x => x.PARICSNumber.ToUpper().Contains(f.ToUpper())).ToList();
+                        allMovements = allMovements.Where(x => (x.PARICSNumber ?? "").ToUpper().Contains(f.ToUpper())).ToList();
                 }
 
                 // 4. Office / Division filter (DB-level field, no encryption)
@@ -80,7 +97,7 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
                 // 5. Collect PTA IDs and fetch PTA records for group filter + enrichment
                 var ptaIds = allMovements
                     .Where(x => x.PTAId.HasValue)
-                    .Select(x => x.PTAId.Value)
+                    .Select(x => x.PTAId!.Value)
                     .Distinct()
                     .ToList();
 
@@ -94,7 +111,7 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
                     (model.Group.ToUpper() == "PPE" || model.Group.ToUpper() == "SE"))
                 {
                     var groupPtaIds = ptaMap
-                        .Where(p => p.Group.ToUpper() == model.Group.ToUpper())
+                        .Where(p => (p.Group ?? "").ToUpper() == model.Group.ToUpper())
                         .Select(p => p.Id)
                         .ToHashSet();
 
@@ -178,15 +195,15 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
                     employeeNameMap.TryGetValue(nonPlantillaId ?? 0, out var nonPlantillaName);
 
                     // Resolve office and division
-                    object office = null;
-                    object division = null;
+                    object? office = null;
+                    object? division = null;
                     if (movement.ActualOfficeId.HasValue)
                         office = await _getTools.Office.GetTblOfficeAsync(movement.ActualOfficeId.Value, context);
                     if (movement.ActualDivisionId.HasValue)
                         division = await _getTools.Office.GetTblDivisionAsync(movement.ActualDivisionId.Value, context);
 
                     // Resolve PTA item details
-                    object itemDetails = null;
+                    object? itemDetails = null;
                     if (movement.PTAId.HasValue && ptaLookup.TryGetValue(movement.PTAId.Value, out var pta))
                     {
                         var category = await _getTools.PTA.GetTblPTACategoryAsync(pta.CategoryId, context);
