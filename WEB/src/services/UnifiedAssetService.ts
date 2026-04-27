@@ -144,6 +144,21 @@ export class UnifiedAssetService {
           ? parseInt(filters.category) || undefined
           : undefined;
 
+      const officeId =
+        filters?.office && filters.office !== 'all'
+          ? parseInt(filters.office) || undefined
+          : undefined;
+
+      const divisionId =
+        filters?.division && filters.division !== 'all'
+          ? parseInt(filters.division) || undefined
+          : undefined;
+
+      const condition =
+        filters?.condition && filters.condition !== 'all'
+          ? filters.condition
+          : undefined;
+
       const groupFilter = filters?.group?.toLowerCase();
 
       let allItems: Asset[] = [];
@@ -161,6 +176,9 @@ export class UnifiedAssetService {
           GroupName: 'ppe',
           EmployeeId: filters?.EmployeeId,
           CategoryId: categoryId,
+          OfficeId: officeId,
+          DivisionId: divisionId,
+          Condition: condition,
         });
         allItems = (ppeResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'PPE'));
         totalCount = ppeResponse.totalCount;
@@ -176,6 +194,9 @@ export class UnifiedAssetService {
           GroupName: 'se',
           EmployeeId: filters?.EmployeeId,
           CategoryId: categoryId,
+          OfficeId: officeId,
+          DivisionId: divisionId,
+          Condition: condition,
         });
         allItems = (seResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'SE'));
         totalCount = seResponse.totalCount;
@@ -192,6 +213,9 @@ export class UnifiedAssetService {
             GroupName: 'ppe',
             EmployeeId: filters?.EmployeeId,
             CategoryId: categoryId,
+            OfficeId: officeId,
+            DivisionId: divisionId,
+            Condition: condition,
           }),
           seApi.list({
             SearchString: searchString,
@@ -204,6 +228,9 @@ export class UnifiedAssetService {
             GroupName: 'se',
             EmployeeId: filters?.EmployeeId,
             CategoryId: categoryId,
+            OfficeId: officeId,
+            DivisionId: divisionId,
+            Condition: condition,
           }),
         ]);
         allItems = [
