@@ -3,9 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Loader2, Search, Eye, User, Package } from 'lucide-react';
+import { Loader2, Search, Eye, User, Package, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements } from '@/api/asset/transferApi';
+import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements, getPTATransferList, getPTAReturnList, editMovement } from '@/api/asset/transferApi';
+import { getConditions } from '@/api/asset/inventoryApi';
+import { getEmployees } from '@/api/user-management/userApi';
+import { ApiEmployee } from '@/types/transfer';
+import { EmployeeSelector } from './EmployeeSelector';
 import { PTRGenerator } from '@/components/assets/reports/PTRGenerator';
 import { ITRGenerator } from '@/components/assets/reports/ITRGenerator';
 import { ReturnReceiptGenerator } from '@/components/assets/reports/ReturnReceiptGenerator';
@@ -54,6 +58,8 @@ interface Movement {
   rrppeRrspNumber?: string;
   rrpperrspNumber?: string;
   paricsNumber?: string;
+  plantillaEmployeeId?: number | null;
+  nonPlantillaEmployeeId?: number | null;
   employee?: EmployeeInfo[];
   office?: any;
   division?: any;
@@ -63,7 +69,36 @@ interface Movement {
   condition?: string;
   isActive: boolean;
   createdAt?: string;
+  allMovementIds?: number[];
 }
+
+// Normalize a single item from the new getPTATransferList response shape into Movement
+const normalizeTransferListItem = (raw: any): Movement => ({
+  id: raw.id,
+  movementId: raw.id,
+  ptaId: raw.ptaId,
+  ptritrNumber: raw.ptrItrNumber,
+  rrppeRrspNumber: raw.rrppeRrspNumber || raw.rrpperrspNumber,
+  paricsNumber: raw.parIcsNumber,
+  dateAssigned: raw.dateAssigned,
+  status: raw.status,
+  remarks: raw.remarks,
+  isActive: raw.isActive,
+  createdAt: raw.createdAt,
+  office: raw.office,
+  division: raw.division,
+  plantillaEmployeeId: raw.plantillaEmployeeId ?? null,
+  nonPlantillaEmployeeId: raw.nonPlantillaEmployeeId ?? null,
+  employee: [
+    ...(raw.plantillaEmployeeName || raw.plantillaEmployeeId
+      ? [{ id: raw.plantillaEmployeeId ?? 0, fullName: raw.plantillaEmployeeName, employeeIdOriginal: raw.plantillaEmployeeIdOriginal, employeeType: 'Plantilla' }]
+      : []),
+    ...(raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
+      ? [{ id: raw.nonPlantillaEmployeeId ?? 0, fullName: raw.nonPlantillaEmployeeName, employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal, employeeType: 'Non-Plantilla' }]
+      : []),
+  ],
+  items: raw.item ? [raw.item] : [],
+});
 
 // Merge movements that share the same transfer number so UI shows a single row per PTR/ITR
 const mergeMovementsByTransfer = (items: Movement[]): Movement[] => {
@@ -83,6 +118,7 @@ const mergeMovementsByTransfer = (items: Movement[]): Movement[] => {
         ...item,
         items: item.items ? [...item.items] : [],
         employee: item.employee ? [...item.employee] : [],
+        allMovementIds: item.id ? [item.id] : [],
       });
       return;
     }
@@ -101,11 +137,15 @@ const mergeMovementsByTransfer = (items: Movement[]): Movement[] => {
       if (!already) mergedEmployees.push(emp);
     });
 
+    const mergedIds = [...(existing.allMovementIds || [])]
+    if (item.id && !mergedIds.includes(item.id)) mergedIds.push(item.id);
+
     map.set(key, {
       ...existing,
       ...item,
       items: mergedItems,
       employee: mergedEmployees,
+      allMovementIds: mergedIds,
     });
   });
 
@@ -122,29 +162,73 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   const [generating, setGenerating] = useState(false);
   const [pageNumber, setPageNumber] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
+
+  // Edit state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingMovement, setEditingMovement] = useState<Movement | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [conditions, setConditions] = useState<string[]>([]);
+  const [editEmployees, setEditEmployees] = useState<ApiEmployee[]>([]);
+  const [editEmployeesLoading, setEditEmployeesLoading] = useState(false);
+  const [editFields, setEditFields] = useState<{
+    dateAssigned: string;
+    transferNumber: string;
+    parIcsNumber: string;
+    status: string;
+    condition: string;
+    remarks: string;
+    plantillaEmployeeId: number | null;
+    nonPlantillaEmployeeId: number | null;
+  }>({
+    dateAssigned: '',
+    transferNumber: '',
+    parIcsNumber: '',
+    status: '',
+    condition: '',
+    remarks: '',
+    plantillaEmployeeId: null,
+    nonPlantillaEmployeeId: null,
+  });
 
   // Load movements
-  const loadMovements = async (search?: string, page: number = 1) => {
+  const loadMovements = async (search?: string, page: number = 1, size: number = pageSize) => {
     try {
       setLoading(true);
       
       let result;
-      if (transferType === 'PTR') {
-        result = await getPTRMovements(search, page, pageSize);
-      } else if (transferType === 'ITR') {
-        result = await getITRMovements(search, page, pageSize);
-      } else if (transferType === 'RRPPE') {
-        result = await getRRPPEMovements(search, page, pageSize);
-      } else if (transferType === 'RRSP') {
-        result = await getRRSPMovements(search, page, pageSize);
+      if (transferType === 'PTR' || transferType === 'ITR') {
+        const group = transferType === 'PTR' ? 'PPE' : 'SE';
+        const raw = await getPTATransferList({
+          group: group as 'PPE' | 'SE',
+          ptrItrFilter: search || undefined,
+          pageNumber: page,
+          pageSize: size,
+        });
+        result = {
+          items: raw.items.map(normalizeTransferListItem),
+          totalCount: raw.totalCount,
+        };
+      } else if (transferType === 'RRPPE' || transferType === 'RRSP') {
+        const group = transferType === 'RRPPE' ? 'PPE' : 'SE';
+        const raw = await getPTAReturnList({
+          group,
+          rrppeRrspFilter: search || transferType,
+          pageNumber: page,
+          pageSize: size,
+        });
+        result = {
+          items: raw.items.map(normalizeTransferListItem),
+          totalCount: raw.totalCount,
+        };
       } else {
-        result = await getMovementsList(search, undefined, undefined, page, pageSize);
+        result = await getMovementsList(search, undefined, undefined, page, size);
       }
 
+      const serverTotal = result.totalCount ?? 0;
       const mergedItems = mergeMovementsByTransfer(result.items || []);
       setMovements(mergedItems);
-      setTotalCount(mergedItems.length);
+      setTotalCount(serverTotal);
       setPageNumber(page);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load movements';
@@ -157,7 +241,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
 
   // Expose loadMovements via ref
   useImperativeHandle(ref, () => ({
-    loadMovements,
+    loadMovements: (search?: string, page?: number) => loadMovements(search, page),
   }));
 
   // Initial load
@@ -178,6 +262,111 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   const handleViewDetails = (movement: Movement) => {
     setSelectedMovement(movement);
     setDetailsDialogOpen(true);
+  };
+
+  // Handle edit details
+  const handleEditDetails = async (movement: Movement) => {
+    setEditingMovement(movement);
+    setEditFields({
+      dateAssigned: movement.dateAssigned
+        ? new Date(movement.dateAssigned).toISOString().split('T')[0]
+        : '',
+      transferNumber:
+        movement.ptritrNumber ||
+        movement.rrppeRrspNumber ||
+        movement.rrpperrspNumber ||
+        '',
+      parIcsNumber: movement.paricsNumber || '',
+      status: movement.status || '',
+      condition: movement.condition || '',
+      remarks: movement.remarks || '',
+      plantillaEmployeeId:
+        movement.plantillaEmployeeId ??
+        movement.employee?.find(e => e.employeeType === 'Plantilla')?.id ??
+        null,
+      nonPlantillaEmployeeId:
+        movement.nonPlantillaEmployeeId ??
+        movement.employee?.find(e => e.employeeType === 'Non-Plantilla')?.id ??
+        null,
+    });
+
+    const loads: Promise<any>[] = [];
+
+    if (conditions.length === 0) {
+      loads.push(
+        getConditions()
+          .then(conds => setConditions(conds || []))
+          .catch(() => {})
+      );
+    }
+
+    if (editEmployees.length === 0) {
+      setEditEmployeesLoading(true);
+      loads.push(
+        getEmployees()
+          .then(res => setEditEmployees(res.data?.items || []))
+          .catch(() => {})
+          .finally(() => setEditEmployeesLoading(false))
+      );
+    }
+
+    await Promise.all(loads);
+    setEditDialogOpen(true);
+  };
+
+  // Save edited movement details
+  const handleSaveEdit = async () => {
+    if (!editingMovement) return;
+    const ids = editingMovement.allMovementIds?.length
+      ? editingMovement.allMovementIds
+      : editingMovement.id
+      ? [editingMovement.id]
+      : [];
+
+    if (ids.length === 0) {
+      toast.error('No movement IDs available to update');
+      return;
+    }
+
+    const isReturn =
+      !editFields.transferNumber.toUpperCase().startsWith('PTR') &&
+      !editFields.transferNumber.toUpperCase().startsWith('ITR');
+
+    try {
+      setEditSaving(true);
+      for (const id of ids) {
+        await editMovement({
+          id,
+          ptaId: editingMovement.ptaId ?? 0,
+          dateAssigned: editFields.dateAssigned
+            ? new Date(editFields.dateAssigned).toISOString()
+            : editingMovement.dateAssigned || new Date().toISOString(),
+          ptrItrNumber: isReturn
+            ? (editingMovement.ptritrNumber || (editingMovement as any).ptrItrNumber || '')
+            : editFields.transferNumber,
+          parIcsNumber: editFields.parIcsNumber,
+          rrppeRrspNumber: isReturn
+            ? editFields.transferNumber
+            : (editingMovement.rrppeRrspNumber || (editingMovement as any).rrppeRrspNumber || editingMovement.rrpperrspNumber || undefined),
+          status: editFields.status,
+          condition: editFields.condition,
+          actualOfficeId: (editingMovement as any).actualOfficeId ?? null,
+          actualDivisionId: (editingMovement as any).actualDivisionId ?? null,
+          plantillaEmployeeId: editFields.plantillaEmployeeId ?? null,
+          nonPlantillaEmployeeId: editFields.nonPlantillaEmployeeId ?? null,
+          isActive: editingMovement.isActive,
+          isCurrent: true,
+        });
+      }
+      toast.success('Movement details updated successfully');
+      setEditDialogOpen(false);
+      loadMovements(searchInput, pageNumber);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update movement';
+      toast.error(message);
+    } finally {
+      setEditSaving(false);
+    }
   };
 
   const buildEmployee = (emp?: EmployeeInfo): NormalizedEmployee => {
@@ -399,14 +588,24 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewDetails(movement)}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Details
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewDetails(movement)}
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              Details
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditDetails(movement)}
+                            >
+                              <Pencil className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -415,31 +614,43 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-between items-center mt-4">
-                  <div className="text-sm text-muted-foreground">
-                    Page {pageNumber} of {totalPages}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={pageNumber === 1 || loading}
-                      onClick={() => loadMovements(searchInput, pageNumber - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={pageNumber === totalPages || loading}
-                      onClick={() => loadMovements(searchInput, pageNumber + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
+              <div className="flex items-center justify-between mt-4 flex-wrap gap-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>Size:</span>
+                  <select
+                    className="border rounded px-2 py-1 text-sm bg-background"
+                    value={pageSize}
+                    onChange={(e) => {
+                      const newSize = Number(e.target.value);
+                      setPageSize(newSize);
+                      loadMovements(searchInput, 1, newSize);
+                    }}
+                  >
+                    {[5, 10, 25, 50, 100].map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                  <span>Page {pageNumber} of {totalPages || 1}</span>
                 </div>
-              )}
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pageNumber === 1 || loading}
+                    onClick={() => loadMovements(searchInput, pageNumber - 1)}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={pageNumber >= (totalPages || 1) || loading}
+                    onClick={() => loadMovements(searchInput, pageNumber + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
             </>
           )}
         </CardContent>
@@ -647,6 +858,209 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
               </div>
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+      {/* Edit Details Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="w-[95vw] sm:max-w-lg max-w-[95vw] max-h-[95vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Update Movement Details</DialogTitle>
+            <DialogDescription className="text-sm">
+              Edit the details for{' '}
+              <span className="font-semibold">
+                {editingMovement?.ptritrNumber ||
+                  editingMovement?.rrppeRrspNumber ||
+                  editingMovement?.rrpperrspNumber ||
+                  'this movement'}
+              </span>
+              {editingMovement?.allMovementIds && editingMovement.allMovementIds.length > 1 && (
+                <span className="text-muted-foreground">
+                  {' '}({editingMovement.allMovementIds.length} records will be updated)
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Transfer / Return Number */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">
+                {transferType === 'RRPPE' || transferType === 'RRSP'
+                  ? 'Return Number'
+                  : 'Transfer Number'}
+              </label>
+              <Input
+                value={editFields.transferNumber}
+                onChange={(e) =>
+                  setEditFields(f => ({ ...f, transferNumber: e.target.value }))
+                }
+                placeholder="e.g. PTR-2024-001"
+              />
+            </div>
+
+            {/* PAR/ICS Number (only for PTR/ITR) */}
+            {(transferType === 'PTR' || transferType === 'ITR' || !transferType) && (
+              <div className="space-y-1">
+                <label className="text-sm font-medium">PAR/ICS Number</label>
+                <Input
+                  value={editFields.parIcsNumber}
+                  onChange={(e) =>
+                    setEditFields(f => ({ ...f, parIcsNumber: e.target.value }))
+                  }
+                  placeholder="e.g. PAR-2024-001"
+                />
+              </div>
+            )}
+
+            {/* Date Assigned */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Date Assigned</label>
+              <Input
+                type="date"
+                value={editFields.dateAssigned}
+                onChange={(e) =>
+                  setEditFields(f => ({ ...f, dateAssigned: e.target.value }))
+                }
+              />
+            </div>
+
+            {/* Accountable Person — Plantilla */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">
+                Plantilla Employee (Accountable Person)
+              </label>
+              {editEmployeesLoading ? (
+                <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading employees…
+                </div>
+              ) : (
+                <EmployeeSelector
+                  employees={editEmployees.filter(e => {
+                    const typeName = (e.employmentTypeName || e.employmentType?.name || '').toLowerCase();
+                    if (e.employmentType?.id) return e.employmentType.id === 1;
+                    return typeName.includes('plantilla') && !typeName.includes('non');
+                  })}
+                  value={editFields.plantillaEmployeeId}
+                  onSelect={(id) => setEditFields(f => ({ ...f, plantillaEmployeeId: id }))}
+                  placeholder="Search plantilla employee…"
+                />
+              )}
+            </div>
+
+            {/* Accountable Person — Non-Plantilla (optional) */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">
+                  Non-Plantilla Employee <span className="text-muted-foreground font-normal">(Optional)</span>
+                </label>
+                {editFields.nonPlantillaEmployeeId !== null && (
+                  <button
+                    type="button"
+                    className="text-xs text-destructive hover:underline"
+                    onClick={() => setEditFields(f => ({ ...f, nonPlantillaEmployeeId: null }))}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {editEmployeesLoading ? (
+                <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading employees…
+                </div>
+              ) : (
+                <EmployeeSelector
+                  employees={editEmployees.filter(e => {
+                    const typeName = (e.employmentTypeName || e.employmentType?.name || '').toLowerCase();
+                    if (e.employmentType?.id) return e.employmentType.id !== 1;
+                    return !typeName.includes('plantilla') || typeName.includes('non');
+                  })}
+                  value={editFields.nonPlantillaEmployeeId}
+                  onSelect={(id) => setEditFields(f => ({ ...f, nonPlantillaEmployeeId: id }))}
+                  placeholder="Search non-plantilla employee…"
+                />
+              )}
+            </div>
+
+            {/* Status */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Status</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm bg-background"
+                value={editFields.status}
+                onChange={(e) =>
+                  setEditFields(f => ({ ...f, status: e.target.value }))
+                }
+              >
+                <option value="">— Select Status —</option>
+                <option value="T">Transfer</option>
+                <option value="R">Return</option>
+                <option value="C">Completed</option>
+              </select>
+            </div>
+
+            {/* Condition */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Condition</label>
+              {conditions.length > 0 ? (
+                <select
+                  className="w-full border rounded px-3 py-2 text-sm bg-background"
+                  value={editFields.condition}
+                  onChange={(e) =>
+                    setEditFields(f => ({ ...f, condition: e.target.value }))
+                  }
+                >
+                  <option value="">— Select Condition —</option>
+                  {conditions.map(c => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  value={editFields.condition}
+                  onChange={(e) =>
+                    setEditFields(f => ({ ...f, condition: e.target.value }))
+                  }
+                  placeholder="e.g. Good"
+                />
+              )}
+            </div>
+
+            {/* Remarks */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Remarks</label>
+              <textarea
+                className="w-full border rounded px-3 py-2 text-sm bg-background resize-none"
+                rows={3}
+                value={editFields.remarks}
+                onChange={(e) =>
+                  setEditFields(f => ({ ...f, remarks: e.target.value }))
+                }
+                placeholder="Optional remarks..."
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+              disabled={editSaving}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={editSaving}>
+              {editSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

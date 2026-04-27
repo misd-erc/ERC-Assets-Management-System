@@ -135,29 +135,37 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     setSelectedItems(itemIds);
   };
 
-  // Check if item is currently held by employee based on IsCurrent flag
+  // Check if item is currently held by employee.
+  // Do NOT rely on the isCurrent flag — it can be stale or incorrectly set.
+  // Instead, take the latest movement by createdAt/id and verify the employee match.
   const isCurrentHolder = (item: any, employeeId: number | undefined): boolean => {
     if (!employeeId) return false;
-    
-    // If item has movements array, find the most recent one and check isCurrent flag
+
     if (item.movements && Array.isArray(item.movements) && item.movements.length > 0) {
-      const sortedMovements = [...item.movements].sort((a, b) => {
-        const dateA = new Date(a.dateAssigned).getTime();
-        const dateB = new Date(b.dateAssigned).getTime();
-        return dateB - dateA; // Most recent first
+      const sorted = [...item.movements].sort((a, b) => {
+        // Prefer createdAt, fall back to dateAssigned, then id
+        const tA = a.createdAt
+          ? new Date(a.createdAt).getTime()
+          : new Date(a.dateAssigned ?? 0).getTime();
+        const tB = b.createdAt
+          ? new Date(b.createdAt).getTime()
+          : new Date(b.dateAssigned ?? 0).getTime();
+        if (tB !== tA) return tB - tA;
+        return (b.id ?? 0) - (a.id ?? 0);
       });
-      
-      const latestMovement = sortedMovements[0];
-      // Check if the latest movement has isCurrent flag set to true
-      if (latestMovement.isCurrent === true) {
-        // Also verify the employee is the holder
-        const isPlantilla = latestMovement.plantillaEmployeeId === employeeId;
-        const isNonPlantilla = latestMovement.nonPlantillaEmployeeId === employeeId;
-        return isPlantilla || isNonPlantilla;
-      }
+
+      const latest = sorted[0];
+      return (
+        latest.plantillaEmployeeId === employeeId ||
+        latest.nonPlantillaEmployeeId === employeeId
+      );
     }
-    
-    return false;
+
+    // No movements recorded — fall back to direct assignment fields if present
+    return (
+      item.plantillaEmployeeId === employeeId ||
+      item.nonPlantillaEmployeeId === employeeId
+    );
   };
 
   // Check if item has been transferred out (has a toEmployee assigned)

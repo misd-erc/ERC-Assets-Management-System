@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OfficeOpenXml;
+using API.Services.Dashboard;
+using API.Services.Inventory;
 using PortalCommon.Utilities;
 using PortalDB.Services;
 using PortalTools.Composition;
@@ -65,6 +67,8 @@ builder.Services.AddScoped<DeliveryEditTools>();
 
 builder.Services.AddScoped<AuthTools>();
 builder.Services.AddScoped<ParserTools>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 #endregion
 
 #region CORS

@@ -450,29 +450,6 @@ export class RegistrySPIByEmployeeGenerator {
             ))}
           </View>
 
-          {/* SIGNATURE BLOCK */}
-          <View style={{
-            width: TABLE_WIDTH,
-            alignSelf: 'center',
-            marginTop: 0,
-            flexDirection: 'row',
-            borderWidth: 1,
-            borderColor: '#000',
-            borderTopWidth: 0,
-          }}>
-            <View style={{ flex: 1, textAlign: 'center', borderRightWidth: 1, borderColor: '#000', padding: 8 }}>
-              <Text style={{ fontSize: 8 }}>I hereby certify the correctness of the information above.</Text>
-              <Text style={{ fontSize: 8 }}> </Text>
-              <Text style={{ fontSize: 8, fontWeight: 'bold' }}>CHERRY LYNN S. GONZALES</Text>
-              <View style={{ borderBottomWidth: 1, borderColor: '#000', width: 180, alignSelf: 'center', marginVertical: 6 }} />
-              <Text style={{ fontSize: 8 }}>SUPPLY OFFICER</Text>
-            </View>
-            <View style={{ flex: 1, textAlign: 'center', padding: 8 }}>
-              <Text style={{ fontSize: 8 }}>Posted By:</Text>
-              <View style={{ borderBottomWidth: 1, borderColor: '#000', width: 180, alignSelf: 'center', marginVertical: 6 }} />
-              <Text style={{ fontSize: 8 }}>ACCOUNTING SECTION</Text>
-            </View>
-          </View>
         </Page>
       </Document>
     );

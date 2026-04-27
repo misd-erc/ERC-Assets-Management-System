@@ -1,4 +1,5 @@
-import { PublicClientApplication, AuthenticationResult } from '@azure/msal-browser';
+import { PublicClientApplication, AuthenticationResult, InteractionRequiredAuthError } from '@azure/msal-browser';
+import { msalInstance } from '@/config/msalConfig';
 
 export interface Employee {
   id: string;
@@ -16,7 +17,10 @@ interface GraphResponse {
 const HRIS_PLANTILLA_GROUP_ID = '10d10efd-bb3d-4c21-b701-59eb60668290';
 const HRIS_CO_JO_GROUP_ID = 'e224728a-cf4c-491a-adc4-75a040225d14';
 
-const SCOPES = ['User.Read.All', 'GroupMember.Read.All'];
+const SCOPES = [
+  'https://graph.microsoft.com/User.Read.All',
+  'https://graph.microsoft.com/GroupMember.Read.All',
+];
 
 /** Fetches all members of a single group, following @odata.nextLink for pagination. */
 async function fetchGroupMembers(groupId: string, accessToken: string): Promise<Employee[]> {
@@ -45,23 +49,17 @@ async function fetchGroupMembers(groupId: string, accessToken: string): Promise<
   return members;
 }
 
-function buildMsalInstance() {
-  return new PublicClientApplication({
-    auth: {
-      clientId: process.env.REACT_APP_MSAL_CLIENT_ID || '',
-      authority: `https://login.microsoftonline.com/${process.env.REACT_APP_MSAL_TENANT_ID || 'common'}`,
-      redirectUri: process.env.REACT_APP_MSAL_REDIRECT_URI || '',
-    },
-    cache: {
-      cacheLocation: 'sessionStorage' as const,
-      storeAuthStateInCookie: false,
-    },
-  });
+let msalInitialized = false;
+
+async function ensureMsalInitialized(): Promise<void> {
+  if (!msalInitialized) {
+    await msalInstance.initialize();
+    msalInitialized = true;
+  }
 }
 
-export async function fetchEmployeesDirectly(): Promise<Employee[]> {
-  const msalInstance = buildMsalInstance();
-  await msalInstance.initialize();
+async function acquireGraphToken(): Promise<string> {
+  await ensureMsalInitialized();
 
   const accounts = msalInstance.getAllAccounts();
 
@@ -76,10 +74,27 @@ export async function fetchEmployeesDirectly(): Promise<Employee[]> {
       scopes: SCOPES,
       account,
     });
+    return tokenResponse.accessToken;
+  } catch (silentError) {
+    if (silentError instanceof InteractionRequiredAuthError) {
+      // Consent or MFA required — prompt the user
+      const tokenResponse = await msalInstance.acquireTokenPopup({
+        scopes: SCOPES,
+        account,
+      });
+      return tokenResponse.accessToken;
+    }
+    throw silentError;
+  }
+}
+
+export async function fetchEmployeesDirectly(): Promise<Employee[]> {
+  try {
+    const accessToken = await acquireGraphToken();
 
     const [plantillaMembers, coJoMembers] = await Promise.all([
-      fetchGroupMembers(HRIS_PLANTILLA_GROUP_ID, tokenResponse.accessToken),
-      fetchGroupMembers(HRIS_CO_JO_GROUP_ID, tokenResponse.accessToken),
+      fetchGroupMembers(HRIS_PLANTILLA_GROUP_ID, accessToken),
+      fetchGroupMembers(HRIS_CO_JO_GROUP_ID, accessToken),
     ]);
 
     // Deduplicate by Entra object ID in case someone appears in both groups

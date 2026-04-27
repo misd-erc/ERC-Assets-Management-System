@@ -219,11 +219,12 @@ export function AssetsTable({
             </TableHeader>
             <TableBody>
               {assets.map((asset) => {
-                const activeMovements = (asset.movements || []).filter(m => m.isActive !== false);
-                const latestMovement =
-                  activeMovements.length > 0
-                    ? activeMovements[activeMovements.length - 1]
-                    : null;
+                const allMovements = asset.movements || [];
+                const latestMovement = allMovements.length > 0
+                  ? [...allMovements].sort((a: any, b: any) =>
+                      new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
+                    )[0]
+                  : null;
 
                 return (
                   <TableRow key={asset.id}>
