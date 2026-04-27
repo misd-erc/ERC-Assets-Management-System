@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search, FileText, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
-import { getRRPPEMovements, getRRSPMovements } from '@/api/asset/transferApi';
+import { getPTAReturnList } from '@/api/asset/transferApi';
 import { ReturnReceiptGenerator } from './ReturnReceiptGenerator';
 
 type ReturnType = 'RRPPE' | 'RRSP';
@@ -58,39 +58,64 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
   const loadRecords = async () => {
     setLoading(true);
     try {
-      const apiFn = returnType === 'RRPPE' ? getRRPPEMovements : getRRSPMovements;
-      const response = await apiFn(undefined, 1, 1000);
+      const group = returnType === 'RRPPE' ? 'PPE' : 'SE';
+      const response = await getPTAReturnList({
+        group,
+        rrppeRrspFilter: returnType,
+        pageNumber: 1,
+        pageSize: 1000,
+      });
 
       const grouped = new Map<string, ReturnRecord>();
       const detailMap = new Map<string, any>();
 
-      (response.items || []).forEach((item: any) => {
-        const number = item.rrppeRrspNumber || item.rrpperrspNumber || '';
+      (response.items || []).forEach((raw: any) => {
+        const number = raw.rrppeRrspNumber || raw.rrpperrspNumber || '';
         if (!number || !number.toUpperCase().startsWith(returnType)) return;
 
         const existingDetail = detailMap.get(number);
-        const mergedItems = [...(existingDetail?.items || []), ...(item.items || [])];
+        const newItems = raw.item ? [raw.item] : (raw.items || []);
+        const mergedItems = [...(existingDetail?.items || []), ...newItems];
         const uniqueItems = mergedItems.reduce((acc: any[], it: any) => {
-          const exists = acc.find(x => (x.id != null && x.id === it.id) || (x.propertyNumber && x.propertyNumber === it.propertyNumber));
+          const exists = acc.find(
+            (x) =>
+              (x.id != null && x.id === it.id) ||
+              (x.propertyNumber && x.propertyNumber === it.propertyNumber),
+          );
           if (!exists) acc.push(it);
           return acc;
         }, []);
 
-        const returnedBy = item.employee?.[0]?.fullName || existingDetail?.returnedBy || 'Unknown';
+        const isNonPlantilla = !!raw.nonPlantillaEmployeeId;
+
+        // "Returned by" is always the plantilla PAR-holder
+        const plantillaName = raw.plantillaEmployeeName || 'Unknown';
+        const plantillaPosition =
+          raw.plantillaEmployeePosition ||
+          raw.plantillaEmployeeType ||
+          '';
+
+        // Sub-PAR is the non-plantilla employee (if any)
+        const nonPlantillaName = raw.nonPlantillaEmployeeName || '';
+
+        const returnedBy = existingDetail?.returnedBy || plantillaName;
 
         detailMap.set(number, {
           number,
           items: uniqueItems,
-          dateAssigned: item.dateAssigned || existingDetail?.dateAssigned,
+          dateAssigned: raw.dateAssigned || existingDetail?.dateAssigned,
           returnedBy,
-          returnedByPosition: item.employee?.[0]?.position?.name || item.employee?.[0]?.employeeType || existingDetail?.returnedByPosition || '',
+          returnedByPosition: existingDetail?.returnedByPosition || plantillaPosition,
+          isNonPlantilla: existingDetail?.isNonPlantilla ?? isNonPlantilla,
+          nonPlantillaEmployeeName:
+            existingDetail?.nonPlantillaEmployeeName || nonPlantillaName || '',
         });
 
         grouped.set(number, {
           number,
           returnedBy,
           itemCount: uniqueItems.length,
-          dateAssigned: item.dateAssigned,
+          dateAssigned: raw.dateAssigned,
         });
       });
 
@@ -127,7 +152,7 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
         details.dateAssigned || new Date().toISOString(),
         details.returnedBy,
         details.returnedByPosition,
-        undefined,
+        details.isNonPlantilla ? details.nonPlantillaEmployeeName : undefined,
         signatureDate
       );
       setPreviewUrl(url);
@@ -232,7 +257,7 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
         <div className="bg-muted/30 p-4 rounded-lg space-y-3">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Returned By</p>
+              <p className="text-xs font-medium text-muted-foreground">Returned By (Plantilla / End User)</p>
               <p className="text-sm font-semibold">{details.returnedBy}</p>
               <p className="text-xs text-muted-foreground">{details.returnedByPosition || '—'}</p>
             </div>
@@ -241,6 +266,12 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
               <p className="text-sm">{details.dateAssigned ? new Date(details.dateAssigned).toLocaleDateString() : '—'}</p>
             </div>
           </div>
+          {details.isNonPlantilla && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Sub-PAR (Non-Plantilla)</p>
+              <p className="text-sm font-semibold">{details.nonPlantillaEmployeeName || '—'}</p>
+            </div>
+          )}
         </div>
 
         <div>

@@ -440,6 +440,61 @@ export const getRRSPMovements = async (
 };
 
 /**
+ * Get RRPPE/RRSP return list from /Inventory/pta/return/list
+ * Only returns movements that have a valid RRPPE/RRSP number (non-empty, non-N/A).
+ */
+export const getPTAReturnList = async (params: {
+  group?: 'PPE' | 'SE';
+  rrppeRrspFilter?: string;
+  searchEmployee?: string;
+  officeId?: number;
+  divisionId?: number;
+  startDate?: string;
+  endDate?: string;
+  pageNumber?: number;
+  pageSize?: number;
+}): Promise<{ items: any[]; totalCount: number; pageNumber: number; pageSize: number }> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
+    const pageNumber = params.pageNumber ?? 1;
+    const pageSize = params.pageSize ?? 50;
+
+    let url = `${API_BASE_URL}/Inventory/pta/return/list?PageNumber=${pageNumber}&PageSize=${pageSize}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+
+    if (params.group) url += `&Group=${encodeURIComponent(params.group)}`;
+    if (params.rrppeRrspFilter) url += `&RrppeRrspFilter=${encodeURIComponent(params.rrppeRrspFilter)}`;
+    if (params.searchEmployee) url += `&SearchEmployee=${encodeURIComponent(params.searchEmployee)}`;
+    if (params.officeId) url += `&OfficeId=${params.officeId}`;
+    if (params.divisionId) url += `&DivisionId=${params.divisionId}`;
+    if (params.startDate) url += `&StartDate=${encodeURIComponent(params.startDate)}`;
+    if (params.endDate) url += `&EndDate=${encodeURIComponent(params.endDate)}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch RRPPE/RRSP return list: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      items: data.data?.items || [],
+      totalCount: data.data?.totalCount || 0,
+      pageNumber,
+      pageSize,
+    };
+  } catch (error) {
+    console.error('Error fetching RRPPE/RRSP return list:', error);
+    throw error;
+  }
+};
+
+/**
  * Generate RRPPE/RRSP return number based on type and current date
  * Calls the backend API endpoint to get the next sequence number
  * @param returnType - 'RRPPE' for PPE returns or 'RRSP' for SE returns
@@ -567,6 +622,7 @@ export const getPTATransferList = async (params: {
   group?: 'PPE' | 'SE';
   searchEmployee?: string;
   ptrItrFilter?: string;
+  rrppeRrspFilter?: string;
   officeId?: number;
   divisionId?: number;
   startDate?: string;
@@ -585,6 +641,7 @@ export const getPTATransferList = async (params: {
 
     if (params.group) url += `&Group=${encodeURIComponent(params.group)}`;
     if (params.ptrItrFilter) url += `&PtrItrFilter=${encodeURIComponent(params.ptrItrFilter)}`;
+    if (params.rrppeRrspFilter) url += `&RrppeRrspFilter=${encodeURIComponent(params.rrppeRrspFilter)}`;
     if (params.searchEmployee) url += `&SearchEmployee=${encodeURIComponent(params.searchEmployee)}`;
     if (params.officeId) url += `&OfficeId=${params.officeId}`;
     if (params.divisionId) url += `&DivisionId=${params.divisionId}`;

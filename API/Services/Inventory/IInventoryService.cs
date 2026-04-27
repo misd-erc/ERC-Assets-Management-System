@@ -45,6 +45,8 @@ namespace API.Services.Inventory
 
         Task<IActionResult> GetPTATransferList([FromQuery] PTATransferListQueryParams model);
 
+        Task<IActionResult> GetPTAReturnList([FromQuery] PTAReturnListQueryParams model);
+
         Task<IActionResult> GetPTATransferDetails([FromQuery] string transferNumber, [FromQuery] SoloQueryParams model);
 
         Task<IActionResult> EditPTACategory([FromBody] EditPTACategoryQueryParams model);

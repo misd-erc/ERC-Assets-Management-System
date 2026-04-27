@@ -150,12 +150,12 @@ function formatShortDate(dateStr?: string) {
   return `${parts[1]}-${parts[2]}-${parts[0]}`;
 }
 
-function buildRowsFromItems(items: any[], endUser: string): ReturnRow[] {
+function buildRowsFromItems(items: any[], endUser: string, nonPlantillaEndUser?: string): ReturnRow[] {
   return (items || []).map((item: any) => ({
     description: item?.description || "",
     quantity: "1",
     propertyNumber: item?.propertyNumber || "",
-    endUser: endUser || "",
+    endUser: nonPlantillaEndUser || endUser || "",
     remarks: item?.condition || item?.remarks || "",
   }));
 }
@@ -213,9 +213,9 @@ const ReturnReceiptDocument = ({
         <View style={styles.tableWrap}>
           <View style={styles.table}>
             <View style={styles.tableHeaderRow}>
-              <Text style={[styles.headerCell, { width: "40%" }]}>Item Description</Text>
-              <Text style={[styles.headerCell, { width: "10%" }]}>Qty.</Text>
-              <Text style={[styles.headerCell, { width: "22%" }]}>Property Number</Text>
+              <Text style={[styles.headerCell, { width: "36%" }]}>Item Description</Text>
+              <Text style={[styles.headerCell, { width: "8%" }]}>Qty.</Text>
+              <Text style={[styles.headerCell, { width: "28%" }]}>Property Number</Text>
               <Text style={[styles.headerCell, { width: "14%" }]}>End-user</Text>
               <Text style={[styles.headerCellLast, { width: "14%" }]}>Remarks</Text>
             </View>
@@ -227,9 +227,9 @@ const ReturnReceiptDocument = ({
             ) : (
               rows.map((r, idx) => (
                 <View key={idx} style={styles.tableRow}>
-                  <Text style={[styles.bodyCell, { width: "40%" }]}>{r.description}</Text>
-                  <Text style={[styles.bodyCell, { width: "10%", textAlign: "center" }]}>{r.quantity}</Text>
-                  <Text style={[styles.bodyCell, { width: "22%" }]}>{r.propertyNumber}</Text>
+                  <Text style={[styles.bodyCell, { width: "36%" }]}>{r.description}</Text>
+                  <Text style={[styles.bodyCell, { width: "8%", textAlign: "center" }]}>{r.quantity}</Text>
+                  <Text style={[styles.bodyCell, { width: "28%", fontSize: 7.5 }]}>{r.propertyNumber}</Text>
                   <Text style={[styles.bodyCell, { width: "14%" }]}>{r.endUser}</Text>
                   <Text style={[styles.bodyCellLast, { width: "14%" }]}>{r.remarks}</Text>
                 </View>
@@ -277,7 +277,7 @@ export class ReturnReceiptGenerator {
     nonPlantillaEmployeeName?: string,
     signatureDate?: string
   ): Promise<string> {
-    const rows = buildRowsFromItems(items, returnedByName);
+    const rows = buildRowsFromItems(items, returnedByName, nonPlantillaEmployeeName);
 
     const blob = await pdf(
       <ReturnReceiptDocument

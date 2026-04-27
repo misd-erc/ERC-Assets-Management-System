@@ -137,6 +137,12 @@ namespace API.Controllers
         public async Task<IActionResult> GetPTATransferList([FromQuery] PTATransferListQueryParams model) => await _inventoryService.GetPTATransferList(model);
 
 
+        [HttpGet("pta/return/list")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetPTAReturnList([FromQuery] PTAReturnListQueryParams model) => await _inventoryService.GetPTAReturnList(model);
+
+
         [HttpGet("pta/movement/transfer-details")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]

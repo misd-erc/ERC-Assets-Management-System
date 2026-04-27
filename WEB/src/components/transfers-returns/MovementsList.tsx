@@ -5,8 +5,11 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Loader2, Search, Eye, User, Package, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements, getPTATransferList, editMovement } from '@/api/asset/transferApi';
+import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements, getPTATransferList, getPTAReturnList, editMovement } from '@/api/asset/transferApi';
 import { getConditions } from '@/api/asset/inventoryApi';
+import { getEmployees } from '@/api/user-management/userApi';
+import { ApiEmployee } from '@/types/transfer';
+import { EmployeeSelector } from './EmployeeSelector';
 import { PTRGenerator } from '@/components/assets/reports/PTRGenerator';
 import { ITRGenerator } from '@/components/assets/reports/ITRGenerator';
 import { ReturnReceiptGenerator } from '@/components/assets/reports/ReturnReceiptGenerator';
@@ -75,6 +78,7 @@ const normalizeTransferListItem = (raw: any): Movement => ({
   movementId: raw.id,
   ptaId: raw.ptaId,
   ptritrNumber: raw.ptrItrNumber,
+  rrppeRrspNumber: raw.rrppeRrspNumber || raw.rrpperrspNumber,
   paricsNumber: raw.parIcsNumber,
   dateAssigned: raw.dateAssigned,
   status: raw.status,
@@ -165,13 +169,26 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   const [editingMovement, setEditingMovement] = useState<Movement | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [conditions, setConditions] = useState<string[]>([]);
-  const [editFields, setEditFields] = useState({
+  const [editEmployees, setEditEmployees] = useState<ApiEmployee[]>([]);
+  const [editEmployeesLoading, setEditEmployeesLoading] = useState(false);
+  const [editFields, setEditFields] = useState<{
+    dateAssigned: string;
+    transferNumber: string;
+    parIcsNumber: string;
+    status: string;
+    condition: string;
+    remarks: string;
+    plantillaEmployeeId: number | null;
+    nonPlantillaEmployeeId: number | null;
+  }>({
     dateAssigned: '',
     transferNumber: '',
     parIcsNumber: '',
     status: '',
     condition: '',
     remarks: '',
+    plantillaEmployeeId: null,
+    nonPlantillaEmployeeId: null,
   });
 
   // Load movements
@@ -192,10 +209,18 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
           items: raw.items.map(normalizeTransferListItem),
           totalCount: raw.totalCount,
         };
-      } else if (transferType === 'RRPPE') {
-        result = await getRRPPEMovements(search, page, size);
-      } else if (transferType === 'RRSP') {
-        result = await getRRSPMovements(search, page, size);
+      } else if (transferType === 'RRPPE' || transferType === 'RRSP') {
+        const group = transferType === 'RRPPE' ? 'PPE' : 'SE';
+        const raw = await getPTAReturnList({
+          group,
+          rrppeRrspFilter: search || transferType,
+          pageNumber: page,
+          pageSize: size,
+        });
+        result = {
+          items: raw.items.map(normalizeTransferListItem),
+          totalCount: raw.totalCount,
+        };
       } else {
         result = await getMovementsList(search, undefined, undefined, page, size);
       }
@@ -255,15 +280,37 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       status: movement.status || '',
       condition: movement.condition || '',
       remarks: movement.remarks || '',
+      plantillaEmployeeId:
+        movement.plantillaEmployeeId ??
+        movement.employee?.find(e => e.employeeType === 'Plantilla')?.id ??
+        null,
+      nonPlantillaEmployeeId:
+        movement.nonPlantillaEmployeeId ??
+        movement.employee?.find(e => e.employeeType === 'Non-Plantilla')?.id ??
+        null,
     });
+
+    const loads: Promise<any>[] = [];
+
     if (conditions.length === 0) {
-      try {
-        const conds = await getConditions();
-        setConditions(conds || []);
-      } catch {
-        // ignore — user can still type
-      }
+      loads.push(
+        getConditions()
+          .then(conds => setConditions(conds || []))
+          .catch(() => {})
+      );
     }
+
+    if (editEmployees.length === 0) {
+      setEditEmployeesLoading(true);
+      loads.push(
+        getEmployees()
+          .then(res => setEditEmployees(res.data?.items || []))
+          .catch(() => {})
+          .finally(() => setEditEmployeesLoading(false))
+      );
+    }
+
+    await Promise.all(loads);
     setEditDialogOpen(true);
   };
 
@@ -305,14 +352,8 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
           condition: editFields.condition,
           actualOfficeId: (editingMovement as any).actualOfficeId ?? null,
           actualDivisionId: (editingMovement as any).actualDivisionId ?? null,
-          plantillaEmployeeId: editingMovement.plantillaEmployeeId
-            ?? editingMovement.employee?.find(e => e.employeeType === 'Plantilla')?.id
-            ?? (editingMovement as any).plantillaEmployeeId
-            ?? null,
-          nonPlantillaEmployeeId: editingMovement.nonPlantillaEmployeeId
-            ?? editingMovement.employee?.find(e => e.employeeType === 'Non-Plantilla')?.id
-            ?? (editingMovement as any).nonPlantillaEmployeeId
-            ?? null,
+          plantillaEmployeeId: editFields.plantillaEmployeeId ?? null,
+          nonPlantillaEmployeeId: editFields.nonPlantillaEmployeeId ?? null,
           isActive: editingMovement.isActive,
           isCurrent: true,
         });
@@ -881,6 +922,65 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
                   setEditFields(f => ({ ...f, dateAssigned: e.target.value }))
                 }
               />
+            </div>
+
+            {/* Accountable Person — Plantilla */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">
+                Plantilla Employee (Accountable Person)
+              </label>
+              {editEmployeesLoading ? (
+                <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading employees…
+                </div>
+              ) : (
+                <EmployeeSelector
+                  employees={editEmployees.filter(e => {
+                    const typeName = (e.employmentTypeName || e.employmentType?.name || '').toLowerCase();
+                    if (e.employmentType?.id) return e.employmentType.id === 1;
+                    return typeName.includes('plantilla') && !typeName.includes('non');
+                  })}
+                  value={editFields.plantillaEmployeeId}
+                  onSelect={(id) => setEditFields(f => ({ ...f, plantillaEmployeeId: id }))}
+                  placeholder="Search plantilla employee…"
+                />
+              )}
+            </div>
+
+            {/* Accountable Person — Non-Plantilla (optional) */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">
+                  Non-Plantilla Employee <span className="text-muted-foreground font-normal">(Optional)</span>
+                </label>
+                {editFields.nonPlantillaEmployeeId !== null && (
+                  <button
+                    type="button"
+                    className="text-xs text-destructive hover:underline"
+                    onClick={() => setEditFields(f => ({ ...f, nonPlantillaEmployeeId: null }))}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {editEmployeesLoading ? (
+                <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading employees…
+                </div>
+              ) : (
+                <EmployeeSelector
+                  employees={editEmployees.filter(e => {
+                    const typeName = (e.employmentTypeName || e.employmentType?.name || '').toLowerCase();
+                    if (e.employmentType?.id) return e.employmentType.id !== 1;
+                    return !typeName.includes('plantilla') || typeName.includes('non');
+                  })}
+                  value={editFields.nonPlantillaEmployeeId}
+                  onSelect={(id) => setEditFields(f => ({ ...f, nonPlantillaEmployeeId: id }))}
+                  placeholder="Search non-plantilla employee…"
+                />
+              )}
             </div>
 
             {/* Status */}
