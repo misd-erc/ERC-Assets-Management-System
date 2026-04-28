@@ -519,11 +519,12 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
             <DialogContent className="!max-w-[98vw] !w-[98vw] max-h-[95vh] h-[95vh] flex flex-col p-0 gap-0 overflow-hidden">
                 {/* Header */}
-                <DialogHeader className="px-6 py-4 border-b shrink-0 bg-lime-600">
-                    <DialogTitle className="text-xl font-bold text-white">
-                        Semi-Expendable Property Card (Annex A.1)
+                <DialogHeader className="px-6 py-4 border-b shrink-0">
+                    <DialogTitle className="text-xl font-semibold text-slate-800">
+                        Semi-Expendable Property Card
+                        <span className="ml-2 text-xs font-normal text-lime-600 bg-lime-50 border border-lime-200 rounded px-2 py-0.5">Annex A.1</span>
                     </DialogTitle>
-                    <DialogDescription className="text-sm text-lime-100">
+                    <DialogDescription className="text-sm text-muted-foreground">
                         Select an SE asset to generate its Semi-Expendable Property Card
                     </DialogDescription>
                 </DialogHeader>
@@ -588,7 +589,7 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                                             return (
                                                 <TableRow
                                                     key={asset.id}
-                                                    className={`cursor-pointer transition-colors ${isSelected ? 'bg-lime-100 font-medium' : 'hover:bg-lime-50'}`}
+                                                    className={`cursor-pointer transition-colors ${isSelected ? 'bg-lime-50 font-medium' : 'hover:bg-slate-50'}`}
                                                     onClick={() => handleSelectAsset(asset)}
                                                 >
                                                     <TableCell className="pr-0 w-8" onClick={(e) => e.stopPropagation()}>
@@ -642,7 +643,7 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                                     </div>
 
                                     {/* Asset info */}
-                                    <div className="bg-lime-50 border border-lime-200 rounded-md px-4 py-3 space-y-1 text-sm">
+                                    <div className="bg-slate-50 border border-slate-200 rounded-md px-4 py-3 space-y-1 text-sm">
                                         <div className="break-words">
                                             <span className="font-medium">Semi-Expendable Property: </span>
                                             <span className="break-words">{asStr(selectedAsset.category)}</span>
@@ -709,7 +710,7 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                                         variant="outline"
                                         onClick={handlePrint}
                                         disabled={printing || saving || !selectedAsset}
-                                        className="gap-2 border-lime-600 text-lime-700 hover:bg-lime-50"
+                                        className="gap-2"
                                     >
                                         {printing ? (
                                             <Loader2 className="size-4 animate-spin" />
@@ -721,7 +722,7 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                                     <Button
                                         onClick={handleSavePDF}
                                         disabled={saving || printing || !selectedAsset}
-                                        className="gap-2 bg-lime-600 hover:bg-lime-700 text-white"
+                                        className="gap-2 bg-lime-600 hover:bg-lime-700"
                                     >
                                         {saving ? (
                                             <Loader2 className="size-4 animate-spin" />
