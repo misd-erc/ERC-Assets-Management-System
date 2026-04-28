@@ -486,11 +486,18 @@ export const WMRReportModal = ({ isOpen, onClose }: WMRReportModalProps) => {
             if (!blob) return;
 
             const url = URL.createObjectURL(blob);
-            const printWindow = window.open(url);
-            if (printWindow) {
-                printWindow.addEventListener('load', () => printWindow.print(), { once: true });
-            }
-            setTimeout(() => URL.revokeObjectURL(url), 60000);
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;opacity:0;';
+            document.body.appendChild(iframe);
+            iframe.src = url;
+            iframe.addEventListener('load', () => {
+                iframe.contentWindow?.focus();
+                iframe.contentWindow?.print();
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                    URL.revokeObjectURL(url);
+                }, 60000);
+            }, { once: true });
         } catch (error) {
             console.error('Failed to print WMR PDF', error);
             toast.error('Failed to print Waste Materials Report');
