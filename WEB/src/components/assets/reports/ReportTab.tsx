@@ -54,6 +54,7 @@ import { PropertyCardReportModal } from "./PropertyCardReportModal";
 import { SEPropertyCardModal } from "./SEPropertyCardModal";
 import { InventoryCountFormModal } from "./InventoryCountFormModal";
 import { ListPPEsAtStationModal } from "./ListPPEsAtStationModal";
+import { RLSDDPModal } from "./RLSDDPModal";
 
 
 export function ReportTab() {
@@ -97,6 +98,7 @@ export function ReportTab() {
   const [showInventoryCountModal, setShowInventoryCountModal] = useState(false);
   const [showSEPropertyCardModal, setShowSEPropertyCardModal] = useState(false);
   const [showListPPEsAtStation, setShowListPPEsAtStation] = useState(false);
+  const [showRLSDDP, setShowRLSDDP] = useState(false);
 
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [registrySPIAssets, setRegistrySPIAssets] = useState<any[]>([]);
@@ -527,7 +529,14 @@ export function ReportTab() {
       bgColor: 'bg-sky-600',
       action: () => setShowListPPEsAtStation(true)
     },
-  ]), []);
+    {
+      title: 'RLSDDP',
+      subtitle: 'Report of Lost, Stolen, Damaged or Destroyed Property',
+      icon: FileSearch,
+      bgColor: 'bg-rose-700',
+      action: () => setShowRLSDDP(true)
+    },
+  ]), []);;
 
   const filteredReports = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -722,6 +731,11 @@ export function ReportTab() {
         <ListPPEsAtStationModal
           isOpen={showListPPEsAtStation}
           onClose={() => setShowListPPEsAtStation(false)}
+        />
+
+        <RLSDDPModal
+          isOpen={showRLSDDP}
+          onClose={() => setShowRLSDDP(false)}
         />
 
         {/* Added the RIS Report Modal to the component tree */}
