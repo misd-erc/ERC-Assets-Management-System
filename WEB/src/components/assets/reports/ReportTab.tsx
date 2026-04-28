@@ -51,6 +51,7 @@ import { StockCardReportModal } from "./StockCardReportModal";
 import { RISReportModal } from "./RISReportModal";
 import { WMRReportModal } from "./WMRReportModal";
 import { PropertyCardReportModal } from "./PropertyCardReportModal";
+import { SEPropertyCardModal } from "./SEPropertyCardModal";
 import { InventoryCountFormModal } from "./InventoryCountFormModal";
 
 
@@ -93,6 +94,7 @@ export function ReportTab() {
   const [showWMRModal, setShowWMRModal] = useState(false);
   const [showPropertyCardModal, setShowPropertyCardModal] = useState(false);
   const [showInventoryCountModal, setShowInventoryCountModal] = useState(false);
+  const [showSEPropertyCardModal, setShowSEPropertyCardModal] = useState(false);
 
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [registrySPIAssets, setRegistrySPIAssets] = useState<any[]>([]);
@@ -126,6 +128,7 @@ export function ReportTab() {
     setShowStockCardModal(false);
     setShowWMRModal(false);
     setShowPropertyCardModal(false);
+    setShowSEPropertyCardModal(false);
     setSelectedReport(null);
     setSelectedItem(null);
     setSelectedMovement(null);
@@ -506,6 +509,13 @@ export function ReportTab() {
       icon: ClipboardList,
       bgColor: 'bg-teal-600',
       action: () => setShowInventoryCountModal(true)
+    },
+    {
+      title: 'Semi-Expendable Property Card',
+      subtitle: 'SE Property Card (Annex A.1)',
+      icon: BookOpen,
+      bgColor: 'bg-lime-600',
+      action: () => setShowSEPropertyCardModal(true)
     }
   ]), []);
 
@@ -692,6 +702,11 @@ export function ReportTab() {
         <InventoryCountFormModal
           isOpen={showInventoryCountModal}
           onClose={() => setShowInventoryCountModal(false)}
+        />
+
+        <SEPropertyCardModal
+          isOpen={showSEPropertyCardModal}
+          onClose={() => setShowSEPropertyCardModal(false)}
         />
 
         {/* Added the RIS Report Modal to the component tree */}
