@@ -50,6 +50,7 @@ import { PARICSListModal } from "./PARICSListModal";
 import { StockCardReportModal } from "./StockCardReportModal";
 import { RISReportModal } from "./RISReportModal";
 import { WMRReportModal } from "./WMRReportModal";
+import { PropertyCardReportModal } from "./PropertyCardReportModal";
 
 
 export function ReportTab() {
@@ -89,6 +90,7 @@ export function ReportTab() {
   const [showICSList, setShowICSList] = useState(false);
   const [showStockCardModal, setShowStockCardModal] = useState(false);
   const [showWMRModal, setShowWMRModal] = useState(false);
+  const [showPropertyCardModal, setShowPropertyCardModal] = useState(false);
 
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [registrySPIAssets, setRegistrySPIAssets] = useState<any[]>([]);
@@ -121,6 +123,7 @@ export function ReportTab() {
     setShowRegistrySPI(false);
     setShowStockCardModal(false);
     setShowWMRModal(false);
+    setShowPropertyCardModal(false);
     setSelectedReport(null);
     setSelectedItem(null);
     setSelectedMovement(null);
@@ -487,6 +490,13 @@ export function ReportTab() {
       icon: FileText,
       bgColor: 'bg-emerald-700',
       action: () => setShowWMRModal(true)
+    },
+    {
+      title: 'Property Card',
+      subtitle: 'PPE Property Card',
+      icon: BookOpen,
+      bgColor: 'bg-orange-600',
+      action: () => setShowPropertyCardModal(true)
     }
   ]), []);
 
@@ -663,6 +673,11 @@ export function ReportTab() {
         <WMRReportModal
           isOpen={showWMRModal}
           onClose={() => setShowWMRModal(false)}
+        />
+
+        <PropertyCardReportModal
+          isOpen={showPropertyCardModal}
+          onClose={() => setShowPropertyCardModal(false)}
         />
 
         {/* Added the RIS Report Modal to the component tree */}
