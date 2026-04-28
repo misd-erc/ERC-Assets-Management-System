@@ -27,6 +27,9 @@ namespace PortalDB.Models.QueryParams.Pagination
         public DateTime? EndDate { get; set; }
         public long? CategoryId { get; set; }
         public long? EmployeeId { get; set; }
+        public long? OfficeId { get; set; }
+        public long? DivisionId { get; set; }
+        public string? Condition { get; set; }
         [Required] public string? GroupName { get; set; }
         public string? GroupBy { get; set; }
         [Required] public long ActionBySystemUserId { get; set; }

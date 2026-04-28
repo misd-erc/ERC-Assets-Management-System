@@ -178,7 +178,6 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                         <TableRow>
                           <TableHead>Name</TableHead>
                           <TableHead>Serial Number</TableHead>
-                          <TableHead>Active</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -186,11 +185,6 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                           <TableRow key={part.id}>
                             <TableCell>{part.name}</TableCell>
                             <TableCell>{part.serialNumber}</TableCell>
-                            <TableCell>
-                              <Badge variant={part.isActive ? "default" : "destructive"}>
-                                {part.isActive ? "Active" : "Inactive"}
-                              </Badge>
-                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -426,7 +420,6 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                         <TableRow>
                           <TableHead>Name</TableHead>
                           <TableHead>Serial Number</TableHead>
-                          <TableHead>Active</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -434,11 +427,6 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                           <TableRow key={part.id}>
                             <TableCell>{part.name}</TableCell>
                             <TableCell>{part.serialNumber}</TableCell>
-                            <TableCell>
-                              <Badge variant={part.isActive ? "default" : "secondary"}>
-                                {part.isActive ? "Active" : "Inactive"}
-                              </Badge>
-                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -500,11 +488,12 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date Assigned</TableHead>
-                    <TableHead>PAR/ITR Number</TableHead>
+                    <TableHead>PAR/ICS No.</TableHead>
+                    <TableHead>PTR/ITR No.</TableHead>
                     <TableHead>RRPPE/RRSP No.</TableHead>
                     <TableHead>Employee (Plantilla)</TableHead>
                     <TableHead>Employee (Non-Plantilla)</TableHead>
-                    <TableHead>Office</TableHead>
+                    <TableHead>Service/Office</TableHead>
                     <TableHead>Division</TableHead>
                     <TableHead>Condition</TableHead>
                   </TableRow>
@@ -513,6 +502,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                   {asset.movements.filter(m => m.isActive !== false).map((movement) => (
                     <TableRow key={movement.id}>
                       <TableCell>{formatDate(movement.dateAssigned)}</TableCell>
+                      <TableCell>{movement.parIcsNumber || '-'}</TableCell>
                       <TableCell>{movement.ptrItrNumber || '-'}</TableCell>
                       <TableCell>{movement.rrppeRrspNumber || '-'}</TableCell>
                       <TableCell>

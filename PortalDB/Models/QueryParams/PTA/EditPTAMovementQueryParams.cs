@@ -21,8 +21,8 @@ namespace PortalDB.Models.QueryParams.PTA
         public long? PlantillaEmployeeId { get; set; }
         public long? NonPlantillaEmployeeId { get; set; }
         [Required] public string Condition { get; set; } = string.Empty;
-        [Required] public long ActualOfficeId { get; set; }
-        [Required] public long ActualDivisionId { get; set; }
+        public long? ActualOfficeId { get; set; }
+        public long? ActualDivisionId { get; set; }
         [Required] public bool IsActive { get; set; } = true;
         public bool IsCurrent { get; set; } = false;
         [Required] public long ActionBySystemUserId { get; set; }

@@ -63,6 +63,9 @@ export const ppeApi = {
 		GroupName: string;
 		EmployeeId?: number;
 		CategoryId?: number;
+		OfficeId?: number;
+		DivisionId?: number;
+		Condition?: string;
 	}): Promise<{ items: PPEAsset[]; totalCount: number }> => {
 		const query = new URLSearchParams();
 
@@ -86,6 +89,18 @@ export const ppeApi = {
 
 		if (params.CategoryId) {
 			query.append('CategoryId', params.CategoryId.toString());
+		}
+
+		if (params.OfficeId) {
+			query.append('OfficeId', params.OfficeId.toString());
+		}
+
+		if (params.DivisionId) {
+			query.append('DivisionId', params.DivisionId.toString());
+		}
+
+		if (params.Condition) {
+			query.append('Condition', params.Condition);
 		}
 
 		query.append('ActionBySystemUserId', params.ActionBySystemUserId);

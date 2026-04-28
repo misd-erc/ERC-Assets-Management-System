@@ -168,8 +168,7 @@ export function TransfersReturns() {
                 </p>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-blue-700">Active PTR Records: <span className="font-semibold">15</span></p>
-                    <p className="text-sm text-blue-700">This Month: <span className="font-semibold">5</span></p>
+                    <p className="text-sm text-blue-700">Active PTR Records: <span className="font-semibold">{statsLoading ? '...' : statistics.activePTR}</span></p>
                   </div>
                   <Button onClick={() => setPtrDialogOpen(true)}>
                     <Plus className="w-4 h-4 mr-2" />
@@ -189,8 +188,7 @@ export function TransfersReturns() {
                 </p>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-purple-700">Active ITR Records: <span className="font-semibold">8</span></p>
-                    <p className="text-sm text-purple-700">This Month: <span className="font-semibold">3</span></p>
+                    <p className="text-sm text-purple-700">Active ITR Records: <span className="font-semibold">{statsLoading ? '...' : statistics.activeITR}</span></p>
                   </div>
                   <Button onClick={() => setItrDialogOpen(true)}>
                     <Plus className="w-4 h-4 mr-2" />
@@ -210,8 +208,7 @@ export function TransfersReturns() {
                 </p>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-amber-700">Pending Returns: <span className="font-semibold">7</span></p>
-                    <p className="text-sm text-amber-700">This Month: <span className="font-semibold">2</span></p>
+                    <p className="text-sm text-amber-700">Active RRPPE Records: <span className="font-semibold">{statsLoading ? '...' : statistics.activeReturnsPPE}</span></p>
                   </div>
                   <Button onClick={() => setRrppeDialogOpen(true)}>
                     <Plus className="w-4 h-4 mr-2" />
@@ -231,8 +228,7 @@ export function TransfersReturns() {
                 </p>
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-green-700">Pending Returns: <span className="font-semibold">5</span></p>
-                    <p className="text-sm text-green-700">This Month: <span className="font-semibold">1</span></p>
+                    <p className="text-sm text-green-700">Active RRSP Records: <span className="font-semibold">{statsLoading ? '...' : statistics.activeReturnsSE}</span></p>
                   </div>
                   <Button onClick={() => setRrspDialogOpen(true)}>
                     <Plus className="w-4 h-4 mr-2" />

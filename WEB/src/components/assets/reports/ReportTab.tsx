@@ -49,6 +49,12 @@ import { RSMIReportModal } from "./RSMIReportModal";
 import { PARICSListModal } from "./PARICSListModal";
 import { StockCardReportModal } from "./StockCardReportModal";
 import { RISReportModal } from "./RISReportModal";
+import { WMRReportModal } from "./WMRReportModal";
+import { PropertyCardReportModal } from "./PropertyCardReportModal";
+import { SEPropertyCardModal } from "./SEPropertyCardModal";
+import { InventoryCountFormModal } from "./InventoryCountFormModal";
+import { ListPPEsAtStationModal } from "./ListPPEsAtStationModal";
+import { RLSDDPModal } from "./RLSDDPModal";
 
 
 export function ReportTab() {
@@ -60,6 +66,7 @@ export function ReportTab() {
   const [rpcppeDate, setRpcppeDate] = useState<Date | null>(null);
   const [rpcppeCategoryId, setRpcppeCategoryId] = useState<number | undefined>(undefined);
   const [sespiDate, setSespiDate] = useState<Date | null>(null);
+  const [sePropertyReportSerialNo, setSePropertyReportSerialNo] = useState('');
   const [sespiEmployee, setSespiEmployee] = useState<NormalizedEmployee | null>(null);
 
   // Item-centric flow states
@@ -86,6 +93,12 @@ export function ReportTab() {
   const [showPARList, setShowPARList] = useState(false);
   const [showICSList, setShowICSList] = useState(false);
   const [showStockCardModal, setShowStockCardModal] = useState(false);
+  const [showWMRModal, setShowWMRModal] = useState(false);
+  const [showPropertyCardModal, setShowPropertyCardModal] = useState(false);
+  const [showInventoryCountModal, setShowInventoryCountModal] = useState(false);
+  const [showSEPropertyCardModal, setShowSEPropertyCardModal] = useState(false);
+  const [showListPPEsAtStation, setShowListPPEsAtStation] = useState(false);
+  const [showRLSDDP, setShowRLSDDP] = useState(false);
 
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [registrySPIAssets, setRegistrySPIAssets] = useState<any[]>([]);
@@ -117,6 +130,10 @@ export function ReportTab() {
     setShowRISModal(false);
     setShowRegistrySPI(false);
     setShowStockCardModal(false);
+    setShowWMRModal(false);
+    setShowPropertyCardModal(false);
+    setShowSEPropertyCardModal(false);
+    setShowListPPEsAtStation(false);
     setSelectedReport(null);
     setSelectedItem(null);
     setSelectedMovement(null);
@@ -205,7 +222,7 @@ export function ReportTab() {
         toast.success('Register SPI PDF generated');
       }
     } else if (selectedReport === 'SESPI-REPORT') {
-      await SEPropertyReportGenerator.generate(sespiDate!);
+      await SEPropertyReportGenerator.generate({ asOfDate: sespiDate!, serialNo: sePropertyReportSerialNo });
       toast.success('Report of Semi-Expandable Property Issued PDF generated');
     } else if (selectedReport === 'RPCPPE') {
       try {
@@ -334,14 +351,15 @@ export function ReportTab() {
     }
   };
 
-  const handleSEPropertyReportGenerate = async (asOfDate: Date) => {
+  const handleSEPropertyReportGenerate = async ({ asOfDate, serialNo }: { asOfDate: Date; serialNo?: string }) => {
     try {
       setLoadingPreview(true);
-      const url = await SEPropertyReportGenerator.generatePreview(asOfDate);
+      const url = await SEPropertyReportGenerator.generatePreview({ asOfDate, serialNo });
       setPreviewUrl(url);
       setLoadingPreview(false);
 
       setSespiDate(asOfDate);
+      setSePropertyReportSerialNo(serialNo ?? '');
       setSelectedReport('SESPI-REPORT');
       setShowPreview(true);
     } catch (error) {
@@ -475,8 +493,50 @@ export function ReportTab() {
       icon: Archive,
       bgColor: 'bg-indigo-500',
       action: () => setShowStockCardModal(true)
-    }
-  ]), []);
+    },
+    {
+      title: 'WMR',
+      subtitle: 'Waste Materials Report',
+      icon: FileText,
+      bgColor: 'bg-emerald-700',
+      action: () => setShowWMRModal(true)
+    },
+    {
+      title: 'Property Card',
+      subtitle: 'PPE Property Card',
+      icon: BookOpen,
+      bgColor: 'bg-orange-600',
+      action: () => setShowPropertyCardModal(true)
+    },
+    {
+      title: 'Inventory Count Form',
+      subtitle: 'Inventory Count Form',
+      icon: ClipboardList,
+      bgColor: 'bg-teal-600',
+      action: () => setShowInventoryCountModal(true)
+    },
+    {
+      title: 'Semi-Expendable Property Card',
+      subtitle: 'SE Property Card',
+      icon: BookOpen,
+      bgColor: 'bg-lime-600',
+      action: () => setShowSEPropertyCardModal(true)
+    },
+    {
+      title: 'List of PPEs Found at Station',
+      subtitle: 'PPE listing per office / station (Annex B)',
+      icon: ClipboardList,
+      bgColor: 'bg-sky-600',
+      action: () => setShowListPPEsAtStation(true)
+    },
+    {
+      title: 'RLSDDP',
+      subtitle: 'Report of Lost, Stolen, Damaged or Destroyed Property',
+      icon: FileSearch,
+      bgColor: 'bg-rose-700',
+      action: () => setShowRLSDDP(true)
+    },
+  ]), []);;
 
   const filteredReports = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -646,6 +706,36 @@ export function ReportTab() {
         <StockCardReportModal
             isOpen={showStockCardModal}
             onClose={() => setShowStockCardModal(false)}
+        />
+
+        <WMRReportModal
+          isOpen={showWMRModal}
+          onClose={() => setShowWMRModal(false)}
+        />
+
+        <PropertyCardReportModal
+          isOpen={showPropertyCardModal}
+          onClose={() => setShowPropertyCardModal(false)}
+        />
+
+        <InventoryCountFormModal
+          isOpen={showInventoryCountModal}
+          onClose={() => setShowInventoryCountModal(false)}
+        />
+
+        <SEPropertyCardModal
+          isOpen={showSEPropertyCardModal}
+          onClose={() => setShowSEPropertyCardModal(false)}
+        />
+
+        <ListPPEsAtStationModal
+          isOpen={showListPPEsAtStation}
+          onClose={() => setShowListPPEsAtStation(false)}
+        />
+
+        <RLSDDPModal
+          isOpen={showRLSDDP}
+          onClose={() => setShowRLSDDP(false)}
         />
 
         {/* Added the RIS Report Modal to the component tree */}

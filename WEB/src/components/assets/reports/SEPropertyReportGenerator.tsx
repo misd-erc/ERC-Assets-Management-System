@@ -9,6 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
+interface SEPropertyReportOptions {
+  asOfDate: Date;
+  serialNo?: string;
+}
+
 /** TABLE CONSTANT */
 const TABLE_WIDTH = 1000;
 
@@ -26,6 +31,38 @@ const styles = StyleSheet.create({
 
   headerContent: {
     textAlign: 'center',
+  },
+
+  metaRow: {
+    width: TABLE_WIDTH,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: 4,
+  },
+
+  metaLeft: {
+    width: 640,
+  },
+
+  metaRight: {
+    width: 240,
+  },
+
+  metaRightLine: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+
+  metaLabel: {
+    width: 70,
+    fontSize: 8,
+  },
+
+  metaValue: {
+    flex: 1,
+    fontSize: 8,
   },
 
   annex: {
@@ -137,18 +174,23 @@ const styles = StyleSheet.create({
 interface SEPropertyReportFilterModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onGenerate: (date: Date) => void;
+  onGenerate: (options: SEPropertyReportOptions) => void;
 }
 
 export function SEPropertyReportFilterModal({ isOpen, onClose, onGenerate }: SEPropertyReportFilterModalProps) {
   const [asOfDate, setAsOfDate] = useState('');
+  const [serialNo, setSerialNo] = useState('');
 
   const handleGenerate = () => {
     if (!asOfDate) {
       toast.error('Please select a date');
       return;
     }
-    onGenerate(new Date(asOfDate));
+
+    onGenerate({
+      asOfDate: new Date(asOfDate),
+      serialNo: serialNo.trim() || undefined,
+    });
   };
 
   return (
@@ -160,7 +202,19 @@ export function SEPropertyReportFilterModal({ isOpen, onClose, onGenerate }: SEP
 
         <div className="space-y-4">
           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="se-property-serial-number" className="col-span-4">Serial No.</Label>
             <Input
+              id="se-property-serial-number"
+              type="text"
+              value={serialNo}
+              onChange={(e) => setSerialNo(e.target.value)}
+              className="col-span-4"
+              placeholder="Enter serial number"
+            />
+
+            <Label htmlFor="se-property-date" className="col-span-4">Date</Label>
+            <Input
+              id="se-property-date"
               type="date"
               value={asOfDate}
               onChange={(e) => setAsOfDate(e.target.value)}
@@ -182,32 +236,39 @@ export class SEPropertyReportGenerator {
   /** COLUMN WIDTHS — MUST TOTAL 100% */
   private static colWidth(i: number) {
     const cols = [
-      0.10, // ICS No.
-      0.12, // Responsibility Center Code
-      0.16, // Semi-expandable Property No.
-      0.20, // Item Description
-      0.06, // Unit
-      0.08, // Quantity Issued
-      0.12, // Date Acquired
-      0.08, // Unit Cost
-      0.08, // Amount
+      0.12, // ICS No.
+      0.15, // Responsibility Center Code
+      0.18, // Semi-expandable Property No.
+      0.25, // Item Description
+      0.07, // Unit
+      0.10, // Quantity Issued
+      0.06, // Unit Cost
+      0.07, // Amount
     ];
     return TABLE_WIDTH * cols[i];
   }
 
-  static async generatePreview(asOfDate: Date): Promise<string> {
-    const seAssets = await PTAService.getAllForSE(asOfDate);
+  private static formatHeaderDate(date: Date) {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  static async generatePreview(options: SEPropertyReportOptions): Promise<string> {
+    const seAssets = await PTAService.getAllForSE(options.asOfDate);
     if (!seAssets.length) throw new Error('No SE assets found for the selected date.');
 
-    const doc = this.buildDocument(seAssets);
+    const doc = this.buildDocument(seAssets, options);
     const blob = await pdf(doc).toBlob();
     return URL.createObjectURL(blob);
   }
 
-  static async generate(asOfDate: Date) {
-    const seAssets = await PTAService.getAllForSE(asOfDate);
+  static async generate(options: SEPropertyReportOptions) {
+    const seAssets = await PTAService.getAllForSE(options.asOfDate);
 
-    const doc = this.buildDocument(seAssets);
+    const doc = this.buildDocument(seAssets, options);
     const blob = await pdf(doc).toBlob();
     const url = URL.createObjectURL(blob);
 
@@ -217,7 +278,7 @@ export class SEPropertyReportGenerator {
     a.click();
   }
 
-  private static buildDocument(seAssets: any[]) {
+  private static buildDocument(seAssets: any[], options: SEPropertyReportOptions) {
     const finalAssets = seAssets.map(asset => {
       const latestMovement = asset.movements
         ?.filter((m: any) => m.parIcsNumber)
@@ -240,9 +301,27 @@ export class SEPropertyReportGenerator {
             </View>
           </View>
 
-          <Text style={styles.entity}>Entity Name: Energy Regulatory Commission</Text>
-          <Text style={styles.fund}>Fund Cluster: Regular Agency Fund</Text>
-          <Text style={styles.division}>To be filled out by the Property and Supply Division</Text>
+          <View style={styles.metaRow}>
+            <View style={styles.metaLeft}>
+              <Text style={styles.entity}>Entity Name: Energy Regulatory Commission</Text>
+              <Text style={styles.fund}>Fund Cluster: Regular Agency Fund</Text>
+            </View>
+            <View style={styles.metaRight}>
+              <View style={styles.metaRightLine}>
+                <Text style={styles.metaLabel}>Serial No:</Text>
+                <Text style={styles.metaValue}>{options.serialNo}</Text>
+              </View>
+              <View style={styles.metaRightLine}>
+                <Text style={styles.metaLabel}>Date:</Text>
+                <Text style={styles.metaValue}>{this.formatHeaderDate(options.asOfDate)}</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.metaRow}>
+            <Text style={styles.division}>To be filled out by the Property and Supply Division</Text>
+            <Text style={styles.division}>To be filled out by the Accounting Division</Text>
+          </View>
 
           {/* TABLE */}
           <View style={styles.table}>
@@ -255,7 +334,6 @@ export class SEPropertyReportGenerator {
                 'Item Description',
                 'Unit',
                 'Quantity Issued',
-                'Date Issued',
                 'Unit Cost',
                 'Amount',
               ].map((h, i) => (
@@ -287,12 +365,9 @@ export class SEPropertyReportGenerator {
                   1
                 </Text>
                 <Text style={[styles.td, styles.center, { width: this.colWidth(6) }]}>
-                  {asset.dateAcquired ? (() => { const d = new Date(asset.dateAcquired); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; })() : ''}
-                </Text>
-                <Text style={[styles.td, styles.center, { width: this.colWidth(7) }]}>
                   {asset.unitValue?.toFixed(2)}
                 </Text>
-                <Text style={[styles.td, styles.center, { width: this.colWidth(8) }]}>
+                <Text style={[styles.td, styles.center, { width: this.colWidth(7) }]}>
                   {asset.unitValue?.toFixed(2)}
                 </Text>
               </View>
@@ -301,7 +376,7 @@ export class SEPropertyReportGenerator {
             {/* EMPTY ROWS */}
             {Array.from({ length: Math.max(0, 20 - finalAssets.length) }).map((_, i) => (
               <View key={i} style={styles.row}>
-                {Array.from({ length: 9 }).map((_, c) => (
+                {Array.from({ length: 8 }).map((_, c) => (
                   <Text key={c} style={[styles.td, { width: this.colWidth(c) }]} />
                 ))}
               </View>
