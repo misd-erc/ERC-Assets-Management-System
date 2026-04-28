@@ -51,6 +51,7 @@ import { StockCardReportModal } from "./StockCardReportModal";
 import { RISReportModal } from "./RISReportModal";
 import { WMRReportModal } from "./WMRReportModal";
 import { PropertyCardReportModal } from "./PropertyCardReportModal";
+import { InventoryCountFormModal } from "./InventoryCountFormModal";
 
 
 export function ReportTab() {
@@ -91,6 +92,7 @@ export function ReportTab() {
   const [showStockCardModal, setShowStockCardModal] = useState(false);
   const [showWMRModal, setShowWMRModal] = useState(false);
   const [showPropertyCardModal, setShowPropertyCardModal] = useState(false);
+  const [showInventoryCountModal, setShowInventoryCountModal] = useState(false);
 
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [registrySPIAssets, setRegistrySPIAssets] = useState<any[]>([]);
@@ -497,6 +499,13 @@ export function ReportTab() {
       icon: BookOpen,
       bgColor: 'bg-orange-600',
       action: () => setShowPropertyCardModal(true)
+    },
+    {
+      title: 'Inventory Count Form',
+      subtitle: 'Inventory Count Form',
+      icon: ClipboardList,
+      bgColor: 'bg-teal-600',
+      action: () => setShowInventoryCountModal(true)
     }
   ]), []);
 
@@ -678,6 +687,11 @@ export function ReportTab() {
         <PropertyCardReportModal
           isOpen={showPropertyCardModal}
           onClose={() => setShowPropertyCardModal(false)}
+        />
+
+        <InventoryCountFormModal
+          isOpen={showInventoryCountModal}
+          onClose={() => setShowInventoryCountModal(false)}
         />
 
         {/* Added the RIS Report Modal to the component tree */}
