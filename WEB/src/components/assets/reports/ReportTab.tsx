@@ -53,6 +53,7 @@ import { WMRReportModal } from "./WMRReportModal";
 import { PropertyCardReportModal } from "./PropertyCardReportModal";
 import { SEPropertyCardModal } from "./SEPropertyCardModal";
 import { InventoryCountFormModal } from "./InventoryCountFormModal";
+import { ListPPEsAtStationModal } from "./ListPPEsAtStationModal";
 
 
 export function ReportTab() {
@@ -95,6 +96,7 @@ export function ReportTab() {
   const [showPropertyCardModal, setShowPropertyCardModal] = useState(false);
   const [showInventoryCountModal, setShowInventoryCountModal] = useState(false);
   const [showSEPropertyCardModal, setShowSEPropertyCardModal] = useState(false);
+  const [showListPPEsAtStation, setShowListPPEsAtStation] = useState(false);
 
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [registrySPIAssets, setRegistrySPIAssets] = useState<any[]>([]);
@@ -129,6 +131,7 @@ export function ReportTab() {
     setShowWMRModal(false);
     setShowPropertyCardModal(false);
     setShowSEPropertyCardModal(false);
+    setShowListPPEsAtStation(false);
     setSelectedReport(null);
     setSelectedItem(null);
     setSelectedMovement(null);
@@ -512,11 +515,18 @@ export function ReportTab() {
     },
     {
       title: 'Semi-Expendable Property Card',
-      subtitle: 'SE Property Card (Annex A.1)',
+      subtitle: 'SE Property Card',
       icon: BookOpen,
       bgColor: 'bg-lime-600',
       action: () => setShowSEPropertyCardModal(true)
-    }
+    },
+    {
+      title: 'List of PPEs Found at Station',
+      subtitle: 'PPE listing per office / station (Annex B)',
+      icon: ClipboardList,
+      bgColor: 'bg-sky-600',
+      action: () => setShowListPPEsAtStation(true)
+    },
   ]), []);
 
   const filteredReports = useMemo(() => {
@@ -707,6 +717,11 @@ export function ReportTab() {
         <SEPropertyCardModal
           isOpen={showSEPropertyCardModal}
           onClose={() => setShowSEPropertyCardModal(false)}
+        />
+
+        <ListPPEsAtStationModal
+          isOpen={showListPPEsAtStation}
+          onClose={() => setShowListPPEsAtStation(false)}
         />
 
         {/* Added the RIS Report Modal to the component tree */}
