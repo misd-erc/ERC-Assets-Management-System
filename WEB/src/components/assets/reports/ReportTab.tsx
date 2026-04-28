@@ -49,6 +49,7 @@ import { RSMIReportModal } from "./RSMIReportModal";
 import { PARICSListModal } from "./PARICSListModal";
 import { StockCardReportModal } from "./StockCardReportModal";
 import { RISReportModal } from "./RISReportModal";
+import { WMRReportModal } from "./WMRReportModal";
 
 
 export function ReportTab() {
@@ -87,6 +88,7 @@ export function ReportTab() {
   const [showPARList, setShowPARList] = useState(false);
   const [showICSList, setShowICSList] = useState(false);
   const [showStockCardModal, setShowStockCardModal] = useState(false);
+  const [showWMRModal, setShowWMRModal] = useState(false);
 
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [registrySPIAssets, setRegistrySPIAssets] = useState<any[]>([]);
@@ -118,6 +120,7 @@ export function ReportTab() {
     setShowRISModal(false);
     setShowRegistrySPI(false);
     setShowStockCardModal(false);
+    setShowWMRModal(false);
     setSelectedReport(null);
     setSelectedItem(null);
     setSelectedMovement(null);
@@ -477,6 +480,13 @@ export function ReportTab() {
       icon: Archive,
       bgColor: 'bg-indigo-500',
       action: () => setShowStockCardModal(true)
+    },
+    {
+      title: 'WMR',
+      subtitle: 'Waste Materials Report',
+      icon: FileText,
+      bgColor: 'bg-emerald-700',
+      action: () => setShowWMRModal(true)
     }
   ]), []);
 
@@ -648,6 +658,11 @@ export function ReportTab() {
         <StockCardReportModal
             isOpen={showStockCardModal}
             onClose={() => setShowStockCardModal(false)}
+        />
+
+        <WMRReportModal
+          isOpen={showWMRModal}
+          onClose={() => setShowWMRModal(false)}
         />
 
         {/* Added the RIS Report Modal to the component tree */}
