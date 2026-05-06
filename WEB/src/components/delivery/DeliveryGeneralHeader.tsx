@@ -11,21 +11,21 @@ import {
   TrendingUp
 } from "lucide-react";
 import { useDeliveryRecordStore } from "@/store/delivery"; // Adjust path if needed
-import { useSupplyIAR } from "@/hooks";
+import { useSupplyIARStore } from "@/store/supply";
 import { formatCurrency } from "@/utils/formatters";
 
 export const DeliveryGeneralHeader = () => {
-  // 1. Pull data from both delivery and supply stores
-  const { vwDeliveryRecords, fetchDeliveryRecords } = useDeliveryRecordStore();
-  const { iars, fetchSupplyIARs } = useSupplyIAR();
+  const vwDeliveryRecordsSummary = useDeliveryRecordStore(state => state.vwDeliveryRecordsSummary);
+  const fetchDeliveryRecordsSummary = useDeliveryRecordStore(state => state.fetchDeliveryRecordsSummary);
+  
+  const iarsSummary = useSupplyIARStore(state => state.iarsSummary);
+  const fetchSupplyIARSummary = useSupplyIARStore(state => state.fetchSupplyIARSummary);
 
-  // 2. Fetch all data when the dashboard component mounts
   useEffect(() => {
-    fetchDeliveryRecords();
-    fetchSupplyIARs();
-  }, [fetchDeliveryRecords, fetchSupplyIARs]);
+    fetchDeliveryRecordsSummary();
+    fetchSupplyIARSummary();
+  }, [fetchDeliveryRecordsSummary, fetchSupplyIARSummary]);
 
-  // 3. Calculate metrics safely
   const stats = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -42,18 +42,11 @@ export const DeliveryGeneralHeader = () => {
     let rejectedDeliveries = 0;
     let delayedInspections = 0;
 
-    // Track linked IAR IDs to avoid double counting if we were to iterate IARs primarily
-    const linkedIarIds = new Set(vwDeliveryRecords.map(r => r.supplyIAR?.id).filter(id => id !== undefined));
-
     // --- Process Delivery Records ---
-    vwDeliveryRecords.forEach(record => {
+    vwDeliveryRecordsSummary.forEach(record => {
       totalDeliveries++;
 
-      const recordTotal = Number(record.totalAmount) || record.items?.reduce(
-          (sum: number, item: any) => sum + ((Number(item.itemQuantity) || 0) * (Number(item.unitCost) || 0)),
-          0
-      ) || 0;
-
+      const recordTotal = Number(record.totalAmount) || 0;
       totalValue += recordTotal;
 
       const recordDateString = record.deliveryDate || record.createdAt;
@@ -75,24 +68,18 @@ export const DeliveryGeneralHeader = () => {
       }
     });
 
-    // --- Process Unlinked IARs (Receipts created directly as IARs) ---
-    iars.forEach(iar => {
-      // If it's not linked to a DR, it's a separate "Receipt"
+    // --- Process Unlinked IARs ---
+    iarsSummary.forEach(iar => {
       if (!iar.recordId) {
         totalDeliveries++;
-        
-        // Unlinked IARs currently don't have items in the same way, 
-        // but we should still count their status
         if (!iar.isApproved) {
           pendingDeliveries++;
-          
           const recordDateString = iar.iarNumberDate || iar.createdAt;
           const recordDate = recordDateString ? new Date(recordDateString) : now;
           const daysPending = Math.floor((now.getTime() - recordDate.getTime()) / (1000 * 3600 * 24));
           if (daysPending > 3) delayedInspections++;
         } else {
           receivedDeliveries++;
-          
           const recordDateString = iar.iarNumberDate || iar.createdAt;
           const recordDate = recordDateString ? new Date(recordDateString) : now;
           const isThisMonth = recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
@@ -112,7 +99,7 @@ export const DeliveryGeneralHeader = () => {
       rejectedDeliveries,
       delayedInspections
     };
-  }, [vwDeliveryRecords, iars]); // Recalculate when either store updates
+  }, [vwDeliveryRecordsSummary, iarsSummary]);
 
   return (
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">

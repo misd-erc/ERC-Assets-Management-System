@@ -20,7 +20,11 @@ interface ListResponse<T> {
 export const getSupplyIARs = async (
   pageNumber: number = 1,
   pageSize: number = 10,
-  search: string = ''
+  search: string = '',
+  status: string = 'all',
+  vendorId?: number,
+  officeId?: number,
+  divisionId?: number
 ): Promise<{ items: VwSupplyIAR[]; totalCount: number }> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
@@ -30,7 +34,11 @@ export const getSupplyIARs = async (
       SessionKey: sessionKey,
       PageNumber: pageNumber,
       PageSize: pageSize,
-      Search: search
+      SearchString: search,
+      Status: status,
+      VendorId: vendorId,
+      OfficeId: officeId,
+      DivisionId: divisionId
     },
   });
 
@@ -138,4 +146,13 @@ export const editSupplyIAR = async (payload: SupplyIAR): Promise<{ message: stri
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save supply IAR');
   
   return { message: response.data.message ?? 'Success' };
+};
+
+export const getSupplyIARSummary = async (): Promise<VwSupplyIAR[]> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+  const response = await axiosInstance.get<SupplyIARResponse<VwSupplyIAR[]>>('/Supply/iar/summary', {
+    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+  });
+  if (!response.data.success) return [];
+  return response.data.data;
 };
