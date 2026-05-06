@@ -1,4 +1,4 @@
-﻿using PortalCommon.Utilities;
+using PortalCommon.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -16,7 +16,7 @@ namespace PortalDB.Entities.ASSET.Supply
         public long Id { get; set; }
 
         [Column("DeliveryRecordId")]
-        public long RecordId { get; set; }
+        public long? RecordId { get; set; }
 
         [Column("SupplyResponsibilityCenterCode")]
         public string? ResponsibilityCenterCodeEncrypted { get; set; }

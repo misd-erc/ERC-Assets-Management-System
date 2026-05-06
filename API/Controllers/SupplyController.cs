@@ -1040,7 +1040,7 @@ namespace API.Controllers
                     var supplyIARModel = new SupplyIARResponseModel
                     {
                         Id = x.Id,
-                        RecordId = x.RecordId,
+                        RecordId = x.RecordId.Value,
                         DRNumber = _getTools.Delivery.GetTblDeliveryRecords(context).Where(y => y.Id == x.RecordId).FirstOrDefault()?.DRNumber ?? "",
                         CenterCode = x.ResponsibilityCenterCode,
                         EntityName = x.EntityName,
@@ -1733,12 +1733,13 @@ namespace API.Controllers
                     IsApproved = model.IsApproved
                 };
 
+                long supplyIARId = await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
+                supplyIAR.Id = supplyIARId;
+
                 if (supplyIAR.IsApproved)
                 {
                     supplyIAR.IsApproved = true;
                     supplyIAR.ApprovedOn = DateTime.UtcNow;
-
-
 
                     List<TblDeliveryRecord>? deliveryRecords = _getTools.Delivery.GetTblDeliveryRecords(context)?.Where(x => x.Id == supplyIAR.RecordId).ToList();
                     foreach (var deliveryRecord in deliveryRecords)
@@ -1753,7 +1754,7 @@ namespace API.Controllers
                                 TblSupplyItem? supplyItem = new TblSupplyItem()
                                 {
                                     Code = deliveryRecordItem.Code,
-                                    IARId = model.Id,
+                                    IARId = supplyIAR.Id,
                                     CategoryId = deliveryRecordItem.CategoryId,
                                     Description = deliveryRecordItem.ItemDescription,
                                     MeasurementUnitId = deliveryRecordItem.UnitId,
@@ -1805,10 +1806,10 @@ namespace API.Controllers
 
                         await _editTools.Delivery.EditTblDeliveryRecordAsync(deliveryRecord, model.ActionBySystemUserId, context);
                     }
+                    
+                    // Update the IAR again to set ApprovedOn
+                    await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
                 }
-
-
-                long supplyIARId = await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
 
                 
 

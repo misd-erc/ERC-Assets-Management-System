@@ -1,4 +1,4 @@
-﻿using API.Attributes;
+using API.Attributes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
@@ -297,11 +297,11 @@ namespace API.Controllers
                         ItemDescription = x.ItemDescription,
                         ItemSpecification = x.ItemSpecification,
                         ItemQuantity = x.ItemQuantity,
-                        ReorderPoint = x.ReorderPoint,
+                        ReorderPoint = x.ReorderPoint ?? 0,
                         StorageLocationId = x.StorageLocationId,
                         VendorId = x.VendorId,
                         UnitId = x.MeasurementUnitId,
-                        UnitCost = x.UnitCost,
+                        UnitCost = x.UnitCost ?? 0,
                         IsActive = x.IsActive,
                         IsDeleted = x.IsDeleted
                     };
