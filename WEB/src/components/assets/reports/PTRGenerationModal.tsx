@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
-import { getPTRMovements, getTransferDetailsByNumber } from '@/api/asset/transferApi';
+import { getPTRTransferList, getTransferDetailsByNumber } from '@/api/asset/transferApi';
 import { PTRGenerator } from './PTRGenerator';
 
 interface PTRGenerationModalProps {
@@ -66,17 +66,17 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
   const loadPTRRecords = async () => {
     setLoading(true);
     try {
-      const response = await getPTRMovements(undefined, 1, 1000);
-      console.log('PTR API Response:', response);
+      const response = await getPTRTransferList(1, 1000);
+      console.log('PTR Transfer List Response:', response);
       console.log('PTR Items:', response.items);
-      
+
       // Create a map to store full details by PTR number
       const detailsMap = new Map();
-      
+
       // Group by PTR number
       const grouped = response.items?.reduce((acc: any, item: any) => {
-        const ptrNum = item.ptritrNumber;
-        if (!ptrNum || !ptrNum.startsWith('PTR')) return acc;
+        const ptrNum = item.ptrItrNumber;
+        if (!ptrNum) return acc;
 
         const existing = acc[ptrNum];
         const existingDetails = detailsMap.get(ptrNum);
@@ -90,22 +90,37 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
           return merged;
         };
 
-        const mergedItems = mergeItems(existingDetails?.items || item.items || [], item.items || []);
+        // transfer/list returns a single `item` object per movement row
+        const incomingItems = item.item ? [item.item] : [];
+        const mergedItems = mergeItems(existingDetails?.items || [], incomingItems);
+
+        // Resolve to employee name string and id
+        const toEmpFullName = item.nonPlantillaEmployeeName || item.plantillaEmployeeName || 'Unknown';
+        const toEmpId = item.nonPlantillaEmployeeId ?? item.plantillaEmployeeId;
+
+        // Split full name into parts for the PDF generator
+        const toEmpParts = toEmpFullName.trim().split(/\s+/);
+        const toEmpObj = {
+          firstName: toEmpParts[0] || '',
+          middleName: toEmpParts.length > 2 ? toEmpParts.slice(1, -1).join(' ') : '',
+          lastName: toEmpParts.length > 1 ? toEmpParts[toEmpParts.length - 1] : ''
+        };
 
         const baseRecord = existing || {
           ptrNumber: ptrNum,
-          fromEmployee: item.employee?.[0] ? `${item.employee[0].fullName}` : 'Unknown',
-          toEmployee: item.employee?.[1] ? `${item.employee[1].fullName}` : 'Unknown',
+          fromEmployee: existingDetails?.fromEmployeeName || 'N/A',
+          toEmployee: toEmpFullName,
           itemCount: 0,
           dateAssigned: item.dateAssigned,
-          transferType: item.transferType || 'N/A'
+          transferType: item.status || 'N/A'
         };
 
         const updatedRecord = {
           ...baseRecord,
+          toEmployee: toEmpFullName,
           itemCount: mergedItems.length,
           dateAssigned: baseRecord.dateAssigned || item.dateAssigned,
-          transferType: baseRecord.transferType || item.transferType || 'N/A'
+          transferType: baseRecord.transferType || item.status || 'N/A'
         };
 
         acc[ptrNum] = updatedRecord;
@@ -113,12 +128,12 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         detailsMap.set(ptrNum, {
           transferNumber: ptrNum,
           transferType: updatedRecord.transferType || 'TRANSFER',
-          fromEmployeeId: item.employee?.[0]?.id ?? existingDetails?.fromEmployeeId,
-          fromEmployeeName: item.employee?.[0]?.fullName || existingDetails?.fromEmployeeName || 'Unknown',
-          fromEmployee: item.employee?.[0] || existingDetails?.fromEmployee,
-          toEmployeeId: item.employee?.[1]?.id ?? existingDetails?.toEmployeeId,
-          toEmployeeName: item.employee?.[1]?.fullName || existingDetails?.toEmployeeName || 'Unknown',
-          toEmployee: item.employee?.[1] || existingDetails?.toEmployee,
+          fromEmployeeId: existingDetails?.fromEmployeeId,
+          fromEmployeeName: existingDetails?.fromEmployeeName || 'N/A',
+          fromEmployee: existingDetails?.fromEmployee || { firstName: 'N/A', middleName: '', lastName: '' },
+          toEmployeeId: toEmpId ?? existingDetails?.toEmployeeId,
+          toEmployeeName: toEmpFullName,
+          toEmployee: toEmpObj,
           items: mergedItems,
           dateAssigned: updatedRecord.dateAssigned,
           remarks: item.remarks || existingDetails?.remarks,
