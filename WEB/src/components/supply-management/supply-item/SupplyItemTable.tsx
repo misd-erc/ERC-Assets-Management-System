@@ -26,6 +26,7 @@ interface Props {
   categoryFilter: string;
   statusFilter: string;
   storageFilter: string;
+  allCategories?: Category[];
   storageLocations?: SupplyStorageLocation[];
   loading?: boolean;
   onAdd: () => void;
@@ -46,6 +47,7 @@ export const SupplyItemTable = ({
   categoryFilter,
   statusFilter,
   storageFilter,
+  allCategories = [],
   storageLocations = [],
   loading = false, 
   onAdd, 
@@ -64,13 +66,7 @@ export const SupplyItemTable = ({
     return 'Available';
   };
 
-  // Categories are now passed or fetched separately, but we can still derive them from current page data for the dropdown
-  // though it's better to fetch all categories once. For now, we'll keep the unique categories from current data.
-  const categories = useMemo(() => {
-    const unique = new Set(data.map(item => item.category?.name).filter(Boolean));
-    return Array.from(unique).sort();
-  }, [data]);
-
+  // Categories are now passed from the parent to ensure consistency with server-side filtering.
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   const handleSort = (key: string) => {
@@ -133,8 +129,8 @@ export const SupplyItemTable = ({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Categories</SelectItem>
-                        {categories.map(cat => (
-                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        {allCategories.map(cat => (
+                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

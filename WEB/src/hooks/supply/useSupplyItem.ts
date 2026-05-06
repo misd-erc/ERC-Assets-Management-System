@@ -1,9 +1,13 @@
-﻿import { useSupplyItemStore } from "@/store/supply";
+import { useSupplyItemStore } from "@/store/supply";
+import { useMemo } from 'react';
 
 export const useSupplyItem = () => {
   const store = useSupplyItemStore();
-  const totalItems = store.supplies.length;
-  return { ...store, totalItems };
+  
+  return useMemo(() => ({
+    ...store,
+    totalItems: store.supplies.length
+  }), [store]);
 };
 
 

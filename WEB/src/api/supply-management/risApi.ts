@@ -72,7 +72,7 @@ export const getSupplyRISs = async (
       SessionKey: sessionKey,
       PageNumber: pageNumber,
       PageSize: pageSize,
-      Search: search,
+      SearchString: search,
       Status: status,
       OfficeId: officeId,
       DivisionId: divisionId,
