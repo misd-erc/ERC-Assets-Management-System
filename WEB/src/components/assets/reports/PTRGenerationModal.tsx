@@ -95,8 +95,8 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         const mergedItems = mergeItems(existingDetails?.items || [], incomingItems);
 
         // Resolve to employee name string and id
-        const toEmpFullName = item.nonPlantillaEmployeeName || item.plantillaEmployeeName || 'Unknown';
-        const toEmpId = item.nonPlantillaEmployeeId ?? item.plantillaEmployeeId;
+        const toEmpFullName = item.plantillaEmployeeName || item.nonPlantillaEmployeeName || 'Unknown';
+        const toEmpId = item.plantillaEmployeeId ?? item.nonPlantillaEmployeeId;
 
         // Split full name into parts for the PDF generator
         const toEmpParts = toEmpFullName.trim().split(/\s+/);
@@ -105,6 +105,16 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
           middleName: toEmpParts.length > 2 ? toEmpParts.slice(1, -1).join(' ') : '',
           lastName: toEmpParts.length > 1 ? toEmpParts[toEmpParts.length - 1] : ''
         };
+
+        // Track non-plantilla employee separately for Sub-PAR
+        const nonPlantillaFullName = item.nonPlantillaEmployeeName || null;
+        const nonPlantillaId = item.nonPlantillaEmployeeId || null;
+        const nonPlantillaParts = nonPlantillaFullName ? nonPlantillaFullName.trim().split(/\s+/) : null;
+        const nonPlantillaObj = nonPlantillaParts ? {
+          firstName: nonPlantillaParts[0] || '',
+          middleName: nonPlantillaParts.length > 2 ? nonPlantillaParts.slice(1, -1).join(' ') : '',
+          lastName: nonPlantillaParts.length > 1 ? nonPlantillaParts[nonPlantillaParts.length - 1] : ''
+        } : null;
 
         const baseRecord = existing || {
           ptrNumber: ptrNum,
@@ -134,6 +144,9 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
           toEmployeeId: toEmpId ?? existingDetails?.toEmployeeId,
           toEmployeeName: toEmpFullName,
           toEmployee: toEmpObj,
+          nonPlantillaEmployeeId: nonPlantillaId ?? existingDetails?.nonPlantillaEmployeeId,
+          nonPlantillaEmployeeName: nonPlantillaFullName ?? existingDetails?.nonPlantillaEmployeeName,
+          nonPlantillaEmployee: nonPlantillaObj ?? existingDetails?.nonPlantillaEmployee,
           items: mergedItems,
           dateAssigned: updatedRecord.dateAssigned,
           remarks: item.remarks || existingDetails?.remarks,
@@ -195,6 +208,20 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         label: ptrDetails.toEmployeeName
       };
 
+      const nonPlantillaEmp: NormalizedEmployee | null = ptrDetails.nonPlantillaEmployee
+        ? {
+            id: ptrDetails.nonPlantillaEmployeeId || 0,
+            firstName: ptrDetails.nonPlantillaEmployee.firstName || '',
+            middleName: ptrDetails.nonPlantillaEmployee.middleName || '',
+            lastName: ptrDetails.nonPlantillaEmployee.lastName || '',
+            suffixName: '',
+            employeeIdOriginal: '',
+            employmentTypeId: 0,
+            employmentTypeName: '',
+            label: ptrDetails.nonPlantillaEmployeeName || '',
+          }
+        : null;
+
       const url = await PTRGenerator.generatePTRPreviewMultiple(
         fromEmp,
         toEmp,
@@ -202,7 +229,8 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         ptrDetails.dateAssigned,
         ptrDetails.transferType || 'REASSIGNMENT',
         ptrDetails.transferNumber,
-        signatureDate
+        signatureDate,
+        nonPlantillaEmp
       );
       setPreviewUrl(url);
       setShowPreview(true);
