@@ -21,8 +21,8 @@ import { useRISStore } from '@/store/supply/risStore'; // Adjust path to where y
 export const SupplyGeneralHeader = () => {
   // 2. Consume the stores
   const { vwSuppliesSummary, totalSupplies, fetchSupplySummary } = useSupplyItem();
-  const { iarsSummary, totalIars, fetchSupplyIARSummary } = useSupplyIARStore();
-  const { risSummary, totalRis, fetchRISSummary } = useRISStore();
+  const { iarsSummary, fetchSupplyIARSummary } = useSupplyIARStore();
+  const { risSummary, fetchRISSummary } = useRISStore();
 
   // 3. Fetch latest summaries on mount
   useEffect(() => {
@@ -34,7 +34,12 @@ export const SupplyGeneralHeader = () => {
   // 4. Calculate all metrics
   const stats = useMemo(() => {
     // --- INVENTORY METRICS ---
-    const totalItems = totalSupplies;
+    // The user wants "Total Items" to likely reflect the number of unique groups or the sum of quantities.
+    // Given the context "encoded items", they probably mean total records.
+    // However, since we display groups, showing totalGroups (totalSupplies) is more consistent with the table.
+    // If they want total quantity, we should sum it.
+    
+    const totalItems = totalSupplies; 
 
     const outOfStockItems = vwSuppliesSummary.filter(
         s => Number(s.quantity || 0) === 0
@@ -96,7 +101,7 @@ export const SupplyGeneralHeader = () => {
       completedRISThisMonth,
       issuedValueMTD
     };
-  }, [vwSuppliesSummary, totalSupplies, iarsSummary, totalIars, totalRis, risSummary]); // Re-calculate when any of these 3 lists change
+  }, [vwSuppliesSummary, totalSupplies, iarsSummary, risSummary]); // Re-calculate when any of these 3 lists change
 
   return (
       <div className="space-y-6 mb-8">
