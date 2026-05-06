@@ -1,19 +1,6 @@
-﻿// AppSidebar.tsx (Permission-based version)
-import React, { useCallback, useMemo, useState, useEffect } from "react";
+﻿// AppSidebar.tsx
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarHeader,
-  SidebarFooter,
-} from "@/components/ui/sidebar";
 
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -25,7 +12,6 @@ import {
 } from "@/utils/moduleConfig";
 
 import { getUserDetails } from "@/api/user-management/authApi";
-
 import { Building, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { secureStorage } from "@/utils/secureStorage";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
@@ -48,14 +34,10 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
-  // ----------------------
-  // LOAD USER DETAILS
-  // ----------------------
   useEffect(() => {
     let isActive = true;
 
     const loadUserDetails = async () => {
-      // Try local cache first
       const encrypted = secureStorage.getItem("userDetails");
       if (encrypted) {
         try {
@@ -63,11 +45,10 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
           if (isActive) setUserDetails(parsed);
           return;
         } catch (err) {
-          console.warn("[Sidebar] Failed to decrypt cached user details, refetching", err);
+          console.warn("[Sidebar] Failed to decrypt cached user details", err);
         }
       }
 
-      // Fallback: fetch fresh details and cache them
       try {
         const fresh = await getUserDetails();
         const encryptedFresh = encrypt(JSON.stringify(fresh));
@@ -85,43 +66,16 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
     };
   }, []);
 
-  // ----------------------
-  // EXTRACT SCOPES (ACRONYM-BASED)
-  // ----------------------
-  const { acronyms } = useMemo(() => {
-    if (!userDetails) return { acronyms: [] };
-
-    const list: string[] = [];
-
-    userDetails.systemRole?.forEach((role: any) => {
-      role.scope?.forEach((s: any) => {
-        if (s.module?.acronym) list.push(s.module.acronym);
-      });
-    });
-
-    return { acronyms: list };
-  }, [userDetails]);
-
-  const effectiveAcronyms = useMemo(() => {
-    const set = new Set(acronyms);
-    // Always surface PPE/SE Issuance while backend scopes are being rolled out
-    set.add("PPEISS");
-    return Array.from(set);
-  }, [acronyms]);
-
-  // ----------------------
-  // BUILD NAVIGATION GROUPS
-  // ----------------------
   const navigationGroups: NavigationGroup[] = useMemo(() => {
     const grouped: Record<string, NavigationItem[]> = {};
 
-    effectiveAcronyms.forEach((acronym) => {
+    adminOverrideModules.forEach((acronym) => {
       const config = moduleConfig[acronym] || {
         ...fallbackModule,
         id: acronym.toLowerCase(),
         title: acronym,
         icon: Building,
-        implemented: false,
+        implemented: true,
       };
 
       const item: NavigationItem = {
@@ -136,7 +90,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
       grouped[config.group].push(item);
     });
 
-    // Sidebar group order
     const groupOrder = [
       'Overview',
       'Core Operations',
@@ -145,7 +98,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
       'Administration',
     ];
 
-    // Always put Dashboard at the top
     let dashboardGroup: NavigationGroup | undefined;
     let otherGroups: NavigationGroup[] = [];
 
@@ -157,7 +109,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
       }
     });
 
-    // Sort other groups by groupOrder
     otherGroups.sort((a, b) => {
       const idxA = groupOrder.indexOf(a.title);
       const idxB = groupOrder.indexOf(b.title);
@@ -165,11 +116,8 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
     });
 
     return dashboardGroup ? [dashboardGroup, ...otherGroups] : otherGroups;
-  }, [effectiveAcronyms]);
+  }, []);
 
-  // ----------------------
-  // CLICK HANDLER
-  // ----------------------
   const handleClick = (item: NavigationItem) => {
     if (item.implemented) {
       onModuleChange(item.id);
@@ -187,9 +135,7 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
 
   const collapsed = !open;
 
-  // ----------------------
-  // DESKTOP SIDEBAR
-  // ----------------------
+  // Desktop sidebar
   if (!isMobile) {
     return (
       <TooltipProvider delayDuration={0}>
@@ -198,7 +144,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
             collapsed ? 'w-16' : 'w-64'
           }`}
         >
-          {/* Header */}
           <div className="p-0 border-b border-slate-100 dark:border-slate-800">
             {collapsed ? (
               <div className="flex justify-center py-3">
@@ -244,7 +189,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
             )}
           </div>
 
-          {/* Content */}
           <div className="overflow-y-auto h-[calc(100%-120px)]">
             <nav className={`py-3 ${collapsed ? 'px-2 space-y-0.5' : 'px-3 space-y-4'}`}>
               {navigationGroups.map((group, gIdx) => (
@@ -318,7 +262,6 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
             </nav>
           </div>
 
-          {/* Footer */}
           <div className="border-t border-slate-100 dark:border-slate-800 p-0 absolute bottom-0 w-full bg-white dark:bg-slate-900">
             {collapsed ? (
               <div className="flex justify-center py-3">
@@ -351,9 +294,7 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
     );
   }
 
-  // ----------------------
-  // MOBILE SIDEBAR (Slide-out panel)
-  // ----------------------
+  // Mobile sidebar - Simplified without Sidebar component
   if (!open) return null;
 
   return (
@@ -365,7 +306,7 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
           onClick={() => onOpenChange?.(false)}
         />
         
-        {/* Sidebar panel */}
+        {/* Sidebar panel sliding from left */}
         <div className="absolute left-0 top-0 h-full w-80 bg-white dark:bg-slate-900 shadow-2xl transition-transform duration-300 transform translate-x-0 flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
