@@ -38,7 +38,17 @@ export const getCategories = async (): Promise<Category[]> => {
       return [];
     }
 
-    return response.data.data?.items || [];
+    const data = response.data.data;
+    const items = Array.isArray(data) ? data : (data as any)?.items || (data as any)?.Items;
+
+    return Array.isArray(items) 
+      ? items.map((c: any) => ({
+          id: c.id ?? c.Id,
+          name: c.name ?? c.Name,
+          generalCode: c.generalCode ?? c.GeneralCode,
+          isActive: c.isActive ?? c.IsActive ?? true
+        }))
+      : [];
   } catch (error) {
     console.error('Error fetching categories:', error);
     return [];

@@ -1,8 +1,8 @@
 import CryptoJS from 'crypto-js';
 
 // Fallbacks are highly recommended just in case env variables fail to load
-const SECRET_KEY = process.env.REACT_ENCRYPTION_KEY || '';
-const SECRET_IV = process.env.REACT_ENCRYPTION_IV || '';
+const SECRET_KEY = process.env.REACT_APP_ENCRYPTION_KEY || '';
+const SECRET_IV = process.env.REACT_APP_ENCRYPTION_IV || '';
 
 // AES requires keys and IVs to be parsed into WordArrays
 const key = CryptoJS.enc.Utf8.parse(SECRET_KEY);

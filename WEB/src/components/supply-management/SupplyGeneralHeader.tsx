@@ -20,39 +20,44 @@ import { useRISStore } from '@/store/supply/risStore'; // Adjust path to where y
 
 export const SupplyGeneralHeader = () => {
   // 2. Consume the stores
-  const { vwSupplies, fetchSupplyItems } = useSupplyItem();
-  const { iars, fetchSupplyIARs } = useSupplyIARStore();
-  const { risList, fetchRISs } = useRISStore();
+  const { vwSuppliesSummary, totalSupplies, fetchSupplySummary } = useSupplyItem();
+  const { iarsSummary, fetchSupplyIARSummary } = useSupplyIARStore();
+  const { risSummary, fetchRISSummary } = useRISStore();
 
-  // 3. Fetch latest IARs and RISs on mount
+  // 3. Fetch latest summaries on mount
   useEffect(() => {
-    fetchSupplyIARs();
-    fetchRISs();
-    fetchSupplyItems();
-  }, [fetchSupplyIARs, fetchRISs]);
+    fetchSupplyIARSummary();
+    fetchRISSummary();
+    fetchSupplySummary();
+  }, [fetchSupplyIARSummary, fetchRISSummary, fetchSupplySummary]);
 
   // 4. Calculate all metrics
   const stats = useMemo(() => {
-    // --- INVENTORY METRICS (from vwSupplies) ---
-    const totalItems = vwSupplies.length;
+    // --- INVENTORY METRICS ---
+    // The user wants "Total Items" to likely reflect the number of unique groups or the sum of quantities.
+    // Given the context "encoded items", they probably mean total records.
+    // However, since we display groups, showing totalGroups (totalSupplies) is more consistent with the table.
+    // If they want total quantity, we should sum it.
+    
+    const totalItems = totalSupplies; 
 
-    const outOfStockItems = vwSupplies.filter(
-        s => Number(s.currentStock || 0) === 0
+    const outOfStockItems = vwSuppliesSummary.filter(
+        s => Number(s.quantity || 0) === 0
     ).length;
 
-    const lowStockItems = vwSupplies.filter(
-        s => Number(s.currentStock || 0) > 0 && Number(s.currentStock || 0) <= Number(s.reorderPoint || 0)
+    const lowStockItems = vwSuppliesSummary.filter(
+        s => Number(s.quantity || 0) > 0 && Number(s.quantity || 0) <= Number(s.reorderPoint || 0)
     ).length;
 
-    const totalInventoryValue = vwSupplies.reduce(
-        (sum, s) => sum + (Number(s.currentStock || 0) * Number(s.unitCost || 0)),
+    const totalInventoryValue = vwSuppliesSummary.reduce(
+        (sum, s) => sum + (Number(s.quantity || 0) * Number(s.unitCost || 0)),
         0
     );
 
-    // --- DELIVERY METRICS (from IAR Store) ---
-    const pendingDeliveries = iars.filter(iar => !iar.isApproved).length;
+    // --- DELIVERY METRICS ---
+    const pendingDeliveriesCount = iarsSummary.filter(iar => !iar.isApproved).length;
 
-    // --- RIS METRICS (from your RIS Store) ---
+    // --- RIS METRICS ---
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
@@ -61,7 +66,7 @@ export const SupplyGeneralHeader = () => {
     let completedRISThisMonth = 0;
     let issuedValueMTD = 0;
 
-    risList.forEach(ris => {
+    risSummary.forEach(ris => {
       // 1. Pending: Requested but not yet approved or issued
       if (!ris.risApprovedDate && !ris.risIssuedDate) {
         pendingRIS++;
@@ -73,21 +78,12 @@ export const SupplyGeneralHeader = () => {
         if (issueDate.getMonth() === currentMonth && issueDate.getFullYear() === currentYear) {
           completedRISThisMonth++;
 
-          // --- NEW: CALCULATE VALUE ISSUED MTD ---
-          // Ensure the RIS has items loaded
+          // --- CALCULATE VALUE ISSUED MTD ---
           if (ris.items && ris.items.length > 0) {
             ris.items.forEach(risItem => {
-              // A. Find the matching supply item in your inventory catalog to get its price
-              // (Assuming 'code' in vwSupplies matches 'stockNumber' in risItem)
-              const matchedSupply = vwSupplies.find(s => s.code === risItem.stockNumber);
-
-              // B. Extract the unit cost (default to 0 if something is missing)
+              const matchedSupply = vwSuppliesSummary.find(s => s.code === risItem.stockNumber);
               const costPerUnit = matchedSupply ? Number(matchedSupply.unitCost || 0) : 0;
-
-              // C. Multiply the cost by the ACTUAL quantity issued (not the requested amount)
               const itemTotalValue = Number(risItem.issueQuantity || 0) * costPerUnit;
-
-              // D. Add it to our running total
               issuedValueMTD += itemTotalValue;
             });
           }
@@ -100,12 +96,12 @@ export const SupplyGeneralHeader = () => {
       outOfStockItems,
       lowStockItems,
       totalInventoryValue,
-      pendingDeliveries,
+      pendingDeliveries: pendingDeliveriesCount,
       pendingRIS,
       completedRISThisMonth,
       issuedValueMTD
     };
-  }, [vwSupplies, iars, risList]); // Re-calculate when any of these 3 lists change
+  }, [vwSuppliesSummary, totalSupplies, iarsSummary, risSummary]); // Re-calculate when any of these 3 lists change
 
   return (
       <div className="space-y-6 mb-8">

@@ -1,6 +1,7 @@
 // src/components/supply-management/ris/SupplyRISTabContent.tsx
 import { useState, useEffect } from 'react';
 import { useRISStore } from '@/store/supply/risStore';
+import { useOfficeStore, useDivisionStore } from '@/store/office';
 import { SupplyRISTable } from './SupplyRISTable';
 import { RISFormModal } from './RISFormModal';
 import { SupplyRISDeleteModal } from './SupplyRISDeleteModal';
@@ -8,16 +9,42 @@ import { VwSupplyRIS } from '@/types/supply/ris';
 import { toast } from 'sonner';
 
 export const SupplyRISTabContent = () => {
-  // Grab whatever update/edit function you use in your store (e.g., saveRIS or editRIS)
-  const { risList, loading, fetchRISs, deleteRIS, saveRIS } = useRISStore();
+  const { risList, totalRis, loading, fetchRISs, deleteRIS, saveRIS } = useRISStore();
+  const { vwOffices, fetchOffices } = useOfficeStore();
+  const { vwDivisions, fetchDivisions } = useDivisionStore();
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedRIS, setSelectedRIS] = useState<VwSupplyRIS | null>(null);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
 
+  const [params, setParams] = useState({
+    page: 1,
+    search: '',
+    status: 'all',
+    officeId: 'all',
+    divisionId: 'all',
+    startDate: '',
+    endDate: ''
+  });
+
   useEffect(() => {
-    fetchRISs();
-  }, [fetchRISs]);
+    fetchOffices();
+    fetchDivisions();
+  }, [fetchOffices, fetchDivisions]);
+
+  useEffect(() => {
+    fetchRISs(
+      params.page,
+      10,
+      params.search,
+      params.status === 'all' ? undefined : params.status,
+      params.officeId === 'all' ? undefined : Number(params.officeId),
+      params.divisionId === 'all' ? undefined : Number(params.divisionId),
+      params.startDate || undefined,
+      params.endDate || undefined
+    );
+  }, [params, fetchRISs]);
 
   const handleAdd = () => {
     setSelectedRIS(null);
@@ -83,13 +110,24 @@ export const SupplyRISTabContent = () => {
   return (
       <>
         <SupplyRISTable
-            data={risList}
-            onAdd={handleAdd}
-            onEdit={handleEdit}
-            onView={handleView}
-            onDelete={handleDelete}
-            onApprove={handleToggleApproval} // ✅ Pass the new handler to the table
-            loading={loading}
+          data={risList}
+          totalCount={totalRis}
+          page={params.page}
+          searchQuery={params.search}
+          statusFilter={params.status}
+          officeFilter={params.officeId}
+          divisionFilter={params.divisionId}
+          startDate={params.startDate}
+          endDate={params.endDate}
+          offices={vwOffices}
+          divisions={vwDivisions}
+          onParamsChange={setParams}
+          loading={loading}
+          onAdd={handleAdd}
+          onEdit={handleEdit}
+          onView={handleView}
+          onDelete={handleDelete}
+          onApprove={handleToggleApproval}
         />
         <RISFormModal
             open={modalOpen}

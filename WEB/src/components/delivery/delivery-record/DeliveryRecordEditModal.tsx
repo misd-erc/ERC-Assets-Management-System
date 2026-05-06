@@ -127,11 +127,11 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>DR Number</Label>
-                <Input value={formData.drNumber} onChange={e => setFormData({...formData, drNumber: e.target.value})} required />
+                <Input value={formData.drNumber} onChange={e => setFormData({...formData, drNumber: e.target.value})} />
               </div>
               <div className="space-y-2">
                 <Label>Delivery Date</Label>
-                <Input type="date" value={formData.deliveryDate} onChange={e => setFormData({...formData, deliveryDate: e.target.value})} required />
+                <Input type="date" value={formData.deliveryDate} onChange={e => setFormData({...formData, deliveryDate: e.target.value})} />
               </div>
             </div>
             

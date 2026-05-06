@@ -1,4 +1,4 @@
-﻿// src/store/office/useOfficeStore.ts
+// src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
 import { SupplyItem, VwSupplyItem, SupplyUnit, SupplyStorageLocation, SupplyIAR, VwSupplyIAR, VwSupplyUniqueRawItem, VwSupplyGroupedItem } from '@/types';
 import { 
@@ -8,12 +8,14 @@ import {
   editSupplyUnit,
   getSupplyStorageLocations,
   editSupplyStorageLocation,
-  getSupplyIARs, // Make sure this is exported from your API
+  getSupplyIARs,
   editSupplyIAR,
+  getSupplyIARSummary,
   getSupplyUniqueRawItems,
   getVwSupplyGroupedItems,
   getVwSupplyGroupedItemLists
 } from '@/api';
+import { getCategories } from '@/api/categories/categoriesApi';
 import { toast } from 'sonner';
 import axiosInstance from '@/lib/axios';
 import { getAuthParams } from '@/utils/auth';
@@ -25,19 +27,26 @@ interface SupplyItemState {
   supplies: SupplyItem[];
   vwSupplyGroupItems: VwSupplyItem[];
   vwSupplies: VwSupplyItem[];
+  vwSuppliesSummary: VwSupplyItem[];
   vwSupplyGroups: VwSupplyGroupedItem[];
   vwUniqueRawSupplies: VwSupplyUniqueRawItem[];
+  totalSupplies: number;
+  totalGroups: number;
+  totalGroupItems: number;
   loading: boolean;
   searchQuery: string;
+  categories: any[];
 
   setSupplyItems: (supplies: SupplyItem[]) => void;
   setLoading: (loading: boolean) => void;
   setSearchQuery: (query: string) => void;
 
-  fetchSupplyItems: () => Promise<void>;
+  fetchSupplyItems: (page?: number, pageSize?: number, search?: string, categoryId?: number, status?: string, storageLocationId?: number, vendorId?: number) => Promise<void>;
+  fetchSupplySummary: () => Promise<void>;
   fetchSupplyUniqueRawItems: () => Promise<void>;
-  fetchSupplyGroupedItems: () => Promise<void>;
-  fetchSupplyGroupedItemLists: (id: number) => Promise<void>;
+  fetchSupplyGroupedItems: (page?: number, pageSize?: number, search?: string, status?: string, categoryId?: number, storageLocationId?: number, vendorId?: number) => Promise<void>;
+  fetchSupplyGroupedItemLists: (id: number, page?: number, pageSize?: number, search?: string, categoryId?: number, status?: string, storageLocationId?: number, vendorId?: number) => Promise<void>;
+  fetchCategories: () => Promise<void>;
   addSupplyItem: (supply: Partial<SupplyItem>) => Promise<void>;
   updateSupplyItem: (id: number, updates: Partial<SupplyItem>) => Promise<void>;
   deleteSupplyItem: (id: number) => Promise<void>;
@@ -46,21 +55,35 @@ interface SupplyItemState {
 export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
   supplies: [],
   vwSupplies: [],
+  vwSuppliesSummary: [],
   vwSupplyGroups: [],
   vwSupplyGroupItems: [],
   vwUniqueRawSupplies: [],
+  totalSupplies: 0,
+  totalGroups: 0,
+  totalGroupItems: 0,
   loading: false,
   searchQuery: '',
+  categories: [],
 
   setSupplyItems: (supplies) => set({ supplies }),
   setLoading: (loading) => set({ loading }),
   setSearchQuery: (query) => set({ searchQuery: query }),
 
-  fetchSupplyGroupedItemLists: async (id) => {
+  fetchCategories: async () => {
+    try {
+      const categories = await getCategories();
+      set({ categories });
+    } catch {
+      console.error('Failed to load categories');
+    }
+  },
+
+  fetchSupplyGroupedItemLists: async (id, page = 1, pageSize = 10, search = '', categoryId, status, storageLocationId, vendorId) => {
     set({ loading: true });
     try {
-      const vwSupplyGroupItems = await getVwSupplyGroupedItemLists(id);
-      set({ vwSupplyGroupItems });
+      const result = await getVwSupplyGroupedItemLists(id, page, pageSize, search, categoryId, status, storageLocationId, vendorId);
+      set({ vwSupplyGroupItems: result.items, totalGroupItems: result.totalCount });
     } catch {
       toast.error('Failed to load supplies');
     } finally {
@@ -68,11 +91,11 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
     }
   },
 
-  fetchSupplyItems: async () => {
+  fetchSupplyItems: async (page = 1, pageSize = 10, search = '', categoryId, status, storageLocationId, vendorId) => {
     set({ loading: true });
     try {
-      const vwSupplies = await getSupplyItems();
-      set({ vwSupplies });
+      const result = await getSupplyItems(page, pageSize, search, categoryId, status, storageLocationId, vendorId);
+      set({ vwSupplies: result.items, totalSupplies: result.totalCount });
     } catch {
       toast.error('Failed to load supplies');
     } finally {
@@ -80,11 +103,22 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
     }
   },
 
-  fetchSupplyGroupedItems: async () => {
+  fetchSupplySummary: async () => {
+    try {
+      // Fetch a larger set for dashboard accuracy, or the backend should ideally have a summary endpoint.
+      // We use a high PageSize to get as many items as reasonable for stats.
+      const result = await getSupplyItems(1, 1000, '', undefined, undefined);
+      set({ vwSuppliesSummary: result.items, totalSupplies: result.totalCount });
+    } catch {
+      console.error('Failed to load supply summary');
+    }
+  },
+
+  fetchSupplyGroupedItems: async (page = 1, pageSize = 10, search = '', status, categoryId, storageLocationId, vendorId) => {
     set({ loading: true });
     try {
-      const vwSupplyGroups = await getVwSupplyGroupedItems();
-      set({ vwSupplyGroups });
+      const result = await getVwSupplyGroupedItems(page, pageSize, search, status, categoryId, storageLocationId, vendorId);
+      set({ vwSupplyGroups: result.items, totalGroups: result.totalCount, totalSupplies: result.totalCount });
     } catch {
       toast.error('Failed to load supply groups');
     } finally {
@@ -123,8 +157,9 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
       });
       await get().fetchSupplyItems();
       toast.success('Supply Item added');
-    } catch {
+    } catch (error) {
       toast.error('Failed to add supply item');
+      throw error;
     }
   },
 
@@ -147,8 +182,9 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
       });
       await get().fetchSupplyItems();
       toast.success('Supply Item updated');
-    } catch {
+    } catch (error) {
       toast.error('Failed to update supply item');
+      throw error;
     }
   },
 
@@ -215,8 +251,9 @@ export const useSupplyUnitStore = create<SupplyUnitState>((set, get) => ({
       });
       await get().fetchSupplyUnits();
       toast.success('Supply Unit added');
-    } catch {
+    } catch (error) {
       toast.error('Failed to add supply unit');
+      throw error;
     }
   },
 
@@ -229,8 +266,9 @@ export const useSupplyUnitStore = create<SupplyUnitState>((set, get) => ({
       });
       await get().fetchSupplyUnits();
       toast.success('Supply Unit updated');
-    } catch {
+    } catch (error) {
       toast.error('Failed to update supply unit');
+      throw error;
     }
   },
 
@@ -297,8 +335,9 @@ export const useSupplyStorageLocationStore = create<SupplyStorageLocationState>(
       });
       await get().fetchSupplyStorageLocations();
       toast.success('Supply Unit added');
-    } catch {
+    } catch (error) {
       toast.error('Failed to add supply storagelocation');
+      throw error;
     }
   },
 
@@ -311,8 +350,9 @@ export const useSupplyStorageLocationStore = create<SupplyStorageLocationState>(
       });
       await get().fetchSupplyStorageLocations();
       toast.success('Supply Unit updated');
-    } catch {
+    } catch (error) {
       toast.error('Failed to update supply storagelocation');
+      throw error;
     }
   },
 
@@ -336,15 +376,30 @@ export const useSupplyStorageLocationStore = create<SupplyStorageLocationState>(
    SUPPLY IAR STORE
 ======================================== */
 export interface SupplyIARState {
-  iars: VwSupplyIAR[]; // Changed to VwSupplyIAR[] to match API
+  iars: VwSupplyIAR[];
+  iarsSummary: VwSupplyIAR[];
+  totalIars: number;
   loading: boolean;
   searchQuery: string;
+  page: number;
+  pageSize: number;
+  status: string;
+  vendorId?: number;
+  officeId?: number;
+  divisionId?: number;
 
   setSupplyIARs: (iars: VwSupplyIAR[]) => void;
   setLoading: (loading: boolean) => void;
   setSearchQuery: (query: string) => void;
+  setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
+  setStatus: (status: string) => void;
+  setVendorId: (id?: number) => void;
+  setOfficeId: (id?: number) => void;
+  setDivisionId: (id?: number) => void;
 
   fetchSupplyIARs: () => Promise<void>;
+  fetchSupplyIARSummary: () => Promise<void>;
   addSupplyIAR: (iar: Partial<SupplyIAR>) => Promise<void>;
   updateSupplyIAR: (id: number, updates: Partial<SupplyIAR>) => Promise<void>;
   deleteSupplyIAR: (id: number) => Promise<void>;
@@ -352,22 +407,46 @@ export interface SupplyIARState {
 
 export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
   iars: [],
+  iarsSummary: [],
+  totalIars: 0,
   loading: false,
   searchQuery: '',
+  page: 1,
+  pageSize: 10,
+  status: 'all',
+  vendorId: undefined,
+  officeId: undefined,
+  divisionId: undefined,
 
   setSupplyIARs: (iars) => set({ iars }),
   setLoading: (loading) => set({ loading }),
-  setSearchQuery: (query) => set({ searchQuery: query }),
+  setSearchQuery: (query) => set({ searchQuery: query, page: 1 }),
+  setPage: (page) => set({ page }),
+  setPageSize: (size) => set({ pageSize: size, page: 1 }),
+  setStatus: (status) => set({ status, page: 1 }),
+  setVendorId: (id) => set({ vendorId: id, page: 1 }),
+  setOfficeId: (id) => set({ officeId: id, page: 1 }),
+  setDivisionId: (id) => set({ divisionId: id, page: 1 }),
 
   fetchSupplyIARs: async () => {
     set({ loading: true });
     try {
-      const iars = await getSupplyIARs();
-      set({ iars });
+      const { page, pageSize, searchQuery, status, vendorId, officeId, divisionId } = get();
+      const result = await getSupplyIARs(page, pageSize, searchQuery, status, vendorId, officeId, divisionId);
+      set({ iars: result.items, totalIars: result.totalCount });
     } catch {
       toast.error('Failed to load IARs');
     } finally {
       set({ loading: false });
+    }
+  },
+
+  fetchSupplyIARSummary: async () => {
+    try {
+      const result = await getSupplyIARSummary();
+      set({ iarsSummary: result });
+    } catch {
+      console.error('Failed to load IAR summary');
     }
   },
 
@@ -395,8 +474,9 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       
       await get().fetchSupplyIARs();
       toast.success('IAR added successfully');
-    } catch {
+    } catch (error) {
       toast.error('Failed to add IAR');
+      throw error;
     }
   },
 
@@ -424,8 +504,9 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       
       await get().fetchSupplyIARs();
       toast.success('IAR updated successfully');
-    } catch {
+    } catch (error) {
       toast.error('Failed to update IAR');
+      throw error;
     }
   },
 

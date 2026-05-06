@@ -62,6 +62,7 @@ export interface VwDeliveryRecord {
   fileId: number;
   isReceived: boolean;
   items: DeliveryRecordItem[];
+  totalAmount: number;
   isActive: boolean;
   createdAt?: string;
 }

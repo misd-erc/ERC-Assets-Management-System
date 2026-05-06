@@ -1,4 +1,4 @@
-﻿// src/components/office/DivisionEditModal.tsx
+// src/components/office/DivisionEditModal.tsx
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -103,11 +103,10 @@ export const DivisionEditModal = ({
         await updateDivision(division.id, payload);
       }
 
-      toast.success(mode === 'add' ? 'Division added' : 'Division updated');
       onSuccess();
       onOpenChange(false);
-    } catch {
-      toast.error('Failed to save division');
+    } catch (error) {
+      console.error('Submission failed:', error);
     } finally {
       setSaving(false);
     }

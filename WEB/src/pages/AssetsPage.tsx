@@ -725,6 +725,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
                 endDate={endDate}
                 onEndDateChange={setEndDate}
                 onClearFilters={handleClearFilters}
+                onApplyFilters={handleApplyFilters}
                 totalResults={totalCount}
               />
               <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
@@ -776,6 +777,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
                 endDate={endDate}
                 onEndDateChange={setEndDate}
                 onClearFilters={handleClearFilters}
+                onApplyFilters={handleApplyFilters}
                 totalResults={totalCount}
               />
               <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">

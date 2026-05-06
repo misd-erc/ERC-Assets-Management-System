@@ -46,7 +46,7 @@ export const RISFormModal = ({ open, onOpenChange, mode, ris }: Props) => {
             fetchOffices(),
             fetchDivisions(),
           ]);
-          const usersRes = await getUsers(1, 100);
+          const usersRes = await getUsers(1, 10000);
           setUsers(usersRes.data.items || []);
         } catch (error) {
           console.error('Failed to fetch master data', error);

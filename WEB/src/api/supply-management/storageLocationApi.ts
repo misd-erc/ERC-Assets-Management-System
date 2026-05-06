@@ -27,12 +27,15 @@ export const getSupplyStorageLocations = async (): Promise<SupplyStorageLocation
     return [];
   }
 
-  return Array.isArray(response.data.data.items)
-    ? response.data.data.items.map((u: any) => ({
-        id: u.id,
-        name: u.name,
-        isActive: u.isActive ?? true,
-        createdAt: u.createdAt
+  const data = response.data.data;
+  const items = Array.isArray(data) ? data : (data as any)?.items || (data as any)?.Items;
+
+  return Array.isArray(items)
+    ? items.map((u: any) => ({
+        id: u.id ?? u.Id,
+        name: u.name ?? u.Name,
+        isActive: u.isActive ?? u.IsActive ?? true,
+        createdAt: u.createdAt ?? u.CreatedAt
       }))
     : [];
 };

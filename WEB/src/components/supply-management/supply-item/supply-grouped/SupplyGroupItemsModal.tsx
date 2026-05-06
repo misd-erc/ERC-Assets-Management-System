@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { VwSupplyGroupedItem, VwSupplyItem } from '@/types';
-import { useSupplyItem } from '@/hooks';
+import { useSupplyItem, useSupplyStorageLocation } from '@/hooks';
 import { SupplyItemEditModal } from '../SupplyItemEditModal';
 import { SupplyItemDeleteModal } from '../SupplyItemDeleteModal';
 import { SupplyItemTable } from '../SupplyItemTable';
@@ -23,21 +23,56 @@ interface Props {
 export const SupplyGroupItemsModal = ({ open, onOpenChange, groupedItem }: Props) => {
   const {
     vwSupplyGroupItems,
+    totalGroupItems,
     loading,
     fetchSupplyGroupedItemLists,
     fetchSupplyGroupedItems,
+    categories,
+    fetchCategories
   } = useSupplyItem();
+
+  const {
+    storagelocations,
+    fetchSupplyStorageLocations
+  } = useSupplyStorageLocation();
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<VwSupplyItem | null>(null);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
 
+  const [params, setParams] = useState({
+    page: 1,
+    search: '',
+    category: 'all',
+    status: 'all',
+    storageId: 'all'
+  });
+
+  useEffect(() => {
+    if (open) {
+      if (categories.length === 0) fetchCategories();
+      if (storagelocations.length === 0) fetchSupplyStorageLocations();
+    }
+  }, [open, categories.length, storagelocations.length, fetchCategories, fetchSupplyStorageLocations]);
+
   useEffect(() => {
     if (open && groupedItem) {
-      fetchSupplyGroupedItemLists(groupedItem.id);
+      const categoryId = params.category === 'all' 
+        ? undefined 
+        : categories.find(c => c.name === params.category)?.id;
+
+      fetchSupplyGroupedItemLists(
+        groupedItem.id,
+        params.page,
+        10,
+        params.search,
+        categoryId,
+        params.status === 'all' ? undefined : params.status,
+        params.storageId === 'all' ? undefined : Number(params.storageId)
+      );
     }
-  }, [open, groupedItem, fetchSupplyGroupedItemLists]);
+  }, [open, groupedItem, fetchSupplyGroupedItemLists, params, categories, storagelocations]);
 
   const handleAdd = () => {
     setSelectedItem(null);
@@ -103,6 +138,15 @@ export const SupplyGroupItemsModal = ({ open, onOpenChange, groupedItem }: Props
               <div className="border rounded-md overflow-x-auto">
                 <SupplyItemTable
                     data={vwSupplyGroupItems}
+                    totalCount={totalGroupItems}
+                    page={params.page}
+                    searchQuery={params.search}
+                    categoryFilter={params.category}
+                    statusFilter={params.status}
+                    storageFilter={params.storageId}
+                    allCategories={categories}
+                    storageLocations={storagelocations}
+                    onParamsChange={setParams}
                     loading={loading}
                     onAdd={handleAdd}
                     onView={handleView}

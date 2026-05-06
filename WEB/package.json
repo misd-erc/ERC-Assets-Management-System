@@ -75,6 +75,7 @@
   "scripts": {
     "start": "react-app-rewired start",
     "build": "react-app-rewired build",
+    "build:staging": "env-cmd -f .env.staging react-app-rewired build",
     "test": "react-app-rewired test",
     "eject": "react-scripts eject",
     "fix:imports": "fix_imports.bat"
@@ -103,6 +104,7 @@
     "@types/qrcode": "^1.5.5",
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.21",
+    "env-cmd": "^10.1.0",
     "postcss": "^8.5.6",
     "react-app-rewire-alias": "^1.1.7",
     "react-app-rewired": "^2.2.1",

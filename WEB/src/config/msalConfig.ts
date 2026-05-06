@@ -12,10 +12,12 @@ const msalConfig = {
     clientId: clientId || '',
     authority: `https://login.microsoftonline.com/${tenantId}`,
     redirectUri: window.location.origin,
+    postLogoutRedirectUri: window.location.origin,
+    navigateToLoginRequestUrl: false,
   },
   cache: {
     cacheLocation: 'localStorage',
-    storeAuthStateInCookie: false,
+    storeAuthStateInCookie: true,
   },
   system: {
     loggerOptions: {
@@ -32,3 +34,6 @@ const msalConfig = {
 };
 
 export const msalInstance = new PublicClientApplication(msalConfig);
+
+// Initialize once at module load time — prevents StrictMode from calling initialize() twice
+export const msalInitPromise = msalInstance.initialize();

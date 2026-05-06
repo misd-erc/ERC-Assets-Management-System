@@ -1,17 +1,45 @@
-import { useState, useEffect } from 'react';
-import { useSupplyIAR } from '@/hooks';
+import { useState, useEffect, useCallback } from 'react';
+import { useSupplyIARStore } from '@/store/supply'; // Use store directly
+import { useOfficeStore, useDivisionStore } from '@/store/office';
+import { getVendors } from '@/api/contract-management/vendorApi';
 import { SupplyIARTable } from './SupplyIARTable';
 import { SupplyIAREditModal } from './SupplyIAREditModal';
 import { SupplyIARDeleteModal } from './SupplyIARDeleteModal';
 import { SupplyIARViewModal } from './SupplyIARViewModal';
 import { SupplyIARApproveModal } from './SupplyIARApproveModal';
-import { VwSupplyIAR } from '@/types';
+import { VwSupplyIAR, Vendor } from '@/types';
 import { VwDeliveryRecord } from '@/types/delivery/delivery';
 import { useDeliveryRecordStore } from '@/store/delivery';
 
 export const SupplyIARTabContent = () => {
-  const { iars, loading, fetchSupplyIARs, addSupplyIAR, updateSupplyIAR, deleteSupplyIAR } = useSupplyIAR();
+  // Use specific selectors for stability
+  const iars = useSupplyIARStore(state => state.iars);
+  const loading = useSupplyIARStore(state => state.loading);
+  const totalIars = useSupplyIARStore(state => state.totalIars);
+  const page = useSupplyIARStore(state => state.page);
+  const pageSize = useSupplyIARStore(state => state.pageSize);
+  const searchQuery = useSupplyIARStore(state => state.searchQuery);
+  const status = useSupplyIARStore(state => state.status);
+  const vendorId = useSupplyIARStore(state => state.vendorId);
+  const officeId = useSupplyIARStore(state => state.officeId);
+  const divisionId = useSupplyIARStore(state => state.divisionId);
+
+  const fetchSupplyIARs = useSupplyIARStore(state => state.fetchSupplyIARs);
+  const addSupplyIAR = useSupplyIARStore(state => state.addSupplyIAR);
+  const updateSupplyIAR = useSupplyIARStore(state => state.updateSupplyIAR);
+  const deleteSupplyIAR = useSupplyIARStore(state => state.deleteSupplyIAR);
+
+  const setPage = useSupplyIARStore(state => state.setPage);
+  const setSearchQuery = useSupplyIARStore(state => state.setSearchQuery);
+  const setStatus = useSupplyIARStore(state => state.setStatus);
+  const setVendorId = useSupplyIARStore(state => state.setVendorId);
+  const setOfficeId = useSupplyIARStore(state => state.setOfficeId);
+  const setDivisionId = useSupplyIARStore(state => state.setDivisionId);
+
   const { vwDeliveryRecords, fetchDeliveryRecords } = useDeliveryRecordStore();
+  const { vwOffices, fetchOffices } = useOfficeStore();
+  const { vwDivisions, fetchDivisions } = useDivisionStore();
+  const [vendors, setVendors] = useState<Vendor[]>([]);
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -22,10 +50,35 @@ export const SupplyIARTabContent = () => {
   const [selectedDeliveryRecord, setSelectedDeliveryRecord] = useState<VwDeliveryRecord | null>(null);
   const [mode, setMode] = useState<'add' | 'edit'>('add');
 
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(debouncedSearch);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [debouncedSearch, setSearchQuery]);
+
   useEffect(() => {
     fetchSupplyIARs();
+  }, [fetchSupplyIARs, page, searchQuery, status, vendorId, officeId, divisionId]);
+
+  useEffect(() => {
     fetchDeliveryRecords();
-  }, [fetchSupplyIARs, fetchDeliveryRecords]);
+    fetchOffices();
+    fetchDivisions();
+    getVendors().then(setVendors);
+  }, [fetchDeliveryRecords, fetchOffices, fetchDivisions]);
+
+  const handleParamsChange = useCallback((params: { page?: number; search?: string; status?: string; vendorId?: number; officeId?: number; divisionId?: number }) => {
+    if (params.page !== undefined) setPage(params.page);
+    if (params.search !== undefined) setDebouncedSearch(params.search);
+    if (params.status !== undefined) setStatus(params.status);
+    if (params.vendorId !== undefined || params.vendorId === undefined) setVendorId(params.vendorId);
+    if (params.officeId !== undefined || params.officeId === undefined) setOfficeId(params.officeId);
+    if (params.divisionId !== undefined || params.divisionId === undefined) setDivisionId(params.divisionId);
+  }, [setPage, setStatus, setVendorId, setOfficeId, setDivisionId]);
 
   const handleAdd = () => { 
     setSelectedRecord(null); 
@@ -81,10 +134,6 @@ export const SupplyIARTabContent = () => {
     setIsEditOpen(false);
   };
 
-  // === CORE FILTERING LOGIC ===
-  // A DR is available for linking if:
-  // 1. It's NOT yet received (!dr.isReceived), AND
-  // 2. It's either NOT linked to any IAR, OR it's linked to the IAR currently being edited
   const availableDeliveryRecords = vwDeliveryRecords.filter(dr => {
     const isUnreceived = !dr.isReceived;
     const isLinkedToOtherIAR = iars.some(iar => 
@@ -98,11 +147,24 @@ export const SupplyIARTabContent = () => {
     <>
       <SupplyIARTable 
         data={iars} 
+        totalCount={totalIars}
+        page={page}
+        pageSize={pageSize}
+        searchQuery={debouncedSearch}
+        statusFilter={status}
+        vendorFilter={vendorId}
+        officeFilter={officeId}
+        divisionFilter={divisionId}
+        vendors={vendors}
+        offices={vwOffices}
+        divisions={vwDivisions}
+        loading={loading}
         onAdd={handleAdd} 
         onEdit={handleEdit} 
         onDelete={handleDelete} 
         onView={handleView}
         onApprove={handleApproveClick}
+        onParamsChange={handleParamsChange}
       />
 
       <SupplyIAREditModal 

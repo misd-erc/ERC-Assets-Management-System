@@ -1,5 +1,6 @@
 // MainLayout.tsx
 import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -25,10 +26,67 @@ import PPEIssuancePage from "@/pages/PPEIssuancePage";
 import DisposalsPage from "@/pages/disposals/DisposalsPage";
 import AssetTaggingPage from "@/pages/AssetTaggingPage";
 
+const modulePathMap: Record<string, string> = {
+  "dashboard": "/dashboard",
+  "ppe-se": "/ppe-se",
+  "ppe-se-issuance": "/ppe-se-issuance",
+  "asset-tagging": "/asset-tagging",
+  "supply-management": "/supply-management",
+  "delivery-receipt-items": "/delivery-receipt-items",
+  "contract-management": "/contract-management",
+  "users-roles": "/users-roles",
+  "roles-management": "/roles-management",
+  "office-management": "/office-management",
+  "audit-logs": "/audit-logs",
+  "category-management": "/category-management",
+  "system-settings": "/system-settings",
+  "profile": "/profile",
+  "transfers-returns": "/transfers-returns",
+  "reports-center": "/reports-center",
+  "disposals": "/disposals",
+};
+
+const pathModuleMap: Record<string, string> = Object.entries(modulePathMap).reduce(
+  (acc, [moduleId, path]) => {
+    acc[path] = moduleId;
+    return acc;
+  },
+  {} as Record<string, string>
+);
+
+const resolveModuleFromPath = (pathname: string): string => {
+  if (pathModuleMap[pathname]) return pathModuleMap[pathname];
+  return "dashboard";
+};
+
 export default function MainLayout() {
-  const [activeModule, setActiveModule] = useState("dashboard");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [activeModule, setActiveModule] = useState(resolveModuleFromPath(location.pathname));
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
+
+  useEffect(() => {
+    const resolved = resolveModuleFromPath(location.pathname);
+    setActiveModule(resolved);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const knownPath = Object.values(modulePathMap).includes(location.pathname);
+    const passthroughPath =
+      location.pathname === "/under-construction" ||
+      location.pathname === "/uc" ||
+      location.pathname === "/no-role";
+
+    if (!knownPath && !passthroughPath) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  const handleModuleChange = (moduleId: string) => {
+    const nextPath = modulePathMap[moduleId] ?? "/under-construction";
+    navigate(nextPath);
+  };
 
   // On mobile, sidebar starts closed; on desktop, starts expanded
   useEffect(() => {
@@ -109,14 +167,14 @@ export default function MainLayout() {
     <SidebarProvider>
       <AppSidebar
         activeModule={activeModule}
-        onModuleChange={setActiveModule}
+        onModuleChange={handleModuleChange}
         open={sidebarOpen}
         onOpenChange={setSidebarOpen}
       />
 
       <div className={`flex flex-col flex-1 overflow-hidden transition-all duration-300 ${getContentMargin()}`}>
         <TopBar
-          onNavigate={setActiveModule}
+          onNavigate={handleModuleChange}
           sidebarOpen={sidebarOpen}
           onMenuClick={() => setSidebarOpen(o => !o)}
           isMobile={isMobile}

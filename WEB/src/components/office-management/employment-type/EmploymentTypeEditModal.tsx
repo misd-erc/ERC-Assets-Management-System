@@ -1,4 +1,4 @@
-﻿// src/components/employment-type/EmploymentTypeEditModal.tsx
+// src/components/employment-type/EmploymentTypeEditModal.tsx
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,8 +58,8 @@ export const EmploymentTypeEditModal = ({
         await updateEmploymentType(type.id, form);
       }
       onSuccess();
-    } catch {
-      toast.error('Failed to save employment type');
+    } catch (error) {
+      console.error('Submission failed:', error);
     } finally {
       setSaving(false);
     }

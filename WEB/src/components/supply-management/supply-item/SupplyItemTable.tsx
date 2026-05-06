@@ -9,46 +9,83 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
-  Edit, Trash2, MoreHorizontal, Plus, AlertTriangle, ChevronLeft, ChevronRight, Eye, PackageSearch
+  Edit, Trash2, MoreHorizontal, Plus, AlertTriangle, ChevronLeft, ChevronRight, Eye, PackageSearch, ArrowUpDown, Filter, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '@/components/ui/select';
 import { SupplyItemSearchBar } from './SupplyItemSearchBar';
 import { formatCurrency } from '@/utils/formatters';
 
 interface Props {
   data: VwSupplyItem[];
+  totalCount: number;
+  page: number;
+  searchQuery: string;
+  categoryFilter: string;
+  statusFilter: string;
+  storageFilter: string;
+  vendorFilter?: string;
+  allCategories?: any[];
+  storageLocations?: any[];
+  allVendors?: any[];
   loading?: boolean;
   onAdd: () => void;
   onView: (item: VwSupplyItem) => void;
   onEdit: (item: VwSupplyItem) => void;
   onDelete: (item: VwSupplyItem) => void;
+  onParamsChange: (params: { page: number; search: string; category: string; status: string; storageId?: string; vendorId?: string }) => void;
   hideAddButton?: boolean;
 }
 
 const PAGE_SIZE = 10;
 
-export const SupplyItemTable = ({ data, loading = false, onAdd, onView, onEdit, onDelete, hideAddButton = false }: Props) => {
-  const [page, setPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
+export const SupplyItemTable = ({ 
+  data, 
+  totalCount,
+  page,
+  searchQuery,
+  categoryFilter,
+  statusFilter,
+  storageFilter,
+  vendorFilter = "all",
+  allCategories = [],
+  storageLocations = [],
+  allVendors = [],
+  loading = false, 
+  onAdd, 
+  onView, 
+  onEdit, 
+  onDelete, 
+  onParamsChange,
+  hideAddButton = false 
+}: Props) => {
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  useEffect(() => {
-    setPage(1);
-  }, [searchQuery]);
+  const getStockStatusLabel = (item: VwSupplyItem) => {
+    if (item.quantity == 0) return 'Out of Stock';
+    if (item.quantity <= item.reorderPoint) return 'Low Stock';
+    return 'Available';
+  };
 
-  const filteredData = useMemo(() => {
-    if (!searchQuery) return data;
-    const query = String(searchQuery).toLowerCase().trim();
-    return data.filter((item) => {
-      const codeStr = String(item.code || '').toLowerCase();
-      const descStr = String(item.description || '').toLowerCase();
-      return codeStr.includes(query) || descStr.includes(query);
+  // Categories are now passed from the parent to ensure consistency with server-side filtering.
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  const handleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev?.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
     });
-  }, [data, searchQuery]);
+    // Note: Server-side sorting can be implemented by adding 'orderBy' to onParamsChange
+  };
 
-  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
-  const paginatedData = useMemo(() => {
-    return filteredData.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  }, [filteredData, page]);
+  const updateParams = (updates: Partial<{ page: number; search: string; category: string; status: string; storageId: string; vendorId: string }>) => {
+    onParamsChange(updates);
+  };
 
   const getStockStatus = (item: VwSupplyItem) => {
     if (item.quantity == 0)
@@ -62,21 +99,111 @@ export const SupplyItemTable = ({ data, loading = false, onAdd, onView, onEdit, 
   return (
       <Card className="border-slate-200 shadow-sm">
         <CardHeader className="border-b border-slate-100 pb-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-xl text-slate-900">Inventory Items</CardTitle>
-              <CardDescription>Manage supply items with stock monitoring</CardDescription>
-            </div>
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <div className="w-full md:w-64">
-                <SupplyItemSearchBar value={searchQuery} onChange={setSearchQuery} />
+          <div className="flex flex-col space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-xl text-slate-900">Inventory Items</CardTitle>
+                <CardDescription>Manage supply items with stock monitoring</CardDescription>
               </div>
-              {!hideAddButton && (
-                  <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700 shrink-0 shadow-sm" disabled={loading}>
-                    <Plus className="w-4 h-4 mr-2" /> Add Item
-                  </Button>
-              )}
+              <div className="flex items-center gap-3">
+                {!hideAddButton && (
+                    <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700 shrink-0 shadow-sm" disabled={loading}>
+                      <Plus className="w-4 h-4 mr-2" /> Add Item
+                    </Button>
+                )}
+              </div>
             </div>
+
+            <div className="flex flex-col md:flex-row items-center gap-3 w-full">
+                <div className="w-full md:flex-1">
+                  <SupplyItemSearchBar value={searchQuery} onChange={(val) => updateParams({ search: val, page: 1 })} />
+                </div>
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-slate-400" />
+                    <Select value={categoryFilter} onValueChange={(val) => updateParams({ category: val, page: 1 })}>
+                      <SelectTrigger className="w-[150px] bg-white">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {allCategories.map(cat => (
+                            <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Select value={statusFilter} onValueChange={(val) => updateParams({ status: val, page: 1 })}>
+                    <SelectTrigger className="w-[150px] bg-white">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="Available">Available</SelectItem>
+                      <SelectItem value="Low Stock">Low Stock</SelectItem>
+                      <SelectItem value="Out of Stock">Out of Stock</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      className={`h-9 px-3 ${showAdvanced ? 'bg-slate-100 text-slate-900 border-slate-300' : 'text-slate-600'}`}
+                  >
+                    {showAdvanced ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
+                    {showAdvanced ? 'Simple Filter' : 'Advanced Filter'}
+                  </Button>
+
+                  {(searchQuery || categoryFilter !== "all" || statusFilter !== "all" || storageFilter !== "all" || vendorFilter !== "all") && (
+                      <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            updateParams({ search: "", category: "all", status: "all", storageId: "all", vendorId: "all", page: 1 });
+                          }}
+                          className="text-slate-500 hover:text-slate-900 h-9"
+                      >
+                        Reset
+                      </Button>
+                  )}
+                </div>
+            </div>
+
+            {showAdvanced && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-50 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-500 ml-1">Storage Location</label>
+                    <Select value={storageFilter} onValueChange={(val) => updateParams({ storageId: val, page: 1 })}>
+                      <SelectTrigger className="w-full bg-white">
+                        <SelectValue placeholder="All Locations" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Locations</SelectItem>
+                        {storageLocations.map(loc => (
+                            <SelectItem key={loc.id} value={loc.id.toString()}>{loc.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-500 ml-1">Vendor</label>
+                    <Select value={vendorFilter} onValueChange={(val) => updateParams({ vendorId: val, page: 1 })}>
+                      <SelectTrigger className="w-full bg-white">
+                        <SelectValue placeholder="All Vendors" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Vendors</SelectItem>
+                        {allVendors.map(vendor => (
+                            <SelectItem key={vendor.id} value={vendor.id.toString()}>{vendor.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+            )}
           </div>
         </CardHeader>
 
@@ -85,14 +212,42 @@ export const SupplyItemTable = ({ data, loading = false, onAdd, onView, onEdit, 
             <Table>
               <TableHeader className="bg-slate-50/80">
                 <TableRow>
-                  <TableHead className="w-[150px]">Item Code</TableHead>
-                  <TableHead className="min-w-[200px]">Description</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Vendor</TableHead>
-                  <TableHead className="text-right">Quantity</TableHead>
+                  <TableHead className="w-[150px] cursor-pointer hover:text-blue-600" onClick={() => handleSort('code')}>
+                    <div className="flex items-center gap-1">
+                      Item Code <ArrowUpDown className="w-3 h-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead className="min-w-[200px] cursor-pointer hover:text-blue-600" onClick={() => handleSort('description')}>
+                    <div className="flex items-center gap-1">
+                      Description <ArrowUpDown className="w-3 h-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:text-blue-600" onClick={() => handleSort('category')}>
+                    <div className="flex items-center gap-1">
+                      Category <ArrowUpDown className="w-3 h-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:text-blue-600" onClick={() => handleSort('storageLocation')}>
+                    <div className="flex items-center gap-1">
+                      Location <ArrowUpDown className="w-3 h-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead className="cursor-pointer hover:text-blue-600" onClick={() => handleSort('vendor')}>
+                    <div className="flex items-center gap-1">
+                      Vendor <ArrowUpDown className="w-3 h-3" />
+                    </div>
+                  </TableHead>
+                  <TableHead className="text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('quantity')}>
+                    <div className="flex items-center justify-end gap-1">
+                      Quantity <ArrowUpDown className="w-3 h-3" />
+                    </div>
+                  </TableHead>
                   <TableHead className="text-right">Reorder Pt.</TableHead>
-                  <TableHead className="text-right">Unit Cost</TableHead>
+                  <TableHead className="text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('unitCost')}>
+                    <div className="flex items-center justify-end gap-1">
+                      Unit Cost <ArrowUpDown className="w-3 h-3" />
+                    </div>
+                  </TableHead>
                   <TableHead className="text-center">Status</TableHead>
                   <TableHead className="text-right w-[80px]">Actions</TableHead>
                 </TableRow>
@@ -109,9 +264,9 @@ export const SupplyItemTable = ({ data, loading = false, onAdd, onView, onEdit, 
                           ))}
                         </TableRow>
                     ))
-                ) : paginatedData.length > 0 ? (
+                ) : data.length > 0 ? (
                     // NORMAL DATA RENDERING
-                    paginatedData.map((item) => {
+                    data.map((item) => {
                       const status = getStockStatus(item);
                       // Using currentStock logic from your original code
                       const isLowStock = item.currentStock > 0 && item.currentStock <= item.reorderPoint;
@@ -204,13 +359,13 @@ export const SupplyItemTable = ({ data, loading = false, onAdd, onView, onEdit, 
           {!loading && totalPages > 1 && (
               <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                 <p className="text-sm text-slate-500">
-                  Showing <span className="font-medium text-slate-900">{(page - 1) * PAGE_SIZE + 1}</span> to <span className="font-medium text-slate-900">{Math.min(page * PAGE_SIZE, filteredData.length)}</span> of <span className="font-medium text-slate-900">{filteredData.length}</span> results
+                  Showing <span className="font-medium text-slate-900">{(page - 1) * PAGE_SIZE + 1}</span> to <span className="font-medium text-slate-900">{Math.min(page * PAGE_SIZE, totalCount)}</span> of <span className="font-medium text-slate-900">{totalCount}</span> results
                 </p>
                 <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="shadow-sm">
+                  <Button variant="outline" size="sm" onClick={() => updateParams({ page: Math.max(1, page - 1) })} disabled={page === 1} className="shadow-sm">
                     <ChevronLeft className="w-4 h-4 mr-1" /> Previous
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="shadow-sm">
+                  <Button variant="outline" size="sm" onClick={() => updateParams({ page: Math.min(totalPages, page + 1) })} disabled={page === totalPages} className="shadow-sm">
                     Next <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>

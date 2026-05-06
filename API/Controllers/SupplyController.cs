@@ -1,4 +1,4 @@
-﻿using API.Attributes;
+using API.Attributes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
@@ -263,92 +263,86 @@ namespace API.Controllers
         [HttpGet("item/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllSupplyItems([FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllSupplyItems([FromQuery] SupplyItemQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
-                IEnumerable<TblSupplyItem>? supplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+                // 1. Start with IQueryable for SQL-level filtering
+                var query = _getTools.Supply.GetTblSupplyItems(context);
+                if (query == null) return Ok(ApiResponse<SupplyItemResponseModel>.OkPaginated(new List<SupplyItemResponseModel>(), model.PageNumber, model.PageSize, 0));
 
-                if (!string.IsNullOrWhiteSpace(model.SearchString))
-                {
-                    string searchLower = model.SearchString.ToLower();
-                    supplyItems = supplyItems.Where(x =>
-                        (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
-                }
+                // Apply SQL-level filters first
+                if (model.CategoryId.HasValue && model.CategoryId > 0)
+                    query = query.Where(x => x.CategoryId == model.CategoryId.Value);
+                if (model.StorageLocationId.HasValue && model.StorageLocationId > 0)
+                    query = query.Where(x => x.StorageLocationId == model.StorageLocationId.Value);
+                if (model.VendorId.HasValue && model.VendorId > 0)
+                    query = query.Where(x => x.VendorId == model.VendorId.Value);
 
                 if (model.StartDate.HasValue)
-                    supplyItems = supplyItems.Where(x => x.CreatedAt >= model.StartDate.Value);
-
+                    query = query.Where(x => x.CreatedAt >= model.StartDate.Value);
                 if (model.EndDate.HasValue)
-                    supplyItems = supplyItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+                    query = query.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                var groupedItems = supplyItems
-                    .GroupBy(x => new { x.Code, x.Description })
-                    .Select(g =>
+                // 2. Fetch to memory for decryption-based filtering
+                var supplyItemsRaw = await query.ToListAsync();
+
+                // 3. Apply memory-level filters
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.Trim().ToLowerInvariant();
+                    supplyItemsRaw = supplyItemsRaw.Where(x =>
+                        (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
+                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower)).ToList();
+                }
+
+                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
+                {
+                    if (model.Status == "Available")
+                        supplyItemsRaw = supplyItemsRaw.Where(x => (x.Quantity ?? 0) > 0).ToList();
+                    else if (model.Status == "Out of Stock")
+                        supplyItemsRaw = supplyItemsRaw.Where(x => (x.Quantity ?? 0) <= 0).ToList();
+                    else if (model.Status == "Low Stock")
+                        supplyItemsRaw = supplyItemsRaw.Where(x => (x.Quantity ?? 0) > 0 && (x.Quantity ?? 0) <= (x.ReorderPoint ?? 0)).ToList();
+                }
+
+                // 4. Map to Response Models (Individual Items)
+                var supplyItemsResponses = new List<SupplyItemResponseModel>();
+                foreach (var item in supplyItemsRaw)
+                {
+                    supplyItemsResponses.Add(new SupplyItemResponseModel
                     {
-                        var firstItem = g.First();
-                        return new TblSupplyItem
-                        {
-                            Code = g.Key.Code,
-                            Description = g.Key.Description,
-                            Quantity = g.Sum(x => x.Quantity),
-                            UnitCost = g.Sum(x => x.UnitCost), 
-
-                            Id = firstItem.Id,
-                            IARId = firstItem.IARId,
-                            CategoryId = firstItem.CategoryId,
-                            MeasurementUnitId = firstItem.MeasurementUnitId,
-                            ReorderPoint = firstItem.ReorderPoint,
-                            StorageLocationId = firstItem.StorageLocationId,
-                            VendorId = firstItem.VendorId,
-                            IsActive = firstItem.IsActive,
-                            CreatedAt = firstItem.CreatedAt
-                        };
+                        Id = item.Id,
+                        Code = item.Code ?? string.Empty,
+                        IARId = item.IARId,
+                        Category = await _getTools.PTA.GetTblPTACategoryAsync(item.CategoryId, context),
+                        MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(item.MeasurementUnitId, context),
+                        Description = item.Description ?? string.Empty,
+                        Quantity = (long?)item.Quantity,
+                        UnitCost = item.UnitCost,
+                        ReorderPoint = item.ReorderPoint,
+                        StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(item.StorageLocationId, context),
+                        Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(item.VendorId, context),
+                        IsActive = item.IsActive,
+                        CreatedAt = item.CreatedAt
                     });
+                }
 
-                int totalCount = groupedItems.Count();
-
+                // 5. Pagination
+                int totalCount = supplyItemsResponses.Count();
                 int skip = (model.PageNumber - 1) * model.PageSize;
-
-                var supplyItemsList = groupedItems
+                var pagedItems = supplyItemsResponses
                     .OrderByDescending(x => x.CreatedAt)
                     .Skip(skip)
                     .Take(model.PageSize)
                     .ToList();
 
-                var supplyItemsResponses = new List<SupplyItemResponseModel>();
-
-                foreach (var x in supplyItemsList)
-                {
-                    var supplyUnitModel = new SupplyItemResponseModel
-                    {
-                        Id = x.Id,
-                        Code = x.Code,
-                        IARId = x.IARId,
-                        Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
-                        MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(x.MeasurementUnitId, context),
-                        Description = x.Description,
-                        Quantity = x.Quantity,
-                        UnitCost = x.UnitCost,
-                        ReorderPoint = x.ReorderPoint,
-                        StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(x.StorageLocationId, context),
-                        Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(x.VendorId, context),
-                        IsActive = x.IsActive,
-                        CreatedAt = x.CreatedAt
-                    };
-                    supplyItemsResponses.Add(supplyUnitModel);
-                }
-
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, "Viewed Supply Items", actionBy: model.ActionBySystemUserId);
-
+                // 6. Return paginated result
                 return Ok(ApiResponse<SupplyItemResponseModel>.OkPaginated(
-                    supplyItemsResponses,
+                    pagedItems,
                     model.PageNumber,
                     model.PageSize,
                     totalCount,
@@ -367,7 +361,7 @@ namespace API.Controllers
         [HttpGet("item/grouped/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllSupplyGroups([FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllSupplyGroups([FromQuery] SupplyItemQueryParams model)
         {
 
             await using var context = new PortalDbContext(_options);
@@ -375,25 +369,46 @@ namespace API.Controllers
 
             try
             {
-                // 1. Fetch all supply items
-                IEnumerable<TblSupplyItem>? supplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+                // 1. Start with IQueryable for SQL-level filtering
+                var query = _getTools.Supply.GetTblSupplyItems(context);
+                if (query == null) return Ok(ApiResponse<SupplyItemGroupedResponseModel>.OkPaginated(new List<SupplyItemGroupedResponseModel>(), model.PageNumber, model.PageSize, 0));
 
-                // 2. Apply filters
+                // Apply SQL-level filters first
+                if (model.CategoryId.HasValue && model.CategoryId > 0)
+                    query = query.Where(x => x.CategoryId == model.CategoryId.Value);
+                if (model.StorageLocationId.HasValue && model.StorageLocationId > 0)
+                    query = query.Where(x => x.StorageLocationId == model.StorageLocationId.Value);
+                if (model.VendorId.HasValue && model.VendorId > 0)
+                    query = query.Where(x => x.VendorId == model.VendorId.Value);
+
+                if (model.StartDate.HasValue)
+                    query = query.Where(x => x.CreatedAt >= model.StartDate.Value);
+                if (model.EndDate.HasValue)
+                    query = query.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                // 2. Fetch to memory for decryption-based filtering and grouping
+                var supplyItems = await query.ToListAsync();
+
+                // 3. Apply memory-level filters
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {
-                    string searchLower = model.SearchString.ToLower();
+                    string searchLower = model.SearchString.Trim().ToLowerInvariant();
                     supplyItems = supplyItems.Where(x =>
                         (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
+                        (x.Description ?? "").ToLowerInvariant().Contains(searchLower)).ToList();
                 }
-                if (model.StartDate.HasValue)
-                    supplyItems = supplyItems.Where(x => x.CreatedAt >= model.StartDate.Value);
-                if (model.EndDate.HasValue)
-                    supplyItems = supplyItems.Where(x => x.CreatedAt <= model.EndDate.Value);
 
-                // 3. Group by Code and Description, compute aggregates
+                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
+                {
+                    if (model.Status == "Available")
+                        supplyItems = supplyItems.Where(x => (x.Quantity ?? 0) > 0).ToList();
+                    else if (model.Status == "Out of Stock")
+                        supplyItems = supplyItems.Where(x => (x.Quantity ?? 0) <= 0).ToList();
+                }
+
+                // 4. Group by Code and Description, compute aggregates
                 var groupedItems = supplyItems
-                    .GroupBy(x => new { x.Code, x.Description })
+                    .GroupBy(x => new { Code = x.Code ?? string.Empty, Description = x.Description ?? string.Empty })
                     .Select(g =>
                     {
                         var firstItem = g.First();
@@ -401,49 +416,44 @@ namespace API.Controllers
                         {
                             Code = g.Key.Code,
                             Description = g.Key.Description,
-                            TotalCurrentStock = g.Sum(x => x.Quantity ?? 0),
-                            UnitCost = firstItem.UnitCost ?? 0, // <-- Capture UnitCost here instead of calculating total cost early
+                            TotalCurrentStock = g.Sum(x => (long)(x.Quantity ?? 0)),
+                            UnitCost = (long)(firstItem.UnitCost ?? 0),
                             Id = firstItem.Id,
                             IARId = firstItem.IARId,
                             ReorderPoint = firstItem.ReorderPoint,
                             IsActive = firstItem.IsActive,
                             CreatedAt = firstItem.CreatedAt
                         };
-                    });
+                    })
+                    .ToList();
 
-                // ===== 4. Fetch fully completed RIS IDs & sum IssueQuantity =====
-
-                // 4a. Get the IDs of fully completed RIS records (Runs highly efficiently in SQL)
+                // ===== 5. Fetch fully completed RIS IDs & sum IssueQuantity =====
                 var fullyCompletedRisIds = await context.Set<TblSupplyRIS>()
-                    .Where(r => r.IsApproved)
+                    .Where(r => r.IsApproved && !r.IsDeleted)
                     .Select(r => r.Id)
                     .ToListAsync();
 
                 var risItemsQuery = _getTools.Supply.GetTblSupplyRISItems(context);
 
-                // 4b. Filter RIS items by those valid IDs at the DB level, then pull to memory
                 var filteredRisItems = risItemsQuery != null
                     ? await risItemsQuery
-                        .Where(x => x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value))
+                        .Where(x => x.SupplyRISId == null || (x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value)))
                         .ToListAsync()
                     : new List<TblSupplyRISItem>();
 
-                // 4c. Group by Code/Description and sum the issued quantities (Runs safely in C# memory for decrypted fields)
                 var issuedStockGroup = filteredRisItems
                     .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.ItemDescription))
-                    .GroupBy(x => new { x.StockNumber, x.ItemDescription })
+                    .GroupBy(x => new { StockNumber = x.StockNumber ?? string.Empty, ItemDescription = x.ItemDescription ?? string.Empty })
                     .Select(g => new
                     {
                         g.Key.StockNumber,
                         g.Key.ItemDescription,
-                        TotalIssuedQuantity = g.Sum(x => x.IssueQuantity)
+                        TotalIssuedQuantity = g.Sum(x => (long)x.IssueQuantity)
                     })
                     .ToDictionary(k => (k.StockNumber, k.ItemDescription), v => v.TotalIssuedQuantity);
 
-                // 5. Count total before pagination
+                // 6. Count total and paginate
                 int totalCount = groupedItems.Count();
-
-                // 6. Pagination
                 int skip = (model.PageNumber - 1) * model.PageSize;
                 var pagedGroups = groupedItems
                     .OrderByDescending(x => x.CreatedAt)
@@ -455,7 +465,7 @@ namespace API.Controllers
                 var supplyItemsResponses = pagedGroups.Select(x =>
                 {
                     var key = (x.Code, x.Description);
-                    var issuedQty = issuedStockGroup.GetValueOrDefault(key, 0);
+                    var issuedQty = issuedStockGroup.GetValueOrDefault(key, 0L);
 
                     // Calculate final stock once so we can use it for both Stock and Cost
                     var finalCurrentStock = Math.Max(0, x.TotalCurrentStock - issuedQty);
@@ -466,8 +476,8 @@ namespace API.Controllers
                         Code = x.Code ?? string.Empty,
                         IARId = x.IARId,
                         Description = x.Description ?? string.Empty,
-                        TotalCurrentStock = (int?)finalCurrentStock,
-                        TotalStockCost = (int?)(finalCurrentStock * x.UnitCost), // <-- Multiply updated stock by the item's unit cost
+                        TotalCurrentStock = finalCurrentStock,
+                        TotalStockCost = (finalCurrentStock * x.UnitCost), // Now long * long
                         ReorderPoint = (int?)x.ReorderPoint,
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
@@ -499,7 +509,7 @@ namespace API.Controllers
         [HttpGet("item/grouped/all/{id}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllSupplyGroupedItems(long id, [FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllSupplyGroupedItems(long id, [FromQuery] SupplyItemQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -538,7 +548,7 @@ namespace API.Controllers
                 var risItemsQuery = _getTools.Supply.GetTblSupplyRISItems(context);
                 var filteredRisItems = risItemsQuery != null
                     ? await risItemsQuery
-                        .Where(x => x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value))
+                        .Where(x => x.SupplyRISId == null || (x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value)))
                         .ToListAsync()
                     : new List<TblSupplyRISItem>();
 
@@ -586,11 +596,26 @@ namespace API.Controllers
                         (x.Item.Description ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
+                if (model.CategoryId.HasValue && model.CategoryId > 0)
+                    filteredItems = filteredItems.Where(x => x.Item.CategoryId == model.CategoryId.Value);
+                if (model.StorageLocationId.HasValue && model.StorageLocationId > 0)
+                    filteredItems = filteredItems.Where(x => x.Item.StorageLocationId == model.StorageLocationId.Value);
+                if (model.VendorId.HasValue && model.VendorId > 0)
+                    filteredItems = filteredItems.Where(x => x.Item.VendorId == model.VendorId.Value);
+
                 if (model.StartDate.HasValue)
                     filteredItems = filteredItems.Where(x => x.Item.CreatedAt >= model.StartDate.Value);
 
                 if (model.EndDate.HasValue)
                     filteredItems = filteredItems.Where(x => x.Item.CreatedAt <= model.EndDate.Value);
+
+                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
+                {
+                    if (model.Status == "Available")
+                        filteredItems = filteredItems.Where(x => x.RemainingQty > 0);
+                    else if (model.Status == "Out of Stock")
+                        filteredItems = filteredItems.Where(x => x.RemainingQty <= 0);
+                }
 
                 // ===== 6. Count, Paginate & Re-sort (Newest First for UI) =====
                 int totalCount = filteredItems.Count();
@@ -654,7 +679,7 @@ namespace API.Controllers
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetSupplyStockCardItems(
-            [FromQuery] PaginationGenericQueryParams model,
+            [FromQuery] SupplyItemQueryParams model,
             string stockNumber,
             string description)
         {
@@ -711,7 +736,7 @@ namespace API.Controllers
                 // Optimization: Filter out unapproved RIS items at the SQL level FIRST
                 var filteredRisItems = risItemsQuery != null
                     ? await risItemsQuery
-                        .Where(x => x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value))
+                        .Where(x => x.SupplyRISId == null || (x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value)))
                         .ToListAsync()
                     : new List<TblSupplyRISItem>();
 
@@ -949,7 +974,7 @@ namespace API.Controllers
         [HttpGet("iar/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllIARs([FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllIARs([FromQuery] SupplyIARQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -959,22 +984,55 @@ namespace API.Controllers
 
                 IEnumerable<TblSupplyIAR>? supplyIARs = await _getTools.Supply.GetTblSupplyIARs(context).ToListAsync();
 
-                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                // Advanced Filtering
+                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
                 {
-                    string searchLower = model.SearchString.ToLower();
-                    supplyIARs = supplyIARs.Where(x =>
-                        (x.IARNumber.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.IARNumberDate.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.PONumber.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.EntityName.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.FundCluster.ToString() ?? "").ToLowerInvariant().Contains(searchLower));
+                    if (model.Status == "Approved")
+                        supplyIARs = supplyIARs.Where(x => x.IsApproved);
+                    else if (model.Status == "Pending")
+                        supplyIARs = supplyIARs.Where(x => !x.IsApproved);
                 }
+
+                if (model.VendorId.HasValue && model.VendorId > 0)
+                    supplyIARs = supplyIARs.Where(x => x.VendorId == model.VendorId.Value);
+
+                if (model.OfficeId.HasValue && model.OfficeId > 0)
+                    supplyIARs = supplyIARs.Where(x => x.OfficeId == model.OfficeId.Value);
+
+                if (model.DivisionId.HasValue && model.DivisionId > 0)
+                    supplyIARs = supplyIARs.Where(x => x.DivisionId == model.DivisionId.Value);
 
                 if (model.StartDate.HasValue)
                     supplyIARs = supplyIARs.Where(x => x.CreatedAt >= model.StartDate.Value);
 
                 if (model.EndDate.HasValue)
                     supplyIARs = supplyIARs.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    var searchResults = new List<TblSupplyIAR>();
+                    foreach (var x in supplyIARs)
+                    {
+                        bool matches = (x.IARNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                                       (x.IARNumberDate.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
+                                       (x.PONumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                                       (x.EntityName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                                       (x.FundCluster ?? "").ToLowerInvariant().Contains(searchLower);
+
+                        if (!matches && x.RecordId.HasValue)
+                        {
+                            var dr = _getTools.Delivery.GetTblDeliveryRecords(context).FirstOrDefault(d => d.Id == x.RecordId.Value);
+                            if (dr != null)
+                            {
+                                matches = (dr.DRNumber ?? "").ToLowerInvariant().Contains(searchLower);
+                            }
+                        }
+
+                        if (matches) searchResults.Add(x);
+                    }
+                    supplyIARs = searchResults;
+                }
 
                 int totalCount = supplyIARs.Count();
 
@@ -993,7 +1051,7 @@ namespace API.Controllers
                     var supplyIARModel = new SupplyIARResponseModel
                     {
                         Id = x.Id,
-                        RecordId = x.RecordId,
+                        RecordId = x.RecordId.Value,
                         DRNumber = _getTools.Delivery.GetTblDeliveryRecords(context).Where(y => y.Id == x.RecordId).FirstOrDefault()?.DRNumber ?? "",
                         CenterCode = x.ResponsibilityCenterCode,
                         EntityName = x.EntityName,
@@ -1035,10 +1093,45 @@ namespace API.Controllers
             }
         }
 
+        [HttpGet("iar/summary")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetIARSummary([FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var supplyIARs = await _getTools.Supply.GetTblSupplyIARs(context)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .ToListAsync();
+
+                var responses = new List<SupplyIARResponseModel>();
+                foreach (var x in supplyIARs)
+                {
+                    responses.Add(new SupplyIARResponseModel
+                    {
+                        Id = x.Id,
+                        IARNumber = x.IARNumber,
+                        IARNumberDate = x.IARNumberDate,
+                        IsApproved = x.IsApproved,
+                        RecordId = x.RecordId.Value,
+                        CreatedAt = x.CreatedAt
+                    });
+                }
+
+                return Ok(ApiResponse<List<SupplyIARResponseModel>>.Ok(responses, "IAR summary retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred."));
+            }
+        }
+
         [HttpGet("ris/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllRISs([FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllRISs([FromQuery] SupplyRISQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -1056,6 +1149,20 @@ namespace API.Controllers
                         (x.EntityName.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
                         (x.FundCluster.ToString() ?? "").ToLowerInvariant().Contains(searchLower));
                 }
+
+                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
+                {
+                    if (model.Status == "Pending")
+                        supplyRISs = supplyRISs.Where(x => !x.IsApproved);
+                    else if (model.Status == "Approved")
+                        supplyRISs = supplyRISs.Where(x => x.IsApproved);
+                }
+
+                if (model.OfficeId.HasValue && model.OfficeId > 0)
+                    supplyRISs = supplyRISs.Where(x => x.OfficeId == model.OfficeId.Value);
+
+                if (model.DivisionId.HasValue && model.DivisionId > 0)
+                    supplyRISs = supplyRISs.Where(x => x.DivisionId == model.DivisionId.Value);
 
                 if (model.StartDate.HasValue)
                     supplyRISs = supplyRISs.Where(x => x.CreatedAt >= model.StartDate.Value);
@@ -1672,12 +1779,13 @@ namespace API.Controllers
                     IsApproved = model.IsApproved
                 };
 
+                long supplyIARId = await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
+                supplyIAR.Id = supplyIARId;
+
                 if (supplyIAR.IsApproved)
                 {
                     supplyIAR.IsApproved = true;
                     supplyIAR.ApprovedOn = DateTime.UtcNow;
-
-
 
                     List<TblDeliveryRecord>? deliveryRecords = _getTools.Delivery.GetTblDeliveryRecords(context)?.Where(x => x.Id == supplyIAR.RecordId).ToList();
                     foreach (var deliveryRecord in deliveryRecords)
@@ -1692,7 +1800,7 @@ namespace API.Controllers
                                 TblSupplyItem? supplyItem = new TblSupplyItem()
                                 {
                                     Code = deliveryRecordItem.Code,
-                                    IARId = model.Id,
+                                    IARId = supplyIAR.Id,
                                     CategoryId = deliveryRecordItem.CategoryId,
                                     Description = deliveryRecordItem.ItemDescription,
                                     MeasurementUnitId = deliveryRecordItem.UnitId,
@@ -1744,10 +1852,10 @@ namespace API.Controllers
 
                         await _editTools.Delivery.EditTblDeliveryRecordAsync(deliveryRecord, model.ActionBySystemUserId, context);
                     }
+                    
+                    // Update the IAR again to set ApprovedOn
+                    await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
                 }
-
-
-                long supplyIARId = await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
 
                 
 
@@ -1818,6 +1926,96 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok(new { SupplyRISId = supplyRISId }, $"Supply RIS has been {(model.Id == 0 ? "added" : "updated")}"));
 
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("stock-card/manual-issuance")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> CreateManualStockCardIssuance([FromBody] CreateManualStockCardIssuanceQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(model.StockNumber) || string.IsNullOrWhiteSpace(model.Description))
+                    return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Stock number and description are required."));
+
+                if (model.Entries == null || model.Entries.Count == 0)
+                    return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "At least one issuance entry is required."));
+
+                if (model.Entries.Any(x => x.IssueQuantity <= 0 || x.UnitId <= 0))
+                    return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Each issuance entry must have a valid unit and quantity."));
+
+                var supplyItemsQuery = _getTools.Supply.GetTblSupplyItems(context);
+                var allSupplyItems = supplyItemsQuery != null
+                    ? await supplyItemsQuery.ToListAsync()
+                    : new List<TblSupplyItem>();
+
+                long totalAddedQuantity = allSupplyItems
+                    .Where(x => x.Code == model.StockNumber && x.Description == model.Description)
+                    .Sum(x => (long)(x.Quantity ?? 0));
+
+                var fullyCompletedRisIds = await context.Set<TblSupplyRIS>()
+                    .Where(r => r.IsApproved)
+                    .Select(r => r.Id)
+                    .ToListAsync();
+
+                var risItemsQuery = _getTools.Supply.GetTblSupplyRISItems(context);
+                var existingIssuanceItems = risItemsQuery != null
+                    ? await risItemsQuery
+                        .Where(x => x.SupplyRISId == null || (x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value)))
+                        .ToListAsync()
+                    : new List<TblSupplyRISItem>();
+
+                long totalIssuedQuantity = existingIssuanceItems
+                    .Where(x => x.StockNumber == model.StockNumber && x.ItemDescription == model.Description)
+                    .Sum(x => x.IssueQuantity);
+
+                long requestedIssueQuantity = model.Entries.Sum(x => x.IssueQuantity);
+                long availableQuantity = Math.Max(0, totalAddedQuantity - totalIssuedQuantity);
+
+                if (requestedIssueQuantity > availableQuantity)
+                    return BadRequest(ApiResponse<object>.Fail(
+                        ErrorCodes.INVALID_INPUT,
+                        $"Insufficient stock. Available: {availableQuantity}, Requested: {requestedIssueQuantity}."));
+
+                var createdIds = new List<long>();
+                foreach (var entry in model.Entries)
+                {
+                    TblSupplyRISItem issuanceItem = new()
+                    {
+                        Id = 0,
+                        SupplyRISId = null,
+                        StockNumber = model.StockNumber.Trim(),
+                        UnitId = entry.UnitId,
+                        ItemDescription = model.Description.Trim(),
+                        RequisitionQuantity = entry.IssueQuantity,
+                        IsAvailable = true,
+                        IssueQuantity = entry.IssueQuantity,
+                        ItemRemarks = entry.ItemRemarks,
+                        IsActive = true
+                    };
+
+                    long issuanceId = await _editTools.Supply.EditTblSupplyRISItemAsync(issuanceItem, model.ActionBySystemUserId, context);
+                    createdIds.Add(issuanceId);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(
+                    _options,
+                    $"Created manual stock card issuance for {model.StockNumber} - {model.Description}. Entries: {model.Entries.Count}",
+                    actionBy: model.ActionBySystemUserId);
+
+                return Ok(ApiResponse<object>.Ok(new { CreatedSupplyRISItemIds = createdIds }, "Manual issuance has been recorded."));
             }
             catch (Exception ex)
             {

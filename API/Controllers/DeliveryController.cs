@@ -1,4 +1,4 @@
-﻿using API.Attributes;
+using API.Attributes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
@@ -43,7 +43,7 @@ namespace API.Controllers
         [HttpGet("record/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllDeliveryRecords([FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllDeliveryRecords([FromQuery] DeliveryRecordQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -53,13 +53,13 @@ namespace API.Controllers
 
                 IEnumerable<TblDeliveryRecord>? deliveryRecords = await _getTools.Supply.GetTblDeliveryRecords(context).ToListAsync();
 
-                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                // Advanced Filtering
+                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
                 {
-                    string searchLower = model.SearchString.ToLower();
-                    deliveryRecords = deliveryRecords.Where(x =>
-                        (x.DRNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.DeliveryDate).ToString().Contains(searchLower) ||
-                        (x.Remarks ?? "").ToLowerInvariant().Contains(searchLower));
+                    if (model.Status == "Received")
+                        deliveryRecords = deliveryRecords.Where(x => x.IsReceived);
+                    else if (model.Status == "Pending")
+                        deliveryRecords = deliveryRecords.Where(x => !x.IsReceived);
                 }
 
                 if (model.StartDate.HasValue)
@@ -67,6 +67,33 @@ namespace API.Controllers
 
                 if (model.EndDate.HasValue)
                     deliveryRecords = deliveryRecords.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    var searchResults = new List<TblDeliveryRecord>();
+                    foreach (var x in deliveryRecords)
+                    {
+                        bool matches = (x.DRNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                                       (x.DeliveryDate).ToString().Contains(searchLower) ||
+                                       (x.Remarks ?? "").ToLowerInvariant().Contains(searchLower);
+
+                        if (!matches)
+                        {
+                            // Check linked IAR for more search matches
+                            var iar = _getTools.Supply.GetTblSupplyIARs(context).FirstOrDefault(z => z.RecordId == x.Id);
+                            if (iar != null)
+                            {
+                                matches = (iar.IARNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                                          (iar.PONumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                                          (iar.EntityName ?? "").ToLowerInvariant().Contains(searchLower);
+                            }
+                        }
+
+                        if (matches) searchResults.Add(x);
+                    }
+                    deliveryRecords = searchResults;
+                }
 
                 int totalCount = deliveryRecords.Count();
 
@@ -84,9 +111,11 @@ namespace API.Controllers
                 {
                     List<TblDeliveryRecordItem>? unmappedItems = await _getTools.Delivery.GetTblDeliveryRecordItemsByRecordId(x.Id, context).ToListAsync();
                     List<DeliveryRecordItemResponseModel>? mappedItems = new List<DeliveryRecordItemResponseModel>();
+                    decimal recordTotalAmount = 0;
 
                     foreach (var y in unmappedItems)
                     {
+                        recordTotalAmount += (y.ItemQuantity ?? 0) * (y.UnitCost ?? 0);
                         var mappedItemModel = new DeliveryRecordItemResponseModel
                         {
                             Id = y.Id,
@@ -112,7 +141,6 @@ namespace API.Controllers
                     var supplyIARModel = new SupplyIARResponseModel();
                     if (z != null)
                     {
-
                         supplyIARModel = new SupplyIARResponseModel
                         {
                             Id = z.Id,
@@ -144,6 +172,7 @@ namespace API.Controllers
                         FileId = x.FileId,
                         IsReceived = x.IsReceived,
                         Items = mappedItems,
+                        TotalAmount = recordTotalAmount,
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
@@ -258,6 +287,46 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+        [HttpGet("record/summary")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetDeliveryRecordsSummary([FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var deliveryRecords = await _getTools.Supply.GetTblDeliveryRecords(context)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .ToListAsync();
+
+                var responses = new List<DeliveryRecordResponseModel>();
+                foreach (var x in deliveryRecords)
+                {
+                    var items = await _getTools.Delivery.GetTblDeliveryRecordItemsByRecordId(x.Id, context).ToListAsync();
+                    decimal totalAmount = items.Sum(y => (y.ItemQuantity ?? 0) * (y.UnitCost ?? 0));
+
+                    responses.Add(new DeliveryRecordResponseModel
+                    {
+                        Id = x.Id,
+                        DRNumber = x.DRNumber,
+                        DeliveryDate = x.DeliveryDate,
+                        IsReceived = x.IsReceived,
+                        TotalAmount = totalAmount,
+                        CreatedAt = x.CreatedAt,
+                        SupplyIAR = _getTools.Supply.GetTblSupplyIARs(context).Any(z => z.RecordId == x.Id)
+                            ? new SupplyIARResponseModel { Id = 1 } 
+                            : null
+                    });
+                }
+
+                return Ok(ApiResponse<List<DeliveryRecordResponseModel>>.Ok(responses, "Delivery records summary retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(DeliveryController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred."));
+            }
+        }
         #endregion
 
         #region POST
@@ -297,11 +366,11 @@ namespace API.Controllers
                         ItemDescription = x.ItemDescription,
                         ItemSpecification = x.ItemSpecification,
                         ItemQuantity = x.ItemQuantity,
-                        ReorderPoint = x.ReorderPoint,
+                        ReorderPoint = x.ReorderPoint ?? 0,
                         StorageLocationId = x.StorageLocationId,
                         VendorId = x.VendorId,
                         UnitId = x.MeasurementUnitId,
-                        UnitCost = x.UnitCost,
+                        UnitCost = x.UnitCost ?? 0,
                         IsActive = x.IsActive,
                         IsDeleted = x.IsDeleted
                     };

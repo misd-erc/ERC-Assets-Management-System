@@ -422,7 +422,7 @@ const ITRDocument = ({
         <View style={styles.sigBlockLast}>
           <Text style={styles.sigTitle}>Received by:</Text>
           <Text style={styles.sigNameAboveLine}>
-            {toEmployee.lastName?.toUpperCase()}, {toEmployee.firstName?.toUpperCase()}
+            {toEmployee.label?.toUpperCase() || [toEmployee.firstName, toEmployee.middleName, toEmployee.lastName].filter(Boolean).join(' ').toUpperCase()}
           </Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
@@ -437,7 +437,7 @@ const ITRDocument = ({
             <Text style={styles.sigDateLabel}>DATE</Text>
           </View>
           <Text style={{ fontSize: 8, fontWeight: "bold", marginTop: 8, textAlign: "left", alignSelf: "flex-start" }}>
-            Sub-ICS :{nonPlantillaEmployee ? ` ${nonPlantillaEmployee.lastName?.toUpperCase()}, ${nonPlantillaEmployee.firstName?.toUpperCase()}${nonPlantillaEmployee.middleName ? ` ${nonPlantillaEmployee.middleName.toUpperCase()}` : ''}` : ""}
+            Sub-ICS :{nonPlantillaEmployee ? ` ${nonPlantillaEmployee.label?.toUpperCase() || [nonPlantillaEmployee.firstName, nonPlantillaEmployee.middleName, nonPlantillaEmployee.lastName].filter(Boolean).join(' ').toUpperCase()}` : ""}
           </Text>
         </View>
       </View>
@@ -455,7 +455,8 @@ export class ITRGenerator {
     transferDate: string,
     transferType: TransferType,
     existingNumber?: string,
-    signatureDate?: string
+    signatureDate?: string,
+    nonPlantillaEmployee?: NormalizedEmployee | null
   ): Promise<string> {
     const itrNumber = existingNumber || this.generateITRNumber();
     const rows = this.buildRowsFromItems(items);
@@ -469,6 +470,7 @@ export class ITRGenerator {
         toEmployee={toEmployee}
         transferType={transferType}
         signatureDate={signatureDate}
+        nonPlantillaEmployee={nonPlantillaEmployee}
       />
     ).toBlob();
 

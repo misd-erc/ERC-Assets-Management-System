@@ -1,4 +1,4 @@
-﻿// src/components/position/PositionEditModal.tsx
+// src/components/position/PositionEditModal.tsx
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -61,8 +61,8 @@ export const PositionEditModal = ({
         await updatePosition(position.id, form);
       }
       onSuccess();
-    } catch {
-      toast.error('Failed to save position');
+    } catch (error) {
+      console.error('Submission failed:', error);
     } finally {
       setSaving(false);
     }

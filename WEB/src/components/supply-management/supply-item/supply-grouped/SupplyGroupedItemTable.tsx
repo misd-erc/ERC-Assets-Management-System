@@ -16,8 +16,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Eye, ChevronLeft, ChevronRight, Plus, PackageSearch, Layers } from 'lucide-react';
+import { MoreHorizontal, Eye, ChevronLeft, ChevronRight, Plus, PackageSearch, Layers, ArrowUpDown, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from '@/components/ui/select';
 import { SupplyItemSearchBar } from '../SupplyItemSearchBar';
 import { formatCurrency } from '@/utils/formatters';
 
@@ -26,69 +29,85 @@ import { SupplyStorageEditModal } from '../../supply-storage/SupplyStorageEditMo
 
 interface Props {
   data: VwSupplyGroupedItem[];
-  onView: (item: VwSupplyGroupedItem) => void;
+  totalCount: number;
+  page: number;
+  searchQuery: string;
+  statusFilter: string;
+  categoryFilter?: string;
+  storageFilter?: string;
+  vendorFilter?: string;
+  allCategories?: any[];
+  storageLocations?: any[];
+  allVendors?: any[];
   loading?: boolean;
+  onView: (item: VwSupplyGroupedItem) => void;
+  onParamsChange: (params: { page: number; search: string; status: string; category?: string; storageId?: string; vendorId?: string }) => void;
 }
 
 const PAGE_SIZE = 10;
 
-export const SupplyGroupedItemTable = ({ data, onView, loading = false }: Props) => {
-  const [page, setPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState("");
+export const SupplyGroupedItemTable = ({ 
+  data, 
+  totalCount,
+  page,
+  searchQuery,
+  statusFilter,
+  categoryFilter = "all",
+  storageFilter = "all",
+  vendorFilter = "all",
+  allCategories = [],
+  storageLocations = [],
+  allVendors = [],
+  onView, 
+  onParamsChange,
+  loading = false 
+}: Props) => {
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
   const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
 
-  useEffect(() => {
-    setPage(1);
-  }, [searchQuery]);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
-  // PERFORMANCE: Memoize the filter logic
-  const filteredData = useMemo(() => {
-    if (!searchQuery) return data;
-
-    const query = String(searchQuery).toLowerCase().trim();
-    return data.filter((item) => {
-      const codeStr = String(item.code || '').toLowerCase();
-      const descStr = String(item.description || '').toLowerCase();
-      return codeStr.includes(query) || descStr.includes(query);
+  const handleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev?.key === key) {
+        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return { key, direction: 'asc' };
     });
-  }, [data, searchQuery]);
+  };
 
-  // PERFORMANCE: Memoize pagination math
-  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
-  const paginatedData = useMemo(() => {
-    return filteredData.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  }, [filteredData, page]);
+  const updateParams = (updates: Partial<{ page: number; search: string; status: string; category: string; storageId: string; vendorId: string }>) => {
+    onParamsChange(updates);
+  };
 
   return (
       <>
         <Card className="border-slate-200 shadow-sm">
           {/* UX ENHANCEMENT: Unified Header Toolbar */}
           <CardHeader className="border-b border-slate-100 pb-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-xl text-slate-900 flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-blue-600" /> Grouped Inventory
-                </CardTitle>
-                <CardDescription>Overview of supply items grouped by item code</CardDescription>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-                <div className="w-full sm:w-64">
-                  <SupplyItemSearchBar value={searchQuery} onChange={setSearchQuery} />
+            <div className="flex flex-col space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="text-xl text-slate-900 flex items-center gap-2">
+                    <Layers className="w-5 h-5 text-blue-600" /> Grouped Inventory
+                  </CardTitle>
+                  <CardDescription>Overview of supply items grouped by item code</CardDescription>
                 </div>
-                <div className="flex gap-2 w-full sm:w-auto">
+
+                <div className="flex gap-2">
                   <Button
                       variant="outline"
-                      className="flex-1 sm:flex-none border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm"
+                      className="border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm"
                       onClick={() => setIsUnitModalOpen(true)}
                       disabled={loading}
                   >
                     <Plus className="w-4 h-4 mr-1.5" /> Unit
                   </Button>
                   <Button
-                      className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 shadow-sm"
+                      className="bg-blue-600 hover:bg-blue-700 shadow-sm"
                       onClick={() => setIsStorageModalOpen(true)}
                       disabled={loading}
                   >
@@ -96,6 +115,97 @@ export const SupplyGroupedItemTable = ({ data, onView, loading = false }: Props)
                   </Button>
                 </div>
               </div>
+
+              <div className="flex flex-col md:flex-row items-center gap-3 w-full">
+                <div className="w-full md:flex-1">
+                  <SupplyItemSearchBar value={searchQuery} onChange={(val) => updateParams({ search: val, page: 1 })} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-slate-400" />
+                  <Select value={statusFilter} onValueChange={(val) => updateParams({ status: val, page: 1 })}>
+                    <SelectTrigger className="w-[180px] bg-white">
+                      <SelectValue placeholder="Stock Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="Available">Available</SelectItem>
+                      <SelectItem value="Out of Stock">Out of Stock</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      className={`h-9 px-3 ${showAdvanced ? 'bg-slate-100 text-slate-900 border-slate-300' : 'text-slate-600'}`}
+                  >
+                    {showAdvanced ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
+                    {showAdvanced ? 'Simple Filter' : 'Advanced Filter'}
+                  </Button>
+
+                  {(searchQuery || statusFilter !== "all" || categoryFilter !== "all" || storageFilter !== "all" || vendorFilter !== "all") && (
+                      <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            updateParams({ search: "", status: "all", category: "all", storageId: "all", vendorId: "all", page: 1 });
+                          }}
+                          className="text-slate-500 hover:text-slate-900 h-9"
+                      >
+                        Reset
+                      </Button>
+                  )}
+                </div>
+              </div>
+
+              {showAdvanced && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-50 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500 ml-1">Category</label>
+                      <Select value={categoryFilter} onValueChange={(val) => updateParams({ category: val, page: 1 })}>
+                        <SelectTrigger className="w-full bg-white">
+                          <SelectValue placeholder="All Categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {allCategories.map(cat => (
+                              <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500 ml-1">Storage Location</label>
+                      <Select value={storageFilter} onValueChange={(val) => updateParams({ storageId: val, page: 1 })}>
+                        <SelectTrigger className="w-full bg-white">
+                          <SelectValue placeholder="All Locations" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Locations</SelectItem>
+                          {storageLocations.map(loc => (
+                              <SelectItem key={loc.id} value={loc.id.toString()}>{loc.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500 ml-1">Vendor</label>
+                      <Select value={vendorFilter} onValueChange={(val) => updateParams({ vendorId: val, page: 1 })}>
+                        <SelectTrigger className="w-full bg-white">
+                          <SelectValue placeholder="All Vendors" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Vendors</SelectItem>
+                          {allVendors.map(v => (
+                              <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+              )}
             </div>
           </CardHeader>
 
@@ -104,10 +214,26 @@ export const SupplyGroupedItemTable = ({ data, onView, loading = false }: Props)
               <Table>
                 <TableHeader className="bg-slate-50/80">
                   <TableRow>
-                    <TableHead className="w-[150px]">Item Code</TableHead>
-                    <TableHead className="min-w-[250px]">Description</TableHead>
-                    <TableHead className="text-right">Total Stock</TableHead>
-                    <TableHead className="text-right">Total Cost</TableHead>
+                    <TableHead className="w-[150px] cursor-pointer hover:text-blue-600" onClick={() => handleSort('code')}>
+                      <div className="flex items-center gap-1">
+                        Item Code <ArrowUpDown className="w-3 h-3" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="min-w-[250px] cursor-pointer hover:text-blue-600" onClick={() => handleSort('description')}>
+                      <div className="flex items-center gap-1">
+                        Description <ArrowUpDown className="w-3 h-3" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('totalCurrentStock')}>
+                      <div className="flex items-center justify-end gap-1">
+                        Total Stock <ArrowUpDown className="w-3 h-3" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-right cursor-pointer hover:text-blue-600" onClick={() => handleSort('totalStockCost')}>
+                      <div className="flex items-center justify-end gap-1">
+                        Total Cost <ArrowUpDown className="w-3 h-3" />
+                      </div>
+                    </TableHead>
                     <TableHead className="text-center w-[120px]">Status</TableHead>
                     <TableHead className="text-right w-[80px]">Actions</TableHead>
                   </TableRow>
@@ -124,9 +250,9 @@ export const SupplyGroupedItemTable = ({ data, onView, loading = false }: Props)
                             ))}
                           </TableRow>
                       ))
-                  ) : paginatedData.length > 0 ? (
+                  ) : data.length > 0 ? (
                       // NORMAL DATA RENDERING
-                      paginatedData.map((item) => {
+                      data.map((item) => {
                         const status =
                             item.totalCurrentStock === 0
                                 ? { label: 'Out of Stock', classes: 'bg-red-50 text-red-700 border-red-200' }
@@ -196,13 +322,13 @@ export const SupplyGroupedItemTable = ({ data, onView, loading = false }: Props)
             {!loading && totalPages > 1 && (
                 <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                   <p className="text-sm text-slate-500">
-                    Showing <span className="font-medium text-slate-900">{(page - 1) * PAGE_SIZE + 1}</span> to <span className="font-medium text-slate-900">{Math.min(page * PAGE_SIZE, filteredData.length)}</span> of <span className="font-medium text-slate-900">{filteredData.length}</span> groups
+                    Showing <span className="font-medium text-slate-900">{(page - 1) * PAGE_SIZE + 1}</span> to <span className="font-medium text-slate-900">{Math.min(page * PAGE_SIZE, totalCount)}</span> of <span className="font-medium text-slate-900">{totalCount}</span> groups
                   </p>
                   <div className="flex items-center space-x-2">
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        onClick={() => updateParams({ page: Math.max(1, page - 1) })}
                         disabled={page === 1}
                         className="shadow-sm"
                     >
@@ -211,7 +337,7 @@ export const SupplyGroupedItemTable = ({ data, onView, loading = false }: Props)
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        onClick={() => updateParams({ page: Math.min(totalPages, page + 1) })}
                         disabled={page === totalPages}
                         className="shadow-sm"
                     >

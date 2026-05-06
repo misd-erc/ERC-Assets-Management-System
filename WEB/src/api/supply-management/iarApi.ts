@@ -12,45 +12,67 @@ interface SupplyIARResponse<T> {
 
 interface ListResponse<T> {
   items: T[];
+  totalCount: number;
 }
 
 /* ------------------------------- GET ------------------------------- */
 
-export const getSupplyIARs = async (): Promise<VwSupplyIAR[]> => {
+export const getSupplyIARs = async (
+  pageNumber: number = 1,
+  pageSize: number = 10,
+  search: string = '',
+  status: string = 'all',
+  vendorId?: number,
+  officeId?: number,
+  divisionId?: number
+): Promise<{ items: VwSupplyIAR[]; totalCount: number }> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   const response = await axiosInstance.get<SupplyIARResponse<ListResponse<any>>>('/Supply/iar/all', {
-    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+    params: { 
+      ActionBySystemUserId: systemUserId, 
+      SessionKey: sessionKey,
+      PageNumber: pageNumber,
+      PageSize: pageSize,
+      SearchString: search,
+      Status: status,
+      VendorId: vendorId,
+      OfficeId: officeId,
+      DivisionId: divisionId
+    },
   });
 
   if (!response.data.success) {
     toast.error(response.data.message || 'Failed to fetch IAR records');
-    return [];
+    return { items: [], totalCount: 0 };
   }
 
-  return Array.isArray(response.data.data.items)
-    ? response.data.data.items.map((u: any) => ({
-        id: u.id,
-        recordId: u.recordId,
-        drNumber: u.drNumber,
-        centerCode: u.centerCode,
-        entityName: u.entityName,
-        fundCluster: u.fundCluster,
-        vendor: u.vendor, // Mapping nested object
-        poNumber: u.poNumber,
-        office: u.office, // Mapping nested object
-        division: u.division, // Mapping nested object
-        iarNumber: u.iarNumber,
-        iarNumberDate: u.iarNumberDate,
-        iarInvoiceNumber: u.iarInvoiceNumber,
-        iarInvoiceNumberDate: u.iarInvoiceNumberDate,
-        poDate: u.poDate,
-        actualDeliveryDate: u.actualDeliveryDate,
-        isActive: u.isActive ?? true,
-        createdAt: u.createdAt,
-        isApproved: u.isApproved
-      }))
-    : [];
+  return {
+    items: Array.isArray(response.data.data.items)
+        ? response.data.data.items.map((u: any) => ({
+          id: u.id,
+          recordId: u.recordId,
+          drNumber: u.drNumber,
+          centerCode: u.centerCode,
+          entityName: u.entityName,
+          fundCluster: u.fundCluster,
+          vendor: u.vendor,
+          poNumber: u.poNumber,
+          office: u.office,
+          division: u.division,
+          iarNumber: u.iarNumber,
+          iarNumberDate: u.iarNumberDate,
+          iarInvoiceNumber: u.iarInvoiceNumber,
+          iarInvoiceNumberDate: u.iarInvoiceNumberDate,
+          poDate: u.poDate,
+          actualDeliveryDate: u.actualDeliveryDate,
+          isActive: u.isActive ?? true,
+          createdAt: u.createdAt,
+          isApproved: u.isApproved
+        }))
+        : [],
+    totalCount: response.data.data.totalCount || 0
+  };
 };
 
 export const getSupplyIARById = async (iarId: number): Promise<VwSupplyIAR | null> => {
@@ -97,24 +119,24 @@ export const editSupplyIAR = async (payload: SupplyIAR): Promise<{ message: stri
 
   const requestPayload = {
     Id: payload.id ?? 0,
-    RecordId: payload.recordId,
-    CenterCode: payload.centerCode,
-    EntityName: payload.entityName,
-    FundCluster: payload.fundCluster,
-    VendorId: payload.vendorId,
-    OfficeId: payload.officeId,
-    DivisionId: payload.divisionId,
-    IARNumber: payload.iarNumber,
-    IARNumberDate: payload.iarNumberDate,
+    RecordId: (payload.recordId && payload.recordId > 0) ? payload.recordId : null,
+    CenterCode: payload.centerCode?.trim() || null,
+    EntityName: payload.entityName?.trim() || null,
+    FundCluster: payload.fundCluster?.trim() || null,
+    VendorId: (payload.vendorId && payload.vendorId > 0) ? payload.vendorId : null,
+    OfficeId: (payload.officeId && payload.officeId > 0) ? payload.officeId : null,
+    DivisionId: (payload.divisionId && payload.divisionId > 0) ? payload.divisionId : null,
+    IARNumber: payload.iarNumber?.trim() || null,
+    IARNumberDate: payload.iarNumberDate || null,
 
-    PONumber: payload.poNumber?.trim() === '' ? null : payload.poNumber,
-    PODate: payload.poDate === '' ? null : payload.poDate,
-    IARInvoiceNumber: payload.iarInvoiceNumber?.trim() === '' ? null : payload.iarInvoiceNumber,
-    IARInvoiceNumberDate: payload.iarInvoiceNumberDate === '' ? null : payload.iarInvoiceNumberDate,
+    PONumber: payload.poNumber?.trim() || null,
+    PODate: payload.poDate || null,
+    IARInvoiceNumber: payload.iarInvoiceNumber?.trim() || null,
+    IARInvoiceNumberDate: payload.iarInvoiceNumberDate || null,
 
-    IsActive: payload.isActive,
-    isApproved: payload.isApproved,
-    ActualDeliveryDate: payload.actualDeliveryDate,
+    IsActive: payload.isActive ?? true,
+    isApproved: payload.isApproved ?? false,
+    ActualDeliveryDate: payload.actualDeliveryDate || null,
 
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,
@@ -124,4 +146,13 @@ export const editSupplyIAR = async (payload: SupplyIAR): Promise<{ message: stri
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save supply IAR');
   
   return { message: response.data.message ?? 'Success' };
+};
+
+export const getSupplyIARSummary = async (): Promise<VwSupplyIAR[]> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+  const response = await axiosInstance.get<SupplyIARResponse<VwSupplyIAR[]>>('/Supply/iar/summary', {
+    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+  });
+  if (!response.data.success) return [];
+  return response.data.data;
 };

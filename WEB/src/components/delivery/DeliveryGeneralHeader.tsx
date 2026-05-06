@@ -11,18 +11,21 @@ import {
   TrendingUp
 } from "lucide-react";
 import { useDeliveryRecordStore } from "@/store/delivery"; // Adjust path if needed
+import { useSupplyIARStore } from "@/store/supply";
 import { formatCurrency } from "@/utils/formatters";
 
 export const DeliveryGeneralHeader = () => {
-  // 1. Pull both the data and the fetch function from your store
-  const { vwDeliveryRecords, fetchDeliveryRecords } = useDeliveryRecordStore();
+  const vwDeliveryRecordsSummary = useDeliveryRecordStore(state => state.vwDeliveryRecordsSummary);
+  const fetchDeliveryRecordsSummary = useDeliveryRecordStore(state => state.fetchDeliveryRecordsSummary);
+  
+  const iarsSummary = useSupplyIARStore(state => state.iarsSummary);
+  const fetchSupplyIARSummary = useSupplyIARStore(state => state.fetchSupplyIARSummary);
 
-  // 2. Fetch the data when the dashboard component mounts
   useEffect(() => {
-    fetchDeliveryRecords();
-  }, [fetchDeliveryRecords]);
+    fetchDeliveryRecordsSummary();
+    fetchSupplyIARSummary();
+  }, [fetchDeliveryRecordsSummary, fetchSupplyIARSummary]);
 
-  // 3. Calculate metrics safely
   const stats = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -39,46 +42,49 @@ export const DeliveryGeneralHeader = () => {
     let rejectedDeliveries = 0;
     let delayedInspections = 0;
 
-    vwDeliveryRecords.forEach(record => {
+    // --- Process Delivery Records ---
+    vwDeliveryRecordsSummary.forEach(record => {
       totalDeliveries++;
 
-      // NOTE: If your C# SQL View (VwDeliveryRecord) already calculates the total amount
-      // (e.g., record.totalAmount), use that directly! Otherwise, fallback to reducing items:
-      const recordTotal = Number((record as any).totalAmount) || record.items?.reduce(
-          (sum: number, item: any) => sum + ((Number(item.itemQuantity) || 0) * (Number(item.unitCost) || 0)),
-          0
-      ) || 0;
-
+      const recordTotal = Number(record.totalAmount) || 0;
       totalValue += recordTotal;
 
-      // Extract date (adjust property names to match your C# VwDeliveryRecord model)
-      const recordDateString = (record as any).deliveryDate || (record as any).createdAt;
+      const recordDateString = record.deliveryDate || record.createdAt;
       const recordDate = recordDateString ? new Date(recordDateString) : now;
       const isThisMonth = recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
 
-      // Ensure 'isReceived' matches your backend property name exactly
-      if (!(record as any).isReceived) {
+      if (!record.isReceived) {
         pendingDeliveries++;
         pendingValue += recordTotal;
 
-        // SLA: Delayed Inspections (Pending for > 3 days)
         const daysPending = Math.floor((now.getTime() - recordDate.getTime()) / (1000 * 3600 * 24));
-        if (daysPending > 3) {
-          delayedInspections++;
-        }
+        if (daysPending > 3) delayedInspections++;
       } else {
         receivedDeliveries++;
-
-        // MTD calculations for successfully received goods
         if (isThisMonth) {
           deliveriesMTD++;
           valueReceivedMTD += recordTotal;
         }
       }
+    });
 
-      // Quality tracking (adjust 'isRejected' or 'status' to match your C# model)
-      if ((record as any).isRejected || (record as any).status === 'Rejected') {
-        rejectedDeliveries++;
+    // --- Process Unlinked IARs ---
+    iarsSummary.forEach(iar => {
+      if (!iar.recordId) {
+        totalDeliveries++;
+        if (!iar.isApproved) {
+          pendingDeliveries++;
+          const recordDateString = iar.iarNumberDate || iar.createdAt;
+          const recordDate = recordDateString ? new Date(recordDateString) : now;
+          const daysPending = Math.floor((now.getTime() - recordDate.getTime()) / (1000 * 3600 * 24));
+          if (daysPending > 3) delayedInspections++;
+        } else {
+          receivedDeliveries++;
+          const recordDateString = iar.iarNumberDate || iar.createdAt;
+          const recordDate = recordDateString ? new Date(recordDateString) : now;
+          const isThisMonth = recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
+          if (isThisMonth) deliveriesMTD++;
+        }
       }
     });
 
@@ -93,7 +99,7 @@ export const DeliveryGeneralHeader = () => {
       rejectedDeliveries,
       delayedInspections
     };
-  }, [vwDeliveryRecords]); // Recalculate only when the records from the store change
+  }, [vwDeliveryRecordsSummary, iarsSummary]);
 
   return (
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
