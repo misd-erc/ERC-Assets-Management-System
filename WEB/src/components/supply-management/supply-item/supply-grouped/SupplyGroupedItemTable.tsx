@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Eye, ChevronLeft, ChevronRight, Plus, PackageSearch, Layers, ArrowUpDown, Filter } from 'lucide-react';
+import { MoreHorizontal, Eye, ChevronLeft, ChevronRight, Plus, PackageSearch, Layers, ArrowUpDown, Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -33,9 +33,15 @@ interface Props {
   page: number;
   searchQuery: string;
   statusFilter: string;
+  categoryFilter?: string;
+  storageFilter?: string;
+  vendorFilter?: string;
+  allCategories?: any[];
+  storageLocations?: any[];
+  allVendors?: any[];
   loading?: boolean;
   onView: (item: VwSupplyGroupedItem) => void;
-  onParamsChange: (params: { page: number; search: string; status: string }) => void;
+  onParamsChange: (params: { page: number; search: string; status: string; category?: string; storageId?: string; vendorId?: string }) => void;
 }
 
 const PAGE_SIZE = 10;
@@ -46,11 +52,18 @@ export const SupplyGroupedItemTable = ({
   page,
   searchQuery,
   statusFilter,
+  categoryFilter = "all",
+  storageFilter = "all",
+  vendorFilter = "all",
+  allCategories = [],
+  storageLocations = [],
+  allVendors = [],
   onView, 
   onParamsChange,
   loading = false 
 }: Props) => {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
   const [isStorageModalOpen, setIsStorageModalOpen] = useState(false);
@@ -66,12 +79,8 @@ export const SupplyGroupedItemTable = ({
     });
   };
 
-  const updateParams = (updates: Partial<{ page: number; search: string; status: string }>) => {
-    onParamsChange({
-      page: updates.page ?? page,
-      search: updates.search ?? searchQuery,
-      status: updates.status ?? statusFilter,
-    });
+  const updateParams = (updates: Partial<{ page: number; search: string; status: string; category: string; storageId: string; vendorId: string }>) => {
+    onParamsChange(updates);
   };
 
   return (
@@ -124,20 +133,79 @@ export const SupplyGroupedItemTable = ({
                     </SelectContent>
                   </Select>
 
-                  {(searchQuery || statusFilter !== "all") && (
+                  <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      className={`h-9 px-3 ${showAdvanced ? 'bg-slate-100 text-slate-900 border-slate-300' : 'text-slate-600'}`}
+                  >
+                    {showAdvanced ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
+                    {showAdvanced ? 'Simple Filter' : 'Advanced Filter'}
+                  </Button>
+
+                  {(searchQuery || statusFilter !== "all" || categoryFilter !== "all" || storageFilter !== "all" || vendorFilter !== "all") && (
                       <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            updateParams({ search: "", status: "all", page: 1 });
+                            updateParams({ search: "", status: "all", category: "all", storageId: "all", vendorId: "all", page: 1 });
                           }}
-                          className="text-slate-500 hover:text-slate-900"
+                          className="text-slate-500 hover:text-slate-900 h-9"
                       >
                         Reset
                       </Button>
                   )}
                 </div>
               </div>
+
+              {showAdvanced && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-50 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500 ml-1">Category</label>
+                      <Select value={categoryFilter} onValueChange={(val) => updateParams({ category: val, page: 1 })}>
+                        <SelectTrigger className="w-full bg-white">
+                          <SelectValue placeholder="All Categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {allCategories.map(cat => (
+                              <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500 ml-1">Storage Location</label>
+                      <Select value={storageFilter} onValueChange={(val) => updateParams({ storageId: val, page: 1 })}>
+                        <SelectTrigger className="w-full bg-white">
+                          <SelectValue placeholder="All Locations" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Locations</SelectItem>
+                          {storageLocations.map(loc => (
+                              <SelectItem key={loc.id} value={loc.id.toString()}>{loc.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-500 ml-1">Vendor</label>
+                      <Select value={vendorFilter} onValueChange={(val) => updateParams({ vendorId: val, page: 1 })}>
+                        <SelectTrigger className="w-full bg-white">
+                          <SelectValue placeholder="All Vendors" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Vendors</SelectItem>
+                          {allVendors.map(v => (
+                              <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+              )}
             </div>
           </CardHeader>
 

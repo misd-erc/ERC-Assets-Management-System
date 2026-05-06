@@ -7,10 +7,12 @@ import { SupplyItemEditModal } from './SupplyItemEditModal';
 import { SupplyItemDeleteModal } from './SupplyItemDeleteModal';
 import { VwSupplyItem, Category } from '@/types';
 import { getCategories } from '@/api/categories/categoriesApi';
+import { getVendors } from '@/api';
 
 export const SupplyItemTabContent = () => {
   const { vwSupplies, totalSupplies, loading, fetchSupplyItems, categories, fetchCategories } = useSupplyItem();
   const { storagelocations, fetchSupplyStorageLocations } = useSupplyStorageLocationStore();
+  const [vendors, setVendors] = useState<any[]>([]);
   
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -22,12 +24,14 @@ export const SupplyItemTabContent = () => {
     search: '',
     category: 'all',
     status: 'all',
-    storageId: 'all'
+    storageId: 'all',
+    vendorId: 'all'
   });
 
   useEffect(() => {
     fetchSupplyStorageLocations();
     fetchCategories();
+    getVendors().then(res => setVendors(res || []));
   }, [fetchSupplyStorageLocations, fetchCategories]);
 
   useEffect(() => {
@@ -40,7 +44,8 @@ export const SupplyItemTabContent = () => {
       params.search,
       selectedCategory?.id,
       params.status === 'all' ? undefined : params.status,
-      params.storageId === 'all' ? undefined : Number(params.storageId)
+      params.storageId === 'all' ? undefined : Number(params.storageId),
+      params.vendorId === 'all' ? undefined : Number(params.vendorId)
     );
   }, [params, fetchSupplyItems, categories]);
 
@@ -81,9 +86,11 @@ export const SupplyItemTabContent = () => {
         categoryFilter={params.category}
         statusFilter={params.status}
         storageFilter={params.storageId}
+        vendorFilter={params.vendorId}
         allCategories={categories}
         storageLocations={storagelocations}
-        onParamsChange={setParams}
+        allVendors={vendors}
+        onParamsChange={(newParams) => setParams(prev => ({ ...prev, ...newParams }))}
         loading={loading}
         onAdd={handleAdd} 
         onView={handleView}

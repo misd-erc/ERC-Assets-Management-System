@@ -44,7 +44,7 @@ interface SupplyItemState {
   fetchSupplyItems: (page?: number, pageSize?: number, search?: string, categoryId?: number, status?: string, storageLocationId?: number, vendorId?: number) => Promise<void>;
   fetchSupplySummary: () => Promise<void>;
   fetchSupplyUniqueRawItems: () => Promise<void>;
-  fetchSupplyGroupedItems: (page?: number, pageSize?: number, search?: string, status?: string) => Promise<void>;
+  fetchSupplyGroupedItems: (page?: number, pageSize?: number, search?: string, status?: string, categoryId?: number, storageLocationId?: number, vendorId?: number) => Promise<void>;
   fetchSupplyGroupedItemLists: (id: number, page?: number, pageSize?: number, search?: string, categoryId?: number, status?: string, storageLocationId?: number, vendorId?: number) => Promise<void>;
   fetchCategories: () => Promise<void>;
   addSupplyItem: (supply: Partial<SupplyItem>) => Promise<void>;
@@ -114,10 +114,10 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
     }
   },
 
-  fetchSupplyGroupedItems: async (page = 1, pageSize = 10, search = '', status) => {
+  fetchSupplyGroupedItems: async (page = 1, pageSize = 10, search = '', status, categoryId, storageLocationId, vendorId) => {
     set({ loading: true });
     try {
-      const result = await getVwSupplyGroupedItems(page, pageSize, search, status);
+      const result = await getVwSupplyGroupedItems(page, pageSize, search, status, categoryId, storageLocationId, vendorId);
       set({ vwSupplyGroups: result.items, totalGroups: result.totalCount, totalSupplies: result.totalCount });
     } catch {
       toast.error('Failed to load supply groups');
