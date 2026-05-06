@@ -15,3 +15,9 @@ export interface SupplyStockCardItem {
   office?: any;
   division?: any;
 }
+
+export interface ManualStockCardIssuanceEntryPayload {
+  unitId: number;
+  issueQuantity: number;
+  itemRemarks?: string;
+}

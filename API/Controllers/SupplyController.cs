@@ -437,7 +437,7 @@ namespace API.Controllers
 
                 var filteredRisItems = risItemsQuery != null
                     ? await risItemsQuery
-                        .Where(x => x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value))
+                        .Where(x => x.SupplyRISId == null || (x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value)))
                         .ToListAsync()
                     : new List<TblSupplyRISItem>();
 
@@ -548,7 +548,7 @@ namespace API.Controllers
                 var risItemsQuery = _getTools.Supply.GetTblSupplyRISItems(context);
                 var filteredRisItems = risItemsQuery != null
                     ? await risItemsQuery
-                        .Where(x => x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value))
+                        .Where(x => x.SupplyRISId == null || (x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value)))
                         .ToListAsync()
                     : new List<TblSupplyRISItem>();
 
@@ -736,7 +736,7 @@ namespace API.Controllers
                 // Optimization: Filter out unapproved RIS items at the SQL level FIRST
                 var filteredRisItems = risItemsQuery != null
                     ? await risItemsQuery
-                        .Where(x => x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value))
+                        .Where(x => x.SupplyRISId == null || (x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value)))
                         .ToListAsync()
                     : new List<TblSupplyRISItem>();
 
@@ -1926,6 +1926,96 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok(new { SupplyRISId = supplyRISId }, $"Supply RIS has been {(model.Id == 0 ? "added" : "updated")}"));
 
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("stock-card/manual-issuance")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> CreateManualStockCardIssuance([FromBody] CreateManualStockCardIssuanceQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(model.StockNumber) || string.IsNullOrWhiteSpace(model.Description))
+                    return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Stock number and description are required."));
+
+                if (model.Entries == null || model.Entries.Count == 0)
+                    return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "At least one issuance entry is required."));
+
+                if (model.Entries.Any(x => x.IssueQuantity <= 0 || x.UnitId <= 0))
+                    return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Each issuance entry must have a valid unit and quantity."));
+
+                var supplyItemsQuery = _getTools.Supply.GetTblSupplyItems(context);
+                var allSupplyItems = supplyItemsQuery != null
+                    ? await supplyItemsQuery.ToListAsync()
+                    : new List<TblSupplyItem>();
+
+                long totalAddedQuantity = allSupplyItems
+                    .Where(x => x.Code == model.StockNumber && x.Description == model.Description)
+                    .Sum(x => (long)(x.Quantity ?? 0));
+
+                var fullyCompletedRisIds = await context.Set<TblSupplyRIS>()
+                    .Where(r => r.IsApproved)
+                    .Select(r => r.Id)
+                    .ToListAsync();
+
+                var risItemsQuery = _getTools.Supply.GetTblSupplyRISItems(context);
+                var existingIssuanceItems = risItemsQuery != null
+                    ? await risItemsQuery
+                        .Where(x => x.SupplyRISId == null || (x.SupplyRISId.HasValue && fullyCompletedRisIds.Contains(x.SupplyRISId.Value)))
+                        .ToListAsync()
+                    : new List<TblSupplyRISItem>();
+
+                long totalIssuedQuantity = existingIssuanceItems
+                    .Where(x => x.StockNumber == model.StockNumber && x.ItemDescription == model.Description)
+                    .Sum(x => x.IssueQuantity);
+
+                long requestedIssueQuantity = model.Entries.Sum(x => x.IssueQuantity);
+                long availableQuantity = Math.Max(0, totalAddedQuantity - totalIssuedQuantity);
+
+                if (requestedIssueQuantity > availableQuantity)
+                    return BadRequest(ApiResponse<object>.Fail(
+                        ErrorCodes.INVALID_INPUT,
+                        $"Insufficient stock. Available: {availableQuantity}, Requested: {requestedIssueQuantity}."));
+
+                var createdIds = new List<long>();
+                foreach (var entry in model.Entries)
+                {
+                    TblSupplyRISItem issuanceItem = new()
+                    {
+                        Id = 0,
+                        SupplyRISId = null,
+                        StockNumber = model.StockNumber.Trim(),
+                        UnitId = entry.UnitId,
+                        ItemDescription = model.Description.Trim(),
+                        RequisitionQuantity = entry.IssueQuantity,
+                        IsAvailable = true,
+                        IssueQuantity = entry.IssueQuantity,
+                        ItemRemarks = entry.ItemRemarks,
+                        IsActive = true
+                    };
+
+                    long issuanceId = await _editTools.Supply.EditTblSupplyRISItemAsync(issuanceItem, model.ActionBySystemUserId, context);
+                    createdIds.Add(issuanceId);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(
+                    _options,
+                    $"Created manual stock card issuance for {model.StockNumber} - {model.Description}. Entries: {model.Entries.Count}",
+                    actionBy: model.ActionBySystemUserId);
+
+                return Ok(ApiResponse<object>.Ok(new { CreatedSupplyRISItemIds = createdIds }, "Manual issuance has been recorded."));
             }
             catch (Exception ex)
             {

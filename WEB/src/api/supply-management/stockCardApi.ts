@@ -2,7 +2,7 @@ import axiosInstance from '@/lib/axios';
 import { ApiResponse } from '@/types';
 import { toast } from 'sonner';
 import { getAuthParams } from '@/utils/auth';
-import { SupplyStockCardItem } from '@/types/supply/stockcard';
+import { ManualStockCardIssuanceEntryPayload, SupplyStockCardItem } from '@/types/supply/stockcard';
 
 interface PaginatedResponse<T> {
   items: T[];
@@ -44,4 +44,24 @@ export const getStockCardItems = async (
     pageNumber: response.data.data.pageNumber,
     pageSize: response.data.data.pageSize,
   };
+};
+
+export const createManualStockCardIssuance = async (
+  stockNumber: string,
+  description: string,
+  entries: ManualStockCardIssuanceEntryPayload[]
+): Promise<void> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  const response = await axiosInstance.post<ApiResponse<any>>('/Supply/stock-card/manual-issuance', {
+    stockNumber,
+    description,
+    entries,
+    ActionBySystemUserId: systemUserId,
+    SessionKey: sessionKey,
+  });
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Failed to create manual issuance');
+  }
 };
