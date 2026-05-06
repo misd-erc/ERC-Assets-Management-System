@@ -1,21 +1,30 @@
 import { create } from 'zustand';
 import { toast } from 'sonner';
 import { DeliveryRecord, EditDeliveryRecord, VwDeliveryRecord } from '@/types/delivery/delivery';
-import { editDeliveryRecord, getDeliveryRecords, uploadDeliveryProof } from '@/api/delivery/deliveryApi';
+import { editDeliveryRecord, getDeliveryRecords, uploadDeliveryProof, getDeliveryRecordsSummary } from '@/api/delivery/deliveryApi';
 import axiosInstance from '@/lib/axios';
 import { getAuthParams } from '@/utils/auth';
 
 interface DeliveryRecordState {
   deliveryRecords: DeliveryRecord[];
   vwDeliveryRecords: VwDeliveryRecord[];
+  vwDeliveryRecordsSummary: VwDeliveryRecord[];
   loading: boolean;
   searchQuery: string;
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  status: string;
 
   setDeliveryRecords: (deliveryRecord: VwDeliveryRecord[]) => void;
   setLoading: (loading: boolean) => void;
   setSearchQuery: (query: string) => void;
+  setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
+  setStatus: (status: string) => void;
 
   fetchDeliveryRecords: () => Promise<void>;
+  fetchDeliveryRecordsSummary: () => Promise<void>;
   addDeliveryRecord: (record: EditDeliveryRecord) => Promise<void>;
   updateDeliveryRecord: (id: number, updates: EditDeliveryRecord) => Promise<void>;
   deleteDeliveryRecord: (id: number) => Promise<void>;
@@ -25,22 +34,40 @@ interface DeliveryRecordState {
 export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => ({
   deliveryRecords: [],
   vwDeliveryRecords: [],
+  vwDeliveryRecordsSummary: [],
   loading: false,
   searchQuery: '',
+  totalCount: 0,
+  page: 1,
+  pageSize: 10,
+  status: 'all',
 
   setDeliveryRecords: (deliveryRecord) => set({ vwDeliveryRecords: deliveryRecord }),
   setLoading: (loading) => set({ loading }),
-  setSearchQuery: (query) => set({ searchQuery: query }),
+  setSearchQuery: (query) => set({ searchQuery: query, page: 1 }),
+  setPage: (page) => set({ page }),
+  setPageSize: (size) => set({ pageSize: size, page: 1 }),
+  setStatus: (status) => set({ status: status, page: 1 }),
 
   fetchDeliveryRecords: async () => {
     set({ loading: true });
     try {
-      const vwDeliveryRecords = await getDeliveryRecords();
-      set({ vwDeliveryRecords: vwDeliveryRecords });
+      const { page, pageSize, searchQuery, status } = get();
+      const result = await getDeliveryRecords(page, pageSize, searchQuery, status);
+      set({ vwDeliveryRecords: result.items, totalCount: result.totalCount });
     } catch {
       toast.error('Failed to load delivery records');
     } finally {
       set({ loading: false });
+    }
+  },
+
+  fetchDeliveryRecordsSummary: async () => {
+    try {
+      const summary = await getDeliveryRecordsSummary();
+      set({ vwDeliveryRecordsSummary: summary });
+    } catch {
+      // Fail silently
     }
   },
 

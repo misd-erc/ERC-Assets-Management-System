@@ -996,7 +996,7 @@ namespace API.Controllers
         [HttpGet("iar/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllIARs([FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllIARs([FromQuery] SupplyIARQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -1006,22 +1006,55 @@ namespace API.Controllers
 
                 IEnumerable<TblSupplyIAR>? supplyIARs = await _getTools.Supply.GetTblSupplyIARs(context).ToListAsync();
 
-                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                // Advanced Filtering
+                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
                 {
-                    string searchLower = model.SearchString.ToLower();
-                    supplyIARs = supplyIARs.Where(x =>
-                        (x.IARNumber.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.IARNumberDate.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.PONumber.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.EntityName.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.FundCluster.ToString() ?? "").ToLowerInvariant().Contains(searchLower));
+                    if (model.Status == "Approved")
+                        supplyIARs = supplyIARs.Where(x => x.IsApproved);
+                    else if (model.Status == "Pending")
+                        supplyIARs = supplyIARs.Where(x => !x.IsApproved);
                 }
+
+                if (model.VendorId.HasValue && model.VendorId > 0)
+                    supplyIARs = supplyIARs.Where(x => x.VendorId == model.VendorId.Value);
+
+                if (model.OfficeId.HasValue && model.OfficeId > 0)
+                    supplyIARs = supplyIARs.Where(x => x.OfficeId == model.OfficeId.Value);
+
+                if (model.DivisionId.HasValue && model.DivisionId > 0)
+                    supplyIARs = supplyIARs.Where(x => x.DivisionId == model.DivisionId.Value);
 
                 if (model.StartDate.HasValue)
                     supplyIARs = supplyIARs.Where(x => x.CreatedAt >= model.StartDate.Value);
 
                 if (model.EndDate.HasValue)
                     supplyIARs = supplyIARs.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                if (!string.IsNullOrWhiteSpace(model.SearchString))
+                {
+                    string searchLower = model.SearchString.ToLower();
+                    var searchResults = new List<TblSupplyIAR>();
+                    foreach (var x in supplyIARs)
+                    {
+                        bool matches = (x.IARNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                                       (x.IARNumberDate.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
+                                       (x.PONumber ?? "").ToLowerInvariant().Contains(searchLower) ||
+                                       (x.EntityName ?? "").ToLowerInvariant().Contains(searchLower) ||
+                                       (x.FundCluster ?? "").ToLowerInvariant().Contains(searchLower);
+
+                        if (!matches && x.RecordId.HasValue)
+                        {
+                            var dr = _getTools.Delivery.GetTblDeliveryRecords(context).FirstOrDefault(d => d.Id == x.RecordId.Value);
+                            if (dr != null)
+                            {
+                                matches = (dr.DRNumber ?? "").ToLowerInvariant().Contains(searchLower);
+                            }
+                        }
+
+                        if (matches) searchResults.Add(x);
+                    }
+                    supplyIARs = searchResults;
+                }
 
                 int totalCount = supplyIARs.Count();
 
@@ -1079,6 +1112,41 @@ namespace API.Controllers
                 await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("iar/summary")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetIARSummary([FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var supplyIARs = await _getTools.Supply.GetTblSupplyIARs(context)
+                    .OrderByDescending(x => x.CreatedAt)
+                    .ToListAsync();
+
+                var responses = new List<SupplyIARResponseModel>();
+                foreach (var x in supplyIARs)
+                {
+                    responses.Add(new SupplyIARResponseModel
+                    {
+                        Id = x.Id,
+                        IARNumber = x.IARNumber,
+                        IARNumberDate = x.IARNumberDate,
+                        IsApproved = x.IsApproved,
+                        RecordId = x.RecordId.Value,
+                        CreatedAt = x.CreatedAt
+                    });
+                }
+
+                return Ok(ApiResponse<List<SupplyIARResponseModel>>.Ok(responses, "IAR summary retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred."));
             }
         }
 

@@ -8,8 +8,9 @@ import {
   editSupplyUnit,
   getSupplyStorageLocations,
   editSupplyStorageLocation,
-  getSupplyIARs, // Make sure this is exported from your API
+  getSupplyIARs,
   editSupplyIAR,
+  getSupplyIARSummary,
   getSupplyUniqueRawItems,
   getVwSupplyGroupedItems,
   getVwSupplyGroupedItemLists
@@ -375,17 +376,29 @@ export const useSupplyStorageLocationStore = create<SupplyStorageLocationState>(
    SUPPLY IAR STORE
 ======================================== */
 export interface SupplyIARState {
-  iars: VwSupplyIAR[]; // Changed to VwSupplyIAR[] to match API
+  iars: VwSupplyIAR[];
   iarsSummary: VwSupplyIAR[];
   totalIars: number;
   loading: boolean;
   searchQuery: string;
+  page: number;
+  pageSize: number;
+  status: string;
+  vendorId?: number;
+  officeId?: number;
+  divisionId?: number;
 
   setSupplyIARs: (iars: VwSupplyIAR[]) => void;
   setLoading: (loading: boolean) => void;
   setSearchQuery: (query: string) => void;
+  setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
+  setStatus: (status: string) => void;
+  setVendorId: (id?: number) => void;
+  setOfficeId: (id?: number) => void;
+  setDivisionId: (id?: number) => void;
 
-  fetchSupplyIARs: (page?: number, pageSize?: number, search?: string) => Promise<void>;
+  fetchSupplyIARs: () => Promise<void>;
   fetchSupplyIARSummary: () => Promise<void>;
   addSupplyIAR: (iar: Partial<SupplyIAR>) => Promise<void>;
   updateSupplyIAR: (id: number, updates: Partial<SupplyIAR>) => Promise<void>;
@@ -398,15 +411,28 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
   totalIars: 0,
   loading: false,
   searchQuery: '',
+  page: 1,
+  pageSize: 10,
+  status: 'all',
+  vendorId: undefined,
+  officeId: undefined,
+  divisionId: undefined,
 
   setSupplyIARs: (iars) => set({ iars }),
   setLoading: (loading) => set({ loading }),
-  setSearchQuery: (query) => set({ searchQuery: query }),
+  setSearchQuery: (query) => set({ searchQuery: query, page: 1 }),
+  setPage: (page) => set({ page }),
+  setPageSize: (size) => set({ pageSize: size, page: 1 }),
+  setStatus: (status) => set({ status, page: 1 }),
+  setVendorId: (id) => set({ vendorId: id, page: 1 }),
+  setOfficeId: (id) => set({ officeId: id, page: 1 }),
+  setDivisionId: (id) => set({ divisionId: id, page: 1 }),
 
-  fetchSupplyIARs: async (page = 1, pageSize = 10, search = '') => {
+  fetchSupplyIARs: async () => {
     set({ loading: true });
     try {
-      const result = await getSupplyIARs(page, pageSize, search);
+      const { page, pageSize, searchQuery, status, vendorId, officeId, divisionId } = get();
+      const result = await getSupplyIARs(page, pageSize, searchQuery, status, vendorId, officeId, divisionId);
       set({ iars: result.items, totalIars: result.totalCount });
     } catch {
       toast.error('Failed to load IARs');
@@ -417,9 +443,8 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
 
   fetchSupplyIARSummary: async () => {
     try {
-      // Fetch a larger set for dashboard accuracy
-      const result = await getSupplyIARs(1, 1000, '');
-      set({ iarsSummary: result.items });
+      const result = await getSupplyIARSummary();
+      set({ iarsSummary: result });
     } catch {
       console.error('Failed to load IAR summary');
     }

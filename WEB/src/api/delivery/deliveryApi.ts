@@ -32,21 +32,38 @@ const mapVwDeliveryRecord = (raw: any): VwDeliveryRecord => ({
 
 /* ------------------------------- GET ------------------------------- */
 
-export const getDeliveryRecords = async (): Promise<VwDeliveryRecord[]> => {
+export const getDeliveryRecords = async (
+  pageNumber: number = 1,
+  pageSize: number = 10,
+  search: string = '',
+  status: string = 'all'
+): Promise<{ items: VwDeliveryRecord[], totalCount: number }> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
-  const response = await axiosInstance.get<DeliveryRecordResponse<ListResponse<any>>>('/Delivery/record/all', {
-    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+  const response = await axiosInstance.get<DeliveryRecordResponse<any>>('/Delivery/record/all', {
+    params: { 
+      ActionBySystemUserId: systemUserId, 
+      SessionKey: sessionKey,
+      PageNumber: pageNumber,
+      PageSize: pageSize,
+      SearchString: search,
+      Status: status
+    },
   });
 
   if (!response.data.success) {
     toast.error(response.data.message || 'Failed to fetch records');
-    return [];
+    return { items: [], totalCount: 0 };
   }
 
-  return Array.isArray(response.data.data.items)
+  const items = Array.isArray(response.data.data.items)
     ? response.data.data.items.map(mapVwDeliveryRecord)
     : [];
+  
+  return {
+    items,
+    totalCount: response.data.data.totalCount || 0
+  };
 };
 
 export const getDeliveryRecordById = async (itemId: number): Promise<VwDeliveryRecord | null> => {
@@ -113,4 +130,13 @@ export const uploadDeliveryProof = async (deliveryRecordId: number, file: File):
 
   if (!response.data.success) throw new Error(response.data.message || 'Failed to upload delivery proof');
   return { message: response.data.message ?? 'Success' };
+};
+
+export const getDeliveryRecordsSummary = async (): Promise<VwDeliveryRecord[]> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+  const response = await axiosInstance.get<DeliveryRecordResponse<VwDeliveryRecord[]>>('/Delivery/record/summary', {
+    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+  });
+  if (!response.data.success) return [];
+  return response.data.data.map(mapVwDeliveryRecord);
 };
