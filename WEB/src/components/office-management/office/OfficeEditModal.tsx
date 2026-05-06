@@ -1,4 +1,4 @@
-﻿import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -56,7 +56,7 @@ export const OfficeEditModal = ({
   // â”€â”€â”€â”€â”€â”€ SUBMIT â”€â”€â”€â”€â”€â”€
   const submit = async () => {
     if (!form.name?.trim() || !form.acronym?.trim() || !form.generalCode?.trim()) {
-      toast.error('Name, Acronym, and General Code are required');
+      toast.error('Name, Acronym, and Responsibility Service Code are required');
       return;
     }
 
@@ -114,9 +114,9 @@ export const OfficeEditModal = ({
               />
             </div>
 
-            {/* General Code */}
+            {/* Responsibility Service Code */}
             <div className="grid gap-2">
-              <Label htmlFor="generalCode">General Code</Label>
+              <Label htmlFor="generalCode">Responsibility Service Code</Label>
               <Input
                 id="generalCode"
                 value={form.generalCode ?? ''}
