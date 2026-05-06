@@ -25,6 +25,7 @@ const mapVwDeliveryRecord = (raw: any): VwDeliveryRecord => ({
   fileId: raw.fileId,
   isReceived: raw.isReceived,
   items: raw.items,
+  totalAmount: raw.totalAmount,
   isActive: raw.isActive ?? true,
   createdAt: raw.createdAt,
 });

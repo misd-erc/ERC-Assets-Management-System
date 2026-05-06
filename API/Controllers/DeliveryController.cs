@@ -84,9 +84,11 @@ namespace API.Controllers
                 {
                     List<TblDeliveryRecordItem>? unmappedItems = await _getTools.Delivery.GetTblDeliveryRecordItemsByRecordId(x.Id, context).ToListAsync();
                     List<DeliveryRecordItemResponseModel>? mappedItems = new List<DeliveryRecordItemResponseModel>();
+                    decimal recordTotalAmount = 0;
 
                     foreach (var y in unmappedItems)
                     {
+                        recordTotalAmount += (y.ItemQuantity ?? 0) * (y.UnitCost ?? 0);
                         var mappedItemModel = new DeliveryRecordItemResponseModel
                         {
                             Id = y.Id,
@@ -112,7 +114,6 @@ namespace API.Controllers
                     var supplyIARModel = new SupplyIARResponseModel();
                     if (z != null)
                     {
-
                         supplyIARModel = new SupplyIARResponseModel
                         {
                             Id = z.Id,
@@ -144,6 +145,7 @@ namespace API.Controllers
                         FileId = x.FileId,
                         IsReceived = x.IsReceived,
                         Items = mappedItems,
+                        TotalAmount = recordTotalAmount,
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
