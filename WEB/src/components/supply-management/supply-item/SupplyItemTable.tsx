@@ -26,14 +26,16 @@ interface Props {
   categoryFilter: string;
   statusFilter: string;
   storageFilter: string;
-  allCategories?: Category[];
-  storageLocations?: SupplyStorageLocation[];
+  vendorFilter?: string;
+  allCategories?: any[];
+  storageLocations?: any[];
+  allVendors?: any[];
   loading?: boolean;
   onAdd: () => void;
   onView: (item: VwSupplyItem) => void;
   onEdit: (item: VwSupplyItem) => void;
   onDelete: (item: VwSupplyItem) => void;
-  onParamsChange: (params: { page: number; search: string; category: string; status: string; storageId?: string }) => void;
+  onParamsChange: (params: { page: number; search: string; category: string; status: string; storageId?: string; vendorId?: string }) => void;
   hideAddButton?: boolean;
 }
 
@@ -47,8 +49,10 @@ export const SupplyItemTable = ({
   categoryFilter,
   statusFilter,
   storageFilter,
+  vendorFilter = "all",
   allCategories = [],
   storageLocations = [],
+  allVendors = [],
   loading = false, 
   onAdd, 
   onView, 
@@ -79,14 +83,8 @@ export const SupplyItemTable = ({
     // Note: Server-side sorting can be implemented by adding 'orderBy' to onParamsChange
   };
 
-  const updateParams = (updates: Partial<{ page: number; search: string; category: string; status: string; storageId: string }>) => {
-    onParamsChange({
-      page: updates.page ?? page,
-      search: updates.search ?? searchQuery,
-      category: updates.category ?? categoryFilter,
-      status: updates.status ?? statusFilter,
-      storageId: updates.storageId ?? storageFilter,
-    });
+  const updateParams = (updates: Partial<{ page: number; search: string; category: string; status: string; storageId: string; vendorId: string }>) => {
+    onParamsChange(updates);
   };
 
   const getStockStatus = (item: VwSupplyItem) => {
@@ -158,12 +156,12 @@ export const SupplyItemTable = ({
                     {showAdvanced ? 'Simple Filter' : 'Advanced Filter'}
                   </Button>
 
-                  {(searchQuery || categoryFilter !== "all" || statusFilter !== "all" || storageFilter !== "all") && (
+                  {(searchQuery || categoryFilter !== "all" || statusFilter !== "all" || storageFilter !== "all" || vendorFilter !== "all") && (
                       <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            updateParams({ search: "", category: "all", status: "all", storageId: "all", page: 1 });
+                            updateParams({ search: "", category: "all", status: "all", storageId: "all", vendorId: "all", page: 1 });
                           }}
                           className="text-slate-500 hover:text-slate-900 h-9"
                       >
@@ -174,7 +172,7 @@ export const SupplyItemTable = ({
             </div>
 
             {showAdvanced && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-50 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-50 animate-in fade-in slide-in-from-top-1 duration-200">
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-slate-500 ml-1">Storage Location</label>
                     <Select value={storageFilter} onValueChange={(val) => updateParams({ storageId: val, page: 1 })}>
@@ -189,7 +187,21 @@ export const SupplyItemTable = ({
                       </SelectContent>
                     </Select>
                   </div>
-                  {/* Additional filters can be added here */}
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-slate-500 ml-1">Vendor</label>
+                    <Select value={vendorFilter} onValueChange={(val) => updateParams({ vendorId: val, page: 1 })}>
+                      <SelectTrigger className="w-full bg-white">
+                        <SelectValue placeholder="All Vendors" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Vendors</SelectItem>
+                        {allVendors.map(vendor => (
+                            <SelectItem key={vendor.id} value={vendor.id.toString()}>{vendor.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
             )}
           </div>

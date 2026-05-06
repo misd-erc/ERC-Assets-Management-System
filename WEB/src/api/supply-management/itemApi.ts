@@ -112,7 +112,10 @@
     pageNumber: number = 1,
     pageSize: number = 10,
     search: string = '',
-    status?: string
+    status?: string,
+    categoryId?: number,
+    storageLocationId?: number,
+    vendorId?: number
   ): Promise<PaginatedResult<VwSupplyGroupedItem>> => {
     const { systemUserId, sessionKey } = getAuthParams();
 
@@ -123,7 +126,10 @@
         PageNumber: pageNumber,
         PageSize: pageSize,
         SearchString: search,
-        Status: status
+        Status: status,
+        CategoryId: categoryId,
+        StorageLocationId: storageLocationId,
+        VendorId: vendorId
       },
     });
 
