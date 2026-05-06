@@ -70,14 +70,20 @@ export const editDeliveryRecord = async (payload: EditDeliveryRecord): Promise<{
   const { systemUserId, sessionKey } = getAuthParams();
 
   const requestPayload = {
-    id: payload.deliveryRecord.id,
-    drNumber: payload.deliveryRecord.drNumber,
-    deliveryDate: payload.deliveryRecord.deliveryDate,
-    employeeId: payload.deliveryRecord.employeeId,
-    remarks: payload.deliveryRecord.remarks,
-    isReceived: payload.deliveryRecord.isReceived,
-    isActive: payload.deliveryRecord.isActive,
-    items: payload.items,
+    id: payload.deliveryRecord.id || 0,
+    drNumber: payload.deliveryRecord.drNumber?.trim() || null,
+    deliveryDate: payload.deliveryRecord.deliveryDate || null,
+    employeeId: (payload.deliveryRecord.employeeId && payload.deliveryRecord.employeeId > 0) ? payload.deliveryRecord.employeeId : null,
+    remarks: payload.deliveryRecord.remarks?.trim() || null,
+    isReceived: payload.deliveryRecord.isReceived ?? false,
+    isActive: payload.deliveryRecord.isActive ?? true,
+    items: payload.items?.map(item => ({
+      ...item,
+      categoryId: (item.categoryId && item.categoryId > 0) ? item.categoryId : null,
+      measurementUnitId: (item.measurementUnitId && item.measurementUnitId > 0) ? item.measurementUnitId : null,
+      storageLocationId: (item.storageLocationId && item.storageLocationId > 0) ? item.storageLocationId : null,
+      vendorId: (item.vendorId && item.vendorId > 0) ? item.vendorId : null,
+    })) || [],
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,
   };

@@ -97,6 +97,7 @@ export const useRISStore = create<RISState>((set, get) => ({
       toast.success('RIS deleted');
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete RIS');
+      throw error;
     }
   },
 
@@ -108,6 +109,7 @@ export const useRISStore = create<RISState>((set, get) => ({
       toast.success('RIS item deleted');
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete RIS item');
+      throw error;
     }
   },
 
@@ -139,7 +141,7 @@ export const useRISStore = create<RISState>((set, get) => ({
       return risId;
     } catch (error: any) {
       toast.error(error.message || 'Failed to save RIS');
-      return null;
+      throw error;
     } finally {
       set({ loading: false });
     }

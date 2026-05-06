@@ -156,8 +156,9 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
       });
       await get().fetchSupplyItems();
       toast.success('Supply Item added');
-    } catch {
+    } catch (error) {
       toast.error('Failed to add supply item');
+      throw error;
     }
   },
 
@@ -180,8 +181,9 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
       });
       await get().fetchSupplyItems();
       toast.success('Supply Item updated');
-    } catch {
+    } catch (error) {
       toast.error('Failed to update supply item');
+      throw error;
     }
   },
 
@@ -248,8 +250,9 @@ export const useSupplyUnitStore = create<SupplyUnitState>((set, get) => ({
       });
       await get().fetchSupplyUnits();
       toast.success('Supply Unit added');
-    } catch {
+    } catch (error) {
       toast.error('Failed to add supply unit');
+      throw error;
     }
   },
 
@@ -262,8 +265,9 @@ export const useSupplyUnitStore = create<SupplyUnitState>((set, get) => ({
       });
       await get().fetchSupplyUnits();
       toast.success('Supply Unit updated');
-    } catch {
+    } catch (error) {
       toast.error('Failed to update supply unit');
+      throw error;
     }
   },
 
@@ -330,8 +334,9 @@ export const useSupplyStorageLocationStore = create<SupplyStorageLocationState>(
       });
       await get().fetchSupplyStorageLocations();
       toast.success('Supply Unit added');
-    } catch {
+    } catch (error) {
       toast.error('Failed to add supply storagelocation');
+      throw error;
     }
   },
 
@@ -344,8 +349,9 @@ export const useSupplyStorageLocationStore = create<SupplyStorageLocationState>(
       });
       await get().fetchSupplyStorageLocations();
       toast.success('Supply Unit updated');
-    } catch {
+    } catch (error) {
       toast.error('Failed to update supply storagelocation');
+      throw error;
     }
   },
 
@@ -443,8 +449,9 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       
       await get().fetchSupplyIARs();
       toast.success('IAR added successfully');
-    } catch {
+    } catch (error) {
       toast.error('Failed to add IAR');
+      throw error;
     }
   },
 
@@ -472,8 +479,9 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       
       await get().fetchSupplyIARs();
       toast.success('IAR updated successfully');
-    } catch {
+    } catch (error) {
       toast.error('Failed to update IAR');
+      throw error;
     }
   },
 

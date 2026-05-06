@@ -61,17 +61,19 @@ export const OfficeEditModal = ({
     }
 
     try {
-      setSaving(true);                     // start
+      setSaving(true);
       if (mode === 'add') {
         await addOffice(form);
       } else if (office?.id) {
         await updateOffice(office.id, form);
       }
       onSuccess();
-    } catch {
-      toast.error('Failed to save office');
+    } catch (error) {
+      // Error is already handled by the store (toast shown)
+      // We catch it here to prevent onSuccess() from being called
+      console.error('Submission failed:', error);
     } finally {
-      setSaving(false);                    // end
+      setSaving(false);
     }
   };
 

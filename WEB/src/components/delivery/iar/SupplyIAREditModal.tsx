@@ -25,6 +25,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
   const { vwDivisions, fetchDivisions } = useDivision();
   
   const [formData, setFormData] = useState<any>({ entityName: 'Energy Regulatory Commission', isActive: true });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => { if (open) { fetchVendors(); fetchOffices(); fetchDivisions(); } }, [open]);
 
@@ -69,7 +70,15 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-7xl !w-[60vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{mode === 'add' ? 'New IAR' : 'Edit IAR'}</DialogTitle></DialogHeader>
-        <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
+        <form onSubmit={async (e) => { 
+          e.preventDefault(); 
+          setLoading(true);
+          try {
+            await onSubmit(formData); 
+          } finally {
+            setLoading(false);
+          }
+        }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             
             {/* Linked Delivery Record */}
@@ -151,10 +160,10 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
               <p className="text-[11px] text-muted-foreground">Only shows unlinked, unreceived delivery records.</p>
             </div>
             
-             <div className="space-y-2"><Label>IAR Number</Label><Input value={formData.iarNumber || ''} onChange={e => setFormData({...formData, iarNumber: e.target.value})} required /></div>
-             <div className="space-y-2"><Label>IAR Date</Label><Input type="date" value={formData.iarNumberDate || ''} onChange={e => setFormData({...formData, iarNumberDate: e.target.value})} required /></div>
+             <div className="space-y-2"><Label>IAR Number</Label><Input value={formData.iarNumber || ''} onChange={e => setFormData({...formData, iarNumber: e.target.value})} /></div>
+             <div className="space-y-2"><Label>IAR Date</Label><Input type="date" value={formData.iarNumberDate || ''} onChange={e => setFormData({...formData, iarNumberDate: e.target.value})} /></div>
              
-             <div className="space-y-2"><Label>Entity Name</Label><Input value={formData.entityName || ''} onChange={e => setFormData({...formData, entityName: e.target.value})} required /></div>
+             <div className="space-y-2"><Label>Entity Name</Label><Input value={formData.entityName || ''} onChange={e => setFormData({...formData, entityName: e.target.value})} /></div>
              <div className="space-y-2"><Label>Fund Cluster</Label><Input value={formData.fundCluster || ''} onChange={e => setFormData({...formData, fundCluster: e.target.value})} /></div>
              
              <div className="space-y-2 col-span-2"><Label>Responsibility Center Code</Label><Input value={formData.centerCode || ''} onChange={e => setFormData({...formData, centerCode: e.target.value})} /></div>
@@ -401,12 +410,12 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
             <div className="space-y-2"><Label>PO Number</Label><Input value={formData.poNumber || ''} onChange={e => setFormData({...formData, poNumber: e.target.value})}/></div>
             <div className="space-y-2"><Label>PO Date</Label><Input type="date" value={formData.poDate || ''} onChange={e => setFormData({...formData, poDate: e.target.value})} /></div>
             
-            <div className="space-y-2"><Label>Actual Delivery Date</Label><Input type="date" value={formData.actualDeliveryDate || ''} onChange={e => setFormData({...formData, actualDeliveryDate: e.target.value})} required/></div>
+            <div className="space-y-2"><Label>Actual Delivery Date</Label><Input type="date" value={formData.actualDeliveryDate || ''} onChange={e => setFormData({...formData, actualDeliveryDate: e.target.value})} /></div>
             
             <div className="space-y-2"><Label>Invoice Number</Label><Input value={formData.iarInvoiceNumber || ''} onChange={e => setFormData({...formData, iarInvoiceNumber: e.target.value})} /></div>
             <div className="space-y-2"><Label>Invoice Date</Label><Input type="date" value={formData.iarInvoiceNumberDate || ''} onChange={e => setFormData({...formData, iarInvoiceNumberDate: e.target.value})} /></div>
           </div>
-          <DialogFooter><Button type="submit">Save IAR Record</Button></DialogFooter>
+          <DialogFooter><Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save IAR Record'}</Button></DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

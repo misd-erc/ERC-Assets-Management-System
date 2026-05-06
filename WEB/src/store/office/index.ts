@@ -1,4 +1,4 @@
-﻿// src/store/office/useOfficeStore.ts
+// src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
 import { Office, VwDivision, EmploymentType, Position, Division, VwEmploymentType, VwOffice, VwPosition, EmployeeDetail } from '@/types';
 import { 
@@ -66,8 +66,9 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
       });
       await get().fetchOffices();
       toast.success('Office added');
-    } catch {
+    } catch (error) {
       toast.error('Failed to add office');
+      throw error;
     }
   },
 
@@ -82,8 +83,9 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
       });
       await get().fetchOffices();
       toast.success('Office updated');
-    } catch {
+    } catch (error) {
       toast.error('Failed to update office');
+      throw error;
     }
   },
 
@@ -154,8 +156,9 @@ export const useDivisionStore = create<DivisionState>((set, get) => ({
       });
       await get().fetchDivisions();
       toast.success('Division added');
-    } catch {
+    } catch (error) {
       toast.error('Failed to add division');
+      throw error;
     }
   },
 
@@ -170,8 +173,9 @@ export const useDivisionStore = create<DivisionState>((set, get) => ({
       });
       await get().fetchDivisions();
       toast.success('Division updated');
-    } catch {
+    } catch (error) {
       toast.error('Failed to update division');
+      throw error;
     }
   },
 
@@ -239,8 +243,9 @@ export const useEmploymentTypeStore = create<EmploymentTypeState>((set, get) => 
       });
       await get().fetchEmploymentTypes();
       toast.success('Employment type added');
-    } catch {
+    } catch (error) {
       toast.error('Failed to add employment type');
+      throw error;
     }
   },
 
@@ -253,8 +258,9 @@ export const useEmploymentTypeStore = create<EmploymentTypeState>((set, get) => 
       });
       await get().fetchEmploymentTypes();
       toast.success('Employment type updated');
-    } catch {
+    } catch (error) {
       toast.error('Failed to update employment type');
+      throw error;
     }
   },
 
@@ -324,8 +330,9 @@ export const usePositionStore = create<PositionState>((set, get) => ({
       });
       await get().fetchPositions();
       toast.success('Position added');
-    } catch {
+    } catch (error) {
       toast.error('Failed to add position');
+      throw error;
     }
   },
 
@@ -340,8 +347,9 @@ export const usePositionStore = create<PositionState>((set, get) => ({
       });
       await get().fetchPositions();
       toast.success('Position updated');
-    } catch {
+    } catch (error) {
       toast.error('Failed to update position');
+      throw error;
     }
   },
 

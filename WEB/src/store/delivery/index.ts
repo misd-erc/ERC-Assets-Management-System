@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { toast } from 'sonner';
 import { DeliveryRecord, EditDeliveryRecord, VwDeliveryRecord } from '@/types/delivery/delivery';
 import { editDeliveryRecord, getDeliveryRecords, uploadDeliveryProof } from '@/api/delivery/deliveryApi';
@@ -52,6 +52,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
     } catch (error: any) {
       console.error("Store Error:", error);
       toast.error(error.message || 'Failed to add delivery record');
+      throw error;
     }
   },
 
@@ -62,6 +63,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
       toast.success('Delivery record updated');
     } catch (error: any) {
       toast.error('Failed to update delivery record');
+      throw error;
     }
   },
 

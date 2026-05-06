@@ -143,11 +143,10 @@ export const EmployeeEditModal = ({ open, mode, employee, onOpenChange, onSucces
         await updateEmployee(form.employeeId, payload);
       }
 
-      toast.success(mode === 'add' ? 'Employee added' : 'Employee updated');
       onSuccess();
       onOpenChange(false);
-    } catch {
-      toast.error('Failed to save employee');
+    } catch (error) {
+      console.error('Submission failed:', error);
     } finally {
       setSaving(false);
     }
