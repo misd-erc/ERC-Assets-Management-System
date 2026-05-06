@@ -319,6 +319,62 @@ export const getITRMovements = async (
 };
 
 /**
+ * Get PTR records from the transfer/list endpoint (Group=PPE)
+ * Response shape per item: { ptrItrNumber, plantillaEmployeeName, nonPlantillaEmployeeName,
+ *   plantillaEmployeeId, nonPlantillaEmployeeId, dateAssigned, status, remarks, item: {...} }
+ */
+export const getPTRTransferList = async (
+  pageNumber: number = 1,
+  pageSize: number = 1000
+): Promise<any> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+    const url = `${API_BASE_URL}/Inventory/pta/transfer/list?Group=PPE&PageNumber=${pageNumber}&PageSize=${pageSize}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+    const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error(`Failed to fetch PTR transfer list: ${response.statusText}`);
+    const data = await response.json();
+    return {
+      items: data.data?.items || [],
+      totalCount: data.data?.totalCount || 0,
+      pageNumber,
+      pageSize,
+    };
+  } catch (error) {
+    console.error('Error fetching PTR transfer list:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get ITR records from the transfer/list endpoint (Group=SE)
+ * Response shape per item: { ptrItrNumber, plantillaEmployeeName, nonPlantillaEmployeeName,
+ *   plantillaEmployeeId, nonPlantillaEmployeeId, dateAssigned, status, remarks, item: {...} }
+ */
+export const getITRTransferList = async (
+  pageNumber: number = 1,
+  pageSize: number = 1000
+): Promise<any> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+    const url = `${API_BASE_URL}/Inventory/pta/transfer/list?Group=SE&PageNumber=${pageNumber}&PageSize=${pageSize}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+    const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error(`Failed to fetch ITR transfer list: ${response.statusText}`);
+    const data = await response.json();
+    return {
+      items: data.data?.items || [],
+      totalCount: data.data?.totalCount || 0,
+      pageNumber,
+      pageSize,
+    };
+  } catch (error) {
+    console.error('Error fetching ITR transfer list:', error);
+    throw error;
+  }
+};
+
+/**
  * Get all movements and items for a specific PTR/ITR transfer number
  * @param transferNumber - The PTR or ITR number (e.g., PTR-20260126-CBHC0)
  * @returns Promise with all movements and items for that transfer

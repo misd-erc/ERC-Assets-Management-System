@@ -1,129 +1,106 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield } from 'lucide-react';
 import { useAuth } from '@/hooks';
-import { PublicClientApplication, AuthenticationResult, AccountInfo, BrowserAuthError } from '@azure/msal-browser';
+import { AuthenticationResult, AccountInfo } from '@azure/msal-browser';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { secureStorage } from '@/utils/secureStorage';
+import { msalInstance, msalInitPromise } from '@/config/msalConfig';
+import { useAuthStore } from '@/store/auth';
 
 const ercLogo = '/images/erc-logo.png';
 const microsoftLogo = '/images/microsoft-logo.svg';
-
-// MSAL configuration
-const msalConfig = {
-  auth: {
-    clientId: process.env.REACT_APP_MSAL_CLIENT_ID || '',
-    authority: `https://login.microsoftonline.com/${process.env.REACT_APP_MSAL_TENANT_ID || 'common'}`,
-    redirectUri: process.env.REACT_APP_MSAL_REDIRECT_URI || '',
-  },
-  cache: {
-    cacheLocation: 'sessionStorage',
-    storeAuthStateInCookie: false,
-  },
-};
+const REDIRECT_PROCESS_LOCK_KEY = 'msal_redirect_processed';
 
 export function LoginScreen() {
-  const { login, requireMFA, isLoading, error } = useAuth();
-  const [msalInstance, setMsalInstance] = useState<PublicClientApplication | null>(null);
+  const { isLoading, error } = useAuth();
+  const login = useAuthStore((s) => s.login);
+  const [msalReady, setMsalReady] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const navigate = useNavigate();
+  const handledRef = useRef(false);
 
   useEffect(() => {
-    const initializeMSAL = async () => {
-      const instance = new PublicClientApplication(msalConfig);
-      await instance.initialize();
-      setMsalInstance(instance);
-    };
+    msalInitPromise.then(() => {
+      setMsalReady(true);
 
-    initializeMSAL();
-  }, []);
-
-  useEffect(() => {
-	console.log(process.env.REACT_APP_API_URL);
-
-    if (msalInstance) {
       msalInstance.handleRedirectPromise().then(async (response: AuthenticationResult | null) => {
-        if (response) {
-          const account: AccountInfo = response.account!;
+        console.log('[MSAL] handleRedirectPromise result:', response ? 'got response' : 'null (no redirect)');
+        const alreadyProcessed = sessionStorage.getItem(REDIRECT_PROCESS_LOCK_KEY) === '1';
+        // Guard: only process once
+        if (!response || handledRef.current || alreadyProcessed) return;
+        sessionStorage.setItem(REDIRECT_PROCESS_LOCK_KEY, '1');
+        handledRef.current = true;
 
-          // Extract user information
-          const entraId = account.localAccountId;
-          const email = account.username;
-          const name = account.name || '';
-          const [firstName, ...lastNameParts] = name.split(' ');
-          const lastName = lastNameParts.join(' ');
+        const account: AccountInfo = response.account!;
+        const entraId = account.localAccountId;
+        const email = account.username;
+        const name = account.name || '';
+        const [firstName, ...lastNameParts] = name.split(' ');
+        const lastName = lastNameParts.join(' ');
 
-          // Extract employeeId from idTokenClaims if available
-          const claims = response.idTokenClaims as any;
-          let employeeId = claims?.employeeId || claims?.employee_id || claims?.['employee-id'] || (account as any).employeeId || (account as any).employee_Id || '';
+        const claims = response.idTokenClaims as any;
+        let employeeId = claims?.employeeId || claims?.employee_id || claims?.['employee-id'] || (account as any).employeeId || (account as any).employee_Id || '';
 
-          // If employeeId is still empty, try to fetch from Microsoft Graph API
-          if (!employeeId && response.accessToken) {
-            try {
-              const graphResponse = await axios.get('https://graph.microsoft.com/v1.0/me?$select=id,displayName,employeeId', {
-                headers: {
-                  Authorization: `Bearer ${response.accessToken}`,
-                },
-              });
-              employeeId = graphResponse.data.employeeId || '';
-              secureStorage.setItem('employeeId', employeeId);
-            } catch (graphError) {
-              console.warn('Failed to fetch employeeId from Microsoft Graph:', graphError);
-            }
+        if (!employeeId && response.accessToken) {
+          try {
+            const graphResponse = await axios.get('https://graph.microsoft.com/v1.0/me?$select=id,displayName,employeeId', {
+              headers: { Authorization: `Bearer ${response.accessToken}` },
+            });
+            employeeId = graphResponse.data.employeeId || '';
+            secureStorage.setItem('employeeId', employeeId);
+          } catch (graphError) {
+            console.warn('Failed to fetch employeeId from Microsoft Graph:', graphError);
           }
-
-          // Call our backend validation
-          login({
-            entraId,
-            firstName: firstName || '',
-            lastName: lastName || '',
-            email,
-            employeeId,
-          }).then((result) => {
-            if (result.success) {
-              toast.success('OTP has been sent to your email. Please check your inbox.', {
-                duration: 3000,
-              });
-              setTimeout(() => navigate('/mfa'), 3000);
-            } else {
-              toast.error(result.message);
-            }
-          }).catch((error) => {
-            console.error('Login failed:', error);
-            // Check if the error is due to pending account approval
-            if (error?.response?.data?.code === 'ERR_UNAUTHORIZED' &&
-                error?.response?.data?.message?.includes('pending')) {
-              navigate('/no-role');
-            } else {
-              toast.error('Something went wrong during login.');
-            }
-          });
         }
-      }).catch((error) => {
-        console.error('MSAL redirect failed:', error);
-        toast.error('Something went wrong during login.');
+
+        try {
+          const result = await login({ entraId, firstName: firstName || '', lastName: lastName || '', email, employeeId });
+          if (result.success) {
+            toast.success('OTP has been sent to your email. Please check your inbox.', { duration: 3000 });
+            setTimeout(() => navigate('/mfa'), 3000);
+          } else {
+            toast.error(result.message);
+          }
+        } catch (err: any) {
+          console.error('Login failed:', err);
+          if (err?.response?.data?.code === 'ERR_UNAUTHORIZED' && err?.response?.data?.message?.includes('pending')) {
+            navigate('/no-role');
+          } else {
+            toast.error(err?.response?.data?.message || 'Something went wrong during login.');
+          }
+        }
+      }).catch((err) => {
+        console.error('MSAL redirect handling failed:', err);
       });
-    }
-  }, [msalInstance, login, navigate]);
+    }).catch(console.error);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleMicrosoftLogin = async () => {
-    if (!msalInstance) {
-      toast.error('MSAL not initialized');
+    if (!msalReady) {
+      toast.error('Authentication not ready. Please wait.');
       return;
     }
 
+    if (isRedirecting) {
+      return;
+    }
+
+    setIsRedirecting(true);
+    sessionStorage.removeItem(REDIRECT_PROCESS_LOCK_KEY);
+
     try {
-      const loginRequest = {
+      await msalInstance.loginRedirect({
         scopes: ['openid', 'profile', 'email', 'User.Read'],
         prompt: 'select_account',
-      };
-
-      await msalInstance.loginRedirect(loginRequest);
-    } catch (error) {
-      console.error('MSAL login failed:', error);
+      });
+    } catch (err) {
+      setIsRedirecting(false);
+      console.error('MSAL login failed:', err);
       toast.error('Something went wrong during login.');
     }
   };
@@ -167,9 +144,9 @@ export function LoginScreen() {
             <Button
               onClick={handleMicrosoftLogin}
               className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-100 border border-gray-300 dark:border-slate-600 hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50"
-              disabled={isLoading}
+              disabled={isLoading || isRedirecting || !msalReady}
             >
-              {isLoading ? (
+              {isLoading || isRedirecting ? (
                 'Signing in...'
               ) : (
                 <>

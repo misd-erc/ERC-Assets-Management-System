@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
 import { LoginScreen } from '@/components/auth/LoginScreen';
 import { MFAVerification } from '@/components/auth/MFAVerification';
@@ -61,6 +61,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AppContent() {
   const { isAuthenticated, requireMFA, initialize, loading } = useAuthStore();
   const hasActiveSession = isSessionValid() && !isSessionExpired();
+  const location = useLocation();
+  const isAuthRoute = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/mfa';
 
   // Initialize auth state on app start
   useEffect(() => {
@@ -85,7 +87,7 @@ function AppContent() {
     return () => window.clearInterval(interval);
   }, []);
 
-  if (loading) {
+  if (loading && !isAuthRoute) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -101,7 +103,7 @@ function AppContent() {
       {/* Public Routes */}
       <Route 
         path="/"
-        element={(isAuthenticated || hasActiveSession) ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}
+        element={(isAuthenticated || hasActiveSession) ? <Navigate to="/dashboard" replace /> : <LoginScreen />}
       />
       <Route
         path="/login"

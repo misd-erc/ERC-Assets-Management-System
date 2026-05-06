@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
-import { getITRMovements, getTransferDetailsByNumber } from '@/api/asset/transferApi';
+import { getITRTransferList, getTransferDetailsByNumber } from '@/api/asset/transferApi';
 import { ITRGenerator } from './ITRGenerator';
 
 interface ITRGenerationModalProps {
@@ -66,17 +66,17 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
   const loadITRRecords = async () => {
     setLoading(true);
     try {
-      const response = await getITRMovements(undefined, 1, 1000);
-      console.log('ITR API Response:', response);
+      const response = await getITRTransferList(1, 1000);
+      console.log('ITR Transfer List Response:', response);
       console.log('ITR Items:', response.items);
-      
+
       // Create a map to store full details by ITR number
       const detailsMap = new Map();
-      
+
       // Group by ITR number
       const grouped = response.items?.reduce((acc: any, item: any) => {
-        const itrNum = item.ptritrNumber;
-        if (!itrNum || !itrNum.startsWith('ITR')) return acc;
+        const itrNum = item.ptrItrNumber;
+        if (!itrNum) return acc;
 
         const existing = acc[itrNum];
         const existingDetails = detailsMap.get(itrNum);
@@ -90,22 +90,47 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
           return merged;
         };
 
-        const mergedItems = mergeItems(existingDetails?.items || item.items || [], item.items || []);
+        // transfer/list returns a single `item` object per movement row
+        const incomingItems = item.item ? [item.item] : [];
+        const mergedItems = mergeItems(existingDetails?.items || [], incomingItems);
+
+        // Resolve to employee name string and id
+        const toEmpFullName = item.plantillaEmployeeName || item.nonPlantillaEmployeeName || 'Unknown';
+        const toEmpId = item.plantillaEmployeeId ?? item.nonPlantillaEmployeeId;
+
+        // Split full name into parts for the PDF generator
+        const toEmpParts = toEmpFullName.trim().split(/\s+/);
+        const toEmpObj = {
+          firstName: toEmpParts[0] || '',
+          middleName: toEmpParts.length > 2 ? toEmpParts.slice(1, -1).join(' ') : '',
+          lastName: toEmpParts.length > 1 ? toEmpParts[toEmpParts.length - 1] : ''
+        };
+
+        // Track non-plantilla employee separately for Sub-ICS
+        const nonPlantillaFullName = item.nonPlantillaEmployeeName || null;
+        const nonPlantillaId = item.nonPlantillaEmployeeId || null;
+        const nonPlantillaParts = nonPlantillaFullName ? nonPlantillaFullName.trim().split(/\s+/) : null;
+        const nonPlantillaObj = nonPlantillaParts ? {
+          firstName: nonPlantillaParts[0] || '',
+          middleName: nonPlantillaParts.length > 2 ? nonPlantillaParts.slice(1, -1).join(' ') : '',
+          lastName: nonPlantillaParts.length > 1 ? nonPlantillaParts[nonPlantillaParts.length - 1] : ''
+        } : null;
 
         const baseRecord = existing || {
           itrNumber: itrNum,
-          fromEmployee: item.employee?.[0] ? `${item.employee[0].fullName}` : 'Unknown',
-          toEmployee: item.employee?.[1] ? `${item.employee[1].fullName}` : 'Unknown',
+          fromEmployee: existingDetails?.fromEmployeeName || 'N/A',
+          toEmployee: toEmpFullName,
           itemCount: 0,
           dateAssigned: item.dateAssigned,
-          transferType: item.transferType || 'N/A'
+          transferType: item.status || 'N/A'
         };
 
         const updatedRecord = {
           ...baseRecord,
+          toEmployee: toEmpFullName,
           itemCount: mergedItems.length,
           dateAssigned: baseRecord.dateAssigned || item.dateAssigned,
-          transferType: baseRecord.transferType || item.transferType || 'N/A'
+          transferType: baseRecord.transferType || item.status || 'N/A'
         };
 
         acc[itrNum] = updatedRecord;
@@ -113,12 +138,15 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         detailsMap.set(itrNum, {
           transferNumber: itrNum,
           transferType: updatedRecord.transferType || 'TRANSFER',
-          fromEmployeeId: item.employee?.[0]?.id ?? existingDetails?.fromEmployeeId,
-          fromEmployeeName: item.employee?.[0]?.fullName || existingDetails?.fromEmployeeName || 'Unknown',
-          fromEmployee: item.employee?.[0] || existingDetails?.fromEmployee,
-          toEmployeeId: item.employee?.[1]?.id ?? existingDetails?.toEmployeeId,
-          toEmployeeName: item.employee?.[1]?.fullName || existingDetails?.toEmployeeName || 'Unknown',
-          toEmployee: item.employee?.[1] || existingDetails?.toEmployee,
+          fromEmployeeId: existingDetails?.fromEmployeeId,
+          fromEmployeeName: existingDetails?.fromEmployeeName || 'N/A',
+          fromEmployee: existingDetails?.fromEmployee || { firstName: 'N/A', middleName: '', lastName: '' },
+          toEmployeeId: toEmpId ?? existingDetails?.toEmployeeId,
+          toEmployeeName: toEmpFullName,
+          toEmployee: toEmpObj,
+          nonPlantillaEmployeeId: nonPlantillaId ?? existingDetails?.nonPlantillaEmployeeId,
+          nonPlantillaEmployeeName: nonPlantillaFullName ?? existingDetails?.nonPlantillaEmployeeName,
+          nonPlantillaEmployee: nonPlantillaObj ?? existingDetails?.nonPlantillaEmployee,
           items: mergedItems,
           dateAssigned: updatedRecord.dateAssigned,
           remarks: item.remarks || existingDetails?.remarks,
@@ -180,6 +208,20 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         label: itrDetails.toEmployeeName
       };
 
+      const nonPlantillaEmp: NormalizedEmployee | null = itrDetails.nonPlantillaEmployee
+        ? {
+            id: itrDetails.nonPlantillaEmployeeId || 0,
+            firstName: itrDetails.nonPlantillaEmployee.firstName || '',
+            middleName: itrDetails.nonPlantillaEmployee.middleName || '',
+            lastName: itrDetails.nonPlantillaEmployee.lastName || '',
+            suffixName: '',
+            employeeIdOriginal: '',
+            employmentTypeId: 0,
+            employmentTypeName: '',
+            label: itrDetails.nonPlantillaEmployeeName || '',
+          }
+        : null;
+
       const url = await ITRGenerator.generateITRPreviewMultiple(
         fromEmp,
         toEmp,
@@ -187,7 +229,8 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         itrDetails.dateAssigned,
         itrDetails.transferType || 'REASSIGNMENT',
         itrDetails.transferNumber,
-        signatureDate
+        signatureDate,
+        nonPlantillaEmp
       );
       setPreviewUrl(url);
       setShowPreview(true);

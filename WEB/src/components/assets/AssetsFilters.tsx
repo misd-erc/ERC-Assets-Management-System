@@ -32,6 +32,7 @@ interface AssetsFiltersProps {
   endDate: string;
   onEndDateChange: (value: string) => void;
   onClearFilters: () => void;
+  onApplyFilters?: () => void;
   totalResults: number;
 }
 
@@ -53,8 +54,12 @@ export function AssetsFilters({
   endDate,
   onEndDateChange,
   onClearFilters,
+  onApplyFilters,
   totalResults,
 }: AssetsFiltersProps) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') onApplyFilters?.();
+  };
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [conditions, setConditions] = useState<string[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
@@ -114,6 +119,7 @@ export function AssetsFilters({
                 placeholder="Search by property number, description..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="pl-10"
               />
             </div>
@@ -248,6 +254,7 @@ export function AssetsFilters({
               type="date"
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
+              onKeyDown={handleKeyDown}
             />
           </div>
 
@@ -258,6 +265,7 @@ export function AssetsFilters({
               type="date"
               value={endDate}
               onChange={(e) => onEndDateChange(e.target.value)}
+              onKeyDown={handleKeyDown}
             />
           </div>
 
