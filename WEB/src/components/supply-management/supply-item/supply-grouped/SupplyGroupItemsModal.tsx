@@ -33,8 +33,17 @@ export const SupplyGroupItemsModal = ({ open, onOpenChange, groupedItem }: Props
   const [selectedItem, setSelectedItem] = useState<VwSupplyItem | null>(null);
   const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
 
+  const [params, setParams] = useState({
+    page: 1,
+    search: '',
+    category: 'all',
+    status: 'all'
+  });
+
   useEffect(() => {
     if (open && groupedItem) {
+      // Note: Group item lists might not support server-side pagination yet in backend
+      // but we provide the params to the table to maintain consistency.
       fetchSupplyGroupedItemLists(groupedItem.id);
     }
   }, [open, groupedItem, fetchSupplyGroupedItemLists]);
@@ -103,6 +112,12 @@ export const SupplyGroupItemsModal = ({ open, onOpenChange, groupedItem }: Props
               <div className="border rounded-md overflow-x-auto">
                 <SupplyItemTable
                     data={vwSupplyGroupItems}
+                    totalCount={vwSupplyGroupItems.length}
+                    page={params.page}
+                    searchQuery={params.search}
+                    categoryFilter={params.category}
+                    statusFilter={params.status}
+                    onParamsChange={setParams}
                     loading={loading}
                     onAdd={handleAdd}
                     onView={handleView}
