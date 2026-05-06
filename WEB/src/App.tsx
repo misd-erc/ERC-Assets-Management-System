@@ -59,7 +59,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppContent() {
-  const { isAuthenticated, requireMFA, initialize } = useAuthStore();
+  const { isAuthenticated, requireMFA, initialize, loading } = useAuthStore();
+  const hasActiveSession = isSessionValid() && !isSessionExpired();
 
   // Initialize auth state on app start
   useEffect(() => {
@@ -74,12 +75,37 @@ function AppContent() {
     });
   }, []);
 
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      if (isSessionValid() && isSessionExpired()) {
+        handleSessionExpired('Your session has expired. Please log in again.');
+      }
+    }, 30000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Routes>
       {/* Public Routes */}
       <Route 
-        path="/" 
-        element={!isAuthenticated ? <LoginScreen /> : <Navigate to="/dashboard" replace />} 
+        path="/"
+        element={(isAuthenticated || hasActiveSession) ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}
+      />
+      <Route
+        path="/login"
+        element={(isAuthenticated || hasActiveSession) ? <Navigate to="/dashboard" replace /> : <LoginScreen />}
       />
       
       {/* Public asset info — accessible without login (e.g. scanning a QR sticker) */}
@@ -93,19 +119,13 @@ function AppContent() {
       
       {/* Protected Routes */}
       <Route
-        path="/"
+        path="/*"
         element={
           <ProtectedRoute>
             <MainLayout />
           </ProtectedRoute>
         }
-      >
-          <Route path="dashboard" element={<div />} />
-          <Route path="profile" element={<div />} />
-          <Route path="under-construction" element={<div />} />
-          <Route path="disposals" element={<div />} />
-
-        </Route>
+      />
         
         {/* No Role Route */}
         <Route path="/no-role" element={<NoRolePage />} />
@@ -131,7 +151,7 @@ function AppContent() {
       />
 
       {/* Catch all - redirect to home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to={hasActiveSession ? "/dashboard" : "/login"} replace />} />
     </Routes>
   );
 }
