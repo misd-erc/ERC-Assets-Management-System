@@ -12,45 +12,59 @@ interface SupplyIARResponse<T> {
 
 interface ListResponse<T> {
   items: T[];
+  totalCount: number;
 }
 
 /* ------------------------------- GET ------------------------------- */
 
-export const getSupplyIARs = async (): Promise<VwSupplyIAR[]> => {
+export const getSupplyIARs = async (
+  pageNumber: number = 1,
+  pageSize: number = 10,
+  search: string = ''
+): Promise<{ items: VwSupplyIAR[]; totalCount: number }> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   const response = await axiosInstance.get<SupplyIARResponse<ListResponse<any>>>('/Supply/iar/all', {
-    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+    params: { 
+      ActionBySystemUserId: systemUserId, 
+      SessionKey: sessionKey,
+      PageNumber: pageNumber,
+      PageSize: pageSize,
+      Search: search
+    },
   });
 
   if (!response.data.success) {
     toast.error(response.data.message || 'Failed to fetch IAR records');
-    return [];
+    return { items: [], totalCount: 0 };
   }
 
-  return Array.isArray(response.data.data.items)
-    ? response.data.data.items.map((u: any) => ({
-        id: u.id,
-        recordId: u.recordId,
-        drNumber: u.drNumber,
-        centerCode: u.centerCode,
-        entityName: u.entityName,
-        fundCluster: u.fundCluster,
-        vendor: u.vendor, // Mapping nested object
-        poNumber: u.poNumber,
-        office: u.office, // Mapping nested object
-        division: u.division, // Mapping nested object
-        iarNumber: u.iarNumber,
-        iarNumberDate: u.iarNumberDate,
-        iarInvoiceNumber: u.iarInvoiceNumber,
-        iarInvoiceNumberDate: u.iarInvoiceNumberDate,
-        poDate: u.poDate,
-        actualDeliveryDate: u.actualDeliveryDate,
-        isActive: u.isActive ?? true,
-        createdAt: u.createdAt,
-        isApproved: u.isApproved
-      }))
-    : [];
+  return {
+    items: Array.isArray(response.data.data.items)
+        ? response.data.data.items.map((u: any) => ({
+          id: u.id,
+          recordId: u.recordId,
+          drNumber: u.drNumber,
+          centerCode: u.centerCode,
+          entityName: u.entityName,
+          fundCluster: u.fundCluster,
+          vendor: u.vendor,
+          poNumber: u.poNumber,
+          office: u.office,
+          division: u.division,
+          iarNumber: u.iarNumber,
+          iarNumberDate: u.iarNumberDate,
+          iarInvoiceNumber: u.iarInvoiceNumber,
+          iarInvoiceNumberDate: u.iarInvoiceNumberDate,
+          poDate: u.poDate,
+          actualDeliveryDate: u.actualDeliveryDate,
+          isActive: u.isActive ?? true,
+          createdAt: u.createdAt,
+          isApproved: u.isApproved
+        }))
+        : [],
+    totalCount: response.data.data.totalCount || 0
+  };
 };
 
 export const getSupplyIARById = async (iarId: number): Promise<VwSupplyIAR | null> => {

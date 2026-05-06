@@ -1,22 +1,43 @@
 // src/components/supply-management/supply-item/SupplyItemTabContent.tsx
 import { useState, useEffect } from 'react';
 import { useSupplyItem } from '@/hooks';
+import { useSupplyStorageLocationStore } from '@/store/supply';
 import { SupplyItemTable } from './SupplyItemTable';
 import { SupplyItemEditModal } from './SupplyItemEditModal';
 import { SupplyItemDeleteModal } from './SupplyItemDeleteModal';
 import { VwSupplyItem } from '@/types';
 
 export const SupplyItemTabContent = () => {
-  const { vwSupplies, loading, fetchSupplyItems } = useSupplyItem();
+  const { vwSupplies, totalSupplies, loading, fetchSupplyItems } = useSupplyItem();
+  const { storagelocations, fetchSupplyStorageLocations } = useSupplyStorageLocationStore();
   
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<VwSupplyItem | null>(null);
-  const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add'); // <--- Updated Type
+  const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
+
+  const [params, setParams] = useState({
+    page: 1,
+    search: '',
+    category: 'all',
+    status: 'all',
+    storageId: 'all'
+  });
 
   useEffect(() => {
-    fetchSupplyItems();
-  }, []);
+    fetchSupplyStorageLocations();
+  }, [fetchSupplyStorageLocations]);
+
+  useEffect(() => {
+    fetchSupplyItems(
+      params.page,
+      10,
+      params.search,
+      undefined, // Category ID mapping can be added if backend requires it
+      params.status === 'all' ? undefined : params.status,
+      params.storageId === 'all' ? undefined : Number(params.storageId)
+    );
+  }, [params, fetchSupplyItems]);
 
   const handleAdd = () => {
     setSelectedItem(null);
@@ -49,8 +70,17 @@ export const SupplyItemTabContent = () => {
     <>
       <SupplyItemTable 
         data={vwSupplies} 
+        totalCount={totalSupplies}
+        page={params.page}
+        searchQuery={params.search}
+        categoryFilter={params.category}
+        statusFilter={params.status}
+        storageFilter={params.storageId}
+        storageLocations={storagelocations}
+        onParamsChange={setParams}
+        loading={loading}
         onAdd={handleAdd} 
-        onView={handleView}  // <--- Pass View Handler
+        onView={handleView}
         onEdit={handleEdit} 
         onDelete={handleDelete} 
       />

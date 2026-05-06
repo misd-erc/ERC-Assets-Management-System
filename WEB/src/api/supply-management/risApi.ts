@@ -48,22 +48,48 @@ const mapVwSupplyRISItem = (raw: any): VwSupplyRISItem => ({
   division: raw.division,
 });
 
+interface ListResponse<T> {
+  items: T[];
+  totalCount: number;
+}
+
 // ------------------- GET -------------------
-export const getSupplyRISs = async (): Promise<VwSupplyRIS[]> => {
+export const getSupplyRISs = async (
+  pageNumber: number = 1,
+  pageSize: number = 10,
+  search: string = '',
+  status?: string,
+  officeId?: number,
+  divisionId?: number,
+  startDate?: string,
+  endDate?: string
+): Promise<{ items: VwSupplyRIS[]; totalCount: number }> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   const response = await axiosInstance.get<ApiResponse<ListResponse<any>>>('/Supply/ris/all', {
-    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+    params: { 
+      ActionBySystemUserId: systemUserId, 
+      SessionKey: sessionKey,
+      PageNumber: pageNumber,
+      PageSize: pageSize,
+      Search: search,
+      Status: status,
+      OfficeId: officeId,
+      DivisionId: divisionId,
+      StartDate: startDate,
+      EndDate: endDate
+    },
   });
 
   if (!response.data.success) {
     toast.error(response.data.message || 'Failed to fetch RIS');
-    return [];
+    return { items: [], totalCount: 0 };
   }
 
-  return Array.isArray(response.data.data.items)
-    ? response.data.data.items.map(mapVwSupplyRIS)
-    : [];
+  return {
+    items: Array.isArray(response.data.data.items) ? response.data.data.items.map(mapVwSupplyRIS) : [],
+    totalCount: response.data.data.totalCount || 0
+  };
 };
 
 // If you have a separate endpoint for a single RIS (maybe with items)

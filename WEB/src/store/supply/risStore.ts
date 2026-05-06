@@ -18,6 +18,8 @@ import { getAuthParams } from '@/utils/auth';
 
 interface RISState {
   risList: VwSupplyRIS[];
+  risSummary: VwSupplyRIS[];
+  totalRis: number;
   currentRISItems: VwSupplyRISItem[];
   loading: boolean;
   searchQuery: string;
@@ -27,7 +29,8 @@ interface RISState {
   setLoading: (loading: boolean) => void;
   setSearchQuery: (query: string) => void;
 
-  fetchRISs: () => Promise<void>;
+  fetchRISs: (page?: number, pageSize?: number, search?: string, status?: string, officeId?: number, divisionId?: number, startDate?: string, endDate?: string) => Promise<void>;
+  fetchRISSummary: () => Promise<void>;
   fetchRISItems: (risId: number) => Promise<void>;
   deleteRIS: (id: number) => Promise<void>;
   deleteRISItem: (id: number) => Promise<void>;
@@ -42,6 +45,8 @@ interface RISState {
 
 export const useRISStore = create<RISState>((set, get) => ({
   risList: [],
+  risSummary: [],
+  totalRis: 0,
   currentRISItems: [],
   loading: false,
   searchQuery: '',
@@ -51,15 +56,25 @@ export const useRISStore = create<RISState>((set, get) => ({
   setLoading: (loading) => set({ loading }),
   setSearchQuery: (query) => set({ searchQuery: query }),
 
-  fetchRISs: async () => {
+  fetchRISs: async (page = 1, pageSize = 10, search = '', status, officeId, divisionId, startDate, endDate) => {
     set({ loading: true });
     try {
-      const risList = await getSupplyRISs();
-      set({ risList });
+      const result = await getSupplyRISs(page, pageSize, search, status, officeId, divisionId, startDate, endDate);
+      set({ risList: result.items, totalRis: result.totalCount });
     } catch {
       toast.error('Failed to load RIS');
     } finally {
       set({ loading: false });
+    }
+  },
+
+  fetchRISSummary: async () => {
+    try {
+      // Fetch a larger set for dashboard accuracy
+      const result = await getSupplyRISs(1, 1000, '', undefined);
+      set({ risSummary: result.items });
+    } catch {
+      console.error('Failed to load RIS summary');
     }
   },
 

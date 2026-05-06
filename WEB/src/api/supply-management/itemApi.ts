@@ -11,6 +11,14 @@
   }
   interface ListResponse<T> {
     items: T[];
+    totalCount: number;
+    pageNumber: number;
+    pageSize: number;
+  }
+
+  export interface PaginatedResult<T> {
+    items: T[];
+    totalCount: number;
   }
 
   const mapVwSupplyItem = (raw: any): VwSupplyItem => ({
@@ -60,37 +68,69 @@
 
   /* ------------------------------- GET ------------------------------- */
 
-  export const getSupplyItems = async (): Promise<VwSupplyItem[]> => {
+  export const getSupplyItems = async (
+    pageNumber: number = 1,
+    pageSize: number = 10,
+    search: string = '',
+    categoryId?: number,
+    status?: string,
+    storageLocationId?: number,
+    vendorId?: number
+  ): Promise<PaginatedResult<VwSupplyItem>> => {
     const { systemUserId, sessionKey } = getAuthParams();
 
     const response = await axiosInstance.get<SupplyItemResponse<ListResponse<any>>>('/Supply/item/all', {
-      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+      params: { 
+        ActionBySystemUserId: systemUserId, 
+        SessionKey: sessionKey,
+        PageNumber: pageNumber,
+        PageSize: pageSize,
+        Search: search,
+        CategoryId: categoryId,
+        Status: status,
+        StorageLocationId: storageLocationId,
+        VendorId: vendorId
+      },
     });
 
     if (!response.data.success) {
       toast.error(response.data.message || 'Failed to fetch items');
-      return [];
+      return { items: [], totalCount: 0 };
     }
 
-    return Array.isArray(response.data.data.items)
-      ? response.data.data.items.map(mapVwSupplyItem)
-      : [];
+    return {
+      items: Array.isArray(response.data.data.items) ? response.data.data.items.map(mapVwSupplyItem) : [],
+      totalCount: response.data.data.totalCount || 0
+    };
   };
 
-    export const getVwSupplyGroupedItems = async (): Promise<VwSupplyGroupedItem[]> => {
+    export const getVwSupplyGroupedItems = async (
+    pageNumber: number = 1,
+    pageSize: number = 10,
+    search: string = '',
+    status?: string
+  ): Promise<PaginatedResult<VwSupplyGroupedItem>> => {
     const { systemUserId, sessionKey } = getAuthParams();
 
     const response = await axiosInstance.get<SupplyItemResponse<ListResponse<any>>>('/Supply/item/grouped/all', {
-      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+      params: { 
+        ActionBySystemUserId: systemUserId, 
+        SessionKey: sessionKey,
+        PageNumber: pageNumber,
+        PageSize: pageSize,
+        Search: search,
+        Status: status
+      },
     });
 
     if (!response.data.success) {
       toast.error(response.data.message || 'Failed to fetch items');
-      return [];
+      return { items: [], totalCount: 0 };
     }
-        return Array.isArray(response.data.data.items)
-      ? response.data.data.items.map(mapVwSupplyGroupedItem)
-      : [];
+        return {
+      items: Array.isArray(response.data.data.items) ? response.data.data.items.map(mapVwSupplyGroupedItem) : [],
+      totalCount: response.data.data.totalCount || 0
+    };
   };
 
     export const getVwSupplyGroupedItemLists = async (id: number): Promise<VwSupplyItem[]> => {
