@@ -5,10 +5,11 @@ import { useSupplyStorageLocationStore } from '@/store/supply';
 import { SupplyItemTable } from './SupplyItemTable';
 import { SupplyItemEditModal } from './SupplyItemEditModal';
 import { SupplyItemDeleteModal } from './SupplyItemDeleteModal';
-import { VwSupplyItem } from '@/types';
+import { VwSupplyItem, Category } from '@/types';
+import { getCategories } from '@/api/categories/categoriesApi';
 
 export const SupplyItemTabContent = () => {
-  const { vwSupplies, totalSupplies, loading, fetchSupplyItems } = useSupplyItem();
+  const { vwSupplies, totalSupplies, loading, fetchSupplyItems, categories, fetchCategories } = useSupplyItem();
   const { storagelocations, fetchSupplyStorageLocations } = useSupplyStorageLocationStore();
   
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -26,18 +27,22 @@ export const SupplyItemTabContent = () => {
 
   useEffect(() => {
     fetchSupplyStorageLocations();
-  }, [fetchSupplyStorageLocations]);
+    fetchCategories();
+  }, [fetchSupplyStorageLocations, fetchCategories]);
 
   useEffect(() => {
+    // Find the category ID if a category filter is selected
+    const selectedCategory = categories.find(c => c.name === params.category);
+    
     fetchSupplyItems(
       params.page,
       10,
       params.search,
-      undefined, // Category ID mapping can be added if backend requires it
+      selectedCategory?.id,
       params.status === 'all' ? undefined : params.status,
       params.storageId === 'all' ? undefined : Number(params.storageId)
     );
-  }, [params, fetchSupplyItems]);
+  }, [params, fetchSupplyItems, categories]);
 
   const handleAdd = () => {
     setSelectedItem(null);
@@ -76,6 +81,7 @@ export const SupplyItemTabContent = () => {
         categoryFilter={params.category}
         statusFilter={params.status}
         storageFilter={params.storageId}
+        allCategories={categories}
         storageLocations={storagelocations}
         onParamsChange={setParams}
         loading={loading}

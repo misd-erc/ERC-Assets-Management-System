@@ -24,12 +24,15 @@ export const getCategories = async (): Promise<{ id: number; name: string; gener
       return [];
     }
 
+    const data = response.data.data;
+    const items = Array.isArray(data) ? data : (data as any)?.items;
+
     // UPDATED: Included isActive in the returned object
-    return response.data.data?.items?.map(item => ({ 
-        id: item.id, 
-        name: item.name, 
-        generalCode: item.generalCode,
-        isActive: item.isActive // <--- Critical Fix
+    return items?.map((item: any) => ({ 
+        id: item.id ?? item.Id, 
+        name: item.name ?? item.Name, 
+        generalCode: item.generalCode ?? item.GeneralCode,
+        isActive: item.isActive ?? item.IsActive ?? true // <--- Critical Fix
     })) || [];
   } catch (error) {
     console.error('Error fetching categories:', error);

@@ -85,7 +85,7 @@
         SessionKey: sessionKey,
         PageNumber: pageNumber,
         PageSize: pageSize,
-        Search: search,
+        SearchString: search,
         CategoryId: categoryId,
         Status: status,
         StorageLocationId: storageLocationId,
@@ -118,7 +118,7 @@
         SessionKey: sessionKey,
         PageNumber: pageNumber,
         PageSize: pageSize,
-        Search: search,
+        SearchString: search,
         Status: status
       },
     });
@@ -133,21 +133,41 @@
     };
   };
 
-    export const getVwSupplyGroupedItemLists = async (id: number): Promise<VwSupplyItem[]> => {
+  export const getVwSupplyGroupedItemLists = async (
+    id: number,
+    pageNumber: number = 1,
+    pageSize: number = 10,
+    search: string = '',
+    categoryId?: number,
+    status?: string,
+    storageLocationId?: number,
+    vendorId?: number
+  ): Promise<PaginatedResult<VwSupplyItem>> => {
     const { systemUserId, sessionKey } = getAuthParams();
 
     const response = await axiosInstance.get<SupplyItemResponse<ListResponse<any>>>(`/Supply/item/grouped/all/${id}`, {
-      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+      params: { 
+        ActionBySystemUserId: systemUserId, 
+        SessionKey: sessionKey,
+        PageNumber: pageNumber,
+        PageSize: pageSize,
+        SearchString: search,
+        CategoryId: categoryId,
+        Status: status,
+        StorageLocationId: storageLocationId,
+        VendorId: vendorId
+      },
     });
 
     if (!response.data.success) {
       toast.error(response.data.message || 'Failed to fetch items');
-      return [];
+      return { items: [], totalCount: 0 };
     }
 
-    return Array.isArray(response.data.data.items)
-      ? response.data.data.items.map(mapVwSupplyItem)
-      : [];
+    return {
+      items: Array.isArray(response.data.data.items) ? response.data.data.items.map(mapVwSupplyItem) : [],
+      totalCount: response.data.data.totalCount || 0
+    };
   };
 
 

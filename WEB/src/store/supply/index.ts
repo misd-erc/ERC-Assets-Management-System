@@ -14,6 +14,7 @@ import {
   getVwSupplyGroupedItems,
   getVwSupplyGroupedItemLists
 } from '@/api';
+import { getCategories } from '@/api/categories/categoriesApi';
 import { toast } from 'sonner';
 import axiosInstance from '@/lib/axios';
 import { getAuthParams } from '@/utils/auth';
@@ -30,8 +31,10 @@ interface SupplyItemState {
   vwUniqueRawSupplies: VwSupplyUniqueRawItem[];
   totalSupplies: number;
   totalGroups: number;
+  totalGroupItems: number;
   loading: boolean;
   searchQuery: string;
+  categories: any[];
 
   setSupplyItems: (supplies: SupplyItem[]) => void;
   setLoading: (loading: boolean) => void;
@@ -41,7 +44,8 @@ interface SupplyItemState {
   fetchSupplySummary: () => Promise<void>;
   fetchSupplyUniqueRawItems: () => Promise<void>;
   fetchSupplyGroupedItems: (page?: number, pageSize?: number, search?: string, status?: string) => Promise<void>;
-  fetchSupplyGroupedItemLists: (id: number) => Promise<void>;
+  fetchSupplyGroupedItemLists: (id: number, page?: number, pageSize?: number, search?: string, categoryId?: number, status?: string, storageLocationId?: number, vendorId?: number) => Promise<void>;
+  fetchCategories: () => Promise<void>;
   addSupplyItem: (supply: Partial<SupplyItem>) => Promise<void>;
   updateSupplyItem: (id: number, updates: Partial<SupplyItem>) => Promise<void>;
   deleteSupplyItem: (id: number) => Promise<void>;
@@ -56,18 +60,29 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
   vwUniqueRawSupplies: [],
   totalSupplies: 0,
   totalGroups: 0,
+  totalGroupItems: 0,
   loading: false,
   searchQuery: '',
+  categories: [],
 
   setSupplyItems: (supplies) => set({ supplies }),
   setLoading: (loading) => set({ loading }),
   setSearchQuery: (query) => set({ searchQuery: query }),
 
-  fetchSupplyGroupedItemLists: async (id) => {
+  fetchCategories: async () => {
+    try {
+      const categories = await getCategories();
+      set({ categories });
+    } catch {
+      console.error('Failed to load categories');
+    }
+  },
+
+  fetchSupplyGroupedItemLists: async (id, page = 1, pageSize = 10, search = '', categoryId, status, storageLocationId, vendorId) => {
     set({ loading: true });
     try {
-      const vwSupplyGroupItems = await getVwSupplyGroupedItemLists(id);
-      set({ vwSupplyGroupItems });
+      const result = await getVwSupplyGroupedItemLists(id, page, pageSize, search, categoryId, status, storageLocationId, vendorId);
+      set({ vwSupplyGroupItems: result.items, totalGroupItems: result.totalCount });
     } catch {
       toast.error('Failed to load supplies');
     } finally {

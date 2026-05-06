@@ -1,4 +1,4 @@
-﻿using API.Attributes;
+using API.Attributes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
@@ -263,7 +263,7 @@ namespace API.Controllers
         [HttpGet("item/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllSupplyItems([FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllSupplyItems([FromQuery] SupplyItemQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -280,11 +280,28 @@ namespace API.Controllers
                         (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
+                if (model.CategoryId.HasValue && model.CategoryId > 0)
+                    supplyItems = supplyItems.Where(x => x.CategoryId == model.CategoryId.Value);
+
+                if (model.StorageLocationId.HasValue && model.StorageLocationId > 0)
+                    supplyItems = supplyItems.Where(x => x.StorageLocationId == model.StorageLocationId.Value);
+
+                if (model.VendorId.HasValue && model.VendorId > 0)
+                    supplyItems = supplyItems.Where(x => x.VendorId == model.VendorId.Value);
+
                 if (model.StartDate.HasValue)
                     supplyItems = supplyItems.Where(x => x.CreatedAt >= model.StartDate.Value);
 
                 if (model.EndDate.HasValue)
                     supplyItems = supplyItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
+                {
+                    if (model.Status == "Available")
+                        supplyItems = supplyItems.Where(x => x.Quantity > 0);
+                    else if (model.Status == "Out of Stock")
+                        supplyItems = supplyItems.Where(x => x.Quantity <= 0);
+                }
 
                 var groupedItems = supplyItems
                     .GroupBy(x => new { x.Code, x.Description })
@@ -367,7 +384,7 @@ namespace API.Controllers
         [HttpGet("item/grouped/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllSupplyGroups([FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllSupplyGroups([FromQuery] SupplyItemQueryParams model)
         {
 
             await using var context = new PortalDbContext(_options);
@@ -386,10 +403,25 @@ namespace API.Controllers
                         (x.Code ?? "").ToLowerInvariant().Contains(searchLower) ||
                         (x.Description ?? "").ToLowerInvariant().Contains(searchLower));
                 }
+                if (model.CategoryId.HasValue && model.CategoryId > 0)
+                    supplyItems = supplyItems.Where(x => x.CategoryId == model.CategoryId.Value);
+                if (model.StorageLocationId.HasValue && model.StorageLocationId > 0)
+                    supplyItems = supplyItems.Where(x => x.StorageLocationId == model.StorageLocationId.Value);
+                if (model.VendorId.HasValue && model.VendorId > 0)
+                    supplyItems = supplyItems.Where(x => x.VendorId == model.VendorId.Value);
+
                 if (model.StartDate.HasValue)
                     supplyItems = supplyItems.Where(x => x.CreatedAt >= model.StartDate.Value);
                 if (model.EndDate.HasValue)
                     supplyItems = supplyItems.Where(x => x.CreatedAt <= model.EndDate.Value);
+
+                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
+                {
+                    if (model.Status == "Available")
+                        supplyItems = supplyItems.Where(x => x.Quantity > 0);
+                    else if (model.Status == "Out of Stock")
+                        supplyItems = supplyItems.Where(x => x.Quantity <= 0);
+                }
 
                 // 3. Group by Code and Description, compute aggregates
                 var groupedItems = supplyItems
@@ -499,7 +531,7 @@ namespace API.Controllers
         [HttpGet("item/grouped/all/{id}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllSupplyGroupedItems(long id, [FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllSupplyGroupedItems(long id, [FromQuery] SupplyItemQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -586,11 +618,26 @@ namespace API.Controllers
                         (x.Item.Description ?? "").ToLowerInvariant().Contains(searchLower));
                 }
 
+                if (model.CategoryId.HasValue && model.CategoryId > 0)
+                    filteredItems = filteredItems.Where(x => x.Item.CategoryId == model.CategoryId.Value);
+                if (model.StorageLocationId.HasValue && model.StorageLocationId > 0)
+                    filteredItems = filteredItems.Where(x => x.Item.StorageLocationId == model.StorageLocationId.Value);
+                if (model.VendorId.HasValue && model.VendorId > 0)
+                    filteredItems = filteredItems.Where(x => x.Item.VendorId == model.VendorId.Value);
+
                 if (model.StartDate.HasValue)
                     filteredItems = filteredItems.Where(x => x.Item.CreatedAt >= model.StartDate.Value);
 
                 if (model.EndDate.HasValue)
                     filteredItems = filteredItems.Where(x => x.Item.CreatedAt <= model.EndDate.Value);
+
+                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
+                {
+                    if (model.Status == "Available")
+                        filteredItems = filteredItems.Where(x => x.RemainingQty > 0);
+                    else if (model.Status == "Out of Stock")
+                        filteredItems = filteredItems.Where(x => x.RemainingQty <= 0);
+                }
 
                 // ===== 6. Count, Paginate & Re-sort (Newest First for UI) =====
                 int totalCount = filteredItems.Count();
@@ -654,7 +701,7 @@ namespace API.Controllers
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
         public async Task<IActionResult> GetSupplyStockCardItems(
-            [FromQuery] PaginationGenericQueryParams model,
+            [FromQuery] SupplyItemQueryParams model,
             string stockNumber,
             string description)
         {
@@ -1038,7 +1085,7 @@ namespace API.Controllers
         [HttpGet("ris/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllRISs([FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllRISs([FromQuery] SupplyRISQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
@@ -1056,6 +1103,20 @@ namespace API.Controllers
                         (x.EntityName.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
                         (x.FundCluster.ToString() ?? "").ToLowerInvariant().Contains(searchLower));
                 }
+
+                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
+                {
+                    if (model.Status == "Pending")
+                        supplyRISs = supplyRISs.Where(x => !x.IsApproved);
+                    else if (model.Status == "Approved")
+                        supplyRISs = supplyRISs.Where(x => x.IsApproved);
+                }
+
+                if (model.OfficeId.HasValue && model.OfficeId > 0)
+                    supplyRISs = supplyRISs.Where(x => x.OfficeId == model.OfficeId.Value);
+
+                if (model.DivisionId.HasValue && model.DivisionId > 0)
+                    supplyRISs = supplyRISs.Where(x => x.DivisionId == model.DivisionId.Value);
 
                 if (model.StartDate.HasValue)
                     supplyRISs = supplyRISs.Where(x => x.CreatedAt >= model.StartDate.Value);
