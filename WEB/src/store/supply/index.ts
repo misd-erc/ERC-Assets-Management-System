@@ -107,7 +107,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
       // Fetch a larger set for dashboard accuracy, or the backend should ideally have a summary endpoint.
       // We use a high PageSize to get as many items as reasonable for stats.
       const result = await getSupplyItems(1, 1000, '', undefined, undefined);
-      set({ vwSuppliesSummary: result.items });
+      set({ vwSuppliesSummary: result.items, totalSupplies: result.totalCount });
     } catch {
       console.error('Failed to load supply summary');
     }
@@ -117,7 +117,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
     set({ loading: true });
     try {
       const result = await getVwSupplyGroupedItems(page, pageSize, search, status);
-      set({ vwSupplyGroups: result.items, totalGroups: result.totalCount });
+      set({ vwSupplyGroups: result.items, totalGroups: result.totalCount, totalSupplies: result.totalCount });
     } catch {
       toast.error('Failed to load supply groups');
     } finally {

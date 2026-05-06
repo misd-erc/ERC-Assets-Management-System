@@ -39,7 +39,7 @@ export const getCategories = async (): Promise<Category[]> => {
     }
 
     const data = response.data.data;
-    const items = Array.isArray(data) ? data : data?.items;
+    const items = Array.isArray(data) ? data : (data as any)?.items || (data as any)?.Items;
 
     return Array.isArray(items) 
       ? items.map((c: any) => ({

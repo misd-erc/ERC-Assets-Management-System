@@ -98,9 +98,13 @@
       return { items: [], totalCount: 0 };
     }
 
+    const data = response.data.data;
+    const items = Array.isArray(data) ? data : (data as any)?.items || (data as any)?.Items;
+    const totalCount = (data as any)?.totalCount || (data as any)?.TotalCount || 0;
+
     return {
-      items: Array.isArray(response.data.data.items) ? response.data.data.items.map(mapVwSupplyItem) : [],
-      totalCount: response.data.data.totalCount || 0
+      items: Array.isArray(items) ? items.map(mapVwSupplyItem) : [],
+      totalCount: totalCount
     };
   };
 
@@ -127,9 +131,13 @@
       toast.error(response.data.message || 'Failed to fetch items');
       return { items: [], totalCount: 0 };
     }
-        return {
-      items: Array.isArray(response.data.data.items) ? response.data.data.items.map(mapVwSupplyGroupedItem) : [],
-      totalCount: response.data.data.totalCount || 0
+        const data = response.data.data;
+    const items = Array.isArray(data) ? data : (data as any)?.items || (data as any)?.Items;
+    const totalCount = (data as any)?.totalCount || (data as any)?.TotalCount || 0;
+
+    return {
+      items: Array.isArray(items) ? items.map(mapVwSupplyGroupedItem) : [],
+      totalCount: totalCount
     };
   };
 

@@ -28,7 +28,7 @@ export const getSupplyStorageLocations = async (): Promise<SupplyStorageLocation
   }
 
   const data = response.data.data;
-  const items = Array.isArray(data) ? data : (data as any)?.items;
+  const items = Array.isArray(data) ? data : (data as any)?.items || (data as any)?.Items;
 
   return Array.isArray(items)
     ? items.map((u: any) => ({

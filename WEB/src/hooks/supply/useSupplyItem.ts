@@ -6,7 +6,7 @@ export const useSupplyItem = () => {
   
   return useMemo(() => ({
     ...store,
-    totalItems: store.supplies.length
+    totalItems: store.totalSupplies
   }), [store]);
 };
 
