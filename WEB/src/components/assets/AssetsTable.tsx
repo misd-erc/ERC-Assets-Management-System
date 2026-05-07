@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Eye, Edit, Trash2, Package } from 'lucide-react';
-import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
-import { getEmployees } from '@/api/user-management/userApi';
+import { Asset } from '@/types/asset/UnifiedAsset';
 
 interface AssetsTableProps {
   assets: Asset[];
@@ -34,45 +33,14 @@ export function AssetsTable({
   onPageChange,
   onPageSizeChange,
 }: AssetsTableProps) {
-  const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
+  function formatEmployee(e: any): string {
+    const firstName = e.firstName ?? '';
+    const middleName = e.middleName ?? '';
+    const lastName = e.lastName ?? '';
+    const suffixName = e.suffixName ?? '';
+    const employeeIdOriginal = e.employeeIdOriginal ?? '';
 
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  const fetchEmployees = async () => {
-    try {
-      const response = await getEmployees();
-      const normalizedEmployees = response.data.items.map(normalizeEmployee);
-      setEmployees(normalizedEmployees);
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-    }
-  };
-
-  function normalizeEmployee(e: any): NormalizedEmployee {
-    const firstName = e.firstName ?? "";
-    const middleName = e.middleName ?? "";
-    const lastName = e.lastName ?? "";
-    const suffixName = e.suffixName ?? "";
-    const employeeIdOriginal = e.employeeIdOriginal ?? "";
-    const employmentTypeId = e.employmentType?.id ?? 1;
-    const employmentTypeName = e.employmentType?.name ?? 'Plantilla';
-    const groupLabel = employmentTypeName === 'Plantilla' || employmentTypeName === 'Contractual' ? 'Plantilla' : 'Non-Plantilla';
-
-    const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${groupLabel})`;
-
-    return {
-      id: e.id,
-      firstName,
-      middleName,
-      lastName,
-      suffixName,
-      employeeIdOriginal,
-      employmentTypeId,
-      employmentTypeName,
-      label,
-    };
+    return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` - ${employeeIdOriginal}` : ''}`;
   }
 
   const getPlantillaEmployeeName = (asset: Asset): string => {
@@ -80,23 +48,11 @@ export function AssetsTable({
     if (activeMovements.length > 0) {
       const latestMovement = activeMovements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
 
-      // First try embedded employee (plantilla only)
       if (latestMovement.employee && Array.isArray(latestMovement.employee) && latestMovement.employee.length > 0) {
         const emp = latestMovement.employee[0];
         if ((emp.employmentType?.id ?? 1) === 1) {
-          const firstName = emp.firstName ?? "";
-          const middleName = emp.middleName ?? "";
-          const lastName = emp.lastName ?? "";
-          const suffixName = emp.suffixName ?? "";
-          const employeeIdOriginal = emp.employeeIdOriginal ?? "";
-          return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''}`;
+          return formatEmployee(emp);
         }
-      }
-
-      // Fallback to ID lookup
-      if (latestMovement.plantillaEmployeeId) {
-        const employee = employees.find((e: NormalizedEmployee) => e.id === latestMovement.plantillaEmployeeId);
-        return employee ? employee.label : 'Unknown Employee';
       }
     }
     return 'N/A';
@@ -107,23 +63,11 @@ export function AssetsTable({
     if (activeMovements.length > 0) {
       const latestMovement = activeMovements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
 
-      // First try embedded employee (non-plantilla only)
       if (latestMovement.employee && Array.isArray(latestMovement.employee) && latestMovement.employee.length > 0) {
         const emp = latestMovement.employee[0];
         if ((emp.employmentType?.id ?? 1) !== 1) {
-          const firstName = emp.firstName ?? "";
-          const middleName = emp.middleName ?? "";
-          const lastName = emp.lastName ?? "";
-          const suffixName = emp.suffixName ?? "";
-          const employeeIdOriginal = emp.employeeIdOriginal ?? "";
-          return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''}`;
+          return formatEmployee(emp);
         }
-      }
-
-      // Fallback to ID lookup
-      if (latestMovement.nonPlantillaEmployeeId) {
-        const employee = employees.find((e: NormalizedEmployee) => e.id === latestMovement.nonPlantillaEmployeeId);
-        return employee ? employee.label : 'Unknown Employee';
       }
     }
     return 'N/A';
@@ -282,7 +226,6 @@ export function AssetsTable({
           </Table>
         </div>
 
-        {/* Pagination */}
         {assets.length > 0 && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
             <div className="text-xs sm:text-sm text-muted-foreground">

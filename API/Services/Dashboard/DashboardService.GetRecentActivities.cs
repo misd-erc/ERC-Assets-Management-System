@@ -15,7 +15,6 @@ namespace API.Services.Dashboard
         public async Task<IActionResult> GetRecentActivities(SoloQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
@@ -45,12 +44,10 @@ namespace API.Services.Dashboard
                     };
                 }).ToList();
 
-                await transaction.CommitAsync();
                 return Ok(ApiResponse<DashboardRecentActivityItem>.Ok(result, "Recent activities retrieved"));
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(DashboardService));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }

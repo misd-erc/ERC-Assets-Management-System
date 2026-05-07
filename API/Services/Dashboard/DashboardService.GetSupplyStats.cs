@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalCommon.Constants;
+using PortalCommon.Utilities;
 using PortalDB.Entities.ASSET.Supply;
 using PortalDB.Models.QueryParams.Universal;
 using PortalDB.Models.ResponseModels.Dashboard;
@@ -16,14 +17,40 @@ namespace API.Services.Dashboard
         public async Task<IActionResult> GetSupplyStats(SoloQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
-                IEnumerable<TblSupplyItem>? supplyItems = await _getTools.Supply.GetTblSupplyItems(context)!.ToListAsync();
-                IEnumerable<TblSupplyRISItem>? risItems = await _getTools.Supply.GetTblSupplyRISItems(context)!.ToListAsync();
+                var supplyItems = await context.TblSupplyItems
+                    .AsNoTracking()
+                    .Where(x => !x.IsDeleted)
+                    .Select(x => new
+                    {
+                        x.CodeEncrypted,
+                        x.DescriptionEncrypted,
+                        x.Quantity,
+                        x.UnitCost,
+                        x.ReorderPoint
+                    })
+                    .ToListAsync();
+
+                var risItems = await context.TblSupplyRISItems
+                    .AsNoTracking()
+                    .Where(x => !x.IsDeleted)
+                    .Select(x => new
+                    {
+                        x.StockNumberEncrypted,
+                        x.ItemDescriptionEncrypted,
+                        x.IssueQuantity
+                    })
+                    .ToListAsync();
 
                 var issuedStockGroup = risItems
+                    .Select(x => new
+                    {
+                        StockNumber = DecryptNullable(x.StockNumberEncrypted),
+                        ItemDescription = DecryptNullable(x.ItemDescriptionEncrypted),
+                        x.IssueQuantity
+                    })
                     .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.ItemDescription))
                     .GroupBy(x => new { x.StockNumber, x.ItemDescription })
                     .ToDictionary(
@@ -31,6 +58,14 @@ namespace API.Services.Dashboard
                         g => g.Sum(x => x.IssueQuantity));
 
                 var groups = supplyItems
+                    .Select(x => new
+                    {
+                        Code = DecryptNullable(x.CodeEncrypted),
+                        Description = DecryptNullable(x.DescriptionEncrypted),
+                        x.Quantity,
+                        x.UnitCost,
+                        x.ReorderPoint
+                    })
                     .GroupBy(x => new { x.Code, x.Description })
                     .Select(g =>
                     {
@@ -59,15 +94,18 @@ namespace API.Services.Dashboard
                     LowStockCount = groups.Count(x => x.IsLowStock)
                 };
 
-                await transaction.CommitAsync();
                 return Ok(ApiResponse<DashboardSupplyStatsResponseModel>.Ok(result, "Supply stats retrieved"));
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(DashboardService));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
+        }
+
+        private static string? DecryptNullable(string? encryptedValue)
+        {
+            return string.IsNullOrWhiteSpace(encryptedValue) ? null : EncryptionHelper.Decrypt(encryptedValue);
         }
     }
 }

@@ -16,30 +16,35 @@ namespace API.Services.Dashboard
         public async Task<IActionResult> GetDisposalStats(SoloQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
-                var disposals = await context.TblDisposals
+                var disposalCounts = await context.TblDisposals
                     .AsNoTracking()
                     .Where(x => !x.IsDeleted)
+                    .GroupBy(x => x.Status)
+                    .Select(g => new
+                    {
+                        Status = g.Key,
+                        Count = g.Count()
+                    })
                     .ToListAsync();
+
+                var countByStatus = disposalCounts.ToDictionary(x => x.Status ?? string.Empty, x => x.Count);
 
                 var result = new DashboardDisposalStatsResponseModel
                 {
-                    PendingCount = disposals.Count(x => x.Status == TblDisposal.PENDING),
-                    ApprovedCount = disposals.Count(x => x.Status == TblDisposal.APPROVED),
-                    DisposedCount = disposals.Count(x => x.Status == TblDisposal.DISPOSED),
-                    RejectedCount = disposals.Count(x => x.Status == TblDisposal.REJECTED),
-                    TotalCount = disposals.Count
+                    PendingCount = countByStatus.GetValueOrDefault(TblDisposal.PENDING, 0),
+                    ApprovedCount = countByStatus.GetValueOrDefault(TblDisposal.APPROVED, 0),
+                    DisposedCount = countByStatus.GetValueOrDefault(TblDisposal.DISPOSED, 0),
+                    RejectedCount = countByStatus.GetValueOrDefault(TblDisposal.REJECTED, 0),
+                    TotalCount = disposalCounts.Sum(x => x.Count)
                 };
 
-                await transaction.CommitAsync();
                 return Ok(ApiResponse<DashboardDisposalStatsResponseModel>.Ok(result, "Disposal stats retrieved"));
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(DashboardService));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }

@@ -66,6 +66,7 @@ export const ppeApi = {
 		OfficeId?: number;
 		DivisionId?: number;
 		Condition?: string;
+		IncludeRelatedData?: boolean;
 	}): Promise<{ items: PPEAsset[]; totalCount: number }> => {
 		const query = new URLSearchParams();
 
@@ -101,6 +102,10 @@ export const ppeApi = {
 
 		if (params.Condition) {
 			query.append('Condition', params.Condition);
+		}
+
+		if (params.IncludeRelatedData !== undefined) {
+			query.append('IncludeRelatedData', String(params.IncludeRelatedData));
 		}
 
 		query.append('ActionBySystemUserId', params.ActionBySystemUserId);

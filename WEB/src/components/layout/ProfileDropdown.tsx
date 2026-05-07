@@ -207,7 +207,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     if (location.pathname.startsWith('/dashboard')) {
       fetchUserData();
     }
-  }, [propUser, location.pathname, user.imageUrl, photoFetched, systemUserId]);
+  }, [propUser, location.pathname, systemUserId]);
 
   const getUserEmailFromStorage = () => {
     const stored = secureStorage.getItem('userDetails');

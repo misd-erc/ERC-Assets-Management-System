@@ -99,21 +99,6 @@ export function AssetsPage() {
     }
   }, []);
 
-  // On mount, fetch total counts for both tabs
-  useEffect(() => {
-    const fetchTabCounts = async () => {
-      try {
-        const [ppeRes, seRes] = await Promise.all([
-          UnifiedAssetService.getAll({ group: 'PPE', PageNumber: 1, PageSize: 1 }),
-          UnifiedAssetService.getAll({ group: 'SE', PageNumber: 1, PageSize: 1 }),
-        ]);
-        setPpeTotalCount(ppeRes.totalCount);
-        setSeTotalCount(seRes.totalCount);
-      } catch {}
-    };
-    fetchTabCounts();
-  }, []);
-
   useEffect(() => {
     loadAssets();
   }, [currentPage, pageSize, appliedFilters, activeTab]);

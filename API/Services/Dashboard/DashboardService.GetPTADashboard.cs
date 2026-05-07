@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalCommon.Constants;
+using PortalCommon.Utilities;
 using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Models.QueryParams.Universal;
 using PortalDB.Models.ResponseModels.Dashboard;
@@ -17,24 +18,28 @@ namespace API.Services.Dashboard
         public async Task<IActionResult> GetPTADashboard(SoloQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
-                List<TblPTA>? ptas = await _getTools.PTA.GetTblPTAs(context).ToListAsync();
+                var ptas = await context.TblPTAs
+                    .AsNoTracking()
+                    .Where(x => !x.IsDeleted && x.IsActive)
+                    .Select(x => new
+                    {
+                        x.Group,
+                        x.UnitValueEncrypted
+                    })
+                    .ToListAsync();
 
                 DashboardPTAResponseModel ptaDash = new DashboardPTAResponseModel();
-                ptaDash.TotalPPE = ptas.Count(x => x.Group == TblPTA.PPE && x.IsActive);
-                ptaDash.TotalSE = ptas.Count(x => x.Group == TblPTA.SE && x.IsActive);
-                ptaDash.TotalPPEValue = (decimal)(ptas.Where(x => x.Group == TblPTA.PPE && x.IsActive).Sum(x => x.UnitValue) ?? 0);
-                ptaDash.TotalSEValue = (decimal)(ptas.Where(x => x.Group == TblPTA.SE && x.IsActive).Sum(x => x.UnitValue) ?? 0);
+                ptaDash.TotalPPE = ptas.Count(x => x.Group == TblPTA.PPE);
+                ptaDash.TotalSE = ptas.Count(x => x.Group == TblPTA.SE);
+                ptaDash.TotalPPEValue = (decimal)ptas.Where(x => x.Group == TblPTA.PPE).Sum(x => ParseEncryptedDouble(x.UnitValueEncrypted));
+                ptaDash.TotalSEValue = (decimal)ptas.Where(x => x.Group == TblPTA.SE).Sum(x => ParseEncryptedDouble(x.UnitValueEncrypted));
                 ptaDash.TotalPPEValuePercentage = ptaDash.TotalPPEValue + ptaDash.TotalSEValue == 0 ? 0 :
                     Math.Round((ptaDash.TotalPPEValue / (ptaDash.TotalPPEValue + ptaDash.TotalSEValue)) * 100, 2);
                 ptaDash.TotalSEValuePercentage = ptaDash.TotalPPEValue + ptaDash.TotalSEValue == 0 ? 0 :
                     Math.Round((ptaDash.TotalSEValue / (ptaDash.TotalPPEValue + ptaDash.TotalSEValue)) * 100, 2);
-
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
 
                 return Ok(ApiResponse<DashboardPTAResponseModel>.Ok(
                     ptaDash,
@@ -43,7 +48,6 @@ namespace API.Services.Dashboard
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(DashboardService));
                 return StatusCode(
                     ApiStatusCode.InternalServerError,
@@ -53,6 +57,17 @@ namespace API.Services.Dashboard
                     )
                 );
             }
+        }
+
+        private static double ParseEncryptedDouble(string? encryptedValue)
+        {
+            if (string.IsNullOrWhiteSpace(encryptedValue))
+            {
+                return 0;
+            }
+
+            var decrypted = EncryptionHelper.Decrypt(encryptedValue);
+            return double.TryParse(decrypted, out var value) ? value : 0;
         }
     }
 }

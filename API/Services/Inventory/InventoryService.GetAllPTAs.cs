@@ -38,7 +38,6 @@ namespace API.Services.Inventory
 public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
@@ -168,54 +167,219 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
                         ptas = ptas.Where(x => x.CreatedAt <= model.EndDate.Value);
 
                     int totalCount = ptas.Count();
-
-                    int skip = (model.PageNumber - 1) * model.PageSize;
+                    int pageSize = model.PageSize <= 0 ? 25 : Math.Min(model.PageSize, 100);
+                    int skip = (model.PageNumber - 1) * pageSize;
 
                     var ptasList = ptas
                         .OrderByDescending(x => x.UpdatedAt ?? x.CreatedAt)
                         .Skip(skip)
-                        .Take(model.PageSize)
+                        .Take(pageSize)
                         .ToList();
 
                     var ptasResponses = new List<PTAResponseModel>();
 
-                    foreach (var x in ptasList)
+                    var categoryIds = ptasList
+                        .Where(x => x.CategoryId.HasValue)
+                        .Select(x => x.CategoryId!.Value)
+                        .Distinct()
+                        .ToList();
+                    var legendIds = ptasList
+                        .Where(x => x.LegendId.HasValue)
+                        .Select(x => x.LegendId!.Value)
+                        .Distinct()
+                        .ToList();
+
+                    var categoriesById = await context.TblPTACategories
+                        .AsNoTracking()
+                        .Where(x => !x.IsDeleted && categoryIds.Contains(x.Id))
+                        .ToDictionaryAsync(x => x.Id);
+                    var legendsById = await context.TblPTALegends
+                        .AsNoTracking()
+                        .Where(x => !x.IsDeleted && legendIds.Contains(x.Id))
+                        .ToDictionaryAsync(x => x.Id);
+
+                    if (!model.IncludeRelatedData)
                     {
-                        var ppeModel = new PTAResponseModel
+                        var ptaIds = ptasList.Select(x => x.Id).ToList();
+
+                        var movementRows = await context.TblPTAMovements
+                            .AsNoTracking()
+                            .Where(x => !x.IsDeleted && x.PTAId.HasValue && ptaIds.Contains(x.PTAId.Value))
+                            .ToListAsync();
+
+                        var latestMovementsByPtaId = movementRows
+                            .Where(x => x.PTAId.HasValue)
+                            .GroupBy(x => x.PTAId!.Value)
+                            .ToDictionary(
+                                g => g.Key,
+                                g => g
+                                    .OrderByDescending(m => m.DateAssigned ?? m.CreatedAt)
+                                    .ThenByDescending(m => m.CreatedAt)
+                                    .ThenByDescending(m => m.Id)
+                                    .First());
+
+                        var employeeIds = latestMovementsByPtaId.Values
+                            .Select(x => x.NonPlantillaEmployeeId ?? x.PlantillaEmployeeId)
+                            .Where(id => id.HasValue)
+                            .Select(id => id!.Value)
+                            .Distinct()
+                            .ToList();
+                        var officeIds = latestMovementsByPtaId.Values
+                            .Where(x => x.ActualOfficeId.HasValue)
+                            .Select(x => x.ActualOfficeId!.Value)
+                            .Distinct()
+                            .ToList();
+                        var divisionIds = latestMovementsByPtaId.Values
+                            .Where(x => x.ActualDivisionId.HasValue)
+                            .Select(x => x.ActualDivisionId!.Value)
+                            .Distinct()
+                            .ToList();
+
+                        var employeesById = await context.TblEmployees
+                            .AsNoTracking()
+                            .Where(x => !x.IsDeleted && employeeIds.Contains(x.Id))
+                            .ToDictionaryAsync(x => x.Id);
+                        var employmentTypeIds = employeesById.Values
+                            .Where(x => x.EmploymentTypeId.HasValue)
+                            .Select(x => x.EmploymentTypeId!.Value)
+                            .Distinct()
+                            .ToList();
+                        var employmentTypesById = await context.TblEmploymentTypes
+                            .AsNoTracking()
+                            .Where(x => !x.IsDeleted && employmentTypeIds.Contains(x.Id))
+                            .ToDictionaryAsync(x => x.Id);
+                        var officesById = await context.TblOffices
+                            .AsNoTracking()
+                            .Where(x => !x.IsDeleted && officeIds.Contains(x.Id))
+                            .ToDictionaryAsync(x => x.Id);
+                        var divisionsById = await context.TblDivisions
+                            .AsNoTracking()
+                            .Where(x => !x.IsDeleted && divisionIds.Contains(x.Id))
+                            .ToDictionaryAsync(x => x.Id);
+
+                        foreach (var x in ptasList)
                         {
-                            Id = x.Id,
-                            Group = x.Group,
-                            PropertyNumber = x.PropertyNumber,
-                            Category = await _getTools.PTA.GetTblPTACategoryAsync(x.CategoryId, context),
-                            Legend = await _getTools.PTA.GetTblPTALegendAsync(x.LegendId, context),
-                            Description = x.Description,
-                            Brand = x.Brand,
-                            Model = x.Model,
-                            SerialNumber = x.SerialNumber,
-                            UnitOfMeasurement = x.UnitOfMeasurement,
-                            UnitValue = x.UnitValue,
-                            DateAcquired = x.DateAcquired,
-                            EstimatedUsefulLife = x.EstimatedUsefulLife,
-                            FiscalDate = x.FiscalDate,
-                            Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                            Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
-                            IsActive = x.IsActive,
-                            CreatedAt = x.CreatedAt,
-                            UpdatedAt = x.UpdatedAt
-                        };
+                            var movements = new List<PTAMovementResponseModel>();
 
-                        ptasResponses.Add(ppeModel);
+                            if (latestMovementsByPtaId.TryGetValue(x.Id, out var latestMovement))
+                            {
+                                var employeeList = new List<EmployeeResponseModel>();
+                                var employeeId = latestMovement.NonPlantillaEmployeeId ?? latestMovement.PlantillaEmployeeId;
+
+                                if (employeeId.HasValue && employeesById.TryGetValue(employeeId.Value, out var employee))
+                                {
+                                    employmentTypesById.TryGetValue(employee.EmploymentTypeId ?? 0, out var employmentType);
+                                    officesById.TryGetValue(employee.OfficeId ?? 0, out var employeeOffice);
+                                    divisionsById.TryGetValue(employee.DivisionId ?? 0, out var employeeDivision);
+
+                                    employeeList.Add(new EmployeeResponseModel
+                                    {
+                                        Id = employee.Id,
+                                        FirstName = employee.FirstName,
+                                        MiddleName = employee.MiddleName,
+                                        LastName = employee.LastName,
+                                        SuffixName = employee.SuffixName,
+                                        EmployeeIdOriginal = latestMovement.NonPlantillaEmployeeId.HasValue
+                                            ? latestMovement.NonPlantillaEmployeeIdOriginal
+                                            : latestMovement.PlantillaEmployeeIdOriginal,
+                                        Office = employeeOffice,
+                                        Division = employeeDivision,
+                                        EmploymentType = employmentType,
+                                        Position = null,
+                                        SystemUser = null,
+                                        IsActive = employee.IsActive,
+                                        CreatedAt = employee.CreatedAt
+                                    });
+                                }
+
+                                officesById.TryGetValue(latestMovement.ActualOfficeId ?? 0, out var movementOffice);
+                                divisionsById.TryGetValue(latestMovement.ActualDivisionId ?? 0, out var movementDivision);
+
+                                movements.Add(new PTAMovementResponseModel
+                                {
+                                    Id = latestMovement.Id,
+                                    PTAId = latestMovement.PTAId,
+                                    DateAssigned = latestMovement.DateAssigned,
+                                    PtrItrNumber = latestMovement.PTRITRNumber ?? string.Empty,
+                                    RrppeRrspNumber = latestMovement.RRPPERRSPNumber ?? string.Empty,
+                                    ParIcsNumber = latestMovement.PARICSNumber ?? string.Empty,
+                                    PlantillaEmployeeId = latestMovement.PlantillaEmployeeId,
+                                    NonPlantillaEmployeeId = latestMovement.NonPlantillaEmployeeId,
+                                    PlantillaEmployeeIdOriginal = latestMovement.PlantillaEmployeeIdOriginal ?? string.Empty,
+                                    NonPlantillaEmployeeIdOriginal = latestMovement.NonPlantillaEmployeeIdOriginal ?? string.Empty,
+                                    Employee = employeeList,
+                                    Office = movementOffice,
+                                    Division = movementDivision,
+                                    Condition = latestMovement.Remarks ?? string.Empty,
+                                    IsCurrent = latestMovement.IsCurrent,
+                                    IsActive = latestMovement.IsActive,
+                                    IsDeleted = latestMovement.IsDeleted,
+                                    CreatedAt = latestMovement.CreatedAt
+                                });
+                            }
+
+                            ptasResponses.Add(new PTAResponseModel
+                            {
+                                Id = x.Id,
+                                Group = x.Group,
+                                PropertyNumber = x.PropertyNumber,
+                                Category = x.CategoryId.HasValue && categoriesById.TryGetValue(x.CategoryId.Value, out var category) ? category : null,
+                                Legend = x.LegendId.HasValue && legendsById.TryGetValue(x.LegendId.Value, out var legend) ? legend : null,
+                                Description = x.Description,
+                                Brand = x.Brand,
+                                Model = x.Model,
+                                SerialNumber = x.SerialNumber,
+                                UnitOfMeasurement = x.UnitOfMeasurement,
+                                UnitValue = x.UnitValue,
+                                DateAcquired = x.DateAcquired,
+                                EstimatedUsefulLife = x.EstimatedUsefulLife,
+                                FiscalDate = x.FiscalDate,
+                                Parts = new List<PTAPartResponseModel>(),
+                                Movements = movements,
+                                IsActive = x.IsActive,
+                                IsDeleted = x.IsDeleted,
+                                CreatedAt = x.CreatedAt,
+                                UpdatedAt = x.UpdatedAt
+                            });
+                        }
                     }
+                    else
+                    {
+                        foreach (var x in ptasList)
+                        {
+                            var ppeModel = new PTAResponseModel
+                            {
+                                Id = x.Id,
+                                Group = x.Group,
+                                PropertyNumber = x.PropertyNumber,
+                                Category = x.CategoryId.HasValue && categoriesById.TryGetValue(x.CategoryId.Value, out var category) ? category : null,
+                                Legend = x.LegendId.HasValue && legendsById.TryGetValue(x.LegendId.Value, out var legend) ? legend : null,
+                                Description = x.Description,
+                                Brand = x.Brand,
+                                Model = x.Model,
+                                SerialNumber = x.SerialNumber,
+                                UnitOfMeasurement = x.UnitOfMeasurement,
+                                UnitValue = x.UnitValue,
+                                DateAcquired = x.DateAcquired,
+                                EstimatedUsefulLife = x.EstimatedUsefulLife,
+                                FiscalDate = x.FiscalDate,
+                                Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
+                                Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
+                                IsActive = x.IsActive,
+                                IsDeleted = x.IsDeleted,
+                                CreatedAt = x.CreatedAt,
+                                UpdatedAt = x.UpdatedAt
+                            };
 
-                    await context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
+                            ptasResponses.Add(ppeModel);
+                        }
+                    }
                     await AuditTrailTool.LogActivityAsync(_options, $"Viewed {model.GroupName}", actionBy: model.ActionBySystemUserId);
 
                     return Ok(ApiResponse<PTAResponseModel>.OkPaginated(
                         ptasResponses,
                         model.PageNumber,
-                        model.PageSize,
+                        pageSize,
                         totalCount,
                         "PTAs have been retrieved",
                         model.AsOfDate
@@ -644,7 +808,6 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryService));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }

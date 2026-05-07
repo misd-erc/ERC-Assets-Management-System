@@ -179,6 +179,7 @@ export class UnifiedAssetService {
           OfficeId: officeId,
           DivisionId: divisionId,
           Condition: condition,
+          IncludeRelatedData: false,
         });
         allItems = (ppeResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'PPE'));
         totalCount = ppeResponse.totalCount;
@@ -197,6 +198,7 @@ export class UnifiedAssetService {
           OfficeId: officeId,
           DivisionId: divisionId,
           Condition: condition,
+          IncludeRelatedData: false,
         });
         allItems = (seResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'SE'));
         totalCount = seResponse.totalCount;
@@ -216,6 +218,7 @@ export class UnifiedAssetService {
             OfficeId: officeId,
             DivisionId: divisionId,
             Condition: condition,
+            IncludeRelatedData: false,
           }),
           seApi.list({
             SearchString: searchString,
@@ -231,6 +234,7 @@ export class UnifiedAssetService {
             OfficeId: officeId,
             DivisionId: divisionId,
             Condition: condition,
+            IncludeRelatedData: false,
           }),
         ]);
         allItems = [

@@ -3,12 +3,14 @@ import { encrypt } from '@/utils/encryption';
 import { secureStorage } from './secureStorage';
 
 let syncInterval: NodeJS.Timeout | null = null;
+let syncStarted = false;
 
 export const initUserSync = () => {
-  // Clear any existing interval
-  if (syncInterval) {
-    clearInterval(syncInterval);
+  if (syncStarted && syncInterval) {
+    return;
   }
+
+  syncStarted = true;
 
   // Function to sync user details
   const syncUserDetails = async () => {
@@ -23,7 +25,7 @@ export const initUserSync = () => {
       }
 
       // Call API to get fresh user details
-      const userDetails = await getUserDetails();
+      const userDetails = await getUserDetails({ preferCache: true });
 
       // Encrypt and save to localStorage
       const encryptedDetails = encrypt(JSON.stringify(userDetails));
@@ -54,4 +56,6 @@ export const stopUserSync = () => {
     clearInterval(syncInterval);
     syncInterval = null;
   }
+
+  syncStarted = false;
 };

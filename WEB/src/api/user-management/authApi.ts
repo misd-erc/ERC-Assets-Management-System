@@ -3,8 +3,8 @@ import axiosInstance from '@/lib/axios';
 import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserPublicViewModel, ApiResponse } from '@/types';
 
 import { guidToLongId } from '@/utils/guidUtils';
-import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
 import { secureStorage } from '@/utils/secureStorage';
+import { decrypt, encrypt } from '@/utils/encryption';
 
 
 export interface UserDetails {
@@ -32,33 +32,62 @@ export interface EditUserPayload {
   actionBySystemUserId: string;
 }
 
-export const getUserDetails = async (): Promise<UserDetails> => {
+let pendingUserDetailsRequest: Promise<UserDetails> | null = null;
+
+const readStoredUserDetails = (): UserDetails | null => {
+  const stored = secureStorage.getItem('userDetails');
+
+  if (!stored) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(decrypt(stored)) as UserDetails;
+  } catch {
+    return null;
+  }
+};
+
+export const getUserDetails = async (
+  options?: { forceRefresh?: boolean; preferCache?: boolean }
+): Promise<UserDetails> => {
   // Retrieve tokens directly from localStorage to ensure we use the latest synced values
   const currentSystemId = String(secureStorage.getItem('systemUserId'));
 
-
-  if (currentSystemId !== currentSystemId) {
-    console.warn('[AuthAPI] Token mismatch detected! Syncing before API call.');
-    // Auto-correct by syncing them
-    if (currentSystemId) {
-      secureStorage.setItem('systemUserId', currentSystemId);
-      console.log('[AuthAPI] Synced systemUserId with ActionBySystemUserIdEncrypted');
+  if (options?.preferCache) {
+    const cached = readStoredUserDetails();
+    if (cached) {
+      return cached;
     }
   }
 
   // Get session key from localStorage
   const sessionKey = secureStorage.getItem('sessionToken') || '';
 
-  const response = await axiosInstance.get<ApiResponse<UserDetails>>(
-    `/Users/all/${encodeURIComponent(currentSystemId)}?ActionBySystemUserId=${encodeURIComponent(currentSystemId)}&SessionKey=${encodeURIComponent(sessionKey)}`
-  );
-
-  // Check for invalid session
-  if (!response.data.success || response.data.code === 'ERR_SERVER') {
-    throw new Error('Session expired');
+  if (!options?.forceRefresh && pendingUserDetailsRequest) {
+    return pendingUserDetailsRequest;
   }
 
-  return response.data.data;
+  pendingUserDetailsRequest = (async () => {
+    const response = await axiosInstance.get<ApiResponse<UserDetails>>(
+      `/Users/all/${encodeURIComponent(currentSystemId)}?ActionBySystemUserId=${encodeURIComponent(currentSystemId)}&SessionKey=${encodeURIComponent(sessionKey)}`
+    );
+
+    // Check for invalid session
+    if (!response.data.success || response.data.code === 'ERR_SERVER') {
+      throw new Error('Session expired');
+    }
+
+    secureStorage.setItem('userDetails', encrypt(JSON.stringify(response.data.data)));
+
+    return response.data.data;
+  })();
+
+  try {
+    return await pendingUserDetailsRequest;
+  } finally {
+    pendingUserDetailsRequest = null;
+  }
 };
 
 export const editUserDetails = async (userData: {

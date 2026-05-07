@@ -60,41 +60,62 @@ export function AssetsFilters({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') onApplyFilters?.();
   };
+
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [conditions, setConditions] = useState<string[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
   const [employees, setEmployees] = useState<{ id: number; label: string }[]>([]);
   const [employeePopoverOpen, setEmployeePopoverOpen] = useState(false);
+  const [employeesLoaded, setEmployeesLoaded] = useState(false);
+  const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
 
   useEffect(() => {
     const loadFilters = async () => {
       try {
-        const [categoriesData, conditionsData, officesData, divisionsData, employeesData] = await Promise.all([
+        const [categoriesData, conditionsData, officesData, divisionsData] = await Promise.all([
           getCategories(),
           getConditions(),
           getOffices(),
           getDivisions(),
-          getEmployees(1, 10000),
         ]);
         setCategories(Array.isArray(categoriesData) ? categoriesData : []);
         setConditions(Array.isArray(conditionsData) ? conditionsData : []);
         setOffices(Array.isArray(officesData) ? officesData : []);
         setDivisions(Array.isArray(divisionsData) ? divisionsData : []);
-        const empItems = employeesData?.data?.items ?? [];
-        setEmployees(empItems.map((e: any) => ({
-          id: e.id,
-          label: [e.lastName, e.firstName, e.middleName].filter(Boolean).join(', ') +
-            (e.employeeIdOriginal ? ` — ${e.employeeIdOriginal}` : ''),
-        })));
       } catch (error) {
         console.error('Failed to load filters:', error);
       }
     };
-    loadFilters();
+
+    void loadFilters();
   }, []);
 
+  useEffect(() => {
+    const loadEmployees = async () => {
+      if (!employeePopoverOpen || employeesLoaded || isLoadingEmployees) {
+        return;
+      }
 
+      try {
+        setIsLoadingEmployees(true);
+        const employeesData = await getEmployees(1, 10000);
+        const empItems = employeesData?.data?.items ?? [];
+        setEmployees(empItems.map((e: any) => ({
+          id: e.id,
+          label: [e.lastName, e.firstName, e.middleName].filter(Boolean).join(', ') +
+            (e.employeeIdOriginal ? ` - ${e.employeeIdOriginal}` : ''),
+        })));
+        setEmployeesLoaded(true);
+      } catch (error) {
+        console.error('Failed to load employees:', error);
+      } finally {
+        setIsLoadingEmployees(false);
+      }
+    };
+
+    void loadEmployees();
+  }, [employeePopoverOpen, employeesLoaded, isLoadingEmployees]);
 
   return (
     <Card>
@@ -109,7 +130,6 @@ export function AssetsFilters({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Search */}
           <div className="space-y-2">
             <Label htmlFor="search">Search</Label>
             <div className="relative">
@@ -125,7 +145,6 @@ export function AssetsFilters({
             </div>
           </div>
 
-          {/* Category Filter */}
           <div className="space-y-2">
             <Label htmlFor="category">Category</Label>
             <Select value={categoryFilter ?? undefined} onValueChange={onCategoryFilterChange}>
@@ -143,7 +162,6 @@ export function AssetsFilters({
             </Select>
           </div>
 
-          {/* Condition Filter */}
           <div className="space-y-2">
             <Label htmlFor="condition">Condition</Label>
             <Select value={conditionFilter ?? undefined} onValueChange={onConditionFilterChange}>
@@ -161,7 +179,6 @@ export function AssetsFilters({
             </Select>
           </div>
 
-          {/* Office Filter */}
           <div className="space-y-2">
             <Label htmlFor="office">Office</Label>
             <Select value={officeFilter ?? undefined} onValueChange={onOfficeFilterChange}>
@@ -179,7 +196,6 @@ export function AssetsFilters({
             </Select>
           </div>
 
-          {/* Division Filter */}
           <div className="space-y-2">
             <Label htmlFor="division">Division</Label>
             <Select value={divisionFilter} onValueChange={onDivisionFilterChange}>
@@ -197,7 +213,6 @@ export function AssetsFilters({
             </Select>
           </div>
 
-          {/* Employee Filter */}
           <div className="space-y-2">
             <Label>Employee</Label>
             <Popover open={employeePopoverOpen} onOpenChange={setEmployeePopoverOpen}>
@@ -220,7 +235,7 @@ export function AssetsFilters({
                 <Command>
                   <CommandInput placeholder="Search employee..." />
                   <CommandList className="max-h-60">
-                    <CommandEmpty>No employee found.</CommandEmpty>
+                    <CommandEmpty>{isLoadingEmployees ? 'Loading employees...' : 'No employee found.'}</CommandEmpty>
                     <CommandGroup>
                       <CommandItem
                         value="all"
@@ -246,7 +261,6 @@ export function AssetsFilters({
             </Popover>
           </div>
 
-          {/* Date Range */}
           <div className="space-y-2">
             <Label htmlFor="startDate">Start Date</Label>
             <Input
@@ -269,7 +283,6 @@ export function AssetsFilters({
             />
           </div>
 
-          {/* Clear Filters */}
           <div className="flex items-end">
             <Button
               variant="outline"

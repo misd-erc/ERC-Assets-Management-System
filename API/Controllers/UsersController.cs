@@ -150,12 +150,16 @@ namespace API.Controllers
         public async Task<IActionResult> GetSystemUserBySystemUserId([FromQuery] SoloQueryParams model, [FromRoute] long systemUserId)
         {
             await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
 
                 VwSystemUser? user = await _getTools.Account.GetVwSystemUserAsync(systemUserId, context);
+
+                if (user == null)
+                {
+                    return NotFound(ApiResponse<object>.Fail(ErrorCodes.NOT_FOUND, "System user not found."));
+                }
 
                 UserBasicResponseModel userBasicResponse = new UserBasicResponseModel
                 {
@@ -176,16 +180,16 @@ namespace API.Controllers
 					LastLoginAt = user.LastLoginAt
 				};
 
+                if (model.ActionBySystemUserId != user.Id)
+                {
+                    await AuditTrailTool.LogActivityAsync(_options, $"Viewed system user information for user {user.Id}", actionBy: model.ActionBySystemUserId);
+                }
 
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system user information for user {user.Id}", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<object>.Ok(userBasicResponse, $"System user have been retrieved"));
 
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }

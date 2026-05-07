@@ -24,7 +24,7 @@ export const useUserProfile = () => {
       console.log('[useUserProfile] Fetching user profile from API...');
 
       // Always fetch from API to ensure latest data
-      const data = await getUserDetails() as UserDetails;
+      const data = await getUserDetails({ preferCache: true }) as UserDetails;
 
       if (isMounted) {
         // Include profilePictureId from separate localStorage key
@@ -63,7 +63,7 @@ export const useUserProfile = () => {
     
     try {
       console.log('[useUserProfile] Refreshing profile...');
-      const data = await getUserDetails();
+      const data = await getUserDetails({ forceRefresh: true });
       secureStorage.setItem('userProfile', JSON.stringify(data));
      setUserProfile(data as UserDetails);
       console.log('[useUserProfile] Profile refreshed successfully');

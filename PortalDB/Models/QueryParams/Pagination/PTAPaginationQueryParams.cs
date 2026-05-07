@@ -11,7 +11,7 @@ namespace PortalDB.Models.QueryParams.Pagination
 
         public int PageNumber { get; set; } = 1;
 
-        public int PageSize { get; set; } = 9999; //temporary only
+        public int PageSize { get; set; } = 25;
 
         public DateTime? StartDate { get; set; }
 
@@ -30,6 +30,7 @@ namespace PortalDB.Models.QueryParams.Pagination
         public long? OfficeId { get; set; }
         public long? DivisionId { get; set; }
         public string? Condition { get; set; }
+        public bool IncludeRelatedData { get; set; } = true;
         [Required] public string? GroupName { get; set; }
         public string? GroupBy { get; set; }
         [Required] public long ActionBySystemUserId { get; set; }
