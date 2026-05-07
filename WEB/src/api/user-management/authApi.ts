@@ -33,18 +33,7 @@ export interface EditUserPayload {
 }
 
 export const getUserDetails = async (): Promise<UserDetails> => {
-  // Retrieve tokens directly from localStorage to ensure we use the latest synced values
   const currentSystemId = String(secureStorage.getItem('systemUserId'));
-
-
-  if (currentSystemId !== currentSystemId) {
-    console.warn('[AuthAPI] Token mismatch detected! Syncing before API call.');
-    // Auto-correct by syncing them
-    if (currentSystemId) {
-      secureStorage.setItem('systemUserId', currentSystemId);
-      console.log('[AuthAPI] Synced systemUserId with ActionBySystemUserIdEncrypted');
-    }
-  }
 
   // Get session key from localStorage
   const sessionKey = secureStorage.getItem('sessionToken') || '';
