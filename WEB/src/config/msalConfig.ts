@@ -2,6 +2,7 @@ import { PublicClientApplication, LogLevel } from '@azure/msal-browser';
 
 const clientId = process.env.REACT_APP_MSAL_CLIENT_ID;
 const tenantId = process.env.REACT_APP_MSAL_TENANT_ID;
+const redirectUri = process.env.REACT_APP_MSAL_REDIRECT_URI;
 
 if (!clientId || !tenantId) {
   console.error('Missing MSAL configuration. Please set REACT_APP_MSAL_CLIENT_ID and REACT_APP_MSAL_TENANT_ID in .env');
@@ -11,8 +12,8 @@ const msalConfig = {
   auth: {
     clientId: clientId || '',
     authority: `https://login.microsoftonline.com/${tenantId}`,
-    redirectUri: window.location.origin,
-    postLogoutRedirectUri: window.location.origin,
+    redirectUri,
+    postLogoutRedirectUri: redirectUri,
     navigateToLoginRequestUrl: false,
   },
   cache: {
