@@ -1,5 +1,4 @@
-﻿import axios, { type AxiosResponse } from 'axios';
-import axiosInstance from '@/lib/axios';
+﻿import axiosInstance from '@/lib/axios';
 import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserPublicViewModel, ApiResponse } from '@/types';
 
 import { guidToLongId } from '@/utils/guidUtils';
@@ -91,22 +90,15 @@ export const validateUser = async (userInfo: { entraId: string; firstName: strin
     employeeId: userInfo.employeeId || ''
   };
 
-  console.log('[AuthAPI] validateUser - payload:', payload);
-
-  const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-  const response = await axios.post<ApiResponse<UserPublicViewModel>>(`${baseURL}/users/validation`, payload);
-  console.log('[AuthAPI] validateUser - response:', response);
-  console.log('[AuthAPI] validateUser - response.data:', response.data);
+  const response = await axiosInstance.post<ApiResponse<UserPublicViewModel>>('/users/validation', payload);
 
   const data = response.data.data;
-  console.log('[AuthAPI] validateUser - data:', data);
 
   if (!response.data.success) {
     throw new Error(response.data.message || 'Validation failed');
   }
 
   if (!data || !data.systemUserId) {
-    console.error('[AuthAPI] validateUser - Invalid response structure:', { data, systemUserId: data?.systemUserId });
     throw new Error('Invalid response from server');
   }
 
