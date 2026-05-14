@@ -16,7 +16,6 @@ using PortalTools.Services.GetEditTools.DBO.Storage;
 using PortalTools.Services.GetEditTools.LOG;
 using System.IO;
 using System.Text;
-using Microsoft.AspNetCore.HttpOverrides;
 
 Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
 var builder = WebApplication.CreateBuilder(args);
@@ -119,14 +118,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowFrontendClient");
-
-// Azure Application Gateway does SSL offloading (HTTPS → HTTP to backend).
-// Without this, UseHttpsRedirection() will redirect every request back to HTTPS,
-// causing the App Gateway health probe to fail and the backend to be blocked (403).
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
 
 app.UseHttpsRedirection();
 
