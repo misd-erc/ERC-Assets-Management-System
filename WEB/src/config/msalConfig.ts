@@ -32,3 +32,6 @@ const msalConfig = {
 };
 
 export const msalInstance = new PublicClientApplication(msalConfig);
+
+// Initialize once at module load time — prevents StrictMode from calling initialize() twice
+export const msalInitPromise = msalInstance.initialize();
