@@ -113,8 +113,16 @@ var app = builder.Build();
 // Auto-apply any pending EF Core migrations on startup
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<PortalDbContext>();
-    db.Database.Migrate();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<PortalDbContext>();
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Migration failed on startup — continuing anyway.");
+    }
 }
 
 // Configure the HTTP request pipeline.
