@@ -25,7 +25,12 @@ namespace API.Attributes
                     value is string encodedValue &&
                     !string.IsNullOrWhiteSpace(encodedValue))
                 {
-                    string decoded = Uri.UnescapeDataString(encodedValue);
+                    string normalized = encodedValue
+                        .Replace(" ", "+")      // Recover lost '+'
+                        .Replace("%2F", "/")    // Re-allow slash
+                        .Replace("%5C", "\\");  // Backslashes
+
+                    string decoded = Uri.UnescapeDataString(normalized);
 
                     context.ActionArguments[paramName] = decoded;
                 }
