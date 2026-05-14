@@ -18,7 +18,6 @@ using System.IO;
 using System.Text;
 
 Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
-Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "logs"));
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -110,21 +109,6 @@ builder.Services.AddCors(options =>
 #endregion
 
 var app = builder.Build();
-
-// Auto-apply any pending EF Core migrations on startup
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        var db = scope.ServiceProvider.GetRequiredService<PortalDbContext>();
-        db.Database.Migrate();
-    }
-    catch (Exception ex)
-    {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Migration failed on startup — continuing anyway.");
-    }
-}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -814,7 +814,7 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyIARPONumber");
 
-                    b.Property<long?>("RecordId")
+                    b.Property<long>("RecordId")
                         .HasColumnType("bigint")
                         .HasColumnName("DeliveryRecordId");
 

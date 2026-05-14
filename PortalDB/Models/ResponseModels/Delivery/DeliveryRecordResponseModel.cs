@@ -1,4 +1,4 @@
-using PortalDB.Entities.ASSET.PTA;
+﻿using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Entities.ASSET.Supply;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Models.ResponseModels.Supply;
@@ -21,7 +21,6 @@ namespace PortalDB.Models.ResponseModels.Delivery
         public long? FileId { get; set; }
         public bool IsReceived { get; set; } = false;
         public List<DeliveryRecordItemResponseModel>? Items { get; set; }
-        public decimal TotalAmount { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime? CreatedAt { get; set; }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
@@ -7,20 +7,21 @@ namespace PortalDB.Models.QueryParams.Delivery
 {
     public class EditDeliveryRecordItemRawQueryParams
     {
-        public long Id { get; set; }
-        public long? RecordId { get; set; }
-        public string? Code { get; set; } = string.Empty;
-        public long? ItemTypeId { get; set; }
-        public long? CategoryId { get; set; }
-        public string? ItemDescription { get; set; } = string.Empty;
-        public string? ItemSpecification { get; set; } = string.Empty;
-        public int? ItemQuantity { get; set; }
-        public int? ReorderPoint { get; set; }
-        public long? MeasurementUnitId { get; set; }
-        public long? UnitCost { get; set; }
-        public long? StorageLocationId { get; set; }
-        public long? VendorId { get; set; }
-        public bool IsActive { get; set; } = true;
-        public bool IsDeleted { get; set; } = false;
+        [Required] public long Id { get; set; }
+        [Required] public long RecordId { get; set; }
+        public string Code { get; set; } = string.Empty;
+        [Required] public long ItemTypeId { get; set; }
+        [Required] public long CategoryId { get; set; }
+        [Required] public string ItemDescription { get; set; } = string.Empty;
+        public string ItemSpecification { get; set; } = string.Empty;
+        [Required] public int ItemQuantity { get; set; }
+        //public int CurrentStock { get; set; }
+        public int ReorderPoint { get; set; }
+        [Required] public long MeasurementUnitId { get; set; }
+        [Required] public long UnitCost { get; set; }
+        public long StorageLocationId { get; set; }
+        public long VendorId { get; set; }
+        [Required] public bool IsActive { get; set; } = true;
+        [Required] public bool IsDeleted { get; set; } = false;
     }
 }

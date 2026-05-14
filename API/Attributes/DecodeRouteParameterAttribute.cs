@@ -25,11 +25,13 @@ namespace API.Attributes
                     value is string encodedValue &&
                     !string.IsNullOrWhiteSpace(encodedValue))
                 {
+                    // Re-normalize lost route-safe characters
                     string normalized = encodedValue
                         .Replace(" ", "+")      // Recover lost '+'
-                        .Replace("%2F", "/")    // Re-allow slash
-                        .Replace("%5C", "\\");  // Backslashes
+                        .Replace("%2F", "/")    // Optional: re-allow slash if you know your data can contain them
+                        .Replace("%5C", "\\");  // Optional: if you expect backslashes
 
+                    // Decode full URI
                     string decoded = Uri.UnescapeDataString(normalized);
 
                     context.ActionArguments[paramName] = decoded;
