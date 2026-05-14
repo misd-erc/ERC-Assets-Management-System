@@ -18,6 +18,7 @@ using System.IO;
 using System.Text;
 
 Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
+Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "logs"));
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
