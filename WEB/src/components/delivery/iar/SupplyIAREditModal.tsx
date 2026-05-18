@@ -27,6 +27,15 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
   const [formData, setFormData] = useState<any>({ entityName: 'Energy Regulatory Commission', isActive: true });
   const [loading, setLoading] = useState(false);
 
+  const [openRecord, setOpenRecord] = useState(false);
+  const [activeRecord, setActiveRecord] = useState("");
+  const [openOffice, setOpenOffice] = useState(false);
+  const [activeOffice, setActiveOffice] = useState("");
+  const [openDivision, setOpenDivision] = useState(false);
+  const [activeDivision, setActiveDivision] = useState("");
+  const [openVendor, setOpenVendor] = useState(false);
+  const [activeVendor, setActiveVendor] = useState("");
+
   useEffect(() => { if (open) { fetchVendors(); fetchOffices(); fetchDivisions(); } }, [open]);
 
   useEffect(() => {
@@ -84,7 +93,13 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
             {/* Linked Delivery Record */}
             <div className="space-y-2 col-span-2">
               <Label className="text-slate-700 font-medium">Linked Delivery Record (DR)</Label>
-              <Popover>
+              <Popover open={openRecord} onOpenChange={(open) => {
+                setOpenRecord(open);
+                if (open) {
+                  const record = availableDeliveryRecords.find((dr: any) => dr.id === formData.recordId);
+                  setActiveRecord(record ? record.drNumber : "");
+                }
+              }}>
                 <PopoverTrigger asChild>
                   <Button
                       variant="outline"
@@ -101,7 +116,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                 </PopoverTrigger>
 
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-                  <Command className="bg-white">
+                  <Command className="bg-white" value={activeRecord} onValueChange={setActiveRecord}>
                     {/* --- SEARCH BOX --- */}
                     <div className="p-2 bg-slate-50 border-b border-slate-100">
                       <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
@@ -124,7 +139,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                       <CommandGroup className="p-1.5">
                         {/* Clear Selection Option */}
                         <CommandItem
-                            onSelect={() => setFormData({ ...formData, recordId: 0 })}
+                            onSelect={() => { setFormData({ ...formData, recordId: 0 }); setOpenRecord(false); }}
                             className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer text-slate-500 italic hover:bg-slate-50"
                         >
                           <span>Clear Selection</span>
@@ -136,6 +151,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                                 value={dr.drNumber} // This is what the search filters against
                                 onSelect={() => {
                                   setFormData({ ...formData, recordId: dr.id });
+                                  setOpenRecord(false);
                                 }}
                                 className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
                             >
@@ -170,7 +186,13 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
 
             <div className="space-y-2 min-w-0 flex flex-col">
               <Label className="text-slate-700 font-medium">Office</Label>
-              <Popover>
+              <Popover open={openOffice} onOpenChange={(open) => {
+                setOpenOffice(open);
+                if (open) {
+                  const name = vwOffices.find((o: any) => o.id === formData.officeId)?.name;
+                  setActiveOffice(name || "");
+                }
+              }}>
                 <PopoverTrigger asChild>
                   <Button
                       variant="outline"
@@ -187,7 +209,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                 </PopoverTrigger>
 
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-                  <Command className="bg-white">
+                  <Command className="bg-white" value={activeOffice} onValueChange={setActiveOffice}>
 
                     {/* --- ENHANCED SEARCH BOX --- */}
                     <div className="p-2 bg-slate-50 border-b border-slate-100">
@@ -212,7 +234,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                       <CommandGroup className="p-1.5">
                         {/* Replaces the old value="0" select item */}
                         <CommandItem
-                            onSelect={() => setFormData({...formData, officeId: 0, divisionId: 0})}
+                            onSelect={() => { setFormData({...formData, officeId: 0, divisionId: 0}); setOpenOffice(false); }}
                             className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50"
                         >
                           <span className="truncate flex-1">Clear Selection</span>
@@ -228,6 +250,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                                     officeId: o.id,
                                     divisionId: 0
                                   });
+                                  setOpenOffice(false);
                                 }}
                                 className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
                             >
@@ -248,7 +271,13 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
 
             <div className="space-y-2 min-w-0 flex flex-col">
               <Label className="text-slate-700 font-medium">Division</Label>
-              <Popover>
+              <Popover open={openDivision} onOpenChange={(open) => {
+                setOpenDivision(open);
+                if (open) {
+                  const name = filteredDivisions.find((d: any) => d.id === formData.divisionId)?.name;
+                  setActiveDivision(name || "");
+                }
+              }}>
                 {/* ✅ Preserved your disabled logic here */}
                 <PopoverTrigger asChild disabled={!formData.officeId}>
                   <Button
@@ -266,7 +295,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                 </PopoverTrigger>
 
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-                  <Command className="bg-white">
+                  <Command className="bg-white" value={activeDivision} onValueChange={setActiveDivision}>
 
                     {/* --- ENHANCED SEARCH BOX --- */}
                     <div className="p-2 bg-slate-50 border-b border-slate-100">
@@ -291,7 +320,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                       <CommandGroup className="p-1.5">
                         {/* Replaces the old value="0" select item */}
                         <CommandItem
-                            onSelect={() => setFormData({...formData, divisionId: 0})}
+                            onSelect={() => { setFormData({...formData, divisionId: 0}); setOpenDivision(false); }}
                             className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50"
                         >
                           <span className="truncate flex-1">Clear Selection</span>
@@ -307,6 +336,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                                     ...formData,
                                     divisionId: d.id
                                   });
+                                  setOpenDivision(false);
                                 }}
                                 className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
                             >
@@ -331,7 +361,13 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
 
             <div className="space-y-2 col-span-2 min-w-0 flex flex-col">
               <Label className="text-slate-700 font-medium">Vendor</Label>
-              <Popover>
+              <Popover open={openVendor} onOpenChange={(open) => {
+                setOpenVendor(open);
+                if (open) {
+                  const name = vendors.find((v: any) => v.id === formData.vendorId)?.name;
+                  setActiveVendor(name || "");
+                }
+              }}>
                 <PopoverTrigger asChild>
                   <Button
                       variant="outline"
@@ -348,7 +384,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                 </PopoverTrigger>
 
                 <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-                  <Command className="bg-white">
+                  <Command className="bg-white" value={activeVendor} onValueChange={setActiveVendor}>
 
                     {/* --- ENHANCED SEARCH BOX --- */}
                     <div className="p-2 bg-slate-50 border-b border-slate-100">
@@ -373,7 +409,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                       <CommandGroup className="p-1.5">
                         {/* Clear Selection Option */}
                         <CommandItem
-                            onSelect={() => setFormData({...formData, vendorId: 0})}
+                            onSelect={() => { setFormData({...formData, vendorId: 0}); setOpenVendor(false); }}
                             className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50"
                         >
                           <span className="truncate flex-1">Clear Selection</span>
@@ -389,6 +425,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                                     ...formData,
                                     vendorId: v.id
                                   });
+                                  setOpenVendor(false);
                                 }}
                                 className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
                             >

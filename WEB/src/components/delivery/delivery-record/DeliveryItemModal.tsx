@@ -28,6 +28,19 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
   const [categories, setCategories] = useState<any[]>([]);
   const [isNewItem, setIsNewItem] = useState(false);
 
+  const [openItemType, setOpenItemType] = useState(false);
+  const [activeItemType, setActiveItemType] = useState("");
+  const [openCategory, setOpenCategory] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("");
+  const [openItemCode, setOpenItemCode] = useState(false);
+  const [activeItemCode, setActiveItemCode] = useState("");
+  const [openLocation, setOpenLocation] = useState(false);
+  const [activeLocation, setActiveLocation] = useState("");
+  const [openVendor, setOpenVendor] = useState(false);
+  const [activeVendor, setActiveVendor] = useState("");
+  const [openUnit, setOpenUnit] = useState(false);
+  const [activeUnit, setActiveUnit] = useState("");
+
   const [item, setItem] = useState({
     itemTypeId: 1,
     categoryId: 0,
@@ -163,7 +176,14 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
               {/* ITEM TYPE */}
               <div className="space-y-2">
                 <Label className="text-slate-700 font-medium">Item Type</Label>
-                <Popover>
+                <Popover open={openItemType} onOpenChange={(open) => {
+                  setOpenItemType(open);
+                  if (open) {
+                    const types = [{ id: 1, label: "Supply" }, { id: 2, label: "PPE" }, { id: 3, label: "Semi-Expendable" }];
+                    const type = types.find(t => t.id === item.itemTypeId);
+                    setActiveItemType(type ? type.label : "");
+                  }
+                }}>
                   <PopoverTrigger asChild>
                     <Button
                         variant="outline"
@@ -181,7 +201,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                   </PopoverTrigger>
 
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-                    <Command className="bg-white">
+                    <Command className="bg-white" value={activeItemType} onValueChange={setActiveItemType}>
                       <div className="p-2 bg-slate-50 border-b border-slate-100">
                         <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
                           <CommandInput
@@ -205,6 +225,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                                     const typeId = type.id;
                                     setItem({ ...item, itemTypeId: typeId });
                                     if (typeId !== 1) setIsNewItem(true);
+                                    setOpenItemType(false);
                                   }}
                                   className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
                               >
@@ -222,7 +243,13 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
               {/* CATEGORY */}
               <div className="space-y-2 min-w-0 flex flex-col">
                 <Label className="text-slate-700 font-medium">Category</Label>
-                <Popover>
+                <Popover open={openCategory} onOpenChange={(open) => {
+                  setOpenCategory(open);
+                  if (open) {
+                    const c = categories.find(c => c.id === item.categoryId);
+                    setActiveCategory(c ? c.name : "");
+                  }
+                }}>
                   <PopoverTrigger asChild disabled={isExistingItem && item.categoryId !== 0}>
                     <Button
                         variant="outline"
@@ -241,7 +268,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                   </PopoverTrigger>
 
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-                    <Command className="bg-white">
+                    <Command className="bg-white" value={activeCategory} onValueChange={setActiveCategory}>
                       <div className="p-2 bg-slate-50 border-b border-slate-100">
                         <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
                           <CommandInput
@@ -254,7 +281,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                         <CommandEmpty className="py-6 text-center text-sm text-slate-500">No category found.</CommandEmpty>
                         <CommandGroup className="p-1.5">
                           <CommandItem
-                              onSelect={() => setItem({ ...item, categoryId: 0 })}
+                              onSelect={() => { setItem({ ...item, categoryId: 0 }); setOpenCategory(false); }}
                               className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50"
                           >
                             <span className="truncate flex-1">Clear Selection</span>
@@ -263,7 +290,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                               <CommandItem
                                   key={c.id}
                                   value={c.name}
-                                  onSelect={() => setItem({ ...item, categoryId: c.id })}
+                                  onSelect={() => { setItem({ ...item, categoryId: c.id }); setOpenCategory(false); }}
                                   className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
                               >
                                 <span className="truncate flex-1">{c.name}</span>
@@ -302,7 +329,13 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                         </Button>
                       </div>
                   ) : (
-                      <Popover>
+                      <Popover open={openItemCode} onOpenChange={(open) => {
+                        setOpenItemCode(open);
+                        if (open) {
+                          const s = vwUniqueRawSupplies.find(s => s.code === item.code);
+                          setActiveItemCode(s ? `${s.code} ${s.description}` : "");
+                        }
+                      }}>
                         <PopoverTrigger asChild>
                           <Button
                               variant="outline"
@@ -321,7 +354,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                         </PopoverTrigger>
 
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-                          <Command className="bg-white">
+                          <Command className="bg-white" value={activeItemCode} onValueChange={setActiveItemCode}>
                             <div className="p-2 bg-slate-50 border-b border-slate-100">
                               <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
                                 <CommandInput
@@ -334,7 +367,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                               <CommandEmpty className="py-6 text-center text-sm text-slate-500">No item found.</CommandEmpty>
                               <CommandGroup className="p-1.5">
                                 <CommandItem
-                                    onSelect={() => handleCodeChange("NEW_ITEM")}
+                                    onSelect={() => { handleCodeChange("NEW_ITEM"); setOpenItemCode(false); }}
                                     className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors font-medium text-blue-600 italic hover:bg-blue-50"
                                 >
                                   <span className="truncate flex-1">+ Add New Item Reference</span>
@@ -343,7 +376,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                                     <CommandItem
                                         key={s.id}
                                         value={`${s.code} ${s.description}`}
-                                        onSelect={() => handleCodeChange(s.code)}
+                                        onSelect={() => { handleCodeChange(s.code); setOpenItemCode(false); }}
                                         className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
                                     >
                                       <span className="truncate flex-1">{s.code} - {s.description}</span>
@@ -385,7 +418,13 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                     {/* STORAGE LOCATION */}
                     <div className="space-y-2 min-w-0 flex flex-col">
                       <Label className="text-slate-700 font-medium">Storage Location</Label>
-                      <Popover>
+                      <Popover open={openLocation} onOpenChange={(open) => {
+                        setOpenLocation(open);
+                        if (open) {
+                          const l = storagelocations.find(l => l.id === item.storageLocationId);
+                          setActiveLocation(l ? l.name : "");
+                        }
+                      }}>
                         <PopoverTrigger asChild disabled={isExistingItem && item.storageLocationId !== 0}>
                           <Button
                               variant="outline"
@@ -404,7 +443,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                         </PopoverTrigger>
 
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-                          <Command className="bg-white">
+                          <Command className="bg-white" value={activeLocation} onValueChange={setActiveLocation}>
                             <div className="p-2 bg-slate-50 border-b border-slate-100">
                               <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
                                 <CommandInput placeholder="Search location..." className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none" />
@@ -413,11 +452,11 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                             <CommandList className="max-h-60 overflow-y-auto overscroll-contain" onWheelCapture={(e) => e.stopPropagation()}>
                               <CommandEmpty className="py-6 text-center text-sm text-slate-500">No location found.</CommandEmpty>
                               <CommandGroup className="p-1.5">
-                                <CommandItem onSelect={() => setItem({ ...item, storageLocationId: 0 })} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50">
+                                <CommandItem onSelect={() => { setItem({ ...item, storageLocationId: 0 }); setOpenLocation(false); }} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50">
                                   <span className="truncate flex-1">Clear Selection</span>
                                 </CommandItem>
                                 {storagelocations.map((l) => (
-                                    <CommandItem key={l.id} value={l.name} onSelect={() => setItem({ ...item, storageLocationId: l.id })} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700">
+                                    <CommandItem key={l.id} value={l.name} onSelect={() => { setItem({ ...item, storageLocationId: l.id }); setOpenLocation(false); }} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700">
                                       <span className="truncate flex-1">{l.name}</span>
                                       <Check className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${item.storageLocationId === l.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"}`} />
                                     </CommandItem>
@@ -432,7 +471,13 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                     {/* VENDOR */}
                     <div className="space-y-2 min-w-0 flex flex-col">
                       <Label className="text-slate-700 font-medium">Vendor</Label>
-                      <Popover>
+                      <Popover open={openVendor} onOpenChange={(open) => {
+                        setOpenVendor(open);
+                        if (open) {
+                          const v = vendors.find(v => v.id === item.vendorId);
+                          setActiveVendor(v ? v.name : "");
+                        }
+                      }}>
                         <PopoverTrigger asChild disabled={isExistingItem && item.vendorId !== 0}>
                           <Button
                               variant="outline"
@@ -451,7 +496,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                         </PopoverTrigger>
 
                         <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-                          <Command className="bg-white">
+                          <Command className="bg-white" value={activeVendor} onValueChange={setActiveVendor}>
                             <div className="p-2 bg-slate-50 border-b border-slate-100">
                               <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
                                 <CommandInput placeholder="Search vendor..." className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none" />
@@ -460,11 +505,11 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                             <CommandList className="max-h-60 overflow-y-auto overscroll-contain" onWheelCapture={(e) => e.stopPropagation()}>
                               <CommandEmpty className="py-6 text-center text-sm text-slate-500">No vendor found.</CommandEmpty>
                               <CommandGroup className="p-1.5">
-                                <CommandItem onSelect={() => setItem({ ...item, vendorId: 0 })} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50">
+                                <CommandItem onSelect={() => { setItem({ ...item, vendorId: 0 }); setOpenVendor(false); }} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50">
                                   <span className="truncate flex-1">Clear Selection</span>
                                 </CommandItem>
                                 {vendors.map((v) => (
-                                    <CommandItem key={v.id} value={v.name} onSelect={() => setItem({ ...item, vendorId: v.id })} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700">
+                                    <CommandItem key={v.id} value={v.name} onSelect={() => { setItem({ ...item, vendorId: v.id }); setOpenVendor(false); }} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700">
                                       <span className="truncate flex-1">{v.name}</span>
                                       <Check className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${item.vendorId === v.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"}`} />
                                     </CommandItem>
@@ -522,7 +567,13 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
               {/* UNIT */}
               <div className="space-y-2">
                 <Label className="text-slate-700 font-medium">Unit</Label>
-                <Popover>
+                <Popover open={openUnit} onOpenChange={(open) => {
+                  setOpenUnit(open);
+                  if (open) {
+                    const u = units.find(u => u.id === item.measurementUnitId);
+                    setActiveUnit(u ? u.name : "");
+                  }
+                }}>
                   <PopoverTrigger asChild>
                     <Button
                         variant="outline"
@@ -539,7 +590,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                   </PopoverTrigger>
 
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-                    <Command className="bg-white">
+                    <Command className="bg-white" value={activeUnit} onValueChange={setActiveUnit}>
                       <div className="p-2 bg-slate-50 border-b border-slate-100">
                         <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
                           <CommandInput placeholder="Search units..." className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none" />
@@ -548,11 +599,11 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                       <CommandList className="max-h-48 overflow-y-auto overscroll-contain" onWheelCapture={(e) => e.stopPropagation()}>
                         <CommandEmpty className="py-4 text-center text-sm text-slate-500">No unit found.</CommandEmpty>
                         <CommandGroup className="p-1.5">
-                          <CommandItem onSelect={() => setItem({ ...item, measurementUnitId: 0 })} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer text-slate-500 italic hover:bg-slate-50">
+                          <CommandItem onSelect={() => { setItem({ ...item, measurementUnitId: 0 }); setOpenUnit(false); }} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer text-slate-500 italic hover:bg-slate-50">
                             <span>Select Unit</span>
                           </CommandItem>
                           {units.map((u) => (
-                              <CommandItem key={u.id} value={u.name} onSelect={() => setItem({ ...item, measurementUnitId: u.id })} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700">
+                              <CommandItem key={u.id} value={u.name} onSelect={() => { setItem({ ...item, measurementUnitId: u.id }); setOpenUnit(false); }} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700">
                                 <span className="flex-1">{u.name}</span>
                                 <Check className={`ml-2 h-4 w-4 shrink-0 transition-all ${item.measurementUnitId === u.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"}`} />
                               </CommandItem>
