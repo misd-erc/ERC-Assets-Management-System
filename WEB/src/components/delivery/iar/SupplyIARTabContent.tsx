@@ -36,7 +36,7 @@ export const SupplyIARTabContent = () => {
   const setOfficeId = useSupplyIARStore(state => state.setOfficeId);
   const setDivisionId = useSupplyIARStore(state => state.setDivisionId);
 
-  const { vwDeliveryRecords, fetchDeliveryRecords } = useDeliveryRecordStore();
+  const { vwDeliveryRecords, fetchDeliveryRecords, fetchDeliveryRecordsSummary } = useDeliveryRecordStore();
   const { vwOffices, fetchOffices } = useOfficeStore();
   const { vwDivisions, fetchDivisions } = useDivisionStore();
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -124,6 +124,8 @@ export const SupplyIARTabContent = () => {
       };
       
       await updateSupplyIAR(selectedRecord.id, fullPayload);
+      await fetchDeliveryRecords();
+      await fetchDeliveryRecordsSummary();
       setIsApproveOpen(false);
     }
   };
@@ -131,6 +133,8 @@ export const SupplyIARTabContent = () => {
   const handleSave = async (data: any) => {
     if (mode === 'add') await addSupplyIAR(data);
     else if (selectedRecord) await updateSupplyIAR(selectedRecord.id, data);
+    await fetchDeliveryRecords();
+    await fetchDeliveryRecordsSummary();
     setIsEditOpen(false);
   };
 
@@ -182,6 +186,8 @@ export const SupplyIARTabContent = () => {
         record={selectedRecord} 
         onConfirm={async () => { 
           if (selectedRecord) await deleteSupplyIAR(selectedRecord.id); 
+          await fetchDeliveryRecords();
+          await fetchDeliveryRecordsSummary();
           setIsDeleteOpen(false); 
         }} 
       />
