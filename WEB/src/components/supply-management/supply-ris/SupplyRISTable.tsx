@@ -220,7 +220,7 @@ export const SupplyRISTable = ({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Divisions</SelectItem>
-                        {divisions.filter(d => officeFilter === 'all' || d.officeId === Number(officeFilter)).map(div => (
+                        {divisions.filter(d => officeFilter === 'all' || d.office?.id === Number(officeFilter)).map(div => (
                             <SelectItem key={div.id} value={div.id.toString()}>{div.acronym}</SelectItem>
                         ))}
                       </SelectContent>

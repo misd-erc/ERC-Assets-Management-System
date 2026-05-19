@@ -84,7 +84,14 @@ export const SupplyItemTable = ({
   };
 
   const updateParams = (updates: Partial<{ page: number; search: string; category: string; status: string; storageId: string; vendorId: string }>) => {
-    onParamsChange(updates);
+    onParamsChange({
+      page: updates.page ?? page,
+      search: updates.search ?? searchQuery,
+      category: updates.category ?? categoryFilter,
+      status: updates.status ?? statusFilter,
+      storageId: updates.storageId ?? storageFilter,
+      vendorId: updates.vendorId ?? vendorFilter,
+    });
   };
 
   const getStockStatus = (item: VwSupplyItem) => {
