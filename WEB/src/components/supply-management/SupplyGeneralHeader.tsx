@@ -124,7 +124,7 @@ export const SupplyGeneralHeader = () => {
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-slate-500">Total Items</p>
-                  <p className="text-3xl font-bold text-slate-900">{stats.totalItems}</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.totalItems}</p>
                 </div>
                 <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
                   <Package className="w-5 h-5" />
@@ -138,7 +138,7 @@ export const SupplyGeneralHeader = () => {
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-slate-500">Current Stock Value</p>
-                  <p className="text-3xl font-bold text-slate-900 truncate max-w-[150px]" title={formatCurrency(stats.totalInventoryValue)}>
+                  <p className="text-2xl font-bold text-slate-900 truncate max-w-[150px]" title={formatCurrency(stats.totalInventoryValue)}>
                     {formatCurrency(stats.totalInventoryValue)}
                   </p>
                 </div>
@@ -159,7 +159,7 @@ export const SupplyGeneralHeader = () => {
                     Low Stock Items
                   </p>
                   <div className="flex items-center gap-2">
-                    <p className="text-3xl font-bold text-slate-900">{stats.lowStockItems}</p>
+                    <p className="text-2xl font-bold text-slate-900">{stats.lowStockItems}</p>
                     {stats.lowStockItems === 0 && stats.outOfStockItems === 0 && (
                         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 mt-1">
                           Healthy
@@ -186,7 +186,7 @@ export const SupplyGeneralHeader = () => {
                     Out of Stock
                   </p>
                   <div className="flex items-center gap-2">
-                    <p className="text-3xl font-bold text-slate-900">{stats.outOfStockItems}</p>
+                    <p className="text-2xl font-bold text-slate-900">{stats.outOfStockItems}</p>
                     {stats.outOfStockItems > 0 && (
                         <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200 mt-1 animate-pulse">
                           Critical
@@ -210,7 +210,7 @@ export const SupplyGeneralHeader = () => {
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-slate-500">Pending RIS</p>
-                  <p className="text-3xl font-bold text-slate-900">{stats.pendingRIS}</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.pendingRIS}</p>
                 </div>
                 <div className="p-3 bg-orange-50 text-orange-600 rounded-xl">
                   <FileText className="w-5 h-5" />
@@ -224,7 +224,7 @@ export const SupplyGeneralHeader = () => {
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-slate-500">Completed RIS (MTD)</p>
-                  <p className="text-3xl font-bold text-slate-900">{stats.completedRISThisMonth}</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.completedRISThisMonth}</p>
                 </div>
                 <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
                   <CheckCircle2 className="w-5 h-5" />
@@ -238,7 +238,7 @@ export const SupplyGeneralHeader = () => {
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-slate-500">Inbound Deliveries</p>
-                  <p className="text-3xl font-bold text-slate-900">{stats.pendingDeliveries}</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.pendingDeliveries}</p>
                 </div>
                 <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl shrink-0">
                   <Truck className="w-5 h-5" />
@@ -252,7 +252,7 @@ export const SupplyGeneralHeader = () => {
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-slate-500">Value Issued (MTD)</p>
-                  <p className="text-3xl font-bold text-slate-900 truncate max-w-[150px]" title={formatCurrency(stats.issuedValueMTD)}>
+                  <p className="text-2xl font-bold text-slate-900 truncate max-w-[150px]" title={formatCurrency(stats.issuedValueMTD)}>
                     {formatCurrency(stats.issuedValueMTD)}
                   </p>
                 </div>
