@@ -1051,7 +1051,7 @@ namespace API.Controllers
                     var supplyIARModel = new SupplyIARResponseModel
                     {
                         Id = x.Id,
-                        RecordId = x.RecordId.Value,
+                        RecordId = x.RecordId ?? 0,
                         DRNumber = _getTools.Delivery.GetTblDeliveryRecords(context).Where(y => y.Id == x.RecordId).FirstOrDefault()?.DRNumber ?? "",
                         CenterCode = x.ResponsibilityCenterCode,
                         EntityName = x.EntityName,
@@ -1114,7 +1114,7 @@ namespace API.Controllers
                         IARNumber = x.IARNumber,
                         IARNumberDate = x.IARNumberDate,
                         IsApproved = x.IsApproved,
-                        RecordId = x.RecordId.Value,
+                        RecordId = x.RecordId ?? 0,
                         CreatedAt = x.CreatedAt
                     });
                 }
