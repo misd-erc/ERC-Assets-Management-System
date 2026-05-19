@@ -256,7 +256,12 @@ export const SupplyRISTable = ({
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
+            {loading && data.length > 0 && (
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-100 dark:bg-blue-950 overflow-hidden z-10">
+                <div className="h-full bg-blue-600 dark:bg-blue-400 animate-pulse w-full"></div>
+              </div>
+            )}
             <Table>
               <TableHeader className="bg-slate-50/80">
                 <TableRow>
@@ -286,7 +291,7 @@ export const SupplyRISTable = ({
               </TableHeader>
               <TableBody>
                 {/* SKELETON LOADER */}
-                {loading ? (
+                {loading && data.length === 0 ? (
                     Array.from({ length: 5 }).map((_, index) => (
                         <TableRow key={`skeleton-${index}`}>
                           {Array.from({ length: 6 }).map((_, colIndex) => (
@@ -392,7 +397,7 @@ export const SupplyRISTable = ({
           </div>
 
           {/* Pagination Footer */}
-          {!loading && totalPages > 1 && (
+          {totalPages > 1 && (
               <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
                 <p className="text-sm text-slate-500">
                   Showing <span className="font-medium text-slate-900">{(page - 1) * PAGE_SIZE + 1}</span> to <span className="font-medium text-slate-900">{Math.min(page * PAGE_SIZE, totalCount)}</span> of <span className="font-medium text-slate-900">{totalCount}</span> results
