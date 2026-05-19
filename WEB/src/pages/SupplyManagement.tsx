@@ -6,8 +6,7 @@ import {
   SupplyGeneralHeader,
   SupplyTabsList,
   SupplyGroupedTabContent,
-  SupplyUnitTabContent,
-  SupplyStorageTabContent
+  SupplyReferenceTabContent
 } from '@/components/supply-management';
 import { SupplyRISTabContent } from '@/components/supply-management/supply-ris/SupplyRISTabContent';
 import { StockCardTabContent } from '@/components/supply-management/supply-stock-card/StockCardTabContent';
@@ -26,20 +25,16 @@ export const SupplyManagement = () => {
           <SupplyGroupedTabContent />
         </TabsContent>
 
-        <TabsContent value="units">
-          <SupplyUnitTabContent />
-        </TabsContent>
-
-        <TabsContent value="storage">
-          <SupplyStorageTabContent />
-        </TabsContent>
-
         <TabsContent value="stock-cards">
           <StockCardTabContent />
         </TabsContent>
 
         <TabsContent value="ris-requests">
           <SupplyRISTabContent />
+        </TabsContent>
+
+        <TabsContent value="setup">
+          <SupplyReferenceTabContent />
         </TabsContent>
       </Tabs>
     </div>
