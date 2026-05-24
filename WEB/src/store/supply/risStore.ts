@@ -15,6 +15,7 @@ import {
   deleteSupplyRISItem,
 } from '@/api/supply-management/risApi';
 import { getAuthParams } from '@/utils/auth';
+import { useSupplyItemStore } from '@/store/supply';
 
 interface RISState {
   risList: VwSupplyRIS[];
@@ -94,6 +95,8 @@ export const useRISStore = create<RISState>((set, get) => ({
     try {
       await deleteSupplyRIS(id);
       await get().fetchRISs();
+      await get().fetchRISSummary();
+      await useSupplyItemStore.getState().fetchSupplySummary();
       toast.success('RIS deleted');
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete RIS');
@@ -106,6 +109,8 @@ export const useRISStore = create<RISState>((set, get) => ({
       await deleteSupplyRISItem(id);
       const risId = get().currentRISItems[0]?.risId;
       if (risId) await get().fetchRISItems(risId);
+      await get().fetchRISSummary();
+      await useSupplyItemStore.getState().fetchSupplySummary();
       toast.success('RIS item deleted');
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete RIS item');
@@ -137,6 +142,8 @@ export const useRISStore = create<RISState>((set, get) => ({
 
       // 4. Refresh the list
       await get().fetchRISs();
+      await get().fetchRISSummary();
+      await useSupplyItemStore.getState().fetchSupplySummary();
       toast.success('RIS saved');
       return risId;
     } catch (error: any) {

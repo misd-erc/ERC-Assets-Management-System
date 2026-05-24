@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, X, Package } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
+import { toast } from 'sonner';
 
 // Components
 import { DeliveryItemModal } from './DeliveryItemModal';
@@ -80,6 +81,17 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.drNumber.trim()) {
+      toast.error('DR Number is required');
+      return;
+    }
+    
+    if (items.length === 0) {
+      toast.error('At least one Delivery Item is required before saving');
+      return;
+    }
+    
     setLoading(true);
     try {
       // Create the Raw Item payload required by the backend
@@ -126,8 +138,8 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>DR Number</Label>
-                <Input value={formData.drNumber} onChange={e => setFormData({...formData, drNumber: e.target.value})} />
+                <Label>DR Number <span className="text-red-500">*</span></Label>
+                <Input required value={formData.drNumber} onChange={e => setFormData({...formData, drNumber: e.target.value})} />
               </div>
               <div className="space-y-2">
                 <Label>Delivery Date</Label>

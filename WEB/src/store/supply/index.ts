@@ -156,6 +156,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
         isActive: supply.isActive ?? true,
       });
       await get().fetchSupplyItems();
+      await get().fetchSupplySummary();
       toast.success('Supply Item added');
     } catch (error) {
       toast.error('Failed to add supply item');
@@ -181,6 +182,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
         isActive: updates.isActive ?? true
       });
       await get().fetchSupplyItems();
+      await get().fetchSupplySummary();
       toast.success('Supply Item updated');
     } catch (error) {
       toast.error('Failed to update supply item');
@@ -195,6 +197,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
         params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
       });
       await get().fetchSupplyItems();
+      await get().fetchSupplySummary();
       toast.success('Supply Item deleted');
     } catch {
       toast.error('Failed to delete supply Item');
@@ -473,6 +476,8 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       } as SupplyIAR);
       
       await get().fetchSupplyIARs();
+      await get().fetchSupplyIARSummary();
+      await useSupplyItemStore.getState().fetchSupplySummary();
       toast.success('IAR added successfully');
     } catch (error) {
       toast.error('Failed to add IAR');
@@ -503,6 +508,8 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       } as SupplyIAR);
       
       await get().fetchSupplyIARs();
+      await get().fetchSupplyIARSummary();
+      await useSupplyItemStore.getState().fetchSupplySummary();
       toast.success('IAR updated successfully');
     } catch (error) {
       toast.error('Failed to update IAR');
@@ -518,6 +525,8 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       });
       
       await get().fetchSupplyIARs();
+      await get().fetchSupplyIARSummary();
+      await useSupplyItemStore.getState().fetchSupplySummary();
       toast.success('IAR deleted successfully');
     } catch {
       toast.error('Failed to delete IAR');

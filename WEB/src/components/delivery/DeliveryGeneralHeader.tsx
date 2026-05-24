@@ -1,5 +1,6 @@
 import { useMemo, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Package,
   Clock,
@@ -102,110 +103,168 @@ export const DeliveryGeneralHeader = () => {
   }, [vwDeliveryRecordsSummary, iarsSummary]);
 
   return (
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="space-y-6 mb-8">
+        {/* Header Title Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Delivery Management</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">
+              Manage incoming deliveries, inspections, and vendor receipts
+            </p>
+          </div>
+        </div>
 
-        {/* ROW 1: Overall Status & Operations */}
+        {/* Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Deliveries (MTD)</CardTitle>
-            <CalendarDays className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.deliveriesMTD}</div>
-            <p className="text-xs text-muted-foreground">Received this month</p>
-          </CardContent>
-        </Card>
+          {/* ROW 1: Overall Status & Operations */}
+          <Card className="hover:shadow-md transition-shadow duration-200 border-slate-200">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-500">Deliveries (MTD)</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.deliveriesMTD}</p>
+                </div>
+                <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                  <CalendarDays className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Receipt</CardTitle>
-            <Clock className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-600">{stats.pendingDeliveries}</div>
-            <p className="text-xs text-muted-foreground">Awaiting inspection</p>
-          </CardContent>
-        </Card>
+          <Card className="hover:shadow-md transition-shadow duration-200 border-slate-200">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-500">Pending Receipt</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.pendingDeliveries}</p>
+                </div>
+                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                  <Clock className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Received / Completed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.receivedDeliveries}</div>
-            <p className="text-xs text-muted-foreground">Fully processed (All time)</p>
-          </CardContent>
-        </Card>
+          <Card className="hover:shadow-md transition-shadow duration-200 border-slate-200">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-500">Received / Completed</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.receivedDeliveries}</p>
+                </div>
+                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                  <CheckCircle className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className={stats.rejectedDeliveries > 0 ? "border-red-200 bg-red-50/30" : ""}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rejected / Issues</CardTitle>
-            <XCircle className={`h-4 w-4 ${stats.rejectedDeliveries > 0 ? "text-red-500" : "text-slate-400"}`} />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${stats.rejectedDeliveries > 0 ? "text-red-600" : "text-slate-700"}`}>
-              {stats.rejectedDeliveries}
-            </div>
-            <p className="text-xs text-muted-foreground">Failed inspections</p>
-          </CardContent>
-        </Card>
+          <Card className={`hover:shadow-md transition-shadow duration-200 ${
+              stats.rejectedDeliveries > 0 ? 'border-red-200 bg-red-50/40' : 'border-slate-200'
+          }`}>
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className={`text-sm font-medium ${stats.rejectedDeliveries > 0 ? 'text-red-600' : 'text-slate-500'}`}>
+                    Rejected / Issues
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl font-bold text-slate-900">{stats.rejectedDeliveries}</p>
+                    {stats.rejectedDeliveries > 0 && (
+                        <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200 mt-1 animate-pulse">
+                          Failed
+                        </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className={`p-3 rounded-xl ${
+                    stats.rejectedDeliveries > 0 ? 'bg-red-100 text-red-600' : 'bg-slate-50 text-slate-400'
+                }`}>
+                  <XCircle className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* ROW 2: Financials & SLA */}
+          {/* ROW 2: Financials & SLA */}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Asset Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-emerald-600 truncate" title={formatCurrency(stats.totalValue)}>
-              {formatCurrency(stats.totalValue)}
-            </div>
-            <p className="text-xs text-muted-foreground">All time value</p>
-          </CardContent>
-        </Card>
+          <Card className="hover:shadow-md transition-shadow duration-200 border-slate-200">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-500">Total Asset Value</p>
+                  <p className="text-2xl font-bold text-slate-900 truncate max-w-[150px]" title={formatCurrency(stats.totalValue)}>
+                    {formatCurrency(stats.totalValue)}
+                  </p>
+                </div>
+                <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl shrink-0">
+                  <DollarSign className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Value Received (MTD)</CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-600 truncate" title={formatCurrency(stats.valueReceivedMTD)}>
-              {formatCurrency(stats.valueReceivedMTD)}
-            </div>
-            <p className="text-xs text-muted-foreground">Processed this month</p>
-          </CardContent>
-        </Card>
+          <Card className="hover:shadow-md transition-shadow duration-200 border-slate-200">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-500">Value Received (MTD)</p>
+                  <p className="text-2xl font-bold text-slate-900 truncate max-w-[150px]" title={formatCurrency(stats.valueReceivedMTD)}>
+                    {formatCurrency(stats.valueReceivedMTD)}
+                  </p>
+                </div>
+                <div className="p-3 bg-purple-50 text-purple-600 rounded-xl shrink-0">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Value</CardTitle>
-            <DollarSign className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-600 truncate" title={formatCurrency(stats.pendingValue)}>
-              {formatCurrency(stats.pendingValue)}
-            </div>
-            <p className="text-xs text-muted-foreground">Value awaiting inspection</p>
-          </CardContent>
-        </Card>
+          <Card className="hover:shadow-md transition-shadow duration-200 border-slate-200">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-slate-500">Pending Value</p>
+                  <p className="text-2xl font-bold text-slate-900 truncate max-w-[150px]" title={formatCurrency(stats.pendingValue)}>
+                    {formatCurrency(stats.pendingValue)}
+                  </p>
+                </div>
+                <div className="p-3 bg-orange-50 text-orange-600 rounded-xl shrink-0">
+                  <DollarSign className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className={stats.delayedInspections > 0 ? "border-orange-200 bg-orange-50/30" : ""}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Delayed Inspections</CardTitle>
-            <AlertCircle className={`h-4 w-4 ${stats.delayedInspections > 0 ? "text-orange-500" : "text-slate-400"}`} />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${stats.delayedInspections > 0 ? "text-orange-600" : "text-slate-700"}`}>
-              {stats.delayedInspections}
-            </div>
-            <p className="text-xs text-muted-foreground">Pending for &gt; 3 days</p>
-          </CardContent>
-        </Card>
+          <Card className={`hover:shadow-md transition-shadow duration-200 ${
+              stats.delayedInspections > 0 ? 'border-amber-200 bg-amber-50/30' : 'border-slate-200'
+          }`}>
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-2">
+                  <p className={`text-sm font-medium ${stats.delayedInspections > 0 ? 'text-amber-600' : 'text-slate-500'}`}>
+                    Delayed Inspections
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl font-bold text-slate-900">{stats.delayedInspections}</p>
+                    {stats.delayedInspections > 0 && (
+                        <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-200 mt-1">
+                          Warning
+                        </Badge>
+                    )}
+                  </div>
+                </div>
+                <div className={`p-3 rounded-xl ${
+                    stats.delayedInspections > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-50 text-slate-400'
+                }`}>
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
+        </div>
       </div>
   );
 };

@@ -6,6 +6,7 @@ import { RISItemsSection } from './RISItemsSection';
 import { EditSupplyRIS, VwSupplyRIS } from '@/types/supply/ris';
 import { User, VwOffice, VwDivision, VwSupplyGroupedItem, SupplyUnit } from '@/types';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Props {
   mode: 'add' | 'edit' | 'view';
@@ -120,6 +121,39 @@ export const RISFormContent = ({
 
   // Fires only when the Save button is clicked
   const handleSubmit = async () => {
+    if (!header.risNumber?.trim()) {
+      toast.error('RIS Number is required');
+      return;
+    }
+    if (!header.entityName?.trim()) {
+      toast.error('Entity Name is required');
+      return;
+    }
+    if (!header.fundCluster?.trim()) {
+      toast.error('Fund Cluster is required');
+      return;
+    }
+    if (!header.officeId || header.officeId === 0) {
+      toast.error('Office is required');
+      return;
+    }
+    if (!header.divisionId || header.divisionId === 0) {
+      toast.error('Division is required');
+      return;
+    }
+    if (!header.responsibilityCenterCode?.trim()) {
+      toast.error('Responsibility Center Code is required');
+      return;
+    }
+    if (!header.risPurpose?.trim()) {
+      toast.error('Purpose is required');
+      return;
+    }
+    if (items.length === 0) {
+      toast.error('At least one item must be added before saving');
+      return;
+    }
+
     await onSave(header, items);
   };
 

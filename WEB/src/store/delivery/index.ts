@@ -75,6 +75,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
     try {
       await editDeliveryRecord(record);
       await get().fetchDeliveryRecords();
+      await get().fetchDeliveryRecordsSummary();
       toast.success('Delivery Record added');
     } catch (error: any) {
       console.error("Store Error:", error);
@@ -87,6 +88,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
     try {
       await editDeliveryRecord(updates);
       await get().fetchDeliveryRecords();
+      await get().fetchDeliveryRecordsSummary();
       toast.success('Delivery record updated');
     } catch (error: any) {
       toast.error('Failed to update delivery record');
@@ -101,6 +103,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
         params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
       });
       await get().fetchDeliveryRecords();
+      await get().fetchDeliveryRecordsSummary();
       toast.success('Delivery record deleted');
     } catch {
       toast.error('Failed to delete delivery record');
@@ -113,6 +116,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
       await uploadDeliveryProof(id, file);
       toast.success('Delivery proof uploaded successfully');
       await get().fetchDeliveryRecords(); // Refresh the table
+      await get().fetchDeliveryRecordsSummary();
     } catch (error: any) {
       toast.error(error.message || 'Failed to upload proof');
     } finally {

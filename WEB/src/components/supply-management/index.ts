@@ -1,6 +1,7 @@
 // General Components
 export { SupplyGeneralHeader } from "./SupplyGeneralHeader";
 export { SupplyTabsList } from "./SupplyTabsList";
+export { SupplyReferenceTabContent } from "./SupplyReferenceTabContent";
 
 // Supply Item Components
 export { SupplyItemTabContent } from "./supply-item/SupplyItemTabContent";
