@@ -11,10 +11,13 @@ export const checkUserAccess = () => {
   const userDetails = JSON.parse(decrypt(encryptedUserDetails));
   const systemRole = userDetails.systemRole;
   const systemRoleId = Array.isArray(systemRole) ? systemRole[0]?.id : systemRole?.id;
+  const roleName: string = (Array.isArray(systemRole) ? systemRole[0]?.roleName : systemRole?.roleName) ?? '';
   const isActive = userDetails.isActive;
 
   if (!systemRoleId || !isActive) {
     window.location.href = '/no-role';
+  } else if (roleName.toLowerCase() === 'employee') {
+    window.location.href = '/employee-portal';
   } else {
     window.location.href = '/dashboard';
   }

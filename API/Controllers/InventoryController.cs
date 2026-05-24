@@ -131,6 +131,12 @@ namespace API.Controllers
         public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQueryParams model) => await _inventoryService.GetPTAIssuanceList(model);
 
 
+        [HttpGet("pta/accountabilities/me")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetMyAccountabilities([FromQuery] PTAMyAccountabilitiesQueryParams model) => await _inventoryService.GetMyAccountabilities(model);
+
+
         [HttpGet("pta/transfer/list")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]

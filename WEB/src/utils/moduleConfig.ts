@@ -15,6 +15,7 @@ import {
   BarChart3,
   Trash2,
   QrCode,
+  ClipboardCheck,
 } from "lucide-react";
 
 // CONFIG MAP FOR KNOWN MODULES
@@ -161,6 +162,14 @@ export const moduleConfig: Record<string, any> = {
     implemented: true,
   },
 
+  MYACC: {
+    id: "my-accountabilities",
+    title: "My Accountabilities",
+    group: "Asset Management",
+    icon: ClipboardCheck,
+    implemented: true,
+  },
+
 };
 
 export const fallbackModule = {
@@ -170,4 +179,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "ASSTAG", "ATG", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC", "DOP"];
+export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "ASSTAG", "ATG", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC", "DOP", "MYACC"];

@@ -26,6 +26,7 @@ export interface UserPublicViewModel {
   email?: string;
   expiryToken?: string;
   sessionKey?: string;
+  employeeDbId?: number;
 }
 
 export interface ApiResponse<T> {
@@ -49,6 +50,7 @@ export interface AuthState {
 export interface AuthActions {
   initialize: () => Promise<void>;
   login: (userInfo: { entraId: string; firstName: string; lastName: string; email: string; employeeId?: string }) => Promise<{ success: boolean; message: string }>;
+  loginEmployee: (userInfo: { entraId: string; firstName: string; lastName: string; email: string; employeeId?: string }) => Promise<{ success: boolean; message: string }>;
   verifyMFA: (code: string) => Promise<boolean>;
   validateSession: () => Promise<boolean>;
   logout: () => void;
