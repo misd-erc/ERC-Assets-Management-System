@@ -11,5 +11,7 @@ namespace PortalDB.Models.ResponseModels.Account
     {
         public long SystemUserId { get; set; }
         public string SessionKey { get; set; } = string.Empty;
+        /// <summary>Numeric primary key of the linked TblEmployee record (0 if not an employee login).</summary>
+        public long EmployeeDbId { get; set; }
     }
 }

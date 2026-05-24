@@ -6,6 +6,8 @@ import { guidToLongId } from '@/utils/guidUtils';
 import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
 import { secureStorage } from '@/utils/secureStorage';
 
+export type LoginAccountType = 'system' | 'employee';
+
 
 export interface UserDetails {
   id: number;
@@ -93,7 +95,10 @@ export const editUserProfile = async (payload: EditUserPayload): Promise<{ messa
   return { message: response.data.message };
 };
 
-export const validateUser = async (userInfo: { entraId: string; firstName: string; lastName: string; email: string; employeeId?: string }): Promise<{ systemUserId: string; message: string }> => {
+const validateUserByType = async (
+  userInfo: { entraId: string; firstName: string; lastName: string; email: string; employeeId?: string },
+  accountType: LoginAccountType
+): Promise<{ systemUserId: string; message: string; employeeDbId: number }> => {
   const payload: UserValidationViewModel = {
     entraId: guidToLongId(userInfo.entraId),
     firstName: userInfo.firstName,
@@ -102,26 +107,35 @@ export const validateUser = async (userInfo: { entraId: string; firstName: strin
     employeeId: userInfo.employeeId || ''
   };
 
-  console.log('[AuthAPI] validateUser - payload:', payload);
+  console.log('[AuthAPI] validateUserByType - payload:', payload);
 
   const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-  const response = await axios.post<ApiResponse<UserPublicViewModel>>(`${baseURL}/users/validation`, payload);
-  console.log('[AuthAPI] validateUser - response:', response);
-  console.log('[AuthAPI] validateUser - response.data:', response.data);
+  const endpoint = accountType === 'employee' ? '/employee/validation' : '/users/validation';
+  const response = await axios.post<ApiResponse<UserPublicViewModel>>(`${baseURL}${endpoint}`, payload);
+  console.log('[AuthAPI] validateUserByType - response:', response);
+  console.log('[AuthAPI] validateUserByType - response.data:', response.data);
 
   const data = response.data.data;
-  console.log('[AuthAPI] validateUser - data:', data);
+  console.log('[AuthAPI] validateUserByType - data:', data);
 
   if (!response.data.success) {
     throw new Error(response.data.message || 'Validation failed');
   }
 
   if (!data || !data.systemUserId) {
-    console.error('[AuthAPI] validateUser - Invalid response structure:', { data, systemUserId: data?.systemUserId });
+    console.error('[AuthAPI] validateUserByType - Invalid response structure:', { data, systemUserId: data?.systemUserId });
     throw new Error('Invalid response from server');
   }
 
-  return { systemUserId: data.systemUserId.toString(), message: response.data.message };
+  return { systemUserId: data.systemUserId.toString(), message: response.data.message, employeeDbId: data.employeeDbId ?? 0 };
+};
+
+export const validateUser = async (userInfo: { entraId: string; firstName: string; lastName: string; email: string; employeeId?: string }): Promise<{ systemUserId: string; message: string; employeeDbId: number }> => {
+  return validateUserByType(userInfo, 'system');
+};
+
+export const validateEmployeeUser = async (userInfo: { entraId: string; firstName: string; lastName: string; email: string; employeeId?: string }): Promise<{ systemUserId: string; message: string; employeeDbId: number }> => {
+  return validateUserByType(userInfo, 'employee');
 };
 
 export const validateOTP = async (systemUserId: string, otp: string): Promise<{ systemUserId: string; sessionKey: string }> => {

@@ -7,6 +7,8 @@ export interface IssuanceRecord {
   employeeId: number;
   employeeName: string;
   employeeIdOriginal?: string;
+  plantillaEmployeeName?: string;
+  nonPlantillaEmployeeName?: string;
   subEmployeeId?: number;
   subEmployeeName?: string;
   subEmployeeIdOriginal?: string;

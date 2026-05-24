@@ -106,6 +106,7 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
     const set = new Set(acronyms);
     // Always surface PPE/SE Issuance while backend scopes are being rolled out
     set.add("PPEISS");
+    set.add("MYACC");
     return Array.from(set);
   }, [acronyms]);
 

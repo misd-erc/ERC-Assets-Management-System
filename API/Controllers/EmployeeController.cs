@@ -172,6 +172,88 @@ namespace API.Controllers
 
         #region POST
 
+        // POST api/employee/validation
+        [HttpPost("validation")]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> ValidateEmployeeUser([FromBody] UserValidationQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(model.EmployeeId))
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.ValidationFailed("Employee ID is required for employee login."));
+
+                TblEmployee? employee = await _getTools.Account.GetEmployeeByEmployeeIdAsync(model.EmployeeId, context);
+
+                if (employee == null)
+                    return StatusCode(ApiStatusCode.Unauthorized, ApiResponse<object>.Unauthorized("Employee account not found. Please contact your administrator."));
+
+                TblSystemUser user = new()
+                {
+                    EntraId = model.EntraId,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    Email = model.Email,
+                    EmployeeId = employee.EmployeeIdOriginal ?? model.EmployeeId
+                };
+
+                user.Id = (await _getTools.Account.GetTblSystemUserByEntraIdAndEmailAsync(user.EntraId, user.Email, context))?.Id ?? 0;
+
+                long systemUserId = await _editTools.Account.EditTblSystemUserForLoginAsync(user, context);
+
+                if (systemUserId <= 0)
+                    throw new Exception("SystemUserId was not returned");
+
+                if (employee.SystemUserId != systemUserId)
+                {
+                    await context.TblEmployees.Where(x => x.Id == employee.Id)
+                        .ExecuteUpdateAsync(x => x.SetProperty(e => e.SystemUserId, systemUserId));
+                }
+
+                var (otp, expiry) = OTPHelper.GenerateTimedOTP(user.EntraId.ToString(), 3);
+
+                TblOneTimePassword otpGenerated = new()
+                {
+                    SystemUserId = systemUserId,
+                    OTP = otp,
+                    ValidUntil = expiry
+                };
+
+                await _editTools.Account.AddTblOneTimePasswordAsync(otpGenerated, context);
+
+                await EmailTools.SendSystemEmailAsync(
+                    _options,
+                    subject: EmailConstants.SUBJECT_OTP_EMAIL,
+                    templateNameOrBody: EmailConstants.TEMPLATE_OTP_EMAIL,
+                    recipient: user.Email,
+                    model: new PortalDB.Models.ViewModels.Email.EmailViewModel
+                    {
+                        Name = user.FirstName,
+                        Body = otp.ToString()
+                    }
+                );
+
+                UserSimplePublicResponseModel publicRM = new()
+                {
+                    SystemUserId = systemUserId,
+                    EmployeeDbId = employee.Id
+                };
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Ok(ApiResponse<object>.Ok(publicRM, "OTP has been sent to email address"));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(EmployeeController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         // POST api/employee/edit
         // Direct management edit — accepts IDs for office/division/employment-type/position
         [HttpPost("edit")]

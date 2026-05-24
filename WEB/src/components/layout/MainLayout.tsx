@@ -24,6 +24,7 @@ import ReportsCenter from "@/pages/ReportsCenter";
 import PPEIssuancePage from "@/pages/PPEIssuancePage";
 import DisposalsPage from "@/pages/disposals/DisposalsPage";
 import AssetTaggingPage from "@/pages/AssetTaggingPage";
+import MyAccountabilitiesPage from "@/pages/MyAccountabilitiesPage";
 
 export default function MainLayout() {
   const [activeModule, setActiveModule] = useState("dashboard");
@@ -91,6 +92,9 @@ export default function MainLayout() {
 
       case "asset-tagging":
         return <AssetTaggingPage />;
+
+      case "my-accountabilities":
+        return <MyAccountabilitiesPage />;
 
       default:
         return <UCPage />;

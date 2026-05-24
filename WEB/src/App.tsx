@@ -9,11 +9,25 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { isSessionValid, isSessionExpired, handleSessionExpired } from '@/utils/sessionUtils';
 import { NoRolePage, UnderConstructionPage } from '@/pages';
 import AssetInfoPage from '@/pages/AssetInfoPage';
+import EmployeePortalPage from '@/pages/EmployeePortalPage';
 import { initUserSync } from '@/utils/userSync';
 
 import { decrypt } from '@/utils/encryption';
 import { secureStorage } from './utils/secureStorage';
 
+
+// Helper: Returns the route the current user should land on after auth
+function getRoleBasedRedirect(): string {
+  try {
+    const raw = secureStorage.getItem('userDetails');
+    if (!raw) return '/dashboard';
+    const d = JSON.parse(decrypt(raw));
+    const role = Array.isArray(d.systemRole) ? d.systemRole[0]?.roleName : d.systemRole?.roleName;
+    return (role as string | undefined)?.toLowerCase() === 'employee' ? '/employee-portal' : '/dashboard';
+  } catch {
+    return '/dashboard';
+  }
+}
 
 // Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -58,6 +72,42 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Employee-only Route — grants access to /employee-portal for EMPLOYEE role users
+function EmployeeRoute({ children }: { children: React.ReactNode }) {
+  const { requireMFA } = useAuthStore();
+  const hasValidSession = isSessionValid();
+  const isExpired = isSessionExpired();
+
+  if (isExpired) {
+    handleSessionExpired('Your session has expired. Please log in again.');
+    return <Navigate to="/" replace />;
+  }
+
+  if (!hasValidSession) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (requireMFA) {
+    return <Navigate to="/mfa" replace />;
+  }
+
+  // Verify the user actually holds the Employee role
+  try {
+    const raw = secureStorage.getItem('userDetails');
+    if (raw) {
+      const d = JSON.parse(decrypt(raw));
+      const role = Array.isArray(d.systemRole) ? d.systemRole[0]?.roleName : d.systemRole?.roleName;
+      if ((role as string | undefined)?.toLowerCase() !== 'employee') {
+        return <Navigate to="/dashboard" replace />;
+      }
+    }
+  } catch {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function AppContent() {
   const { isAuthenticated, requireMFA, initialize } = useAuthStore();
 
@@ -77,18 +127,18 @@ function AppContent() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route 
-        path="/" 
-        element={!isAuthenticated ? <LoginScreen /> : <Navigate to="/dashboard" replace />} 
+      <Route
+        path="/"
+        element={!isAuthenticated ? <LoginScreen /> : <Navigate to={getRoleBasedRedirect()} replace />}
       />
       
       {/* Public asset info — accessible without login (e.g. scanning a QR sticker) */}
       <Route path="/asset-info/:id" element={<AssetInfoPage />} />
 
       {/* MFA Route */}
-      <Route 
-        path="/mfa" 
-        element={requireMFA ? <MFAVerification /> : <Navigate to="/dashboard" replace />} 
+      <Route
+        path="/mfa"
+        element={requireMFA ? <MFAVerification /> : <Navigate to={getRoleBasedRedirect()} replace />}
       />
       
       {/* Protected Routes */}
@@ -109,6 +159,16 @@ function AppContent() {
         
         {/* No Role Route */}
         <Route path="/no-role" element={<NoRolePage />} />
+
+      {/* Employee Portal Route */}
+      <Route
+        path="/employee-portal"
+        element={
+          <EmployeeRoute>
+            <EmployeePortalPage />
+          </EmployeeRoute>
+        }
+      />
 
       {/* Under Construction Route */}
       <Route

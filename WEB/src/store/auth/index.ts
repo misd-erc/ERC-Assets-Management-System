@@ -1,6 +1,6 @@
 ﻿import { create } from 'zustand';
 import { User, AuthStore } from '@/types';
-import { validateUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '@/api/user-management/authApi';
+import { validateUser, validateEmployeeUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '@/api/user-management/authApi';
 import { generateSessionToken, saveSession, loadSession, clearSession as clearAuthSession } from '@/services/authService';
 import { clearSession, setSessionToken, syncSessionIds, setSessionKey, getSessionToken } from '@/utils/sessionUtils';
 import { encrypt, decrypt } from '@/utils/encryption';
@@ -90,7 +90,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ loading: true, error: '' });
 
     try {
-      console.log('[AuthStore] Validating user...');
+      console.log('[AuthStore] Validating system user...');
       const result = await validateUser(userInfo);
 
       secureStorage.setItem('systemUserId', JSON.stringify(result.systemUserId));
@@ -103,10 +103,42 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         systemUserId: result.systemUserId,
       });
 
-      console.log('[AuthStore] User validated, MFA required');
+      console.log('[AuthStore] System user validated, MFA required');
       return { success: true, message: result.message };
     } catch (error) {
-      console.error('[AuthStore] Login failed:', error);
+      console.error('[AuthStore] System login failed:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Login failed',
+        loading: false
+      });
+      return { success: false, message: error instanceof Error ? error.message : 'Invalid response from server' };
+    }
+  },
+
+  loginEmployee: async (userInfo: { entraId: string; firstName: string; lastName: string; email: string; employeeId?: string }) => {
+    set({ loading: true, error: '' });
+
+    try {
+      console.log('[AuthStore] Validating employee user...');
+      const result = await validateEmployeeUser(userInfo);
+
+      secureStorage.setItem('systemUserId', JSON.stringify(result.systemUserId));
+      if (result.employeeDbId) {
+        secureStorage.setItem('employeeDbId', String(result.employeeDbId));
+      }
+
+      setSessionToken();
+
+      set({
+        requireMFA: true,
+        loading: false,
+        systemUserId: result.systemUserId,
+      });
+
+      console.log('[AuthStore] Employee user validated, MFA required');
+      return { success: true, message: result.message };
+    } catch (error) {
+      console.error('[AuthStore] Employee login failed:', error);
       set({
         error: error instanceof Error ? error.message : 'Login failed',
         loading: false

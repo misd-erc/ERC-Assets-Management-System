@@ -43,6 +43,8 @@ namespace API.Services.Inventory
 
         Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQueryParams model);
 
+        Task<IActionResult> GetMyAccountabilities([FromQuery] PTAMyAccountabilitiesQueryParams model);
+
         Task<IActionResult> GetPTATransferList([FromQuery] PTATransferListQueryParams model);
 
         Task<IActionResult> GetPTAReturnList([FromQuery] PTAReturnListQueryParams model);
