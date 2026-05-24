@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useVendor, useOffice, useDivision } from '@/hooks';
 import { VwDeliveryRecord } from '@/types/delivery/delivery';
-import {Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {Check, ChevronsUpDown} from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { toast } from 'sonner';
 
 interface Props {
   open: boolean;
@@ -81,6 +82,32 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
         <DialogHeader><DialogTitle>{mode === 'add' ? 'New IAR' : 'Edit IAR'}</DialogTitle></DialogHeader>
         <form onSubmit={async (e) => { 
           e.preventDefault(); 
+          
+          if (!formData.recordId || formData.recordId === 0) {
+            toast.error('Linked Delivery Record is required');
+            return;
+          }
+          if (!formData.iarNumber?.trim()) {
+            toast.error('IAR Number is required');
+            return;
+          }
+          if (!formData.iarNumberDate) {
+            toast.error('IAR Date is required');
+            return;
+          }
+          if (!formData.entityName?.trim()) {
+            toast.error('Entity Name is required');
+            return;
+          }
+          if (!formData.officeId || formData.officeId === 0) {
+            toast.error('Office is required');
+            return;
+          }
+          if (!formData.vendorId || formData.vendorId === 0) {
+            toast.error('Vendor is required');
+            return;
+          }
+
           setLoading(true);
           try {
             await onSubmit(formData); 
@@ -92,7 +119,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
             
             {/* Linked Delivery Record */}
             <div className="space-y-2 col-span-2">
-              <Label className="text-slate-700 font-medium">Linked Delivery Record (DR)</Label>
+              <Label className="text-slate-700 font-medium">Linked Delivery Record (DR) <span className="text-red-500">*</span></Label>
               <Popover open={openRecord} onOpenChange={(open) => {
                 setOpenRecord(open);
                 if (open) {
@@ -176,16 +203,16 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
               <p className="text-[11px] text-muted-foreground">Only shows unlinked, unreceived delivery records.</p>
             </div>
             
-             <div className="space-y-2"><Label>IAR Number</Label><Input value={formData.iarNumber || ''} onChange={e => setFormData({...formData, iarNumber: e.target.value})} /></div>
-             <div className="space-y-2"><Label>IAR Date</Label><Input type="date" value={formData.iarNumberDate || ''} onChange={e => setFormData({...formData, iarNumberDate: e.target.value})} /></div>
+             <div className="space-y-2"><Label>IAR Number <span className="text-red-500">*</span></Label><Input required value={formData.iarNumber || ''} onChange={e => setFormData({...formData, iarNumber: e.target.value})} /></div>
+             <div className="space-y-2"><Label>IAR Date <span className="text-red-500">*</span></Label><Input type="date" required value={formData.iarNumberDate || ''} onChange={e => setFormData({...formData, iarNumberDate: e.target.value})} /></div>
              
-             <div className="space-y-2"><Label>Entity Name</Label><Input value={formData.entityName || ''} onChange={e => setFormData({...formData, entityName: e.target.value})} /></div>
+             <div className="space-y-2"><Label>Entity Name <span className="text-red-500">*</span></Label><Input required value={formData.entityName || ''} onChange={e => setFormData({...formData, entityName: e.target.value})} /></div>
              <div className="space-y-2"><Label>Fund Cluster</Label><Input value={formData.fundCluster || ''} onChange={e => setFormData({...formData, fundCluster: e.target.value})} /></div>
              
              <div className="space-y-2 col-span-2"><Label>Responsibility Center Code</Label><Input value={formData.centerCode || ''} onChange={e => setFormData({...formData, centerCode: e.target.value})} /></div>
 
             <div className="space-y-2 min-w-0 flex flex-col">
-              <Label className="text-slate-700 font-medium">Office</Label>
+              <Label className="text-slate-700 font-medium">Office <span className="text-red-500">*</span></Label>
               <Popover open={openOffice} onOpenChange={(open) => {
                 setOpenOffice(open);
                 if (open) {
@@ -360,7 +387,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
             </div>
 
             <div className="space-y-2 col-span-2 min-w-0 flex flex-col">
-              <Label className="text-slate-700 font-medium">Vendor</Label>
+              <Label className="text-slate-700 font-medium">Vendor <span className="text-red-500">*</span></Label>
               <Popover open={openVendor} onOpenChange={(open) => {
                 setOpenVendor(open);
                 if (open) {

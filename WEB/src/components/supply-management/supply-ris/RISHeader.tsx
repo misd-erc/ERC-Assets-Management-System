@@ -63,7 +63,7 @@ export const RISHeader = ({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>RIS Number</Label>
+          <Label>RIS Number <span className="text-red-500">*</span></Label>
           <Input
             value={header.risNumber}
             onChange={(e) => handleChange('risNumber', e.target.value)}
@@ -86,7 +86,7 @@ export const RISHeader = ({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Entity Name</Label>
+          <Label>Entity Name <span className="text-red-500">*</span></Label>
           <Input
             value={header.entityName}
             onChange={(e) => handleChange('entityName', e.target.value)}
@@ -96,7 +96,7 @@ export const RISHeader = ({
           />
         </div>
         <div className="space-y-2">
-          <Label>Fund Cluster</Label>
+          <Label>Fund Cluster <span className="text-red-500">*</span></Label>
           <Input
             value={header.fundCluster}
             onChange={(e) => handleChange('fundCluster', e.target.value)}
@@ -110,7 +110,7 @@ export const RISHeader = ({
       <div className="grid grid-cols-2 gap-4">
         {/* Office Combobox */}
         <div className="space-y-2 min-w-0 flex flex-col">
-          <Label className="text-slate-700 font-medium">Office</Label>
+          <Label className="text-slate-700 font-medium">Office <span className="text-red-500">*</span></Label>
           <Popover open={openOffice} onOpenChange={(open) => {
             setOpenOffice(open);
             if (open) {
@@ -158,7 +158,7 @@ export const RISHeader = ({
 
         {/* Division Combobox */}
         <div className="space-y-2 min-w-0 flex flex-col">
-          <Label className="text-slate-700 font-medium">Division</Label>
+          <Label className="text-slate-700 font-medium">Division <span className="text-red-500">*</span></Label>
           <Popover open={openDivision} onOpenChange={(open) => {
             setOpenDivision(open);
             if (open) {
@@ -197,12 +197,12 @@ export const RISHeader = ({
       </div>
 
       <div className="space-y-2">
-        <Label>Responsibility Center Code</Label>
+        <Label>Responsibility Center Code <span className="text-red-500">*</span></Label>
         <Input value={header.responsibilityCenterCode} onChange={(e) => handleChange('responsibilityCenterCode', e.target.value)} placeholder="RCC-123" required disabled={isViewMode} />
       </div>
 
       <div className="space-y-2">
-        <Label>Purpose</Label>
+        <Label>Purpose <span className="text-red-500">*</span></Label>
         <Textarea value={header.risPurpose} onChange={(e) => handleChange('risPurpose', e.target.value)} placeholder="State the reason for the requisition" required disabled={isViewMode} />
       </div>
 
