@@ -130,10 +130,26 @@ const normalizeTransferListItem = (raw: any): Movement => ({
 
     return [
       ...(raw.plantillaEmployeeName || raw.plantillaEmployeeId
-        ? [{ id: raw.plantillaEmployeeId ?? 0, fullName: raw.plantillaEmployeeName, employeeIdOriginal: raw.plantillaEmployeeIdOriginal, employeeType: 'Plantilla' }]
+        ? [{
+            id: raw.plantillaEmployeeId ?? 0,
+            fullName: raw.plantillaEmployeeName,
+            employeeIdOriginal: raw.plantillaEmployeeIdOriginal,
+            employeeType: 'Plantilla',
+            position: raw.plantillaEmployeePosition ? { name: raw.plantillaEmployeePosition } : undefined,
+            office: raw.plantillaEmployeeOffice ? { acronym: raw.plantillaEmployeeOffice, name: raw.plantillaEmployeeOffice } : raw.office,
+            division: raw.plantillaEmployeeDivision ? { acronym: raw.plantillaEmployeeDivision, name: raw.plantillaEmployeeDivision } : raw.division,
+          }]
         : []),
       ...(raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
-        ? [{ id: raw.nonPlantillaEmployeeId ?? 0, fullName: raw.nonPlantillaEmployeeName, employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal, employeeType: 'Non-Plantilla' }]
+        ? [{
+            id: raw.nonPlantillaEmployeeId ?? 0,
+            fullName: raw.nonPlantillaEmployeeName,
+            employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal,
+            employeeType: 'Non-Plantilla',
+            position: raw.nonPlantillaEmployeePosition ? { name: raw.nonPlantillaEmployeePosition } : undefined,
+            office: raw.nonPlantillaEmployeeOffice ? { acronym: raw.nonPlantillaEmployeeOffice, name: raw.nonPlantillaEmployeeOffice } : raw.office,
+            division: raw.nonPlantillaEmployeeDivision ? { acronym: raw.nonPlantillaEmployeeDivision, name: raw.nonPlantillaEmployeeDivision } : raw.division,
+          }]
         : []),
     ];
   })(),
@@ -486,6 +502,10 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     const toEmp = buildEmployee(movement.employee?.[1]);
     const transferDate = movement.dateAssigned || new Date().toISOString();
     const transferType = (movement.status || 'REASSIGNMENT') as any;
+    const toEmpPosition = (movement.employee?.[1]?.position as any)?.name || '';
+    const toEmpOffice = (movement.employee?.[1]?.office as any)?.acronym || (movement.employee?.[1]?.office as any)?.name || '';
+    const toEmpDivision = (movement.employee?.[1]?.division as any)?.acronym || (movement.employee?.[1]?.division as any)?.name || '';
+    const toEmployeePositionOffice = [toEmpPosition, [toEmpOffice, toEmpDivision].filter(Boolean).join(', ')].filter(Boolean).join(' - ');
 
     const returnedByName = movement.employee?.[0]?.fullName || fromEmp.label || 'Unknown';
     const returnedByPosition = (movement.employee?.[0] as any)?.position?.name || movement.employee?.[0]?.employeeType || '';
@@ -502,7 +522,17 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
         a.click();
         URL.revokeObjectURL(dlUrl);
       } else if (prefix.startsWith('ITR')) {
-        const url = await ITRGenerator.generateITRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType, transferNumber);
+        const url = await ITRGenerator.generateITRPreviewMultiple(
+          fromEmp,
+          toEmp,
+          items as any,
+          transferDate,
+          transferType,
+          transferNumber,
+          undefined,
+          undefined,
+          toEmployeePositionOffice
+        );
         const blob = await fetch(url).then(r => r.blob());
         const dlUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
