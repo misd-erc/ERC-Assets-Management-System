@@ -347,9 +347,17 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       return;
     }
 
+    // Determine movement type from tab/context and original record, not from editable number prefix.
+    // Custom numbers like "N" should still update PTR/ITR when editing transfer records.
+    const hasPtrItrNumber = !!(editingMovement.ptritrNumber && editingMovement.ptritrNumber.trim());
+    const hasReturnNumber = !!(
+      (editingMovement.rrppeRrspNumber && editingMovement.rrppeRrspNumber.trim()) ||
+      (editingMovement.rrpperrspNumber && editingMovement.rrpperrspNumber.trim())
+    );
     const isReturn =
-      !editFields.transferNumber.toUpperCase().startsWith('PTR') &&
-      !editFields.transferNumber.toUpperCase().startsWith('ITR');
+      transferType === 'RRPPE' ||
+      transferType === 'RRSP' ||
+      (!transferType && !hasPtrItrNumber && hasReturnNumber);
 
     try {
       setEditSaving(true);
@@ -366,7 +374,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
           parIcsNumber: editFields.parIcsNumber,
           rrppeRrspNumber: isReturn
             ? editFields.transferNumber
-            : (editingMovement.rrppeRrspNumber || (editingMovement as any).rrppeRrspNumber || editingMovement.rrpperrspNumber || undefined),
+            : undefined,
           status: editFields.status,
           condition: editFields.condition,
           actualOfficeId: (editingMovement as any).actualOfficeId ?? null,
