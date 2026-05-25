@@ -1,7 +1,7 @@
 // src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
 import { SupplyItem, VwSupplyItem, SupplyUnit, SupplyStorageLocation, SupplyIAR, VwSupplyIAR, VwSupplyUniqueRawItem, VwSupplyGroupedItem } from '@/types';
-import { 
+import {
   getSupplyItems,
   editSupplyItem,
   getSupplyUnits,
@@ -474,7 +474,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
         isActive: iar.isActive ?? true,
         isApproved: iar.isApproved ?? false,
       } as SupplyIAR);
-      
+
       await get().fetchSupplyIARs();
       await get().fetchSupplyIARSummary();
       await useSupplyItemStore.getState().fetchSupplySummary();
@@ -506,7 +506,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
         isActive: updates.isActive ?? true,
         isApproved: updates.isApproved ?? false,
       } as SupplyIAR);
-      
+
       await get().fetchSupplyIARs();
       await get().fetchSupplyIARSummary();
       await useSupplyItemStore.getState().fetchSupplySummary();
@@ -523,7 +523,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       await axiosInstance.delete(`/Supply/iar/delete/${id}`, {
         params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
       });
-      
+
       await get().fetchSupplyIARs();
       await get().fetchSupplyIARSummary();
       await useSupplyItemStore.getState().fetchSupplySummary();

@@ -55,6 +55,7 @@ import { SEPropertyCardModal } from "./SEPropertyCardModal";
 import { InventoryCountFormModal } from "./InventoryCountFormModal";
 import { ListPPEsAtStationModal } from "./ListPPEsAtStationModal";
 import { RLSDDPModal } from "./RLSDDPModal";
+import { IARReportModal } from "./IARReportModal";
 
 
 export function ReportTab() {
@@ -99,6 +100,7 @@ export function ReportTab() {
   const [showSEPropertyCardModal, setShowSEPropertyCardModal] = useState(false);
   const [showListPPEsAtStation, setShowListPPEsAtStation] = useState(false);
   const [showRLSDDP, setShowRLSDDP] = useState(false);
+  const [showIARModal, setShowIARModal] = useState(false);
 
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [registrySPIAssets, setRegistrySPIAssets] = useState<any[]>([]);
@@ -134,6 +136,7 @@ export function ReportTab() {
     setShowPropertyCardModal(false);
     setShowSEPropertyCardModal(false);
     setShowListPPEsAtStation(false);
+    setShowIARModal(false);
     setSelectedReport(null);
     setSelectedItem(null);
     setSelectedMovement(null);
@@ -143,6 +146,7 @@ export function ReportTab() {
       setShowItemSelectModal(false);
       setShowItemMovementsModal(false);
       setShowPreview(false);
+      setShowIARModal(false);
       setSelectedReport(null);
       setSelectedItem(null);
       setSelectedMovement(null);
@@ -395,6 +399,13 @@ export function ReportTab() {
       icon: FileSpreadsheet,
       bgColor: 'bg-blue-600',
       action: () => setShowRPCPPE(true)
+    },
+    {
+      title: 'IAR',
+      subtitle: 'Inspection & Acceptance Report',
+      icon: ClipboardList,
+      bgColor: 'bg-blue-700',
+      action: () => setShowIARModal(true)
     },
     {
       title: 'PAR',
@@ -742,6 +753,12 @@ export function ReportTab() {
         <RISReportModal
             isOpen={showRISModal}
             onClose={() => setShowRISModal(false)}
+        />
+
+        {/* Added the IAR Report Modal to the component tree */}
+        <IARReportModal
+            isOpen={showIARModal}
+            onClose={() => setShowIARModal(false)}
         />
 
         <RPCPPEFilterModal
