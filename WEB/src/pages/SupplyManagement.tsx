@@ -15,7 +15,7 @@ export const SupplyManagement = () => {
   const [activeTab, setActiveTab] = useState('inventory');
 
   return (
-    <div className="p-2 pt-5 md:pt-20 space-y-8">
+    <div className="p-6 md:p-8 space-y-6">
       <SupplyGeneralHeader />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

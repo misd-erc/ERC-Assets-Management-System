@@ -2,9 +2,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { 
-  Edit, Trash2, MoreHorizontal, Eye, CheckCircle, FileQuestion, Package, 
-  Search, Filter, ChevronLeft, ChevronRight, PackageSearch 
+import {
+  Edit, Trash2, MoreHorizontal, Eye, CheckCircle, FileQuestion, Package,
+  Search, Filter, ChevronLeft, ChevronRight, PackageSearch, Plus, Loader2, ClipboardCheck
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -34,8 +34,8 @@ interface Props {
   onParamsChange: (params: { page?: number; search?: string; status?: string; vendorId?: number; officeId?: number; divisionId?: number }) => void;
 }
 
-export const SupplyIARTable = ({ 
-  data, 
+export const SupplyIARTable = ({
+  data,
   totalCount,
   page,
   pageSize,
@@ -48,10 +48,10 @@ export const SupplyIARTable = ({
   offices = [],
   divisions = [],
   loading = false,
-  onAdd, 
-  onEdit, 
-  onDelete, 
-  onView, 
+  onAdd,
+  onEdit,
+  onDelete,
+  onView,
   onApprove,
   onParamsChange
 }: Props) => {
@@ -63,11 +63,17 @@ export const SupplyIARTable = ({
         <div className="flex flex-col space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-xl text-slate-900">Inspection & Acceptance Reports</CardTitle>
+              <CardTitle className="text-xl text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                <ClipboardCheck className="w-5 h-5 text-blue-600" /> Inspection & Acceptance Reports
+              </CardTitle>
               <CardDescription>Manage official IAR documentation</CardDescription>
             </div>
-            <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700 shadow-sm">
-              Generate IAR
+            <Button
+              onClick={onAdd}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold shadow-md shadow-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 active:scale-95 transition-all duration-300 rounded-xl px-5 py-2.5 flex items-center gap-2 border-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Generate IAR</span>
             </Button>
           </div>
 
@@ -75,13 +81,13 @@ export const SupplyIARTable = ({
             <div className="relative w-full md:flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
-                  placeholder="Search IAR#, DR#, PO#, or Entity..."
-                  value={searchQuery}
-                  onChange={(e) => onParamsChange({ search: e.target.value, page: 1 })}
-                  className="pl-9 bg-white"
+                placeholder="Search IAR#, DR#, PO#, or Entity..."
+                value={searchQuery}
+                onChange={(e) => onParamsChange({ search: e.target.value, page: 1 })}
+                className="pl-9 bg-white"
               />
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-slate-400" />
@@ -97,8 +103,8 @@ export const SupplyIARTable = ({
                 </Select>
               </div>
 
-              <Select 
-                value={vendorFilter?.toString() || "all"} 
+              <Select
+                value={vendorFilter?.toString() || "all"}
                 onValueChange={(val) => onParamsChange({ vendorId: val === "all" ? undefined : Number(val), page: 1 })}
               >
                 <SelectTrigger className="w-[150px] bg-white">
@@ -107,13 +113,13 @@ export const SupplyIARTable = ({
                 <SelectContent>
                   <SelectItem value="all">All Vendors</SelectItem>
                   {vendors.map(v => (
-                      <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>
+                    <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select 
-                value={officeFilter?.toString() || "all"} 
+              <Select
+                value={officeFilter?.toString() || "all"}
                 onValueChange={(val) => onParamsChange({ officeId: val === "all" ? undefined : Number(val), page: 1 })}
               >
                 <SelectTrigger className="w-[150px] bg-white">
@@ -122,20 +128,20 @@ export const SupplyIARTable = ({
                 <SelectContent>
                   <SelectItem value="all">All Offices</SelectItem>
                   {offices.map(o => (
-                      <SelectItem key={o.id} value={o.id.toString()}>{o.acronym}</SelectItem>
+                    <SelectItem key={o.id} value={o.id.toString()}>{o.acronym}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
               {(searchQuery || statusFilter !== "all" || vendorFilter || officeFilter) && (
-                  <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onParamsChange({ search: "", status: "all", vendorId: undefined, officeId: undefined, page: 1 })}
-                      className="text-slate-500 hover:text-slate-900 h-9"
-                  >
-                    Reset
-                  </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onParamsChange({ search: "", status: "all", vendorId: undefined, officeId: undefined, page: 1 })}
+                  className="text-slate-500 hover:text-slate-900 h-9"
+                >
+                  Reset
+                </Button>
               )}
             </div>
           </div>
@@ -162,11 +168,11 @@ export const SupplyIARTable = ({
             </TableHeader>
             <TableBody>
               {loading && data.length === 0 ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell colSpan={7}><div className="h-10 w-full bg-slate-100 animate-pulse rounded" /></TableCell>
-                      </TableRow>
-                  ))
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={7}><div className="h-10 w-full bg-slate-100 animate-pulse rounded" /></TableCell>
+                  </TableRow>
+                ))
               ) : data.length > 0 ? (
                 data.map((record: VwSupplyIAR) => (
                   <TableRow key={record.id} className="hover:bg-slate-50/50 transition-colors">
@@ -259,31 +265,31 @@ export const SupplyIARTable = ({
         </div>
 
         {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-              <p className="text-sm text-slate-500">
-                Showing <span className="font-medium text-slate-900">{(page - 1) * pageSize + 1}</span> to <span className="font-medium text-slate-900">{Math.min(page * pageSize, totalCount)}</span> of <span className="font-medium text-slate-900">{totalCount}</span> results
-              </p>
-              <div className="flex items-center space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => onParamsChange({ page: Math.max(1, page - 1) })} 
-                  disabled={page === 1} 
-                  className="shadow-sm bg-white"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => onParamsChange({ page: Math.min(totalPages, page + 1) })} 
-                  disabled={page === totalPages} 
-                  className="shadow-sm bg-white"
-                >
-                  Next <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+            <p className="text-sm text-slate-500">
+              Showing <span className="font-medium text-slate-900">{(page - 1) * pageSize + 1}</span> to <span className="font-medium text-slate-900">{Math.min(page * pageSize, totalCount)}</span> of <span className="font-medium text-slate-900">{totalCount}</span> results
+            </p>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onParamsChange({ page: Math.max(1, page - 1) })}
+                disabled={page === 1 || loading}
+                className="shadow-sm bg-white dark:bg-slate-900 border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-800 rounded-lg active:scale-95 transition-all duration-200"
+              >
+                {loading ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <ChevronLeft className="w-4 h-4 mr-1" />} Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onParamsChange({ page: Math.min(totalPages, page + 1) })}
+                disabled={page === totalPages || loading}
+                className="shadow-sm bg-white dark:bg-slate-900 border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-800 rounded-lg active:scale-95 transition-all duration-200"
+              >
+                Next {loading ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <ChevronRight className="w-4 h-4 ml-1" />}
+              </Button>
             </div>
+          </div>
         )}
       </CardContent>
     </Card>
