@@ -147,6 +147,51 @@ namespace API.Services.Inventory
                 int skip = (model.PageNumber - 1) * model.PageSize;
                 var pagedMovements = allMovements.Skip(skip).Take(model.PageSize).ToList();
 
+                // Load complete movement history for PTAs in this page to resolve previous holder (FROM employee).
+                var ptaIdsInPage = pagedMovements
+                    .Where(x => x.PTAId.HasValue)
+                    .Select(x => x.PTAId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                var allMovementsForPtas = await _getTools.PTA.GetTblPTAMovements(context)
+                    .Where(x => x.PTAId.HasValue && ptaIdsInPage.Contains(x.PTAId.Value) && !x.IsDeleted)
+                    .ToListAsync();
+
+                var movementsByPta = allMovementsForPtas
+                    .OrderBy(x => x.DateAssigned)
+                    .ThenBy(x => x.CreatedAt)
+                    .GroupBy(x => x.PTAId!.Value)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                var previousMovementById = new Dictionary<long, dynamic>();
+                foreach (var movement in pagedMovements)
+                {
+                    var ptaId = movement.PTAId;
+                    if (!ptaId.HasValue) continue;
+                    if (!movementsByPta.TryGetValue(ptaId.Value, out var history)) continue;
+
+                    var currentIndex = history.FindIndex(m => m.Id == movement.Id);
+                    if (currentIndex > 0)
+                        previousMovementById[movement.Id] = history[currentIndex - 1];
+                }
+
+                // Ensure previous holder IDs also have display names in the map.
+                var previousHolderIds = previousMovementById.Values
+                    .Select(pm => (long?)(pm.NonPlantillaEmployeeId ?? pm.PlantillaEmployeeId))
+                    .Where(id => id.HasValue)
+                    .Select(id => id!.Value)
+                    .Distinct()
+                    .ToList();
+
+                foreach (var prevEmpId in previousHolderIds)
+                {
+                    if (employeeNameMap.ContainsKey(prevEmpId)) continue;
+                    var emp = await _getTools.Account.GetTblEmployeeAsync(prevEmpId, context);
+                    if (emp != null)
+                        employeeNameMap[prevEmpId] = $"{emp.FirstName} {emp.MiddleName} {emp.LastName}".Trim();
+                }
+
                 // 11. Build result
                 var result = new List<object>();
 
@@ -154,6 +199,25 @@ namespace API.Services.Inventory
                 {
                     long? plantillaId = movement.PlantillaEmployeeId;
                     long? nonPlantillaId = movement.NonPlantillaEmployeeId;
+                    long? previousPlantillaId = null;
+                    long? previousNonPlantillaId = null;
+                    string? previousPlantillaName = null;
+                    string? previousNonPlantillaName = null;
+                    string? previousPlantillaIdOriginal = null;
+                    string? previousNonPlantillaIdOriginal = null;
+
+                    if (previousMovementById.TryGetValue(movement.Id, out var previousMovement))
+                    {
+                        previousPlantillaId = previousMovement.PlantillaEmployeeId;
+                        previousNonPlantillaId = previousMovement.NonPlantillaEmployeeId;
+                        previousPlantillaIdOriginal = previousMovement.PlantillaEmployeeIdOriginal;
+                        previousNonPlantillaIdOriginal = previousMovement.NonPlantillaEmployeeIdOriginal;
+
+                        if (previousPlantillaId.HasValue)
+                            employeeNameMap.TryGetValue(previousPlantillaId.Value, out previousPlantillaName);
+                        if (previousNonPlantillaId.HasValue)
+                            employeeNameMap.TryGetValue(previousNonPlantillaId.Value, out previousNonPlantillaName);
+                    }
 
                     employeeNameMap.TryGetValue(plantillaId ?? 0, out var plantillaName);
                     employeeNameMap.TryGetValue(nonPlantillaId ?? 0, out var nonPlantillaName);
@@ -204,6 +268,12 @@ namespace API.Services.Inventory
                         nonPlantillaEmployeeId = nonPlantillaId,
                         nonPlantillaEmployeeName = nonPlantillaName,
                         nonPlantillaEmployeeIdOriginal = movement.NonPlantillaEmployeeIdOriginal,
+                        previousPlantillaEmployeeId = previousPlantillaId,
+                        previousPlantillaEmployeeName = previousPlantillaName,
+                        previousPlantillaEmployeeIdOriginal = previousPlantillaIdOriginal,
+                        previousNonPlantillaEmployeeId = previousNonPlantillaId,
+                        previousNonPlantillaEmployeeName = previousNonPlantillaName,
+                        previousNonPlantillaEmployeeIdOriginal = previousNonPlantillaIdOriginal,
                         office,
                         division,
                         item = itemDetails

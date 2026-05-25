@@ -89,14 +89,54 @@ const normalizeTransferListItem = (raw: any): Movement => ({
   division: raw.division,
   plantillaEmployeeId: raw.plantillaEmployeeId ?? null,
   nonPlantillaEmployeeId: raw.nonPlantillaEmployeeId ?? null,
-  employee: [
-    ...(raw.plantillaEmployeeName || raw.plantillaEmployeeId
-      ? [{ id: raw.plantillaEmployeeId ?? 0, fullName: raw.plantillaEmployeeName, employeeIdOriginal: raw.plantillaEmployeeIdOriginal, employeeType: 'Plantilla' }]
-      : []),
-    ...(raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
-      ? [{ id: raw.nonPlantillaEmployeeId ?? 0, fullName: raw.nonPlantillaEmployeeName, employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal, employeeType: 'Non-Plantilla' }]
-      : []),
-  ],
+  employee: (() => {
+    const isReturn = !!(raw.rrppeRrspNumber || raw.rrpperrspNumber) && !raw.ptrItrNumber;
+
+    if (isReturn) {
+      const fromEmployee = raw.previousNonPlantillaEmployeeName || raw.previousNonPlantillaEmployeeId
+        ? {
+            id: raw.previousNonPlantillaEmployeeId ?? 0,
+            fullName: raw.previousNonPlantillaEmployeeName,
+            employeeIdOriginal: raw.previousNonPlantillaEmployeeIdOriginal,
+            employeeType: 'Non-Plantilla',
+          }
+        : raw.previousPlantillaEmployeeName || raw.previousPlantillaEmployeeId
+          ? {
+              id: raw.previousPlantillaEmployeeId ?? 0,
+              fullName: raw.previousPlantillaEmployeeName,
+              employeeIdOriginal: raw.previousPlantillaEmployeeIdOriginal,
+              employeeType: 'Plantilla',
+            }
+          : null;
+
+      const toEmployee = raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
+        ? {
+            id: raw.nonPlantillaEmployeeId ?? 0,
+            fullName: raw.nonPlantillaEmployeeName,
+            employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal,
+            employeeType: 'Non-Plantilla',
+          }
+        : raw.plantillaEmployeeName || raw.plantillaEmployeeId
+          ? {
+              id: raw.plantillaEmployeeId ?? 0,
+              fullName: raw.plantillaEmployeeName,
+              employeeIdOriginal: raw.plantillaEmployeeIdOriginal,
+              employeeType: 'Plantilla',
+            }
+          : null;
+
+      return [fromEmployee, toEmployee].filter(Boolean) as EmployeeInfo[];
+    }
+
+    return [
+      ...(raw.plantillaEmployeeName || raw.plantillaEmployeeId
+        ? [{ id: raw.plantillaEmployeeId ?? 0, fullName: raw.plantillaEmployeeName, employeeIdOriginal: raw.plantillaEmployeeIdOriginal, employeeType: 'Plantilla' }]
+        : []),
+      ...(raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
+        ? [{ id: raw.nonPlantillaEmployeeId ?? 0, fullName: raw.nonPlantillaEmployeeName, employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal, employeeType: 'Non-Plantilla' }]
+        : []),
+    ];
+  })(),
   items: raw.item ? [raw.item] : [],
 });
 
