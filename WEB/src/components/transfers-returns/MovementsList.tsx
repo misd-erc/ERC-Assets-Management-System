@@ -266,6 +266,9 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
 
   // Handle edit details
   const handleEditDetails = async (movement: Movement) => {
+    const rawCondition = (movement.condition || '').trim();
+    const rawRemarks = (movement.remarks || '').trim();
+
     setEditingMovement(movement);
     setEditFields({
       dateAssigned: movement.dateAssigned
@@ -290,27 +293,43 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
         null,
     });
 
-    const loads: Promise<any>[] = [];
-
-    if (conditions.length === 0) {
-      loads.push(
-        getConditions()
-          .then(conds => setConditions(conds || []))
-          .catch(() => {})
-      );
+    let availableConditions = conditions;
+    if (availableConditions.length === 0) {
+      try {
+        const conds = await getConditions();
+        availableConditions = conds || [];
+        setConditions(availableConditions);
+      } catch {
+        availableConditions = [];
+      }
     }
 
     if (editEmployees.length === 0) {
       setEditEmployeesLoading(true);
-      loads.push(
-        getEmployees()
-          .then(res => setEditEmployees(res.data?.items || []))
-          .catch(() => {})
-          .finally(() => setEditEmployeesLoading(false))
-      );
+      try {
+        const res = await getEmployees();
+        setEditEmployees(res.data?.items || []);
+      } catch {
+        // ignore load error; selector stays empty
+      } finally {
+        setEditEmployeesLoading(false);
+      }
     }
 
-    await Promise.all(loads);
+    // Ensure current condition is reflected in the select even when backend stores it with different casing,
+    // or temporarily in remarks for older records.
+    const matchCondition = (value: string) =>
+      availableConditions.find(c => c.trim().toLowerCase() === value.trim().toLowerCase());
+
+    const resolvedCondition =
+      (rawCondition && (matchCondition(rawCondition) || rawCondition)) ||
+      (rawRemarks && matchCondition(rawRemarks)) ||
+      '';
+
+    if (resolvedCondition !== rawCondition) {
+      setEditFields(prev => ({ ...prev, condition: resolvedCondition }));
+    }
+
     setEditDialogOpen(true);
   };
 
