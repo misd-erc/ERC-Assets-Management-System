@@ -28,7 +28,7 @@ export function QuickActionsCard({
 }: QuickActionsCardProps) {
   const handleCreateRIS = () => {
     toast.success("Navigating to RIS creation");
-    onNavigate?.("supplies-inventory");
+    onNavigate?.("supply-management");
   };
 
   const handleEncodeAsset = () => {

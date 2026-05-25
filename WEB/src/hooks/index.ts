@@ -16,6 +16,8 @@ export { useSupplyItem } from '@/hooks/supply/useSupplyItem';
 export { useSupplyStorageLocation } from '@/hooks/supply/useSupplyStorageLocation';
 export { useSupplyUnit } from '@/hooks/supply/useSupplyUnit';
 export { useSupplyIAR } from '@/hooks/supply/useIAR';
+export { useStockCard } from '@/hooks/supply/useStockCard';
+export { useSupplyRIS } from '@/hooks/supply/useSupplyRIS';
 
 export { useDarkMode } from '@/hooks/ui/useDarkMode';
 

@@ -782,11 +782,6 @@ namespace API.Controllers
                 int skip = (model.PageNumber - 1) * model.PageSize;
                 var pagedEvents = allEvents.Skip(skip).Take(model.PageSize).ToList();
 
-                string debugJson = System.Text.Json.JsonSerializer.Serialize(pagedEvents, new System.Text.Json.JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
                 // ===== 6. Compute running balance before the first event in the page =====
                 long previousBalance = 0;
                 if (skip > 0)

@@ -31,7 +31,9 @@ export const SupplyItemTabContent = () => {
   useEffect(() => {
     fetchSupplyStorageLocations();
     fetchCategories();
-    getVendors().then(res => setVendors(res || []));
+    getVendors()
+      .then(res => setVendors(res || []))
+      .catch(() => setVendors([]));
   }, [fetchSupplyStorageLocations, fetchCategories]);
 
   useEffect(() => {

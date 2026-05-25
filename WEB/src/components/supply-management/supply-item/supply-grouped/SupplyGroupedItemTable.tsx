@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import { VwSupplyGroupedItem } from '@/types';
 import {
   Table,
@@ -10,13 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Eye, ChevronLeft, ChevronRight, Plus, PackageSearch, Layers, ArrowUpDown, Filter, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Eye, ChevronLeft, ChevronRight, Plus, PackageSearch, Layers, ArrowUpDown, Filter, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
@@ -41,6 +35,7 @@ interface Props {
   allVendors?: any[];
   loading?: boolean;
   onView: (item: VwSupplyGroupedItem) => void;
+  viewActionLabel?: string;
   onParamsChange: (params: { page: number; search: string; status: string; category?: string; storageId?: string; vendorId?: string }) => void;
 }
 
@@ -59,6 +54,7 @@ export const SupplyGroupedItemTable = ({
   storageLocations = [],
   allVendors = [],
   onView,
+  viewActionLabel = 'View',
   onParamsChange,
   loading = false
 }: Props) => {
@@ -247,7 +243,7 @@ export const SupplyGroupedItemTable = ({
                     </div>
                   </TableHead>
                   <TableHead className="text-center w-[120px]">Status</TableHead>
-                  <TableHead className="text-right w-[80px]">Actions</TableHead>
+                  <TableHead className="text-right w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -294,18 +290,15 @@ export const SupplyGroupedItemTable = ({
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0 text-slate-500 hover:text-slate-900">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-44">
-                              <DropdownMenuItem onClick={() => onView(item)} className="cursor-pointer">
-                                <Eye className="w-4 h-4 mr-2 text-slate-500" /> View Group Details
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 gap-1.5 text-slate-700 hover:text-blue-700 hover:border-blue-200"
+                            onClick={() => onView(item)}
+                          >
+                            <Eye className="w-4 h-4" />
+                            {viewActionLabel}
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );

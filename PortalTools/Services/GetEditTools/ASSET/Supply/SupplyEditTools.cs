@@ -337,7 +337,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
             {
                 TblSupplyStorageLocation? supplyCategoryModel = await _getTools.Supply.GetTblSupplyStorageLocationAsync(id, context);
                 await context.TblSupplyStorageLocations.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
-                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a Supply Category", actionBy: actionBySystemUserId,
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a Supply Storage Location", actionBy: actionBySystemUserId,
                     linkedAuditTrailId: AuditTrailTool.TrackChanges(context, supplyCategoryModel, null, nameof(TblSupplyStorageLocation), actionBySystemUserId, "Delete"));
 
                 return true;
@@ -396,7 +396,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
             {
                 TblSupplyUnit? supplyCategoryModel = await _getTools.Supply.GetTblSupplyUnitAsync(id, context);
                 await context.TblSupplyUnits.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
-                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a Supply Category", actionBy: actionBySystemUserId,
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted a Supply Unit", actionBy: actionBySystemUserId,
                     linkedAuditTrailId: AuditTrailTool.TrackChanges(context, supplyCategoryModel, null, nameof(TblSupplyUnit), actionBySystemUserId, "Delete"));
 
                 return true;

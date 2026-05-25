@@ -21,7 +21,15 @@ namespace API.Services.Dashboard
             try
             {
                 IEnumerable<TblSupplyItem>? supplyItems = await _getTools.Supply.GetTblSupplyItems(context)!.ToListAsync();
-                IEnumerable<TblSupplyRISItem>? risItems = await _getTools.Supply.GetTblSupplyRISItems(context)!.ToListAsync();
+
+                var approvedRisIds = await context.Set<TblSupplyRIS>()
+                    .Where(r => r.IsApproved && !r.IsDeleted)
+                    .Select(r => r.Id)
+                    .ToListAsync();
+
+                IEnumerable<TblSupplyRISItem>? risItems = await _getTools.Supply.GetTblSupplyRISItems(context)!
+                    .Where(x => x.SupplyRISId.HasValue && approvedRisIds.Contains(x.SupplyRISId.Value))
+                    .ToListAsync();
 
                 var issuedStockGroup = risItems
                     .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.ItemDescription))
