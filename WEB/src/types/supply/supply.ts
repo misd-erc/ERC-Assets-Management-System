@@ -102,7 +102,7 @@ export interface SupplyIAR {
 export interface VwSupplyIAR {
   id: number;
   recordId: number;
-  drNumber: number;
+  drNumber: string;
   centerCode: string;
   entityName: string;
   fundCluster: string;

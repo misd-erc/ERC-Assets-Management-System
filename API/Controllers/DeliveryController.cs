@@ -209,76 +209,87 @@ namespace API.Controllers
 
             try
             {
-
                 TblDeliveryRecord? deliveryRecord = await _getTools.Supply.GetTblDeliveryRecordAsync(recordId, context);
 
-                var deliveryRecordsResponses = new List<DeliveryRecordResponseModel>();
-
-                    List<TblDeliveryRecordItem>? unmappedItems = await _getTools.Delivery.GetTblDeliveryRecordItemsByRecordId(deliveryRecord.Id, context).ToListAsync();
-                    List<DeliveryRecordItemResponseModel>? mappedItems = new List<DeliveryRecordItemResponseModel>();
-
-                    foreach (var y in unmappedItems)
-                    {
-                        var mappedItemModel = new DeliveryRecordItemResponseModel
-                        {
-                            Id = y.Id,
-                            RecordId = y.RecordId,
-                            ItemTypeId = y.ItemTypeId,
-                            Category = await _getTools.PTA.GetTblPTACategoryAsync(y.CategoryId, context),
-                            ItemDescription = y.ItemDescription,
-                            ItemSpecification = y.ItemSpecification,
-                            ItemQuantity = y.ItemQuantity,
-                            MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(y.UnitId, context),
-                            UnitCost = y.UnitCost,
-                            IsActive = y.IsActive,
-                            CreatedAt = y.CreatedAt
-                        };
-                        mappedItems.Add(mappedItemModel);
-                    }
-
-                TblSupplyIAR? z = _getTools.Supply.GetTblSupplyIARs(context).FirstOrDefault(iar => iar.RecordId == deliveryRecord.Id);
-
-                var supplyIARModel = new SupplyIARResponseModel
+                if (deliveryRecord == null)
                 {
-                    Id = z.Id,
-                    CenterCode = z.ResponsibilityCenterCode,
-                    EntityName = z.EntityName,
-                    FundCluster = z.FundCluster,
-                    Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(z.VendorId, context),
-                    Office = await _getTools.Office.GetTblOfficeAsync(z.OfficeId, context),
-                    Division = await _getTools.Office.GetTblDivisionAsync(z.DivisionId, context),
-                    PONumber = z.PONumber,
-                    IARNumber = z.IARNumber,
-                    IARNumberDate = z.IARNumberDate,
-                    IARInvoiceNumber = z.IARInvoiceNumber,
-                    IARInvoiceNumberDate = z.IARInvoiceNumberDate,
-                    PODate = z.PODate,
-                    IsActive = z.IsActive,
-                    CreatedAt = z.CreatedAt
-                };
+                    await transaction.RollbackAsync();
+                    return StatusCode(ApiStatusCode.NotFound, ApiResponse<object>.NotFound("Delivery record not found."));
+                }
+
+                List<TblDeliveryRecordItem>? unmappedItems = await _getTools.Delivery.GetTblDeliveryRecordItemsByRecordId(deliveryRecord.Id, context).ToListAsync();
+                List<DeliveryRecordItemResponseModel> mappedItems = new();
+                decimal recordTotalAmount = 0;
+
+                foreach (var y in unmappedItems)
+                {
+                    recordTotalAmount += (y.ItemQuantity ?? 0) * (y.UnitCost ?? 0);
+                    mappedItems.Add(new DeliveryRecordItemResponseModel
+                    {
+                        Id = y.Id,
+                        RecordId = y.RecordId,
+                        Code = y.Code,
+                        ItemTypeId = y.ItemTypeId,
+                        Category = await _getTools.PTA.GetTblPTACategoryAsync(y.CategoryId, context),
+                        ItemDescription = y.ItemDescription,
+                        ItemSpecification = y.ItemSpecification,
+                        ItemQuantity = y.ItemQuantity,
+                        MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(y.UnitId, context),
+                        UnitCost = y.UnitCost,
+                        ReorderPoint = y.ReorderPoint,
+                        StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(y.StorageLocationId, context),
+                        Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(y.VendorId, context),
+                        IsActive = y.IsActive,
+                        CreatedAt = y.CreatedAt
+                    });
+                }
+
+                TblSupplyIAR? linkedIar = _getTools.Supply.GetTblSupplyIARs(context).FirstOrDefault(iar => iar.RecordId == deliveryRecord.Id);
+                SupplyIARResponseModel? supplyIARModel = null;
+
+                if (linkedIar != null)
+                {
+                    supplyIARModel = new SupplyIARResponseModel
+                    {
+                        Id = linkedIar.Id,
+                        CenterCode = linkedIar.ResponsibilityCenterCode,
+                        EntityName = linkedIar.EntityName,
+                        FundCluster = linkedIar.FundCluster,
+                        Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(linkedIar.VendorId, context),
+                        Office = await _getTools.Office.GetTblOfficeAsync(linkedIar.OfficeId, context),
+                        Division = await _getTools.Office.GetTblDivisionAsync(linkedIar.DivisionId, context),
+                        PONumber = linkedIar.PONumber,
+                        IARNumber = linkedIar.IARNumber,
+                        IARNumberDate = linkedIar.IARNumberDate,
+                        IARInvoiceNumber = linkedIar.IARInvoiceNumber,
+                        IARInvoiceNumberDate = linkedIar.IARInvoiceNumberDate,
+                        PODate = linkedIar.PODate,
+                        IsApproved = linkedIar.IsApproved,
+                        IsActive = linkedIar.IsActive,
+                        CreatedAt = linkedIar.CreatedAt
+                    };
+                }
 
                 var deliveryRecordModel = new DeliveryRecordResponseModel
-                    {
-                        Id = deliveryRecord.Id,
-                        DRNumber = deliveryRecord.DRNumber,
-                        SupplyIAR = supplyIARModel,
-                        DeliveryDate = deliveryRecord.DeliveryDate,
-                        Employee = await _getTools.Account.GetTblEmployeeAsync(deliveryRecord.EmployeeId, context),
-                        Remarks = deliveryRecord.Remarks,
-                        FileId = deliveryRecord.FileId,
-                        IsReceived = deliveryRecord.IsReceived,
-                        Items = mappedItems,
-                        IsActive = deliveryRecord.IsActive,
-                        CreatedAt = deliveryRecord.CreatedAt
-                    };
-                    deliveryRecordsResponses.Add(deliveryRecordModel);
-                
+                {
+                    Id = deliveryRecord.Id,
+                    DRNumber = deliveryRecord.DRNumber,
+                    SupplyIAR = supplyIARModel,
+                    DeliveryDate = deliveryRecord.DeliveryDate,
+                    Employee = await _getTools.Account.GetTblEmployeeAsync(deliveryRecord.EmployeeId, context),
+                    Remarks = deliveryRecord.Remarks,
+                    FileId = deliveryRecord.FileId,
+                    IsReceived = deliveryRecord.IsReceived,
+                    Items = mappedItems,
+                    TotalAmount = recordTotalAmount,
+                    IsActive = deliveryRecord.IsActive,
+                    CreatedAt = deliveryRecord.CreatedAt
+                };
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed Delivery Record {deliveryRecord.Id}", actionBy: model.ActionBySystemUserId);
-                return Ok(ApiResponse<DeliveryRecordResponseModel>.Ok(deliveryRecordsResponses,"Delivery Record have been retrieved"));
-
+                return Ok(ApiResponse<DeliveryRecordResponseModel>.Ok(deliveryRecordModel, "Delivery Record has been retrieved"));
             }
             catch (Exception ex)
             {
@@ -313,9 +324,15 @@ namespace API.Controllers
                         IsReceived = x.IsReceived,
                         TotalAmount = totalAmount,
                         CreatedAt = x.CreatedAt,
-                        SupplyIAR = _getTools.Supply.GetTblSupplyIARs(context).Any(z => z.RecordId == x.Id)
-                            ? new SupplyIARResponseModel { Id = 1 } 
-                            : null
+                        SupplyIAR = _getTools.Supply.GetTblSupplyIARs(context)
+                            .Where(z => z.RecordId == x.Id)
+                            .Select(z => new SupplyIARResponseModel
+                            {
+                                Id = z.Id,
+                                IsApproved = z.IsApproved,
+                                IARNumber = z.IARNumber
+                            })
+                            .FirstOrDefault()
                     });
                 }
 
@@ -407,7 +424,7 @@ namespace API.Controllers
                 bool isDeleted = await _editTools.Delivery.DeleteTblDeliveryRecordAsync(recordId, model.ActionBySystemUserId, context);
 
                 if (!isDeleted)
-                    return Ok(ApiResponse<object>.Ok($"Unable to delete this delivery record, try again later"));
+                    return Ok(ApiResponse<object>.OperationFailed("Unable to delete this delivery record, try again later"));
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();

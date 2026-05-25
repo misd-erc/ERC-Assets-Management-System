@@ -520,16 +520,20 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
   deleteSupplyIAR: async (id) => {
     try {
       const { systemUserId, sessionKey } = getAuthParams();
-      await axiosInstance.delete(`/Supply/iar/delete/${id}`, {
+      const response = await axiosInstance.delete(`/Supply/iar/delete/${id}`, {
         params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
       });
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to delete IAR');
+      }
 
       await get().fetchSupplyIARs();
       await get().fetchSupplyIARSummary();
       await useSupplyItemStore.getState().fetchSupplySummary();
       toast.success('IAR deleted successfully');
-    } catch {
-      toast.error('Failed to delete IAR');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete IAR');
+      throw error;
     }
   },
 }));

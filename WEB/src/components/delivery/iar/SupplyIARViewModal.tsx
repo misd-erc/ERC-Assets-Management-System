@@ -13,9 +13,10 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   record: VwSupplyIAR | null;
   deliveryRecord: VwDeliveryRecord | null;
+  loadingDeliveryRecord?: boolean;
 }
 
-export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord }: Props) => {
+export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord, loadingDeliveryRecord }: Props) => {
   if (!record) return null;
 
   const deliveryItems = deliveryRecord?.items || [];
@@ -198,6 +199,10 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord 
                     </div>
 
                   </div>
+                </div>
+            ) : loadingDeliveryRecord ? (
+                <div className="py-10 text-center border-t">
+                  <p className="text-sm text-muted-foreground italic">Loading delivered items...</p>
                 </div>
             ) : (
                 <div className="py-10 text-center border-t">

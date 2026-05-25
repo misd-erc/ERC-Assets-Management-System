@@ -45,6 +45,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
     itemTypeId: 1,
     categoryId: 0,
     itemDescription: '',
+    itemSpecification: '',
     itemQuantity: 0,
     measurementUnitId: 0,
     unitCost: 0,
@@ -68,7 +69,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
   const resetForm = () => {
     setIsNewItem(false);
     setItem({
-      itemTypeId: 1, categoryId: 0, itemDescription: '',
+      itemTypeId: 1, categoryId: 0, itemDescription: '', itemSpecification: '',
       itemQuantity: 0, measurementUnitId: 0, unitCost: 0,
       code: '', reorderPoint: 0,
       storageLocationId: 0, vendorId: 0
@@ -408,6 +409,16 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                   required
                   disabled={isExistingItem}
                   className={isExistingItem ? "bg-slate-50" : ""}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Specification <span className="text-muted-foreground font-normal">(optional)</span></Label>
+              <Textarea
+                  value={item.itemSpecification}
+                  onChange={e => setItem({...item, itemSpecification: e.target.value})}
+                  placeholder="Brand, model, or other specifications"
+                  rows={2}
               />
             </div>
 

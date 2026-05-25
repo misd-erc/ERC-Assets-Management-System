@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSupplyIARStore } from '@/store/supply'; // Use store directly
+import { useSupplyIARStore } from '@/store/supply';
 import { useOfficeStore, useDivisionStore } from '@/store/office';
 import { getVendors } from '@/api/contract-management/vendorApi';
+import { getDeliveryRecordById } from '@/api/delivery/deliveryApi';
 import { SupplyIARTable } from './SupplyIARTable';
 import { SupplyIAREditModal } from './SupplyIAREditModal';
 import { SupplyIARDeleteModal } from './SupplyIARDeleteModal';
@@ -12,8 +13,8 @@ import { VwDeliveryRecord } from '@/types/delivery/delivery';
 import { useDeliveryRecordStore } from '@/store/delivery';
 
 export const SupplyIARTabContent = () => {
-  // Use specific selectors for stability
   const iars = useSupplyIARStore(state => state.iars);
+  const iarsSummary = useSupplyIARStore(state => state.iarsSummary);
   const loading = useSupplyIARStore(state => state.loading);
   const totalIars = useSupplyIARStore(state => state.totalIars);
   const page = useSupplyIARStore(state => state.page);
@@ -25,6 +26,7 @@ export const SupplyIARTabContent = () => {
   const divisionId = useSupplyIARStore(state => state.divisionId);
 
   const fetchSupplyIARs = useSupplyIARStore(state => state.fetchSupplyIARs);
+  const fetchSupplyIARSummary = useSupplyIARStore(state => state.fetchSupplyIARSummary);
   const addSupplyIAR = useSupplyIARStore(state => state.addSupplyIAR);
   const updateSupplyIAR = useSupplyIARStore(state => state.updateSupplyIAR);
   const deleteSupplyIAR = useSupplyIARStore(state => state.deleteSupplyIAR);
@@ -36,7 +38,7 @@ export const SupplyIARTabContent = () => {
   const setOfficeId = useSupplyIARStore(state => state.setOfficeId);
   const setDivisionId = useSupplyIARStore(state => state.setDivisionId);
 
-  const { vwDeliveryRecords, fetchDeliveryRecords, fetchDeliveryRecordsSummary } = useDeliveryRecordStore();
+  const { vwDeliveryRecordsSummary, fetchDeliveryRecordsSummary } = useDeliveryRecordStore();
   const { vwOffices, fetchOffices } = useOfficeStore();
   const { vwDivisions, fetchDivisions } = useDivisionStore();
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -45,12 +47,12 @@ export const SupplyIARTabContent = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [isApproveOpen, setIsApproveOpen] = useState(false);
-  
+
   const [selectedRecord, setSelectedRecord] = useState<VwSupplyIAR | null>(null);
   const [selectedDeliveryRecord, setSelectedDeliveryRecord] = useState<VwDeliveryRecord | null>(null);
+  const [loadingDeliveryRecord, setLoadingDeliveryRecord] = useState(false);
   const [mode, setMode] = useState<'add' | 'edit'>('add');
 
-  // Debounce search
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
 
   useEffect(() => {
@@ -65,50 +67,68 @@ export const SupplyIARTabContent = () => {
   }, [fetchSupplyIARs, page, searchQuery, status, vendorId, officeId, divisionId]);
 
   useEffect(() => {
-    fetchDeliveryRecords();
+    fetchDeliveryRecordsSummary();
+    fetchSupplyIARSummary();
     fetchOffices();
     fetchDivisions();
     getVendors().then(setVendors);
-  }, [fetchDeliveryRecords, fetchOffices, fetchDivisions]);
+  }, [fetchDeliveryRecordsSummary, fetchSupplyIARSummary, fetchOffices, fetchDivisions]);
+
+  const loadLinkedDeliveryRecord = useCallback(async (recordId: number) => {
+    setLoadingDeliveryRecord(true);
+    setSelectedDeliveryRecord(null);
+    try {
+      const dr = await getDeliveryRecordById(recordId);
+      setSelectedDeliveryRecord(dr);
+    } finally {
+      setLoadingDeliveryRecord(false);
+    }
+  }, []);
 
   const handleParamsChange = useCallback((params: { page?: number; search?: string; status?: string; vendorId?: number; officeId?: number; divisionId?: number }) => {
     if (params.page !== undefined) setPage(params.page);
     if (params.search !== undefined) setDebouncedSearch(params.search);
     if (params.status !== undefined) setStatus(params.status);
-    if (params.vendorId !== undefined || params.vendorId === undefined) setVendorId(params.vendorId);
-    if (params.officeId !== undefined || params.officeId === undefined) setOfficeId(params.officeId);
-    if (params.divisionId !== undefined || params.divisionId === undefined) setDivisionId(params.divisionId);
+    if ('vendorId' in params) setVendorId(params.vendorId);
+    if ('officeId' in params) setOfficeId(params.officeId);
+    if ('divisionId' in params) setDivisionId(params.divisionId);
   }, [setPage, setStatus, setVendorId, setOfficeId, setDivisionId]);
 
-  const handleAdd = () => { 
-    setSelectedRecord(null); 
-    setMode('add'); 
-    setIsEditOpen(true); 
+  const handleAdd = () => {
+    setSelectedRecord(null);
+    setMode('add');
+    setIsEditOpen(true);
   };
 
-  const handleEdit = (record: VwSupplyIAR) => { 
-    setSelectedRecord(record); 
-    setMode('edit'); 
-    setIsEditOpen(true); 
+  const handleEdit = (record: VwSupplyIAR) => {
+    setSelectedRecord(record);
+    setMode('edit');
+    setIsEditOpen(true);
   };
 
-  const handleDelete = (record: VwSupplyIAR) => { 
-    setSelectedRecord(record); 
-    setIsDeleteOpen(true); 
+  const handleDelete = (record: VwSupplyIAR) => {
+    setSelectedRecord(record);
+    setIsDeleteOpen(true);
   };
 
   const handleView = (record: VwSupplyIAR) => {
     setSelectedRecord(record);
-    const match = vwDeliveryRecords.find(dr => dr.id === record.recordId);
-    setSelectedDeliveryRecord(match || null);
     setIsViewOpen(true);
+    if (record.recordId) {
+      loadLinkedDeliveryRecord(record.recordId);
+    } else {
+      setSelectedDeliveryRecord(null);
+    }
   };
-  
+
   const handleApproveClick = (record: VwSupplyIAR) => {
     setSelectedRecord(record);
-    const match = vwDeliveryRecords.find(dr => dr.id === record.recordId);
-    setSelectedDeliveryRecord(match || null);
     setIsApproveOpen(true);
+    if (record.recordId) {
+      loadLinkedDeliveryRecord(record.recordId);
+    } else {
+      setSelectedDeliveryRecord(null);
+    }
   };
 
   const handleConfirmApprove = async () => {
@@ -122,9 +142,8 @@ export const SupplyIARTabContent = () => {
         isApproved: true,
         isActive: selectedRecord.isActive ?? true
       };
-      
+
       await updateSupplyIAR(selectedRecord.id, fullPayload);
-      await fetchDeliveryRecords();
       await fetchDeliveryRecordsSummary();
       setIsApproveOpen(false);
     }
@@ -133,15 +152,14 @@ export const SupplyIARTabContent = () => {
   const handleSave = async (data: any) => {
     if (mode === 'add') await addSupplyIAR(data);
     else if (selectedRecord) await updateSupplyIAR(selectedRecord.id, data);
-    await fetchDeliveryRecords();
     await fetchDeliveryRecordsSummary();
     setIsEditOpen(false);
   };
 
-  const availableDeliveryRecords = vwDeliveryRecords.filter(dr => {
+  const availableDeliveryRecords = vwDeliveryRecordsSummary.filter(dr => {
     const isUnreceived = !dr.isReceived;
-    const isLinkedToOtherIAR = iars.some(iar => 
-      iar.recordId === dr.id && 
+    const isLinkedToOtherIAR = iarsSummary.some(iar =>
+      iar.recordId === dr.id &&
       iar.id !== selectedRecord?.id
     );
     return isUnreceived && !isLinkedToOtherIAR;
@@ -149,8 +167,8 @@ export const SupplyIARTabContent = () => {
 
   return (
     <>
-      <SupplyIARTable 
-        data={iars} 
+      <SupplyIARTable
+        data={iars}
         totalCount={totalIars}
         page={page}
         pageSize={pageSize}
@@ -163,48 +181,51 @@ export const SupplyIARTabContent = () => {
         offices={vwOffices}
         divisions={vwDivisions}
         loading={loading}
-        onAdd={handleAdd} 
-        onEdit={handleEdit} 
-        onDelete={handleDelete} 
+        onAdd={handleAdd}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
         onView={handleView}
         onApprove={handleApproveClick}
         onParamsChange={handleParamsChange}
       />
 
-      <SupplyIAREditModal 
-        open={isEditOpen} 
-        onOpenChange={setIsEditOpen} 
-        mode={mode} 
-        record={selectedRecord} 
+      <SupplyIAREditModal
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        mode={mode}
+        record={selectedRecord}
         onSubmit={handleSave}
         availableDeliveryRecords={availableDeliveryRecords}
       />
-      
-      <SupplyIARDeleteModal 
-        open={isDeleteOpen} 
-        onOpenChange={setIsDeleteOpen} 
-        record={selectedRecord} 
-        onConfirm={async () => { 
-          if (selectedRecord) await deleteSupplyIAR(selectedRecord.id); 
-          await fetchDeliveryRecords();
-          await fetchDeliveryRecordsSummary();
-          setIsDeleteOpen(false); 
-        }} 
-      />
-      
-      <SupplyIARApproveModal 
-        open={isApproveOpen} 
-        onOpenChange={setIsApproveOpen} 
+
+      <SupplyIARDeleteModal
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
         record={selectedRecord}
-        deliveryRecord={selectedDeliveryRecord}
-        onConfirm={handleConfirmApprove} 
+        onConfirm={async () => {
+          if (selectedRecord) {
+            await deleteSupplyIAR(selectedRecord.id);
+            await fetchDeliveryRecordsSummary();
+            setIsDeleteOpen(false);
+          }
+        }}
       />
 
-      <SupplyIARViewModal 
-        open={isViewOpen} 
-        onOpenChange={setIsViewOpen} 
-        record={selectedRecord} 
-        deliveryRecord={selectedDeliveryRecord} 
+      <SupplyIARApproveModal
+        open={isApproveOpen}
+        onOpenChange={setIsApproveOpen}
+        record={selectedRecord}
+        deliveryRecord={selectedDeliveryRecord}
+        loadingDeliveryRecord={loadingDeliveryRecord}
+        onConfirm={handleConfirmApprove}
+      />
+
+      <SupplyIARViewModal
+        open={isViewOpen}
+        onOpenChange={setIsViewOpen}
+        record={selectedRecord}
+        deliveryRecord={selectedDeliveryRecord}
+        loadingDeliveryRecord={loadingDeliveryRecord}
       />
     </>
   );

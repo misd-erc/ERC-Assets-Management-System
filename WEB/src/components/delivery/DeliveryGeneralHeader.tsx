@@ -1,4 +1,4 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, type ReactNode } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,6 +14,53 @@ import {
 import { useDeliveryRecordStore } from "@/store/delivery"; // Adjust path if needed
 import { useSupplyIARStore } from "@/store/supply";
 import { formatCurrency } from "@/utils/formatters";
+
+/** Responsive font size so currency values fit without truncation */
+function CurrencyStatValue({ value }: { value: number }) {
+  const formatted = formatCurrency(value);
+  const sizeClass =
+    formatted.length > 16 ? "text-xs sm:text-sm" :
+    formatted.length > 13 ? "text-sm sm:text-base" :
+    formatted.length > 10 ? "text-base sm:text-lg" :
+    "text-xl sm:text-2xl";
+
+  return (
+    <p
+      className={`${sizeClass} font-bold tabular-nums tracking-tight leading-snug text-slate-900 dark:text-white`}
+      title={formatted}
+    >
+      {formatted}
+    </p>
+  );
+}
+
+function MetricCardLayout({
+  label,
+  labelClassName,
+  value,
+  icon,
+  iconClassName,
+}: {
+  label: string;
+  labelClassName?: string;
+  value: ReactNode;
+  icon: ReactNode;
+  iconClassName: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1 space-y-2">
+        <p className={`text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 ${labelClassName ?? ""}`}>
+          {label}
+        </p>
+        {value}
+      </div>
+      <div className={`shrink-0 p-3 rounded-xl transition-colors duration-300 ${iconClassName}`}>
+        {icon}
+      </div>
+    </div>
+  );
+}
 
 export const DeliveryGeneralHeader = () => {
   const vwDeliveryRecordsSummary = useDeliveryRecordStore(state => state.vwDeliveryRecordsSummary);
@@ -60,6 +107,7 @@ export const DeliveryGeneralHeader = () => {
 
         const daysPending = Math.floor((now.getTime() - recordDate.getTime()) / (1000 * 3600 * 24));
         if (daysPending > 3) delayedInspections++;
+        if (daysPending > 3 && !record.supplyIAR) rejectedDeliveries++;
       } else {
         receivedDeliveries++;
         if (isThisMonth) {
@@ -79,6 +127,7 @@ export const DeliveryGeneralHeader = () => {
           const recordDate = recordDateString ? new Date(recordDateString) : now;
           const daysPending = Math.floor((now.getTime() - recordDate.getTime()) / (1000 * 3600 * 24));
           if (daysPending > 3) delayedInspections++;
+          if (daysPending > 7) rejectedDeliveries++;
         } else {
           receivedDeliveries++;
           const recordDateString = iar.iarNumberDate || iar.createdAt;
@@ -123,12 +172,12 @@ export const DeliveryGeneralHeader = () => {
           <Card className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 hover:border-blue-200 dark:hover:border-blue-900/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm rounded-2xl">
             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
             <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Deliveries (MTD)</p>
                   <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{stats.deliveriesMTD}</p>
                 </div>
-                <div className="p-3 bg-blue-50/60 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl group-hover:bg-blue-100/70 dark:group-hover:bg-blue-900/40 transition-colors duration-300">
+                <div className="shrink-0 p-3 bg-blue-50/60 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl group-hover:bg-blue-100/70 dark:group-hover:bg-blue-900/40 transition-colors duration-300">
                   <CalendarDays className="w-5 h-5" />
                 </div>
               </div>
@@ -182,7 +231,7 @@ export const DeliveryGeneralHeader = () => {
                   <p className={`text-xs font-semibold uppercase tracking-wider ${stats.rejectedDeliveries > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400 dark:text-slate-500'}`}>
                     Rejected / Issues
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{stats.rejectedDeliveries}</p>
                     {stats.rejectedDeliveries > 0 && (
                         <Badge variant="outline" className="bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/30 animate-pulse text-[10px] py-0.5 px-1.5 font-bold">
@@ -206,17 +255,12 @@ export const DeliveryGeneralHeader = () => {
           <Card className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 hover:border-emerald-200 dark:hover:border-emerald-900/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm rounded-2xl">
             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
             <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Total Asset Value</p>
-                  <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate max-w-[140px]" title={formatCurrency(stats.totalValue)}>
-                    {formatCurrency(stats.totalValue)}
-                  </p>
-                </div>
-                <div className="p-3 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl group-hover:bg-emerald-100/70 dark:group-hover:bg-emerald-900/40 transition-colors duration-300">
-                  <DollarSign className="w-5 h-5" />
-                </div>
-              </div>
+              <MetricCardLayout
+                label="Total Asset Value"
+                value={<CurrencyStatValue value={stats.totalValue} />}
+                icon={<DollarSign className="w-5 h-5" />}
+                iconClassName="bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-100/70 dark:group-hover:bg-emerald-900/40"
+              />
             </CardContent>
           </Card>
 
@@ -224,17 +268,12 @@ export const DeliveryGeneralHeader = () => {
           <Card className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 hover:border-purple-200 dark:hover:border-purple-900/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm rounded-2xl">
             <div className="absolute top-0 left-0 w-1 h-full bg-purple-500" />
             <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Value Received (MTD)</p>
-                  <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate max-w-[140px]" title={formatCurrency(stats.valueReceivedMTD)}>
-                    {formatCurrency(stats.valueReceivedMTD)}
-                  </p>
-                </div>
-                <div className="p-3 bg-purple-50/60 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded-xl group-hover:bg-purple-100/70 dark:group-hover:bg-purple-900/40 transition-colors duration-300">
-                  <TrendingUp className="w-5 h-5" />
-                </div>
-              </div>
+              <MetricCardLayout
+                label="Value Received (MTD)"
+                value={<CurrencyStatValue value={stats.valueReceivedMTD} />}
+                icon={<TrendingUp className="w-5 h-5" />}
+                iconClassName="bg-purple-50/60 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 group-hover:bg-purple-100/70 dark:group-hover:bg-purple-900/40"
+              />
             </CardContent>
           </Card>
 
@@ -242,17 +281,12 @@ export const DeliveryGeneralHeader = () => {
           <Card className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 hover:border-orange-200 dark:hover:border-orange-900/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm rounded-2xl">
             <div className="absolute top-0 left-0 w-1 h-full bg-orange-500" />
             <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Pending Value</p>
-                  <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate max-w-[140px]" title={formatCurrency(stats.pendingValue)}>
-                    {formatCurrency(stats.pendingValue)}
-                  </p>
-                </div>
-                <div className="p-3 bg-orange-50/60 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-xl group-hover:bg-orange-100/70 dark:group-hover:bg-orange-900/40 transition-colors duration-300">
-                  <DollarSign className="w-5 h-5" />
-                </div>
-              </div>
+              <MetricCardLayout
+                label="Pending Value"
+                value={<CurrencyStatValue value={stats.pendingValue} />}
+                icon={<DollarSign className="w-5 h-5" />}
+                iconClassName="bg-orange-50/60 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 group-hover:bg-orange-100/70 dark:group-hover:bg-orange-900/40"
+              />
             </CardContent>
           </Card>
 
@@ -271,7 +305,7 @@ export const DeliveryGeneralHeader = () => {
                   <p className={`text-xs font-semibold uppercase tracking-wider ${stats.delayedInspections > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`}>
                     Delayed Inspections
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{stats.delayedInspections}</p>
                     {stats.delayedInspections > 0 && (
                         <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/30 animate-pulse text-[10px] py-0.5 px-1.5 font-bold">

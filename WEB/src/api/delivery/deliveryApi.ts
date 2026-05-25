@@ -79,7 +79,11 @@ export const getDeliveryRecordById = async (itemId: number): Promise<VwDeliveryR
     return null;
   }
 
-  return mapVwDeliveryRecord(response.data.data);
+  const raw = response.data.data;
+  const record = Array.isArray(raw) ? raw[0] : raw;
+  if (!record) return null;
+
+  return mapVwDeliveryRecord(record);
 };
 
 /* ------------------------------- POST ------------------------------- */
