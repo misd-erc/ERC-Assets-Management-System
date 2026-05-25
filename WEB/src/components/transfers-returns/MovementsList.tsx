@@ -195,40 +195,62 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   const loadMovements = async (search?: string, page: number = 1, size: number = pageSize) => {
     try {
       setLoading(true);
-      
-      let result;
-      if (transferType === 'PTR' || transferType === 'ITR') {
-        const group = transferType === 'PTR' ? 'PPE' : 'SE';
-        const raw = await getPTATransferList({
-          group: group as 'PPE' | 'SE',
-          ptrItrFilter: search || undefined,
-          pageNumber: page,
-          pageSize: size,
-        });
-        result = {
-          items: raw.items.map(normalizeTransferListItem),
-          totalCount: raw.totalCount,
-        };
-      } else if (transferType === 'RRPPE' || transferType === 'RRSP') {
-        const group = transferType === 'RRPPE' ? 'PPE' : 'SE';
-        const raw = await getPTAReturnList({
-          group,
-          rrppeRrspFilter: search || transferType,
-          pageNumber: page,
-          pageSize: size,
-        });
-        result = {
-          items: raw.items.map(normalizeTransferListItem),
-          totalCount: raw.totalCount,
-        };
-      } else {
-        result = await getMovementsList(search, undefined, undefined, page, size);
+
+      if (transferType === 'PTR' || transferType === 'ITR' || transferType === 'RRPPE' || transferType === 'RRSP') {
+        const normalizedItems: Movement[] = [];
+        const targetEndIndex = page * size;
+        let fetchPage = 1;
+        let totalRawPages = 1;
+
+        while (fetchPage <= totalRawPages) {
+          if (transferType === 'PTR' || transferType === 'ITR') {
+            const group = transferType === 'PTR' ? 'PPE' : 'SE';
+            const raw = await getPTATransferList({
+              group: group as 'PPE' | 'SE',
+              ptrItrFilter: search || undefined,
+              pageNumber: fetchPage,
+              pageSize: size,
+            });
+            if (fetchPage === 1) {
+              totalRawPages = Math.max(1, Math.ceil((raw.totalCount || 0) / size));
+            }
+            normalizedItems.push(...(raw.items || []).map(normalizeTransferListItem));
+          } else {
+            const group = transferType === 'RRPPE' ? 'PPE' : 'SE';
+            const raw = await getPTAReturnList({
+              group,
+              rrppeRrspFilter: search || transferType,
+              pageNumber: fetchPage,
+              pageSize: size,
+            });
+            if (fetchPage === 1) {
+              totalRawPages = Math.max(1, Math.ceil((raw.totalCount || 0) / size));
+            }
+            normalizedItems.push(...(raw.items || []).map(normalizeTransferListItem));
+          }
+
+          const mergedSoFar = mergeMovementsByTransfer(normalizedItems);
+          if (mergedSoFar.length >= targetEndIndex || fetchPage >= totalRawPages) {
+            break;
+          }
+
+          fetchPage += 1;
+        }
+
+        const allMerged = mergeMovementsByTransfer(normalizedItems);
+        const startIndex = (page - 1) * size;
+        const pagedMerged = allMerged.slice(startIndex, startIndex + size);
+
+        setMovements(pagedMerged);
+        setTotalCount(allMerged.length);
+        setPageNumber(page);
+        return;
       }
 
-      const serverTotal = result.totalCount ?? 0;
+      const result = await getMovementsList(search, undefined, undefined, page, size);
       const mergedItems = mergeMovementsByTransfer(result.items || []);
       setMovements(mergedItems);
-      setTotalCount(serverTotal);
+      setTotalCount(result.totalCount ?? mergedItems.length);
       setPageNumber(page);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load movements';
