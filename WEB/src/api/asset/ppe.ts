@@ -191,7 +191,8 @@ export const ppeApi = {
 	editPart: async (
 		partData: any
 	): Promise<{ success: boolean; code?: string; message?: string; data?: any }> => {
-		const url = API_BASE_URL + `/Inventory/pta/ppe/part/edit`;
+		// Use the shared part-edit endpoint for both PPE and SE.
+		const url = API_BASE_URL + `/Inventory/pta/part/edit`;
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
@@ -200,7 +201,7 @@ export const ppeApi = {
 			body: JSON.stringify(partData),
 		});
 		if (!response.ok) {
-			throw new Error('Failed to edit PPE asset part');
+			throw new Error(`Failed to edit PPE asset part: HTTP ${response.status} ${response.statusText}`);
 		}
 		return response.json();
 	},
