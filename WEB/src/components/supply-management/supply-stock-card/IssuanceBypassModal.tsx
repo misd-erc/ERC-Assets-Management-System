@@ -172,7 +172,7 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
         .then(setCategories)
         .catch((err) => console.error("Failed to load categories", err));
 
-      getUsers(1, 10000)
+      getUsers({ page: 1, pageSize: 10000 })
         .then((res) => setUsers(res.data.items || []))
         .catch((err) => console.error("Failed to load users", err));
 

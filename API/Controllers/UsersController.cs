@@ -55,7 +55,10 @@ namespace API.Controllers
         [HttpGet("all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> GetAllSystemUsers([FromQuery] PaginationGenericQueryParams model)
+        public async Task<IActionResult> GetAllSystemUsers(
+            [FromQuery] PaginationGenericQueryParams model,
+            [FromQuery] string? statusFilter = null,
+            [FromQuery] string? roleFilter = null)
         {
 			await using var context = new PortalDbContext(_options);
 			await using var transaction = await context.Database.BeginTransactionAsync();
@@ -65,6 +68,12 @@ namespace API.Controllers
 
 				IEnumerable<VwSystemUser?> users = await _getTools.Account.GetVwSystemUsers(context).ToListAsync();
                 long systemUserId = await _getTools.Account.GetSystemUserIdBySessionKeyAsync(model.SessionKey, context);
+
+                if (!string.IsNullOrWhiteSpace(statusFilter) && !statusFilter.Equals("All", StringComparison.OrdinalIgnoreCase))
+                    users = users.Where(x => string.Equals(x.StatusName, statusFilter, StringComparison.OrdinalIgnoreCase));
+
+                if (!string.IsNullOrWhiteSpace(roleFilter) && !roleFilter.Equals("All", StringComparison.OrdinalIgnoreCase))
+                    users = users.Where(x => string.Equals(x.SystemRoleName, roleFilter, StringComparison.OrdinalIgnoreCase));
 
                 if (!string.IsNullOrWhiteSpace(model.SearchString))
                 {

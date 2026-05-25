@@ -60,20 +60,37 @@ export const UserList: React.FC<UserListProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentPage, debouncedSearch, statusFilter, roleFilter]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await getUsers(currentPage);
+      const response = await getUsers({
+        page: currentPage,
+        pageSize: itemsPerPage,
+        searchString: debouncedSearch,
+        statusFilter,
+        roleFilter,
+      });
       setUsers(response.data.items);
       setTotalPages(response.data.totalPages);
+      setTotalCount(response.data.totalCount);
     } catch (error: any) {
       console.error('Failed to fetch users:', error);
       // Check if it's a 401 error (unauthorized) and show appropriate message
@@ -89,27 +106,15 @@ export const UserList: React.FC<UserListProps> = ({
     }
   };
 
-  // Filter users based on search and filters
-  const filteredUsers = users.filter(user => {
-    const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
-    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (user.division?.name && user.division.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = statusFilter === 'All' || user.systemUserStatus.name === statusFilter;
-    const matchesRole = roleFilter === 'All' || user.systemRole[0]?.roleName === roleFilter;
-    return matchesSearch && matchesStatus && matchesRole;
-  });
-
-  // Pagination
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+  const startIndex = totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const endIndex = Math.min(currentPage * itemsPerPage, totalCount);
 
   const handleDeleteUser = async (userId: string) => {
     try {
       await deleteUser(userId);
-      setUsers(users.filter(user => user.id !== parseInt(userId, 10)));
       setDeleteUserId(null);
       toast.success('User deleted successfully');
+      await fetchUsers();
     } catch (error) {
       console.error('Failed to delete user:', error);
       toast.error('Failed to delete user');
@@ -183,7 +188,7 @@ export const UserList: React.FC<UserListProps> = ({
             </div>
             <div>
               <Label htmlFor="status-filter">Status Filter</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value); setCurrentPage(1); }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -197,7 +202,7 @@ export const UserList: React.FC<UserListProps> = ({
             </div>
             <div>
               <Label htmlFor="role-filter">Role Filter</Label>
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <Select value={roleFilter} onValueChange={(value) => { setRoleFilter(value); setCurrentPage(1); }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -217,7 +222,7 @@ export const UserList: React.FC<UserListProps> = ({
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Users ({filteredUsers.length})</CardTitle>
+          <CardTitle>Users ({totalCount})</CardTitle>
           <CardDescription>
             Manage user accounts and their role assignments
           </CardDescription>
@@ -236,7 +241,13 @@ export const UserList: React.FC<UserListProps> = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedUsers.map((user) => (
+                {users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      No users found
+                    </TableCell>
+                  </TableRow>
+                ) : users.map((user) => (
                   <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/60">
                     <TableCell>
                       <div>
@@ -284,30 +295,29 @@ export const UserList: React.FC<UserListProps> = ({
             </Table>
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
+          {totalCount > 0 && (
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-6">
               <p className="text-sm text-muted-foreground">
-                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredUsers.length)} of {filteredUsers.length} users
+                Showing {startIndex} to {endIndex} of {totalCount} users
               </p>
               <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
+                  disabled={currentPage === 1 || loading}
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Previous
                 </Button>
                 <span className="text-sm">
-                  Page {currentPage} of {totalPages}
+                  Page {currentPage} of {totalPages || 1}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
+                  disabled={currentPage >= totalPages || loading}
                 >
                   Next
                   <ChevronRight className="w-4 h-4" />
