@@ -1,6 +1,6 @@
 ﻿import axios, { type AxiosResponse } from 'axios';
 import axiosInstance from '@/lib/axios';
-import { User, UserValidationViewModel, OTPValidationViewModel, SessionTokenValidationViewModel, UserPublicViewModel, ApiResponse } from '@/types';
+import { User, UserValidationViewModel, OTPValidationViewModel, ResendOTPViewModel, SessionTokenValidationViewModel, UserPublicViewModel, ApiResponse } from '@/types';
 
 import { guidToLongId } from '@/utils/guidUtils';
 import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
@@ -136,6 +136,20 @@ export const validateUser = async (userInfo: { entraId: string; firstName: strin
 
 export const validateEmployeeUser = async (userInfo: { entraId: string; firstName: string; lastName: string; email: string; employeeId?: string }): Promise<{ systemUserId: string; message: string; employeeDbId: number }> => {
   return validateUserByType(userInfo, 'employee');
+};
+
+export const resendOTP = async (systemUserId: string): Promise<{ message: string }> => {
+  const payload: ResendOTPViewModel = {
+    systemUserId,
+  };
+
+  const response = await axiosInstance.post<ApiResponse<UserPublicViewModel>>('/users/otp/re-send', payload);
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Failed to resend OTP');
+  }
+
+  return { message: response.data.message };
 };
 
 export const validateOTP = async (systemUserId: string, otp: string): Promise<{ systemUserId: string; sessionKey: string }> => {

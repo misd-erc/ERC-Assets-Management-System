@@ -5,12 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, ArrowLeft, Mail } from 'lucide-react';
 import { useAuth } from '@/hooks';
+import { useOtpTimer } from '@/hooks/auth/useOtpTimer';
+import { OTP_VALIDITY_MINUTES } from '@/utils/otpTimerUtils';
+import { toast } from 'sonner';
 
 export function MFAVerification() {
   const [codes, setCodes] = useState(['', '', '', '', '', '']);
+  const [isResending, setIsResending] = useState(false);
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
-  const { verifyMFA, logout, isLoading, error } = useAuth();
+  const { verifyMFA, resendMFA, logout, isLoading, error } = useAuth();
+  const { formattedTime, canResend, resetTimer } = useOtpTimer();
 
   const fullCode = codes.join('');
 
@@ -44,6 +49,25 @@ export function MFAVerification() {
     }
   };
 
+  const handleResend = async () => {
+    if (!canResend || isResending || isLoading) {
+      return;
+    }
+
+    setIsResending(true);
+    const result = await resendMFA();
+    setIsResending(false);
+
+    if (result.success) {
+      resetTimer();
+      setCodes(['', '', '', '', '', '']);
+      inputsRef.current[0]?.focus();
+      toast.success(result.message || 'A new verification code has been sent to your email.');
+    } else {
+      toast.error(result.message);
+    }
+  };
+
   useEffect(() => {
     inputsRef.current[0]?.focus();
   }, []);
@@ -51,7 +75,6 @@ export function MFAVerification() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Header */}
         <div className="text-center space-y-2">
           <div className="mx-auto w-16 h-16 bg-primary rounded-lg flex items-center justify-center">
             <Shield className="w-8 h-8 text-primary-foreground" />
@@ -60,7 +83,6 @@ export function MFAVerification() {
           <p className="text-slate-600 dark:text-slate-400">Enter the verification code sent to your email</p>
         </div>
 
-        {/* MFA Form */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -102,7 +124,26 @@ export function MFAVerification() {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground text-center">
-                  Didn't receive the code? <button type="button" className="text-blue-600 hover:underline">Resend</button>
+                  {canResend ? (
+                    <>
+                      Code expired.{' '}
+                      <button
+                        type="button"
+                        className="text-blue-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={handleResend}
+                        disabled={isResending || isLoading}
+                      >
+                        {isResending ? 'Sending...' : 'Resend code'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Code expires in{' '}
+                      <span className="font-mono font-medium text-slate-700 dark:text-slate-300">
+                        {formattedTime}
+                      </span>
+                    </>
+                  )}
                 </p>
               </div>
 
@@ -127,16 +168,16 @@ export function MFAVerification() {
           </CardContent>
         </Card>
 
-        {/* Help */}
         <Card className="border-blue-200 bg-blue-50">
           <CardContent className="pt-4">
             <div className="text-sm text-blue-800">
-              <p className="mb-2">Having trouble?</p>
-              <ul className="space-y-1 text-xs">
-                <li>â€¢ Check your email inbox and spam folder</li>
-                <li>â€¢ The code is valid for 3 minutes</li>
-                <li>â€¢ Contact IT support if you've lost access to your email</li>
-                <li>â€¢ Emergency access: Contact your system administrator</li>
+              <p className="mb-2 font-medium">Having trouble?</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>Check your email inbox and spam folder</li>
+                <li>The code is valid for {OTP_VALIDITY_MINUTES} minutes</li>
+                <li>You can request a new code after the timer expires</li>
+                <li>Contact IT support if you&apos;ve lost access to your email</li>
+                <li>Emergency access: Contact your system administrator</li>
               </ul>
             </div>
           </CardContent>
@@ -145,8 +186,3 @@ export function MFAVerification() {
     </div>
   );
 }
-
-
-
-
-

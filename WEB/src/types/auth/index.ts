@@ -14,6 +14,10 @@ export interface OTPValidationViewModel {
   otp: string;
 }
 
+export interface ResendOTPViewModel {
+  systemUserId: string;
+}
+
 export interface SessionTokenValidationViewModel {
   Key: string;
   systemUserId: string;
@@ -52,6 +56,7 @@ export interface AuthActions {
   login: (userInfo: { entraId: string; firstName: string; lastName: string; email: string; employeeId?: string }) => Promise<{ success: boolean; message: string }>;
   loginEmployee: (userInfo: { entraId: string; firstName: string; lastName: string; email: string; employeeId?: string }) => Promise<{ success: boolean; message: string }>;
   verifyMFA: (code: string) => Promise<boolean>;
+  resendMFA: () => Promise<{ success: boolean; message: string }>;
   validateSession: () => Promise<boolean>;
   logout: () => void;
 }

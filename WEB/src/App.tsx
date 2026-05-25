@@ -14,6 +14,7 @@ import { initUserSync } from '@/utils/userSync';
 
 import { decrypt } from '@/utils/encryption';
 import { secureStorage } from './utils/secureStorage';
+import { isMfaPending } from '@/utils/otpTimerUtils';
 
 
 // Helper: Returns the route the current user should land on after auth
@@ -46,8 +47,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/" replace />;
   }
 
-  // If MFA is required, redirect to MFA page
-  if (requireMFA) {
+  if (requireMFA || isMfaPending()) {
     return <Navigate to="/mfa" replace />;
   }
 
@@ -87,7 +87,7 @@ function EmployeeRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/" replace />;
   }
 
-  if (requireMFA) {
+  if (requireMFA || isMfaPending()) {
     return <Navigate to="/mfa" replace />;
   }
 
@@ -138,7 +138,7 @@ function AppContent() {
       {/* MFA Route */}
       <Route
         path="/mfa"
-        element={requireMFA ? <MFAVerification /> : <Navigate to={getRoleBasedRedirect()} replace />}
+        element={requireMFA || isMfaPending() ? <MFAVerification /> : <Navigate to={getRoleBasedRedirect()} replace />}
       />
       
       {/* Protected Routes */}

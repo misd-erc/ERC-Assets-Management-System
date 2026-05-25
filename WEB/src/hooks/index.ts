@@ -1,6 +1,7 @@
 ﻿import { useSupplyIAR } from './supply/useIAR';
 
 export { useAuth } from '@/hooks/auth/useAuth';
+export { useOtpTimer } from '@/hooks/auth/useOtpTimer';
 export { useData } from '@/hooks/data/useData';
 
 export { useOffice } from '@/hooks/office/useOffice';
