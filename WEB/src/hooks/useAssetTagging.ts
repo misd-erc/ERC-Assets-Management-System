@@ -43,8 +43,10 @@ export function getLatestMovement(movements: UnifiedMovement[] = []): UnifiedMov
 }
 
 export function formatEmployeeName(movement?: UnifiedMovement): string {
-  const employee = movement?.employee?.[0];
-  if (!employee) return "Unassigned";
+  const employees = movement?.employee;
+  if (!employees?.length) return "Unassigned";
+  const plantilla = employees.find(e => e.employmentType?.name?.toLowerCase() === 'plantilla');
+  const employee = plantilla ?? employees[0];
   const parts = [employee.firstName, employee.middleName, employee.lastName, employee.suffixName]
     .filter(Boolean)
     .join(" ")

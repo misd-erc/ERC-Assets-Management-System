@@ -89,14 +89,70 @@ const normalizeTransferListItem = (raw: any): Movement => ({
   division: raw.division,
   plantillaEmployeeId: raw.plantillaEmployeeId ?? null,
   nonPlantillaEmployeeId: raw.nonPlantillaEmployeeId ?? null,
-  employee: [
-    ...(raw.plantillaEmployeeName || raw.plantillaEmployeeId
-      ? [{ id: raw.plantillaEmployeeId ?? 0, fullName: raw.plantillaEmployeeName, employeeIdOriginal: raw.plantillaEmployeeIdOriginal, employeeType: 'Plantilla' }]
-      : []),
-    ...(raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
-      ? [{ id: raw.nonPlantillaEmployeeId ?? 0, fullName: raw.nonPlantillaEmployeeName, employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal, employeeType: 'Non-Plantilla' }]
-      : []),
-  ],
+  employee: (() => {
+    const isReturn = !!(raw.rrppeRrspNumber || raw.rrpperrspNumber) && !raw.ptrItrNumber;
+
+    if (isReturn) {
+      const fromEmployee = raw.previousNonPlantillaEmployeeName || raw.previousNonPlantillaEmployeeId
+        ? {
+            id: raw.previousNonPlantillaEmployeeId ?? 0,
+            fullName: raw.previousNonPlantillaEmployeeName,
+            employeeIdOriginal: raw.previousNonPlantillaEmployeeIdOriginal,
+            employeeType: 'Non-Plantilla',
+          }
+        : raw.previousPlantillaEmployeeName || raw.previousPlantillaEmployeeId
+          ? {
+              id: raw.previousPlantillaEmployeeId ?? 0,
+              fullName: raw.previousPlantillaEmployeeName,
+              employeeIdOriginal: raw.previousPlantillaEmployeeIdOriginal,
+              employeeType: 'Plantilla',
+            }
+          : null;
+
+      const toEmployee = raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
+        ? {
+            id: raw.nonPlantillaEmployeeId ?? 0,
+            fullName: raw.nonPlantillaEmployeeName,
+            employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal,
+            employeeType: 'Non-Plantilla',
+          }
+        : raw.plantillaEmployeeName || raw.plantillaEmployeeId
+          ? {
+              id: raw.plantillaEmployeeId ?? 0,
+              fullName: raw.plantillaEmployeeName,
+              employeeIdOriginal: raw.plantillaEmployeeIdOriginal,
+              employeeType: 'Plantilla',
+            }
+          : null;
+
+      return [fromEmployee, toEmployee].filter(Boolean) as EmployeeInfo[];
+    }
+
+    return [
+      ...(raw.plantillaEmployeeName || raw.plantillaEmployeeId
+        ? [{
+            id: raw.plantillaEmployeeId ?? 0,
+            fullName: raw.plantillaEmployeeName,
+            employeeIdOriginal: raw.plantillaEmployeeIdOriginal,
+            employeeType: 'Plantilla',
+            position: raw.plantillaEmployeePosition ? { name: raw.plantillaEmployeePosition } : undefined,
+            office: raw.plantillaEmployeeOffice ? { acronym: raw.plantillaEmployeeOffice, name: raw.plantillaEmployeeOffice } : raw.office,
+            division: raw.plantillaEmployeeDivision ? { acronym: raw.plantillaEmployeeDivision, name: raw.plantillaEmployeeDivision } : raw.division,
+          }]
+        : []),
+      ...(raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
+        ? [{
+            id: raw.nonPlantillaEmployeeId ?? 0,
+            fullName: raw.nonPlantillaEmployeeName,
+            employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal,
+            employeeType: 'Non-Plantilla',
+            position: raw.nonPlantillaEmployeePosition ? { name: raw.nonPlantillaEmployeePosition } : undefined,
+            office: raw.nonPlantillaEmployeeOffice ? { acronym: raw.nonPlantillaEmployeeOffice, name: raw.nonPlantillaEmployeeOffice } : raw.office,
+            division: raw.nonPlantillaEmployeeDivision ? { acronym: raw.nonPlantillaEmployeeDivision, name: raw.nonPlantillaEmployeeDivision } : raw.division,
+          }]
+        : []),
+    ];
+  })(),
   items: raw.item ? [raw.item] : [],
 });
 
@@ -195,40 +251,62 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   const loadMovements = async (search?: string, page: number = 1, size: number = pageSize) => {
     try {
       setLoading(true);
-      
-      let result;
-      if (transferType === 'PTR' || transferType === 'ITR') {
-        const group = transferType === 'PTR' ? 'PPE' : 'SE';
-        const raw = await getPTATransferList({
-          group: group as 'PPE' | 'SE',
-          ptrItrFilter: search || undefined,
-          pageNumber: page,
-          pageSize: size,
-        });
-        result = {
-          items: raw.items.map(normalizeTransferListItem),
-          totalCount: raw.totalCount,
-        };
-      } else if (transferType === 'RRPPE' || transferType === 'RRSP') {
-        const group = transferType === 'RRPPE' ? 'PPE' : 'SE';
-        const raw = await getPTAReturnList({
-          group,
-          rrppeRrspFilter: search || transferType,
-          pageNumber: page,
-          pageSize: size,
-        });
-        result = {
-          items: raw.items.map(normalizeTransferListItem),
-          totalCount: raw.totalCount,
-        };
-      } else {
-        result = await getMovementsList(search, undefined, undefined, page, size);
+
+      if (transferType === 'PTR' || transferType === 'ITR' || transferType === 'RRPPE' || transferType === 'RRSP') {
+        const normalizedItems: Movement[] = [];
+        const targetEndIndex = page * size;
+        let fetchPage = 1;
+        let totalRawPages = 1;
+
+        while (fetchPage <= totalRawPages) {
+          if (transferType === 'PTR' || transferType === 'ITR') {
+            const group = transferType === 'PTR' ? 'PPE' : 'SE';
+            const raw = await getPTATransferList({
+              group: group as 'PPE' | 'SE',
+              ptrItrFilter: search || undefined,
+              pageNumber: fetchPage,
+              pageSize: size,
+            });
+            if (fetchPage === 1) {
+              totalRawPages = Math.max(1, Math.ceil((raw.totalCount || 0) / size));
+            }
+            normalizedItems.push(...(raw.items || []).map(normalizeTransferListItem));
+          } else {
+            const group = transferType === 'RRPPE' ? 'PPE' : 'SE';
+            const raw = await getPTAReturnList({
+              group,
+              rrppeRrspFilter: search || transferType,
+              pageNumber: fetchPage,
+              pageSize: size,
+            });
+            if (fetchPage === 1) {
+              totalRawPages = Math.max(1, Math.ceil((raw.totalCount || 0) / size));
+            }
+            normalizedItems.push(...(raw.items || []).map(normalizeTransferListItem));
+          }
+
+          const mergedSoFar = mergeMovementsByTransfer(normalizedItems);
+          if (mergedSoFar.length >= targetEndIndex || fetchPage >= totalRawPages) {
+            break;
+          }
+
+          fetchPage += 1;
+        }
+
+        const allMerged = mergeMovementsByTransfer(normalizedItems);
+        const startIndex = (page - 1) * size;
+        const pagedMerged = allMerged.slice(startIndex, startIndex + size);
+
+        setMovements(pagedMerged);
+        setTotalCount(allMerged.length);
+        setPageNumber(page);
+        return;
       }
 
-      const serverTotal = result.totalCount ?? 0;
+      const result = await getMovementsList(search, undefined, undefined, page, size);
       const mergedItems = mergeMovementsByTransfer(result.items || []);
       setMovements(mergedItems);
-      setTotalCount(serverTotal);
+      setTotalCount(result.totalCount ?? mergedItems.length);
       setPageNumber(page);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load movements';
@@ -266,6 +344,9 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
 
   // Handle edit details
   const handleEditDetails = async (movement: Movement) => {
+    const rawCondition = (movement.condition || '').trim();
+    const rawRemarks = (movement.remarks || '').trim();
+
     setEditingMovement(movement);
     setEditFields({
       dateAssigned: movement.dateAssigned
@@ -290,27 +371,43 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
         null,
     });
 
-    const loads: Promise<any>[] = [];
-
-    if (conditions.length === 0) {
-      loads.push(
-        getConditions()
-          .then(conds => setConditions(conds || []))
-          .catch(() => {})
-      );
+    let availableConditions = conditions;
+    if (availableConditions.length === 0) {
+      try {
+        const conds = await getConditions();
+        availableConditions = conds || [];
+        setConditions(availableConditions);
+      } catch {
+        availableConditions = [];
+      }
     }
 
     if (editEmployees.length === 0) {
       setEditEmployeesLoading(true);
-      loads.push(
-        getEmployees()
-          .then(res => setEditEmployees(res.data?.items || []))
-          .catch(() => {})
-          .finally(() => setEditEmployeesLoading(false))
-      );
+      try {
+        const res = await getEmployees();
+        setEditEmployees(res.data?.items || []);
+      } catch {
+        // ignore load error; selector stays empty
+      } finally {
+        setEditEmployeesLoading(false);
+      }
     }
 
-    await Promise.all(loads);
+    // Ensure current condition is reflected in the select even when backend stores it with different casing,
+    // or temporarily in remarks for older records.
+    const matchCondition = (value: string) =>
+      availableConditions.find(c => c.trim().toLowerCase() === value.trim().toLowerCase());
+
+    const resolvedCondition =
+      (rawCondition && (matchCondition(rawCondition) || rawCondition)) ||
+      (rawRemarks && matchCondition(rawRemarks)) ||
+      '';
+
+    if (resolvedCondition !== rawCondition) {
+      setEditFields(prev => ({ ...prev, condition: resolvedCondition }));
+    }
+
     setEditDialogOpen(true);
   };
 
@@ -328,9 +425,17 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       return;
     }
 
+    // Determine movement type from tab/context and original record, not from editable number prefix.
+    // Custom numbers like "N" should still update PTR/ITR when editing transfer records.
+    const hasPtrItrNumber = !!(editingMovement.ptritrNumber && editingMovement.ptritrNumber.trim());
+    const hasReturnNumber = !!(
+      (editingMovement.rrppeRrspNumber && editingMovement.rrppeRrspNumber.trim()) ||
+      (editingMovement.rrpperrspNumber && editingMovement.rrpperrspNumber.trim())
+    );
     const isReturn =
-      !editFields.transferNumber.toUpperCase().startsWith('PTR') &&
-      !editFields.transferNumber.toUpperCase().startsWith('ITR');
+      transferType === 'RRPPE' ||
+      transferType === 'RRSP' ||
+      (!transferType && !hasPtrItrNumber && hasReturnNumber);
 
     try {
       setEditSaving(true);
@@ -347,7 +452,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
           parIcsNumber: editFields.parIcsNumber,
           rrppeRrspNumber: isReturn
             ? editFields.transferNumber
-            : (editingMovement.rrppeRrspNumber || (editingMovement as any).rrppeRrspNumber || editingMovement.rrpperrspNumber || undefined),
+            : undefined,
           status: editFields.status,
           condition: editFields.condition,
           actualOfficeId: (editingMovement as any).actualOfficeId ?? null,
@@ -397,6 +502,10 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     const toEmp = buildEmployee(movement.employee?.[1]);
     const transferDate = movement.dateAssigned || new Date().toISOString();
     const transferType = (movement.status || 'REASSIGNMENT') as any;
+    const toEmpPosition = (movement.employee?.[1]?.position as any)?.name || '';
+    const toEmpOffice = (movement.employee?.[1]?.office as any)?.acronym || (movement.employee?.[1]?.office as any)?.name || '';
+    const toEmpDivision = (movement.employee?.[1]?.division as any)?.acronym || (movement.employee?.[1]?.division as any)?.name || '';
+    const toEmployeePositionOffice = [toEmpPosition, [toEmpOffice, toEmpDivision].filter(Boolean).join(', ')].filter(Boolean).join(' - ');
 
     const returnedByName = movement.employee?.[0]?.fullName || fromEmp.label || 'Unknown';
     const returnedByPosition = (movement.employee?.[0] as any)?.position?.name || movement.employee?.[0]?.employeeType || '';
@@ -413,7 +522,17 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
         a.click();
         URL.revokeObjectURL(dlUrl);
       } else if (prefix.startsWith('ITR')) {
-        const url = await ITRGenerator.generateITRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType, transferNumber);
+        const url = await ITRGenerator.generateITRPreviewMultiple(
+          fromEmp,
+          toEmp,
+          items as any,
+          transferDate,
+          transferType,
+          transferNumber,
+          undefined,
+          undefined,
+          toEmployeePositionOffice
+        );
         const blob = await fetch(url).then(r => r.blob());
         const dlUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');

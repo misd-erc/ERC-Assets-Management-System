@@ -87,7 +87,8 @@ export function TagPreviewGrid({
         {tagPreviews.map((tag) => {
           const asset = tag.asset;
           const latestMovement = getLatestMovement(asset.movements);
-          const employee = latestMovement?.employee?.[0];
+          const employees = latestMovement?.employee || [];
+          const employee = employees.find(e => e.employmentType?.name?.toLowerCase() === 'plantilla') ?? employees[0];
           const officeAcronym = (employee?.office?.acronym || latestMovement?.office?.acronym || "").trim();
           const divisionAcronym = (employee?.division?.acronym || latestMovement?.division?.acronym || "").trim();
           const accountableAcronym = officeAcronym && divisionAcronym

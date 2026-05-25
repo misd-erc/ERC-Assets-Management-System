@@ -99,11 +99,50 @@ namespace API.Services.Inventory
                     .ToList();
 
                 var employeeNameMap = new Dictionary<long, string>();
+                var employeePositionMap = new Dictionary<long, string>();
+                var employeeOfficeMap = new Dictionary<long, string>();
+                var employeeDivisionMap = new Dictionary<long, string>();
                 foreach (var empId in employeeIds)
                 {
                     var emp = await _getTools.Account.GetTblEmployeeAsync(empId, context);
                     if (emp != null)
+                    {
                         employeeNameMap[empId] = $"{emp.FirstName} {emp.MiddleName} {emp.LastName}".Trim();
+
+                        long? resolvedPositionId = emp.PositionId;
+                        if (!resolvedPositionId.HasValue && emp.SystemUserId.HasValue)
+                        {
+                            var systemUser = await _getTools.Account.GetTblSystemUserAsync(emp.SystemUserId.Value, context);
+                            resolvedPositionId = systemUser?.PositionId;
+                        }
+
+                        if (resolvedPositionId.HasValue)
+                        {
+                            var position = await _getTools.Office.GetTblPositionAsync(resolvedPositionId.Value, context);
+                            if (position != null)
+                                employeePositionMap[empId] = !string.IsNullOrWhiteSpace(position.Name)
+                                    ? position.Name
+                                    : (position.Acronym ?? string.Empty);
+                        }
+
+                        if (emp.OfficeId.HasValue)
+                        {
+                            var officeEntity = await _getTools.Office.GetTblOfficeAsync(emp.OfficeId.Value, context);
+                            if (officeEntity != null)
+                                employeeOfficeMap[empId] = !string.IsNullOrWhiteSpace(officeEntity.Acronym)
+                                    ? officeEntity.Acronym
+                                    : (officeEntity.Name ?? string.Empty);
+                        }
+
+                        if (emp.DivisionId.HasValue)
+                        {
+                            var divisionEntity = await _getTools.Office.GetTblDivisionAsync(emp.DivisionId.Value, context);
+                            if (divisionEntity != null)
+                                employeeDivisionMap[empId] = !string.IsNullOrWhiteSpace(divisionEntity.Acronym)
+                                    ? divisionEntity.Acronym
+                                    : (divisionEntity.Name ?? string.Empty);
+                        }
+                    }
                 }
 
                 // Apply employee search filter
@@ -156,6 +195,12 @@ namespace API.Services.Inventory
 
                     employeeNameMap.TryGetValue(plantillaId ?? 0, out var plantillaName);
                     employeeNameMap.TryGetValue(nonPlantillaId ?? 0, out var nonPlantillaName);
+                    employeePositionMap.TryGetValue(plantillaId ?? 0, out var plantillaPosition);
+                    employeePositionMap.TryGetValue(nonPlantillaId ?? 0, out var nonPlantillaPosition);
+                    employeeOfficeMap.TryGetValue(plantillaId ?? 0, out var plantillaOffice);
+                    employeeOfficeMap.TryGetValue(nonPlantillaId ?? 0, out var nonPlantillaOffice);
+                    employeeDivisionMap.TryGetValue(plantillaId ?? 0, out var plantillaDivision);
+                    employeeDivisionMap.TryGetValue(nonPlantillaId ?? 0, out var nonPlantillaDivision);
 
                     object? office = null;
                     object? division = null;
@@ -199,9 +244,15 @@ namespace API.Services.Inventory
                         plantillaEmployeeId = plantillaId,
                         plantillaEmployeeName = plantillaName,
                         plantillaEmployeeIdOriginal = movement.PlantillaEmployeeIdOriginal,
+                        plantillaEmployeePosition = plantillaPosition,
+                        plantillaEmployeeOffice = plantillaOffice,
+                        plantillaEmployeeDivision = plantillaDivision,
                         nonPlantillaEmployeeId = nonPlantillaId,
                         nonPlantillaEmployeeName = nonPlantillaName,
                         nonPlantillaEmployeeIdOriginal = movement.NonPlantillaEmployeeIdOriginal,
+                        nonPlantillaEmployeePosition = nonPlantillaPosition,
+                        nonPlantillaEmployeeOffice = nonPlantillaOffice,
+                        nonPlantillaEmployeeDivision = nonPlantillaDivision,
                         office,
                         division,
                         item = itemDetails
