@@ -80,7 +80,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
   },
 
   fetchSupplyGroupedItemLists: async (id, page = 1, pageSize = 10, search = '', categoryId, status, storageLocationId, vendorId) => {
-    set({ loading: true });
+    set({ loading: true, vwSupplyGroupItems: [], totalGroupItems: 0 });
     try {
       const result = await getVwSupplyGroupedItemLists(id, page, pageSize, search, categoryId, status, storageLocationId, vendorId);
       set({ vwSupplyGroupItems: result.items, totalGroupItems: result.totalCount });

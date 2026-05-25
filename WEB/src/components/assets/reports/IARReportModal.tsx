@@ -248,7 +248,7 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
                 getDeliveryRecords(1, 200, '', 'all')
             ])
             .then(([iarResult, deliveryResult]) => {
-                const iarsWithDR = iarResult.items.filter(iar => iar.drNumber && iar.drNumber.trim() !== '');
+                const iarsWithDR = iarResult.items.filter(iar => iar.drNumber !== undefined && iar.drNumber !== null && String(iar.drNumber).trim() !== '');
                 setIarList(iarsWithDR);
                 setDeliveryRecords(deliveryResult.items);
             })
@@ -275,7 +275,7 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
                 getSupplyIARs(1, 200, searchTerm),
                 getDeliveryRecords(1, 200, searchTerm, 'all')
             ]);
-            const iarsWithDR = iarResult.items.filter(iar => iar.drNumber && iar.drNumber.trim() !== '');
+            const iarsWithDR = iarResult.items.filter(iar => iar.drNumber !== undefined && iar.drNumber !== null && String(iar.drNumber).trim() !== '');
             setIarList(iarsWithDR);
             setDeliveryRecords(deliveryResult.items);
         } catch (error) {
