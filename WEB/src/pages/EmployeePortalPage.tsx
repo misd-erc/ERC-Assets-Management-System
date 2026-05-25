@@ -172,6 +172,9 @@ export default function EmployeePortalPage() {
   const [showICSDialog, setShowICSDialog] = useState(false);
   const [records, setRecords] = useState<IssuanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [parPage, setParPage] = useState(1);
+  const [icsPage, setIcsPage] = useState(1);
+  const [listPageSize, setListPageSize] = useState(10);
 
   // Pull display name from stored user details
   const userDisplayName = (() => {
@@ -201,6 +204,27 @@ export default function EmployeePortalPage() {
 
   const myPARs = useMemo(() => mapToGroups(records, 'PPE'), [records]);
   const myICS  = useMemo(() => mapToGroups(records, 'SE'),  [records]);
+
+  const parTotalPages = Math.max(1, Math.ceil(myPARs.length / listPageSize));
+  const icsTotalPages = Math.max(1, Math.ceil(myICS.length / listPageSize));
+
+  const pagedPARs = useMemo(() => {
+    const start = (parPage - 1) * listPageSize;
+    return myPARs.slice(start, start + listPageSize);
+  }, [myPARs, parPage, listPageSize]);
+
+  const pagedICS = useMemo(() => {
+    const start = (icsPage - 1) * listPageSize;
+    return myICS.slice(start, start + listPageSize);
+  }, [myICS, icsPage, listPageSize]);
+
+  useEffect(() => {
+    if (parPage > parTotalPages) setParPage(parTotalPages);
+  }, [parPage, parTotalPages]);
+
+  useEffect(() => {
+    if (icsPage > icsTotalPages) setIcsPage(icsTotalPages);
+  }, [icsPage, icsTotalPages]);
 
   const totalAssets        = myPARs.reduce((s, x) => s + x.items.length, 0);
   const totalAssetsValue   = myPARs.reduce((s, x) => s + x.totalValue, 0);
@@ -387,7 +411,7 @@ export default function EmployeePortalPage() {
                             No PAR records found.
                           </TableCell>
                         </TableRow>
-                      ) : myPARs.map((par) => (
+                      ) : pagedPARs.map((par) => (
                         <TableRow key={par.parIcsNumber} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40">
                           <TableCell className="font-medium">
                             <Badge variant="outline">{formatParIcsDisplay(par.parIcsNumber)}</Badge>
@@ -407,6 +431,37 @@ export default function EmployeePortalPage() {
                     </TableBody>
                   </Table>
                 </div>
+                {!isLoading && myPARs.length > 0 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
+                    <div className="text-xs sm:text-sm text-muted-foreground">
+                      Showing {((parPage - 1) * listPageSize) + 1} to {Math.min(parPage * listPageSize, myPARs.length)} of {myPARs.length} PAR records
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs sm:text-sm text-muted-foreground">Size:</label>
+                      <select
+                        className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                        value={listPageSize}
+                        onChange={(e) => {
+                          const size = Number(e.target.value);
+                          setListPageSize(size);
+                          setParPage(1);
+                          setIcsPage(1);
+                        }}
+                      >
+                        {[5, 10, 20, 50, 100].map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                      <span className="text-xs sm:text-sm text-muted-foreground">Page {parPage} of {parTotalPages}</span>
+                      <Button variant="outline" size="sm" disabled={parPage === 1} onClick={() => setParPage((p) => Math.max(1, p - 1))}>
+                        Previous
+                      </Button>
+                      <Button variant="outline" size="sm" disabled={parPage >= parTotalPages} onClick={() => setParPage((p) => Math.min(parTotalPages, p + 1))}>
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
 
               {/* ICS Tab */}
@@ -440,7 +495,7 @@ export default function EmployeePortalPage() {
                             No ICS records found.
                           </TableCell>
                         </TableRow>
-                      ) : myICS.map((ics) => (
+                      ) : pagedICS.map((ics) => (
                         <TableRow key={ics.parIcsNumber} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40">
                           <TableCell className="font-medium">
                             <Badge variant="outline">{formatParIcsDisplay(ics.parIcsNumber)}</Badge>
@@ -460,6 +515,37 @@ export default function EmployeePortalPage() {
                     </TableBody>
                   </Table>
                 </div>
+                {!isLoading && myICS.length > 0 && (
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
+                    <div className="text-xs sm:text-sm text-muted-foreground">
+                      Showing {((icsPage - 1) * listPageSize) + 1} to {Math.min(icsPage * listPageSize, myICS.length)} of {myICS.length} ICS records
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs sm:text-sm text-muted-foreground">Size:</label>
+                      <select
+                        className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                        value={listPageSize}
+                        onChange={(e) => {
+                          const size = Number(e.target.value);
+                          setListPageSize(size);
+                          setParPage(1);
+                          setIcsPage(1);
+                        }}
+                      >
+                        {[5, 10, 20, 50, 100].map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                      <span className="text-xs sm:text-sm text-muted-foreground">Page {icsPage} of {icsTotalPages}</span>
+                      <Button variant="outline" size="sm" disabled={icsPage === 1} onClick={() => setIcsPage((p) => Math.max(1, p - 1))}>
+                        Previous
+                      </Button>
+                      <Button variant="outline" size="sm" disabled={icsPage >= icsTotalPages} onClick={() => setIcsPage((p) => Math.min(icsTotalPages, p + 1))}>
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
