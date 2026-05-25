@@ -20,7 +20,7 @@ import { useStockCard } from '@/hooks/supply/useStockCard';
 import { formatDate } from '@/utils/dateUtils';
 import { SupplyStockCardItem } from '@/types/supply/stockcard';
 import { ChevronLeft, ChevronRight, ClipboardList, Plus } from 'lucide-react';
-import { SupplyItemEditModal } from '../supply-item/SupplyItemEditModal';
+import { IssuanceBypassModal } from './IssuanceBypassModal';
 
 interface Props {
   open: boolean;
@@ -94,7 +94,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description }:
               className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm shrink-0 flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
-              Add Stock Card Delivery
+              Issuance
             </Button>
           </div>
 
@@ -238,12 +238,12 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description }:
         </DialogContent>
       </Dialog>
 
-      <SupplyItemEditModal
+      <IssuanceBypassModal
         open={bypassModalOpen}
         onOpenChange={setBypassModalOpen}
-        mode="add"
-        supplyItem={null}
-        groupContext={open && stockNumber && description ? { code: stockNumber, description: description } : undefined}
+        stockNumber={stockNumber}
+        description={description}
+        unitId={stockCardItems[0]?.unit?.id}
         onSuccess={() => {
           fetchStockCardItems(stockNumber, description, 1);
         }}
