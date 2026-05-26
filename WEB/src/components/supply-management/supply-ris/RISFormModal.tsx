@@ -31,35 +31,42 @@ export const RISFormModal = ({ open, onOpenChange, mode, ris }: Props) => {
   const { vwDivisions, fetchDivisions } = useDivision();
 
   const [users, setUsers] = useState<User[]>([]);
-  const [masterLoading, setMasterLoading] = useState(true);
+  const [masterLoading, setMasterLoading] = useState(false);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [masterLoaded, setMasterLoaded] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      const fetchMaster = async () => {
-        setMasterLoading(true);
-        try {
-          await Promise.all([
-            fetchSupplyGroupedItems(),
-            fetchSupplyUnits(),
-            fetchOffices(),
-            fetchDivisions(),
-          ]);
-          const usersRes = await getUsers(1, 10000);
-          setUsers(usersRes.data.items || []);
-        } catch (error) {
-          console.error('Failed to fetch master data', error);
-          toast.error('Failed to load reference data');
-        } finally {
-          setMasterLoading(false);
-        }
-      };
-      fetchMaster();
+    if (!open) {
+      // Reset when modal closes so it re-fetches on next open
+      setMasterLoaded(false);
+      return;
     }
+    const fetchMaster = async () => {
+      setMasterLoading(true);
+      setMasterLoaded(false);
+      try {
+        await Promise.all([
+          fetchSupplyGroupedItems(),
+          fetchSupplyUnits(),
+          fetchOffices(),
+          fetchDivisions(),
+        ]);
+        const usersRes = await getUsers({ page: 1, pageSize: 10000 });
+        setUsers(usersRes.data.items || []);
+        setMasterLoaded(true);
+      } catch (error) {
+        console.error('Failed to fetch master data', error);
+        toast.error('Failed to load reference data');
+      } finally {
+        setMasterLoading(false);
+      }
+    };
+    fetchMaster();
   }, [open, fetchSupplyGroupedItems, fetchSupplyUnits, fetchOffices, fetchDivisions]);
 
-  const isReady = !masterLoading && vwSupplyGroups.length > 0 && units.length > 0;
+  // Only render the form once ALL fetches have finished — including offices & divisions
+  const isReady = masterLoaded && !masterLoading;
 
   const handleSave = async (headerData: any, itemsData: any[]) => {
     setSaving(true);

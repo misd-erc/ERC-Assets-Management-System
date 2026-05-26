@@ -1,6 +1,7 @@
 ﻿import { useSupplyIAR } from './supply/useIAR';
 
 export { useAuth } from '@/hooks/auth/useAuth';
+export { useOtpTimer } from '@/hooks/auth/useOtpTimer';
 export { useData } from '@/hooks/data/useData';
 
 export { useOffice } from '@/hooks/office/useOffice';
@@ -15,6 +16,8 @@ export { useSupplyItem } from '@/hooks/supply/useSupplyItem';
 export { useSupplyStorageLocation } from '@/hooks/supply/useSupplyStorageLocation';
 export { useSupplyUnit } from '@/hooks/supply/useSupplyUnit';
 export { useSupplyIAR } from '@/hooks/supply/useIAR';
+export { useStockCard } from '@/hooks/supply/useStockCard';
+export { useSupplyRIS } from '@/hooks/supply/useSupplyRIS';
 
 export { useDarkMode } from '@/hooks/ui/useDarkMode';
 

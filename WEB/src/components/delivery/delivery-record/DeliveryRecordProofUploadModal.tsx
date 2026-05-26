@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { VwDeliveryRecord } from '@/types/delivery/delivery';
 import { UploadCloud, Loader2, X, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Props {
     open: boolean;
@@ -39,6 +40,12 @@ export const DeliveryRecordProofUploadModal = ({ open, onOpenChange, record, onU
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
             const selectedFile = e.target.files[0];
+            const maxSizeBytes = 10 * 1024 * 1024;
+            if (selectedFile.size > maxSizeBytes) {
+                toast.error('File size must be 10MB or less');
+                e.target.value = '';
+                return;
+            }
             setFile(selectedFile);
 
             // Clean up the old preview URL if it exists
@@ -69,10 +76,15 @@ export const DeliveryRecordProofUploadModal = ({ open, onOpenChange, record, onU
         if (!file || !record) return;
 
         setIsUploading(true);
-        await onUpload(record.id, file);
-        setIsUploading(false);
-        handleRemoveFile();
-        onOpenChange(false);
+        try {
+            await onUpload(record.id, file);
+            handleRemoveFile();
+            onOpenChange(false);
+        } catch {
+            // Error toast handled by store
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (

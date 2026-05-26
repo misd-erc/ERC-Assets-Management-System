@@ -20,6 +20,96 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@components/ui/select";
+import { cn } from "@/components/ui/utils";
+
+interface ComboboxProps {
+  value: number | undefined | null;
+  onChange: (value: number) => void;
+  options: { id: number; name: string }[];
+  placeholder: string;
+  searchPlaceholder?: string;
+  disabled?: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  activeSearch: string;
+  onActiveSearchChange: (val: string) => void;
+}
+
+const Combobox = ({
+  value,
+  onChange,
+  options,
+  placeholder,
+  searchPlaceholder = "Search...",
+  disabled = false,
+  open,
+  onOpenChange,
+  activeSearch,
+  onActiveSearchChange
+}: ComboboxProps) => {
+  const selectedOption = options.find((o) => o.id === value);
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild disabled={disabled}>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            "w-full justify-between font-normal h-10 px-3 bg-white hover:bg-slate-50/80 border-slate-200 hover:border-slate-300 active:scale-[0.99] transition-all rounded-lg shadow-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500",
+            !value ? "text-slate-400" : "text-slate-900 font-medium"
+          )}
+        >
+          <span className="truncate">
+            {selectedOption ? selectedOption.name : placeholder}
+          </span>
+          <ChevronsUpDown className={cn("ml-2 h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400", open && "text-blue-500")} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border border-slate-100 bg-white overflow-hidden">
+        <Command className="bg-white" value={activeSearch} onValueChange={onActiveSearchChange}>
+          <div className="p-2 bg-slate-50/50 border-b border-slate-100">
+            <div className="relative rounded-md border border-slate-200 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+              <CommandInput
+                placeholder={searchPlaceholder}
+                className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+              />
+            </div>
+          </div>
+          <CommandList className="max-h-60 overflow-y-auto p-1">
+            <CommandEmpty className="py-6 text-center text-sm text-slate-500">
+              No result found.
+            </CommandEmpty>
+            <CommandGroup>
+              {options.map((o) => (
+                <CommandItem
+                  key={o.id}
+                  value={o.name}
+                  onSelect={() => {
+                    onChange(o.id);
+                    onOpenChange(false);
+                  }}
+                  className={cn(
+                    "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700 hover:bg-slate-50",
+                    value === o.id && "bg-blue-50/60 font-medium text-blue-700"
+                  )}
+                >
+                  <span className="truncate flex-1">{o.name}</span>
+                  <Check
+                    className={cn(
+                      "ml-2 h-4 w-4 shrink-0 transition-all duration-200",
+                      value === o.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 interface Props {
   header: EditSupplyRIS;
@@ -58,51 +148,55 @@ export const RISHeader = ({
   const filteredDivisions = divisions.filter((d) => d.office?.id === header.officeId);
 
   return (
-    <div className="space-y-4 border rounded-lg p-4">
-      <h3 className="font-semibold">RIS Information</h3>
+    <div className="space-y-4 border rounded-lg p-4 bg-white shadow-sm">
+      <h3 className="font-semibold text-slate-800 text-base">RIS Information</h3>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>RIS Number <span className="text-red-500">*</span></Label>
+          <Label className="text-slate-700 font-medium">RIS Number <span className="text-red-500">*</span></Label>
           <Input
             value={header.risNumber}
             onChange={(e) => handleChange('risNumber', e.target.value)}
             placeholder="e.g., RIS-2024-001"
             required
             disabled={isViewMode}
+            className="h-10"
           />
         </div>
         <div className="space-y-2">
-          <Label>Requested Date</Label>
+          <Label className="text-slate-700 font-medium">Requested Date</Label>
           <Input
             type="date"
             value={header.risRequestedDate?.slice(0, 10) || ''}
             onChange={(e) => handleChange('risRequestedDate', e.target.value)}
             required
             disabled={isViewMode}
+            className="h-10"
           />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Entity Name <span className="text-red-500">*</span></Label>
+          <Label className="text-slate-700 font-medium">Entity Name <span className="text-red-500">*</span></Label>
           <Input
             value={header.entityName}
             onChange={(e) => handleChange('entityName', e.target.value)}
             placeholder="e.g., DOST"
             required
             disabled={isViewMode}
+            className="h-10"
           />
         </div>
         <div className="space-y-2">
-          <Label>Fund Cluster <span className="text-red-500">*</span></Label>
+          <Label className="text-slate-700 font-medium">Fund Cluster <span className="text-red-500">*</span></Label>
           <Input
             value={header.fundCluster}
             onChange={(e) => handleChange('fundCluster', e.target.value)}
             placeholder="e.g., General Fund"
             required
             disabled={isViewMode}
+            className="h-10"
           />
         </div>
       </div>
@@ -111,269 +205,165 @@ export const RISHeader = ({
         {/* Office Combobox */}
         <div className="space-y-2 min-w-0 flex flex-col">
           <Label className="text-slate-700 font-medium">Office <span className="text-red-500">*</span></Label>
-          <Popover open={openOffice} onOpenChange={(open) => {
-            setOpenOffice(open);
-            if (open) {
-              const name = offices.find(o => o.id === header.officeId)?.name;
-              setActiveOffice(name || "");
-            }
-          }}>
-            <PopoverTrigger asChild disabled={isViewMode}>
-              <Button
-                variant="outline"
-                role="combobox"
-                className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
-              >
-                <span className="truncate text-slate-700">
-                  {header.officeId
-                    ? offices.find((o) => o.id === header.officeId)?.name
-                    : "Select Office"}
-                </span>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
-              </Button>
-            </PopoverTrigger>
-
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-              <Command className="bg-white" value={activeOffice} onValueChange={setActiveOffice}>
-                <div className="p-2 bg-slate-50 border-b border-slate-100">
-                  <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
-                    <CommandInput placeholder="Search office..." className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none" />
-                  </div>
-                </div>
-                <CommandList className="max-h-60 overflow-y-auto overscroll-contain" onWheelCapture={(e) => e.stopPropagation()}>
-                  <CommandEmpty className="py-6 text-center text-sm text-slate-500">No office found.</CommandEmpty>
-                  <CommandGroup className="p-1.5">
-                    {offices.map((o) => (
-                      <CommandItem key={o.id} value={o.name} onSelect={() => { handleChange('officeId', o.id); if (o.id !== header.officeId) handleChange('divisionId', 0); setOpenOffice(false); }} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700">
-                        <span className="truncate flex-1">{o.name}</span>
-                        <Check className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${header.officeId === o.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"}`} />
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <Combobox
+            value={header.officeId}
+            onChange={(val) => {
+              handleChange('officeId', val);
+              if (val !== header.officeId) handleChange('divisionId', 0);
+            }}
+            options={offices.map((o) => ({ id: o.id, name: o.name }))}
+            placeholder="Select Office"
+            searchPlaceholder="Search office..."
+            disabled={isViewMode}
+            open={openOffice}
+            onOpenChange={setOpenOffice}
+            activeSearch={activeOffice}
+            onActiveSearchChange={setActiveOffice}
+          />
         </div>
 
         {/* Division Combobox */}
         <div className="space-y-2 min-w-0 flex flex-col">
           <Label className="text-slate-700 font-medium">Division <span className="text-red-500">*</span></Label>
-          <Popover open={openDivision} onOpenChange={(open) => {
-            setOpenDivision(open);
-            if (open) {
-              const name = filteredDivisions.find(d => d.id === header.divisionId)?.name;
-              setActiveDivision(name || "");
-            }
-          }}>
-            <PopoverTrigger asChild disabled={isViewMode || !header.officeId}>
-              <Button variant="outline" role="combobox" className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors">
-                <span className="truncate text-slate-700">{header.divisionId ? filteredDivisions.find((d) => d.id === header.divisionId)?.name : "Select Division"}</span>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-              <Command className="bg-white" value={activeDivision} onValueChange={setActiveDivision}>
-                <div className="p-2 bg-slate-50 border-b border-slate-100">
-                  <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
-                    <CommandInput placeholder="Search division..." className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none" />
-                  </div>
-                </div>
-                <CommandList className="max-h-60 overflow-y-auto overscroll-contain" onWheelCapture={(e) => e.stopPropagation()}>
-                  <CommandEmpty className="py-6 text-center text-sm text-slate-500">No division found.</CommandEmpty>
-                  <CommandGroup className="p-1.5">
-                    {filteredDivisions.map((d) => (
-                      <CommandItem key={d.id} value={d.name} onSelect={() => { handleChange('divisionId', d.id); setOpenDivision(false); }} className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700">
-                        <span className="truncate flex-1">{d.name}</span>
-                        <Check className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${header.divisionId === d.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"}`} />
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <Combobox
+            value={header.divisionId}
+            onChange={(val) => handleChange('divisionId', val)}
+            options={filteredDivisions.map((d) => ({ id: d.id, name: d.name }))}
+            placeholder="Select Division"
+            searchPlaceholder="Search division..."
+            disabled={isViewMode || !header.officeId}
+            open={openDivision}
+            onOpenChange={setOpenDivision}
+            activeSearch={activeDivision}
+            onActiveSearchChange={setActiveDivision}
+          />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label>Responsibility Center Code <span className="text-red-500">*</span></Label>
-        <Input value={header.responsibilityCenterCode} onChange={(e) => handleChange('responsibilityCenterCode', e.target.value)} placeholder="RCC-123" required disabled={isViewMode} />
+        <Label className="text-slate-700 font-medium">Responsibility Center Code <span className="text-red-500">*</span></Label>
+        <Input 
+          value={header.responsibilityCenterCode} 
+          onChange={(e) => handleChange('responsibilityCenterCode', e.target.value)} 
+          placeholder="RCC-123" 
+          required 
+          disabled={isViewMode} 
+          className="h-10"
+        />
       </div>
 
       <div className="space-y-2">
-        <Label>Purpose <span className="text-red-500">*</span></Label>
-        <Textarea value={header.risPurpose} onChange={(e) => handleChange('risPurpose', e.target.value)} placeholder="State the reason for the requisition" required disabled={isViewMode} />
+        <Label className="text-slate-700 font-medium">Purpose <span className="text-red-500">*</span></Label>
+        <Textarea 
+          value={header.risPurpose} 
+          onChange={(e) => handleChange('risPurpose', e.target.value)} 
+          placeholder="State the reason for the requisition" 
+          required 
+          disabled={isViewMode} 
+          rows={3}
+        />
       </div>
 
       {/* ---------------- REQUESTED BY SECTION ---------------- */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Same as before... */}
         <div className="space-y-2 min-w-0 flex flex-col">
           <Label className="text-slate-700 font-medium">Requested By</Label>
-          <Popover open={openRequestedBy} onOpenChange={(open) => {
-            setOpenRequestedBy(open);
-            if (open) {
-              const user = users.find(u => u.id === header.risRequestedBySystemUserId);
-              setActiveRequestedBy(user ? `${user.firstName} ${user.lastName}` : "");
-            }
-          }}>
-            <PopoverTrigger asChild disabled={isViewMode}>
-              <Button variant="outline" role="combobox" className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors">
-                <span className="truncate text-slate-700">{header.risRequestedBySystemUserId ? users.filter((u) => u.id === header.risRequestedBySystemUserId).map((u) => `${u.firstName} ${u.lastName}`.toUpperCase())[0] || "Select User" : "Select User"}</span>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-              <Command className="bg-white" value={activeRequestedBy} onValueChange={setActiveRequestedBy}>
-                <CommandInput placeholder="Search user..." />
-                <CommandEmpty>No user found.</CommandEmpty>
-                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
-                  {users.map((u) => (
-                    <CommandItem key={u.id} value={`${u.firstName} ${u.lastName}`} onSelect={() => { handleChange('risRequestedBySystemUserId', u.id); setOpenRequestedBy(false); }}>
-                      <span className="truncate flex-1">{`${u.firstName} ${u.lastName}`.toUpperCase()}</span>
-                      <Check className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${header.risRequestedBySystemUserId === u.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"}`} />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <Combobox
+            value={header.risRequestedBySystemUserId}
+            onChange={(val) => handleChange('risRequestedBySystemUserId', val)}
+            options={users.map((u) => ({ id: u.id, name: `${u.firstName} ${u.lastName}`.toUpperCase() }))}
+            placeholder="Select User"
+            searchPlaceholder="Search user..."
+            disabled={isViewMode}
+            open={openRequestedBy}
+            onOpenChange={setOpenRequestedBy}
+            activeSearch={activeRequestedBy}
+            onActiveSearchChange={setActiveRequestedBy}
+          />
         </div>
         <div className="space-y-2">
           <Label className="text-slate-700 font-medium">Requested Date</Label>
-          <Input type="date" value={header.risRequestedDate?.slice(0, 10) || ''} disabled className="bg-gray-100 text-slate-500" />
+          <Input type="date" value={header.risRequestedDate?.slice(0, 10) || ''} disabled className="bg-gray-50 text-slate-500 h-10" />
         </div>
       </div>
 
       {/* ---------------- APPROVED BY SECTION ---------------- */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Same as before... */}
         <div className="space-y-2 min-w-0 flex flex-col">
           <Label className="text-slate-700 font-medium">Approved By</Label>
-          <Popover open={openApprovedBy} onOpenChange={(open) => {
-            setOpenApprovedBy(open);
-            if (open) {
-              const user = users.find(u => u.id === header.risApprovedBySystemUserId);
-              setActiveApprovedBy(user ? `${user.firstName} ${user.lastName}` : "");
-            }
-          }}>
-            <PopoverTrigger asChild disabled={isViewMode}>
-              <Button variant="outline" role="combobox" className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors">
-                <span className="truncate text-slate-700">{header.risApprovedBySystemUserId ? users.filter((u) => u.id === header.risApprovedBySystemUserId).map((u) => `${u.firstName} ${u.lastName}`.toUpperCase())[0] || "Select User" : "Select User"}</span>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-              <Command className="bg-white" value={activeApprovedBy} onValueChange={setActiveApprovedBy}>
-                <CommandInput placeholder="Search user..." />
-                <CommandEmpty>No user found.</CommandEmpty>
-                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
-                  {users.map((u) => (
-                    <CommandItem key={u.id} value={`${u.firstName} ${u.lastName}`} onSelect={() => { handleChange('risApprovedBySystemUserId', u.id); setOpenApprovedBy(false); }}>
-                      <span className="truncate flex-1">{`${u.firstName} ${u.lastName}`.toUpperCase()}</span>
-                      <Check className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${header.risApprovedBySystemUserId === u.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"}`} />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <Combobox
+            value={header.risApprovedBySystemUserId}
+            onChange={(val) => handleChange('risApprovedBySystemUserId', val)}
+            options={users.map((u) => ({ id: u.id, name: `${u.firstName} ${u.lastName}`.toUpperCase() }))}
+            placeholder="Select User"
+            searchPlaceholder="Search user..."
+            disabled={isViewMode}
+            open={openApprovedBy}
+            onOpenChange={setOpenApprovedBy}
+            activeSearch={activeApprovedBy}
+            onActiveSearchChange={setActiveApprovedBy}
+          />
         </div>
         <div className="space-y-2">
           <Label className="text-slate-700 font-medium">Approved Date</Label>
-          <Input type="date" value={header.risApprovedDate?.slice(0, 10) || ''} onChange={(e) => handleChange('risApprovedDate', e.target.value || undefined)} disabled={isViewMode} />
+          <Input type="date" value={header.risApprovedDate?.slice(0, 10) || ''} onChange={(e) => handleChange('risApprovedDate', e.target.value || undefined)} disabled={isViewMode} className="h-10" />
         </div>
       </div>
 
       {/* ---------------- ISSUED BY SECTION ---------------- */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Same as before... */}
         <div className="space-y-2 min-w-0 flex flex-col">
           <Label className="text-slate-700 font-medium">Issued By</Label>
-          <Popover open={openIssuedBy} onOpenChange={(open) => {
-            setOpenIssuedBy(open);
-            if (open) {
-              const user = users.find(u => u.id === header.risIssuedBySystemUserId);
-              setActiveIssuedBy(user ? `${user.firstName} ${user.lastName}` : "");
-            }
-          }}>
-            <PopoverTrigger asChild disabled={isViewMode}>
-              <Button variant="outline" role="combobox" className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors">
-                <span className="truncate text-slate-700">{header.risIssuedBySystemUserId ? users.filter((u) => u.id === header.risIssuedBySystemUserId).map((u) => `${u.firstName} ${u.lastName}`.toUpperCase())[0] || "Select User" : "Select User"}</span>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-              <Command className="bg-white" value={activeIssuedBy} onValueChange={setActiveIssuedBy}>
-                <CommandInput placeholder="Search user..." />
-                <CommandEmpty>No user found.</CommandEmpty>
-                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
-                  {users.map((u) => (
-                    <CommandItem key={u.id} value={`${u.firstName} ${u.lastName}`} onSelect={() => { handleChange('risIssuedBySystemUserId', u.id); setOpenIssuedBy(false); }}>
-                      <span className="truncate flex-1">{`${u.firstName} ${u.lastName}`.toUpperCase()}</span>
-                      <Check className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${header.risIssuedBySystemUserId === u.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"}`} />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <Combobox
+            value={header.risIssuedBySystemUserId}
+            onChange={(val) => handleChange('risIssuedBySystemUserId', val)}
+            options={users.map((u) => ({ id: u.id, name: `${u.firstName} ${u.lastName}`.toUpperCase() }))}
+            placeholder="Select User"
+            searchPlaceholder="Search user..."
+            disabled={isViewMode}
+            open={openIssuedBy}
+            onOpenChange={setOpenIssuedBy}
+            activeSearch={activeIssuedBy}
+            onActiveSearchChange={setActiveIssuedBy}
+          />
         </div>
         <div className="space-y-2">
           <Label className="text-slate-700 font-medium">Issued Date</Label>
-          <Input type="date" value={header.risIssuedDate?.slice(0, 10) || ''} onChange={(e) => handleChange('risIssuedDate', e.target.value || undefined)} disabled={isViewMode} />
+          <Input type="date" value={header.risIssuedDate?.slice(0, 10) || ''} onChange={(e) => handleChange('risIssuedDate', e.target.value || undefined)} disabled={isViewMode} className="h-10" />
         </div>
       </div>
 
       {/* ---------------- RECEIVED BY SECTION ---------------- */}
       <div className="grid grid-cols-2 gap-4">
-        {/* Same as before... */}
         <div className="space-y-2 min-w-0 flex flex-col">
           <Label className="text-slate-700 font-medium">Received By</Label>
-          <Popover open={openReceivedBy} onOpenChange={(open) => {
-            setOpenReceivedBy(open);
-            if (open) {
-              const user = users.find(u => u.id === header.risReceivedBySystemUserId);
-              setActiveReceivedBy(user ? `${user.firstName} ${user.lastName}` : "");
-            }
-          }}>
-            <PopoverTrigger asChild disabled={isViewMode}>
-              <Button variant="outline" role="combobox" className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors">
-                <span className="truncate text-slate-700">{header.risReceivedBySystemUserId ? users.filter((u) => u.id === header.risReceivedBySystemUserId).map((u) => `${u.firstName} ${u.lastName}`.toUpperCase())[0] || "Select User" : "Select User"}</span>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
-              <Command className="bg-white" value={activeReceivedBy} onValueChange={setActiveReceivedBy}>
-                <CommandInput placeholder="Search user..." />
-                <CommandEmpty>No user found.</CommandEmpty>
-                <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
-                  {users.map((u) => (
-                    <CommandItem key={u.id} value={`${u.firstName} ${u.lastName}`} onSelect={() => { handleChange('risReceivedBySystemUserId', u.id); setOpenReceivedBy(false); }}>
-                      <span className="truncate flex-1">{`${u.firstName} ${u.lastName}`.toUpperCase()}</span>
-                      <Check className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${header.risReceivedBySystemUserId === u.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"}`} />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <Combobox
+            value={header.risReceivedBySystemUserId}
+            onChange={(val) => handleChange('risReceivedBySystemUserId', val)}
+            options={users.map((u) => ({ id: u.id, name: `${u.firstName} ${u.lastName}`.toUpperCase() }))}
+            placeholder="Select User"
+            searchPlaceholder="Search user..."
+            disabled={isViewMode}
+            open={openReceivedBy}
+            onOpenChange={setOpenReceivedBy}
+            activeSearch={activeReceivedBy}
+            onActiveSearchChange={setActiveReceivedBy}
+          />
         </div>
         <div className="space-y-2">
           <Label className="text-slate-700 font-medium">Received Date</Label>
-          <Input type="date" value={header.risReceivedDate?.slice(0, 10) || ''} onChange={(e) => handleChange('risReceivedDate', e.target.value || undefined)} disabled={isViewMode} />
+          <Input type="date" value={header.risReceivedDate?.slice(0, 10) || ''} onChange={(e) => handleChange('risReceivedDate', e.target.value || undefined)} disabled={isViewMode} className="h-10" />
         </div>
-
       </div>
+
       <div className="space-y-2">
-        <Label>Status</Label>
+        <Label className="text-slate-700 font-medium">Status</Label>
         <Select
           value={header.isActive ? 'active' : 'inactive'}
           onValueChange={(val) => handleChange('isActive', val === 'active')}
           disabled={isViewMode}
         >
-          <SelectTrigger>
+          <SelectTrigger className="h-10 bg-white border-slate-200">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>

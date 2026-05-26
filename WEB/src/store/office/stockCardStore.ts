@@ -26,7 +26,7 @@ export const useStockCardStore = create<StockCardState>((set, get) => ({
   pageSize: 10,
 
   fetchStockCardItems: async (stockNumber, description, page = 1) => {
-    set({ loading: true, currentStockNumber: stockNumber, currentDescription: description, currentPage: page });
+    set({ loading: true, stockCardItems: [], totalCount: 0, currentStockNumber: stockNumber, currentDescription: description, currentPage: page });
     try {
       const response = await getStockCardItems(stockNumber, description, page, get().pageSize);
       set({

@@ -146,7 +146,13 @@ export const SupplyGroupItemsModal = ({ open, onOpenChange, groupedItem }: Props
                     storageFilter={params.storageId}
                     allCategories={categories}
                     storageLocations={storagelocations}
-                    onParamsChange={setParams}
+                    onParamsChange={(newParams) => setParams({
+                      page: newParams.page,
+                      search: newParams.search,
+                      category: newParams.category,
+                      status: newParams.status,
+                      storageId: newParams.storageId || 'all'
+                    })}
                     loading={loading}
                     onAdd={handleAdd}
                     onView={handleView}

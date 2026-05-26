@@ -4,10 +4,6 @@ import { toast } from 'sonner';
 import { getAuthParams } from '@/utils/auth';
 import { EditSupplyRIS, EditSupplyRISItem, VwSupplyRIS, VwSupplyRISItem } from '@/types/supply/ris';
 
-interface ListResponse<T> {
-  items: T[];
-}
-
 // ------------------- Mapping functions -------------------
 const mapVwSupplyRIS = (raw: any): VwSupplyRIS => ({
   id: raw.id,

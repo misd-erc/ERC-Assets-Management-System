@@ -26,7 +26,9 @@ export const StockCardTabContent = () => {
   useEffect(() => {
     fetchCategories();
     fetchSupplyStorageLocations();
-    getVendors().then(res => setVendors(res || []));
+    getVendors()
+      .then(res => setVendors(res || []))
+      .catch(() => setVendors([]));
   }, [fetchCategories, fetchSupplyStorageLocations]);
 
   useEffect(() => {
@@ -65,6 +67,7 @@ export const StockCardTabContent = () => {
         allVendors={vendors}
         onParamsChange={(newParams) => setParams(prev => ({ ...prev, ...newParams }))}
         onView={handleViewStockCard}
+        viewActionLabel="View"
         loading={loading}
       />
       <StockCardModal

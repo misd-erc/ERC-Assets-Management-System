@@ -18,5 +18,7 @@ export * from '@/api/supply-management/itemApi';
 export * from '@/api/supply-management/storageLocationApi';
 export * from '@/api/supply-management/unitApi';
 export * from '@/api/supply-management/iarApi';
+export * from '@/api/supply-management/risApi';
+export * from '@/api/supply-management/stockCardApi';
 
 

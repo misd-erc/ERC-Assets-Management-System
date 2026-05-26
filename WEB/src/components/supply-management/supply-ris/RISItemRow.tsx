@@ -23,8 +23,10 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/components/ui/utils";
 
 interface Props {
   item: FormItem;
@@ -67,25 +69,28 @@ export const RISItemRow = ({
             <Button
               variant="outline"
               role="combobox"
-              className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
+              className={cn(
+                "w-full justify-between font-normal h-10 px-3 bg-white hover:bg-slate-50/80 border-slate-200 hover:border-slate-300 active:scale-[0.99] transition-all rounded-lg shadow-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500",
+                !item.stockNumber ? "text-slate-400" : "text-slate-900 font-medium"
+              )}
             >
-              <span className="truncate text-slate-700">
+              <span className="truncate">
                 {item.stockNumber
                   ? vwSupplyGroups
                       .filter((g) => g.code === item.stockNumber)
                       .map((g) => `${g.code} - ${g.description}`)[0] || "Select Item"
                   : "Select Item"}
               </span>
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400 transition-colors" />
             </Button>
           </PopoverTrigger>
 
-          <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-lg shadow-lg border-slate-200 overflow-hidden">
+          <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border border-slate-100 bg-white overflow-hidden">
             <Command className="bg-white">
               
               {/* Enhanced Search Box */}
-              <div className="p-2 bg-slate-50 border-b border-slate-100">
-                <div className="relative rounded-md border border-slate-300 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+              <div className="p-2 bg-slate-50/50 border-b border-slate-100">
+                <div className="relative rounded-md border border-slate-200 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
                   <CommandInput
                     placeholder="Search stock number or description..."
                     className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
@@ -97,34 +102,39 @@ export const RISItemRow = ({
                 No item found.
               </CommandEmpty>
 
-              <CommandGroup className="max-h-60 overflow-y-auto p-1.5">
-                {/* Clear Selection Option */}
-                <CommandItem
-                  onSelect={() => onUpdate(index, 'stockNumber', "")}
-                  className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50"
-                >
-                  <span className="truncate flex-1">Clear Selection</span>
-                </CommandItem>
-
-                {/* Map over vwSupplyGroups */}
-                {vwSupplyGroups.map((g) => (
+              <CommandList className="max-h-60 overflow-y-auto p-1">
+                <CommandGroup>
+                  {/* Clear Selection Option */}
                   <CommandItem
-                    key={g.code}
-                    value={`${g.code} ${g.description}`} // Enables searching by either code or description
-                    onSelect={() => onUpdate(index, 'stockNumber', g.code)}
-                    className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
+                    onSelect={() => onUpdate(index, 'stockNumber', "")}
+                    className="flex items-center justify-between rounded-lg px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-400 italic hover:bg-slate-50"
                   >
-                    <span className="truncate flex-1">
-                      {g.code} - {g.description}
-                    </span>
-                    <Check
-                      className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
-                        item.stockNumber === g.code ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
-                      }`}
-                    />
+                    <span className="truncate flex-1">Clear Selection</span>
                   </CommandItem>
-                ))}
-              </CommandGroup>
+
+                  {/* Map over vwSupplyGroups */}
+                  {vwSupplyGroups.map((g) => (
+                    <CommandItem
+                      key={g.code}
+                      value={`${g.code} ${g.description}`} // Enables searching by either code or description
+                      onSelect={() => onUpdate(index, 'stockNumber', g.code)}
+                      className={cn(
+                        "flex items-center justify-between rounded-lg px-3 py-2 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700 hover:bg-slate-50",
+                        item.stockNumber === g.code && "bg-blue-50/60 font-medium text-blue-700"
+                      )}
+                    >
+                      <span className="truncate flex-1">
+                        {g.code} - {g.description}
+                      </span>
+                      <Check
+                        className={`ml-2 h-4 w-4 shrink-0 transition-all duration-200 ${
+                          item.stockNumber === g.code ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                        }`}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
             </Command>
           </PopoverContent>
         </Popover>

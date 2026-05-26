@@ -782,11 +782,6 @@ namespace API.Controllers
                 int skip = (model.PageNumber - 1) * model.PageSize;
                 var pagedEvents = allEvents.Skip(skip).Take(model.PageSize).ToList();
 
-                string debugJson = System.Text.Json.JsonSerializer.Serialize(pagedEvents, new System.Text.Json.JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
-
                 // ===== 6. Compute running balance before the first event in the page =====
                 long previousBalance = 0;
                 if (skip > 0)
@@ -1084,6 +1079,60 @@ namespace API.Controllers
                     "Supply IARs have been retrieved"
                 ));
 
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("iar/all/{iarId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetIAR([FromQuery] PaginationGenericQueryParams model, [FromRoute] long iarId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                TblSupplyIAR? supplyIAR = await _getTools.Supply.GetTblSupplyIARAsync(iarId, context);
+
+                if (supplyIAR == null)
+                {
+                    await transaction.RollbackAsync();
+                    return StatusCode(ApiStatusCode.NotFound, ApiResponse<object>.NotFound("Supply IAR not found."));
+                }
+
+                var supplyIARModel = new SupplyIARResponseModel
+                {
+                    Id = supplyIAR.Id,
+                    RecordId = supplyIAR.RecordId ?? 0,
+                    DRNumber = _getTools.Delivery.GetTblDeliveryRecords(context).Where(y => y.Id == supplyIAR.RecordId).FirstOrDefault()?.DRNumber ?? "",
+                    CenterCode = supplyIAR.ResponsibilityCenterCode,
+                    EntityName = supplyIAR.EntityName,
+                    FundCluster = supplyIAR.FundCluster,
+                    Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(supplyIAR.VendorId, context),
+                    PONumber = supplyIAR.PONumber,
+                    Office = await _getTools.Office.GetTblOfficeAsync(supplyIAR.OfficeId, context),
+                    Division = await _getTools.Office.GetTblDivisionAsync(supplyIAR.DivisionId, context),
+                    IARNumber = supplyIAR.IARNumber,
+                    IARNumberDate = supplyIAR.IARNumberDate,
+                    IARInvoiceNumber = supplyIAR.IARInvoiceNumber,
+                    IARInvoiceNumberDate = supplyIAR.IARInvoiceNumberDate,
+                    PODate = supplyIAR.PODate,
+                    ActualDeliveryDate = supplyIAR.ActualDeliveryDate,
+                    IsActive = supplyIAR.IsActive,
+                    IsApproved = supplyIAR.IsApproved,
+                    CreatedAt = supplyIAR.CreatedAt
+                };
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed Supply IAR {supplyIAR.Id}", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<SupplyIARResponseModel>.Ok(supplyIARModel, "Supply IAR has been retrieved"));
             }
             catch (Exception ex)
             {
@@ -1758,6 +1807,13 @@ namespace API.Controllers
             try
             {
 
+                bool wasAlreadyApproved = false;
+                if (model.Id > 0)
+                {
+                    TblSupplyIAR? existingIAR = await _getTools.Supply.GetTblSupplyIARAsync(model.Id, context);
+                    wasAlreadyApproved = existingIAR?.IsApproved == true;
+                }
+
                 TblSupplyIAR supplyIAR = new()
                 {
                     Id = model.Id,
@@ -1782,7 +1838,7 @@ namespace API.Controllers
                 long supplyIARId = await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
                 supplyIAR.Id = supplyIARId;
 
-                if (supplyIAR.IsApproved)
+                if (supplyIAR.IsApproved && !wasAlreadyApproved)
                 {
                     supplyIAR.IsApproved = true;
                     supplyIAR.ApprovedOn = DateTime.UtcNow;
@@ -2020,7 +2076,7 @@ namespace API.Controllers
                 bool isDeleted = await _editTools.Supply.DeleteTblSupplyIARAsync(iarId, model.ActionBySystemUserId, context);
 
                 if (!isDeleted)
-                    return Ok(ApiResponse<object>.Ok($"Unable to delete this Supply IAR, try again later"));
+                    return Ok(ApiResponse<object>.OperationFailed("Unable to delete this Supply IAR, try again later"));
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();

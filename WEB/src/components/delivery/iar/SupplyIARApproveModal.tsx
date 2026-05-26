@@ -17,16 +17,22 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   record: VwSupplyIAR | null;
   deliveryRecord: VwDeliveryRecord | null;
+  loadingDeliveryRecord?: boolean;
   onConfirm: () => Promise<void>;
 }
 
-export const SupplyIARApproveModal = ({ open, onOpenChange, record, deliveryRecord, onConfirm }: Props) => {
+export const SupplyIARApproveModal = ({ open, onOpenChange, record, deliveryRecord, loadingDeliveryRecord, onConfirm }: Props) => {
   const deliveryItems = deliveryRecord?.items || [];
+  const canApprove = !loadingDeliveryRecord && deliveryItems.length > 0;
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          {deliveryItems.length > 0 ? (
+          {loadingDeliveryRecord ? (
+            <div className="flex items-center gap-2 text-slate-600 mb-2">
+              <AlertDialogTitle>Loading delivery items...</AlertDialogTitle>
+            </div>
+          ) : canApprove ? (
             <div className="flex items-center gap-2 text-green-600 mb-2">
               <CheckCircle className="h-5 w-5" />
               <AlertDialogTitle>Approve IAR Record?</AlertDialogTitle>
@@ -39,7 +45,9 @@ export const SupplyIARApproveModal = ({ open, onOpenChange, record, deliveryReco
           )}
 
           <AlertDialogDescription>
-            {deliveryItems.length > 0 ? (
+            {loadingDeliveryRecord ? (
+              <>Please wait while delivery record items are loaded.</>
+            ) : canApprove ? (
               <>
                 Are you sure you want to approve IAR <strong>{record?.iarNumber}</strong>?
                 Once approved, the record will be finalized and can no longer be edited.
@@ -52,7 +60,9 @@ export const SupplyIARApproveModal = ({ open, onOpenChange, record, deliveryReco
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          {deliveryItems.length > 0 ? (
+          {loadingDeliveryRecord ? (
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          ) : canApprove ? (
             <>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction

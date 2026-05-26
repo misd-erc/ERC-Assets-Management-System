@@ -9,7 +9,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import {
-  Edit, Trash2, MoreHorizontal, Plus, MapPin, MapPinOff, ChevronLeft, ChevronRight, Package
+  Edit, Trash2, MoreHorizontal, Plus, MapPin, MapPinOff, ChevronLeft, ChevronRight, Package, Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { SupplyItemSearchBar } from '../supply-item/SupplyItemSearchBar'; // Adjust path if needed
@@ -27,14 +27,14 @@ interface Props {
 const PAGE_SIZE = 10;
 
 export const SupplyStorageTable = ({
-                                     data,
-                                     usageCounts,
-                                     onAdd,
-                                     onEdit,
-                                     onDelete,
-                                     onViewLinkedItems,
-                                     loading = false
-                                   }: Props) => {
+  data,
+  usageCounts,
+  onAdd,
+  onEdit,
+  onDelete,
+  onViewLinkedItems,
+  loading = false
+}: Props) => {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -48,7 +48,7 @@ export const SupplyStorageTable = ({
     if (!searchQuery) return data;
     const query = String(searchQuery).toLowerCase().trim();
     return data.filter((storage) =>
-        String(storage.name || '').toLowerCase().includes(query)
+      String(storage.name || '').toLowerCase().includes(query)
     );
   }, [data, searchQuery]);
 
@@ -59,171 +59,170 @@ export const SupplyStorageTable = ({
   }, [filteredData, page]);
 
   return (
-      <Card className="border-slate-200 shadow-sm">
-        {/* UX ENHANCEMENT: Unified Header Toolbar */}
-        <CardHeader className="border-b border-slate-100 pb-4">
-          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-            <div>
-              <CardTitle className="text-xl text-slate-900 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-blue-600" /> Storage Locations
-              </CardTitle>
-              <CardDescription>Manage warehouses, storage rooms, and cabinets</CardDescription>
-            </div>
+    <Card className="border-slate-200 shadow-sm">
+      {/* UX ENHANCEMENT: Unified Header Toolbar */}
+      <CardHeader className="border-b border-slate-100 pb-4">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-xl text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-blue-600" /> Storage Locations
+            </CardTitle>
+            <CardDescription>Manage warehouses, storage rooms, and cabinets</CardDescription>
+          </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
-              <div className="w-full sm:w-64">
-                <SupplyItemSearchBar value={searchQuery} onChange={setSearchQuery} />
-              </div>
-              <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700 shrink-0 shadow-sm w-full sm:w-auto justify-center" disabled={loading}>
-                <Plus className="w-4 h-4 mr-2" /> Add Location
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full xl:w-auto">
+            <div className="w-full sm:w-64">
+              <SupplyItemSearchBar value={searchQuery} onChange={setSearchQuery} />
+            </div>
+            <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700 shrink-0 shadow-sm w-full sm:w-auto justify-center" disabled={loading}>
+              <Plus className="w-4 h-4 mr-2" /> Add Location
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-0">
+        <div className="relative overflow-x-auto">
+          {loading && filteredData.length > 0 && (
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-100 dark:bg-blue-950 overflow-hidden z-10">
+              <div className="h-full bg-blue-600 dark:bg-blue-400 animate-pulse w-full"></div>
+            </div>
+          )}
+          <Table>
+            <TableHeader className="bg-slate-50/80">
+              <TableRow>
+                <TableHead className="min-w-[200px]">Location Name</TableHead>
+                <TableHead className="text-center w-[150px]">Stored Items</TableHead>
+                <TableHead className="text-center w-[120px]">Status</TableHead>
+                <TableHead className="text-right w-[80px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {/* SKELETON LOADER */}
+              {loading && filteredData.length === 0 ? (
+                Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={`skeleton-${index}`}>
+                    {Array.from({ length: 4 }).map((_, colIndex) => (
+                      <TableCell key={`skel-col-${colIndex}`}>
+                        <div className="h-4 bg-slate-200 rounded animate-pulse w-full"></div>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : paginatedData.length > 0 ? (
+                // NORMAL DATA RENDERING
+                paginatedData.map((storage) => {
+                  const itemCount = usageCounts[storage.id] || 0;
+                  const isActive = storage.isActive;
+
+                  return (
+                    <TableRow key={storage.id} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell>
+                        <span className="font-medium text-slate-900">{storage.name}</span>
+                      </TableCell>
+
+                      <TableCell className="text-center">
+                        {itemCount > 0 ? (
+                          <Button
+                            variant="ghost"
+                            className="h-auto p-0 hover:bg-transparent group"
+                            onClick={() => onViewLinkedItems(storage)}
+                          >
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 group-hover:bg-blue-100 group-hover:border-blue-300 transition-colors cursor-pointer flex items-center gap-1.5">
+                              <Package className="w-3 h-3" />
+                              {itemCount} Items
+                            </Badge>
+                          </Button>
+                        ) : (
+                          <span className="text-slate-400 text-sm font-medium px-4">-</span>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="text-center">
+                        <Badge
+                          variant="outline"
+                          className={`whitespace-nowrap ${isActive
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-slate-50 text-slate-600 border-slate-200'
+                            }`}
+                        >
+                          {isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0 text-slate-500 hover:text-slate-900">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={() => onEdit(storage)} className="cursor-pointer">
+                              <Edit className="w-4 h-4 mr-2 text-blue-500" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => onDelete(storage)}
+                              disabled={itemCount > 0}
+                              className="text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                // POLISHED EMPTY STATE
+                <TableRow>
+                  <TableCell colSpan={4} className="h-48 text-center">
+                    <div className="flex flex-col items-center justify-center text-slate-500 space-y-3">
+                      <div className="p-3 bg-slate-50 rounded-full">
+                        <MapPinOff className="w-8 h-8 text-slate-400" />
+                      </div>
+                      <p className="font-medium text-slate-900">No locations found</p>
+                      <p className="text-sm">
+                        {searchQuery ? "Try adjusting your search criteria." : "Get started by adding a new storage location."}
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Pagination Footer */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+            <p className="text-sm text-slate-500">
+              Showing <span className="font-medium text-slate-900">{(page - 1) * PAGE_SIZE + 1}</span> to <span className="font-medium text-slate-900">{Math.min(page * PAGE_SIZE, filteredData.length)}</span> of <span className="font-medium text-slate-900">{filteredData.length}</span> locations
+            </p>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1 || loading}
+                className="shadow-sm"
+              >
+                {loading ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <ChevronLeft className="w-4 h-4 mr-1" />} Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages || loading}
+                className="shadow-sm"
+              >
+                Next {loading ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <ChevronRight className="w-4 h-4 ml-1" />}
               </Button>
             </div>
           </div>
-        </CardHeader>
-
-        <CardContent className="p-0">
-          <div className="relative overflow-x-auto">
-            {loading && filteredData.length > 0 && (
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-100 dark:bg-blue-950 overflow-hidden z-10">
-                <div className="h-full bg-blue-600 dark:bg-blue-400 animate-pulse w-full"></div>
-              </div>
-            )}
-            <Table>
-              <TableHeader className="bg-slate-50/80">
-                <TableRow>
-                  <TableHead className="min-w-[200px]">Location Name</TableHead>
-                  <TableHead className="text-center w-[150px]">Stored Items</TableHead>
-                  <TableHead className="text-center w-[120px]">Status</TableHead>
-                  <TableHead className="text-right w-[80px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {/* SKELETON LOADER */}
-                {loading && filteredData.length === 0 ? (
-                    Array.from({ length: 5 }).map((_, index) => (
-                        <TableRow key={`skeleton-${index}`}>
-                          {Array.from({ length: 4 }).map((_, colIndex) => (
-                              <TableCell key={`skel-col-${colIndex}`}>
-                                <div className="h-4 bg-slate-200 rounded animate-pulse w-full"></div>
-                              </TableCell>
-                          ))}
-                        </TableRow>
-                    ))
-                ) : paginatedData.length > 0 ? (
-                    // NORMAL DATA RENDERING
-                    paginatedData.map((storage) => {
-                      const itemCount = usageCounts[storage.id] || 0;
-                      const isActive = storage.isActive;
-
-                      return (
-                          <TableRow key={storage.id} className="hover:bg-slate-50/50 transition-colors">
-                            <TableCell>
-                              <span className="font-medium text-slate-900">{storage.name}</span>
-                            </TableCell>
-
-                            <TableCell className="text-center">
-                              {itemCount > 0 ? (
-                                  <Button
-                                      variant="ghost"
-                                      className="h-auto p-0 hover:bg-transparent group"
-                                      onClick={() => onViewLinkedItems(storage)}
-                                  >
-                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 group-hover:bg-blue-100 group-hover:border-blue-300 transition-colors cursor-pointer flex items-center gap-1.5">
-                                      <Package className="w-3 h-3" />
-                                      {itemCount} Items
-                                    </Badge>
-                                  </Button>
-                              ) : (
-                                  <span className="text-slate-400 text-sm font-medium px-4">-</span>
-                              )}
-                            </TableCell>
-
-                            <TableCell className="text-center">
-                              <Badge
-                                  variant="outline"
-                                  className={`whitespace-nowrap ${
-                                      isActive
-                                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                          : 'bg-slate-50 text-slate-600 border-slate-200'
-                                  }`}
-                              >
-                                {isActive ? 'Active' : 'Inactive'}
-                              </Badge>
-                            </TableCell>
-
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" className="h-8 w-8 p-0 text-slate-500 hover:text-slate-900">
-                                    <MoreHorizontal className="h-4 w-4"/>
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-40">
-                                  <DropdownMenuItem onClick={() => onEdit(storage)} className="cursor-pointer">
-                                    <Edit className="w-4 h-4 mr-2 text-blue-500"/> Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                      onClick={() => onDelete(storage)}
-                                      disabled={itemCount > 0}
-                                      className="text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    <Trash2 className="w-4 h-4 mr-2"/> Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                      );
-                    })
-                ) : (
-                    // POLISHED EMPTY STATE
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-48 text-center">
-                        <div className="flex flex-col items-center justify-center text-slate-500 space-y-3">
-                          <div className="p-3 bg-slate-50 rounded-full">
-                            <MapPinOff className="w-8 h-8 text-slate-400" />
-                          </div>
-                          <p className="font-medium text-slate-900">No locations found</p>
-                          <p className="text-sm">
-                            {searchQuery ? "Try adjusting your search criteria." : "Get started by adding a new storage location."}
-                          </p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination Footer */}
-          {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-                <p className="text-sm text-slate-500">
-                  Showing <span className="font-medium text-slate-900">{(page - 1) * PAGE_SIZE + 1}</span> to <span className="font-medium text-slate-900">{Math.min(page * PAGE_SIZE, filteredData.length)}</span> of <span className="font-medium text-slate-900">{filteredData.length}</span> locations
-                </p>
-                <div className="flex items-center space-x-2">
-                  <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page === 1}
-                      className="shadow-sm"
-                  >
-                    <ChevronLeft className="w-4 h-4 mr-1" /> Previous
-                  </Button>
-                  <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={page === totalPages}
-                      className="shadow-sm"
-                  >
-                    Next <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-                </div>
-              </div>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </CardContent>
+    </Card>
   );
 };

@@ -1,4 +1,4 @@
-// src/store/office/useOfficeStore.ts
+// src/store/supply/index.ts
 import { create } from 'zustand';
 import { SupplyItem, VwSupplyItem, SupplyUnit, SupplyStorageLocation, SupplyIAR, VwSupplyIAR, VwSupplyUniqueRawItem, VwSupplyGroupedItem } from '@/types';
 import {
@@ -27,7 +27,7 @@ interface SupplyItemState {
   supplies: SupplyItem[];
   vwSupplyGroupItems: VwSupplyItem[];
   vwSupplies: VwSupplyItem[];
-  vwSuppliesSummary: VwSupplyItem[];
+  vwSuppliesSummary: VwSupplyGroupedItem[];
   vwSupplyGroups: VwSupplyGroupedItem[];
   vwUniqueRawSupplies: VwSupplyUniqueRawItem[];
   totalSupplies: number;
@@ -75,12 +75,12 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
       const categories = await getCategories();
       set({ categories });
     } catch {
-      console.error('Failed to load categories');
+      toast.error('Failed to load categories');
     }
   },
 
   fetchSupplyGroupedItemLists: async (id, page = 1, pageSize = 10, search = '', categoryId, status, storageLocationId, vendorId) => {
-    set({ loading: true });
+    set({ loading: true, vwSupplyGroupItems: [], totalGroupItems: 0 });
     try {
       const result = await getVwSupplyGroupedItemLists(id, page, pageSize, search, categoryId, status, storageLocationId, vendorId);
       set({ vwSupplyGroupItems: result.items, totalGroupItems: result.totalCount });
@@ -105,12 +105,10 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
 
   fetchSupplySummary: async () => {
     try {
-      // Fetch a larger set for dashboard accuracy, or the backend should ideally have a summary endpoint.
-      // We use a high PageSize to get as many items as reasonable for stats.
-      const result = await getSupplyItems(1, 1000, '', undefined, undefined);
+      const result = await getVwSupplyGroupedItems(1, 1000, '', undefined, undefined);
       set({ vwSuppliesSummary: result.items, totalSupplies: result.totalCount });
     } catch {
-      console.error('Failed to load supply summary');
+      toast.error('Failed to load supply summary');
     }
   },
 
@@ -337,9 +335,9 @@ export const useSupplyStorageLocationStore = create<SupplyStorageLocationState>(
         isActive: storagelocation.isActive
       });
       await get().fetchSupplyStorageLocations();
-      toast.success('Supply Unit added');
+      toast.success('Storage location added');
     } catch (error) {
-      toast.error('Failed to add supply storagelocation');
+      toast.error('Failed to add storage location');
       throw error;
     }
   },
@@ -352,9 +350,9 @@ export const useSupplyStorageLocationStore = create<SupplyStorageLocationState>(
         isActive: updates.isActive
       });
       await get().fetchSupplyStorageLocations();
-      toast.success('Supply Unit updated');
+      toast.success('Storage location updated');
     } catch (error) {
-      toast.error('Failed to update supply storagelocation');
+      toast.error('Failed to update storage location');
       throw error;
     }
   },
@@ -362,13 +360,13 @@ export const useSupplyStorageLocationStore = create<SupplyStorageLocationState>(
   deleteSupplyStorageLocation: async (id) => {
     try {
       const { systemUserId, sessionKey } = getAuthParams();
-      await axiosInstance.delete(`/Supply/storagelocation/delete/${id}`, {
+      await axiosInstance.delete(`/Supply/storage-location/delete/${id}`, {
         params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
       });
       await get().fetchSupplyStorageLocations();
-      toast.success('Supply storagelocation deleted');
+      toast.success('Storage location deleted');
     } catch {
-      toast.error('Failed to delete supply storagelocation');
+      toast.error('Failed to delete storage location');
     }
   },
 }));
@@ -449,7 +447,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       const result = await getSupplyIARSummary();
       set({ iarsSummary: result });
     } catch {
-      console.error('Failed to load IAR summary');
+      toast.error('Failed to load delivery summary');
     }
   },
 
@@ -520,16 +518,20 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
   deleteSupplyIAR: async (id) => {
     try {
       const { systemUserId, sessionKey } = getAuthParams();
-      await axiosInstance.delete(`/Supply/iar/delete/${id}`, {
+      const response = await axiosInstance.delete(`/Supply/iar/delete/${id}`, {
         params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
       });
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to delete IAR');
+      }
 
       await get().fetchSupplyIARs();
       await get().fetchSupplyIARSummary();
       await useSupplyItemStore.getState().fetchSupplySummary();
       toast.success('IAR deleted successfully');
-    } catch {
-      toast.error('Failed to delete IAR');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete IAR');
+      throw error;
     }
   },
 }));
