@@ -10,8 +10,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
   Edit, Trash2, MoreHorizontal, Eye, PackageOpen, UploadCloud,
-  Search, Filter, ChevronLeft, ChevronRight, PackageSearch, Plus, Loader2, Truck
+  Search, Filter, ChevronLeft, ChevronRight, PackageSearch, Plus, Loader2, Truck,
+  Layers, CheckCircle2, Clock
 } from 'lucide-react';
+import { cn } from "@/components/ui/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -92,13 +94,42 @@ export const DeliveryRecordTable = ({
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-slate-400" />
                 <Select value={statusFilter} onValueChange={(val) => onParamsChange({ status: val, page: 1 })}>
-                  <SelectTrigger className="w-[140px] bg-white">
-                    <SelectValue placeholder="Status" />
+                  <SelectTrigger className={cn(
+                    "w-[140px] border rounded-lg h-9 px-3 transition-all focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-500 shadow-sm font-medium",
+                    statusFilter === 'all'
+                      ? "bg-slate-50/40 hover:bg-slate-100/40 text-slate-700 border-slate-200 hover:border-slate-300"
+                      : statusFilter === 'Received'
+                      ? "bg-blue-50/50 hover:bg-blue-100/40 text-blue-700 border-blue-200 hover:border-blue-300"
+                      : "bg-amber-50/50 hover:bg-amber-100/40 text-amber-700 border-amber-200 hover:border-amber-300"
+                  )}>
+                    <div className="flex items-center gap-2">
+                      {statusFilter === 'all' && <Layers className="w-4 h-4 text-slate-400" />}
+                      {statusFilter === 'Received' && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
+                      {statusFilter === 'Pending' && <Clock className="w-4 h-4 text-amber-500 animate-pulse" />}
+                      <span className="truncate">
+                        {statusFilter === 'all' ? 'All Status' : statusFilter}
+                      </span>
+                    </div>
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="Received">Received</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectContent className="rounded-xl shadow-xl border border-slate-100 p-1">
+                    <SelectItem value="all" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <Layers className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+                        All Status
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Received" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-500 mr-1.5 shrink-0" />
+                        Received
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Pending" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <Clock className="w-3.5 h-3.5 text-amber-500 mr-1.5 shrink-0" />
+                        Pending
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>

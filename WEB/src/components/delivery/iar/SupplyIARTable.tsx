@@ -4,8 +4,10 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import {
   Edit, Trash2, MoreHorizontal, Eye, CheckCircle, FileQuestion, Package,
-  Search, Filter, ChevronLeft, ChevronRight, PackageSearch, Plus, Loader2, ClipboardCheck
+  Search, Filter, ChevronLeft, ChevronRight, PackageSearch, Plus, Loader2, ClipboardCheck,
+  Layers, CheckCircle2, Clock, Building2, Store
 } from 'lucide-react';
+import { cn } from "@/components/ui/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -92,13 +94,42 @@ export const SupplyIARTable = ({
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-slate-400" />
                 <Select value={statusFilter} onValueChange={(val) => onParamsChange({ status: val, page: 1 })}>
-                  <SelectTrigger className="w-[130px] bg-white">
-                    <SelectValue placeholder="Status" />
+                  <SelectTrigger className={cn(
+                    "w-[140px] border rounded-lg h-9 px-3 transition-all focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-500 shadow-sm font-medium",
+                    statusFilter === 'all'
+                      ? "bg-slate-50/40 hover:bg-slate-100/40 text-slate-700 border-slate-200 hover:border-slate-300"
+                      : statusFilter === 'Approved'
+                      ? "bg-emerald-50/50 hover:bg-emerald-100/40 text-emerald-700 border-emerald-200 hover:border-emerald-300"
+                      : "bg-amber-50/50 hover:bg-amber-100/40 text-amber-700 border-amber-200 hover:border-amber-300"
+                  )}>
+                    <div className="flex items-center gap-2">
+                      {statusFilter === 'all' && <Layers className="w-4 h-4 text-slate-400" />}
+                      {statusFilter === 'Approved' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                      {statusFilter === 'Pending' && <Clock className="w-4 h-4 text-amber-500 animate-pulse" />}
+                      <span className="truncate">
+                        {statusFilter === 'all' ? 'All Status' : statusFilter}
+                      </span>
+                    </div>
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="Approved">Approved</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectContent className="rounded-xl shadow-xl border border-slate-100 p-1">
+                    <SelectItem value="all" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <Layers className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+                        All Status
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Approved" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mr-1.5 shrink-0" />
+                        Approved
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Pending" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <Clock className="w-3.5 h-3.5 text-amber-500 mr-1.5 shrink-0" />
+                        Pending
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -107,13 +138,33 @@ export const SupplyIARTable = ({
                 value={vendorFilter?.toString() || "all"}
                 onValueChange={(val) => onParamsChange({ vendorId: val === "all" ? undefined : Number(val), page: 1 })}
               >
-                <SelectTrigger className="w-[150px] bg-white">
-                  <SelectValue placeholder="Vendor" />
+                <SelectTrigger className={cn(
+                  "w-[160px] border rounded-lg h-9 px-3 transition-all focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-500 shadow-sm font-medium",
+                  !vendorFilter
+                    ? "bg-slate-50/40 hover:bg-slate-100/40 text-slate-700 border-slate-200 hover:border-slate-300"
+                    : "bg-amber-50/50 hover:bg-amber-100/40 text-amber-700 border-amber-200 hover:border-amber-300"
+                )}>
+                  <div className="flex items-center gap-2">
+                    <Store className={cn("w-4 h-4", !vendorFilter ? "text-slate-400" : "text-amber-500")} />
+                    <span className="truncate">
+                      {!vendorFilter ? 'All Vendors' : (vendors.find(v => v.id === vendorFilter)?.name || 'Select Vendor')}
+                    </span>
+                  </div>
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Vendors</SelectItem>
+                <SelectContent className="rounded-xl shadow-xl border border-slate-100 p-1">
+                  <SelectItem value="all" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                    <div className="flex items-center">
+                      <Store className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+                      All Vendors
+                    </div>
+                  </SelectItem>
                   {vendors.map(v => (
-                    <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>
+                    <SelectItem key={v.id} value={v.id.toString()} className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <Store className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+                        {v.name}
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -122,13 +173,33 @@ export const SupplyIARTable = ({
                 value={officeFilter?.toString() || "all"}
                 onValueChange={(val) => onParamsChange({ officeId: val === "all" ? undefined : Number(val), page: 1 })}
               >
-                <SelectTrigger className="w-[150px] bg-white">
-                  <SelectValue placeholder="Office" />
+                <SelectTrigger className={cn(
+                  "w-[160px] border rounded-lg h-9 px-3 transition-all focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-500 shadow-sm font-medium",
+                  !officeFilter
+                    ? "bg-slate-50/40 hover:bg-slate-100/40 text-slate-700 border-slate-200 hover:border-slate-300"
+                    : "bg-blue-50/50 hover:bg-blue-100/40 text-blue-700 border-blue-200 hover:border-blue-300"
+                )}>
+                  <div className="flex items-center gap-2">
+                    <Building2 className={cn("w-4 h-4", !officeFilter ? "text-slate-400" : "text-blue-500")} />
+                    <span className="truncate">
+                      {!officeFilter ? 'All Offices' : (offices.find(o => o.id === officeFilter)?.acronym || 'Select Office')}
+                    </span>
+                  </div>
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Offices</SelectItem>
+                <SelectContent className="rounded-xl shadow-xl border border-slate-100 p-1">
+                  <SelectItem value="all" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                    <div className="flex items-center">
+                      <Building2 className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+                      All Offices
+                    </div>
+                  </SelectItem>
                   {offices.map(o => (
-                    <SelectItem key={o.id} value={o.id.toString()}>{o.acronym}</SelectItem>
+                    <SelectItem key={o.id} value={o.id.toString()} className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <Building2 className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+                        {o.acronym}
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
