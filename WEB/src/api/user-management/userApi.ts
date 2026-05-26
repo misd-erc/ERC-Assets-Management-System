@@ -17,14 +17,35 @@ export interface UserListResponse {
   };
 }
 
-export const getUsers = async (page: number = 1, pageSize: number = 10): Promise<UserListResponse> => {
-  // Get system user ID and session key from localStorage
+export interface GetUsersParams {
+  page?: number;
+  pageSize?: number;
+  searchString?: string;
+  statusFilter?: string;
+  roleFilter?: string;
+}
+
+export const getUsers = async ({
+  page = 1,
+  pageSize = 10,
+  searchString,
+  statusFilter,
+  roleFilter,
+}: GetUsersParams = {}): Promise<UserListResponse> => {
   const systemUserId = secureStorage.getItem('systemUserId') || '';
   const sessionKey = secureStorage.getItem('sessionToken') || '';
 
-  const response = await axiosInstance.get<UserListResponse>(
-    `/Users/all?ActionBySystemUserId=${encodeURIComponent(systemUserId)}&SessionKey=${encodeURIComponent(sessionKey)}&pageNumber=${page}&pageSize=${pageSize}`
-  );
+  const response = await axiosInstance.get<UserListResponse>('/Users/all', {
+    params: {
+      ActionBySystemUserId: systemUserId,
+      SessionKey: sessionKey,
+      pageNumber: page,
+      pageSize,
+      ...(searchString?.trim() ? { searchString: searchString.trim() } : {}),
+      ...(statusFilter && statusFilter !== 'All' ? { statusFilter } : {}),
+      ...(roleFilter && roleFilter !== 'All' ? { roleFilter } : {}),
+    },
+  });
 
   // Map API response to User type
   const mappedItems = response.data.data.items.map((item: any) => ({
@@ -68,7 +89,7 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
   // return response.data;
 
   // Mock implementation
-  const response = await getUsers();
+  const response = await getUsers({ page: 1, pageSize: 10 });
   const user = response.data.items.find(u => u.id === parseInt(id, 10));
   if (!user) throw new Error('User not found');
   return { ...user, ...updates };

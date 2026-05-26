@@ -1,6 +1,7 @@
 ﻿import { create } from 'zustand';
 import { User, AuthStore } from '@/types';
-import { validateUser, validateEmployeeUser, validateOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '@/api/user-management/authApi';
+import { validateUser, validateEmployeeUser, validateOTP, resendOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '@/api/user-management/authApi';
+import { clearOtpExpiresAt, isMfaPending, parseStoredSystemUserId, setOtpExpiresAt } from '@/utils/otpTimerUtils';
 import { generateSessionToken, saveSession, loadSession, clearSession as clearAuthSession } from '@/services/authService';
 import { clearSession, setSessionToken, syncSessionIds, setSessionKey, getSessionToken } from '@/utils/sessionUtils';
 import { encrypt, decrypt } from '@/utils/encryption';
@@ -79,9 +80,16 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
           error: error instanceof Error ? error.message : 'Session expired'
         });
       }
+    } else if (isMfaPending()) {
+      const systemUserId = parseStoredSystemUserId();
+      console.log('[AuthStore] MFA pending, restoring state');
+      set({
+        requireMFA: true,
+        systemUserId: systemUserId ?? undefined,
+        loading: false,
+      });
     } else {
       console.log('[AuthStore] No session found');
-      // No token, redirect to login
       set({ loading: false });
     }
   },
@@ -96,6 +104,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       secureStorage.setItem('systemUserId', JSON.stringify(result.systemUserId));
 
       setSessionToken();
+
+      setOtpExpiresAt();
 
       set({
         requireMFA: true,
@@ -128,6 +138,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       setSessionToken();
+
+      setOtpExpiresAt();
 
       set({
         requireMFA: true,
@@ -200,6 +212,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // Remove user from localStorage as requested
       secureStorage.removeItem('user');
 
+      clearOtpExpiresAt();
+
       set({
         isAuthenticated: true,
         user: updatedUser,
@@ -216,6 +230,28 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         loading: false
       });
       return false;
+    }
+  },
+
+  resendMFA: async () => {
+    const { systemUserId } = get();
+    const resolvedSystemUserId = systemUserId ?? parseStoredSystemUserId();
+
+    if (!resolvedSystemUserId) {
+      return { success: false, message: 'No system user ID available' };
+    }
+
+    set({ loading: true, error: '' });
+
+    try {
+      const result = await resendOTP(resolvedSystemUserId);
+      setOtpExpiresAt();
+      set({ loading: false });
+      return { success: true, message: result.message };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to resend OTP';
+      set({ error: message, loading: false });
+      return { success: false, message };
     }
   },
 
@@ -265,6 +301,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   logout: () => {
     console.log('[AuthStore] Logging out...');
+    clearOtpExpiresAt();
     clearSession();
     clearAuthSession();
     

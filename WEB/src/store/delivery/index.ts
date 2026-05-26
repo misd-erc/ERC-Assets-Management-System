@@ -99,14 +99,18 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
   deleteDeliveryRecord: async (id) => {
     try {
       const { systemUserId, sessionKey } = getAuthParams();
-      await axiosInstance.delete(`/Delivery/record/delete/${id}`, {
+      const response = await axiosInstance.delete(`/Delivery/record/delete/${id}`, {
         params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
       });
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Failed to delete delivery record');
+      }
       await get().fetchDeliveryRecords();
       await get().fetchDeliveryRecordsSummary();
       toast.success('Delivery record deleted');
-    } catch {
-      toast.error('Failed to delete delivery record');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete delivery record');
+      throw error;
     }
   },
 
@@ -115,10 +119,11 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
     try {
       await uploadDeliveryProof(id, file);
       toast.success('Delivery proof uploaded successfully');
-      await get().fetchDeliveryRecords(); // Refresh the table
+      await get().fetchDeliveryRecords();
       await get().fetchDeliveryRecordsSummary();
     } catch (error: any) {
       toast.error(error.message || 'Failed to upload proof');
+      throw error;
     } finally {
       set({ loading: false });
     }

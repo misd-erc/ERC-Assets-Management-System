@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Plus, X, Package } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
 import { toast } from 'sonner';
+import { getEmployees } from '@/api/user-management/userApi';
+import { EmployeeSelector } from '@/components/transfers-returns/EmployeeSelector';
 
 // Components
 import { DeliveryItemModal } from './DeliveryItemModal';
@@ -27,6 +28,14 @@ interface Props {
 export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSubmit }: Props) => {
   const [loading, setLoading] = useState(false);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+  const [employees, setEmployees] = useState<Array<{
+    id: number;
+    firstName: string;
+    lastName: string;
+    employeeIdOriginal?: string | null;
+    officeName?: string;
+    divisionName?: string;
+  }>>([]);
 
   const [formData, setFormData] = useState({
     id: 0,
@@ -40,6 +49,23 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
 
   const [items, setItems] = useState<Partial<DeliveryRecordItem>[]>([]);
   const [removedItems, setRemovedItems] = useState<Partial<DeliveryRecordItem>[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      getEmployees().then((response) => {
+        if (response.success && response.data?.items) {
+          setEmployees(response.data.items.map(emp => ({
+            id: emp.id,
+            firstName: emp.firstName,
+            lastName: emp.lastName,
+            employeeIdOriginal: emp.employeeIdOriginal,
+            officeName: emp.office?.name,
+            divisionName: emp.division?.name,
+          })));
+        }
+      });
+    }
+  }, [open]);
 
   useEffect(() => {
     if (mode === 'edit' && record) {
@@ -147,6 +173,16 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
               </div>
             </div>
             
+            <div className="space-y-2">
+              <Label>Received By</Label>
+              <EmployeeSelector
+                employees={employees}
+                value={formData.employeeId > 0 ? formData.employeeId : null}
+                onSelect={(employeeId) => setFormData({ ...formData, employeeId })}
+                placeholder="Select receiving employee (optional)"
+              />
+            </div>
+
             <div className="space-y-2">
               <Label>Remarks</Label>
               <Textarea value={formData.remarks} onChange={e => setFormData({...formData, remarks: e.target.value})} />

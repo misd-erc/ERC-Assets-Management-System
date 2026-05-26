@@ -40,6 +40,7 @@ export const SupplyGroupedTabContent = () => {
         statusFilter={params.status}
         onParamsChange={setParams}
         onView={handleView}
+        viewActionLabel="View"
         loading={loading}
       />
       <SupplyGroupItemsModal

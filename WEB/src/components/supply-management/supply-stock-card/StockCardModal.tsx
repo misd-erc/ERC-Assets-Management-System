@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { useStockCard } from '@/hooks/supply/useStockCard';
 import { formatDate } from '@/utils/dateUtils';
 import { SupplyStockCardItem } from '@/types/supply/stockcard';
-import { ChevronLeft, ChevronRight, ClipboardList, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ClipboardList, Plus, Loader2 } from 'lucide-react';
 import { IssuanceBypassModal } from './IssuanceBypassModal';
 
 interface Props {
@@ -200,16 +200,16 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description }:
 
             {/* Center: Pagination controls */}
             <div className="w-1/3 flex justify-center">
-              {!loading && totalPages > 1 && (
+              {totalPages > 1 && (
                 <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handlePreviousPage}
-                    disabled={currentPage === 1}
+                    disabled={currentPage === 1 || loading}
                     className="shadow-sm h-8 px-3"
                   >
-                    <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                    {loading ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <ChevronLeft className="w-4 h-4 mr-1" />} Prev
                   </Button>
                   <div className="text-sm text-slate-600 font-medium px-2 whitespace-nowrap">
                     Page {currentPage} of {totalPages}
@@ -218,10 +218,10 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description }:
                     variant="outline"
                     size="sm"
                     onClick={handleNextPage}
-                    disabled={currentPage === totalPages}
+                    disabled={currentPage === totalPages || loading}
                     className="shadow-sm h-8 px-3"
                   >
-                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                    Next {loading ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <ChevronRight className="w-4 h-4 ml-1" />}
                   </Button>
                 </div>
               )}

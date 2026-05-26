@@ -262,6 +262,7 @@ const ITRDocument = ({
   transferType,
   nonPlantillaEmployee,
   signatureDate,
+  toEmployeePositionOffice,
 }: {
   rows: ITRRow[];
   itrNumber: string;
@@ -271,6 +272,7 @@ const ITRDocument = ({
   transferType: TransferType;
   nonPlantillaEmployee?: NormalizedEmployee | null;
   signatureDate?: string;
+  toEmployeePositionOffice?: string;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -426,7 +428,9 @@ const ITRDocument = ({
           </Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
-          <Text style={[styles.sigTopText, { marginBottom: 4, marginTop: 6 }]}>Accountable Officer</Text>
+          <Text style={[styles.sigTopText, { marginBottom: 4, marginTop: 6 }]}>
+            {toEmployeePositionOffice || ''}
+          </Text>
           <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 2 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 2 }]}>Position/Office</Text>
           <View>
@@ -456,7 +460,8 @@ export class ITRGenerator {
     transferType: TransferType,
     existingNumber?: string,
     signatureDate?: string,
-    nonPlantillaEmployee?: NormalizedEmployee | null
+    nonPlantillaEmployee?: NormalizedEmployee | null,
+    toEmployeePositionOffice?: string
   ): Promise<string> {
     const itrNumber = existingNumber || this.generateITRNumber();
     const rows = this.buildRowsFromItems(items);
@@ -471,6 +476,7 @@ export class ITRGenerator {
         transferType={transferType}
         signatureDate={signatureDate}
         nonPlantillaEmployee={nonPlantillaEmployee}
+        toEmployeePositionOffice={toEmployeePositionOffice}
       />
     ).toBlob();
 

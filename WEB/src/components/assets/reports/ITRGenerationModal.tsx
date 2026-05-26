@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 
 import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
 import { getITRTransferList, getTransferDetailsByNumber } from '@/api/asset/transferApi';
+import { getEmployees } from '@/api/user-management/userApi';
 import { ITRGenerator } from './ITRGenerator';
 
 interface ITRGenerationModalProps {
@@ -67,6 +68,10 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
     setLoading(true);
     try {
       const response = await getITRTransferList(1, 1000);
+      const employeeResponse = await getEmployees().catch(() => ({ data: { items: [] } } as any));
+      const employeeById = new Map<number, any>(
+        ((employeeResponse as any)?.data?.items || []).map((emp: any) => [emp.id, emp])
+      );
       console.log('ITR Transfer List Response:', response);
       console.log('ITR Items:', response.items);
 
@@ -97,6 +102,21 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         // Resolve to employee name string and id
         const toEmpFullName = item.plantillaEmployeeName || item.nonPlantillaEmployeeName || 'Unknown';
         const toEmpId = item.plantillaEmployeeId ?? item.nonPlantillaEmployeeId;
+        const toEmpDetails = toEmpId ? employeeById.get(toEmpId) : null;
+        const isToPlantilla = !!item.plantillaEmployeeId;
+        const toEmpPosition = item.plantillaEmployeeName
+          ? (item.plantillaEmployeePosition || toEmpDetails?.position?.name || '')
+          : (item.nonPlantillaEmployeePosition || toEmpDetails?.position?.name || '');
+        const toEmpOffice = item.plantillaEmployeeName
+          ? (item.plantillaEmployeeOffice || toEmpDetails?.office?.acronym || toEmpDetails?.office?.name || item.office?.acronym || item.office?.name || '')
+          : (item.nonPlantillaEmployeeOffice || toEmpDetails?.office?.acronym || toEmpDetails?.office?.name || item.office?.acronym || item.office?.name || '');
+        const toEmpDivision = item.plantillaEmployeeName
+          ? (item.plantillaEmployeeDivision || toEmpDetails?.division?.acronym || toEmpDetails?.division?.name || item.division?.acronym || item.division?.name || '')
+          : (item.nonPlantillaEmployeeDivision || toEmpDetails?.division?.acronym || toEmpDetails?.division?.name || item.division?.acronym || item.division?.name || '');
+        const toEmpPositionOffice = [
+          toEmpPosition,
+          [toEmpOffice, toEmpDivision].filter(Boolean).join(', '),
+        ].filter(Boolean).join(' - ');
 
         // Split full name into parts for the PDF generator
         const toEmpParts = toEmpFullName.trim().split(/\s+/);
@@ -147,6 +167,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
           nonPlantillaEmployeeId: nonPlantillaId ?? existingDetails?.nonPlantillaEmployeeId,
           nonPlantillaEmployeeName: nonPlantillaFullName ?? existingDetails?.nonPlantillaEmployeeName,
           nonPlantillaEmployee: nonPlantillaObj ?? existingDetails?.nonPlantillaEmployee,
+          toEmployeePositionOffice: toEmpPositionOffice || existingDetails?.toEmployeePositionOffice || '',
           items: mergedItems,
           dateAssigned: updatedRecord.dateAssigned,
           remarks: item.remarks || existingDetails?.remarks,
@@ -230,7 +251,8 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         itrDetails.transferType || 'REASSIGNMENT',
         itrDetails.transferNumber,
         signatureDate,
-        nonPlantillaEmp
+        nonPlantillaEmp,
+        itrDetails.toEmployeePositionOffice || ''
       );
       setPreviewUrl(url);
       setShowPreview(true);

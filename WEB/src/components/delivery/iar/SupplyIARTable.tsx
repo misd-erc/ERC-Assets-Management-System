@@ -2,10 +2,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { 
-  Edit, Trash2, MoreHorizontal, Eye, CheckCircle, FileQuestion, Package, 
-  Search, Filter, ChevronLeft, ChevronRight, PackageSearch 
+import {
+  Edit, Trash2, MoreHorizontal, Eye, CheckCircle, FileQuestion, Package,
+  Search, Filter, ChevronLeft, ChevronRight, PackageSearch, Plus, Loader2, ClipboardCheck,
+  Layers, CheckCircle2, Clock, Building2, Store
 } from 'lucide-react';
+import { cn } from "@/components/ui/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -34,8 +36,8 @@ interface Props {
   onParamsChange: (params: { page?: number; search?: string; status?: string; vendorId?: number; officeId?: number; divisionId?: number }) => void;
 }
 
-export const SupplyIARTable = ({ 
-  data, 
+export const SupplyIARTable = ({
+  data,
   totalCount,
   page,
   pageSize,
@@ -48,10 +50,10 @@ export const SupplyIARTable = ({
   offices = [],
   divisions = [],
   loading = false,
-  onAdd, 
-  onEdit, 
-  onDelete, 
-  onView, 
+  onAdd,
+  onEdit,
+  onDelete,
+  onView,
   onApprove,
   onParamsChange
 }: Props) => {
@@ -63,11 +65,17 @@ export const SupplyIARTable = ({
         <div className="flex flex-col space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <CardTitle className="text-xl text-slate-900">Inspection & Acceptance Reports</CardTitle>
+              <CardTitle className="text-xl text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                <ClipboardCheck className="w-5 h-5 text-blue-600" /> Inspection & Acceptance Reports
+              </CardTitle>
               <CardDescription>Manage official IAR documentation</CardDescription>
             </div>
-            <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700 shadow-sm">
-              Generate IAR
+            <Button
+              onClick={onAdd}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold shadow-md shadow-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 active:scale-95 transition-all duration-300 rounded-xl px-5 py-2.5 flex items-center gap-2 border-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Generate IAR</span>
             </Button>
           </div>
 
@@ -75,67 +83,136 @@ export const SupplyIARTable = ({
             <div className="relative w-full md:flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
-                  placeholder="Search IAR#, DR#, PO#, or Entity..."
-                  value={searchQuery}
-                  onChange={(e) => onParamsChange({ search: e.target.value, page: 1 })}
-                  className="pl-9 bg-white"
+                placeholder="Search IAR#, DR#, PO#, or Entity..."
+                value={searchQuery}
+                onChange={(e) => onParamsChange({ search: e.target.value, page: 1 })}
+                className="pl-9 bg-white"
               />
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-slate-400" />
                 <Select value={statusFilter} onValueChange={(val) => onParamsChange({ status: val, page: 1 })}>
-                  <SelectTrigger className="w-[130px] bg-white">
-                    <SelectValue placeholder="Status" />
+                  <SelectTrigger className={cn(
+                    "w-[140px] border rounded-lg h-9 px-3 transition-all focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-500 shadow-sm font-medium",
+                    statusFilter === 'all'
+                      ? "bg-slate-50/40 hover:bg-slate-100/40 text-slate-700 border-slate-200 hover:border-slate-300"
+                      : statusFilter === 'Approved'
+                      ? "bg-emerald-50/50 hover:bg-emerald-100/40 text-emerald-700 border-emerald-200 hover:border-emerald-300"
+                      : "bg-amber-50/50 hover:bg-amber-100/40 text-amber-700 border-amber-200 hover:border-amber-300"
+                  )}>
+                    <div className="flex items-center gap-2">
+                      {statusFilter === 'all' && <Layers className="w-4 h-4 text-slate-400" />}
+                      {statusFilter === 'Approved' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                      {statusFilter === 'Pending' && <Clock className="w-4 h-4 text-amber-500 animate-pulse" />}
+                      <span className="truncate">
+                        {statusFilter === 'all' ? 'All Status' : statusFilter}
+                      </span>
+                    </div>
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="Approved">Approved</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectContent className="rounded-xl shadow-xl border border-slate-100 p-1">
+                    <SelectItem value="all" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <Layers className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+                        All Status
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Approved" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mr-1.5 shrink-0" />
+                        Approved
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Pending" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <Clock className="w-3.5 h-3.5 text-amber-500 mr-1.5 shrink-0" />
+                        Pending
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <Select 
-                value={vendorFilter?.toString() || "all"} 
+              <Select
+                value={vendorFilter?.toString() || "all"}
                 onValueChange={(val) => onParamsChange({ vendorId: val === "all" ? undefined : Number(val), page: 1 })}
               >
-                <SelectTrigger className="w-[150px] bg-white">
-                  <SelectValue placeholder="Vendor" />
+                <SelectTrigger className={cn(
+                  "w-[160px] border rounded-lg h-9 px-3 transition-all focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-500 shadow-sm font-medium",
+                  !vendorFilter
+                    ? "bg-slate-50/40 hover:bg-slate-100/40 text-slate-700 border-slate-200 hover:border-slate-300"
+                    : "bg-amber-50/50 hover:bg-amber-100/40 text-amber-700 border-amber-200 hover:border-amber-300"
+                )}>
+                  <div className="flex items-center gap-2">
+                    <Store className={cn("w-4 h-4", !vendorFilter ? "text-slate-400" : "text-amber-500")} />
+                    <span className="truncate">
+                      {!vendorFilter ? 'All Vendors' : (vendors.find(v => v.id === vendorFilter)?.name || 'Select Vendor')}
+                    </span>
+                  </div>
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Vendors</SelectItem>
+                <SelectContent className="rounded-xl shadow-xl border border-slate-100 p-1">
+                  <SelectItem value="all" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                    <div className="flex items-center">
+                      <Store className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+                      All Vendors
+                    </div>
+                  </SelectItem>
                   {vendors.map(v => (
-                      <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>
+                    <SelectItem key={v.id} value={v.id.toString()} className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <Store className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+                        {v.name}
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select 
-                value={officeFilter?.toString() || "all"} 
+              <Select
+                value={officeFilter?.toString() || "all"}
                 onValueChange={(val) => onParamsChange({ officeId: val === "all" ? undefined : Number(val), page: 1 })}
               >
-                <SelectTrigger className="w-[150px] bg-white">
-                  <SelectValue placeholder="Office" />
+                <SelectTrigger className={cn(
+                  "w-[160px] border rounded-lg h-9 px-3 transition-all focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-500 shadow-sm font-medium",
+                  !officeFilter
+                    ? "bg-slate-50/40 hover:bg-slate-100/40 text-slate-700 border-slate-200 hover:border-slate-300"
+                    : "bg-blue-50/50 hover:bg-blue-100/40 text-blue-700 border-blue-200 hover:border-blue-300"
+                )}>
+                  <div className="flex items-center gap-2">
+                    <Building2 className={cn("w-4 h-4", !officeFilter ? "text-slate-400" : "text-blue-500")} />
+                    <span className="truncate">
+                      {!officeFilter ? 'All Offices' : (offices.find(o => o.id === officeFilter)?.acronym || 'Select Office')}
+                    </span>
+                  </div>
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Offices</SelectItem>
+                <SelectContent className="rounded-xl shadow-xl border border-slate-100 p-1">
+                  <SelectItem value="all" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                    <div className="flex items-center">
+                      <Building2 className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+                      All Offices
+                    </div>
+                  </SelectItem>
                   {offices.map(o => (
-                      <SelectItem key={o.id} value={o.id.toString()}>{o.acronym}</SelectItem>
+                    <SelectItem key={o.id} value={o.id.toString()} className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <Building2 className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+                        {o.acronym}
+                      </div>
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
               {(searchQuery || statusFilter !== "all" || vendorFilter || officeFilter) && (
-                  <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onParamsChange({ search: "", status: "all", vendorId: undefined, officeId: undefined, page: 1 })}
-                      className="text-slate-500 hover:text-slate-900 h-9"
-                  >
-                    Reset
-                  </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onParamsChange({ search: "", status: "all", vendorId: undefined, officeId: undefined, page: 1 })}
+                  className="text-slate-500 hover:text-slate-900 h-9"
+                >
+                  Reset
+                </Button>
               )}
             </div>
           </div>
@@ -162,11 +239,11 @@ export const SupplyIARTable = ({
             </TableHeader>
             <TableBody>
               {loading && data.length === 0 ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell colSpan={7}><div className="h-10 w-full bg-slate-100 animate-pulse rounded" /></TableCell>
-                      </TableRow>
-                  ))
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={7}><div className="h-10 w-full bg-slate-100 animate-pulse rounded" /></TableCell>
+                  </TableRow>
+                ))
               ) : data.length > 0 ? (
                 data.map((record: VwSupplyIAR) => (
                   <TableRow key={record.id} className="hover:bg-slate-50/50 transition-colors">
@@ -259,31 +336,31 @@ export const SupplyIARTable = ({
         </div>
 
         {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
-              <p className="text-sm text-slate-500">
-                Showing <span className="font-medium text-slate-900">{(page - 1) * pageSize + 1}</span> to <span className="font-medium text-slate-900">{Math.min(page * pageSize, totalCount)}</span> of <span className="font-medium text-slate-900">{totalCount}</span> results
-              </p>
-              <div className="flex items-center space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => onParamsChange({ page: Math.max(1, page - 1) })} 
-                  disabled={page === 1} 
-                  className="shadow-sm bg-white"
-                >
-                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => onParamsChange({ page: Math.min(totalPages, page + 1) })} 
-                  disabled={page === totalPages} 
-                  className="shadow-sm bg-white"
-                >
-                  Next <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              </div>
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+            <p className="text-sm text-slate-500">
+              Showing <span className="font-medium text-slate-900">{(page - 1) * pageSize + 1}</span> to <span className="font-medium text-slate-900">{Math.min(page * pageSize, totalCount)}</span> of <span className="font-medium text-slate-900">{totalCount}</span> results
+            </p>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onParamsChange({ page: Math.max(1, page - 1) })}
+                disabled={page === 1 || loading}
+                className="shadow-sm bg-white dark:bg-slate-900 border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-800 rounded-lg active:scale-95 transition-all duration-200"
+              >
+                {loading ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <ChevronLeft className="w-4 h-4 mr-1" />} Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onParamsChange({ page: Math.min(totalPages, page + 1) })}
+                disabled={page === totalPages || loading}
+                className="shadow-sm bg-white dark:bg-slate-900 border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-800 rounded-lg active:scale-95 transition-all duration-200"
+              >
+                Next {loading ? <Loader2 className="w-3.5 h-3.5 ml-1 animate-spin" /> : <ChevronRight className="w-4 h-4 ml-1" />}
+              </Button>
             </div>
+          </div>
         )}
       </CardContent>
     </Card>

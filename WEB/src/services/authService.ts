@@ -1,6 +1,7 @@
 ﻿import { User } from '@/types';
 import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
 import { secureStorage } from '@/utils/secureStorage';
+import { clearOtpExpiresAt } from '@/utils/otpTimerUtils';
 
 export interface SessionData {
   sessionToken: string;
@@ -84,6 +85,7 @@ export const loadSession = (): SessionData | null => {
  * Clears all session data from localStorage
  */
 export const clearSession = (): void => {
+  clearOtpExpiresAt();
   secureStorage.removeItem('sessionToken');
   secureStorage.removeItem('systemUserIdEncrypted');
   secureStorage.removeItem('systemUserId');

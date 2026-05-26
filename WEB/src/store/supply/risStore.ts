@@ -42,6 +42,7 @@ interface RISState {
     items: EditSupplyRISItem[],
     originalItems: VwSupplyRISItem[]   // needed to know which items to delete
   ) => Promise<number | null>;
+  updateRISApproval: (ris: EditSupplyRIS) => Promise<number | null>;
 }
 
 export const useRISStore = create<RISState>((set, get) => ({
@@ -75,7 +76,7 @@ export const useRISStore = create<RISState>((set, get) => ({
       const result = await getSupplyRISs(1, 1000, '', undefined);
       set({ risSummary: result.items });
     } catch {
-      console.error('Failed to load RIS summary');
+      toast.error('Failed to load RIS summary');
     }
   },
 
@@ -121,26 +122,24 @@ export const useRISStore = create<RISState>((set, get) => ({
   saveRIS: async (ris, items, originalItems) => {
     set({ loading: true });
     try {
-      // 1. Save the RIS header
       const risResult = await editSupplyRIS(ris);
       const risId = risResult.id;
       if (!risId) throw new Error('Failed to obtain RIS ID');
 
-      // 2. Delete items that are no longer present (compare originalItems with current items)
-      const itemsToDelete = originalItems.filter(
-        (oi) => !items.some((i) => i.id === oi.id && i.id !== 0)
-      );
-      for (const delItem of itemsToDelete) {
-        await deleteSupplyRISItem(delItem.id);
+      if (items.length > 0 || originalItems.length > 0) {
+        const itemsToDelete = originalItems.filter(
+          (oi) => !items.some((i) => i.id === oi.id && i.id !== 0)
+        );
+        for (const delItem of itemsToDelete) {
+          await deleteSupplyRISItem(delItem.id);
+        }
+
+        for (const item of items) {
+          const itemToSave = { ...item, risId };
+          await editSupplyRISItem(itemToSave);
+        }
       }
 
-      // 3. Save each item (create new or update existing)
-      for (const item of items) {
-        const itemToSave = { ...item, risId };
-        await editSupplyRISItem(itemToSave);
-      }
-
-      // 4. Refresh the list
       await get().fetchRISs();
       await get().fetchRISSummary();
       await useSupplyItemStore.getState().fetchSupplySummary();
@@ -148,6 +147,25 @@ export const useRISStore = create<RISState>((set, get) => ({
       return risId;
     } catch (error: any) {
       toast.error(error.message || 'Failed to save RIS');
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  updateRISApproval: async (ris) => {
+    set({ loading: true });
+    try {
+      const risResult = await editSupplyRIS(ris);
+      const risId = risResult.id;
+      if (!risId) throw new Error('Failed to update RIS approval');
+
+      await get().fetchRISs();
+      await get().fetchRISSummary();
+      await useSupplyItemStore.getState().fetchSupplySummary();
+      return risId;
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update RIS approval');
       throw error;
     } finally {
       set({ loading: false });

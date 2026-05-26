@@ -29,65 +29,123 @@ import {
     Page,
     Text,
     View,
-    StyleSheet
+    StyleSheet,
+    Font,
+    Image
 } from '@react-pdf/renderer';
 
-// --- PDF STYLES (Appendix 62 Format - Times New Roman) ---
-const pdfStyles = StyleSheet.create({
-    page: { padding: 35, fontSize: 8.5, fontFamily: 'Times-Roman' },
-
-    appendixText: { fontStyle: 'italic', textAlign: 'right', fontSize: 9, marginBottom: 12 },
-    mainTitle: { fontSize: 11, fontFamily: 'Times-Bold', textAlign: 'center', marginBottom: 12 },
-
-    entityRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-    entityText: { fontSize: 8.5, fontFamily: 'Times-Bold' },
-
-    // Outer Table Borders
-    tableContainer: { borderWidth: 1, borderColor: '#000' },
-
-    // Header Grid (Supplier / IAR Info etc)
-    headerGrid: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000' },
-    headerColLeft: { flex: 1.2, borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    headerColRight: { flex: 1, padding: 4 },
-    headerText: { fontSize: 8.5, marginBottom: 2.5 },
-
-    // Table Column Headers
-    colHeaderRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', backgroundColor: '#fdfdfd' },
-    colStockNo: { width: '18%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center' },
-    colDesc: { width: '47%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center' },
-    colUnit: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center' },
-    colQty: { width: '20%', padding: 4, justifyContent: 'center' },
-
-    cellHeaderBold: { fontSize: 8.5, fontFamily: 'Times-Bold', textAlign: 'center' },
-
-    // Row Data
-    dataRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000' },
-    cellTextCenter: { fontSize: 8.5, textAlign: 'center' },
-    cellTextLeft: { fontSize: 8.5, textAlign: 'left' },
-
-    // Split Columns for Inspection & Acceptance
-    splitHeaderRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', backgroundColor: '#fdfdfd' },
-    splitColLeft: { flex: 1, borderRightWidth: 1, borderRightColor: '#000', padding: 5, alignItems: 'center' },
-    splitColRight: { flex: 1, padding: 5, alignItems: 'center' },
-    splitHeaderTitle: { fontSize: 9, fontFamily: 'Times-Bold', textTransform: 'uppercase' },
-
-    splitContentRow: { flexDirection: 'row', minHeight: 140 },
-    splitContentLeft: { flex: 1, borderRightWidth: 1, borderRightColor: '#000', padding: 6 },
-    splitContentRight: { flex: 1, padding: 6 },
-
-    checkboxContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-    checkboxSquare: { width: 9, height: 9, borderWidth: 1, borderColor: '#000', marginRight: 5, justifyContent: 'center', alignItems: 'center' },
-    checkboxCheck: { fontSize: 7, fontFamily: 'Times-Bold' },
-    labelText: { fontSize: 8 },
-
-    signSection: { marginTop: 30, alignItems: 'center' },
-    signLine: { width: '80%', borderBottomWidth: 1, borderBottomColor: '#000', marginTop: 15, marginBottom: 3 },
-    signName: { fontSize: 8.5, fontFamily: 'Times-Bold', textAlign: 'center' },
-    signTitle: { fontSize: 8, fontStyle: 'italic', textAlign: 'center', color: '#333' },
-    signDateRow: { width: '80%', flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-    signDateLabel: { fontSize: 8 },
-    signDateVal: { fontSize: 8, fontFamily: 'Times-Bold' },
+Font.register({
+    family: 'Roboto',
+    src: 'https://fonts.gstatic.com/l/font?kit=KFOMCnqEu92Fr1ME7kSn66aGLdTylUAMQXC89YmC2DPNWubEbWmTmgDyuGwX7VwC5k1A1f4ix0E&skey=a0a0114a1dcab3ac&v=v51'
 });
+
+// --- STRICT APPENDIX 62 SPECIFICATIONS (Times New Roman) ---
+const pdfStyles = StyleSheet.create({
+    page: { padding: 30, fontSize: 8.5, fontFamily: 'Times-Roman', color: '#000' },
+
+    // Header Element Structures
+    headerContainer: { position: 'relative', marginBottom: 5, textAlign: 'center' },
+    stampText: { position: 'absolute', top: -10, right: 10, color: '#6b21a8', fontSize: 13, fontFamily: 'Times-Bold', opacity: 0.8 },
+    logoContainer: { position: 'absolute', top: 5, left: 25, width: 36, height: 36, borderRadius: 18, borderWidth: 1, borderColor: '#000', justifyContent: 'center', alignItems: 'center' },
+    logoText: { fontSize: 9, fontFamily: 'Times-Bold' },
+
+    repText: { fontSize: 8.5 },
+    ercText: { fontSize: 10.5, fontFamily: 'Times-Bold', marginVertical: 1 },
+    addressText: { fontSize: 8 },
+
+    titleContainer: { borderTopWidth: 1, borderColor: '#000', paddingVertical: 3, marginTop: 12, marginBottom: 4 },
+    mainTitle: { fontSize: 10.5, fontFamily: 'Times-Bold', textAlign: 'center' },
+
+    agencySection: { textAlign: 'center', marginBottom: 12 },
+    agencyText: { fontSize: 9, fontFamily: 'Times-Roman' },
+    agencyLabel: { fontSize: 8.5, fontFamily: 'Times-Roman', marginTop: 1 },
+
+    // Metadata Block Positioning (IAR No. and Date sitting stacked on top-right of metadata grid)
+    iarMetaWrapper: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 },
+    iarMetaBox: { width: 180 },
+    iarMetaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2 },
+    iarLabel: { width: 45, fontSize: 8.5 },
+    iarValueLine: { flex: 1, borderBottomWidth: 1, borderBottomColor: '#000', fontSize: 8.5, fontFamily: 'Times-Bold', textAlign: 'center', pb: 1 },
+
+    // Full Width Grid Implementation
+    mainGrid: { borderWidth: 1, borderColor: '#000' },
+    rowContainer: { flexDirection: 'row', minHeight: 18 },
+
+    // Exact Width Splits for Matrix Info
+    colSupplier: { width: '45%', padding: 3, flexDirection: 'row', alignItems: 'center' },
+    colSINo: { width: '35%', padding: 3, flexDirection: 'row', alignItems: 'center' },
+    colSIDate: { width: '20%', padding: 3, flexDirection: 'row', alignItems: 'center' },
+
+    colPODate: { width: '45%', padding: 3, flexDirection: 'row', alignItems: 'center' },
+    colDRNo: { width: '35%', padding: 3, flexDirection: 'row', alignItems: 'center' },
+    colDRDate: { width: '20%', padding: 3, flexDirection: 'row', alignItems: 'center' },
+
+    colReqOffice: { width: '45%', padding: 3, flexDirection: 'row', alignItems: 'center' },
+    colActualDel: { width: '55%', padding: 3, flexDirection: 'row', alignItems: 'center' },
+
+    labelText: { fontSize: 8.5 },
+    valueUnderline: { fontSize: 8.5, fontFamily: 'Times-Bold', borderBottomWidth: 1, borderBottomColor: '#000', flex: 1, marginLeft: 3, textAlign: 'center', minHeight: 12 },
+    valueClean: { fontSize: 8.5, fontFamily: 'Times-Bold', flex: 1, marginLeft: 3, textAlign: 'center' },
+
+    // Tabular Alignments
+    tableHeaderRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', minHeight: 18 },
+    tableDataRow: { flexDirection: 'row', minHeight: 16 },
+
+    wQty: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 3, justifyContent: 'center' },
+    wUnit: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 3, justifyContent: 'center' },
+    wDesc: { width: '50%', borderRightWidth: 1, borderRightColor: '#000', padding: 3, justifyContent: 'center' },
+    wPrice: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 3, justifyContent: 'center' },
+    wAmount: { width: '15%', padding: 3, justifyContent: 'center' },
+
+    textBoldCenter: { fontSize: 8.5, fontFamily: 'Times-Bold', textAlign: 'center' },
+    textCenter: { fontSize: 8.5, textAlign: 'center' },
+    textLeft: { fontSize: 8.5, textAlign: 'left' },
+    textRight: { fontSize: 8.5, textAlign: 'right' },
+
+    nothingFollows: { textAlign: 'center', fontSize: 8.5, fontStyle: 'italic', marginVertical: 10, width: '100%' },
+
+    // Total Alignment Fields
+    totalSummaryRow: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#000', borderBottomWidth: 1, borderBottomColor: '#000', minHeight: 18 },
+    totalSpacer: { width: '85%', borderRightWidth: 1, borderRightColor: '#000' },
+    totalValCell: { width: '15%', padding: 3, justifyContent: 'center' },
+
+    // Lower Splitted Container Sections
+    splitWrapperRow: { flexDirection: 'row', minHeight: 210 },
+    splitPaneLeft: { width: '50%', borderRightWidth: 1, borderRightColor: '#000', padding: 5, position: 'relative' },
+    splitPaneRight: { width: '50%', padding: 5, position: 'relative' },
+
+    innerHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    innerLineLabel: { fontSize: 8.5 },
+    innerLineValue: { fontSize: 8.5, fontFamily: 'Times-Bold', borderBottomWidth: 1, borderBottomColor: '#000', width: 90, textAlign: 'center' },
+
+    sectionTitleText: { fontSize: 9, fontFamily: 'Times-Bold', textAlign: 'center', marginVertical: 5, letterSpacing: 0.5 },
+
+    checkboxGroup: { flexDirection: 'row', marginTop: 8, paddingHorizontal: 4 },
+    checkboxBox: { width: 9, height: 9, borderWidth: 1, borderColor: '#000', marginRight: 5, justifyContent: 'center', alignItems: 'center', marginTop: 1 },
+    checkboxMark: { fontSize: 7, fontFamily: 'Times-Bold' },
+    checkboxLabel: { fontSize: 8.5, flex: 1, lineHeight: 1.2 },
+
+    signSectionLabel: { fontSize: 8.5, marginTop: 10, paddingHorizontal: 4 },
+
+    // Absolute signature block configurations matching image parameters
+    centerSignBlock: { alignItems: 'center', marginTop: 30 },
+    bottomSignBlock: { alignItems: 'center', marginTop: 25 },
+    horizontalLine: { width: '75%', borderBottomWidth: 1, borderBottomColor: '#000', marginBottom: 2 },
+    textSignName: { fontSize: 8.5, fontFamily: 'Times-Bold', textAlign: 'center' },
+    textSignTitle: { fontSize: 8, textAlign: 'center', lineHeight: 1.2 },
+
+    conformeWrapper: { flexDirection: 'row', marginTop: 25, paddingHorizontal: 6, alignItems: 'flex-end' },
+    conformeInlineLabel: { fontSize: 8.5, width: 50, marginBottom: 2 },
+    conformeLineBlock: { flex: 1, alignItems: 'center' },
+
+    // Footer Block Architecture
+    footerRemarksPane: { padding: 4, minHeight: 45, borderTopWidth: 1, borderTopColor: '#000' },
+    footerRemarksLabel: { fontSize: 8.5, fontFamily: 'Times-Bold' },
+    pesoSymbol: { fontFamily: 'Roboto' }
+});
+
+const formatPDFNumber = (n = 0) =>
+    n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // --- PDF DOCUMENT COMPONENT ---
 interface IARPDFProps {
@@ -96,115 +154,216 @@ interface IARPDFProps {
 }
 
 const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items }) => {
+    const totalAmount = items.reduce((sum, item) => sum + ((item.itemQuantity || 0) * (item.unitCost || 0)), 0);
+
     return (
         <Document>
             <Page size="A4" style={pdfStyles.page} orientation="portrait">
-                <Text style={pdfStyles.appendixText}>Appendix 62</Text>
-                <Text style={pdfStyles.mainTitle}>INSPECTION AND ACCEPTANCE REPORT</Text>
 
-                <View style={pdfStyles.entityRow}>
-                    <Text style={pdfStyles.entityText}>Entity Name : {iar.entityName || 'ENERGY REGULATORY COMMISSION'}</Text>
-                    <Text style={pdfStyles.entityText}>Fund Cluster : {iar.fundCluster || '________________________'}</Text>
-                </View>
+                {/* Unified Outer Container Grid */}
+                <View style={pdfStyles.mainGrid}>
 
-                {/* Main Table Wrapper */}
-                <View style={pdfStyles.tableContainer}>
-
-                    {/* Header Info Grid */}
-                    <View style={pdfStyles.headerGrid}>
-                        <View style={pdfStyles.headerColLeft}>
-                            <Text style={pdfStyles.headerText}>Supplier : {iar.vendor?.name || ''}</Text>
-                            <Text style={pdfStyles.headerText}>PO No./Date : {iar.poNumber ? `${iar.poNumber} / ${formatDate(iar.poDate)}` : ''}</Text>
-                            <Text style={pdfStyles.headerText}>Requisitioning Office/Dept : {iar.office?.acronym || 'N/A'} {iar.division?.acronym ? `/ ${iar.division.acronym}` : ''}</Text>
-                            <Text style={pdfStyles.headerText}>Responsibility Center Code : {iar.centerCode || ''}</Text>
+                    {/* Main Identity Headers */}
+                    <View style={[pdfStyles.headerContainer, { paddingTop: 10, paddingHorizontal: 10 }]}>
+                        <View style={[pdfStyles.logoContainer, { top: 12, left: 15 }]}>
+                            <Image src="/images/erc-logo.png" style={{ width: 34, height: 34, borderRadius: 17 }} />
                         </View>
-                        <View style={pdfStyles.headerColRight}>
-                            <Text style={pdfStyles.headerText}>IAR No. : {iar.iarNumber || ''}</Text>
-                            <Text style={pdfStyles.headerText}>Date : {formatDate(iar.iarNumberDate)}</Text>
-                            <Text style={pdfStyles.headerText}>Invoice No. : {iar.iarInvoiceNumber || ''}</Text>
-                            <Text style={pdfStyles.headerText}>Date : {formatDate(iar.iarInvoiceNumberDate)}</Text>
+                        <Text style={pdfStyles.repText}>Republic of the Philippines</Text>
+                        <Text style={pdfStyles.ercText}>ENERGY REGULATORY COMMISSION</Text>
+                        <Text style={pdfStyles.addressText}>Exquadra Tower, 1 Jade Drive, Brgy. San Antonio, Ortigas Center, Pasig City</Text>
+                    </View>
+
+                    {/* Section Header Labels */}
+                    <View style={pdfStyles.titleContainer}>
+                        <Text style={pdfStyles.mainTitle}>INSPECTION AND ACCEPTANCE REPORT</Text>
+                    </View>
+                    <View style={pdfStyles.agencySection}>
+                        <Text style={pdfStyles.agencyText}>Energy Regulatory Commission</Text>
+                        <Text style={pdfStyles.agencyLabel}>Agency</Text>
+                    </View>
+
+                    {/* Reference Identifiers Block */}
+                    <View style={[pdfStyles.iarMetaWrapper, { paddingRight: 10, marginBottom: 0 }]}>
+                        <View style={pdfStyles.iarMetaBox}>
+                            <View style={pdfStyles.iarMetaRow}>
+                                <Text style={pdfStyles.iarLabel}>IAR No.:</Text>
+                                <Text style={pdfStyles.iarValueLine}>{iar.iarNumber}</Text>
+                            </View>
+                            <View style={pdfStyles.iarMetaRow}>
+                                <Text style={pdfStyles.iarLabel}>Date:</Text>
+                                <Text style={pdfStyles.iarValueLine}>{formatDate(iar.iarNumberDate)}</Text>
+                            </View>
                         </View>
                     </View>
 
-                    {/* Table Column Headers */}
-                    <View style={pdfStyles.colHeaderRow}>
-                        <View style={pdfStyles.colStockNo}><Text style={pdfStyles.cellHeaderBold}>Stock/Property No.</Text></View>
-                        <View style={pdfStyles.colDesc}><Text style={pdfStyles.cellHeaderBold}>Description</Text></View>
-                        <View style={pdfStyles.colUnit}><Text style={pdfStyles.cellHeaderBold}>Unit</Text></View>
-                        <View style={pdfStyles.colQty}><Text style={pdfStyles.cellHeaderBold}>Quantity</Text></View>
+                    {/* Primary Logistics Mapping Row */}
+                    <View style={pdfStyles.rowContainer}>
+                        <View style={pdfStyles.colSupplier}>
+                            <Text style={pdfStyles.labelText}>Supplier :</Text>
+                            <Text style={pdfStyles.valueUnderline}>{iar.vendor?.name}</Text>
+                        </View>
+                        <View style={pdfStyles.colSINo}>
+                            <Text style={pdfStyles.labelText}>S.I. No. :</Text>
+                            <Text style={pdfStyles.valueUnderline}>{iar.iarInvoiceNumber}</Text>
+                        </View>
+                        <View style={pdfStyles.colSIDate}>
+                            <Text style={pdfStyles.labelText}>Date :</Text>
+                            <Text style={pdfStyles.valueUnderline}>{formatDate(iar.iarInvoiceNumberDate)}</Text>
+                        </View>
                     </View>
 
-                    {/* Items Data */}
+                    {/* Secondary Transaction Mapping Row */}
+                    <View style={pdfStyles.rowContainer}>
+                        <View style={pdfStyles.colPODate}>
+                            <Text style={pdfStyles.labelText}>P.O. No. :</Text>
+                            <Text style={[pdfStyles.valueUnderline, { flex: 0.5 }]}>{iar.poNumber}</Text>
+                            <Text style={[pdfStyles.labelText, { marginLeft: 4 }]}>Date :</Text>
+                            <Text style={[pdfStyles.valueUnderline, { flex: 0.5 }]}>{formatDate(iar.poDate)}</Text>
+                        </View>
+                        <View style={pdfStyles.colDRNo}>
+                            <Text style={pdfStyles.labelText}>D.R. No. :</Text>
+                            <Text style={pdfStyles.valueUnderline}>{iar.drNumber}</Text>
+                        </View>
+                        <View style={pdfStyles.colDRDate}>
+                            <Text style={pdfStyles.labelText}>Date :</Text>
+                            <Text style={pdfStyles.valueUnderline}>{formatDate(iar.actualDeliveryDate)}</Text>
+                        </View>
+                    </View>
+
+                    {/* Department Allocation Row */}
+                    <View style={[pdfStyles.rowContainer, { borderBottomWidth: 1, borderBottomColor: '#000' }]}>
+                        <View style={pdfStyles.colReqOffice}>
+                            <Text style={pdfStyles.labelText}>Requisitioning Office :</Text>
+                            <Text style={pdfStyles.valueClean}>{iar.office?.name || 'Financial and Administrative Service'}</Text>
+                        </View>
+                        <View style={pdfStyles.colActualDel}>
+                            <Text style={pdfStyles.labelText}>Date of Actual Delivery :</Text>
+                            <Text style={pdfStyles.valueUnderline}>{formatDate(iar.actualDeliveryDate)}</Text>
+                        </View>
+                    </View>
+
+                    {/* Grid Core Headers */}
+                    <View style={pdfStyles.tableHeaderRow}>
+                        <View style={pdfStyles.wQty}><Text style={pdfStyles.textBoldCenter}>Quantity</Text></View>
+                        <View style={pdfStyles.wUnit}><Text style={pdfStyles.textBoldCenter}>Unit</Text></View>
+                        <View style={pdfStyles.wDesc}><Text style={pdfStyles.textBoldCenter}>Description</Text></View>
+                        <View style={pdfStyles.wPrice}><Text style={pdfStyles.textBoldCenter}>Unit Price (<Text style={pdfStyles.pesoSymbol}>₱</Text>)</Text></View>
+                        <View style={pdfStyles.wAmount}><Text style={pdfStyles.textBoldCenter}>Amount (<Text style={pdfStyles.pesoSymbol}>₱</Text>)</Text></View>
+                    </View>
+
+                    {/* Line Items Structural Population */}
                     {items.map((item, idx) => (
-                        <View key={idx} style={pdfStyles.dataRow}>
-                            <View style={pdfStyles.colStockNo}><Text style={pdfStyles.cellTextCenter}>{item.code || '—'}</Text></View>
-                            <View style={pdfStyles.colDesc}>
-                                <Text style={pdfStyles.cellTextLeft}>
+                        <View key={idx} style={pdfStyles.tableDataRow}>
+                            <View style={pdfStyles.wQty}><Text style={pdfStyles.textCenter}>{item.itemQuantity ?? 0}</Text></View>
+                            <View style={pdfStyles.wUnit}><Text style={pdfStyles.textCenter}>{item.measurementUnit?.name || 'pack'}</Text></View>
+                            <View style={pdfStyles.wDesc}>
+                                <Text style={pdfStyles.textLeft}>
                                     {item.itemDescription || ''}
                                     {item.itemSpecification ? ` (${item.itemSpecification})` : ''}
                                 </Text>
                             </View>
-                            <View style={pdfStyles.colUnit}><Text style={pdfStyles.cellTextCenter}>{item.measurementUnit?.name || '—'}</Text></View>
-                            <View style={pdfStyles.colQty}><Text style={pdfStyles.cellTextCenter}>{item.itemQuantity ?? 0}</Text></View>
+                            <View style={pdfStyles.wPrice}><Text style={pdfStyles.textRight}><Text style={pdfStyles.pesoSymbol}>₱</Text>{formatPDFNumber(item.unitCost || 0)}</Text></View>
+                            <View style={pdfStyles.wAmount}><Text style={pdfStyles.textRight}><Text style={pdfStyles.pesoSymbol}>₱</Text>{formatPDFNumber((item.itemQuantity || 0) * (item.unitCost || 0))}</Text></View>
                         </View>
                     ))}
 
-                    {/* Inspection & Acceptance Header split */}
-                    <View style={pdfStyles.splitHeaderRow}>
-                        <View style={pdfStyles.splitColLeft}>
-                            <Text style={pdfStyles.splitHeaderTitle}>Inspection</Text>
+                    {/* Nothing Follows Break Indicator Row */}
+                    <View style={pdfStyles.tableDataRow}>
+                        <View style={pdfStyles.wQty}><Text> </Text></View>
+                        <View style={pdfStyles.wUnit}><Text> </Text></View>
+                        <View style={pdfStyles.wDesc}>
+                            <Text style={pdfStyles.nothingFollows}>***nothing follows***</Text>
                         </View>
-                        <View style={pdfStyles.splitColRight}>
-                            <Text style={pdfStyles.splitHeaderTitle}>Acceptance</Text>
+                        <View style={pdfStyles.wPrice}><Text> </Text></View>
+                        <View style={pdfStyles.wAmount}><Text> </Text></View>
+                    </View>
+
+                    {/* Financial Aggregate Aggregation Field Summary */}
+                    <View style={pdfStyles.totalSummaryRow}>
+                        <View style={pdfStyles.totalSpacer}><Text> </Text></View>
+                        <View style={pdfStyles.totalValCell}>
+                            <Text style={[pdfStyles.textRight, { fontFamily: 'Times-Bold' }]}><Text style={pdfStyles.pesoSymbol}>₱</Text>{formatPDFNumber(totalAmount)}</Text>
                         </View>
                     </View>
 
-                    {/* Inspection & Acceptance Split Content */}
-                    <View style={pdfStyles.splitContentRow}>
-                        {/* Inspection Box */}
-                        <View style={pdfStyles.splitContentLeft}>
-                            <View style={pdfStyles.checkboxContainer}>
-                                <View style={pdfStyles.checkboxSquare}><Text style={pdfStyles.checkboxCheck}>✓</Text></View>
-                                <Text style={pdfStyles.labelText}>Inspected, verified and found OK as to quantity</Text>
-                            </View>
-                            <Text style={[pdfStyles.labelText, { marginLeft: 14, marginBottom: 12 }]}>and specifications.</Text>
+                    {/* Split Panel Architecture block (Inspection vs Acceptance workflows) */}
+                    <View style={pdfStyles.splitWrapperRow}>
 
-                            <View style={pdfStyles.signSection}>
-                                <View style={pdfStyles.signLine}></View>
-                                <Text style={pdfStyles.signName}>INSPECTION COMMITTEE MEMBER</Text>
-                                <Text style={pdfStyles.signTitle}>Inspection Officer / Committee</Text>
-                                <View style={pdfStyles.signDateRow}>
-                                    <Text style={pdfStyles.signDateLabel}>Date :</Text>
-                                    <Text style={pdfStyles.signDateVal}>{iar.actualDeliveryDate ? formatDate(iar.actualDeliveryDate) : '________________'}</Text>
+                        {/* LEFT SECTION: INSPECTION */}
+                        <View style={pdfStyles.splitPaneLeft}>
+                            <View style={pdfStyles.innerHeaderRow}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Text style={pdfStyles.innerLineLabel}>Date Inspected: </Text>
+                                    <Text style={pdfStyles.innerLineValue}>
+                                        {iar.actualDeliveryDate ? formatDate(iar.actualDeliveryDate) : ' '}
+                                    </Text>
+                                </View>
+                            </View>
+
+                            <Text style={pdfStyles.sectionTitleText}>INSPECTION</Text>
+
+                            <View style={pdfStyles.checkboxGroup}>
+                                <View style={pdfStyles.checkboxBox}>
+                                    <Text style={pdfStyles.checkboxMark}>✓</Text>
+                                </View>
+                                <Text style={pdfStyles.checkboxLabel}>Inspected, verified and found in order as to quantity and specifications</Text>
+                            </View>
+
+                            <Text style={pdfStyles.signSectionLabel}>Inspected by:</Text>
+
+                            <View style={pdfStyles.centerSignBlock}>
+                                <View style={pdfStyles.horizontalLine}></View>
+                                <Text style={pdfStyles.textSignName}>ARTURO D. PELARAZA</Text>
+                                <Text style={pdfStyles.textSignTitle}>Chairperson</Text>
+                                <Text style={pdfStyles.textSignTitle}>Technical Property Inspection Committee</Text>
+                            </View>
+
+                            <View style={pdfStyles.conformeWrapper}>
+                                <Text style={pdfStyles.conformeInlineLabel}>Conforme:</Text>
+                                <View style={pdfStyles.conformeLineBlock}>
+                                    <View style={pdfStyles.horizontalLine}></View>
+                                    <Text style={pdfStyles.textSignName}>CHERRY LYNN S. GONZALES</Text>
+                                    <Text style={pdfStyles.textSignTitle}>End-user</Text>
                                 </View>
                             </View>
                         </View>
 
-                        {/* Acceptance Box */}
-                        <View style={pdfStyles.splitContentRight}>
-                            <View style={pdfStyles.checkboxContainer}>
-                                <View style={pdfStyles.checkboxSquare}><Text style={pdfStyles.checkboxCheck}>✓</Text></View>
-                                <Text style={pdfStyles.labelText}>Received :</Text>
-                            </View>
-                            <View style={[pdfStyles.checkboxContainer, { marginLeft: 14 }]}>
-                                <View style={pdfStyles.checkboxSquare}><Text style={pdfStyles.checkboxCheck}>✓</Text></View>
-                                <Text style={pdfStyles.labelText}>Complete</Text>
-                            </View>
-                            <View style={[pdfStyles.checkboxContainer, { marginLeft: 14 }]}>
-                                <View style={pdfStyles.checkboxSquare}></View>
-                                <Text style={pdfStyles.labelText}>Partial (specify quantity) : ______________</Text>
-                            </View>
-
-                            <View style={pdfStyles.signSection}>
-                                <View style={pdfStyles.signLine}></View>
-                                <Text style={pdfStyles.signName}>PROPERTY CUSTODIAN</Text>
-                                <Text style={pdfStyles.signTitle}>Supply and/or Property Custodian</Text>
-                                <View style={pdfStyles.signDateRow}>
-                                    <Text style={pdfStyles.signDateLabel}>Date :</Text>
-                                    <Text style={pdfStyles.signDateVal}>{iar.iarNumberDate ? formatDate(iar.iarNumberDate) : '________________'}</Text>
+                        {/* RIGHT SECTION: ACCEPTANCE */}
+                        <View style={pdfStyles.splitPaneRight}>
+                            <View style={pdfStyles.innerHeaderRow}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Text style={pdfStyles.innerLineLabel}>Date Accepted: </Text>
+                                    <Text style={pdfStyles.innerLineValue}>
+                                        {iar.iarNumberDate ? formatDate(iar.iarNumberDate) : ' '}
+                                    </Text>
                                 </View>
                             </View>
+
+                            <Text style={pdfStyles.sectionTitleText}>ACCEPTANCE</Text>
+
+                            <View style={pdfStyles.checkboxGroup}>
+                                <View style={pdfStyles.checkboxBox}>
+                                    <Text style={pdfStyles.checkboxMark}>✓</Text>
+                                </View>
+                                <Text style={pdfStyles.checkboxLabel}>Complete</Text>
+                            </View>
+
+                            <View style={[pdfStyles.checkboxGroup, { marginTop: 2 }]}>
+                                <View style={pdfStyles.checkboxBox}></View>
+                                <Text style={pdfStyles.checkboxLabel}>Partial (Pls. specify) __________________</Text>
+                            </View>
+
+                            <View style={pdfStyles.bottomSignBlock}>
+                                <View style={pdfStyles.horizontalLine}></View>
+                                <Text style={pdfStyles.textSignName}>ROSELLE M. GUINTU</Text>
+                                <Text style={pdfStyles.textSignTitle}>Administrative Officer IV</Text>
+                            </View>
                         </View>
+                    </View>
+
+                    {/* Supplementary Remarks Terminal Panel Field */}
+                    <View style={pdfStyles.footerRemarksPane}>
+                        <Text style={pdfStyles.footerRemarksLabel}>REMARKS:</Text>
                     </View>
 
                 </View>
@@ -233,7 +392,6 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
     const [isPreviewLoading, setIsPreviewLoading] = useState(false);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-    // Load initial records on open
     useEffect(() => {
         if (isOpen) {
             setSearchTerm('');
@@ -241,29 +399,29 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
             setHasSearched(true);
             setSelectedIar(null);
             setSelectedDelivery(null);
-            
+
             setLoading(true);
             Promise.all([
                 getSupplyIARs(1, 200, ''),
                 getDeliveryRecords(1, 200, '', 'all')
             ])
-            .then(([iarResult, deliveryResult]) => {
-                const iarsWithDR = iarResult.items.filter(iar => iar.drNumber && iar.drNumber.trim() !== '');
-                setIarList(iarsWithDR);
-                setDeliveryRecords(deliveryResult.items);
-            })
-            .catch(() => {
-                toast.error("Failed to load initial report records.");
-            })
-            .finally(() => {
-                setLoading(false);
-            });
+                .then(([iarResult, deliveryResult]) => {
+                    const iarsWithDR = iarResult.items.filter(iar => iar.drNumber !== undefined && iar.drNumber !== null && String(iar.drNumber).trim() !== '');
+                    setIarList(iarsWithDR);
+                    setDeliveryRecords(deliveryResult.items);
+                })
+                .catch(() => {
+                    toast.error("Failed to load initial report records.");
+                })
+                .finally(() => {
+                    setLoading(false);
+                });
         }
     }, [isOpen]);
 
     const handleSearchSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         setHasSearched(true);
         setActiveSearchQuery(searchTerm);
         setSelectedIar(null);
@@ -275,7 +433,7 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
                 getSupplyIARs(1, 200, searchTerm),
                 getDeliveryRecords(1, 200, searchTerm, 'all')
             ]);
-            const iarsWithDR = iarResult.items.filter(iar => iar.drNumber && iar.drNumber.trim() !== '');
+            const iarsWithDR = iarResult.items.filter(iar => iar.drNumber !== undefined && iar.drNumber !== null && String(iar.drNumber).trim() !== '');
             setIarList(iarsWithDR);
             setDeliveryRecords(deliveryResult.items);
         } catch (error) {
@@ -294,13 +452,11 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
 
         setSelectedIar(iar);
 
-        // Find match in our preloaded delivery records list
         const match = deliveryRecords.find(dr => dr.id === iar.recordId || dr.drNumber?.toString() === iar.drNumber?.toString());
-        
+
         if (match && match.items && match.items.length > 0) {
             setSelectedDelivery(match);
         } else {
-            // Fallback: try querying single item endpoint (might be missing items in some backend configs, but is a safe fallback)
             setIsPreviewLoading(true);
             try {
                 if (iar.recordId) {
@@ -375,7 +531,7 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
                                 Inspection & Acceptance Report (IAR)
                             </DialogTitle>
                             <DialogDescription className="mt-1.5 text-slate-500">
-                                Search and select an IAR record below to view details and generate the official Appendix 62 PDF report.
+                                Search and select an IAR record below to view details and generate the official PDF report.
                             </DialogDescription>
                         </div>
                         <div className="flex items-center gap-3">

@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Eye, Edit, Trash2, Package } from 'lucide-react';
 import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { getEmployees } from '@/api/user-management/userApi';
+import { isPlantillaEmploymentType } from '@/utils/employeeUtils';
 
 interface AssetsTableProps {
   assets: Asset[];
@@ -75,57 +76,72 @@ export function AssetsTable({
     };
   }
 
-  const getPlantillaEmployeeName = (asset: Asset): string => {
+  const formatMovementEmployeeName = (emp: any): string => {
+    const firstName = emp?.firstName ?? "";
+    const middleName = emp?.middleName ?? "";
+    const lastName = emp?.lastName ?? "";
+    const suffixName = emp?.suffixName ?? "";
+    const employeeIdOriginal = emp?.employeeIdOriginal ?? "";
+    return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''}`;
+  };
+
+  const getLatestActiveMovement = (asset: Asset) => {
     const activeMovements = (asset.movements || []).filter(m => m.isActive !== false);
-    if (activeMovements.length > 0) {
-      const latestMovement = activeMovements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+    if (activeMovements.length === 0) return null;
+    return [...activeMovements].sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+  };
 
-      // First try embedded employee (plantilla only)
-      if (latestMovement.employee && Array.isArray(latestMovement.employee) && latestMovement.employee.length > 0) {
-        const emp = latestMovement.employee[0];
-        if ((emp.employmentType?.id ?? 1) === 1) {
-          const firstName = emp.firstName ?? "";
-          const middleName = emp.middleName ?? "";
-          const lastName = emp.lastName ?? "";
-          const suffixName = emp.suffixName ?? "";
-          const employeeIdOriginal = emp.employeeIdOriginal ?? "";
-          return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''}`;
-        }
-      }
+  const getPlantillaEmployeeName = (asset: Asset): string => {
+    const latestMovement = getLatestActiveMovement(asset);
+    if (!latestMovement) return 'N/A';
 
-      // Fallback to ID lookup
-      if (latestMovement.plantillaEmployeeId) {
-        const employee = employees.find((e: NormalizedEmployee) => e.id === latestMovement.plantillaEmployeeId);
-        return employee ? employee.label : 'Unknown Employee';
-      }
+    const movementEmployees = Array.isArray(latestMovement.employee) ? latestMovement.employee : [];
+    const plantillaById = latestMovement.plantillaEmployeeId
+      ? movementEmployees.find((emp: any) => emp?.id === latestMovement.plantillaEmployeeId)
+      : undefined;
+    const plantillaByType = movementEmployees.find((emp: any) =>
+      isPlantillaEmploymentType(emp?.employmentType?.name)
+    );
+    const plantillaEmployee = plantillaById ?? plantillaByType;
+
+    if (plantillaEmployee) {
+      return formatMovementEmployeeName(plantillaEmployee);
     }
+
+    if (latestMovement.plantillaEmployeeId) {
+      const employee = employees.find((e: NormalizedEmployee) => e.id === latestMovement.plantillaEmployeeId);
+      return employee ? employee.label : 'Unknown Employee';
+    }
+
     return 'N/A';
   };
 
   const getNonPlantillaEmployeeName = (asset: Asset): string => {
-    const activeMovements = (asset.movements || []).filter(m => m.isActive !== false);
-    if (activeMovements.length > 0) {
-      const latestMovement = activeMovements.sort((a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime())[0];
+    const latestMovement = getLatestActiveMovement(asset);
+    if (!latestMovement) return 'N/A';
 
-      // First try embedded employee (non-plantilla only)
-      if (latestMovement.employee && Array.isArray(latestMovement.employee) && latestMovement.employee.length > 0) {
-        const emp = latestMovement.employee[0];
-        if ((emp.employmentType?.id ?? 1) !== 1) {
-          const firstName = emp.firstName ?? "";
-          const middleName = emp.middleName ?? "";
-          const lastName = emp.lastName ?? "";
-          const suffixName = emp.suffixName ?? "";
-          const employeeIdOriginal = emp.employeeIdOriginal ?? "";
-          return `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''}`;
-        }
-      }
+    const movementEmployees = Array.isArray(latestMovement.employee) ? latestMovement.employee : [];
+    const nonPlantillaId = latestMovement.nonPlantillaEmployeeId && latestMovement.nonPlantillaEmployeeId > 0
+      ? latestMovement.nonPlantillaEmployeeId
+      : null;
 
-      // Fallback to ID lookup
-      if (latestMovement.nonPlantillaEmployeeId) {
-        const employee = employees.find((e: NormalizedEmployee) => e.id === latestMovement.nonPlantillaEmployeeId);
-        return employee ? employee.label : 'Unknown Employee';
-      }
+    const nonPlantillaById = nonPlantillaId
+      ? movementEmployees.find((emp: any) => emp?.id === nonPlantillaId)
+      : undefined;
+    const nonPlantillaByType = movementEmployees.find((emp: any) =>
+      !isPlantillaEmploymentType(emp?.employmentType?.name) && emp?.id !== latestMovement.plantillaEmployeeId
+    );
+    const nonPlantillaEmployee = nonPlantillaById ?? nonPlantillaByType;
+
+    if (nonPlantillaEmployee) {
+      return formatMovementEmployeeName(nonPlantillaEmployee);
     }
+
+    if (nonPlantillaId) {
+      const employee = employees.find((e: NormalizedEmployee) => e.id === nonPlantillaId);
+      return employee ? employee.label : 'Unknown Employee';
+    }
+
     return 'N/A';
   };
 

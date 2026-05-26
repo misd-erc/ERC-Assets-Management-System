@@ -9,7 +9,7 @@ import { VwSupplyRIS } from '@/types/supply/ris';
 import { toast } from 'sonner';
 
 export const SupplyRISTabContent = () => {
-  const { risList, totalRis, loading, fetchRISs, deleteRIS, saveRIS } = useRISStore();
+  const { risList, totalRis, loading, fetchRISs, deleteRIS, updateRISApproval } = useRISStore();
   const { vwOffices, fetchOffices } = useOfficeStore();
   const { vwDivisions, fetchDivisions } = useDivisionStore();
   
@@ -78,7 +78,7 @@ export const SupplyRISTabContent = () => {
 
   const handleToggleApproval = async (ris: VwSupplyRIS) => {
     try {
-
+      const approving = !ris.isApproved;
       const headerData = {
         id: ris.id,
         entityName: ris.entityName,
@@ -91,19 +91,21 @@ export const SupplyRISTabContent = () => {
         risRequestedDate: ris.risRequestedDate,
         risRequestedBySystemUserId: ris.requestedBySystemUser?.id,
         risApprovedBySystemUserId: ris.approvedBySystemUser?.id,
-        risApprovedDate: ris.risApprovedDate,
+        risApprovedDate: approving && !ris.risApprovedDate
+          ? new Date().toISOString()
+          : ris.risApprovedDate,
         risIssuedBySystemUserId: ris.issuedBySystemUser?.id,
         risIssuedDate: ris.risIssuedDate,
         risReceivedBySystemUserId: ris.receivedBySystemUser?.id,
         risReceivedDate: ris.risReceivedDate,
-        isApproved: !ris.isApproved, // Toggle the status
+        isApproved: approving,
         isActive: ris.isActive,
       };
 
-      await saveRIS(headerData, [], []);
-      toast.success(`RIS has been ${!ris.isApproved ? 'approved' : 'unapproved'}.`);
-    } catch (error) {
-      toast.error("Failed to update approval status.");
+      await updateRISApproval(headerData);
+      toast.success(approving ? 'RIS approved.' : 'RIS approval removed.');
+    } catch {
+      toast.error('Failed to update approval status.');
     }
   };
 
@@ -121,7 +123,15 @@ export const SupplyRISTabContent = () => {
           endDate={params.endDate}
           offices={vwOffices}
           divisions={vwDivisions}
-          onParamsChange={setParams}
+          onParamsChange={(newParams) => setParams({
+            page: newParams.page,
+            search: newParams.search,
+            status: newParams.status,
+            officeId: newParams.officeId || 'all',
+            divisionId: newParams.divisionId || 'all',
+            startDate: newParams.startDate || '',
+            endDate: newParams.endDate || ''
+          })}
           loading={loading}
           onAdd={handleAdd}
           onEdit={handleEdit}
