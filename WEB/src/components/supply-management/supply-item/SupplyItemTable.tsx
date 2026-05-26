@@ -332,16 +332,14 @@ export const SupplyItemTable = ({
                             <DropdownMenuItem onClick={() => onView(item)} className="cursor-pointer">
                               <Eye className="w-4 h-4 mr-2 text-slate-500" /> View Details
                             </DropdownMenuItem>
-                            {!item.iarId && (
-                              <>
-                                <DropdownMenuItem onClick={() => onEdit(item)} className="cursor-pointer">
-                                  <Edit className="w-4 h-4 mr-2 text-blue-500" /> Edit Item
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-700">
-                                  <Trash2 className="w-4 h-4 mr-2" /> Delete Item
-                                </DropdownMenuItem>
-                              </>
-                            )}
+                            <DropdownMenuItem onClick={() => onEdit(item)} className="cursor-pointer">
+                              <Edit className="w-4 h-4 mr-2 text-blue-500" /> Edit Item
+                            </DropdownMenuItem>
+                            {/* {!item.iarId && (
+                              <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-700">
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete Item
+                              </DropdownMenuItem>
+                            )} */}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
