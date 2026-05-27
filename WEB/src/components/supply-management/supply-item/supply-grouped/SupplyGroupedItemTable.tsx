@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { VwSupplyGroupedItem } from '@/types';
+import { cn } from "@/components/ui/utils";
 import {
   Table,
   TableBody,
@@ -10,16 +11,126 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Eye, ChevronLeft, ChevronRight, Plus, PackageSearch, Layers, ArrowUpDown, Filter, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { Eye, ChevronLeft, ChevronRight, Plus, PackageSearch, Layers, ArrowUpDown, Filter, ChevronDown, ChevronUp, Loader2, CheckCircle2, XCircle, Tag, MapPin, Store, Check, ChevronsUpDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { SupplyItemSearchBar } from '../SupplyItemSearchBar';
 import { formatCurrency } from '@/utils/formatters';
 
 import { SupplyUnitEditModal } from '../../supply-unit/SupplyUnitEditModal';
 import { SupplyStorageEditModal } from '../../supply-storage/SupplyStorageEditModal';
+
+interface SearchableFilterProps {
+  value: string;
+  onValueChange: (val: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+  emptyMessage?: string;
+  activeClass: string;
+  inactiveClass: string;
+  icon: any;
+  activeIconColorClass: string;
+  allLabel: string;
+}
+
+function SearchableFilter({
+  value,
+  onValueChange,
+  options,
+  placeholder,
+  emptyMessage = "No results found.",
+  activeClass,
+  inactiveClass,
+  icon: IconComponent,
+  activeIconColorClass,
+  allLabel
+}: SearchableFilterProps) {
+  const [open, setOpen] = useState(false);
+  const selectedOption = options.find(opt => opt.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            "w-full justify-between border rounded-lg h-10 px-3 active:scale-[0.99] transition-all font-medium text-left shadow-sm focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-500",
+            value === "all" ? inactiveClass : activeClass
+          )}
+        >
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <IconComponent className={cn("w-4 h-4 shrink-0", value === "all" ? "text-slate-400" : activeIconColorClass)} />
+            <span className="truncate">
+              {value === "all" ? allLabel : (selectedOption ? selectedOption.label : placeholder)}
+            </span>
+          </div>
+          <ChevronsUpDown className={cn("ml-2 h-4 w-4 shrink-0 transition-colors duration-200", open ? "text-blue-500" : "text-slate-400 opacity-60")} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl shadow-xl border border-slate-100 bg-white overflow-hidden" align="start">
+        <Command className="bg-white">
+          <div className="p-2 bg-slate-50/50 border-b border-slate-100">
+            <div className="relative rounded-md border border-slate-200 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+              <CommandInput
+                placeholder={placeholder}
+                className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+              />
+            </div>
+          </div>
+          <CommandList className="max-h-60 overflow-y-auto p-1">
+            <CommandEmpty className="py-6 text-center text-sm text-slate-500">{emptyMessage}</CommandEmpty>
+            <CommandGroup>
+              <CommandItem
+                value={allLabel}
+                onSelect={() => {
+                  onValueChange("all");
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700 hover:bg-slate-50",
+                  value === "all" && "bg-blue-50/60 font-medium text-blue-700"
+                )}
+              >
+                <div className="flex items-center min-w-0 gap-1.5">
+                  <IconComponent className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                  <span className="truncate flex-1">{allLabel}</span>
+                </div>
+                <Check className={cn("ml-2 h-4 w-4 shrink-0 transition-all duration-200", value === "all" ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75")} />
+              </CommandItem>
+              {options.map(opt => (
+                <CommandItem
+                  key={opt.value}
+                  value={`${opt.label} ${opt.value}`}
+                  onSelect={() => {
+                    onValueChange(opt.value);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700 hover:bg-slate-50",
+                    value === opt.value && "bg-blue-50/60 font-medium text-blue-700"
+                  )}
+                >
+                  <div className="flex items-center min-w-0 gap-1.5">
+                    <IconComponent className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                    <span className="truncate flex-1">{opt.label}</span>
+                  </div>
+                  <Check className={cn("ml-2 h-4 w-4 shrink-0 transition-all duration-200", value === opt.value ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75")} />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 
 interface Props {
   data: VwSupplyGroupedItem[];
@@ -59,6 +170,7 @@ export const SupplyGroupedItemTable = ({
   loading = false
 }: Props) => {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
+  const [isSorting, setIsSorting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [isUnitModalOpen, setIsUnitModalOpen] = useState(false);
@@ -66,14 +178,52 @@ export const SupplyGroupedItemTable = ({
 
   const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
+  const categoryOptions = useMemo(() => allCategories.map(cat => ({
+    value: cat.name,
+    label: cat.name
+  })), [allCategories]);
+
+  const storageOptions = useMemo(() => storageLocations.map(loc => ({
+    value: loc.id.toString(),
+    label: loc.name
+  })), [storageLocations]);
+
+  const vendorOptions = useMemo(() => allVendors.map(v => ({
+    value: v.id.toString(),
+    label: v.name
+  })), [allVendors]);
+
   const handleSort = (key: string) => {
-    setSortConfig(prev => {
-      if (prev?.key === key) {
-        return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
-      }
-      return { key, direction: 'asc' };
-    });
+    setIsSorting(true);
+    setTimeout(() => {
+      setSortConfig(prev => {
+        if (prev?.key === key) {
+          return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' };
+        }
+        return { key, direction: 'asc' };
+      });
+      setIsSorting(false);
+    }, 450);
   };
+
+  const sortedData = useMemo(() => {
+    if (!sortConfig) return data;
+    return [...data].sort((a, b) => {
+      let aVal = a[sortConfig.key as keyof VwSupplyGroupedItem];
+      let bVal = b[sortConfig.key as keyof VwSupplyGroupedItem];
+
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase();
+        bVal = (bVal as string || '').toLowerCase();
+      }
+
+      if (aVal === undefined || aVal === null) return 1;
+      if (bVal === undefined || bVal === null) return -1;
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [data, sortConfig]);
 
   const updateParams = (updates: Partial<{ page: number; search: string; status: string; category: string; storageId: string; vendorId: string }>) => {
     onParamsChange({
@@ -126,13 +276,42 @@ export const SupplyGroupedItemTable = ({
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-slate-400" />
                 <Select value={statusFilter} onValueChange={(val) => updateParams({ status: val, page: 1 })}>
-                  <SelectTrigger className="w-[180px] bg-white">
-                    <SelectValue placeholder="Stock Status" />
+                  <SelectTrigger className={cn(
+                    "w-[185px] border rounded-lg h-9 px-3 transition-all focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-500 shadow-sm font-medium",
+                    statusFilter === 'all'
+                      ? "bg-slate-50/40 hover:bg-slate-100/40 text-slate-700 border-slate-200 hover:border-slate-300"
+                      : statusFilter === 'Available'
+                      ? "bg-emerald-50/50 hover:bg-emerald-100/40 text-emerald-700 border-emerald-200 hover:border-emerald-300"
+                      : "bg-red-50/50 hover:bg-red-100/40 text-red-700 border-red-200 hover:border-red-300"
+                  )}>
+                    <div className="flex items-center gap-2">
+                      {statusFilter === 'all' && <Layers className="w-4 h-4 text-slate-400" />}
+                      {statusFilter === 'Available' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                      {statusFilter === 'Out of Stock' && <XCircle className="w-4 h-4 text-red-500" />}
+                      <span className="truncate">
+                        {statusFilter === 'all' ? 'All Status' : statusFilter}
+                      </span>
+                    </div>
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="Available">Available</SelectItem>
-                    <SelectItem value="Out of Stock">Out of Stock</SelectItem>
+                  <SelectContent className="rounded-xl shadow-xl border border-slate-100 p-1">
+                    <SelectItem value="all" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <Layers className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
+                        All Status
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Available" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 mr-1.5 shrink-0" />
+                        Available
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Out of Stock" className="rounded-lg py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <div className="flex items-center">
+                        <XCircle className="w-3.5 h-3.5 text-red-500 mr-1.5 shrink-0" />
+                        Out of Stock
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -165,47 +344,47 @@ export const SupplyGroupedItemTable = ({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-50 animate-in fade-in slide-in-from-top-1 duration-200">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-500 ml-1">Category</label>
-                  <Select value={categoryFilter} onValueChange={(val) => updateParams({ category: val, page: 1 })}>
-                    <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {allCategories.map(cat => (
-                        <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableFilter
+                    value={categoryFilter}
+                    onValueChange={(val) => updateParams({ category: val, page: 1 })}
+                    options={categoryOptions}
+                    placeholder="Search category..."
+                    allLabel="All Categories"
+                    inactiveClass="bg-slate-50/40 hover:bg-slate-100/40 text-slate-700 border-slate-200 hover:border-slate-300"
+                    activeClass="bg-blue-50/50 hover:bg-blue-100/40 text-blue-700 border-blue-200 hover:border-blue-300"
+                    icon={Tag}
+                    activeIconColorClass="text-blue-500"
+                  />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-500 ml-1">Storage Location</label>
-                  <Select value={storageFilter} onValueChange={(val) => updateParams({ storageId: val, page: 1 })}>
-                    <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="All Locations" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Locations</SelectItem>
-                      {storageLocations.map(loc => (
-                        <SelectItem key={loc.id} value={loc.id.toString()}>{loc.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableFilter
+                    value={storageFilter}
+                    onValueChange={(val) => updateParams({ storageId: val, page: 1 })}
+                    options={storageOptions}
+                    placeholder="Search storage location..."
+                    allLabel="All Locations"
+                    inactiveClass="bg-slate-50/40 hover:bg-slate-100/40 text-slate-700 border-slate-200 hover:border-slate-300"
+                    activeClass="bg-rose-50/50 hover:bg-rose-100/40 text-rose-700 border-rose-200 hover:border-rose-300"
+                    icon={MapPin}
+                    activeIconColorClass="text-rose-500"
+                  />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-500 ml-1">Vendor</label>
-                  <Select value={vendorFilter} onValueChange={(val) => updateParams({ vendorId: val, page: 1 })}>
-                    <SelectTrigger className="w-full bg-white">
-                      <SelectValue placeholder="All Vendors" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Vendors</SelectItem>
-                      {allVendors.map(v => (
-                        <SelectItem key={v.id} value={v.id.toString()}>{v.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableFilter
+                    value={vendorFilter}
+                    onValueChange={(val) => updateParams({ vendorId: val, page: 1 })}
+                    options={vendorOptions}
+                    placeholder="Search vendor..."
+                    allLabel="All Vendors"
+                    inactiveClass="bg-slate-50/40 hover:bg-slate-100/40 text-slate-700 border-slate-200 hover:border-slate-300"
+                    activeClass="bg-amber-50/50 hover:bg-amber-100/40 text-amber-700 border-amber-200 hover:border-amber-300"
+                    icon={Store}
+                    activeIconColorClass="text-amber-500"
+                  />
                 </div>
               </div>
             )}
@@ -217,6 +396,17 @@ export const SupplyGroupedItemTable = ({
             {loading && data.length > 0 && (
               <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-100 dark:bg-blue-950 overflow-hidden z-10">
                 <div className="h-full bg-blue-600 dark:bg-blue-400 animate-pulse w-full"></div>
+              </div>
+            )}
+            {isSorting && (
+              <div className="absolute inset-0 bg-white/85 dark:bg-slate-950/85 backdrop-blur-md flex flex-col items-center justify-center gap-3.5 z-30 animate-in fade-in duration-200">
+                <div className="p-3.5 bg-slate-50 dark:bg-slate-900 rounded-full shadow-inner border border-slate-100 dark:border-slate-800 flex items-center justify-center">
+                  <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
+                </div>
+                <div className="flex flex-col items-center gap-1 text-center">
+                  <span className="text-sm font-bold text-slate-800 dark:text-slate-200">Sorting Grouped Inventory...</span>
+                  <span className="text-xs text-slate-400 font-medium">Reorganizing item groups by column</span>
+                </div>
               </div>
             )}
             <Table>
@@ -258,9 +448,9 @@ export const SupplyGroupedItemTable = ({
                       ))}
                     </TableRow>
                   ))
-                ) : data.length > 0 ? (
+                ) : sortedData.length > 0 ? (
                   // NORMAL DATA RENDERING
-                  data.map((item) => {
+                  sortedData.map((item) => {
                     const status =
                       item.totalCurrentStock === 0
                         ? { label: 'Out of Stock', classes: 'bg-red-50 text-red-700 border-red-200' }

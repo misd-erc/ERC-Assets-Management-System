@@ -123,7 +123,15 @@ export const SupplyRISTabContent = () => {
           endDate={params.endDate}
           offices={vwOffices}
           divisions={vwDivisions}
-          onParamsChange={setParams}
+          onParamsChange={(newParams) => setParams({
+            page: newParams.page,
+            search: newParams.search,
+            status: newParams.status,
+            officeId: newParams.officeId || 'all',
+            divisionId: newParams.divisionId || 'all',
+            startDate: newParams.startDate || '',
+            endDate: newParams.endDate || ''
+          })}
           loading={loading}
           onAdd={handleAdd}
           onEdit={handleEdit}

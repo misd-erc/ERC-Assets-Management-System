@@ -5,7 +5,7 @@ import { useSupplyStorageLocationStore } from '@/store/supply';
 import { SupplyItemTable } from './SupplyItemTable';
 import { SupplyItemEditModal } from './SupplyItemEditModal';
 import { SupplyItemDeleteModal } from './SupplyItemDeleteModal';
-import { VwSupplyItem, Category } from '@/types';
+import { VwSupplyItem } from '@/types';
 import { getCategories } from '@/api/categories/categoriesApi';
 import { getVendors } from '@/api';
 
