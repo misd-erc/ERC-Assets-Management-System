@@ -52,28 +52,40 @@ interface SearchableSelectProps {
 
 const SearchableSelect = ({ value, onChange, options, placeholder = "Select...", disabled = false }: SearchableSelectProps) => {
   const [open, setOpen] = useState(false);
+  const [activeSearch, setActiveSearch] = useState("");
+  const selectedOption = options.find((o) => o.id === value);
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger asChild disabled={disabled}>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          disabled={disabled}
           className={cn(
-            "w-full justify-between font-normal bg-white border-slate-200 shadow-sm text-slate-700",
-            !value && "text-slate-400"
+            "w-full justify-between font-normal h-10 px-3 bg-white hover:bg-slate-50/80 border-slate-200 hover:border-slate-300 active:scale-[0.99] transition-all rounded-lg shadow-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500",
+            !value ? "text-slate-400" : "text-slate-900 font-medium"
           )}
         >
-          {value ? options.find((item) => item.id === value)?.name : placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 text-slate-400" />
+          <span className="truncate">
+            {selectedOption ? selectedOption.name : placeholder}
+          </span>
+          <ChevronsUpDown className={cn("ml-2 h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400", open && "text-blue-500")} />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[300px] p-0 border border-slate-200 rounded-lg shadow-lg overflow-hidden" align="start">
-        <Command className="bg-white">
-          <CommandInput className="border-0 outline-none focus:outline-none focus:ring-0 ring-0 p-2" placeholder={`Search ${placeholder.toLowerCase()}...`} />
-          <CommandList>
-            <CommandEmpty>No result found.</CommandEmpty>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border border-slate-100 bg-white overflow-hidden" align="start">
+        <Command className="bg-white" value={activeSearch} onValueChange={setActiveSearch}>
+          <div className="p-2 bg-slate-50/50 border-b border-slate-100">
+            <div className="relative rounded-md border border-slate-200 bg-white shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+              <CommandInput
+                placeholder={`Search ${placeholder.toLowerCase()}...`}
+                className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+              />
+            </div>
+          </div>
+          <CommandList className="max-h-60 overflow-y-auto p-1">
+            <CommandEmpty className="py-6 text-center text-sm text-slate-500">
+              No result found.
+            </CommandEmpty>
             <CommandGroup>
               {options.map((item) => (
                 <CommandItem
@@ -83,10 +95,18 @@ const SearchableSelect = ({ value, onChange, options, placeholder = "Select...",
                     onChange(item.id);
                     setOpen(false);
                   }}
-                  className="cursor-pointer hover:bg-slate-50"
+                  className={cn(
+                    "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700 hover:bg-slate-50",
+                    value === item.id && "bg-blue-50/60 font-medium text-blue-700"
+                  )}
                 >
-                  <Check className={cn("mr-2 h-4 w-4 text-blue-600", value === item.id ? "opacity-100" : "opacity-0")} />
-                  {item.name}
+                  <span className="truncate flex-1">{item.name}</span>
+                  <Check
+                    className={cn(
+                      "ml-2 h-4 w-4 shrink-0 transition-all duration-200",
+                      value === item.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                    )}
+                  />
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -103,10 +123,11 @@ interface Props {
   stockNumber: string;
   description: string;
   unitId?: number;
+  totalCurrentStock?: number;
   onSuccess: () => void;
 }
 
-export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, description, unitId, onSuccess }: Props) => {
+export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, description, unitId, totalCurrentStock, onSuccess }: Props) => {
   const { addSupplyItem } = useSupplyItem();
   const { units, fetchSupplyUnits } = useSupplyUnit();
   const { storagelocations, fetchSupplyStorageLocations } = useSupplyStorageLocation();
@@ -214,14 +235,14 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
       });
 
       setRisItemForm({
-        requisitionQuantity: 1,
-        issueQuantity: 1,
+        requisitionQuantity: totalCurrentStock || 0,
+        issueQuantity: 0,
         itemRemarks: '',
       });
 
       setActiveTab('add-item');
     }
-  }, [open, stockNumber, description, unitId]);
+  }, [open, stockNumber, description, unitId, totalCurrentStock]);
 
   const handleAddItemSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,6 +353,10 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
       toast.error('Issued Quantity cannot be negative');
       return;
     }
+    if (risItemForm.issueQuantity > risItemForm.requisitionQuantity) {
+      toast.error('Issued Quantity cannot exceed Requisition Quantity');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -389,8 +414,8 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
             risPurpose: '',
           }));
           setRisItemForm({
-            requisitionQuantity: 1,
-            issueQuantity: 1,
+            requisitionQuantity: totalCurrentStock || 0,
+            issueQuantity: 0,
             itemRemarks: '',
           });
         }
@@ -466,14 +491,19 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
                   />
                 </div>
 
-                <div className="space-y-2">
+                  <div className="space-y-2">
                   <Label className="text-slate-700 font-medium">Quantity to Add</Label>
                   <Input
                     type="number"
-                    value={itemForm.quantity || 0}
-                    onChange={(e) => setItemForm({ ...itemForm, quantity: Number(e.target.value) })}
-                    className="bg-white border-slate-200 text-slate-900"
+                    value={itemForm.quantity === 0 ? "" : itemForm.quantity}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setItemForm({ ...itemForm, quantity: val === "" ? 0 : Number(val) });
+                    }}
+                    onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                    className="bg-white border-slate-200 text-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     min={0}
+                    placeholder="0"
                   />
                 </div>
                 <div className="space-y-2">
@@ -481,10 +511,15 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
                   <Input
                     type="number"
                     step="0.01"
-                    value={itemForm.unitCost || 0}
-                    onChange={(e) => setItemForm({ ...itemForm, unitCost: Number(e.target.value) })}
-                    className="bg-white border-slate-200 text-slate-900"
+                    value={itemForm.unitCost === 0 ? "" : itemForm.unitCost}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setItemForm({ ...itemForm, unitCost: val === "" ? 0 : Number(val) });
+                    }}
+                    onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                    className="bg-white border-slate-200 text-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     min={0}
+                    placeholder="0"
                   />
                 </div>
 
@@ -492,10 +527,15 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
                   <Label className="text-slate-700 font-medium">Reorder Point</Label>
                   <Input
                     type="number"
-                    value={itemForm.reorderPoint || 0}
-                    onChange={(e) => setItemForm({ ...itemForm, reorderPoint: Number(e.target.value) })}
-                    className="bg-white border-slate-200 text-slate-900"
+                    value={itemForm.reorderPoint === 0 ? "" : itemForm.reorderPoint}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setItemForm({ ...itemForm, reorderPoint: val === "" ? 0 : Number(val) });
+                    }}
+                    onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                    className="bg-white border-slate-200 text-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     min={0}
+                    placeholder="0"
                   />
                 </div>
                 <div className="space-y-2">
@@ -673,30 +713,33 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
                   <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">RIS Requisitioned Item</span>
                 </div>
 
-                <div className="space-y-2">
+                  <div className="space-y-2">
                   <Label className="text-slate-700 font-medium">Requisition Quantity</Label>
                   <Input
                     type="number"
-                    value={risItemForm.requisitionQuantity}
+                    value={risItemForm.requisitionQuantity === 0 ? "" : risItemForm.requisitionQuantity}
                     disabled
-                    className="bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed"
+                    className="bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    placeholder="0"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-slate-700 font-medium">Issued Quantity <span className="text-red-500">*</span></Label>
                   <Input
                     type="number"
-                    value={risItemForm.issueQuantity}
+                    value={risItemForm.issueQuantity === 0 ? "" : risItemForm.issueQuantity}
                     onChange={(e) => {
-                      const val = Number(e.target.value);
+                      const val = e.target.value;
+                      const num = val === "" ? 0 : Number(val);
                       setRisItemForm({
                         ...risItemForm,
-                        issueQuantity: val,
-                        requisitionQuantity: val
+                        issueQuantity: num
                       });
                     }}
-                    className="bg-white border-slate-200 text-slate-900"
+                    onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                    className="bg-white border-slate-200 text-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     min={0}
+                    placeholder="0"
                   />
                 </div>
                 <div className="space-y-2">

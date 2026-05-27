@@ -27,9 +27,10 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   stockNumber: string;
   description: string;
+  totalCurrentStock?: number;
 }
 
-export const StockCardModal = ({ open, onOpenChange, stockNumber, description }: Props) => {
+export const StockCardModal = ({ open, onOpenChange, stockNumber, description, totalCurrentStock }: Props) => {
   const { stockCardItems, loading, totalCount, fetchStockCardItems, reset, setPage, currentPage, pageSize } = useStockCard();
   const [bypassModalOpen, setBypassModalOpen] = useState(false);
   const getAcronym = (text: string | undefined | null): string => {
@@ -244,6 +245,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description }:
         stockNumber={stockNumber}
         description={description}
         unitId={stockCardItems[0]?.unit?.id}
+        totalCurrentStock={totalCurrentStock}
         onSuccess={() => {
           fetchStockCardItems(stockNumber, description, 1);
         }}
