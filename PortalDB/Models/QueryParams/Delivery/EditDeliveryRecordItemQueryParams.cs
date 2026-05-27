@@ -15,7 +15,7 @@ namespace PortalDB.Models.QueryParams.Delivery
         public string ItemSpecification { get; set; } = string.Empty;
         [Required] public long ItemQuantity { get; set; }
         [Required] public long UnitId { get; set; }
-        [Required] public long UnitCost { get; set; }
+        [Required] public decimal UnitCost { get; set; }
         [Required] public bool IsActive { get; set; } = true;
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;

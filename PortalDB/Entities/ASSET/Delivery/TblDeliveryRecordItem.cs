@@ -76,8 +76,8 @@ namespace PortalDB.Entities.ASSET.Delivery
         [Column("SupplyUnitId")]
         public long? UnitId { get; set; }
 
-        [Column("DeliveryRecordUnitCost")]
-        public long? UnitCost { get; set; }
+        [Column("DeliveryRecordUnitCost", TypeName = "decimal(18,2)")]
+        public decimal? UnitCost { get; set; }
 
         [Column("DeliveryRecordItemReorderPoint")]
         public int? ReorderPoint { get; set; }

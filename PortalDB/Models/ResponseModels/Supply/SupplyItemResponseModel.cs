@@ -18,7 +18,7 @@ namespace PortalDB.Models.ResponseModels.Supply
         public string Description { get; set; } = string.Empty;
         //public int? CurrentStock { get; set; }
         public long? Quantity { get; set; }
-        public long? UnitCost { get; set; }
+        public decimal? UnitCost { get; set; }
         public int? ReorderPoint { get; set; }
         public TblSupplyStorageLocation? StorageLocation { get; set; }
         public TblSupplyVendor? Vendor { get; set; }
@@ -35,7 +35,7 @@ namespace PortalDB.Models.ResponseModels.Supply
         public long? IARId { get; set; }
         public string Description { get; set; } = string.Empty;
         public long? TotalCurrentStock { get; set; }
-        public long? TotalStockCost { get; set; }
+        public decimal? TotalStockCost { get; set; }
         public int? ReorderPoint { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime? CreatedAt { get; set; }
