@@ -129,6 +129,7 @@ export const editSupplyRIS = async (payload: EditSupplyRIS): Promise<{ id: numbe
 
   const requestPayload = {
     ...payload,
+    CreatedAt: payload.createdAt,
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,
   };
@@ -146,6 +147,7 @@ export const editSupplyRISItem = async (payload: EditSupplyRISItem): Promise<{ i
 
   const requestPayload = {
     ...payload,
+    CreatedAt: payload.createdAt,
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,
   };

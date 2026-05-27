@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PortalDB.Entities.ASSET.Delivery;
 using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Entities.ASSET.Supply;
@@ -258,7 +258,8 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                             .SetProperty(x => x.ReorderPoint, model.ReorderPoint)
                             .SetProperty(x => x.StorageLocationId, model.StorageLocationId)
                             .SetProperty(x => x.VendorId, model.VendorId)
-                            .SetProperty(x => x.IsActive, model.IsActive));
+                            .SetProperty(x => x.IsActive, model.IsActive)
+                            .SetProperty(x => x.CreatedAt, model.CreatedAt));
                 }
 
                 return isInsert ? model.Id : existingSupplyItem.Id;
@@ -518,6 +519,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                             .SetProperty(x => x.IssueQuantity, model.IssueQuantity)
                             .SetProperty(x => x.ItemRemarksEncrypted, model.ItemRemarksEncrypted)
                             .SetProperty(x => x.IsActive, model.IsActive)
+                            .SetProperty(x => x.CreatedAt, model.CreatedAt)
                         );
                 }
 

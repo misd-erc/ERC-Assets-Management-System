@@ -270,6 +270,7 @@ namespace API.Controllers
 
             try
             {
+        
                 // 1. Start with IQueryable for SQL-level filtering
                 var query = _getTools.Supply.GetTblSupplyItems(context);
                 if (query == null) return Ok(ApiResponse<SupplyItemResponseModel>.OkPaginated(new List<SupplyItemResponseModel>(), model.PageNumber, model.PageSize, 0));
@@ -313,6 +314,7 @@ namespace API.Controllers
                 var supplyItemsResponses = new List<SupplyItemResponseModel>();
                 foreach (var item in supplyItemsRaw)
                 {
+
                     supplyItemsResponses.Add(new SupplyItemResponseModel
                     {
                         Id = item.Id,
@@ -1765,7 +1767,6 @@ namespace API.Controllers
 
             try
             {
-
                 TblSupplyItem supplyItem = new()
                 {
                     Id = model.Id,
@@ -1778,7 +1779,8 @@ namespace API.Controllers
                     ReorderPoint = model.ReorderPoint,
                     StorageLocationId = model.StorageLocationId,
                     VendorId = model.VendorId,
-                    IsActive = model.IsActive
+                    IsActive = model.IsActive,
+                    CreatedAt = model.CreatedAt ?? DateTime.UtcNow
                 };
 
                 long supplyItemId = await _editTools.Supply.EditTblSupplyItemAsync(supplyItem, model.ActionBySystemUserId, context);
@@ -1940,7 +1942,6 @@ namespace API.Controllers
 
             try
             {
-
                 TblSupplyRIS supplyRIS = new()
                 {
                     Id = model.Id,
@@ -1960,9 +1961,9 @@ namespace API.Controllers
                     RISReceivedBySystemUserId = model.RISReceivedBySystemUserId,
                     RISReceivedDate = model.RISReceivedDate,
                     IsApproved = model.IsApproved,
-                    IsActive = model.IsActive,
-                    //IsApproved = model.IsApproved
+                    IsActive = model.IsActive
                 };
+
 
                 //if (supplyRIS.IsApproved)
                 //{
@@ -2015,7 +2016,8 @@ namespace API.Controllers
                     IsAvailable = model.IsAvailable,
                     IssueQuantity = model.IssueQuantity,
                     ItemRemarks = model.ItemRemarks,
-                    IsActive = model.IsActive
+                    IsActive = model.IsActive,
+                    CreatedAt = model.CreatedAt ?? DateTime.UtcNow
                 };
 
                 long supplyRISItemId = await _editTools.Supply.EditTblSupplyRISItemAsync(supplyRISItem, model.ActionBySystemUserId, context);

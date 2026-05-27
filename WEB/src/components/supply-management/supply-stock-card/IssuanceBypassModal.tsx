@@ -132,6 +132,7 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
     storageLocationId: 0,
     vendorId: 0,
     isActive: true,
+    createdAt: new Date().toISOString().slice(0, 10),
   });
 
   // Tab 2: RIS Form State
@@ -151,6 +152,7 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
     risIssuedDate: new Date().toISOString().slice(0, 10),
     risReceivedBySystemUserId: 0,
     risReceivedDate: new Date().toISOString().slice(0, 10),
+    createdAt: new Date().toISOString().slice(0, 10),
   });
 
   const [risItemForm, setRisItemForm] = useState({
@@ -167,7 +169,7 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
       fetchVendors();
       fetchOffices();
       fetchDivisions();
-      
+
       getCategories()
         .then(setCategories)
         .catch((err) => console.error("Failed to load categories", err));
@@ -188,6 +190,7 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
         storageLocationId: 0,
         vendorId: 0,
         isActive: true,
+        createdAt: new Date().toISOString().slice(0, 10),
       });
 
       const { systemUserId } = getAuthParams();
@@ -207,6 +210,7 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
         risIssuedDate: new Date().toISOString().slice(0, 10),
         risReceivedBySystemUserId: 0,
         risReceivedDate: new Date().toISOString().slice(0, 10),
+        createdAt: new Date().toISOString().slice(0, 10),
       });
 
       setRisItemForm({
@@ -236,6 +240,14 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
     }
     if (!itemForm.measurementUnitId) {
       toast.error('Measurement Unit is required');
+      return;
+    }
+    if (!itemForm.storageLocationId) {
+      toast.error('Storage Location is required');
+      return;
+    }
+    if (!itemForm.vendorId) {
+      toast.error('Vendor is required');
       return;
     }
 
@@ -336,7 +348,7 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
         risPurpose: risForm.risPurpose,
         risRequestedBySystemUserId: risForm.risRequestedBySystemUserId,
         risRequestedDate: risForm.risRequestedDate,
-        
+
         // AUTO APPROVAL logic
         isApproved: true,
         risApprovedBySystemUserId: risForm.risApprovedBySystemUserId || systemUserId,
@@ -345,8 +357,9 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
         risIssuedDate: risForm.risIssuedDate ? new Date(risForm.risIssuedDate).toISOString() : new Date().toISOString(),
         risReceivedBySystemUserId: risForm.risReceivedBySystemUserId || undefined,
         risReceivedDate: risForm.risReceivedBySystemUserId && risForm.risReceivedDate ? new Date(risForm.risReceivedDate).toISOString() : undefined,
-        
+
         isActive: true,
+        createdAt: risForm.createdAt ? new Date(risForm.createdAt).toISOString() : undefined,
       };
 
       const itemsData: EditSupplyRISItem[] = [{
@@ -360,6 +373,7 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
         isAvailable: true,
         itemRemarks: risItemForm.itemRemarks,
         isActive: true,
+        createdAt: risForm.createdAt ? new Date(risForm.createdAt).toISOString() : undefined,
       }];
 
       const result = await saveRIS(headerData, itemsData, []);
@@ -485,7 +499,7 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-slate-700 font-medium">Storage Location</Label>
+                  <Label className="text-slate-700 font-medium">Storage Location <span className="text-red-500">*</span></Label>
                   <SearchableSelect
                     value={itemForm.storageLocationId || 0}
                     onChange={(val) => setItemForm({ ...itemForm, storageLocationId: val })}
@@ -494,13 +508,22 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
                   />
                 </div>
 
-                <div className="space-y-2 col-span-2">
-                  <Label className="text-slate-700 font-medium">Vendor</Label>
+                <div className="space-y-2">
+                  <Label className="text-slate-700 font-medium">Vendor <span className="text-red-500">*</span></Label>
                   <SearchableSelect
                     value={itemForm.vendorId || 0}
                     onChange={(val) => setItemForm({ ...itemForm, vendorId: val })}
                     options={vendors}
                     placeholder="Select vendor"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-700 font-medium">Created At</Label>
+                  <Input
+                    type="date"
+                    value={itemForm.createdAt || ''}
+                    onChange={(e) => setItemForm({ ...itemForm, createdAt: e.target.value })}
+                    className="bg-white border-slate-200 text-slate-900"
                   />
                 </div>
               </div>
@@ -535,7 +558,7 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
                 <div className="col-span-2 flex items-center justify-between pb-2 border-b">
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">RIS Header Information</span>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label className="text-slate-700 font-medium">Entity Name</Label>
                   <Input value={risForm.entityName} onChange={(e) => setRisForm({ ...risForm, entityName: e.target.value })} className="bg-white border-slate-200 text-slate-900" />
@@ -634,6 +657,11 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
                 </div>
 
                 <div className="space-y-2 col-span-2">
+                  <Label className="text-slate-700 font-medium">Created At</Label>
+                  <Input type="date" value={risForm.createdAt} onChange={(e) => setRisForm({ ...risForm, createdAt: e.target.value })} className="bg-white border-slate-200 text-slate-900" />
+                </div>
+
+                <div className="space-y-2 col-span-2">
                   <Label className="text-slate-700 font-medium">Purpose <span className="text-red-500">*</span></Label>
                   <Textarea required value={risForm.risPurpose} onChange={(e) => setRisForm({ ...risForm, risPurpose: e.target.value })} placeholder="Purpose of this requisition..." className="bg-white border-slate-200 text-slate-900 min-h-[60px]" />
                 </div>
@@ -644,7 +672,7 @@ export const IssuanceBypassModal = ({ open, onOpenChange, stockNumber, descripti
                 <div className="col-span-3 pb-2 border-b">
                   <span className="text-xs font-bold text-blue-700 uppercase tracking-wider">RIS Requisitioned Item</span>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label className="text-slate-700 font-medium">Requisition Quantity</Label>
                   <Input

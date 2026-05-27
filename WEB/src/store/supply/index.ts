@@ -152,6 +152,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
         storageLocationId: supply.storageLocationId || 0,
         vendorId: supply.vendorId || 0,
         isActive: supply.isActive ?? true,
+        createdAt: supply.createdAt,
       });
       await get().fetchSupplyItems();
       await get().fetchSupplySummary();
