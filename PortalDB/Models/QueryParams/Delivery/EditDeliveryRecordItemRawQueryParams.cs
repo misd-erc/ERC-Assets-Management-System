@@ -17,7 +17,7 @@ namespace PortalDB.Models.QueryParams.Delivery
         public int? ItemQuantity { get; set; }
         public int? ReorderPoint { get; set; }
         public long? MeasurementUnitId { get; set; }
-        public long? UnitCost { get; set; }
+        public decimal? UnitCost { get; set; }
         public long? StorageLocationId { get; set; }
         public long? VendorId { get; set; }
         public bool IsActive { get; set; } = true;
