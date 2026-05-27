@@ -21,7 +21,7 @@ namespace PortalDB.Models.ResponseModels.Delivery
         public long? ItemQuantity { get; set; }
         //public int? CurrentStock { get; set; }
         public TblSupplyUnit? MeasurementUnit { get; set; }
-        public long? UnitCost { get; set; }
+        public decimal? UnitCost { get; set; }
         public int? ReorderPoint { get; set; }
         public TblSupplyStorageLocation? StorageLocation { get; set; }
         public TblSupplyVendor? Vendor { get; set; }

@@ -48,8 +48,8 @@ namespace PortalDB.Entities.ASSET.Supply
         //[Column("SupplyItemCurrentStock")]
         //public int? CurrentStock { get; set; }
 
-        [Column("SupplyItemUnitCost")]
-        public long? UnitCost { get; set; }
+        [Column("SupplyItemUnitCost", TypeName = "decimal(18,2)")]
+        public decimal? UnitCost { get; set; }
 
         [Column("SupplyItemReorderPoint")]
         public int? ReorderPoint { get; set; }

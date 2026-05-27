@@ -417,7 +417,7 @@ namespace API.Controllers
                             Code = g.Key.Code,
                             Description = g.Key.Description,
                             TotalCurrentStock = g.Sum(x => (long)(x.Quantity ?? 0)),
-                            UnitCost = (long)(firstItem.UnitCost ?? 0),
+                            UnitCost = firstItem.UnitCost ?? 0,
                             Id = firstItem.Id,
                             IARId = firstItem.IARId,
                             ReorderPoint = firstItem.ReorderPoint,
@@ -477,7 +477,7 @@ namespace API.Controllers
                         IARId = x.IARId,
                         Description = x.Description ?? string.Empty,
                         TotalCurrentStock = finalCurrentStock,
-                        TotalStockCost = (finalCurrentStock * x.UnitCost), // Now long * long
+                        TotalStockCost = finalCurrentStock * x.UnitCost,
                         ReorderPoint = (int?)x.ReorderPoint,
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
@@ -1892,7 +1892,9 @@ namespace API.Controllers
                                         Model = deliveryRecordItem.ItemSpecification,
                                         SerialNumber = null,
                                         UnitOfMeasurement = unitName,
-                                        UnitValue = deliveryRecordItem.UnitCost,
+                                        UnitValue = deliveryRecordItem.UnitCost.HasValue
+                                            ? (double)deliveryRecordItem.UnitCost.Value
+                                            : null,
                                         DateAcquired = deliveryRecord.DeliveryDate,
                                         FiscalDate = deliveryRecord.DeliveryDate,
                                         IsActive = true
