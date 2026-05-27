@@ -21,4 +21,6 @@ export * from '@/api/supply-management/iarApi';
 export * from '@/api/supply-management/risApi';
 export * from '@/api/supply-management/stockCardApi';
 
+export * from '@/api/asset/assetRequestApi';
+
 
