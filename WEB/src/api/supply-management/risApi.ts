@@ -6,42 +6,42 @@ import { EditSupplyRIS, EditSupplyRISItem, VwSupplyRIS, VwSupplyRISItem } from '
 
 // ------------------- Mapping functions -------------------
 const mapVwSupplyRIS = (raw: any): VwSupplyRIS => ({
-  id: raw.id,
-  entityName: raw.entityName,
-  fundCluster: raw.fundCluster,
-  office: raw.office,
-  division: raw.division,
-  responsibilityCenterCode: raw.responsibilityCenterCode,
-  risNumber: raw.risNumber,
-  risPurpose: raw.risPurpose,
-  requestedBySystemUser: raw.requestedBySystemUser,
-  risRequestedDate: raw.risRequestedDate,
-  approvedBySystemUser: raw.approvedBySystemUser,
-  risApprovedDate: raw.risApprovedDate,
-  issuedBySystemUser: raw.issuedBySystemUser,
-  risIssuedDate: raw.risIssuedDate,
-  receivedBySystemUser: raw.receivedBySystemUser,
-  risReceivedDate: raw.risReceivedDate,
-  isApproved: raw.isApproved,
-  isActive: raw.isActive ?? true,
-  createdAt: raw.createdAt,
-  items: raw.items?.map(mapVwSupplyRISItem) // if included
+  id: raw.id ?? raw.Id,
+  entityName: raw.entityName ?? raw.EntityName,
+  fundCluster: raw.fundCluster ?? raw.FundCluster,
+  office: raw.office ?? raw.Office,
+  division: raw.division ?? raw.Division,
+  responsibilityCenterCode: raw.responsibilityCenterCode ?? raw.ResponsibilityCenterCode,
+  risNumber: raw.risNumber ?? raw.RisNumber ?? raw.RISNumber,
+  risPurpose: raw.risPurpose ?? raw.RisPurpose ?? raw.RISPurpose,
+  requestedBySystemUser: raw.requestedBySystemUser ?? raw.RequestedBySystemUser,
+  risRequestedDate: raw.risRequestedDate ?? raw.RisRequestedDate ?? raw.RISRequestedDate,
+  approvedBySystemUser: raw.approvedBySystemUser ?? raw.ApprovedBySystemUser,
+  risApprovedDate: raw.risApprovedDate ?? raw.RisApprovedDate ?? raw.RISApprovedDate,
+  issuedBySystemUser: raw.issuedBySystemUser ?? raw.IssuedBySystemUser,
+  risIssuedDate: raw.risIssuedDate ?? raw.RisIssuedDate ?? raw.RISIssuedDate,
+  receivedBySystemUser: raw.receivedBySystemUser ?? raw.ReceivedBySystemUser,
+  risReceivedDate: raw.risReceivedDate ?? raw.RisReceivedDate ?? raw.RISReceivedDate,
+  isApproved: raw.isApproved ?? raw.IsApproved,
+  isActive: raw.isActive ?? raw.IsActive ?? true,
+  createdAt: raw.createdAt ?? raw.CreatedAt,
+  items: (raw.items ?? raw.Items)?.map(mapVwSupplyRISItem) // if included
 });
 
 const mapVwSupplyRISItem = (raw: any): VwSupplyRISItem => ({
-  id: raw.id,
-  risId: raw.risId,
-  stockNumber: raw.stockNumber,
-  unit: raw.unit,
-  itemDescription: raw.itemDescription,
-  requisitionQuantity: raw.requisitionQuantity,
-  isAvailable: raw.isAvailable,
-  issueQuantity: raw.issueQuantity,
-  itemRemarks: raw.itemRemarks,
-  isActive: raw.isActive ?? true,
-  createdAt: raw.createdAt,
-  office: raw.office,
-  division: raw.division,
+  id: raw.id ?? raw.Id,
+  risId: raw.risId ?? raw.RisId ?? raw.RISId ?? raw.supplyRISId ?? raw.SupplyRISId,
+  stockNumber: raw.stockNumber ?? raw.StockNumber,
+  unit: raw.unit ?? raw.Unit,
+  itemDescription: raw.itemDescription ?? raw.ItemDescription,
+  requisitionQuantity: raw.requisitionQuantity ?? raw.RequisitionQuantity,
+  isAvailable: raw.isAvailable ?? raw.IsAvailable,
+  issueQuantity: raw.issueQuantity ?? raw.IssueQuantity,
+  itemRemarks: raw.itemRemarks ?? raw.ItemRemarks,
+  isActive: raw.isActive ?? raw.IsActive ?? true,
+  createdAt: raw.createdAt ?? raw.CreatedAt,
+  office: raw.office ?? raw.Office,
+  division: raw.division ?? raw.Division,
 });
 
 interface ListResponse<T> {
@@ -92,33 +92,53 @@ export const getSupplyRISs = async (
 export const getSupplyRISById = async (risId: number): Promise<VwSupplyRIS | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
-  const response = await axiosInstance.get<ApiResponse<any>>(`/Supply/ris/${risId}`, {
-    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
-  });
+  console.log('[API] getSupplyRISById - Fetching RIS ID:', risId);
+  try {
+    const response = await axiosInstance.get<ApiResponse<any>>(`/Supply/ris/${risId}`, {
+      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+    });
 
-  if (!response.data.success) {
-    toast.error(response.data.message || 'RIS not found');
+    console.log('[API] getSupplyRISById - Response:', response.data);
+
+    if (!response.data.success) {
+      toast.error(response.data.message || 'RIS not found');
+      return null;
+    }
+
+    const mapped = mapVwSupplyRIS(response.data.data);
+    console.log('[API] getSupplyRISById - Mapped RIS:', mapped);
+    return mapped;
+  } catch (error) {
+    console.error('[API] getSupplyRISById - Error:', error);
     return null;
   }
-
-  return mapVwSupplyRIS(response.data.data);
 };
 
 export const getSupplyRISItems = async (risId: number): Promise<VwSupplyRISItem[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
-  const response = await axiosInstance.get<ApiResponse<ListResponse<any>>>(`/Supply/ris-item/all/${risId}`, {
-    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
-  });
+  console.log('[API] getSupplyRISItems - Fetching RIS Items for RIS ID:', risId);
+  try {
+    const response = await axiosInstance.get<ApiResponse<ListResponse<any>>>(`/Supply/ris-item/all/${risId}`, {
+      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+    });
 
-  if (!response.data.success) {
-    toast.error(response.data.message || 'Failed to fetch RIS items');
+    console.log('[API] getSupplyRISItems - Response:', response.data);
+
+    if (!response.data.success) {
+      toast.error(response.data.message || 'Failed to fetch RIS items');
+      return [];
+    }
+
+    const mapped = Array.isArray(response.data.data.items)
+      ? response.data.data.items.map(mapVwSupplyRISItem)
+      : [];
+    console.log('[API] getSupplyRISItems - Mapped RIS Items:', mapped);
+    return mapped;
+  } catch (error) {
+    console.error('[API] getSupplyRISItems - Error:', error);
     return [];
   }
-
-  return Array.isArray(response.data.data.items)
-    ? response.data.data.items.map(mapVwSupplyRISItem)
-    : [];
 };
 
 // ------------------- POST / PUT -------------------

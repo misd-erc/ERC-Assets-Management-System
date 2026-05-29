@@ -19,8 +19,10 @@ import { Badge } from '@/components/ui/badge';
 import { useStockCard } from '@/hooks/supply/useStockCard';
 import { formatDate } from '@/utils/dateUtils';
 import { SupplyStockCardItem } from '@/types/supply/stockcard';
-import { ChevronLeft, ChevronRight, ClipboardList, Plus, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ClipboardList, Plus, Loader2, Pencil } from 'lucide-react';
 import { IssuanceBypassModal } from './IssuanceBypassModal';
+import { AddSupplyStockModal } from './AddSupplyStockModal';
+import { IssuanceRISModal } from './IssuanceRISModal';
 
 interface Props {
   open: boolean;
@@ -33,6 +35,13 @@ interface Props {
 export const StockCardModal = ({ open, onOpenChange, stockNumber, description, totalCurrentStock }: Props) => {
   const { stockCardItems, loading, totalCount, fetchStockCardItems, reset, setPage, currentPage, pageSize } = useStockCard();
   const [bypassModalOpen, setBypassModalOpen] = useState(false);
+
+  // Edit Mode States
+  const [addStockEditOpen, setAddStockEditOpen] = useState(false);
+  const [risEditOpen, setRisEditOpen] = useState(false);
+  const [selectedEditId, setSelectedEditId] = useState<number | undefined>(undefined);
+  const [selectedRISId, setSelectedRISId] = useState<number | undefined>(undefined);
+
   const getAcronym = (text: string | undefined | null): string => {
     if (!text) return ''; // Safely handle empty/undefined data
 
@@ -112,6 +121,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
                   <TableHead className="w-[150px] text-right">Office</TableHead>
                   <TableHead className="w-[120px] text-right">Balance</TableHead>
                   <TableHead className="text-right">Days Consumed</TableHead>
+                  <TableHead className="w-[80px] text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -119,7 +129,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
                 {loading ? (
                   Array.from({ length: 6 }).map((_, index) => (
                     <TableRow key={`skeleton-${index}`}>
-                      {Array.from({ length: 8 }).map((_, colIndex) => (
+                      {Array.from({ length: 9 }).map((_, colIndex) => (
                         <TableCell key={`skel-col-${colIndex}`}>
                           <div className="h-4 bg-slate-200 rounded animate-pulse w-full"></div>
                         </TableCell>
@@ -164,13 +174,31 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
                         <TableCell className="max-w-[150px] text-right truncate text-slate-600">
                           {item.issuedStockQuantity ? "30" : ""}
                         </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedEditId(item.id);
+                              if (item.addedStockQuantity > 0) {
+                                setAddStockEditOpen(true);
+                              } else if (item.issuedStockQuantity > 0) {
+                                setSelectedRISId(item.supplyRISId ?? (item as any).supplyRisId ?? (item as any).supplyrisId);
+                                setRisEditOpen(true);
+                              }
+                            }}
+                            className="h-8 w-8 p-0 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     );
                   })
                 ) : (
                   // POLISHED EMPTY STATE
                   <TableRow>
-                    <TableCell colSpan={8} className="h-64 text-center">
+                    <TableCell colSpan={9} className="h-64 text-center">
                       <div className="flex flex-col items-center justify-center text-slate-500 space-y-3">
                         <div className="p-3 bg-slate-50 rounded-full">
                           <ClipboardList className="w-8 h-8 text-slate-400" />
@@ -246,6 +274,43 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
         description={description}
         unitId={stockCardItems[0]?.unit?.id}
         totalCurrentStock={totalCurrentStock}
+        onSuccess={() => {
+          fetchStockCardItems(stockNumber, description, 1);
+        }}
+      />
+
+      <AddSupplyStockModal
+        open={addStockEditOpen}
+        onOpenChange={(val) => {
+          setAddStockEditOpen(val);
+          if (!val) {
+            setSelectedEditId(undefined);
+          }
+        }}
+        stockNumber={stockNumber}
+        description={description}
+        unitId={stockCardItems[0]?.unit?.id}
+        editId={selectedEditId}
+        onSuccess={() => {
+          fetchStockCardItems(stockNumber, description, 1);
+        }}
+      />
+
+      <IssuanceRISModal
+        open={risEditOpen}
+        onOpenChange={(val) => {
+          setRisEditOpen(val);
+          if (!val) {
+            setSelectedEditId(undefined);
+            setSelectedRISId(undefined);
+          }
+        }}
+        stockNumber={stockNumber}
+        description={description}
+        unitId={stockCardItems[0]?.unit?.id}
+        totalCurrentStock={totalCurrentStock}
+        editItemId={selectedEditId}
+        parentRISId={selectedRISId}
         onSuccess={() => {
           fetchStockCardItems(stockNumber, description, 1);
         }}

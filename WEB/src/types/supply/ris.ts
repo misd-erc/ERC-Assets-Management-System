@@ -105,6 +105,7 @@ export interface EditSupplyRIS {
 export interface SupplyRISItem {
   id: number;
   supplyRISId: number;
+  supplyRisId?: number;
   stockNumber: string;
   unitId: number;
   itemDescription: string;
