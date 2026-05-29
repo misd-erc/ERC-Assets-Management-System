@@ -110,18 +110,18 @@ export const IssuanceRISForm = ({
                 id: ris.id,
                 entityName: ris.entityName || 'Energy Regulatory Commission',
                 fundCluster: ris.fundCluster || '01',
-                officeId: ris.office?.id ?? ris.office?.Id ?? 0,
-                divisionId: ris.division?.id ?? ris.division?.Id ?? 0,
+                officeId: ris.office?.id ?? 0,
+                divisionId: ris.division?.id ?? 0,
                 responsibilityCenterCode: ris.responsibilityCenterCode || '',
                 risNumber: ris.risNumber || '',
                 risPurpose: ris.risPurpose || '',
                 risRequestedDate: safeFormatDate(ris.risRequestedDate) || new Date().toISOString().slice(0, 10),
-                risRequestedBySystemUserId: ris.requestedBySystemUser?.id ?? ris.requestedBySystemUser?.Id ?? 0,
-                risApprovedBySystemUserId: ris.approvedBySystemUser?.id ?? ris.approvedBySystemUser?.Id ?? 0,
+                risRequestedBySystemUserId: ris.requestedBySystemUser?.id ?? 0,
+                risApprovedBySystemUserId: ris.approvedBySystemUser?.id ?? 0,
                 risApprovedDate: safeFormatDate(ris.risApprovedDate) || new Date().toISOString().slice(0, 10),
-                risIssuedBySystemUserId: ris.issuedBySystemUser?.id ?? ris.issuedBySystemUser?.Id ?? 0,
+                risIssuedBySystemUserId: ris.issuedBySystemUser?.id ?? 0,
                 risIssuedDate: safeFormatDate(ris.risIssuedDate) || new Date().toISOString().slice(0, 10),
-                risReceivedBySystemUserId: ris.receivedBySystemUser?.id ?? ris.receivedBySystemUser?.Id ?? 0,
+                risReceivedBySystemUserId: ris.receivedBySystemUser?.id ?? 0,
                 risReceivedDate: safeFormatDate(ris.risReceivedDate) || new Date().toISOString().slice(0, 10),
                 createdAt: safeFormatDate(ris.createdAt) || new Date().toISOString().slice(0, 10),
               };
@@ -132,14 +132,14 @@ export const IssuanceRISForm = ({
               getSupplyRISItems(parentRISId)
                 .then((items) => {
                   console.log('[DEBUG] IssuanceRISForm - Fetched RIS items:', items);
-                  const item = items.find((i: any) => (i.id ?? i.Id) == editItemId);
+                  const item = items.find((i: any) => i.id == editItemId);
                   if (item) {
                     const newRisItemForm = {
-                      id: item.id ?? item.Id,
-                      risId: item.risId ?? item.RisId ?? item.RISId ?? 0,
+                      id: item.id,
+                      risId: item.risId ?? 0,
                       requisitionQuantity: totalCurrentStock || 0,
-                      issueQuantity: item.issueQuantity ?? item.IssueQuantity ?? 0,
-                      itemRemarks: item.itemRemarks ?? item.ItemRemarks ?? '',
+                      issueQuantity: item.issueQuantity ?? 0,
+                      itemRemarks: item.itemRemarks ?? '',
                     };
                     console.log('[DEBUG] IssuanceRISForm - Setting risItemForm to:', newRisItemForm);
                     setRisItemForm(newRisItemForm);
@@ -171,10 +171,10 @@ export const IssuanceRISForm = ({
         .then((res) => {
           const items = res.data?.data?.items || [];
           console.log('[DEBUG] IssuanceRISForm - Fallback fetched all RIS items:', items);
-          const item = items.find((i: any) => (i.id ?? i.Id) == editItemId);
+          const item = items.find((i: any) => i.id == editItemId);
           if (item) {
-            console.log('[DEBUG] IssuanceRISForm - Fallback found item:', item, 'Fetching RIS ID:', item.risId ?? item.RisId ?? item.RISId);
-            getSupplyRISById(item.risId ?? item.RisId ?? item.RISId)
+            console.log('[DEBUG] IssuanceRISForm - Fallback found item:', item, 'Fetching RIS ID:', item.risId);
+            getSupplyRISById(item.risId)
               .then((ris) => {
                 console.log('[DEBUG] IssuanceRISForm - Fallback fetched RIS:', ris);
                 if (ris) {
@@ -182,18 +182,18 @@ export const IssuanceRISForm = ({
                     id: ris.id,
                     entityName: ris.entityName || 'Energy Regulatory Commission',
                     fundCluster: ris.fundCluster || '01',
-                    officeId: ris.office?.id ?? ris.office?.Id ?? 0,
-                    divisionId: ris.division?.id ?? ris.division?.Id ?? 0,
+                    officeId: ris.office?.id ?? 0,
+                    divisionId: ris.division?.id ?? 0,
                     responsibilityCenterCode: ris.responsibilityCenterCode || '',
                     risNumber: ris.risNumber || '',
                     risPurpose: ris.risPurpose || '',
                     risRequestedDate: safeFormatDate(ris.risRequestedDate) || new Date().toISOString().slice(0, 10),
-                    risRequestedBySystemUserId: ris.requestedBySystemUser?.id ?? ris.requestedBySystemUser?.Id ?? 0,
-                    risApprovedBySystemUserId: ris.approvedBySystemUser?.id ?? ris.approvedBySystemUser?.Id ?? 0,
+                    risRequestedBySystemUserId: ris.requestedBySystemUser?.id ?? 0,
+                    risApprovedBySystemUserId: ris.approvedBySystemUser?.id ?? 0,
                     risApprovedDate: safeFormatDate(ris.risApprovedDate) || new Date().toISOString().slice(0, 10),
-                    risIssuedBySystemUserId: ris.issuedBySystemUser?.id ?? ris.issuedBySystemUser?.Id ?? 0,
+                    risIssuedBySystemUserId: ris.issuedBySystemUser?.id ?? 0,
                     risIssuedDate: safeFormatDate(ris.risIssuedDate) || new Date().toISOString().slice(0, 10),
-                    risReceivedBySystemUserId: ris.receivedBySystemUser?.id ?? ris.receivedBySystemUser?.Id ?? 0,
+                    risReceivedBySystemUserId: ris.receivedBySystemUser?.id ?? 0,
                     risReceivedDate: safeFormatDate(ris.risReceivedDate) || new Date().toISOString().slice(0, 10),
                     createdAt: safeFormatDate(ris.createdAt) || new Date().toISOString().slice(0, 10),
                   };
@@ -201,11 +201,11 @@ export const IssuanceRISForm = ({
                   setRisForm(newRisForm);
 
                   const newRisItemForm = {
-                    id: item.id ?? item.Id,
-                    risId: item.risId ?? item.RisId ?? item.RISId ?? 0,
+                    id: item.id,
+                    risId: item.risId ?? 0,
                     requisitionQuantity: totalCurrentStock || 0,
-                    issueQuantity: item.issueQuantity ?? item.IssueQuantity ?? 0,
-                    itemRemarks: item.itemRemarks ?? item.ItemRemarks ?? '',
+                    issueQuantity: item.issueQuantity ?? 0,
+                    itemRemarks: item.itemRemarks ?? '',
                   };
                   console.log('[DEBUG] IssuanceRISForm - Fallback setting risItemForm to:', newRisItemForm);
                   setRisItemForm(newRisItemForm);
