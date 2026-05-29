@@ -22,20 +22,24 @@ export interface PaginatedResult<T> {
 }
 
 const mapVwSupplyItem = (raw: any): VwSupplyItem => ({
-  id: raw.id,
-  iarId: raw.iarId,
-  code: raw.code,
-  category: raw.category,
-  quantity: raw.quantity,
-  description: raw.description,
-  measurementUnit: raw.measurementUnit,
-  currentStock: raw.currentStock ?? raw.totalCurrentStock ?? 0,
-  unitCost: raw.unitCost,
-  reorderPoint: raw.reorderPoint,
-  storageLocation: raw.storageLocation,
-  vendor: raw.vendor,
-  isActive: raw.isActive ?? true,
-  createdAt: raw.createdAt,
+  id: raw.id ?? raw.Id,
+  iarId: raw.iarId ?? raw.IarId ?? raw.IARId,
+  code: raw.code ?? raw.Code,
+  category: raw.category ?? raw.Category,
+  categoryId: raw.categoryId ?? raw.CategoryId ?? raw.category?.id ?? raw.Category?.Id ?? raw.Category?.id ?? 0,
+  quantity: raw.quantity ?? raw.Quantity,
+  description: raw.description ?? raw.Description,
+  measurementUnit: raw.measurementUnit ?? raw.MeasurementUnit,
+  measurementUnitId: raw.measurementUnitId ?? raw.MeasurementUnitId ?? raw.measurementUnit?.id ?? raw.MeasurementUnit?.Id ?? raw.MeasurementUnit?.id ?? 0,
+  currentStock: raw.currentStock ?? raw.CurrentStock ?? raw.totalCurrentStock ?? raw.TotalCurrentStock ?? 0,
+  unitCost: raw.unitCost ?? raw.UnitCost,
+  reorderPoint: raw.reorderPoint ?? raw.ReorderPoint,
+  storageLocation: raw.storageLocation ?? raw.StorageLocation,
+  storageLocationId: raw.storageLocationId ?? raw.StorageLocationId ?? raw.storageLocation?.id ?? raw.StorageLocation?.Id ?? raw.StorageLocation?.id ?? 0,
+  vendor: raw.vendor ?? raw.Vendor,
+  vendorId: raw.vendorId ?? raw.VendorId ?? raw.vendor?.id ?? raw.Vendor?.Id ?? raw.Vendor?.id ?? 0,
+  isActive: raw.isActive ?? raw.IsActive ?? true,
+  createdAt: raw.createdAt ?? raw.CreatedAt,
 });
 
 const mapVwSupplyGroupedItem = (raw: any): VwSupplyGroupedItem => ({
@@ -206,17 +210,27 @@ export const getSupplyUniqueRawItems = async (): Promise<VwSupplyUniqueRawItem[]
 export const getSupplyItemById = async (itemId: number): Promise<VwSupplyItem | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
-  const response = await axiosInstance.get<SupplyItemResponse<any>>(
-    `/Supply/item/all/${encodeURIComponent(itemId)}`,
-    { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
-  );
+  console.log('[API] getSupplyItemById - Fetching item ID:', itemId);
+  try {
+    const response = await axiosInstance.get<SupplyItemResponse<any>>(
+      `/Supply/item/all/${encodeURIComponent(itemId)}`,
+      { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
+    );
 
-  if (!response.data.success) {
-    toast.error(response.data.message || 'Item not found');
+    console.log('[API] getSupplyItemById - Response:', response.data);
+
+    if (!response.data.success) {
+      toast.error(response.data.message || 'Item not found');
+      return null;
+    }
+
+    const mapped = mapVwSupplyItem(response.data.data);
+    console.log('[API] getSupplyItemById - Mapped Item:', mapped);
+    return mapped;
+  } catch (error) {
+    console.error('[API] getSupplyItemById - Error:', error);
     return null;
   }
-
-  return mapVwSupplyItem(response.data.data);
 };
 
 /* ------------------------------- POST ------------------------------- */

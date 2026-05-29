@@ -36,14 +36,18 @@ export interface VwSupplyItem {
   code: string;
   iarId: number | null;
   category: Category | null;
+  categoryId?: number;
   description: string;
   measurementUnit: SupplyUnit | null;
+  measurementUnitId?: number;
   currentStock: number;
   quantity: number;
   unitCost: number;
   reorderPoint: number;
   storageLocation: SupplyStorageLocation | null;
+  storageLocationId?: number;
   vendor: Vendor | null;
+  vendorId?: number;
   isActive: boolean;
   createdAt?: string;
 }
