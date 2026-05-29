@@ -180,7 +180,14 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                 <Popover open={openItemType} onOpenChange={(open) => {
                   setOpenItemType(open);
                   if (open) {
-                    const types = [{ id: 1, label: "Supply" }, { id: 2, label: "PPE" }, { id: 3, label: "Semi-Expendable" }];
+                    const types = [
+                      { id: 1, label: "Supply" },
+                      { id: 2, label: "PPE" },
+                      { id: 3, label: "Semi-Expendable" },
+                      { id: 4, label: "Service" },
+                      { id: 5, label: "Subscription" },
+                      { id: 6, label: "Consultancy" }
+                    ];
                     const type = types.find(t => t.id === item.itemTypeId);
                     setActiveItemType(type ? type.label : "");
                   }
@@ -195,6 +202,9 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                     {item.itemTypeId === 1 && "Supply"}
                     {item.itemTypeId === 2 && "PPE"}
                     {item.itemTypeId === 3 && "Semi-Expendable"}
+                    {item.itemTypeId === 4 && "Service"}
+                    {item.itemTypeId === 5 && "Subscription"}
+                    {item.itemTypeId === 6 && "Consultancy"}
                     {!item.itemTypeId && "Select Item Type"}
                   </span>
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
@@ -218,6 +228,9 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                             { id: 1, label: "Supply" },
                             { id: 2, label: "PPE" },
                             { id: 3, label: "Semi-Expendable" },
+                            { id: 4, label: "Service" },
+                            { id: 5, label: "Subscription" },
+                            { id: 6, label: "Consultancy" },
                           ].map((type) => (
                               <CommandItem
                                   key={type.id}

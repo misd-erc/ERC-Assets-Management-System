@@ -1,4 +1,4 @@
-﻿using Microsoft.Graph.Models;
+using Microsoft.Graph.Models;
 using PortalCommon.Utilities;
 using System;
 using System.Collections.Generic;
@@ -16,6 +16,9 @@ namespace PortalDB.Entities.ASSET.Delivery
         [NotMapped] public const string ITEM_TYPE_SUPPLY = "Supply";
         [NotMapped] public const string ITEM_TYPE_PPE = "Property, Plant & Equipment (PPE)";
         [NotMapped] public const string ITEM_TYPE_SE = "Semi-Expendable";
+        [NotMapped] public const string ITEM_TYPE_SERVICE = "Service";
+        [NotMapped] public const string ITEM_TYPE_SUBSCRIPTION = "Subscription";
+        [NotMapped] public const string ITEM_TYPE_CONSULTANCY = "Consultancy";
         #endregion
 
         #region Dictionary
@@ -23,6 +26,9 @@ namespace PortalDB.Entities.ASSET.Delivery
             (1, ITEM_TYPE_SUPPLY),
             (2, ITEM_TYPE_PPE),
             (3, ITEM_TYPE_SE),
+            (4, ITEM_TYPE_SERVICE),
+            (5, ITEM_TYPE_SUBSCRIPTION),
+            (6, ITEM_TYPE_CONSULTANCY),
         ]);
         #endregion
 

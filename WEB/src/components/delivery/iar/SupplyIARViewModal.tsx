@@ -16,6 +16,18 @@ interface Props {
   loadingDeliveryRecord?: boolean;
 }
 
+const getItemTypeLabel = (typeId: number | undefined | null): string => {
+  switch (typeId) {
+    case 1: return 'Supply';
+    case 2: return 'PPE';
+    case 3: return 'Semi-Expendable';
+    case 4: return 'Service';
+    case 5: return 'Subscription';
+    case 6: return 'Consultancy';
+    default: return 'N/A';
+  }
+};
+
 export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord, loadingDeliveryRecord }: Props) => {
   if (!record) return null;
 
@@ -164,7 +176,7 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord,
                             <div className="flex justify-between items-start">
                               <div>
                                 <div className="font-medium flex items-center gap-2">
-                                  <Badge variant="outline" className="text-xs">{item.itemTypeId === 1 ? 'Supply' : item.itemTypeId === 2 ? 'PPE' : 'SE'}</Badge>
+                                  <Badge variant="outline" className="text-xs">{getItemTypeLabel(item.itemTypeId)}</Badge>
                                   {item.itemDescription}
                                   {item.code && <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1 rounded">[{item.code}]</span>}
                                 </div>
