@@ -265,6 +265,26 @@ export default function EmployeePortalPage() {
   const myPARs = useMemo(() => mapToGroups(records, 'PPE'), [records]);
   const myICS  = useMemo(() => mapToGroups(records, 'SE'),  [records]);
 
+  const myLinkedItems = useMemo(() => {
+    const unique = new Map<string, AssetLookupItem>();
+
+    records.forEach((r) => {
+      const pn = (r.propertyNumber || '').trim();
+      if (!pn || unique.has(pn)) return;
+
+      unique.set(pn, {
+        id: r.ptaId,
+        group: r.itemGroup,
+        propertyNumber: pn,
+        description: r.itemName,
+        serialNumber: r.serialNumber,
+        unitValue: r.unitValue,
+      });
+    });
+
+    return Array.from(unique.values()).sort((a, b) => a.propertyNumber.localeCompare(b.propertyNumber));
+  }, [records]);
+
   const parTotalPages = Math.max(1, Math.ceil(myPARs.length / listPageSize));
   const icsTotalPages = Math.max(1, Math.ceil(myICS.length / listPageSize));
 
@@ -796,6 +816,36 @@ export default function EmployeePortalPage() {
                     <Button variant="outline" size="sm" onClick={() => removeDraftItem(index)} disabled={draftItems.length === 1}>
                       Remove
                     </Button>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">My linked items</Label>
+                    <select
+                      className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                      value={item.lookup?.propertyNumber || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (!value) {
+                          updateDraftItem(index, { lookup: undefined });
+                          return;
+                        }
+
+                        const selected = myLinkedItems.find((x) => x.propertyNumber === value);
+                        if (!selected) return;
+
+                        updateDraftItem(index, {
+                          propertyNumber: selected.propertyNumber,
+                          lookup: selected,
+                        });
+                      }}
+                    >
+                      <option value="">Select from your assigned items</option>
+                      {myLinkedItems.map((linked) => (
+                        <option key={linked.id} value={linked.propertyNumber}>
+                          {linked.propertyNumber} - {linked.description || linked.group}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="grid gap-3 md:grid-cols-[1fr_auto]">

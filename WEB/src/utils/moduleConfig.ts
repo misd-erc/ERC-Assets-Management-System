@@ -155,7 +155,7 @@ export const moduleConfig: Record<string, any> = {
 
   APR: {
     id: "approvals",
-    title: "Approvals",
+    title: "Approval/Request",
     group: "Reports & Approvals",
     icon: ClipboardCheck,
     implemented: true,

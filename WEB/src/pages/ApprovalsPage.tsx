@@ -149,7 +149,7 @@ export default function ApprovalsPage() {
   }, [rows]);
 
   return (
-    <div className="space-y-6">
+    <div className="p-2 pt-5 md:pt-20 space-y-4 sm:space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Approval Request Management</CardTitle>
