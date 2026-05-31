@@ -11,7 +11,6 @@ import {
   ArrowRightLeft,
   Archive,
   FileText,
-  Truck,
   BarChart3,
   Trash2,
   QrCode,
@@ -154,6 +153,14 @@ export const moduleConfig: Record<string, any> = {
     implemented: true,
   },
 
+  APR: {
+    id: "approvals",
+    title: "Approval/Request",
+    group: "Reports & Approvals",
+    icon: ClipboardCheck,
+    implemented: true,
+  },
+
   DOP: {
     id: "disposals",
     title: "Disposal of Properties",
@@ -179,4 +186,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "ASSTAG", "ATG", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC", "DOP", "MYACC"];
+export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "ASSTAG", "ATG", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC", "APR", "DOP", "MYACC"];

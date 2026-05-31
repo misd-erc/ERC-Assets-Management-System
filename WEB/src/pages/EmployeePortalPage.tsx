@@ -7,13 +7,27 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency } from '@/utils/formatters';
 import { formatDate } from '@/utils/dateUtils';
 import { getMyAccountabilities } from '@/api/asset/myAccountabilitiesApi';
+import {
+  AssetLookupItem,
+  AssetRequestRecord,
+  AssetRequestStatus,
+  createAssetRequest,
+  getAssetRequestById,
+  getAssetRequestProcessors,
+  getMyAssetRequests,
+  lookupAssetByPropertyNumber,
+} from '@/api/asset/assetRequestApi';
 import { IssuanceRecord } from '@/types/issuance';
 import { useAuthStore } from '@/store/auth';
 import { secureStorage } from '@/utils/secureStorage';
 import { decrypt } from '@/utils/encryption';
+import { toast } from 'sonner';
 
 const ercLogo = '/images/erc-logo.png';
 
@@ -46,6 +60,20 @@ const formatParIcsDisplay = (value: string) => {
     return value.startsWith('ICS') ? 'ICS (Pending Assignment)' : 'PAR (Pending Assignment)';
   }
   return value;
+};
+
+type RequestDraftItem = {
+  propertyNumber: string;
+  remarks: string;
+  lookup?: AssetLookupItem | null;
+  isLookingUp?: boolean;
+};
+
+const toRequestStatusVariant = (status: AssetRequestStatus): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  if (status === 'Rejected') return 'destructive';
+  if (status === 'Resolved' || status === 'Completed') return 'secondary';
+  if (status === 'Pending') return 'outline';
+  return 'default';
 };
 
 const mapToGroups = (records: IssuanceRecord[], group: 'PPE' | 'SE'): AccountabilityGroup[] => {
@@ -176,6 +204,17 @@ export default function EmployeePortalPage() {
   const [icsPage, setIcsPage] = useState(1);
   const [listPageSize, setListPageSize] = useState(10);
 
+  const [showCreateRequestDialog, setShowCreateRequestDialog] = useState(false);
+  const [draftItems, setDraftItems] = useState<RequestDraftItem[]>([{ propertyNumber: '', remarks: '' }]);
+  const [committeeUsers, setCommitteeUsers] = useState<Array<{ id: number; fullName: string }>>([]);
+  const [selectedCommitteeId, setSelectedCommitteeId] = useState<number | ''>('');
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+
+  const [myRequests, setMyRequests] = useState<AssetRequestRecord[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [showRequestDetails, setShowRequestDetails] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<AssetRequestRecord | null>(null);
+
   // Pull display name from stored user details
   const userDisplayName = (() => {
     try {
@@ -202,8 +241,49 @@ export default function EmployeePortalPage() {
     })();
   }, []);
 
+  const loadRequestDependencies = async () => {
+    const [reqRes, committeeRes] = await Promise.all([
+      getMyAssetRequests({ pageSize: 100 }),
+      getAssetRequestProcessors(),
+    ]);
+
+    setMyRequests(reqRes.items);
+    setCommitteeUsers(committeeRes.map((x) => ({ id: x.id, fullName: x.fullName })));
+  };
+
+  useEffect(() => {
+    (async () => {
+      setRequestsLoading(true);
+      try {
+        await loadRequestDependencies();
+      } finally {
+        setRequestsLoading(false);
+      }
+    })();
+  }, []);
+
   const myPARs = useMemo(() => mapToGroups(records, 'PPE'), [records]);
   const myICS  = useMemo(() => mapToGroups(records, 'SE'),  [records]);
+
+  const myLinkedItems = useMemo(() => {
+    const unique = new Map<string, AssetLookupItem>();
+
+    records.forEach((r) => {
+      const pn = (r.propertyNumber || '').trim();
+      if (!pn || unique.has(pn)) return;
+
+      unique.set(pn, {
+        id: r.ptaId,
+        group: r.itemGroup,
+        propertyNumber: pn,
+        description: r.itemName,
+        serialNumber: r.serialNumber,
+        unitValue: r.unitValue,
+      });
+    });
+
+    return Array.from(unique.values()).sort((a, b) => a.propertyNumber.localeCompare(b.propertyNumber));
+  }, [records]);
 
   const parTotalPages = Math.max(1, Math.ceil(myPARs.length / listPageSize));
   const icsTotalPages = Math.max(1, Math.ceil(myICS.length / listPageSize));
@@ -233,6 +313,92 @@ export default function EmployeePortalPage() {
 
   const employeeName = userDisplayName || records[0]?.employeeName || 'N/A';
   const department   = records[0]?.divisionName || records[0]?.officeName || 'N/A';
+
+  const updateDraftItem = (index: number, patch: Partial<RequestDraftItem>) => {
+    setDraftItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  };
+
+  const addDraftItem = () => {
+    setDraftItems((prev) => [...prev, { propertyNumber: '', remarks: '' }]);
+  };
+
+  const removeDraftItem = (index: number) => {
+    setDraftItems((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== index)));
+  };
+
+  const handleLookup = async (index: number) => {
+    const item = draftItems[index];
+    if (!item.propertyNumber.trim()) {
+      toast.error('Enter property number first.');
+      return;
+    }
+
+    updateDraftItem(index, { isLookingUp: true });
+    try {
+      const found = await lookupAssetByPropertyNumber(item.propertyNumber.trim());
+      if (!found) {
+        updateDraftItem(index, { lookup: null });
+        toast.error(`No asset found for ${item.propertyNumber}.`);
+        return;
+      }
+      updateDraftItem(index, { lookup: found, propertyNumber: found.propertyNumber || item.propertyNumber });
+      toast.success('Asset matched.');
+    } finally {
+      updateDraftItem(index, { isLookingUp: false });
+    }
+  };
+
+  const resetRequestDraft = () => {
+    setDraftItems([{ propertyNumber: '', remarks: '' }]);
+    setSelectedCommitteeId('');
+  };
+
+  const handleSubmitRequest = async () => {
+    if (!selectedCommitteeId) {
+      toast.error('Please select an assignee.');
+      return;
+    }
+
+    const hasInvalid = draftItems.some((x) => !x.propertyNumber.trim() || !x.remarks.trim());
+    if (hasInvalid) {
+      toast.error('Property number and remarks are required for all items.');
+      return;
+    }
+
+    setIsSubmittingRequest(true);
+    try {
+      const result = await createAssetRequest({
+        assignedCommitteeSystemUserId: Number(selectedCommitteeId),
+        items: draftItems.map((x) => ({
+          ptaId: x.lookup?.id,
+          propertyNumber: x.propertyNumber.trim(),
+          remarks: x.remarks.trim(),
+        })),
+      });
+
+      if (!result) {
+        toast.error('Failed to submit request.');
+        return;
+      }
+
+      toast.success(`Request ${result.requestNumber} submitted.`);
+      setShowCreateRequestDialog(false);
+      resetRequestDraft();
+      setRequestsLoading(true);
+      await loadRequestDependencies();
+      setActiveTab('requests');
+    } finally {
+      setIsSubmittingRequest(false);
+      setRequestsLoading(false);
+    }
+  };
+
+  const openRequestDetails = async (requestId: number) => {
+    setShowRequestDetails(true);
+    setSelectedRequest(null);
+    const request = await getAssetRequestById(requestId);
+    setSelectedRequest(request);
+  };
 
   const handleLogout = () => {
     logout();
@@ -296,12 +462,17 @@ export default function EmployeePortalPage() {
                 Property and supplies currently assigned to you
               </p>
             </div>
-            {department !== 'N/A' && (
-              <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 bg-slate-100 dark:bg-slate-700 rounded-full px-3 py-1.5 flex-shrink-0">
-                <Building2 className="w-3.5 h-3.5" />
-                <span>{department}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {department !== 'N/A' && (
+                <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500 bg-slate-100 dark:bg-slate-700 rounded-full px-3 py-1.5 flex-shrink-0">
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span>{department}</span>
+                </div>
+              )}
+              <Button size="sm" onClick={() => setShowCreateRequestDialog(true)}>
+                Create Request
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -336,8 +507,12 @@ export default function EmployeePortalPage() {
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsList className="grid w-full grid-cols-4 mb-4">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="requests">
+                  My Requests
+                  {myRequests.length > 0 && <Badge variant="secondary" className="ml-2 text-xs">{myRequests.length}</Badge>}
+                </TabsTrigger>
                 <TabsTrigger value="par">
                   Property (PAR)
                   {myPARs.length > 0 && <Badge variant="secondary" className="ml-2 text-xs">{myPARs.length}</Badge>}
@@ -377,6 +552,57 @@ export default function EmployeePortalPage() {
                       {formatCurrency(totalAssetsValue + totalSuppliesValue)}
                     </span>
                   </div>
+                </div>
+              </TabsContent>
+
+              {/* My Requests Tab */}
+              <TabsContent value="requests">
+                <div className="rounded-lg border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Request #</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Assigned To</TableHead>
+                        <TableHead>Items</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Details</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {requestsLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="animate-spin h-5 w-5 rounded-full border-2 border-blue-500 border-t-transparent" />
+                              Loading requests...
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : myRequests.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                            No requests yet.
+                          </TableCell>
+                        </TableRow>
+                      ) : myRequests.map((request) => (
+                        <TableRow key={request.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40">
+                          <TableCell className="font-medium">{request.requestNumber}</TableCell>
+                          <TableCell>
+                            <Badge variant={toRequestStatusVariant(request.status)}>{request.status}</Badge>
+                          </TableCell>
+                          <TableCell>{request.assignedPersonnelName || request.assignedCommitteeName || 'Unassigned'}</TableCell>
+                          <TableCell>{request.items.length}</TableCell>
+                          <TableCell>{formatDate(request.createdAt)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" onClick={() => openRequestDetails(request.id)}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </TabsContent>
 
@@ -560,6 +786,178 @@ export default function EmployeePortalPage() {
       </footer>
 
       {/* ── Dialogs ── */}
+      <Dialog open={showCreateRequestDialog} onOpenChange={setShowCreateRequestDialog}>
+        <DialogContent className="w-[96vw] !max-w-[96vw] sm:!max-w-[980px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Request</DialogTitle>
+            <DialogDescription>Submit asset concerns with multiple items and required remarks.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Assign To (Committee / Processor)</Label>
+              <select
+                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                value={selectedCommitteeId}
+                onChange={(e) => setSelectedCommitteeId(e.target.value ? Number(e.target.value) : '')}
+              >
+                <option value="">Select assignee</option>
+                {committeeUsers.map((u) => (
+                  <option key={u.id} value={u.id}>{u.fullName}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-3">
+              {draftItems.map((item, index) => (
+                <div key={index} className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">Item {index + 1}</p>
+                    <Button variant="outline" size="sm" onClick={() => removeDraftItem(index)} disabled={draftItems.length === 1}>
+                      Remove
+                    </Button>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">My linked items</Label>
+                    <select
+                      className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                      value={item.lookup?.propertyNumber || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (!value) {
+                          updateDraftItem(index, { lookup: undefined });
+                          return;
+                        }
+
+                        const selected = myLinkedItems.find((x) => x.propertyNumber === value);
+                        if (!selected) return;
+
+                        updateDraftItem(index, {
+                          propertyNumber: selected.propertyNumber,
+                          lookup: selected,
+                        });
+                      }}
+                    >
+                      <option value="">Select from your assigned items</option>
+                      {myLinkedItems.map((linked) => (
+                        <option key={linked.id} value={linked.propertyNumber}>
+                          {linked.propertyNumber} - {linked.description || linked.group}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-[1fr_auto]">
+                    <Input
+                      value={item.propertyNumber}
+                      onChange={(e) => updateDraftItem(index, { propertyNumber: e.target.value, lookup: undefined })}
+                      placeholder="Property number"
+                    />
+                    <Button variant="secondary" onClick={() => handleLookup(index)} disabled={item.isLookingUp}>
+                      {item.isLookingUp ? 'Looking up...' : 'Lookup'}
+                    </Button>
+                  </div>
+
+                  {item.lookup && (
+                    <div className="rounded-md bg-muted/40 border p-3 text-xs sm:text-sm space-y-0.5">
+                      <p><span className="text-muted-foreground">Description:</span> {item.lookup.description || '-'}</p>
+                      <p><span className="text-muted-foreground">Group:</span> {item.lookup.group || '-'}</p>
+                      <p><span className="text-muted-foreground">Serial:</span> {item.lookup.serialNumber || '-'}</p>
+                    </div>
+                  )}
+
+                  <Textarea
+                    value={item.remarks}
+                    onChange={(e) => updateDraftItem(index, { remarks: e.target.value })}
+                    placeholder="Remarks / concern (required)"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between gap-2">
+              <Button variant="outline" onClick={addDraftItem}>Add Item</Button>
+              <Button onClick={handleSubmitRequest} disabled={isSubmittingRequest}>
+                {isSubmittingRequest ? 'Submitting...' : 'Submit Request'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showRequestDetails} onOpenChange={setShowRequestDetails}>
+        <DialogContent className="w-[96vw] !max-w-[96vw] sm:!max-w-[980px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Request Details {selectedRequest?.requestNumber ? `- ${selectedRequest.requestNumber}` : ''}
+            </DialogTitle>
+            <DialogDescription>Items, status tracking, and history logs.</DialogDescription>
+          </DialogHeader>
+
+          {!selectedRequest ? (
+            <div className="py-8 text-center text-muted-foreground">Loading details...</div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-md border p-3">
+                  <p className="text-xs text-muted-foreground">Status</p>
+                  <Badge variant={toRequestStatusVariant(selectedRequest.status)}>{selectedRequest.status}</Badge>
+                </div>
+                <div className="rounded-md border p-3">
+                  <p className="text-xs text-muted-foreground">Assigned To</p>
+                  <p className="font-medium">{selectedRequest.assignedPersonnelName || selectedRequest.assignedCommitteeName || 'Unassigned'}</p>
+                </div>
+                <div className="rounded-md border p-3">
+                  <p className="text-xs text-muted-foreground">Created</p>
+                  <p className="font-medium">{formatDate(selectedRequest.createdAt)}</p>
+                </div>
+              </div>
+
+              <div className="rounded-md border overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Property Number</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Remarks</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedRequest.items.map((x) => (
+                      <TableRow key={x.id}>
+                        <TableCell>{x.propertyNumber}</TableCell>
+                        <TableCell>{x.item?.description || '-'}</TableCell>
+                        <TableCell>{x.remarks}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="space-y-2">
+                <p className="font-semibold text-sm">Timeline</p>
+                {selectedRequest.history.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No history yet.</div>
+                ) : selectedRequest.history.map((h) => (
+                  <div key={h.id} className="rounded-md border p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium">{h.actionType}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(h.actionAt)}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">By: {h.updatedByName || 'Unknown'}</p>
+                    {(h.fromStatus || h.toStatus) && (
+                      <p className="text-xs text-muted-foreground">{h.fromStatus || '-'} → {h.toStatus || '-'}</p>
+                    )}
+                    {h.remarks && <p className="text-sm mt-1">{h.remarks}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <ItemDetailsDialog
         open={showPARDialog}
         onOpenChange={setShowPARDialog}
