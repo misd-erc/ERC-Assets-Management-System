@@ -188,7 +188,21 @@ namespace API.Controllers
                 TblEmployee? employee = await _getTools.Account.GetEmployeeByEmployeeIdAsync(model.EmployeeId, context);
 
                 if (employee == null)
-                    return StatusCode(ApiStatusCode.Unauthorized, ApiResponse<object>.Unauthorized("Employee account not found. Please contact your administrator."));
+                {
+                    // Auto-provision employee record from Microsoft login payload when missing.
+                    employee = new TblEmployee
+                    {
+                        FirstName = model.FirstName,
+                        LastName = model.LastName,
+                        EmployeeIdOriginal = model.EmployeeId,
+                        IsActive = true,
+                        IsDeleted = false,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    await context.TblEmployees.AddAsync(employee);
+                    await context.SaveChangesAsync();
+                }
 
                 TblSystemUser user = new()
                 {
