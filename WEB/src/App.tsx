@@ -1,4 +1,4 @@
-﻿import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
 import { LoginScreen } from '@/components/auth/LoginScreen';
@@ -15,6 +15,7 @@ import { initUserSync } from '@/utils/userSync';
 import { decrypt } from '@/utils/encryption';
 import { secureStorage } from './utils/secureStorage';
 import { isMfaPending } from '@/utils/otpTimerUtils';
+import { ChatWidget } from './components/chat/ChatWidget';
 
 
 // Helper: Returns the route the current user should land on after auth
@@ -212,6 +213,7 @@ export default function App() {
             <AppContent />
           </div>
         </Suspense>
+        <ChatWidget />
         <Toaster />
       {/* </ErrorBoundary> */}
     </Router>

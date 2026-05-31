@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260531122718_NewTblChats")]
+    partial class NewTblChats
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1680,10 +1683,6 @@ namespace PortalDB.Migrations
                     b.Property<long?>("ReceiverId")
                         .HasColumnType("bigint")
                         .HasColumnName("ReceiverSystemUserId");
-
-                    b.Property<long?>("ReplyToMessageId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("ReplyToMessageId");
 
                     b.Property<long>("SenderId")
                         .HasColumnType("bigint")

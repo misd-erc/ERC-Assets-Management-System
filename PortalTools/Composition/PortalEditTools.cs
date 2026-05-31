@@ -1,8 +1,9 @@
-﻿using PortalTools.Services.GetEditTools.ASSET.PTA;
+using PortalTools.Services.GetEditTools.ASSET.PTA;
 using PortalTools.Services.GetEditTools.ASSET.Supply;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
 using PortalTools.Services.GetEditTools.DBO.Office;
+using PortalTools.Services.GetEditTools.DBO.Chat;
 using PortalTools.Services.GetEditTools.LOG;
 using System;
 using System.Collections.Generic;
@@ -19,7 +20,8 @@ public class PortalEditTools : IPortalEditTools
         NotificationEditTools notification,
         PTAEditTools pta,
         SupplyEditTools supply,
-        DeliveryEditTools delivery
+        DeliveryEditTools delivery,
+        ChatEditTools chat
     )
     {
         Account = account;
@@ -29,6 +31,7 @@ public class PortalEditTools : IPortalEditTools
         PTA = pta;
         Supply = supply;
         Delivery = delivery;
+        Chat = chat;
     }
 
     public AccountEditTools Account { get; }
@@ -38,4 +41,5 @@ public class PortalEditTools : IPortalEditTools
     public PTAEditTools PTA { get; }
     public SupplyEditTools Supply { get; }
     public DeliveryEditTools Delivery { get; }
+    public ChatEditTools Chat { get; }
 }

@@ -1,9 +1,10 @@
-﻿using PortalTools.Services.GetEditTools.ASSET.PTA;
+using PortalTools.Services.GetEditTools.ASSET.PTA;
 using PortalTools.Services.GetEditTools.ASSET.Supply;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
 using PortalTools.Services.GetEditTools.DBO.Office;
 using PortalTools.Services.GetEditTools.DBO.Storage;
+using PortalTools.Services.GetEditTools.DBO.Chat;
 using PortalTools.Services.GetEditTools.LOG;
 
 namespace PortalTools.Composition;
@@ -18,7 +19,8 @@ public class PortalGetTools : IPortalGetTools
         NotificationGetTools notification,
         PTAGetTools pta,
         SupplyGetTools supply,
-        DeliveryGetTools delivery
+        DeliveryGetTools delivery,
+        ChatGetTools chat
     )
     {
         Account = account;
@@ -29,6 +31,7 @@ public class PortalGetTools : IPortalGetTools
         PTA = pta;
         Supply = supply;
         Delivery = delivery;
+        Chat = chat;
     }
 
     public AccountGetTools Account { get; }
@@ -39,5 +42,6 @@ public class PortalGetTools : IPortalGetTools
     public PTAGetTools PTA { get; }
     public SupplyGetTools Supply { get; }
     public DeliveryGetTools Delivery { get; }
+    public ChatGetTools Chat { get; }
 
 }

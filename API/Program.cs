@@ -13,6 +13,7 @@ using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
 using PortalTools.Services.GetEditTools.DBO.Office;
 using PortalTools.Services.GetEditTools.DBO.Storage;
+using PortalTools.Services.GetEditTools.DBO.Chat;
 using PortalTools.Services.GetEditTools.LOG;
 using System.IO;
 using System.Text;
@@ -22,6 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -64,6 +66,8 @@ builder.Services.AddScoped<SupplyGetTools>();
 builder.Services.AddScoped<SupplyEditTools>();
 builder.Services.AddScoped<DeliveryGetTools>();
 builder.Services.AddScoped<DeliveryEditTools>();
+builder.Services.AddScoped<ChatGetTools>();
+builder.Services.AddScoped<ChatEditTools>();
 
 builder.Services.AddScoped<AuthTools>();
 builder.Services.AddScoped<ParserTools>();
@@ -124,6 +128,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<API.Hubs.ChatHub>("/hubs/chat");
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
