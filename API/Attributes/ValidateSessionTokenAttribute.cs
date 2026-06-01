@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.DependencyInjection;
 using PortalDB.Models.Responses;
@@ -27,7 +27,7 @@ namespace PortalAPI.Attributes
 
                 if (modelObj == null)
                 {
-                    context.Result = new JsonResult(ApiResponse<object>.NoContent("Missing ActionBySystemUserId o SessionKey in request model."));
+                    context.Result = new BadRequestObjectResult(ApiResponse<object>.Fail("INVALID_INPUT", "Missing ActionBySystemUserId or SessionKey in request model."));
                     return;
                 }
 
@@ -43,13 +43,13 @@ namespace PortalAPI.Attributes
 
                 if (string.IsNullOrWhiteSpace(ActionBySystemUserId))
                 {
-                    context.Result = new JsonResult(ApiResponse<object>.Unauthorized("Invalid or missing system user id."));
+                    context.Result = new UnauthorizedObjectResult(ApiResponse<object>.Unauthorized("Invalid or missing system user id."));
                     return;
                 }
 
                 if (string.IsNullOrWhiteSpace(sessionKey))
                 {
-                    context.Result = new JsonResult(ApiResponse<object>.Unauthorized("Invalid or missing session key."));
+                    context.Result = new UnauthorizedObjectResult(ApiResponse<object>.Unauthorized("Invalid or missing session key."));
                     return;
                 }
 
@@ -58,14 +58,14 @@ namespace PortalAPI.Attributes
                 var authTools = context.HttpContext.RequestServices.GetService<AuthTools>();
                 if (authTools == null)
                 {
-                    context.Result = new JsonResult(ApiResponse<object>.Conflict("Internal service error: AuthTools not available."));
+                    context.Result = new ConflictObjectResult(ApiResponse<object>.Conflict("Internal service error: AuthTools not available."));
                     return;
                 }
 
                 bool isValid = await authTools.ValidateSessionTokenInternally(userId, sessionKey);
                 if (!isValid)
                 {
-                    context.Result = new JsonResult(ApiResponse<object>.SessionTokenExpired());
+                    context.Result = new UnauthorizedObjectResult(ApiResponse<object>.SessionTokenExpired());
                     return;
                 }
 
@@ -73,7 +73,7 @@ namespace PortalAPI.Attributes
             }
             catch (Exception ex)
             {
-                context.Result = new JsonResult(ApiResponse<object>.Unauthorized($"Token validation failed: {ex.Message}"));
+                context.Result = new UnauthorizedObjectResult(ApiResponse<object>.Unauthorized($"Token validation failed: {ex.Message}"));
             }
         }
     }

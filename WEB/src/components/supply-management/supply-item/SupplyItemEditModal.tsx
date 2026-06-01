@@ -274,8 +274,14 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem, grou
               <Label>Quantity</Label>
               <Input
                 type="number"
-                value={form.quantity ?? 0}
-                onChange={e => setForm({ ...form, quantity: Number(e.target.value) })}
+                value={form.quantity === 0 ? "" : form.quantity}
+                onChange={e => {
+                  const val = e.target.value;
+                  setForm({ ...form, quantity: val === "" ? 0 : Number(val) });
+                }}
+                onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                className="bg-white border-slate-200 text-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="0"
                 disabled={isViewMode}
               />
             </div>
@@ -284,8 +290,14 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem, grou
               <Input
                 type="number"
                 step="0.01"
-                value={form.unitCost}
-                onChange={e => setForm({ ...form, unitCost: Number(e.target.value) })}
+                value={form.unitCost === 0 ? "" : form.unitCost}
+                onChange={e => {
+                  const val = e.target.value;
+                  setForm({ ...form, unitCost: val === "" ? 0 : Number(val) });
+                }}
+                onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                className="bg-white border-slate-200 text-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="0"
                 disabled={isViewMode}
               />
             </div>
@@ -293,8 +305,14 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem, grou
               <Label>Reorder Point</Label>
               <Input
                 type="number"
-                value={form.reorderPoint}
-                onChange={e => setForm({ ...form, reorderPoint: Number(e.target.value) })}
+                value={form.reorderPoint === 0 ? "" : form.reorderPoint}
+                onChange={e => {
+                  const val = e.target.value;
+                  setForm({ ...form, reorderPoint: val === "" ? 0 : Number(val) });
+                }}
+                onKeyDown={(e) => ["e", "E", "+", "-"].includes(e.key) && e.preventDefault()}
+                className="bg-white border-slate-200 text-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                placeholder="0"
                 disabled={isViewMode}
               />
             </div>
