@@ -113,8 +113,8 @@ const buildHistoryRows = (asset: any): HistoryRow[] => {
 
     const dateAcquired = field(asset, 'dateAcquired', 'date_acquired');
     const unitValue = field(asset, 'unitValue', 'unit_value');
+    const formattedUnitValue = formatCurrency(Number(unitValue) || 0);
 
-    let balance = sorted.length;
     sorted.forEach((m) => {
         const cond = asStr(m.condition);
         const isDisposal = ['Disposed', 'Missing', 'Unserviceable', 'IIRUP'].includes(cond);
@@ -125,25 +125,38 @@ const buildHistoryRows = (asset: any): HistoryRow[] => {
             receiptQty: isDisposal ? '' : '1',
             issueQty: isDisposal ? '1' : '',
             office: movementOffice(m),
-            balanceQty: isDisposal ? '0' : String(balance),
-            amount: '',
+            // SE property card is per-asset (qty 1), so balance should not depend on movement count.
+            balanceQty: isDisposal ? '0' : '1',
+            amount: isDisposal ? '' : formattedUnitValue,
             remarks: asStr(m.remarks) || cond,
         });
-
-        if (!isDisposal) balance = Math.max(0, balance - 1);
     });
 
-    const lastMove = sorted[sorted.length - 1];
-    rows.push({
-        date: formatDateDisplay(String(dateAcquired)),
-        reference: lastMove ? movementRef(lastMove) : asStr(asset.par_itr_number),
-        receiptQty: '1',
-        issueQty: '',
-        office: lastMove ? movementOffice(lastMove) : asStr(asset.actual_division),
-        balanceQty: '1',
-        amount: formatCurrency(Number(unitValue) || 0),
-        remarks: '',
-    });
+    const normalizeDateOnly = (value: unknown): string => {
+        const raw = asStr(value);
+        if (!raw) return '';
+        const d = new Date(raw);
+        if (Number.isNaN(d.getTime())) return raw.slice(0, 10);
+        return d.toISOString().slice(0, 10);
+    };
+
+    const acquisitionDateOnly = normalizeDateOnly(dateAcquired);
+    const hasAcquisitionInMovements = sorted.some((m) => normalizeDateOnly(m.dateAssigned || m.date) === acquisitionDateOnly);
+
+    // Add initial acquisition row only when not already represented by a movement entry.
+    if (!hasAcquisitionInMovements) {
+        const lastMove = sorted[sorted.length - 1];
+        rows.push({
+            date: formatDateDisplay(String(dateAcquired)),
+            reference: lastMove ? movementRef(lastMove) : asStr(asset.par_itr_number),
+            receiptQty: '1',
+            issueQty: '',
+            office: lastMove ? movementOffice(lastMove) : asStr(asset.actual_division),
+            balanceQty: '1',
+            amount: formattedUnitValue,
+            remarks: '',
+        });
+    }
 
     return rows;
 };

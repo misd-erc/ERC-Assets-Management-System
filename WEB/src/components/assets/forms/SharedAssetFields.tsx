@@ -75,8 +75,14 @@ export function SharedAssetFields({
     getConditions().then(setConditions).catch(() => {});
   }, []);
 
-  const plantillaEmployeeOptions = employees.filter(emp => emp.id != null && isPlantillaEmploymentType(emp.employmentTypeName)).map(emp => ({ value: emp.id.toString(), label: emp.label }));
-  const nonPlantillaEmployeeOptions = employees.filter(emp => emp.id != null && !isPlantillaEmploymentType(emp.employmentTypeName)).map(emp => ({ value: emp.id.toString(), label: emp.label }));
+  const plantillaEmployeeOptions = [
+    { value: '0', label: 'N/A' },
+    ...employees.filter(emp => emp.id != null && isPlantillaEmploymentType(emp.employmentTypeName)).map(emp => ({ value: emp.id.toString(), label: emp.label })),
+  ];
+  const nonPlantillaEmployeeOptions = [
+    { value: '0', label: 'N/A' },
+    ...employees.filter(emp => emp.id != null && !isPlantillaEmploymentType(emp.employmentTypeName)).map(emp => ({ value: emp.id.toString(), label: emp.label })),
+  ];
 
   // Convert a UTC ISO string to "YYYY-MM-DDTHH:mm" in local time (for datetime-local inputs)
   const toLocalDatetimeInput = (utcString: string) => {
