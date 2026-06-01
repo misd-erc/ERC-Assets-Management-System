@@ -270,6 +270,7 @@ namespace API.Controllers
 
             try
             {
+        
                 // 1. Start with IQueryable for SQL-level filtering
                 var query = _getTools.Supply.GetTblSupplyItems(context);
                 if (query == null) return Ok(ApiResponse<SupplyItemResponseModel>.OkPaginated(new List<SupplyItemResponseModel>(), model.PageNumber, model.PageSize, 0));
@@ -313,6 +314,7 @@ namespace API.Controllers
                 var supplyItemsResponses = new List<SupplyItemResponseModel>();
                 foreach (var item in supplyItemsRaw)
                 {
+
                     supplyItemsResponses.Add(new SupplyItemResponseModel
                     {
                         Id = item.Id,
@@ -353,6 +355,51 @@ namespace API.Controllers
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpGet("item/all/{itemId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetSupplyItemById([FromQuery] SoloQueryParams model, [FromRoute] long itemId)
+        {
+            await using var context = new PortalDbContext(_options);
+
+            try
+            {
+                TblSupplyItem? item = await _getTools.Supply.GetTblSupplyItemAsync(itemId, context);
+                if (item == null)
+                {
+                    return NotFound(ApiResponse<object>.Fail(ErrorCodes.NOT_FOUND, "Supply item not found."));
+                }
+
+                var response = new SupplyItemResponseModel
+                {
+                    Id = item.Id,
+                    Code = item.Code ?? string.Empty,
+                    IARId = item.IARId,
+                    Category = await _getTools.PTA.GetTblPTACategoryAsync(item.CategoryId, context),
+                    CategoryId = item.CategoryId,
+                    MeasurementUnit = await _getTools.Supply.GetTblSupplyUnitAsync(item.MeasurementUnitId, context),
+                    MeasurementUnitId = item.MeasurementUnitId,
+                    Description = item.Description ?? string.Empty,
+                    Quantity = (long?)item.Quantity,
+                    UnitCost = item.UnitCost,
+                    ReorderPoint = item.ReorderPoint,
+                    StorageLocation = await _getTools.Supply.GetTblSupplyStorageLocationAsync(item.StorageLocationId, context),
+                    StorageLocationId = item.StorageLocationId,
+                    Vendor = await _getTools.Supply.GetTblSupplyVendorAsync(item.VendorId, context),
+                    VendorId = item.VendorId,
+                    IsActive = item.IsActive,
+                    CreatedAt = item.CreatedAt
+                };
+
+                return Ok(ApiResponse<SupplyItemResponseModel>.Ok(response, "Supply Item has been retrieved"));
+            }
+            catch (Exception ex)
+            {
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -838,6 +885,7 @@ namespace API.Controllers
                         ItemRemarks = evt.ItemRemarks,
                         IsActive = evt.IsActive,
                         CreatedAt = evt.CreatedAt,
+                        SupplyRISId = risId,
 
                         // --- ADDED: Map Office and Division safely ---
                         Office = parentRIS != null
@@ -1355,6 +1403,128 @@ namespace API.Controllers
             }
         }
 
+        [HttpGet("ris/{risId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetSupplyRISById([FromQuery] SoloQueryParams model, [FromRoute] long risId)
+        {
+            await using var context = new PortalDbContext(_options);
+
+            try
+            {
+                TblSupplyRIS? ris = await _getTools.Supply.GetTblSupplyRISAsync(risId, context);
+                if (ris == null)
+                {
+                    return NotFound(ApiResponse<object>.Fail(ErrorCodes.NOT_FOUND, "Supply RIS not found."));
+                }
+
+                // Map ApprovedBySystemUser
+                UserBasicResponseModel? approvedByUser = null;
+                if (ris.RISApprovedBySystemUserId.HasValue)
+                {
+                    var user = await _getTools.Account.GetTblSystemUserAsync(ris.RISApprovedBySystemUserId.Value, context);
+                    if (user != null)
+                    {
+                        approvedByUser = new UserBasicResponseModel
+                        {
+                            Id = user.Id,
+                            FirstName = user.FirstName,
+                            LastName = user.LastName,
+                            Email = user.Email,
+                            EmployeeId = user.EmployeeId,
+                            IsActive = user.IsActive
+                        };
+                    }
+                }
+
+                // Map IssuedBySystemUser
+                UserBasicResponseModel? issuedByUser = null;
+                if (ris.RISIssuedBySystemUserId.HasValue)
+                {
+                    var user = await _getTools.Account.GetTblSystemUserAsync(ris.RISIssuedBySystemUserId.Value, context);
+                    if (user != null)
+                    {
+                        issuedByUser = new UserBasicResponseModel
+                        {
+                            Id = user.Id,
+                            FirstName = user.FirstName,
+                            LastName = user.LastName,
+                            Email = user.Email,
+                            EmployeeId = user.EmployeeId,
+                            IsActive = user.IsActive
+                        };
+                    }
+                }
+
+                // Map ReceivedBySystemUser
+                UserBasicResponseModel? receivedByUser = null;
+                if (ris.RISReceivedBySystemUserId.HasValue)
+                {
+                    var user = await _getTools.Account.GetTblSystemUserAsync(ris.RISReceivedBySystemUserId.Value, context);
+                    if (user != null)
+                    {
+                        receivedByUser = new UserBasicResponseModel
+                        {
+                            Id = user.Id,
+                            FirstName = user.FirstName,
+                            LastName = user.LastName,
+                            Email = user.Email,
+                            EmployeeId = user.EmployeeId,
+                            IsActive = user.IsActive
+                        };
+                    }
+                }
+
+                UserBasicResponseModel? requestedByUser = null;
+                if (ris.RISRequestedBySystemUserId.HasValue)
+                {
+                    var user = await _getTools.Account.GetTblSystemUserAsync(ris.RISRequestedBySystemUserId.Value, context);
+                    if (user != null)
+                    {
+                        requestedByUser = new UserBasicResponseModel
+                        {
+                            Id = user.Id,
+                            FirstName = user.FirstName,
+                            LastName = user.LastName,
+                            Email = user.Email,
+                            EmployeeId = user.EmployeeId,
+                            IsActive = user.IsActive
+                        };
+                    }
+                }
+
+                var responseModel = new SupplyRISResponseModel
+                {
+                    Id = ris.Id,
+                    EntityName = ris.EntityName,
+                    FundCluster = ris.FundCluster,
+                    Office = await _getTools.Office.GetTblOfficeAsync(ris.OfficeId, context),
+                    Division = await _getTools.Office.GetTblDivisionAsync(ris.DivisionId, context),
+                    ResponsibilityCenterCode = ris.ResponsibilityCenterCode,
+                    RISNumber = ris.RISNumber,
+                    RISPurpose = ris.RISPurpose,
+                    RequestedBySystemUser = requestedByUser,
+                    RISRequestedDate = ris.RISRequestedDate,
+                    ApprovedBySystemUser = approvedByUser,
+                    RISApprovedDate = ris.RISApprovedDate,
+                    IssuedBySystemUser = issuedByUser,
+                    RISIssuedDate = ris.RISIssuedDate,
+                    ReceivedBySystemUser = receivedByUser,
+                    RISReceivedDate = ris.RISReceivedDate,
+                    IsApproved = ris.IsApproved,
+                    IsActive = ris.IsActive,
+                    CreatedAt = ris.CreatedAt
+                };
+
+                return Ok(ApiResponse<SupplyRISResponseModel>.Ok(responseModel, "Supply RIS has been retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred."));
+            }
+        }
+
         [HttpGet("ris-item/all")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
@@ -1523,10 +1693,9 @@ namespace API.Controllers
         [HttpGet("rmsi-items/filter/{categoryId}/{startDate}/{endDate}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> FilterRMSIItems(long categoryId, DateTime startDate, DateTime endDate, [FromQuery] SoloQueryParams model)
+        public async Task<IActionResult> FilterRMSIItems([FromQuery] SoloQueryParams model, [FromRoute] long categoryId, [FromRoute] DateTime startDate, [FromRoute] DateTime endDate)
         {
             await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
 
             try
             {
@@ -1634,9 +1803,6 @@ namespace API.Controllers
                     })
                     .ToList();
 
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
                 return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.Ok(
                     grouped,
                     "Filtered RIS items retrieved"
@@ -1644,7 +1810,6 @@ namespace API.Controllers
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
@@ -1765,7 +1930,6 @@ namespace API.Controllers
 
             try
             {
-
                 TblSupplyItem supplyItem = new()
                 {
                     Id = model.Id,
@@ -1778,7 +1942,8 @@ namespace API.Controllers
                     ReorderPoint = model.ReorderPoint,
                     StorageLocationId = model.StorageLocationId,
                     VendorId = model.VendorId,
-                    IsActive = model.IsActive
+                    IsActive = model.IsActive,
+                    CreatedAt = model.CreatedAt ?? DateTime.UtcNow
                 };
 
                 long supplyItemId = await _editTools.Supply.EditTblSupplyItemAsync(supplyItem, model.ActionBySystemUserId, context);
@@ -1940,7 +2105,6 @@ namespace API.Controllers
 
             try
             {
-
                 TblSupplyRIS supplyRIS = new()
                 {
                     Id = model.Id,
@@ -1960,9 +2124,9 @@ namespace API.Controllers
                     RISReceivedBySystemUserId = model.RISReceivedBySystemUserId,
                     RISReceivedDate = model.RISReceivedDate,
                     IsApproved = model.IsApproved,
-                    IsActive = model.IsActive,
-                    //IsApproved = model.IsApproved
+                    IsActive = model.IsActive
                 };
+
 
                 //if (supplyRIS.IsApproved)
                 //{
@@ -2015,7 +2179,8 @@ namespace API.Controllers
                     IsAvailable = model.IsAvailable,
                     IssueQuantity = model.IssueQuantity,
                     ItemRemarks = model.ItemRemarks,
-                    IsActive = model.IsActive
+                    IsActive = model.IsActive,
+                    CreatedAt = model.CreatedAt ?? DateTime.UtcNow
                 };
 
                 long supplyRISItemId = await _editTools.Supply.EditTblSupplyRISItemAsync(supplyRISItem, model.ActionBySystemUserId, context);

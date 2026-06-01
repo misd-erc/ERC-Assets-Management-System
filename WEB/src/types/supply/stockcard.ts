@@ -14,4 +14,6 @@ export interface SupplyStockCardItem {
   createdAt: string;
   office?: any;
   division?: any;
+  supplyRISId?: number;
+  supplyRisId?: number;
 }

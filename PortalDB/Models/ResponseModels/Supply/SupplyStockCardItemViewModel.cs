@@ -1,4 +1,4 @@
-﻿using PortalDB.Entities.ASSET.Supply;
+using PortalDB.Entities.ASSET.Supply;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Office.Division;
 using System;
@@ -22,5 +22,6 @@ namespace PortalDB.Models.ResponseModels.Supply
         public string? ItemRemarks { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
+        public long? SupplyRISId { get; set; }
     }
 }

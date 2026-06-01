@@ -25,6 +25,18 @@ interface Props {
   onSubmit: (data: any) => Promise<void>;
 }
 
+const getItemTypeLabel = (typeId: number | undefined | null): string => {
+  switch (typeId) {
+    case 1: return 'Supply';
+    case 2: return 'PPE';
+    case 3: return 'Semi-Expendable';
+    case 4: return 'Service';
+    case 5: return 'Subscription';
+    case 6: return 'Consultancy';
+    default: return 'N/A';
+  }
+};
+
 export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSubmit }: Props) => {
   const [loading, setLoading] = useState(false);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
@@ -207,7 +219,7 @@ export const DeliveryRecordEditModal = ({ open, onOpenChange, mode, record, onSu
                   <div key={idx} className="flex justify-between items-center p-3 border rounded bg-white text-sm shadow-sm">
                     <div>
                       <div className="font-medium flex items-center gap-2">
-                        <Badge variant="outline">{item.itemTypeId === 1 ? 'Supply' : item.itemTypeId === 2 ? 'PPE' : 'SE'}</Badge>
+                        <Badge variant="outline">{getItemTypeLabel(item.itemTypeId)}</Badge>
                         {item.itemDescription}
                         {item.code && <span className="text-[10px] bg-slate-100 text-slate-500 px-1 rounded font-mono">[{item.code}]</span>}
                       </div>

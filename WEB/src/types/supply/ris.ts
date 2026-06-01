@@ -97,6 +97,7 @@ export interface EditSupplyRIS {
   risReceivedDate?: string;
   isApproved: boolean;
   isActive: boolean;
+  createdAt?: string;
   // Note: RIS items are handled separately
 }
 
@@ -104,6 +105,7 @@ export interface EditSupplyRIS {
 export interface SupplyRISItem {
   id: number;
   supplyRISId: number;
+  supplyRisId?: number;
   stockNumber: string;
   unitId: number;
   itemDescription: string;
@@ -145,6 +147,7 @@ export interface EditSupplyRISItem {
   issueQuantity: number;
   itemRemarks: string;
   isActive: boolean;
+  createdAt?: string;
 }
 
 

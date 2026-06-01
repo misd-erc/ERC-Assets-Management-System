@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
@@ -19,6 +19,7 @@ namespace PortalDB.Models.QueryParams.Supply
         [Required] public long? StorageLocationId { get; set; }
         [Required] public long? VendorId { get; set; }
         [Required] public bool IsActive { get; set; } = true;
+        public DateTime? CreatedAt { get; set; }
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;
     }

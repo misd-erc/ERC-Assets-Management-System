@@ -1,4 +1,4 @@
-﻿using PortalCommon.Utilities;
+using PortalCommon.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

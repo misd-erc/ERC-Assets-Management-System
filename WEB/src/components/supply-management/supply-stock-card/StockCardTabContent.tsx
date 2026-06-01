@@ -75,6 +75,7 @@ export const StockCardTabContent = () => {
         onOpenChange={setModalOpen}
         stockNumber={selectedGroup?.code || ''}
         description={selectedGroup?.description || ''}
+        totalCurrentStock={selectedGroup?.totalCurrentStock}
       />
     </>
   );
