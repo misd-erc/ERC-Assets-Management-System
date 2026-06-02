@@ -1,12 +1,23 @@
 import CryptoJS from 'crypto-js';
 
 // Fallbacks are highly recommended just in case env variables fail to load
-const SECRET_KEY = process.env.REACT_ENCRYPTION_KEY || '';
-const SECRET_IV = process.env.REACT_ENCRYPTION_IV || '';
+const SECRET_KEY = process.env.REACT_APP_ENCRYPTION_KEY || process.env.REACT_ENCRYPTION_KEY || '';
+const SECRET_IV = process.env.REACT_APP_ENCRYPTION_IV || process.env.REACT_ENCRYPTION_IV || '';
+
+// Function to support parsing both raw Utf8 strings and Hex-encoded strings
+function parseKeyOrIv(value: string, expectedBytes: number): CryptoJS.lib.WordArray {
+  if (!value) return CryptoJS.enc.Utf8.parse('');
+  // Check if it is a valid hex string of double the expected byte length
+  if (/^[0-9a-fA-F]+$/.test(value) && value.length === expectedBytes * 2) {
+    return CryptoJS.enc.Hex.parse(value);
+  }
+  return CryptoJS.enc.Utf8.parse(value);
+}
 
 // AES requires keys and IVs to be parsed into WordArrays
-const key = CryptoJS.enc.Utf8.parse(SECRET_KEY);
-const iv = CryptoJS.enc.Utf8.parse(SECRET_IV);
+// 32 bytes key for AES-256, 16 bytes IV for AES
+const key = parseKeyOrIv(SECRET_KEY, 32);
+const iv = parseKeyOrIv(SECRET_IV, 16);
 
 export const cryptoUtil = {
   /**

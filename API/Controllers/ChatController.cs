@@ -46,8 +46,8 @@ namespace API.Controllers
             try
             {
                 var query = _getTools.Chat.GetChatMessages(context)
-                    .Where(m => (m.SenderId == currentUserId && m.ReceiverId == otherUserId) ||
-                                (m.SenderId == otherUserId && m.ReceiverId == currentUserId));
+                    .Where(m => (m.SenderId == currentUserId && m.ReceiverId == otherUserId && !m.IsDeletedForSender) ||
+                                (m.SenderId == otherUserId && m.ReceiverId == currentUserId && !m.IsDeletedForReceiver));
 
                 if (beforeMessageId.HasValue)
                 {
@@ -71,12 +71,18 @@ namespace API.Controllers
                     .Where(r => messageIds.Contains(r.ChatMessageId))
                     .ToListAsync();
 
+                var fileStorageIds = messages.Where(m => m.FileStorageId.HasValue).Select(m => m.FileStorageId.Value).Distinct().ToList();
+                var fileRecords = await context.TblFileStorages.Where(f => fileStorageIds.Contains(f.Id)).ToListAsync();
+
                 var result = messages.Select(m => new {
                     m.Id,
                     m.SenderId,
                     m.ReceiverId,
+                    m.ReplyToMessageId,
                     m.Message,
                     m.FileStorageId,
+                    AttachmentName = m.FileStorageId.HasValue ? fileRecords.FirstOrDefault(f => f.Id == m.FileStorageId.Value)?.OriginalFileName : null,
+                    AttachmentType = m.FileStorageId.HasValue ? fileRecords.FirstOrDefault(f => f.Id == m.FileStorageId.Value)?.ContentType : null,
                     m.IsUnsent,
                     m.CreatedAt,
                     ReadReceipts = receipts.Where(r => r.ChatMessageId == m.Id).Select(r => new { r.SystemUserId, r.ReadAt }),
@@ -122,12 +128,18 @@ namespace API.Controllers
                     .Where(r => messageIds.Contains(r.ChatMessageId))
                     .ToListAsync();
 
+                var fileStorageIds = messages.Where(m => m.FileStorageId.HasValue).Select(m => m.FileStorageId.Value).Distinct().ToList();
+                var fileRecords = await context.TblFileStorages.Where(f => fileStorageIds.Contains(f.Id)).ToListAsync();
+
                 var result = messages.Select(m => new {
                     m.Id,
                     m.SenderId,
                     m.GroupId,
+                    m.ReplyToMessageId,
                     m.Message,
                     m.FileStorageId,
+                    AttachmentName = m.FileStorageId.HasValue ? fileRecords.FirstOrDefault(f => f.Id == m.FileStorageId.Value)?.OriginalFileName : null,
+                    AttachmentType = m.FileStorageId.HasValue ? fileRecords.FirstOrDefault(f => f.Id == m.FileStorageId.Value)?.ContentType : null,
                     m.IsUnsent,
                     m.CreatedAt,
                     ReadReceipts = receipts.Where(r => r.ChatMessageId == m.Id).Select(r => new { r.SystemUserId, r.ReadAt }),
@@ -248,6 +260,18 @@ namespace API.Controllers
                 await _editTools.Chat.SaveMessageAsync(chatMessage, context);
                 await transaction.CommitAsync();
 
+                string? attachmentName = null;
+                string? attachmentType = null;
+                if (fileStorageId.HasValue)
+                {
+                    var fileRecord = await context.TblFileStorages.FirstOrDefaultAsync(f => f.Id == fileStorageId.Value);
+                    if (fileRecord != null)
+                    {
+                        attachmentName = fileRecord.OriginalFileName;
+                        attachmentType = fileRecord.ContentType;
+                    }
+                }
+
                 var responsePayload = new {
                     chatMessage.Id,
                     chatMessage.SenderId,
@@ -256,6 +280,8 @@ namespace API.Controllers
                     chatMessage.ReplyToMessageId,
                     chatMessage.Message,
                     chatMessage.FileStorageId,
+                    AttachmentName = attachmentName,
+                    AttachmentType = attachmentType,
                     chatMessage.IsUnsent,
                     chatMessage.CreatedAt
                 };
@@ -297,8 +323,13 @@ namespace API.Controllers
                 };
                 await _editTools.Chat.CreateChatGroupAsync(group, context);
 
-                // Add creator as member
-                await _editTools.Chat.AddMemberToGroupAsync(new TblChatGroupMember { ChatGroupId = group.Id, SystemUserId = req.SystemUserId }, context);
+                // Add creator as member (admin!)
+                await _editTools.Chat.AddMemberToGroupAsync(new TblChatGroupMember 
+                { 
+                    ChatGroupId = group.Id, 
+                    SystemUserId = req.SystemUserId, 
+                    IsAdmin = true 
+                }, context);
 
                 if (req.MemberIds != null)
                 {
@@ -339,6 +370,19 @@ namespace API.Controllers
             await using var context = new PortalDbContext(_options);
             try
             {
+                var message = await context.TblChatMessages.FirstOrDefaultAsync(x => x.Id == messageId);
+                if (message == null) return BadRequest(ApiResponse<object>.Fail("NOT_FOUND", "Message not found"));
+
+                // Delete file from Azure if it exists
+                if (message.FileStorageId.HasValue)
+                {
+                    var fileRecord = await context.TblFileStorages.FirstOrDefaultAsync(f => f.Id == message.FileStorageId.Value);
+                    if (fileRecord != null && !string.IsNullOrEmpty(fileRecord.BlobName))
+                    {
+                        await PortalTools.Services.AzureTools.DeleteFileAsync(fileRecord.BlobName, _options);
+                    }
+                }
+
                 var success = await _editTools.Chat.UnsendMessageAsync(messageId, context);
                 if (success)
                 {
@@ -388,6 +432,46 @@ namespace API.Controllers
                 }
 
                 return Ok(ApiResponse<object>.Ok((object?)null, "Read receipt saved"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(context, ex, nameof(ChatController));
+                return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
+            }
+        }
+
+        [HttpPost("read-conversation")]
+        public async Task<IActionResult> ReadConversation([FromBody] ReadConversationRequest req)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var messagesQuery = _getTools.Chat.GetChatMessages(context).Where(m => m.SenderId != req.SystemUserId);
+                if (req.IsGroup)
+                {
+                    messagesQuery = messagesQuery.Where(m => m.GroupId == req.TargetId);
+                }
+                else
+                {
+                    messagesQuery = messagesQuery.Where(m => m.GroupId == null && m.SenderId == req.TargetId && m.ReceiverId == req.SystemUserId);
+                }
+
+                var unreadMessages = await messagesQuery.ToListAsync();
+                var receipts = unreadMessages.Select(m => new TblChatMessageReadReceipt
+                {
+                    ChatMessageId = m.Id,
+                    SystemUserId = req.SystemUserId
+                }).ToList();
+
+                if (receipts.Any())
+                {
+                    await _editTools.Chat.SaveReadReceiptsAsync(receipts, context);
+                    
+                    // We can also notify the sender(s) that their messages were read if needed,
+                    // but bulk read usually doesn't need to fire SignalR for every single message to avoid spam.
+                }
+
+                return Ok(ApiResponse<object>.Ok((object?)null, "Conversation marked as read"));
             }
             catch (Exception ex)
             {
@@ -467,6 +551,608 @@ namespace API.Controllers
                 return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
             }
         }
+        [HttpGet("group/{groupId}/members")]
+        public async Task<IActionResult> GetGroupMembers([FromRoute] long groupId)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var members = await context.TblChatGroupMembers
+                    .Where(m => m.ChatGroupId == groupId && !m.IsDeleted && m.IsActive)
+                    .ToListAsync();
+
+                var userIds = members.Select(m => m.SystemUserId).ToList();
+                var users = await context.TblSystemUsers
+                    .Where(u => userIds.Contains(u.Id))
+                    .ToListAsync();
+
+                var result = members.Select(m => {
+                    var user = users.FirstOrDefault(u => u.Id == m.SystemUserId);
+                    return new {
+                        m.Id,
+                        m.ChatGroupId,
+                        m.SystemUserId,
+                        m.IsAdmin,
+                        FirstName = user?.FirstName ?? "Unknown",
+                        LastName = user?.LastName ?? "User",
+                        Email = user?.Email ?? ""
+                    };
+                });
+
+                return Ok(ApiResponse<object>.Ok(result, "Group members retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(context, ex, nameof(ChatController));
+                return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
+            }
+        }
+
+        [HttpPost("group/assign-admin")]
+        public async Task<IActionResult> AssignAdmin([FromBody] AssignAdminRequest req)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var isRequesterAdmin = await context.TblChatGroupMembers
+                    .AnyAsync(m => m.ChatGroupId == req.GroupId && m.SystemUserId == req.RequesterUserId && m.IsAdmin && !m.IsDeleted && m.IsActive);
+                
+                if (!isRequesterAdmin)
+                {
+                    return BadRequest(ApiResponse<object>.Fail("FORBIDDEN", "Only group admins can assign or remove admins."));
+                }
+
+                var member = await context.TblChatGroupMembers
+                    .FirstOrDefaultAsync(m => m.ChatGroupId == req.GroupId && m.SystemUserId == req.TargetUserId && !m.IsDeleted && m.IsActive);
+
+                if (member == null)
+                {
+                    return BadRequest(ApiResponse<object>.Fail("NOT_FOUND", "User is not a member of this group."));
+                }
+
+                member.IsAdmin = req.IsAdmin;
+                context.TblChatGroupMembers.Update(member);
+                await context.SaveChangesAsync();
+
+                // Notify members via SignalR
+                await _hubContext.Clients.Group($"Group_{req.GroupId}").SendAsync("AdminStatusUpdated", new { req.GroupId, req.TargetUserId, req.IsAdmin });
+
+                return Ok(ApiResponse<object>.Ok((object?)null, "Admin status updated"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(context, ex, nameof(ChatController));
+                return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
+            }
+        }
+
+        [HttpPost("group/add-member")]
+        public async Task<IActionResult> AddMember([FromBody] GroupMemberRequest req)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var isRequesterAdmin = await context.TblChatGroupMembers
+                    .AnyAsync(m => m.ChatGroupId == req.GroupId && m.SystemUserId == req.RequesterUserId && m.IsAdmin && !m.IsDeleted && m.IsActive);
+                
+                if (!isRequesterAdmin)
+                {
+                    return BadRequest(ApiResponse<object>.Fail("FORBIDDEN", "Only group admins can add new members."));
+                }
+
+                var existing = await context.TblChatGroupMembers
+                    .FirstOrDefaultAsync(m => m.ChatGroupId == req.GroupId && m.SystemUserId == req.TargetUserId);
+
+                if (existing != null)
+                {
+                    if (existing.IsDeleted || !existing.IsActive)
+                    {
+                        existing.IsDeleted = false;
+                        existing.IsActive = true;
+                        context.TblChatGroupMembers.Update(existing);
+                        await context.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        return BadRequest(ApiResponse<object>.Fail("CONFLICT", "User is already a member of this group."));
+                    }
+                }
+                else
+                {
+                    await _editTools.Chat.AddMemberToGroupAsync(new TblChatGroupMember 
+                    { 
+                        ChatGroupId = req.GroupId, 
+                        SystemUserId = req.TargetUserId 
+                    }, context);
+                }
+
+                var group = await context.TblChatGroups.FirstOrDefaultAsync(g => g.Id == req.GroupId);
+
+                // Add System Message
+                var chatMessage = new TblChatMessage
+                {
+                    SenderId = req.TargetUserId,
+                    GroupId = req.GroupId,
+                    Message = "was added to the group.",
+                    IsSystemMessage = true
+                };
+                context.TblChatMessages.Add(chatMessage);
+                await context.SaveChangesAsync();
+
+                var responsePayload = new {
+                    chatMessage.Id,
+                    chatMessage.SenderId,
+                    chatMessage.ReceiverId,
+                    chatMessage.GroupId,
+                    chatMessage.ReplyToMessageId,
+                    chatMessage.Message,
+                    chatMessage.FileStorageId,
+                    chatMessage.IsUnsent,
+                    chatMessage.IsSystemMessage,
+                    chatMessage.CreatedAt
+                };
+
+                // Notify target via SignalR
+                await _hubContext.Clients.Group($"User_{req.TargetUserId}").SendAsync("GroupCreated", group);
+                await _hubContext.Clients.Group($"Group_{req.GroupId}").SendAsync("MemberAdded", new { req.GroupId, req.TargetUserId });
+                await _hubContext.Clients.Group($"Group_{req.GroupId}").SendAsync("ReceiveMessage", responsePayload);
+
+                return Ok(ApiResponse<object>.Ok((object?)null, "Member added successfully"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(context, ex, nameof(ChatController));
+                return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
+            }
+        }
+
+        [HttpPost("group/remove-member")]
+        public async Task<IActionResult> RemoveMember([FromBody] GroupMemberRequest req)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var isLeaving = req.RequesterUserId == req.TargetUserId;
+                var isRequesterAdmin = await context.TblChatGroupMembers
+                    .AnyAsync(m => m.ChatGroupId == req.GroupId && m.SystemUserId == req.RequesterUserId && m.IsAdmin && !m.IsDeleted && m.IsActive);
+                
+                if (!isRequesterAdmin && !isLeaving)
+                {
+                    return BadRequest(ApiResponse<object>.Fail("FORBIDDEN", "Only group admins can remove members."));
+                }
+
+                var member = await context.TblChatGroupMembers
+                    .FirstOrDefaultAsync(m => m.ChatGroupId == req.GroupId && m.SystemUserId == req.TargetUserId && !m.IsDeleted && m.IsActive);
+
+                if (member == null)
+                {
+                    return BadRequest(ApiResponse<object>.Fail("NOT_FOUND", "User is not a member of this group."));
+                }
+
+                if (isLeaving && member.IsAdmin)
+                {
+                    var otherAdminsExist = await context.TblChatGroupMembers
+                        .AnyAsync(m => m.ChatGroupId == req.GroupId && m.SystemUserId != req.TargetUserId && m.IsAdmin && !m.IsDeleted && m.IsActive);
+                    var otherMembersExist = await context.TblChatGroupMembers
+                        .AnyAsync(m => m.ChatGroupId == req.GroupId && m.SystemUserId != req.TargetUserId && !m.IsDeleted && m.IsActive);
+                    
+                    if (otherMembersExist && !otherAdminsExist)
+                    {
+                        return BadRequest(ApiResponse<object>.Fail("ADMIN_REQUIRED", "You cannot leave as the sole admin. Assign another admin first."));
+                    }
+                }
+
+                member.IsDeleted = true;
+                context.TblChatGroupMembers.Update(member);
+
+                // Add System Message
+                var systemMessageText = isLeaving ? "left the group." : "was removed from the group by an admin.";
+                var chatMessage = new TblChatMessage
+                {
+                    SenderId = req.TargetUserId,
+                    GroupId = req.GroupId,
+                    Message = systemMessageText,
+                    IsSystemMessage = true
+                };
+                context.TblChatMessages.Add(chatMessage);
+
+                await context.SaveChangesAsync();
+
+                // Notify target and group via SignalR
+                var responsePayload = new {
+                    chatMessage.Id,
+                    chatMessage.SenderId,
+                    chatMessage.ReceiverId,
+                    chatMessage.GroupId,
+                    chatMessage.ReplyToMessageId,
+                    chatMessage.Message,
+                    chatMessage.FileStorageId,
+                    chatMessage.IsUnsent,
+                    chatMessage.IsSystemMessage,
+                    chatMessage.CreatedAt
+                };
+
+                await _hubContext.Clients.Group($"User_{req.TargetUserId}").SendAsync("LeftGroup", req.GroupId);
+                await _hubContext.Clients.Group($"Group_{req.GroupId}").SendAsync("MemberRemoved", new { req.GroupId, req.TargetUserId });
+                await _hubContext.Clients.Group($"Group_{req.GroupId}").SendAsync("ReceiveMessage", responsePayload);
+
+                return Ok(ApiResponse<object>.Ok((object?)null, "Member removed successfully"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(context, ex, nameof(ChatController));
+                return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
+            }
+        }
+
+        [HttpPost("group/update-settings")]
+        public async Task<IActionResult> UpdateSettings([FromForm] UpdateSettingsRequest req)
+        {
+            await using var context = new PortalDbContext(_options);
+            using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                var isRequesterAdmin = await context.TblChatGroupMembers
+                    .AnyAsync(m => m.ChatGroupId == req.GroupId && m.SystemUserId == req.RequesterUserId && m.IsAdmin && !m.IsDeleted && m.IsActive);
+                
+                if (!isRequesterAdmin)
+                {
+                    return BadRequest(ApiResponse<object>.Fail("FORBIDDEN", "Only group admins can update group settings."));
+                }
+
+                var group = await context.TblChatGroups.FirstOrDefaultAsync(g => g.Id == req.GroupId);
+                if (group == null)
+                {
+                    return BadRequest(ApiResponse<object>.Fail("NOT_FOUND", "Group not found."));
+                }
+
+                if (!string.IsNullOrWhiteSpace(req.Name)) group.Name = req.Name;
+                if (req.Description != null) group.Description = req.Description;
+
+                if (req.LogoFile != null && req.LogoFile.Length > 0)
+                {
+                    // 1. Delete old logo if it exists
+                    if (group.GroupLogoStorageFileId.HasValue)
+                    {
+                        var oldFileRecord = await context.TblFileStorages.FirstOrDefaultAsync(f => f.Id == group.GroupLogoStorageFileId.Value);
+                        if (oldFileRecord != null && !string.IsNullOrEmpty(oldFileRecord.BlobName))
+                        {
+                            await PortalTools.Services.AzureTools.DeleteFileAsync(oldFileRecord.BlobName, _options);
+                        }
+                    }
+
+                    // 2. Upload new logo
+                    using var stream = req.LogoFile.OpenReadStream();
+                    var newFileId = await PortalTools.Services.AzureTools.UploadFileAndSaveToDbAsync(
+                        _options,
+                        stream,
+                        req.LogoFile.FileName,
+                        req.LogoFile.ContentType,
+                        req.RequesterUserId,
+                        $"chat/group/{group.Id}/logo"
+                    );
+
+                    if (newFileId.HasValue)
+                    {
+                        group.GroupLogoStorageFileId = newFileId.Value;
+                    }
+                    else
+                    {
+                        return StatusCode(500, ApiResponse<object>.Fail("UPLOAD_FAILED", "Failed to upload group logo."));
+                    }
+                }
+
+                context.TblChatGroups.Update(group);
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Notify members via SignalR
+                await _hubContext.Clients.Group($"Group_{req.GroupId}").SendAsync("GroupSettingsUpdated", group);
+
+                return Ok(ApiResponse<object>.Ok(group, "Group settings updated successfully"));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(context, ex, nameof(ChatController));
+                return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
+            }
+        }
+
+        [HttpDelete("group/{groupId}/{requesterUserId}")]
+        public async Task<IActionResult> DeleteGroup([FromRoute] long groupId, [FromRoute] long requesterUserId)
+        {
+            await using var context = new PortalDbContext(_options);
+            using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                var isRequesterAdmin = await context.TblChatGroupMembers
+                    .AnyAsync(m => m.ChatGroupId == groupId && m.SystemUserId == requesterUserId && m.IsAdmin && !m.IsDeleted && m.IsActive);
+                
+                if (!isRequesterAdmin)
+                {
+                    return BadRequest(ApiResponse<object>.Fail("FORBIDDEN", "Only group admins can delete the group."));
+                }
+
+                var group = await context.TblChatGroups.FirstOrDefaultAsync(g => g.Id == groupId && !g.IsDeleted);
+                if (group == null)
+                    return BadRequest(ApiResponse<object>.Fail("NOT_FOUND", "Group not found."));
+
+                // 1. Delete Logo Blob
+                if (group.GroupLogoStorageFileId.HasValue)
+                {
+                    var logoRecord = await context.TblFileStorages.FirstOrDefaultAsync(f => f.Id == group.GroupLogoStorageFileId.Value);
+                    if (logoRecord != null && !string.IsNullOrEmpty(logoRecord.BlobName))
+                        await PortalTools.Services.AzureTools.DeleteFileAsync(logoRecord.BlobName, _options);
+                }
+
+                // 2. Delete Message Blobs & Messages
+                var messages = await context.TblChatMessages.Where(m => m.GroupId == groupId).ToListAsync();
+                foreach (var msg in messages)
+                {
+                    if (msg.FileStorageId.HasValue)
+                    {
+                        var fileRecord = await context.TblFileStorages.FirstOrDefaultAsync(f => f.Id == msg.FileStorageId.Value);
+                        if (fileRecord != null && !string.IsNullOrEmpty(fileRecord.BlobName))
+                            await PortalTools.Services.AzureTools.DeleteFileAsync(fileRecord.BlobName, _options);
+                    }
+                    msg.IsDeleted = true;
+                }
+
+                // 3. Delete Members
+                var members = await context.TblChatGroupMembers.Where(m => m.ChatGroupId == groupId).ToListAsync();
+                foreach (var m in members)
+                {
+                    m.IsDeleted = true;
+                    m.IsActive = false;
+                }
+
+                // 4. Delete Group
+                group.IsDeleted = true;
+                group.IsActive = false;
+
+                context.TblChatMessages.UpdateRange(messages);
+                context.TblChatGroupMembers.UpdateRange(members);
+                context.TblChatGroups.Update(group);
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Notify all members
+                await _hubContext.Clients.Group($"Group_{groupId}").SendAsync("GroupDeleted", groupId);
+
+                return Ok(ApiResponse<object>.Ok((object?)null, "Group deleted successfully."));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(context, ex, nameof(ChatController));
+                return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
+            }
+        }
+
+        [HttpGet("conversations/{systemUserId}")]
+        public async Task<IActionResult> GetConversations([FromRoute] long systemUserId)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                // Use the proper shared query which already filters IsDeleted
+                var partnerMessages = await _getTools.Chat.GetChatMessages(context)
+                    .Where(m => m.GroupId == null && m.ReceiverId != null && !m.IsUnsent &&
+                        ((m.SenderId == systemUserId && !m.IsDeletedForSender) || 
+                         (m.ReceiverId == systemUserId && !m.IsDeletedForReceiver)))
+                    .ToListAsync();
+
+                // Group by conversation partner and get latest message details
+                var conversationData = partnerMessages
+                    .GroupBy(m => m.SenderId == systemUserId ? m.ReceiverId!.Value : m.SenderId)
+                    .Select(g => {
+                        var latestMsg = g.OrderByDescending(m => m.CreatedAt).First();
+                        return new {
+                            PartnerId = g.Key,
+                            LastMessageAt = latestMsg.CreatedAt,
+                            LastMessage = latestMsg.IsUnsent ? "Message unsent" : (latestMsg.Message ?? (latestMsg.FileStorageId.HasValue ? "Sent an attachment" : "")),
+                            LastMessageSenderId = latestMsg.SenderId
+                        };
+                    })
+                    .ToDictionary(x => x.PartnerId);
+
+                var partnerIds = conversationData.Keys.ToList();
+
+                if (!partnerIds.Any())
+                {
+                    return Ok(ApiResponse<object>.Ok(
+                        new List<object>(), 
+                        "No active conversations found"
+                    ));
+                }
+
+                // Get details of these partner users using the Account tools
+                var dbUsers = await _getTools.Account.GetVwSystemUsers(context)
+                    .Where(x => x.Id.HasValue && partnerIds.Contains(x.Id.Value))
+                    .ToListAsync();
+
+                var results = new List<object>();
+                foreach (var x in dbUsers)
+                {
+                    if (x == null || !x.Id.HasValue) continue;
+                    var convo = conversationData.ContainsKey(x.Id.Value) ? conversationData[x.Id.Value] : null;
+                    
+                    results.Add(new {
+                        Id = x.Id,
+                        FirstName = x.FirstName,
+                        LastName = x.LastName,
+                        Email = x.Email,
+                        EmployeeId = x.EmployeeId,
+                        IsActive = x.IsActive,
+                        SystemRole = await _getTools.Account.GetSystemRoleWithScopesAsListAsync(x.SystemRoleId, context),
+                        SystemUserStatus = await _getTools.Account.GetSystemUserStatusAsync(x.StatusId, context),
+                        Office = await _getTools.Office.GetTblOfficeAsync(x.OfficeId, context),
+                        Division = await _getTools.Office.GetTblDivisionAsync(x.DivisionId, context),
+                        EmploymentType = await _getTools.Office.GetTblEmploymentTypeAsync(x.EmploymentTypeId ?? 0, context),
+                        Position = await _getTools.Office.GetTblPositionAsync(x.PositionId ?? 0, context),
+                        ProfilePictureStorageFile = await _getTools.Storage.GetTblFileStorageAsync(x.ProfilePictureFileStorageId, context),
+                        CreatedAt = x.CreatedAt,
+                        LastLoginAt = x.LastLoginAt,
+                        LastMessage = convo?.LastMessage,
+                        LastMessageAt = convo?.LastMessageAt,
+                        LastMessageSenderId = convo?.LastMessageSenderId
+                    });
+                }
+
+                var sortedResults = results
+                    .OrderByDescending(r => {
+                        var prop = r.GetType().GetProperty("LastMessageAt");
+                        return prop?.GetValue(r) as DateTime? ?? DateTime.MinValue;
+                    })
+                    .ToList();
+
+                return Ok(ApiResponse<object>.Ok(sortedResults, "Conversations retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(context, ex, nameof(ChatController));
+                return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
+            }
+        }
+
+        [HttpDelete("conversations/{requesterUserId}/{partnerUserId}")]
+        public async Task<IActionResult> DeleteConversation([FromRoute] long requesterUserId, [FromRoute] long partnerUserId)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var messages = await context.TblChatMessages
+                    .Where(m => m.GroupId == null && m.ReceiverId != null && 
+                           ((m.SenderId == requesterUserId && m.ReceiverId == partnerUserId) ||
+                            (m.SenderId == partnerUserId && m.ReceiverId == requesterUserId)))
+                    .ToListAsync();
+
+                if (!messages.Any())
+                    return Ok(ApiResponse<object>.Ok((object?)null, "No conversation found."));
+
+                foreach (var m in messages)
+                {
+                    if (m.SenderId == requesterUserId)
+                    {
+                        m.IsDeletedForSender = true;
+                    }
+                    if (m.ReceiverId == requesterUserId)
+                    {
+                        m.IsDeletedForReceiver = true;
+                    }
+                }
+
+                context.TblChatMessages.UpdateRange(messages);
+                await context.SaveChangesAsync();
+
+                // Notify frontend
+                await _hubContext.Clients.Group($"User_{requesterUserId}").SendAsync("ConversationDeleted", partnerUserId);
+
+                return Ok(ApiResponse<object>.Ok((object?)null, "Conversation deleted."));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(context, ex, nameof(ChatController));
+                return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
+            }
+        }
+
+        [HttpGet("group/{groupId}/logo")]
+        public async Task<IActionResult> GetGroupLogo([FromRoute] long groupId)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var group = await context.TblChatGroups.FirstOrDefaultAsync(g => g.Id == groupId && !g.IsDeleted);
+                if (group == null || !group.GroupLogoStorageFileId.HasValue)
+                    return NotFound(ApiResponse<object>.Fail("NO_LOGO", "No logo found."));
+
+                var fileRecord = await context.TblFileStorages.FirstOrDefaultAsync(f => f.Id == group.GroupLogoStorageFileId.Value);
+                if (fileRecord == null || string.IsNullOrEmpty(fileRecord.BlobName))
+                    return NotFound(ApiResponse<object>.Fail("NO_LOGO", "No logo found."));
+
+                // We can redirect to the actual blob URL using AzureTools
+                var stream = await PortalTools.Services.AzureTools.GetFileStreamAsync(fileRecord.BlobName);
+                if (stream == null)
+                    return NotFound(ApiResponse<object>.Fail("NOT_FOUND", "File not found in storage."));
+
+                return File(stream, fileRecord.ContentType ?? "application/octet-stream", fileRecord.OriginalFileName);
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(context, ex, nameof(ChatController));
+                return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
+            }
+        }
+
+        [HttpGet("message/{messageId}/attachment")]
+        public async Task<IActionResult> GetMessageAttachment([FromRoute] long messageId)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var message = await context.TblChatMessages.FirstOrDefaultAsync(m => m.Id == messageId && !m.IsDeleted && !m.IsUnsent);
+                if (message == null || !message.FileStorageId.HasValue)
+                    return NotFound(ApiResponse<object>.Fail("NO_ATTACHMENT", "No attachment found or message unsent."));
+
+                var fileRecord = await context.TblFileStorages.FirstOrDefaultAsync(f => f.Id == message.FileStorageId.Value && f.IsActive);
+                if (fileRecord == null || string.IsNullOrEmpty(fileRecord.BlobName))
+                    return NotFound(ApiResponse<object>.Fail("NO_ATTACHMENT", "No attachment found."));
+
+                var stream = await PortalTools.Services.AzureTools.GetFileStreamAsync(fileRecord.BlobName);
+                if (stream == null)
+                    return NotFound(ApiResponse<object>.Fail("NOT_FOUND", "File not found in storage."));
+
+                return File(stream, fileRecord.ContentType ?? "application/octet-stream", fileRecord.OriginalFileName);
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(context, ex, nameof(ChatController));
+                return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
+            }
+        }
+
+        [HttpPost("seed-sample-data")]
+        public async Task<IActionResult> SeedSampleData()
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                DbSeeder.SeedSampleChatData(context);
+                return Ok(ApiResponse<object>.Ok((object?)null, "Sample chat data and groups seeded successfully."));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(context, ex, nameof(ChatController));
+                return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
+            }
+        }
+    }
+
+    public class AssignAdminRequest
+    {
+        public long RequesterUserId { get; set; }
+        public long TargetUserId { get; set; }
+        public long GroupId { get; set; }
+        public bool IsAdmin { get; set; }
+    }
+
+    public class GroupMemberRequest
+    {
+        public long RequesterUserId { get; set; }
+        public long TargetUserId { get; set; }
+        public long GroupId { get; set; }
+    }
+
+    public class UpdateSettingsRequest
+    {
+        public long RequesterUserId { get; set; }
+        public long GroupId { get; set; }
+        public string? Name { get; set; }
+        public string? Description { get; set; }
+        public IFormFile? LogoFile { get; set; }
     }
 
     public class CreateGroupRequest
@@ -480,6 +1166,13 @@ namespace API.Controllers
     public class ReadMessageRequest
     {
         public long SystemUserId { get; set; }
+    }
+
+    public class ReadConversationRequest
+    {
+        public long SystemUserId { get; set; }
+        public long TargetId { get; set; }
+        public bool IsGroup { get; set; }
     }
 
     public class ReactMessageRequest

@@ -6,7 +6,10 @@ export interface ChatMessage {
     replyToMessageId?: number;
     message?: string;
     fileStorageId?: number;
+    attachmentName?: string;
+    attachmentType?: string;
     isUnsent: boolean;
+    isSystemMessage?: boolean;
     createdAt: string;
     readReceipts: ReadReceipt[];
     reactions: ChatReaction[];

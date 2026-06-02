@@ -91,6 +91,10 @@ class SignalRService {
         }
     }
 
+    public get connection() {
+        return this.hubConnection;
+    }
+
     public async sendTypingStarted(receiverId?: number, groupId?: number) {
         if (this.hubConnection && this.hubConnection.state === 'Connected') {
             await this.hubConnection.invoke("TypingStarted", receiverId || null, groupId || null);

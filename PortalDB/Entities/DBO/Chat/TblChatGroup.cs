@@ -18,6 +18,9 @@ namespace PortalDB.Entities.DBO.Chat
         [Column("GroupDescription")]
         public string? Description { get; set; }
 
+        [Column("GroupLogoStorageFileId")]
+        public long? GroupLogoStorageFileId { get; set; }
+
         [Column("CreatedBySystemUserId")]
         public long CreatedBySystemUserId { get; set; }
 

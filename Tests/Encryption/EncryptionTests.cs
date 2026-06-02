@@ -1,4 +1,5 @@
 using PortalCommon.Utilities;
+using Tests;
 
 namespace Tests.Encryption
 {

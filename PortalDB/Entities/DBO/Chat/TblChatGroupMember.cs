@@ -24,6 +24,9 @@ namespace PortalDB.Entities.DBO.Chat
         [Column("IsDeleted")]
         public bool IsDeleted { get; set; } = false;
 
+        [Column("IsAdmin")]
+        public bool IsAdmin { get; set; } = false;
+
         [Column("JoinedAt")]
         public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
     }

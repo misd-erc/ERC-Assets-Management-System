@@ -28,7 +28,16 @@ export const secureStorage = {
       
       // 2. Decode btoa -> Decode URI -> Decrypt AES
       const decodedUriValue = decodeURIComponent(atob(encodedValue));
-      return cryptoUtil.decrypt(decodedUriValue);
+      const decrypted = cryptoUtil.decrypt(decodedUriValue);
+      
+      if (decrypted && decrypted.startsWith('"') && decrypted.endsWith('"')) {
+        try {
+          return JSON.parse(decrypted);
+        } catch {
+          return decrypted.slice(1, -1);
+        }
+      }
+      return decrypted;
       
     } catch (error) {
       console.error("Error decoding from localStorage", error);

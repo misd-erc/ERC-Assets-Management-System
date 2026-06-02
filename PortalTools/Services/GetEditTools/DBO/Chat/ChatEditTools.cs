@@ -56,6 +56,21 @@ namespace PortalTools.Services.GetEditTools.DBO.Chat
             return existing.Id;
         }
 
+        public async Task SaveReadReceiptsAsync(System.Collections.Generic.IEnumerable<TblChatMessageReadReceipt> receipts, PortalDbContext context)
+        {
+            foreach(var receipt in receipts)
+            {
+                var existing = await context.TblChatMessageReadReceipts
+                    .FirstOrDefaultAsync(x => x.ChatMessageId == receipt.ChatMessageId && x.SystemUserId == receipt.SystemUserId);
+                if (existing == null)
+                {
+                    await context.TblChatMessageReadReceipts.AddAsync(receipt);
+                }
+            }
+            await context.SaveChangesAsync();
+        }
+
+
         public async Task<long> SaveReactionAsync(TblChatMessageReaction reaction, PortalDbContext context)
         {
             var existing = await context.TblChatMessageReactions

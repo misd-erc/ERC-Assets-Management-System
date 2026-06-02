@@ -44,6 +44,15 @@ namespace PortalDB.Entities.DBO.Chat
         [Column("IsDeleted")]
         public bool IsDeleted { get; set; } = false;
 
+        [Column("IsDeletedForSender")]
+        public bool IsDeletedForSender { get; set; } = false;
+
+        [Column("IsDeletedForReceiver")]
+        public bool IsDeletedForReceiver { get; set; } = false;
+
+        [Column("IsSystemMessage")]
+        public bool IsSystemMessage { get; set; } = false;
+
         [Column("CreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260601142854_AddIsAdminToGroupMember")]
+    partial class AddIsAdminToGroupMember
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1593,10 +1596,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("GroupDescription");
 
-                    b.Property<long?>("GroupLogoStorageFileId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("GroupLogoStorageFileId");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("IsActive");
@@ -1676,18 +1675,6 @@ namespace PortalDB.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit")
                         .HasColumnName("IsDeleted");
-
-                    b.Property<bool>("IsDeletedForReceiver")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsDeletedForReceiver");
-
-                    b.Property<bool>("IsDeletedForSender")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsDeletedForSender");
-
-                    b.Property<bool>("IsSystemMessage")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsSystemMessage");
 
                     b.Property<bool>("IsUnsent")
                         .HasColumnType("bit")
