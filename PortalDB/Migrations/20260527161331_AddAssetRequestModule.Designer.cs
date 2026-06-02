@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260527161331_AddAssetRequestModule")]
+    partial class AddAssetRequestModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1734,204 +1737,6 @@ namespace PortalDB.Migrations
                         });
 
                     b.ToView("vwSystemUsers", "dbo");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.DBO.Chat.TblChatGroup", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("ChatGroupId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("CreatedAt");
-
-                    b.Property<long>("CreatedBySystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("CreatedBySystemUserId");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("GroupDescription");
-
-                    b.Property<long?>("GroupLogoStorageFileId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("GroupLogoStorageFileId");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsActive");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsDeleted");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("GroupName");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblChatGroups", "dbo");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.DBO.Chat.TblChatGroupMember", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("ChatGroupMemberId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<long>("ChatGroupId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("ChatGroupId");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsActive");
-
-                    b.Property<bool>("IsAdmin")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsAdmin");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsDeleted");
-
-                    b.Property<DateTime>("JoinedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("JoinedAt");
-
-                    b.Property<long>("SystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SystemUserId");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblChatGroupMembers", "dbo");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.DBO.Chat.TblChatMessage", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("ChatMessageId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("CreatedAt");
-
-                    b.Property<long?>("FileStorageId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("FileStorageId");
-
-                    b.Property<long?>("GroupId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("ChatGroupId");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsDeleted");
-
-                    b.Property<bool>("IsDeletedForReceiver")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsDeletedForReceiver");
-
-                    b.Property<bool>("IsDeletedForSender")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsDeletedForSender");
-
-                    b.Property<bool>("IsSystemMessage")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsSystemMessage");
-
-                    b.Property<bool>("IsUnsent")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsUnsent");
-
-                    b.Property<string>("MessageEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("MessageContentEncrypted");
-
-                    b.Property<long?>("ReceiverId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("ReceiverSystemUserId");
-
-                    b.Property<long?>("ReplyToMessageId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("ReplyToMessageId");
-
-                    b.Property<long>("SenderId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SenderSystemUserId");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblChatMessages", "dbo");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.DBO.Chat.TblChatMessageReaction", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("ReactionId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<long>("ChatMessageId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("ChatMessageId");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("CreatedAt");
-
-                    b.Property<string>("ReactionType")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("ReactionType");
-
-                    b.Property<long>("SystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SystemUserId");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblChatMessageReactions", "dbo");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.DBO.Chat.TblChatMessageReadReceipt", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("ReadReceiptId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<long>("ChatMessageId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("ChatMessageId");
-
-                    b.Property<DateTime>("ReadAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("ReadAt");
-
-                    b.Property<long>("SystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("SystemUserId");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblChatMessageReadReceipts", "dbo");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.DBO.Module.TblSystemModule", b =>

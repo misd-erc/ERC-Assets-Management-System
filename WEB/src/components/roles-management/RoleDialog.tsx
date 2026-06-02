@@ -22,6 +22,22 @@ export function RoleDialog({ isOpen, onClose, onSave, editingRole, rolesCount }:
   const [description, setDescription] = useState('');
   const [permissions, setPermissions] = useState<string[]>([]);
 
+  const getPermissionIdByModuleName = (moduleName: string): string | null => {
+    for (const categoryPermissions of Object.values(PERMISSION_CATEGORIES)) {
+      const permission = categoryPermissions.find(p => p.label === moduleName);
+      if (permission) return permission.id;
+    }
+
+    const aliasMap: Record<string, string> = {
+      'Approvals': '13',
+      'Approval Request': '13',
+      'Approval Requests': '13',
+      'Approval/Request': '13',
+    };
+
+    return aliasMap[moduleName] || null;
+  };
+
   useEffect(() => {
     if (editingRole) {
       setRoleName(editingRole.roleName); 
@@ -29,13 +45,9 @@ export function RoleDialog({ isOpen, onClose, onSave, editingRole, rolesCount }:
       // Map scope (module names) to permission IDs
       const permissionIds: string[] = [];
       editingRole.scope.forEach(moduleName => {
-        // Find the permission ID for this module name
-        for (const [categoryName, categoryPermissions] of Object.entries(PERMISSION_CATEGORIES)) {
-          const permission = categoryPermissions.find(p => p.label === moduleName);
-          if (permission) {
-            permissionIds.push(permission.id);
-            break; // Found the permission, no need to continue searching
-          }
+        const permissionId = getPermissionIdByModuleName(moduleName);
+        if (permissionId) {
+          permissionIds.push(permissionId);
         }
       });
       setPermissions(permissionIds);

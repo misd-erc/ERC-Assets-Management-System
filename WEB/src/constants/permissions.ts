@@ -45,7 +45,7 @@ export const PERMISSION_CATEGORIES = {
  ],
   'Reports & Approvals': [
     { id: '12', label: 'Reports Center', description: 'Generate and view reports', icon: BarChart3 },
-    { id: '13', label: 'Approvals', description: 'Process approval workflows', icon: CheckCircle }
+    { id: '13', label: 'Approval/Request', description: 'Review and process approval requests', icon: CheckCircle }
   ],
   'Administration': [
     { id: '14', label: 'User Management', description: 'Manage system users', icon: Users },
