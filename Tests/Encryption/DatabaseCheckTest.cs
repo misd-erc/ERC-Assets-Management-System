@@ -50,7 +50,7 @@ namespace Tests.Encryption
             var systemUserId = 1;
             var partnerIds = messages
                 .Where(m => m.GroupId == null && m.ReceiverId != null && (m.SenderId == systemUserId || m.ReceiverId == systemUserId))
-                .Select(m => m.SenderId == systemUserId ? m.ReceiverId.Value : m.SenderId)
+                .Select(m => m.SenderId == systemUserId ? m.ReceiverId!.Value : m.SenderId)
                 .Distinct()
                 .ToList();
 
