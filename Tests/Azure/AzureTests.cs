@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading.Tasks;
 using Microsoft.Identity.Client;
 using PortalCommon.Constants;
@@ -6,11 +6,16 @@ using PortalCommon.Utilities;
 using Xunit;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using Tests;
 
 namespace Tests.Azure
 {
     public class AzureToolsTests
     {
+        static AzureToolsTests()
+        {
+            TestSettingsInitializer.Initialize();
+        }
 
         #region AzureConstants_Should_Have_Valid_Decrypted_Keys
         [Fact(DisplayName = "AzureConstants should contain valid decrypted keys")]

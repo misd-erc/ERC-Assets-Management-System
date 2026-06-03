@@ -49,26 +49,20 @@ export function decrypt(cipherText: string): string {
 export function encryptToBytes(plainText: string): Uint8Array {
   if (!plainText) return new Uint8Array();
 
-  const encrypted = CryptoJS.AES.encrypt(plainText, KEY, {
+  const encrypted = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(plainText), KEY, {
     iv: IV,
     mode: CryptoJS.mode.CBC,
     padding: CryptoJS.pad.Pkcs7
   });
 
-  // Convert word array to Uint8Array
   const wordArray = encrypted.ciphertext;
-  const arrayOfWords = wordArray.hasOwnProperty('words') ? wordArray.words : [];
-  const length = wordArray.hasOwnProperty('sigBytes') ? wordArray.sigBytes : arrayOfWords.length * 4;
-  const uInt8Array = new Uint8Array(length);
-  let index = 0;
-  let word: number;
-  let i: number;
-  for (i = 0; i < length; i++) {
-    word = arrayOfWords[i];
-    uInt8Array[index++] = word >> 24;
-    uInt8Array[index++] = (word >> 16) & 0xff;
-    uInt8Array[index++] = (word >> 8) & 0xff;
-    uInt8Array[index++] = word & 0xff;
+  const sigBytes = wordArray.sigBytes;
+  const words = wordArray.words;
+
+  const uInt8Array = new Uint8Array(sigBytes);
+  for (let i = 0; i < sigBytes; i++) {
+    const byte = (words[i >>> 2] >>> (24 - (i % 4) * 8)) & 0xff;
+    uInt8Array[i] = byte;
   }
 
   return uInt8Array;
