@@ -277,24 +277,55 @@ namespace PortalTools.Services
                         continue;
 
                     var dateCell = dataRow[dateIdx].Trim();
-                    if (string.IsNullOrWhiteSpace(dateCell))
-                        continue;
 
                     string GetBlockCell(string colName) =>
                         blockMap.TryGetValue(colName, out int idx) && idx < dataRow.Length
                             ? dataRow[idx]?.Trim() ?? string.Empty
                             : string.Empty;
 
+                    // For columns whose header appears twice in a block (Firstname, Lastname, Position),
+                    // use offset from an anchor column instead of name lookup (TryAdd keeps only first occurrence).
+                    string GetBlockCellByOffset(string anchorCol, int offset)
+                    {
+                        if (!blockMap.TryGetValue(anchorCol, out int anchorIdx)) return string.Empty;
+                        int target = anchorIdx + offset;
+                        return target < dataRow.Length ? dataRow[target]?.Trim() ?? string.Empty : string.Empty;
+                    }
+
+                    var plantillaId   = GetBlockCell("Plantilla Employee ID");
+                    var plantillaFn   = GetBlockCellByOffset("Plantilla Employee ID", 1);
+                    var plantillaLn   = GetBlockCellByOffset("Plantilla Employee ID", 2);
+                    var nonPlantillaId = GetBlockCell("Non-Plantilla Employee ID");
+                    var nonPlantillaFn = GetBlockCellByOffset("Non-Plantilla Employee ID", 1);
+                    var nonPlantillaLn = GetBlockCellByOffset("Non-Plantilla Employee ID", 2);
+
+                    bool hasEmployeeData = !string.IsNullOrWhiteSpace(plantillaId)
+                        || !string.IsNullOrWhiteSpace(nonPlantillaId)
+                        || !string.IsNullOrWhiteSpace(plantillaFn)
+                        || !string.IsNullOrWhiteSpace(plantillaLn)
+                        || !string.IsNullOrWhiteSpace(nonPlantillaFn)
+                        || !string.IsNullOrWhiteSpace(nonPlantillaLn);
+
+                    // Skip only if both date and employee data are absent
+                    if (string.IsNullOrWhiteSpace(dateCell) && !hasEmployeeData)
+                        continue;
+
                     movements.Add(new PTAAnnualCount
                     {
-                        PtrItrNumber          = GetBlockCell("PTR/ITR Number"),
-                        ParIcsNumber          = GetBlockCell("PAR/ICS Number"),
-                        PlantillaEmployeeId   = GetBlockCell("Plantilla Employee ID"),
-                        NonPlantillaEmployeeId = GetBlockCell("Non-Plantilla Employee ID"),
-                        ActualOfficeAndDivision = GetBlockCell("Office/Division"),
-                        Condition             = GetBlockCell("Condition"),
-                        DateAssigned          = TryParseDate(dateCell),
-                        Status                = GetBlockCell("Status")
+                        PtrItrNumber              = GetBlockCell("PTR/ITR Number"),
+                        ParIcsNumber              = GetBlockCell("PAR/ICS Number"),
+                        PlantillaEmployeeId       = plantillaId,
+                        PlantillaFirstname        = plantillaFn,
+                        PlantillaLastname         = plantillaLn,
+                        PlantillaPosition         = GetBlockCellByOffset("Plantilla Employee ID", 3),
+                        NonPlantillaEmployeeId    = nonPlantillaId,
+                        NonPlantillaFirstname     = nonPlantillaFn,
+                        NonPlantillaLastname      = nonPlantillaLn,
+                        NonPlantillaPosition      = GetBlockCellByOffset("Non-Plantilla Employee ID", 3),
+                        ActualOfficeAndDivision   = GetBlockCell("Office/Division"),
+                        Condition                 = GetBlockCell("Condition"),
+                        DateAssigned              = TryParseDate(dateCell),
+                        Status                    = GetBlockCell("Status")
                     });
                 }
 
