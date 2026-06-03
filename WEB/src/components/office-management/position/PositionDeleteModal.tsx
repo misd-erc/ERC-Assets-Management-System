@@ -1,4 +1,4 @@
-﻿// src/components/position/PositionDeleteModal.tsx
+// src/components/position/PositionDeleteModal.tsx
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { usePosition } from '@/hooks';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { toast } from 'sonner';
 
 interface Props {

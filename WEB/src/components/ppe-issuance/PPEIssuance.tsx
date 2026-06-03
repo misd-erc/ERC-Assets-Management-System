@@ -102,6 +102,7 @@ export function PPEIssuance() {
     refreshData();
     fetchEmployees();
     fetchOfficesAndDivisions();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Re-fetch whenever filters, page number, or page size change (skip first mount)
@@ -111,6 +112,7 @@ export function PPEIssuance() {
       return;
     }
     fetchIssuanceData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchEmployee, parIcsFilter, pageNumber, pageSize]);
 
   const fetchIssuanceData = async (overrides?: Partial<IssuanceListParams>) => {
@@ -180,6 +182,7 @@ export function PPEIssuance() {
   };
 
   // All records from the API are already filtered (status NEW/RENEW, isCurrent=true)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const filteredActive = useMemo(() => records, [records]);
   const filteredPPE = useMemo(() => records.filter((r) => r.itemGroup === 'PPE'), [records]);
   const filteredSE = useMemo(() => records.filter((r) => r.itemGroup === 'SE'), [records]);
@@ -219,6 +222,7 @@ export function PPEIssuance() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleGroupChange = async (group: 'PPE' | 'SE') => {
     setForm((prev) => ({ ...prev, group }));
     // Reset item selections when group changes

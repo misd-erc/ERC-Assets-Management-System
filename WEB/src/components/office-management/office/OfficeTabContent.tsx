@@ -1,4 +1,4 @@
-﻿// src/components/office-management/OfficeTabContent.tsx
+// src/components/office-management/OfficeTabContent.tsx
 import { OfficeTable } from '@/components/office-management/office/OfficeTable';
 import { Office, VwOffice } from '@/types';
 

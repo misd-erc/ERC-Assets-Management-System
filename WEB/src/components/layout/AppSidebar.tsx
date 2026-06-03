@@ -1,4 +1,4 @@
-﻿// AppSidebar.tsx
+// AppSidebar.tsx
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -30,6 +30,7 @@ interface NavigationGroup {
 }
 
 export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenChange }: any) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userDetails, setUserDetails] = useState<any>(null);
   const navigate = useNavigate();
   const isMobile = useMediaQuery("(max-width: 768px)");

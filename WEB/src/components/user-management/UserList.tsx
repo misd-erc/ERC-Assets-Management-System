@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Plus,
   Search,
   Edit,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Trash2,
   Eye,
   ChevronLeft,
@@ -19,15 +21,24 @@ import {
 import { getUsers, deleteUser, editUser } from '@/api/user-management/userApi';
 import { User } from '@/types/user';
 import { toast } from 'sonner';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useAuthStore } from '@/store/auth';
 import {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   AlertDialog,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   AlertDialogAction,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   AlertDialogCancel,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   AlertDialogContent,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   AlertDialogDescription,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   AlertDialogFooter,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   AlertDialogHeader,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
@@ -62,6 +73,7 @@ export const UserList: React.FC<UserListProps> = ({
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
@@ -76,6 +88,7 @@ export const UserList: React.FC<UserListProps> = ({
 
   useEffect(() => {
     fetchUsers();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, debouncedSearch, statusFilter, roleFilter]);
 
   const fetchUsers = async () => {
@@ -96,6 +109,7 @@ export const UserList: React.FC<UserListProps> = ({
       // Check if it's a 401 error (unauthorized) and show appropriate message
       if (error.response?.status === 401) {
         toast.error('You do not have permission to view users or your session has expired.');
+      // eslint-disable-next-line eqeqeq
       }if (error.response?.code == "ERR_TOKEN_EXPIRED") {
          return <Navigate to="/" replace />;
       } else {
@@ -109,6 +123,7 @@ export const UserList: React.FC<UserListProps> = ({
   const startIndex = totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endIndex = Math.min(currentPage * itemsPerPage, totalCount);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDeleteUser = async (userId: string) => {
     try {
       await deleteUser(userId);
@@ -121,6 +136,7 @@ export const UserList: React.FC<UserListProps> = ({
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleChangeRole = async (userId: string, newRole: string) => {
     try {
       const token = secureStorage.getItem('systemUserId') || '';

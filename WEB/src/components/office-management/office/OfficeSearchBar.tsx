@@ -1,4 +1,4 @@
-﻿// src/components/office/OfficeSearchBar.tsx
+// src/components/office/OfficeSearchBar.tsx
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { useOffice } from '@/hooks';

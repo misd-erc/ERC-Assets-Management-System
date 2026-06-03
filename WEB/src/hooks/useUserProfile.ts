@@ -1,6 +1,7 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { getUserDetails } from '@/api/user-management/authApi';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { UserDetails, SystemRole, SystemRoleScope } from '@/types/user';
 import { handleSessionExpired, getSessionToken } from '@/utils/sessionUtils';
 import { secureStorage } from '@/utils/secureStorage';

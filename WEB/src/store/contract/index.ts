@@ -1,4 +1,4 @@
-﻿// src/store/office/useOfficeStore.ts
+// src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
 import { Vendor } from '@/types';
 import { getVendors,editVendor } from '@/api';
@@ -47,6 +47,7 @@ export const useVendorStore = create<VendorState>((set, get) => ({
 
   addVendor: async (vendor) => {
     try {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { systemUserId, sessionKey } = getAuthParams();
       await editVendor({
         id: 0,

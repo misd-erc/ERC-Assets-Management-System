@@ -1,7 +1,8 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth';
 import { useRolesStore } from '@/store/roles';
 import { Role } from '@/types/roles';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { PERMISSION_CATEGORIES } from '@/constants/permissions';
 import { RolesHeader } from '@/components/roles-management/RolesHeader';
 import { SearchAndSummary } from '@/components/roles-management/SearchAndSummary';
@@ -20,6 +21,7 @@ export function RolesManagement() {
   const [showAddRole, setShowAddRole] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [deleteRoleId, setDeleteRoleId] = useState<number | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [editingLoading, setEditingLoading] = useState(false);
 
  

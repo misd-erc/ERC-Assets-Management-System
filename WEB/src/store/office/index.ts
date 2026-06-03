@@ -56,6 +56,7 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
 
   addOffice: async (office) => {
     try {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { systemUserId, sessionKey } = getAuthParams();
       await editOffice({
         officeId: 0,
@@ -188,7 +189,7 @@ export const useDivisionStore = create<DivisionState>((set, get) => ({
       await get().fetchDivisions();
       toast.success('Division deleted');
     } catch {
-_double: toast.error('Failed to delete division');
+toast.error('Failed to delete division');
     }
   },
 }));

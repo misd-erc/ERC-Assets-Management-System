@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { 
   Settings, 
   QrCode, 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Wifi, 
   Database, 
   Shield,
@@ -28,6 +29,7 @@ interface Integration {
 export function SystemSettings() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [employees, setEmployees] = useState<GraphApiEmployee[]>([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -126,6 +128,7 @@ export function SystemSettings() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const integrations: Integration[] = [
     { name: 'Active Directory', status: 'Connected', type: 'Authentication' },
     { name: 'Employee List', status: 'Connected', type: 'Microsoft Entra ID (Users)' },

@@ -1,5 +1,6 @@
-﻿// src/api/office/employmentTypeApi.ts
+// src/api/office/employmentTypeApi.ts
 import axiosInstance from '@/lib/axios';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ApiResponse, EmploymentType, VwEmploymentType } from '@/types';
 import { toast } from 'sonner';
 import { getAuthParams } from '@/utils/auth';

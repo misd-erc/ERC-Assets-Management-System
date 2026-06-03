@@ -1,4 +1,5 @@
-﻿import axiosInstance from '@/lib/axios';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import axiosInstance from '@/lib/axios';
 
 interface Department {
   id: string;

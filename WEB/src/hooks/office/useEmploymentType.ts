@@ -1,4 +1,4 @@
-﻿// src/hooks/employment-type/useEmploymentType.ts
+// src/hooks/employment-type/useEmploymentType.ts
 import { useEmploymentTypeStore } from "@/store/office";
 
 export const useEmploymentType = () => {

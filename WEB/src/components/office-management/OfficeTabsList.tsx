@@ -1,4 +1,4 @@
-﻿import { TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, Users, Briefcase, UserCheck, UserCircle } from 'lucide-react';
 
 export const OfficeTabsList = () => {

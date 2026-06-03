@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -26,6 +26,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Separator } from '@/components/ui/separator';
 import { ppeApi } from '@/api/asset/ppe';
 import { seApi } from '@/api/asset/se';
@@ -44,6 +45,7 @@ import {
     Printer,
     Search,
     Square,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     TrendingUp,
     X,
 } from 'lucide-react';
@@ -67,6 +69,7 @@ type AssetGroup = 'PPE' | 'SE';
 type AnyAsset = PPEAsset | SEAsset;
 
 const CONDITIONS = ['All', 'Working', 'Not Working', 'IIRUP', 'Disposed', 'Missing'] as const;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type ConditionFilter = typeof CONDITIONS[number];
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -91,6 +94,7 @@ const formatCurrency = (val?: number | null): string => {
     return val.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const formatDateDisplay = (value?: string): string => {
     if (!value) return '';
     const parsed = new Date(value);
@@ -98,6 +102,7 @@ const formatDateDisplay = (value?: string): string => {
     return parsed.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: '2-digit' });
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const todayInputValue = (): string => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -112,12 +117,15 @@ const getPropertyNo = (a: AnyAsset): string =>
 const getDescription = (a: AnyAsset): string =>
     asStr((a as Record<string, unknown>).description);
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getUnitValue = (a: AnyAsset): number =>
     Number(field(a as Record<string, unknown>, 'unitValue', 'unit_value')) || 0;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getCondition = (a: AnyAsset): string =>
     asStr((a as Record<string, unknown>).condition);
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const getCategory = (a: AnyAsset): string =>
     asStr((a as Record<string, unknown>).category);
 

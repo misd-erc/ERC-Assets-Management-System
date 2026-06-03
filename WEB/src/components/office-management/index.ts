@@ -1,4 +1,4 @@
-﻿export { OfficeDeleteModal } from "@/components/office-management/office/OfficeDeleteModal";
+export { OfficeDeleteModal } from "@/components/office-management/office/OfficeDeleteModal";
 export { OfficeEditModal } from "@/components/office-management/office/OfficeEditModal";
 export { OfficeSearchBar } from "@/components/office-management/office/OfficeSearchBar";
 export { OfficeTable } from "@/components/office-management/office/OfficeTable";

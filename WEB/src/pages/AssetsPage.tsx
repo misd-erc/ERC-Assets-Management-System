@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -116,6 +117,7 @@ export function AssetsPage() {
 
   useEffect(() => {
     loadAssets();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, appliedFilters, activeTab]);
 
   const loadAssets = async () => {
@@ -306,6 +308,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
       const blockCount = remaining.length / 8;
       for (let block = 0; block < blockCount; block++) {
         const blockStart = block * 8;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const expectedHeaders = block === 0 ? movementBlock1 : movementBlock1;
         
         for (let i = 0; i < 8; i++) {

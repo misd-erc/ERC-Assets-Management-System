@@ -1,4 +1,4 @@
-﻿// ProfileDropdown.tsx
+// ProfileDropdown.tsx
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, LogOut, ChevronDown } from 'lucide-react';
@@ -45,6 +45,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
   isLoading = false
 }) => {
   const { logout } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const navigate = useNavigate();
   const location = useLocation();
   const { systemUserId } = useAuthStore();
@@ -124,6 +125,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
     return () => {
       window.removeEventListener('profilePictureUpdated', handleProfilePictureUpdate);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch user details only when landing on the dashboard
@@ -143,6 +145,7 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({
         const userDetails = parsed;
 
         if (userDetails) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { firstName, lastName, role, profilePictureStorageFileId } = userDetails;
           
           let localProfilePictureStorageFileId: string | undefined;

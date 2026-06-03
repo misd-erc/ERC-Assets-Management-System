@@ -32,6 +32,7 @@ export const RISFormModal = ({ open, onOpenChange, mode, ris }: Props) => {
 
   const [users, setUsers] = useState<User[]>([]);
   const [masterLoading, setMasterLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [itemsLoading, setItemsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [masterLoaded, setMasterLoaded] = useState(false);

@@ -1,4 +1,4 @@
-﻿// src/hooks/division/useDivision.ts
+// src/hooks/division/useDivision.ts
 import { useDivisionStore } from "@/store/office";
 
 export const useDivision = () => {

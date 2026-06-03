@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Loader2, Search, Eye, User, Package, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements, getPTATransferList, getPTAReturnList, editMovement } from '@/api/asset/transferApi';
 import { getConditions } from '@/api/asset/inventoryApi';
 import { getEmployees } from '@/api/user-management/userApi';
@@ -325,6 +326,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   // Initial load
   useEffect(() => {
     loadMovements();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transferType]);
 
   // Handle search

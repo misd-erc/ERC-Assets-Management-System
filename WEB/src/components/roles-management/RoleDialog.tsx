@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,6 +66,7 @@ export function RoleDialog({ isOpen, onClose, onSave, editingRole, rolesCount }:
 
     // Convert permission IDs back to module names for saving
     const scopeLabels = permissions.map(permissionId => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for (const [categoryName, categoryPermissions] of Object.entries(PERMISSION_CATEGORIES)) {
         const permission = categoryPermissions.find(p => p.id === permissionId);
         if (permission) {
@@ -173,6 +174,7 @@ export function RoleDialog({ isOpen, onClose, onSave, editingRole, rolesCount }:
                 {Object.entries(PERMISSION_CATEGORIES).map(([category, categoryPermissions], categoryIndex) => {
                   const categoryPermissionIds = categoryPermissions.map(p => p.id);
                   const allSelected = categoryPermissionIds.every(id => permissions.includes(id));
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
                   const someSelected = categoryPermissionIds.some(id => permissions.includes(id));
 
                   return (

@@ -1,4 +1,4 @@
-﻿// src/hooks/position/usePosition.ts
+// src/hooks/position/usePosition.ts
 import { usePositionStore } from "@/store/office";
 
 export const usePosition = () => {

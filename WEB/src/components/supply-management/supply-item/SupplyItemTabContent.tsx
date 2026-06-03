@@ -6,6 +6,7 @@ import { SupplyItemTable } from './SupplyItemTable';
 import { SupplyItemEditModal } from './SupplyItemEditModal';
 import { SupplyItemDeleteModal } from './SupplyItemDeleteModal';
 import { VwSupplyItem } from '@/types';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getCategories } from '@/api/categories/categoriesApi';
 import { getVendors } from '@/api';
 

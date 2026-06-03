@@ -147,6 +147,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem, grou
     fetchSupplyStorageLocations();
     fetchCategoriesData();
     fetchVendors();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-﻿// src/components/office/DivisionTable.tsx
+// src/components/office/DivisionTable.tsx
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Users,
 } from 'lucide-react';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Division, Office, VwDivision } from '@/types';
 import {
   Card,

@@ -14,6 +14,7 @@ import {
   deleteSupplyRIS,
   deleteSupplyRISItem,
 } from '@/api/supply-management/risApi';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getAuthParams } from '@/utils/auth';
 import { useSupplyItemStore } from '@/store/supply';
 

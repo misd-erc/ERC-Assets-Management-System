@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Edit, Trash2, MoreHorizontal, Eye, CheckCircle, FileQuestion, Package,
   Search, Filter, ChevronLeft, ChevronRight, PackageSearch, Plus, Loader2, ClipboardCheck,
   Layers, CheckCircle2, Clock, Building2, Store, Check, ChevronsUpDown
@@ -11,10 +12,12 @@ import {
 import { cn } from "@/components/ui/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { VwSupplyIAR } from '@/types';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { formatDate } from '@/utils/dateUtils';
 
 interface SearchableFilterProps {

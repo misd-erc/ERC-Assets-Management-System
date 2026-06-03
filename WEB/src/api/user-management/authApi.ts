@@ -1,8 +1,10 @@
-﻿import axios, { type AxiosResponse } from 'axios';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import axios, { type AxiosResponse } from 'axios';
 import axiosInstance from '@/lib/axios';
 import { User, UserValidationViewModel, OTPValidationViewModel, ResendOTPViewModel, SessionTokenValidationViewModel, UserPublicViewModel, ApiResponse } from '@/types';
 
 import { guidToLongId } from '@/utils/guidUtils';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
 import { secureStorage } from '@/utils/secureStorage';
 
@@ -37,16 +39,6 @@ export interface EditUserPayload {
 export const getUserDetails = async (): Promise<UserDetails> => {
   // Retrieve tokens directly from localStorage to ensure we use the latest synced values
   const currentSystemId = String(secureStorage.getItem('systemUserId'));
-
-
-  if (currentSystemId !== currentSystemId) {
-    console.warn('[AuthAPI] Token mismatch detected! Syncing before API call.');
-    // Auto-correct by syncing them
-    if (currentSystemId) {
-      secureStorage.setItem('systemUserId', currentSystemId);
-      console.log('[AuthAPI] Synced systemUserId with ActionBySystemUserIdEncrypted');
-    }
-  }
 
   // Get session key from localStorage
   const sessionKey = secureStorage.getItem('sessionToken') || '';

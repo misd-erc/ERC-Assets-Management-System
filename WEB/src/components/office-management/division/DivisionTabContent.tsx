@@ -1,4 +1,4 @@
-﻿// src/components/office-management/DivisionTabContent.tsx
+// src/components/office-management/DivisionTabContent.tsx
 import { DivisionTable } from '@/components/office-management/division/DivisionTable';
 import { VwDivision } from '@/types';
 

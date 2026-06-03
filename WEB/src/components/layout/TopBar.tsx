@@ -1,4 +1,4 @@
-﻿// TopBar.tsx
+// TopBar.tsx
 import React, { useState, useEffect } from 'react';
 import { Bell, Search, Menu, Clock, Command, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';

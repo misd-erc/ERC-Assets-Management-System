@@ -1,4 +1,4 @@
-﻿// GlobalSearch.tsx
+// GlobalSearch.tsx
 import { useState, useEffect, useRef } from "react";
 import {
   Command,

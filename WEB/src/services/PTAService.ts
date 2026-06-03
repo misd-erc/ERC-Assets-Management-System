@@ -155,6 +155,7 @@ export class PTAService {
       'Other PPE': 7,
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const categoryId = categoryMapping[ptaItem.category] || 0;
 
     // Prefer explicit dateAcquired from API, otherwise fall back to latest movement

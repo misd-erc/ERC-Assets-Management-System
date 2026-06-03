@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -207,6 +207,7 @@ export const UserEditModal: React.FC<UserEditModalProps> = ({
     if (open && selectedUser && roles.length > 0) {
       prefillForm(selectedUser);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, selectedUser, roles]);
 
   const fetchDropdownData = async () => {

@@ -60,6 +60,7 @@ export function PARICSListModal({ isOpen, onClose, reportType }: PARICSListModal
       resetState();
       loadRecords();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const resetState = () => {

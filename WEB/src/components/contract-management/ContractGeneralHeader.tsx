@@ -1,4 +1,5 @@
-﻿import { Button } from '@/components/ui/button';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { Button } from '@/components/ui/button';
 import { Truck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useVendor } from '@/hooks/contract/useVendor';

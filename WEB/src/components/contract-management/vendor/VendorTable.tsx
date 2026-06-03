@@ -1,4 +1,4 @@
-﻿// src/components/contract-management/vendor/VendorTable.tsx
+// src/components/contract-management/vendor/VendorTable.tsx
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

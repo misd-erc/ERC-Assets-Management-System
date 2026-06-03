@@ -1,4 +1,5 @@
-﻿import axios, { type AxiosInstance, type AxiosResponse, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, { type AxiosInstance, type AxiosResponse, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getSessionToken, handleSessionExpired, isSessionError } from '@/utils/sessionUtils';
 import { secureStorage } from '@/utils/secureStorage';
 

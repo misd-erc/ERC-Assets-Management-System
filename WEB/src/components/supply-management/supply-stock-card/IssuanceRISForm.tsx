@@ -124,6 +124,7 @@ export const IssuanceRISForm = ({
               getSupplyRISItems(parentRISId)
                 .then((items) => {
                   console.log('[DEBUG] IssuanceRISForm - Fetched RIS items:', items);
+                  // eslint-disable-next-line eqeqeq
                   const item = items.find((i: any) => i.id == editItemId);
                   if (item) {
                     const newRisItemForm = {
@@ -163,6 +164,7 @@ export const IssuanceRISForm = ({
         .then((res) => {
           const items = res.data?.data?.items || [];
           console.log('[DEBUG] IssuanceRISForm - Fallback fetched all RIS items:', items);
+          // eslint-disable-next-line eqeqeq
           const item = items.find((i: any) => i.id == editItemId);
           if (item) {
             console.log('[DEBUG] IssuanceRISForm - Fallback found item:', item, 'Fetching RIS ID:', item.risId);

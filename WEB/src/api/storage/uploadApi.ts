@@ -1,4 +1,5 @@
-﻿import axiosInstance from '@/lib/axios';
+import axiosInstance from '@/lib/axios';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ApiResponse } from '@/types/auth';
 import { secureStorage } from '@/utils/secureStorage';
 

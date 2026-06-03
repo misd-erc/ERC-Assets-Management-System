@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isSessionValid, handleSessionExpired, getSessionToken } from '@/utils/sessionUtils';
 import { getUserDetails } from '@/api/user-management/authApi';

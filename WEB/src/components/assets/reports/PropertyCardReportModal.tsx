@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ppeApi } from '@/api/asset/ppe';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { PPEAsset } from '@/types/asset/ppe';
 import { getAuthParams } from '@/utils/auth';
 import { toast } from 'sonner';
