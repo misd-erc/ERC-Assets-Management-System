@@ -255,6 +255,23 @@ public async Task<IActionResult> PTABatchUpload([FromQuery] SoloQueryParams mode
                             if (!string.IsNullOrEmpty(movement.PlantillaEmployeeId))
                             {
                                 TblEmployee? plantillaEmployee = await _getTools.Account.GetEmployeeByEmployeeIdAsync(movement.PlantillaEmployeeId, context);
+
+                                if (plantillaEmployee == null &&
+                                    (!string.IsNullOrWhiteSpace(movement.PlantillaFirstname) || !string.IsNullOrWhiteSpace(movement.PlantillaLastname)))
+                                {
+                                    // Employee ID not found — create a new employee record so the item is accountable
+                                    Console.WriteLine($"[BATCH_UPLOAD] Plantilla employee '{movement.PlantillaEmployeeId}' not found. Creating new employee record.");
+                                    TblEmployee newEmp = new()
+                                    {
+                                        FirstName = movement.PlantillaFirstname,
+                                        LastName = movement.PlantillaLastname,
+                                        EmployeeIdOriginal = movement.PlantillaEmployeeId,
+                                        IsActive = true
+                                    };
+                                    long newEmpId = await _editTools.Account.EditTblEmployeeDirectAsync(newEmp, model.ActionBySystemUserId, context);
+                                    plantillaEmployee = await _getTools.Account.GetTblEmployeeAsync(newEmpId, context);
+                                }
+
                                 plantillaEmployeeId = plantillaEmployee?.Id;
 
                                 //If actual office/division and non plantilla are nulled, get from the plantilla details
@@ -272,6 +289,23 @@ public async Task<IActionResult> PTABatchUpload([FromQuery] SoloQueryParams mode
                             if (!string.IsNullOrEmpty(movement.NonPlantillaEmployeeId))
                             {
                                 TblEmployee? nonPlantillaEmployee = await _getTools.Account.GetEmployeeByEmployeeIdAsync(movement.NonPlantillaEmployeeId, context);
+
+                                if (nonPlantillaEmployee == null &&
+                                    (!string.IsNullOrWhiteSpace(movement.NonPlantillaFirstname) || !string.IsNullOrWhiteSpace(movement.NonPlantillaLastname)))
+                                {
+                                    // Employee ID not found — create a new employee record
+                                    Console.WriteLine($"[BATCH_UPLOAD] Non-plantilla employee '{movement.NonPlantillaEmployeeId}' not found. Creating new employee record.");
+                                    TblEmployee newEmp = new()
+                                    {
+                                        FirstName = movement.NonPlantillaFirstname,
+                                        LastName = movement.NonPlantillaLastname,
+                                        EmployeeIdOriginal = movement.NonPlantillaEmployeeId,
+                                        IsActive = true
+                                    };
+                                    long newEmpId = await _editTools.Account.EditTblEmployeeDirectAsync(newEmp, model.ActionBySystemUserId, context);
+                                    nonPlantillaEmployee = await _getTools.Account.GetTblEmployeeAsync(newEmpId, context);
+                                }
+
                                 nonPlantillaEmployeeId = nonPlantillaEmployee?.Id;
 
                                 //If actual office/division are nulled, get from the non plantilla details
@@ -283,7 +317,7 @@ public async Task<IActionResult> PTABatchUpload([FromQuery] SoloQueryParams mode
                                         divisionId = systemUserInfo.DivisionId;
                                         officeId = systemUserInfo.OfficeId;
                                     }
-                                    
+
                                 }
                             }
 
