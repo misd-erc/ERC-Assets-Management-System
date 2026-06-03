@@ -13,15 +13,75 @@ using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
 using PortalTools.Services.GetEditTools.DBO.Office;
 using PortalTools.Services.GetEditTools.DBO.Storage;
+using PortalTools.Services.GetEditTools.DBO.Chat;
 using PortalTools.Services.GetEditTools.LOG;
 using System.IO;
 using System.Text;
+
+#region Load launchSettings.json Environment Variables
+{
+    var dir = Directory.GetCurrentDirectory();
+    string? launchSettingsPath = null;
+
+    while (dir != null)
+    {
+        var path = Path.Combine(dir, "Properties", "launchSettings.json");
+        if (File.Exists(path))
+        {
+            launchSettingsPath = path;
+            break;
+        }
+        var apiPath = Path.Combine(dir, "API", "Properties", "launchSettings.json");
+        if (File.Exists(apiPath))
+        {
+            launchSettingsPath = apiPath;
+            break;
+        }
+        dir = Directory.GetParent(dir)?.FullName;
+    }
+
+    if (launchSettingsPath != null)
+    {
+        try
+        {
+            var json = File.ReadAllText(launchSettingsPath);
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("profiles", out var profiles))
+            {
+                System.Text.Json.JsonElement envVars = default;
+                if (profiles.TryGetProperty("http", out var httpProfile) && httpProfile.TryGetProperty("environmentVariables", out envVars))
+                {
+                }
+                else if (profiles.TryGetProperty("https", out var httpsProfile) && httpsProfile.TryGetProperty("environmentVariables", out envVars))
+                {
+                }
+
+                if (envVars.ValueKind == System.Text.Json.JsonValueKind.Object)
+                {
+                    foreach (var prop in envVars.EnumerateObject())
+                    {
+                        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(prop.Name)))
+                        {
+                            Environment.SetEnvironmentVariable(prop.Name, prop.Value.GetString());
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading launchSettings.json: {ex.Message}");
+        }
+    }
+}
+#endregion
 
 Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"));
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -64,6 +124,8 @@ builder.Services.AddScoped<SupplyGetTools>();
 builder.Services.AddScoped<SupplyEditTools>();
 builder.Services.AddScoped<DeliveryGetTools>();
 builder.Services.AddScoped<DeliveryEditTools>();
+builder.Services.AddScoped<ChatGetTools>();
+builder.Services.AddScoped<ChatEditTools>();
 
 builder.Services.AddScoped<AuthTools>();
 builder.Services.AddScoped<ParserTools>();
@@ -110,6 +172,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Automatically apply pending EF migrations
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<PortalDbContext>();
+    context.Database.Migrate();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -124,6 +193,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<API.Hubs.ChatHub>("/hubs/chat");
 
 app.UseDefaultFiles();
 app.UseStaticFiles();

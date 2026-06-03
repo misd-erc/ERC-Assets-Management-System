@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260531122718_NewTblChats")]
+    partial class NewTblChats
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -144,170 +147,6 @@ namespace PortalDB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblDeliveryRecordItems", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblAssetRequest", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("AssetRequestId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<long?>("AssignedCommitteeSystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("AssetRequestAssignedCommitteeSystemUserId");
-
-                    b.Property<long?>("AssignedPersonnelSystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("AssetRequestAssignedPersonnelSystemUserId");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("AssetRequestCreatedAt");
-
-                    b.Property<long>("EmployeeSystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("AssetRequestEmployeeSystemUserId");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("AssetRequestIsActive");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("AssetRequestIsDeleted");
-
-                    b.Property<string>("RequestNumberEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("AssetRequestNumber");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("AssetRequestStatus");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("AssetRequestUpdatedAt");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblAssetRequests", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblAssetRequestHistory", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("AssetRequestHistoryId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("ActionAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("AssetRequestHistoryActionAt");
-
-                    b.Property<string>("ActionType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("AssetRequestHistoryActionType");
-
-                    b.Property<long>("AssetRequestId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("AssetRequestId");
-
-                    b.Property<long?>("AssignedCommitteeSystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("AssetRequestHistoryAssignedCommitteeSystemUserId");
-
-                    b.Property<long?>("AssignedPersonnelSystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("AssetRequestHistoryAssignedPersonnelSystemUserId");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("AssetRequestHistoryCreatedAt");
-
-                    b.Property<string>("FromStatus")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("AssetRequestHistoryFromStatus");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("AssetRequestHistoryIsActive");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("AssetRequestHistoryIsDeleted");
-
-                    b.Property<string>("RemarksEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("AssetRequestHistoryRemarks");
-
-                    b.Property<string>("ToStatus")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("AssetRequestHistoryToStatus");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("AssetRequestHistoryUpdatedAt");
-
-                    b.Property<long>("UpdatedBySystemUserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("AssetRequestHistoryUpdatedBySystemUserId");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblAssetRequestHistories", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblAssetRequestItem", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("AssetRequestItemId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<long>("AssetRequestId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("AssetRequestId");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("AssetRequestItemCreatedAt");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("AssetRequestItemIsActive");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit")
-                        .HasColumnName("AssetRequestItemIsDeleted");
-
-                    b.Property<long?>("PTAId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("PTAId");
-
-                    b.Property<string>("PropertyNumberEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("AssetRequestItemPropertyNumber");
-
-                    b.Property<string>("RemarksEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("AssetRequestItemRemarks");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("AssetRequestItemUpdatedAt");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblAssetRequestItems", "asset");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblDisposal", b =>
@@ -1757,10 +1596,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("GroupDescription");
 
-                    b.Property<long?>("GroupLogoStorageFileId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("GroupLogoStorageFileId");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("IsActive");
@@ -1794,10 +1629,6 @@ namespace PortalDB.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("IsActive");
-
-                    b.Property<bool>("IsAdmin")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsAdmin");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit")
@@ -1841,18 +1672,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("IsDeleted");
 
-                    b.Property<bool>("IsDeletedForReceiver")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsDeletedForReceiver");
-
-                    b.Property<bool>("IsDeletedForSender")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsDeletedForSender");
-
-                    b.Property<bool>("IsSystemMessage")
-                        .HasColumnType("bit")
-                        .HasColumnName("IsSystemMessage");
-
                     b.Property<bool>("IsUnsent")
                         .HasColumnType("bit")
                         .HasColumnName("IsUnsent");
@@ -1864,10 +1683,6 @@ namespace PortalDB.Migrations
                     b.Property<long?>("ReceiverId")
                         .HasColumnType("bigint")
                         .HasColumnName("ReceiverSystemUserId");
-
-                    b.Property<long?>("ReplyToMessageId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("ReplyToMessageId");
 
                     b.Property<long>("SenderId")
                         .HasColumnType("bigint")

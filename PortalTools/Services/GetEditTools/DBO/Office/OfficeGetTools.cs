@@ -26,5 +26,6 @@ namespace PortalTools.Services.GetEditTools.DBO.Office
         public async Task<TblEmploymentType?> GetTblEmploymentTypeAsync(long id, PortalDbContext context) => await context.TblEmploymentTypes.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
         public IQueryable<TblPosition> GetTblPositions(PortalDbContext context) => context.TblPositions.AsNoTracking().Where(x => !x.IsDeleted);
         public async Task<TblPosition?> GetTblPositionAsync(long id, PortalDbContext context) => await context.TblPositions.AsNoTracking().Where(x => !x.IsDeleted && x.Id == id).FirstOrDefaultAsync();
+        public async Task<TblPosition?> GetTblPositionByNameAsync(string name, PortalDbContext context) => await context.TblPositions.AsNoTracking().Where(x => !x.IsDeleted && x.Name == name).FirstOrDefaultAsync();
     }
 }

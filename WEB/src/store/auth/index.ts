@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { User, AuthStore } from '@/types';
 import { validateUser, validateEmployeeUser, validateOTP, resendOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '@/api/user-management/authApi';
 import { clearOtpExpiresAt, isMfaPending, parseStoredSystemUserId, setOtpExpiresAt } from '@/utils/otpTimerUtils';
@@ -101,7 +101,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       console.log('[AuthStore] Validating system user...');
       const result = await validateUser(userInfo);
 
-      secureStorage.setItem('systemUserId', JSON.stringify(result.systemUserId));
+      secureStorage.setItem('systemUserId', String(result.systemUserId));
 
       setSessionToken();
 
@@ -132,7 +132,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       console.log('[AuthStore] Validating employee user...');
       const result = await validateEmployeeUser(userInfo);
 
-      secureStorage.setItem('systemUserId', JSON.stringify(result.systemUserId));
+      secureStorage.setItem('systemUserId', String(result.systemUserId));
       if (result.employeeDbId) {
         secureStorage.setItem('employeeDbId', String(result.employeeDbId));
       }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PortalDB.Entities.DBO.Account;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Office.Division;
@@ -11,6 +11,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using PortalDB.Entities.DBO.Storage;
 using PortalDB.Entities.DBO.Notification;
 using PortalDB.Entities.DBO.Module;
+using PortalDB.Entities.DBO.Chat;
 using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Seeds.DBO.Module;
 using PortalDB.Entities.ASSET.Supply;
@@ -39,6 +40,14 @@ namespace PortalDB.Services
         public DbSet<TblSystemNotificationRead> TblSystemNotificationReads { get; set; }
         public DbSet<TblSystemModule> TblSystemModules { get; set; }
         public DbSet<TblEmployee> TblEmployees { get; set; }
+        #endregion
+
+        #region Chat
+        public DbSet<TblChatGroup> TblChatGroups { get; set; }
+        public DbSet<TblChatGroupMember> TblChatGroupMembers { get; set; }
+        public DbSet<TblChatMessage> TblChatMessages { get; set; }
+        public DbSet<TblChatMessageReadReceipt> TblChatMessageReadReceipts { get; set; }
+        public DbSet<TblChatMessageReaction> TblChatMessageReactions { get; set; }
         #endregion
 
         #region Office
