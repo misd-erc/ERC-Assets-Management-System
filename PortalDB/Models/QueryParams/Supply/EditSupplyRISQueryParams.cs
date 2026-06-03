@@ -11,12 +11,12 @@ namespace PortalDB.Models.QueryParams.Supply
     {
         [Required] public long Id { get; set; }
         [Required] public string? EntityName { get; set; }
-        [Required] public string? FundCluster { get; set; }
+        public string? FundCluster { get; set; }
         [Required] public long? DivisionId { get; set; }
         [Required] public long? OfficeId { get; set; }
-        [Required] public string? ResponsibilityCenterCode { get; set; }
+        public string? ResponsibilityCenterCode { get; set; }
         [Required] public string? RISNumber{ get; set; }
-        [Required] public string? RISPurpose { get; set; }
+        public string? RISPurpose { get; set; }
         public long? RISRequestedBySystemUserId { get; set; }
         public DateTime? RISRequestedDate { get; set; }
         public long? RISApprovedBySystemUserId { get; set; }

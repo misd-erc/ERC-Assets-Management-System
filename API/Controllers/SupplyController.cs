@@ -1242,9 +1242,9 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     supplyRISs = supplyRISs.Where(x =>
-                        (x.RISNumber.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.EntityName.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.FundCluster.ToString() ?? "").ToLowerInvariant().Contains(searchLower));
+                        (!string.IsNullOrEmpty(x.RISNumber) && x.RISNumber.ToLowerInvariant().Contains(searchLower)) ||
+                        (!string.IsNullOrEmpty(x.EntityName) && x.EntityName.ToLowerInvariant().Contains(searchLower)) ||
+                        (!string.IsNullOrEmpty(x.FundCluster) && x.FundCluster.ToLowerInvariant().Contains(searchLower)));
                 }
 
                 if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")

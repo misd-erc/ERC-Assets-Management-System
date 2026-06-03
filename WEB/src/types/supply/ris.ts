@@ -81,14 +81,14 @@ export interface VwSupplyRIS {
 export interface EditSupplyRIS {
   id: number;
   entityName: string;
-  fundCluster: string;
+  fundCluster?: string;
   officeId: number;
   divisionId: number;
-  responsibilityCenterCode: string;
+  responsibilityCenterCode?: string;
   risNumber: string;
-  risPurpose: string;
+  risPurpose?: string;
   risRequestedBySystemUserId?: number;
-  risRequestedDate: string;
+  risRequestedDate?: string;
   risApprovedBySystemUserId?: number;
   risApprovedDate?: string;
   risIssuedBySystemUserId?: number;
