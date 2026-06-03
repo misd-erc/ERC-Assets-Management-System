@@ -261,11 +261,21 @@ public async Task<IActionResult> PTABatchUpload([FromQuery] SoloQueryParams mode
                                 {
                                     // Employee ID not found — create a new employee record so the item is accountable
                                     Console.WriteLine($"[BATCH_UPLOAD] Plantilla employee '{movement.PlantillaEmployeeId}' not found. Creating new employee record.");
+
+                                    long? plantillaPositionId = null;
+                                    if (!string.IsNullOrWhiteSpace(movement.PlantillaPosition))
+                                    {
+                                        var pos = await _getTools.Office.GetTblPositionByNameAsync(movement.PlantillaPosition.Trim(), context);
+                                        plantillaPositionId = pos?.Id;
+                                        Console.WriteLine($"[BATCH_UPLOAD] Plantilla position '{movement.PlantillaPosition}' → {(plantillaPositionId.HasValue ? plantillaPositionId.ToString() : "not found")}");
+                                    }
+
                                     TblEmployee newEmp = new()
                                     {
                                         FirstName = movement.PlantillaFirstname,
                                         LastName = movement.PlantillaLastname,
                                         EmployeeIdOriginal = movement.PlantillaEmployeeId,
+                                        PositionId = plantillaPositionId,
                                         IsActive = true
                                     };
                                     long newEmpId = await _editTools.Account.EditTblEmployeeDirectAsync(newEmp, model.ActionBySystemUserId, context);
@@ -295,11 +305,21 @@ public async Task<IActionResult> PTABatchUpload([FromQuery] SoloQueryParams mode
                                 {
                                     // Employee ID not found — create a new employee record
                                     Console.WriteLine($"[BATCH_UPLOAD] Non-plantilla employee '{movement.NonPlantillaEmployeeId}' not found. Creating new employee record.");
+
+                                    long? nonPlantillaPositionId = null;
+                                    if (!string.IsNullOrWhiteSpace(movement.NonPlantillaPosition))
+                                    {
+                                        var pos = await _getTools.Office.GetTblPositionByNameAsync(movement.NonPlantillaPosition.Trim(), context);
+                                        nonPlantillaPositionId = pos?.Id;
+                                        Console.WriteLine($"[BATCH_UPLOAD] Non-plantilla position '{movement.NonPlantillaPosition}' → {(nonPlantillaPositionId.HasValue ? nonPlantillaPositionId.ToString() : "not found")}");
+                                    }
+
                                     TblEmployee newEmp = new()
                                     {
                                         FirstName = movement.NonPlantillaFirstname,
                                         LastName = movement.NonPlantillaLastname,
                                         EmployeeIdOriginal = movement.NonPlantillaEmployeeId,
+                                        PositionId = nonPlantillaPositionId,
                                         IsActive = true
                                     };
                                     long newEmpId = await _editTools.Account.EditTblEmployeeDirectAsync(newEmp, model.ActionBySystemUserId, context);
