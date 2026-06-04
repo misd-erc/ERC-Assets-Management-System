@@ -186,4 +186,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "ASSTAG", "ATG", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC", "APR", "DOP", "MYACC"];
+export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "ASSTAG", "TR", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC", "APR", "DOP", "MYACC"];
