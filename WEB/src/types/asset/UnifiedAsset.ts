@@ -9,6 +9,7 @@ export interface ApiEmployee {
   office?: { id: number; name: string; acronym: string } | null;
   division?: { id: number; name: string; acronym: string } | null;
   position?: { id: number; name: string } | null;
+  systemUser?: any;
   // keep other fields as optional
 }
 

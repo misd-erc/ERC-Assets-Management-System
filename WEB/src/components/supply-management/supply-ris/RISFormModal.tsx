@@ -11,8 +11,8 @@ import { useRISStore } from '@/store/supply/risStore';
 import { useSupplyItemStore } from '@/store/supply';
 import { useSupplyUnitStore } from '@/store/supply';
 import { useOffice, useDivision } from '@/hooks';
-import { getUsers } from '@/api';
-import { VwSupplyRIS, User } from '@/types';
+import { getUsers, getEmployees } from '@/api';
+import { VwSupplyRIS, User, ApiEmployee } from '@/types';
 import { toast } from 'sonner';
 import { RISFormContent } from './RISFormContent';
 
@@ -31,6 +31,7 @@ export const RISFormModal = ({ open, onOpenChange, mode, ris }: Props) => {
   const { vwDivisions, fetchDivisions } = useDivision();
 
   const [users, setUsers] = useState<User[]>([]);
+  const [employees, setEmployees] = useState<ApiEmployee[]>([]);
   const [masterLoading, setMasterLoading] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [itemsLoading, setItemsLoading] = useState(false);
@@ -47,14 +48,17 @@ export const RISFormModal = ({ open, onOpenChange, mode, ris }: Props) => {
       setMasterLoading(true);
       setMasterLoaded(false);
       try {
-        await Promise.all([
+        const [,,,,, usersRes, employeesRes] = await Promise.all([
           fetchSupplyGroupedItems(),
           fetchSupplyUnits(),
           fetchOffices(),
           fetchDivisions(),
+          null, // placeholder to preserve destructuring if needed
+          getUsers({ page: 1, pageSize: 10000 }),
+          getEmployees(1, 10000)
         ]);
-        const usersRes = await getUsers({ page: 1, pageSize: 10000 });
         setUsers(usersRes.data.items || []);
+        setEmployees(employeesRes.data?.items || []);
         setMasterLoaded(true);
       } catch (error) {
         console.error('Failed to fetch master data', error);
@@ -111,6 +115,7 @@ export const RISFormModal = ({ open, onOpenChange, mode, ris }: Props) => {
             offices={vwOffices}
             divisions={vwDivisions}
             users={users}
+            employees={employees}
             vwSupplyGroups={vwSupplyGroups}
             units={units}
             onSave={handleSave}

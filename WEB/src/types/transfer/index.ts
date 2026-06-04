@@ -101,6 +101,7 @@ export interface ApiEmployee {
   division?: { id: number; name: string; acronym: string } | null;
   position?: { id: number; name: string } | null;
   isActive?: boolean;
+  systemUser?: any;
 }
 
 export enum TransferType {
