@@ -51,6 +51,13 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
                             .SetProperty(x => x.EmailEncrypted, model.EmailEncrypted)
                             .SetProperty(x => x.ContactEncrypted, model.ContactEncrypted)
                             .SetProperty(x => x.ContactPersonEncrypted, model.ContactPersonEncrypted)
+                            .SetProperty(x => x.VendorTypeEncrypted, model.VendorTypeEncrypted)
+                            .SetProperty(x => x.ContractStart, model.ContractStart)
+                            .SetProperty(x => x.ContractEnd, model.ContractEnd)
+                            .SetProperty(x => x.ProcurementTitleEncrypted, model.ProcurementTitleEncrypted)
+                            .SetProperty(x => x.TermsEncrypted, model.TermsEncrypted)
+                            .SetProperty(x => x.DeliveryDate, model.DeliveryDate)
+                            .SetProperty(x => x.DeliveryDueDate, model.DeliveryDueDate)
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 

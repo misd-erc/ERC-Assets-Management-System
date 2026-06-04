@@ -94,6 +94,13 @@ namespace API.Controllers
                         Email = x.Email,
                         Contact = x.Contact,
                         ContactPerson = x.ContactPerson,
+                        VendorType = x.VendorType,
+                        ContractStart = x.ContractStart,
+                        ContractEnd = x.ContractEnd,
+                        ProcurementTitle = x.ProcurementTitle,
+                        Terms = x.Terms,
+                        DeliveryDate = x.DeliveryDate,
+                        DeliveryDueDate = x.DeliveryDueDate,
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
@@ -1836,6 +1843,13 @@ namespace API.Controllers
                     Email = model.Email,
                     Contact = model.Contact,
                     ContactPerson = model.ContactPerson,
+                    VendorType = model.VendorType,
+                    ContractStart = model.ContractStart,
+                    ContractEnd = model.ContractEnd,
+                    ProcurementTitle = model.ProcurementTitle,
+                    Terms = model.Terms,
+                    DeliveryDate = model.DeliveryDate,
+                    DeliveryDueDate = model.DeliveryDueDate,
                     IsActive = model.IsActive
                 };
 

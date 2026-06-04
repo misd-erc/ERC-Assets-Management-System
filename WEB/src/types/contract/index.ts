@@ -17,4 +17,11 @@ export interface Vendor {
   contactPerson: string;
   isActive: boolean;
   createdAt?: string;
+  vendorType?: string | null;
+  contractStart?: string | null;
+  contractEnd?: string | null;
+  procurementTitle?: string | null;
+  terms?: string | null;
+  deliveryDate?: string | null;
+  deliveryDueDate?: string | null;
 }

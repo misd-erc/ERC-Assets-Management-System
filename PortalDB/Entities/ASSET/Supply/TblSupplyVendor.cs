@@ -1,4 +1,4 @@
-﻿using PortalCommon.Utilities;
+using PortalCommon.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -62,6 +62,45 @@ namespace PortalDB.Entities.ASSET.Supply
 
         [Column("SupplyVendorIsActive")]
         public bool IsActive { get; set; } = true;
+
+        [Column("SupplyVendorType")]
+        public string? VendorTypeEncrypted { get; set; }
+        [NotMapped]
+        public string? VendorType
+        {
+            get => string.IsNullOrEmpty(VendorTypeEncrypted) ? null : EncryptionHelper.Decrypt(VendorTypeEncrypted);
+            set => VendorTypeEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+        }
+
+        [Column("SupplyVendorContractStart")]
+        public DateTime? ContractStart { get; set; }
+
+        [Column("SupplyVendorContractEnd")]
+        public DateTime? ContractEnd { get; set; }
+
+        [Column("SupplyVendorProcurementTitle")]
+        public string? ProcurementTitleEncrypted { get; set; }
+        [NotMapped]
+        public string? ProcurementTitle
+        {
+            get => string.IsNullOrEmpty(ProcurementTitleEncrypted) ? null : EncryptionHelper.Decrypt(ProcurementTitleEncrypted);
+            set => ProcurementTitleEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+        }
+
+        [Column("SupplyVendorTerms")]
+        public string? TermsEncrypted { get; set; }
+        [NotMapped]
+        public string? Terms
+        {
+            get => string.IsNullOrEmpty(TermsEncrypted) ? null : EncryptionHelper.Decrypt(TermsEncrypted);
+            set => TermsEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+        }
+
+        [Column("SupplyVendorDeliveryDate")]
+        public DateTime? DeliveryDate { get; set; }
+
+        [Column("SupplyVendorDeliveryDueDate")]
+        public DateTime? DeliveryDueDate { get; set; }
 
         [Column("SupplyVendorIsDeleted")]
         public bool IsDeleted { get; set; } = false;
