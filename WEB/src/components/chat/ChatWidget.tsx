@@ -118,6 +118,7 @@ export const ChatWidget: React.FC = () => {
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const hasScrolledToBottomRef = useRef(false);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const desktopMessageInputRef = useRef<HTMLInputElement>(null);
     const mobileMessageInputRef = useRef<HTMLInputElement>(null);
@@ -347,15 +348,87 @@ export const ChatWidget: React.FC = () => {
         }
     };
 
+    const [userIsNearBottom, setUserIsNearBottom] = useState(true);
+
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-        if (e.currentTarget.scrollTop === 0) {
+        const container = e.currentTarget;
+        if (container.scrollTop === 0 && hasScrolledToBottomRef.current) {
             fetchHistory();
+        }
+        const threshold = 150;
+        const nearBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
+        setUserIsNearBottom(nearBottom);
+    };
+
+    const scrollToBottom = (behavior: 'smooth' | 'auto' = 'smooth') => {
+        if (messagesContainerRef.current) {
+            const container = messagesContainerRef.current;
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior
+            });
+        } else {
+            messagesEndRef.current?.scrollIntoView({ behavior });
         }
     };
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id : null;
+    const prevActiveChatIdRef = useRef<number | null>(null);
+    const prevIsOpenRef = useRef(false);
+
+    useEffect(() => {
+        if (!isOpen || !activeChatId || messages.length === 0 || view !== 'chat' || isLoadingHistory) {
+            prevIsOpenRef.current = isOpen;
+            if (activeChatId && messages.length === 0) {
+                hasScrolledToBottomRef.current = false;
+            }
+            return;
+        }
+
+        const openedWidget = !prevIsOpenRef.current && isOpen;
+        const switchedChat = prevActiveChatIdRef.current !== activeChatId;
+        const shouldScrollInstant = openedWidget || switchedChat;
+
+        prevIsOpenRef.current = isOpen;
+        prevActiveChatIdRef.current = activeChatId;
+
+        const timer1 = setTimeout(() => {
+            const lastMsg = messages[messages.length - 1];
+            const isSelf = lastMsg?.senderId === currentUserId;
+            
+            if (shouldScrollInstant || isSelf || userIsNearBottom) {
+                scrollToBottom(shouldScrollInstant ? 'auto' : 'smooth');
+                hasScrolledToBottomRef.current = true;
+            }
+        }, 50);
+
+        const timer2 = setTimeout(() => {
+            const lastMsg = messages[messages.length - 1];
+            const isSelf = lastMsg?.senderId === currentUserId;
+            
+            if (shouldScrollInstant || isSelf || userIsNearBottom) {
+                scrollToBottom(shouldScrollInstant ? 'auto' : 'smooth');
+                hasScrolledToBottomRef.current = true;
+            }
+        }, 150);
+
+        const timer3 = setTimeout(() => {
+            const lastMsg = messages[messages.length - 1];
+            const isSelf = lastMsg?.senderId === currentUserId;
+            
+            if (shouldScrollInstant || isSelf || userIsNearBottom) {
+                scrollToBottom(shouldScrollInstant ? 'auto' : 'smooth');
+                hasScrolledToBottomRef.current = true;
+            }
+        }, 350);
+
+        return () => {
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+            clearTimeout(timer3);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, activeChatId, lastMessageId, view, currentUserId, isLoadingHistory, userIsNearBottom]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setMessageInput(e.target.value);
