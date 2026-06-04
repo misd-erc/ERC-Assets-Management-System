@@ -1,4 +1,4 @@
-﻿import { useDeliveryRecordStore } from "@/store/delivery";
+import { useDeliveryRecordStore } from "@/store/delivery";
 
 export const useDeliveryRecord = () => {
   const store = useDeliveryRecordStore();

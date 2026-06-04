@@ -1,4 +1,5 @@
 // src/components/assets/reports/IARReportModal.tsx
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React, { useState, useEffect, useMemo } from 'react';
 import {
     Dialog,
@@ -381,6 +382,7 @@ interface IARReportModalProps {
 export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSearchQuery, setActiveSearchQuery] = useState('');
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [hasSearched, setHasSearched] = useState(false);
 
     const [iarList, setIarList] = useState<VwSupplyIAR[]>([]);

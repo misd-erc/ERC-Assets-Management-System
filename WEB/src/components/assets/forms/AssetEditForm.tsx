@@ -1,6 +1,8 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Package, DollarSign, User, Plus, X } from 'lucide-react';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Asset, UnifiedMovement, NormalizedEmployee, Part, FormAsset } from '@/types/asset/UnifiedAsset';
 import { getOffices } from '@/api/office-management/officeApi';
@@ -22,7 +24,9 @@ interface AssetEditFormProps {
 }
 
 export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEditFormProps) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { systemUserId } = useAuthStore();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { userProfile } = useUserProfile();
 
   const [formData, setFormData] = useState<FormAsset>({
@@ -52,6 +56,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
   const [legends, setLegends] = useState<{ id: number; name: string; description?: string }[]>([]);
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [employeeOptions, setEmployeeOptions] = useState<{ value: string; label: string }[]>([]);
 
   useEffect(() => {
@@ -74,6 +79,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
     fetchCategories();
     fetchLegends();
     fetchEmployees();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

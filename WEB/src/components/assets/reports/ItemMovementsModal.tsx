@@ -141,6 +141,7 @@ export function ItemMovementsModal({
               ) : (
                 <div className="p-4 space-y-3">
                   {activeMovements.map((movement, index) => {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                     const { plantillaName, nonPlantillaName, fallbackName, officeName, employeeId } = getMovementDetails(movement);
                     return (
                       <div

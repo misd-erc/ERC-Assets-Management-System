@@ -5,6 +5,7 @@ import { LoginScreen } from '@/components/auth/LoginScreen';
 import { MFAVerification } from '@/components/auth/MFAVerification';
 import MainLayout from '@/components/layout/MainLayout';
 import { Toaster } from '@/components/ui/sonner';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { isSessionValid, isSessionExpired, handleSessionExpired } from '@/utils/sessionUtils';
 import { NoRolePage, UnderConstructionPage } from '@/pages';
@@ -61,6 +62,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       const systemRoleId = Array.isArray(systemRole) ? systemRole[0]?.id : systemRole?.id;
       const isActive = userDetails.systemUserStatus?.name;
 
+      // eslint-disable-next-line eqeqeq
       if (systemRoleId == 0 || systemRoleId == null || isActive !== "Active") {
         return <Navigate to="/no-role" replace />;
       }

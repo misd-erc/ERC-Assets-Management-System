@@ -1,4 +1,4 @@
-﻿import { Asset } from '@/types/asset';
+import { Asset } from '@/types/asset';
 import { SupplyItem, RISRequest } from '@/types/supply';
 import { Contract } from '@/types/contract';
 

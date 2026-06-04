@@ -1,4 +1,4 @@
-﻿import { useSupplyStorageLocationStore } from "@/store/supply";
+import { useSupplyStorageLocationStore } from "@/store/supply";
 
 export const useSupplyStorageLocation = () => {
   const store = useSupplyStorageLocationStore();

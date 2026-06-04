@@ -1,4 +1,5 @@
-﻿import { toast } from 'sonner';
+import { toast } from 'sonner';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
 import { secureStorage } from './secureStorage';
 

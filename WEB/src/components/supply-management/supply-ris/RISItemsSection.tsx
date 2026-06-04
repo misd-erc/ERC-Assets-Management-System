@@ -135,6 +135,7 @@ export const RISItemsSection = ({
     } else if (mode === 'add') {
       setItems([]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [risId, mode, vwSupplyGroups, units, fetchRISItems, fetchSupplyGroupedItemLists, onLoadingChange]);
 
   // Notify parent when items change

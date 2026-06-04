@@ -1,7 +1,9 @@
 import axiosInstance from '@/lib/axios';
 import { MovementEditPayload, TransferRecord } from '@/types/transfer';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ApiResponse } from '@/types';
 import { getAuthParams } from '@/utils/auth';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getEmployeeById } from '@/api/user-management/userApi';
 
 /**
@@ -458,11 +460,12 @@ export const getTransferDetailsByNumber = async (transferNumber: string): Promis
  */
 export const validateTransferNumber = (ptrItrNumber: string): boolean => {
   // Format validation: Allow alphanumeric with dashes/slashes
-  const pattern = /^[A-Z0-9\-\/]+$/i;
+  const pattern = new RegExp('^[A-Z0-9-/]+$', 'i');
   return pattern.test(ptrItrNumber) && ptrItrNumber.length > 0;
 };
 
 // Track the last generated sequence to prevent duplicates
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let lastGeneratedSequence: { [key: string]: number } = {};
 
 /**

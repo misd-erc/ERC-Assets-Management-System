@@ -1,4 +1,4 @@
-﻿import { TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Truck } from 'lucide-react';
 
 export const ContractTabsList = () => {

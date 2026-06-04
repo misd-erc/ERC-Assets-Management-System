@@ -1,4 +1,4 @@
-﻿import { Division, Office, EmploymentType, Position } from "@/types/office";
+import { Division, Office, EmploymentType, Position } from "@/types/office";
 
 export interface ProfilePictureStorageFile {
   id: number;

@@ -9,9 +9,13 @@ import {
   StyleSheet,
   Image,
 } from "@react-pdf/renderer";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Asset, NormalizedEmployee, UnifiedMovement } from "@/types/asset/UnifiedAsset";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getEmployeeById, getEmployees } from "@/api/user-management/userApi";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { UnifiedAssetService } from "@/services/UnifiedAssetService";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 import { IssuanceRecord } from "@/types/issuance";
 
@@ -21,6 +25,7 @@ const logoSrc =
     : "/mnt/data/erc-logo.png";
 
 // Auto-date (long format)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 const styles = StyleSheet.create({

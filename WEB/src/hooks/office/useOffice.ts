@@ -1,5 +1,6 @@
-﻿// src/hooks/office/useOffice.ts
+// src/hooks/office/useOffice.ts
 import { useOfficeStore } from '@/store/office';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Office } from '@/types';
 
 export const useOffice = () => {

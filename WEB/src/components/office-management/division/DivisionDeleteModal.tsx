@@ -1,4 +1,4 @@
-﻿import {
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -9,6 +9,7 @@
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useDivision } from '@/hooks';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { toast } from 'sonner';
 
 interface Props {

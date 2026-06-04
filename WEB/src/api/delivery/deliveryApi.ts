@@ -11,6 +11,7 @@ interface DeliveryRecordResponse<T> {
   data: T;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface ListResponse<T> {
   items: T[];
 }

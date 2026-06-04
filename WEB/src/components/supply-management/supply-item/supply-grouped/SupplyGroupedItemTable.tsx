@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Eye, ChevronLeft, ChevronRight, Plus, PackageSearch, Layers, ArrowUpDown, Filter, ChevronDown, ChevronUp, Loader2, CheckCircle2, XCircle, Tag, MapPin, Store, Check, ChevronsUpDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";

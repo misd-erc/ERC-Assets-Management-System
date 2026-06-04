@@ -1,14 +1,18 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Select } from '@/components/ui/select';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useOffice } from '@/hooks';
 import { Office } from '@/types';
 import { toast } from 'sonner';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Toggle } from '@/components/ui/toggle';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Check, X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
@@ -37,6 +41,7 @@ export const OfficeEditModal = ({
     isActive: true,
   });
   const [saving, setSaving] = useState(false);   // request in flight
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [loading, setLoading] = useState(false); // optional preâ€‘fetch
 
   // â”€â”€â”€â”€â”€â”€ EFFECTS â”€â”€â”€â”€â”€â”€

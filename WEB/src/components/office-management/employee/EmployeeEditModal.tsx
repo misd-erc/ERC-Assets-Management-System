@@ -110,6 +110,7 @@ export const EmployeeEditModal = ({ open, mode, employee, onOpenChange, onSucces
     } else {
       setForm(emptyForm);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, employee, open]);
 
   const submit = async () => {

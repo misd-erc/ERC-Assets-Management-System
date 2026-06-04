@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { User, VwOffice, VwDivision } from '@/types';
+import { User, VwOffice, VwDivision, ApiEmployee } from '@/types';
+import { EmployeeSelector } from '@/components/transfers-returns/EmployeeSelector';
 import { EditSupplyRIS } from '@/types/supply/ris';
 import { Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -116,6 +117,7 @@ interface Props {
   offices: VwOffice[];
   divisions: VwDivision[];
   users: User[];
+  employees: ApiEmployee[];
   isViewMode: boolean;
   onChange: (updated: Partial<EditSupplyRIS>) => void;
 }
@@ -125,21 +127,29 @@ export const RISHeader = ({
   offices,
   divisions,
   users,
+  employees,
   isViewMode,
   onChange,
 }: Props) => {
+  const getEmployeeIdFromSystemUserId = (systemUserId: number | undefined | null) => {
+    if (!systemUserId) return null;
+    const emp = employees.find(e => e.systemUser?.id === systemUserId);
+    return emp ? emp.id : null;
+  };
+
+  const handleEmployeeSelect = (field: keyof EditSupplyRIS, employeeId: number | null) => {
+    if (!employeeId) {
+      handleChange(field, null);
+      return;
+    }
+    const emp = employees.find(e => e.id === employeeId);
+    const systemUserId = emp?.systemUser?.id || null;
+    handleChange(field, systemUserId);
+  };
   const [openOffice, setOpenOffice] = useState(false);
   const [activeOffice, setActiveOffice] = useState("");
   const [openDivision, setOpenDivision] = useState(false);
   const [activeDivision, setActiveDivision] = useState("");
-  const [openRequestedBy, setOpenRequestedBy] = useState(false);
-  const [activeRequestedBy, setActiveRequestedBy] = useState("");
-  const [openApprovedBy, setOpenApprovedBy] = useState(false);
-  const [activeApprovedBy, setActiveApprovedBy] = useState("");
-  const [openIssuedBy, setOpenIssuedBy] = useState(false);
-  const [activeIssuedBy, setActiveIssuedBy] = useState("");
-  const [openReceivedBy, setOpenReceivedBy] = useState(false);
-  const [activeReceivedBy, setActiveReceivedBy] = useState("");
 
   const handleChange = (field: keyof EditSupplyRIS, value: any) => {
     onChange({ [field]: value });
@@ -268,17 +278,12 @@ export const RISHeader = ({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2 min-w-0 flex flex-col">
           <Label className="text-slate-700 font-medium">Requested By</Label>
-          <Combobox
-            value={header.risRequestedBySystemUserId}
-            onChange={(val) => handleChange('risRequestedBySystemUserId', val)}
-            options={users.map((u) => ({ id: u.id, name: `${u.firstName} ${u.lastName}`.toUpperCase() }))}
-            placeholder="Select User"
-            searchPlaceholder="Search user..."
+          <EmployeeSelector
+            employees={employees}
+            value={getEmployeeIdFromSystemUserId(header.risRequestedBySystemUserId)}
+            onSelect={(empId) => handleEmployeeSelect('risRequestedBySystemUserId', empId)}
+            placeholder="Select requesting employee"
             disabled={isViewMode}
-            open={openRequestedBy}
-            onOpenChange={setOpenRequestedBy}
-            activeSearch={activeRequestedBy}
-            onActiveSearchChange={setActiveRequestedBy}
           />
         </div>
         <div className="space-y-2">
@@ -291,17 +296,12 @@ export const RISHeader = ({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2 min-w-0 flex flex-col">
           <Label className="text-slate-700 font-medium">Approved By</Label>
-          <Combobox
-            value={header.risApprovedBySystemUserId}
-            onChange={(val) => handleChange('risApprovedBySystemUserId', val)}
-            options={users.map((u) => ({ id: u.id, name: `${u.firstName} ${u.lastName}`.toUpperCase() }))}
-            placeholder="Select User"
-            searchPlaceholder="Search user..."
+          <EmployeeSelector
+            employees={employees}
+            value={getEmployeeIdFromSystemUserId(header.risApprovedBySystemUserId)}
+            onSelect={(empId) => handleEmployeeSelect('risApprovedBySystemUserId', empId)}
+            placeholder="Select approving employee"
             disabled={isViewMode}
-            open={openApprovedBy}
-            onOpenChange={setOpenApprovedBy}
-            activeSearch={activeApprovedBy}
-            onActiveSearchChange={setActiveApprovedBy}
           />
         </div>
         <div className="space-y-2">
@@ -314,17 +314,12 @@ export const RISHeader = ({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2 min-w-0 flex flex-col">
           <Label className="text-slate-700 font-medium">Issued By</Label>
-          <Combobox
-            value={header.risIssuedBySystemUserId}
-            onChange={(val) => handleChange('risIssuedBySystemUserId', val)}
-            options={users.map((u) => ({ id: u.id, name: `${u.firstName} ${u.lastName}`.toUpperCase() }))}
-            placeholder="Select User"
-            searchPlaceholder="Search user..."
+          <EmployeeSelector
+            employees={employees}
+            value={getEmployeeIdFromSystemUserId(header.risIssuedBySystemUserId)}
+            onSelect={(empId) => handleEmployeeSelect('risIssuedBySystemUserId', empId)}
+            placeholder="Select issuing employee"
             disabled={isViewMode}
-            open={openIssuedBy}
-            onOpenChange={setOpenIssuedBy}
-            activeSearch={activeIssuedBy}
-            onActiveSearchChange={setActiveIssuedBy}
           />
         </div>
         <div className="space-y-2">
@@ -337,17 +332,12 @@ export const RISHeader = ({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2 min-w-0 flex flex-col">
           <Label className="text-slate-700 font-medium">Received By</Label>
-          <Combobox
-            value={header.risReceivedBySystemUserId}
-            onChange={(val) => handleChange('risReceivedBySystemUserId', val)}
-            options={users.map((u) => ({ id: u.id, name: `${u.firstName} ${u.lastName}`.toUpperCase() }))}
-            placeholder="Select User"
-            searchPlaceholder="Search user..."
+          <EmployeeSelector
+            employees={employees}
+            value={getEmployeeIdFromSystemUserId(header.risReceivedBySystemUserId)}
+            onSelect={(empId) => handleEmployeeSelect('risReceivedBySystemUserId', empId)}
+            placeholder="Select receiving employee"
             disabled={isViewMode}
-            open={openReceivedBy}
-            onOpenChange={setOpenReceivedBy}
-            activeSearch={activeReceivedBy}
-            onActiveSearchChange={setActiveReceivedBy}
           />
         </div>
         <div className="space-y-2">

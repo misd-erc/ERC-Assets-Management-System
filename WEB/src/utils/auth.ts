@@ -1,4 +1,4 @@
-﻿import { decrypt } from '@/utils/encryption';
+import { decrypt } from '@/utils/encryption';
 import { secureStorage } from './secureStorage';
 
 export const checkUserAccess = () => {

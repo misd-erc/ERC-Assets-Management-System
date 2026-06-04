@@ -1,4 +1,4 @@
-﻿// src/components/position/PositionSearchBar.tsx
+// src/components/position/PositionSearchBar.tsx
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { usePosition } from '@/hooks';

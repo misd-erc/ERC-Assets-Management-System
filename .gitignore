@@ -5,5 +5,4 @@ publish
 /API/.idea
 API/Properties/launchSettings.json
 API/API.sln.DotSettings.user
-Tests/TestSettingsInitializer.cs
 WEB/amsstaging.sql

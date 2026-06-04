@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { RISHeader } from './RISHeader';
 import { RISItemsSection } from './RISItemsSection';
 import { EditSupplyRIS, VwSupplyRIS } from '@/types/supply/ris';
-import { User, VwOffice, VwDivision, VwSupplyGroupedItem, SupplyUnit } from '@/types';
+import { User, VwOffice, VwDivision, VwSupplyGroupedItem, SupplyUnit, ApiEmployee } from '@/types';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -14,6 +14,7 @@ interface Props {
   offices: VwOffice[];
   divisions: VwDivision[];
   users: User[];
+  employees: ApiEmployee[];
   vwSupplyGroups: VwSupplyGroupedItem[];
   units: SupplyUnit[];
   onSave: (header: EditSupplyRIS, items: any[]) => Promise<void>;
@@ -27,6 +28,7 @@ export const RISFormContent = ({
   offices,
   divisions,
   users,
+  employees,
   vwSupplyGroups,
   units,
   onSave,
@@ -164,6 +166,7 @@ export const RISFormContent = ({
         offices={offices}
         divisions={divisions}
         users={users}
+        employees={employees}
         isViewMode={isViewMode}
         onChange={handleHeaderChange}
       />

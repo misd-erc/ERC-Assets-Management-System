@@ -1,4 +1,4 @@
-﻿// src/store/office/useOfficeStore.ts
+// src/store/office/useOfficeStore.ts
 import { create } from 'zustand';
 import { Vendor } from '@/types';
 import { getVendors,editVendor } from '@/api';
@@ -47,6 +47,7 @@ export const useVendorStore = create<VendorState>((set, get) => ({
 
   addVendor: async (vendor) => {
     try {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { systemUserId, sessionKey } = getAuthParams();
       await editVendor({
         id: 0,
@@ -56,6 +57,13 @@ export const useVendorStore = create<VendorState>((set, get) => ({
         contact: vendor.contact || '',
         contactPerson: vendor.contactPerson || '',
         isActive: vendor.isActive ?? true,
+        vendorType: vendor.vendorType || null,
+        contractStart: vendor.contractStart || null,
+        contractEnd: vendor.contractEnd || null,
+        procurementTitle: vendor.procurementTitle || '',
+        terms: vendor.terms || '',
+        deliveryDate: vendor.deliveryDate || null,
+        deliveryDueDate: vendor.deliveryDueDate || null,
       });
       await get().fetchVendors();
       toast.success('Vendor added');
@@ -73,7 +81,14 @@ export const useVendorStore = create<VendorState>((set, get) => ({
         email: updates.email || '',
         contact: updates.contact || '',
         contactPerson: updates.contactPerson || '',
-        isActive: updates.isActive ?? true
+        isActive: updates.isActive ?? true,
+        vendorType: updates.vendorType || null,
+        contractStart: updates.contractStart || null,
+        contractEnd: updates.contractEnd || null,
+        procurementTitle: updates.procurementTitle || '',
+        terms: updates.terms || '',
+        deliveryDate: updates.deliveryDate || null,
+        deliveryDueDate: updates.deliveryDueDate || null,
       });
       await get().fetchVendors();
       toast.success('Vendor updated');

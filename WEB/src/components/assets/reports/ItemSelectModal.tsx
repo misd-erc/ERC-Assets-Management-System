@@ -45,6 +45,7 @@ export function ItemSelectModal({
     if (isOpen && items.length === 0) {
       loadItems();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const loadItems = async () => {

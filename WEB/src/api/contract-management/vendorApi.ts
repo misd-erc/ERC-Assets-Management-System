@@ -1,4 +1,5 @@
-﻿import axiosInstance from '@/lib/axios';
+import axiosInstance from '@/lib/axios';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ApiResponse, Office, VwDivision, Division, Vendor } from '@/types';
 import { toast } from 'sonner';
 import { getAuthParams } from '@/utils/auth';
@@ -22,6 +23,13 @@ const mapVendor = (raw: any): Vendor => ({
   contactPerson: raw.contactPerson,
   isActive: raw.isActive ?? true,
   createdAt: raw.createdAt,
+  vendorType: raw.vendorType,
+  contractStart: raw.contractStart,
+  contractEnd: raw.contractEnd,
+  procurementTitle: raw.procurementTitle,
+  terms: raw.terms,
+  deliveryDate: raw.deliveryDate,
+  deliveryDueDate: raw.deliveryDueDate,
 });
 
 /* ------------------------------- GET ------------------------------- */
@@ -74,6 +82,13 @@ export const editVendor = async (payload: Vendor): Promise<{ message: string }> 
     Contact: payload.contact,
     ContactPerson: payload.contactPerson,
     IsActive: payload.isActive,
+    VendorType: payload.vendorType,
+    ContractStart: payload.contractStart,
+    ContractEnd: payload.contractEnd,
+    ProcurementTitle: payload.procurementTitle,
+    Terms: payload.terms,
+    DeliveryDate: payload.deliveryDate,
+    DeliveryDueDate: payload.deliveryDueDate,
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,
   };

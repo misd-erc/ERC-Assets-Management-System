@@ -448,6 +448,7 @@ export function RLSDDPModal({ isOpen, onClose }: RLSDDPModalProps) {
     const [propertyStatus, setPropertyStatus] = useState<PropertyStatus>('Lost');
     const [circumstances, setCircumstances] = useState('');
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [assets, setAssets] = useState<any[]>([]);
     const [rows, setRows] = useState<RLSDDPRow[]>([]);
     const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
@@ -551,6 +552,7 @@ export function RLSDDPModal({ isOpen, onClose }: RLSDDPModalProps) {
     useEffect(() => {
         if (!rows.length) return;
         triggerPdfBuild(rows.filter((_, i) => selectedIndices.has(i)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         entityName, fundCluster, department, rlsddpNo, rlsddpDate,
         accountableOfficer, designation, parNo, parDate,

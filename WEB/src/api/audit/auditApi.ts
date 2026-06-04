@@ -1,4 +1,4 @@
-﻿import axiosInstance from '@/lib/axios';
+import axiosInstance from '@/lib/axios';
 import { AuditTrailResponse, ActivityResponse } from '@/types/audit';
 
 /**

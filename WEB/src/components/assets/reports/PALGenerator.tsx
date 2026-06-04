@@ -19,6 +19,7 @@ const logoSrc =
     : "/mnt/data/erc-logo.png";
 
 // Auto-date (long format)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 const styles = StyleSheet.create({

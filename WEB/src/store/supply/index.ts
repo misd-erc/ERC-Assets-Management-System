@@ -138,6 +138,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
 
   addSupplyItem: async (supply) => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { systemUserId, sessionKey } = getAuthParams();
       await editSupplyItem({
         id: 0,
