@@ -481,8 +481,8 @@ export default function EmployeePortalPage() {
           {[
             { label: 'Property (PAR)', value: myPARs.length, sub: 'PAR records', icon: FileText, color: 'bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
             { label: 'Total Assets', value: totalAssets, sub: formatCurrency(totalAssetsValue), icon: Package, color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' },
-            { label: 'Supplies (ICS)', value: myICS.length, sub: 'ICS records', icon: ClipboardList, color: 'bg-orange-50 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' },
-            { label: 'Total Supplies', value: totalSupplies, sub: formatCurrency(totalSuppliesValue), icon: Package, color: 'bg-violet-50 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
+            { label: 'Semi Expandables (ICS)', value: myICS.length, sub: 'ICS records', icon: ClipboardList, color: 'bg-orange-50 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' },
+            { label: 'Total Semi Expandables', value: totalSupplies, sub: formatCurrency(totalSuppliesValue), icon: Package, color: 'bg-violet-50 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
           ].map(({ label, value, sub, icon: Icon, color }) => (
             <Card key={label} className="shadow-sm bg-white dark:bg-slate-800">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -518,7 +518,7 @@ export default function EmployeePortalPage() {
                   {myPARs.length > 0 && <Badge variant="secondary" className="ml-2 text-xs">{myPARs.length}</Badge>}
                 </TabsTrigger>
                 <TabsTrigger value="ics">
-                  Supplies (ICS)
+                  Semi Expandables (ICS)
                   {myICS.length > 0 && <Badge variant="secondary" className="ml-2 text-xs">{myICS.length}</Badge>}
                 </TabsTrigger>
               </TabsList>
@@ -534,8 +534,8 @@ export default function EmployeePortalPage() {
                     { label: 'Total Assets', value: <Badge>{totalAssets}</Badge> },
                     { label: 'Total Asset Value', value: <Badge variant="secondary">{formatCurrency(totalAssetsValue)}</Badge>, sep: true },
                     { label: 'ICS Records', value: <Badge>{myICS.length}</Badge> },
-                    { label: 'Total Supply Items', value: <Badge>{totalSupplies}</Badge> },
-                    { label: 'Total Supply Value', value: <Badge variant="secondary">{formatCurrency(totalSuppliesValue)}</Badge> },
+                    { label: 'Total Semi Expandable Items', value: <Badge>{totalSupplies}</Badge> },
+                    { label: 'Total Semi Expandable Value', value: <Badge variant="secondary">{formatCurrency(totalSuppliesValue)}</Badge> },
                   ].map(({ label, value, sep }, i) => (
                     <div key={i}>
                       {sep && <Separator className="mb-3" />}
@@ -638,7 +638,7 @@ export default function EmployeePortalPage() {
                           </TableCell>
                         </TableRow>
                       ) : pagedPARs.map((par) => (
-                        <TableRow key={par.parIcsNumber} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40">
+                        <TableRow key={par.parIcsNumber} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 cursor-pointer" onClick={() => { setSelectedPAR(par); setShowPARDialog(true); }}>
                           <TableCell className="font-medium">
                             <Badge variant="outline">{formatParIcsDisplay(par.parIcsNumber)}</Badge>
                           </TableCell>
@@ -722,7 +722,7 @@ export default function EmployeePortalPage() {
                           </TableCell>
                         </TableRow>
                       ) : pagedICS.map((ics) => (
-                        <TableRow key={ics.parIcsNumber} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40">
+                        <TableRow key={ics.parIcsNumber} className="hover:bg-slate-50/80 dark:hover:bg-slate-700/40 cursor-pointer" onClick={() => { setSelectedICS(ics); setShowICSDialog(true); }}>
                           <TableCell className="font-medium">
                             <Badge variant="outline">{formatParIcsDisplay(ics.parIcsNumber)}</Badge>
                           </TableCell>

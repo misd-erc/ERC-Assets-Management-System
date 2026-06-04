@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -117,7 +116,6 @@ export function AssetsPage() {
 
   useEffect(() => {
     loadAssets();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, appliedFilters, activeTab]);
 
   const loadAssets = async () => {
@@ -211,13 +209,20 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
     ];
 
     //
-    // FIRST MOVEMENT BLOCK HEADERS (8 COLUMNS)
+    // MOVEMENT BLOCK HEADERS — NEW FORMAT (14 COLUMNS)
+    // Plantilla Employee ID + Firstname/Lastname/Position, then Non-Plantilla + Firstname/Lastname/Position
     //
-    const movementBlock1 = [
+    const movementBlock14 = [
       "PTR/ITR Number",
       "PAR/ICS Number",
       "Plantilla Employee ID",
+      "Firstname",
+      "Lastname",
+      "Position",
       "Non-Plantilla Employee ID",
+      "Firstname",
+      "Lastname",
+      "Position",
       "Office/Division",
       "Condition",
       "Date Assigned (YYYY-MM-DD)",
@@ -225,11 +230,12 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
     ];
 
     //
-    // SECOND MOVEMENT BLOCK HEADERS (7 COLUMNS - NO PLANTILLA ID)
+    // LEGACY MOVEMENT BLOCK HEADERS (8 COLUMNS — kept for backward compat)
     //
-    const movementBlock2 = [
+    const movementBlock8 = [
       "PTR/ITR Number",
       "PAR/ICS Number",
+      "Plantilla Employee ID",
       "Non-Plantilla Employee ID",
       "Office/Division",
       "Condition",
@@ -285,14 +291,17 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
     }
 
     //
-    // VALIDATE MOVEMENT BLOCKS - FLEXIBLE APPROACH
-    // Allow any number of movement blocks (8 columns each)
+    // VALIDATE MOVEMENT BLOCKS — strip trailing empty headers first
     //
     const startIndex = assetHeaders.length;
-    const remaining = headers.slice(startIndex);
+    // Drop trailing empty columns so extra blank cols at the end of the sheet don't fail validation
+    let trimmedHeaders = [...headers];
+    while (trimmedHeaders.length > 0 && trimmedHeaders[trimmedHeaders.length - 1] === "") {
+      trimmedHeaders.pop();
+    }
+    const remaining = trimmedHeaders.slice(startIndex);
 
     if (remaining.length === 0) {
-      // No movement blocks - still valid, just assets
       console.log("Valid: Asset-only template (no movement blocks)");
       return {
         isValid: true,
@@ -301,91 +310,54 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
       };
     }
 
-    // Validate that remaining columns are in groups of 8 (movement blocks)
-    // OR in groups of 7 (movement blocks without Plantilla Employee ID)
+    const toColumnLabel = (colIndex: number) => {
+      if (colIndex < 26) return String.fromCharCode(65 + colIndex);
+      return String.fromCharCode(65 + Math.floor(colIndex / 26) - 1) + String.fromCharCode(65 + (colIndex % 26));
+    };
+
+    const validateBlocks = (blockSize: number, blockDef: string[]) => {
+      const blockCount = remaining.length / blockSize;
+      const errs: string[] = [];
+      for (let block = 0; block < blockCount; block++) {
+        const blockStart = block * blockSize;
+        for (let i = 0; i < blockSize; i++) {
+          if (remaining[blockStart + i] !== blockDef[i]) {
+            const colIndex = startIndex + blockStart + i;
+            errs.push(
+              `Block ${block + 1}, Column ${toColumnLabel(colIndex)}2 (Position ${colIndex + 1}): Expected "${blockDef[i]}" but found "${remaining[blockStart + i] || '(empty)'}"`
+            );
+          }
+        }
+      }
+      return errs;
+    };
+
+    // New format: 14-column blocks
+    if (remaining.length % 14 === 0) {
+      const blockCount = remaining.length / 14;
+      const errs = validateBlocks(14, movementBlock14);
+      if (errs.length > 0) {
+        return { isValid: false, errors: errs, details: `Movement blocks have ${errs.length} column mismatch(es)` };
+      }
+      console.log(`Valid: ${blockCount} movement block(s) found (14-column format)`);
+      return { isValid: true, errors: [], details: `Valid template with ${blockCount} movement block(s)` };
+    }
+
+    // Legacy format: 8-column blocks
     if (remaining.length % 8 === 0) {
-      // All blocks are 8 columns each
       const blockCount = remaining.length / 8;
-      for (let block = 0; block < blockCount; block++) {
-        const blockStart = block * 8;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const expectedHeaders = block === 0 ? movementBlock1 : movementBlock1;
-        
-        for (let i = 0; i < 8; i++) {
-          if (remaining[blockStart + i] !== movementBlock1[i]) {
-            const colIndex = startIndex + blockStart + i;
-            let columnLetter = '';
-            if (colIndex < 26) {
-              columnLetter = String.fromCharCode(65 + colIndex);
-            } else {
-              columnLetter = String.fromCharCode(65 + Math.floor(colIndex / 26) - 1) + String.fromCharCode(65 + (colIndex % 26));
-            }
-            errors.push(
-              `Block ${block + 1}, Column ${columnLetter}${2} (Position ${colIndex + 1}): Expected "${movementBlock1[i]}" but found "${remaining[blockStart + i] || '(empty)'}"`
-            );
-          }
-        }
+      const errs = validateBlocks(8, movementBlock8);
+      if (errs.length > 0) {
+        return { isValid: false, errors: errs, details: `Movement blocks have ${errs.length} column mismatch(es)` };
       }
-
-      if (errors.length > 0) {
-        return {
-          isValid: false,
-          errors,
-          details: `Movement blocks have ${errors.length} column mismatch(es)`
-        };
-      }
-
-      console.log(`Valid: ${blockCount} movement block(s) found`);
-      return {
-        isValid: true,
-        errors: [],
-        details: `Valid template with ${blockCount} movement block(s)`
-      };
+      console.log(`Valid: ${blockCount} movement block(s) found (8-column legacy format)`);
+      return { isValid: true, errors: [], details: `Valid template with ${blockCount} movement block(s)` };
     }
 
-    // Check if it's blocks of 7 columns (without Plantilla ID)
-    if (remaining.length % 7 === 0) {
-      const blockCount = remaining.length / 7;
-      for (let block = 0; block < blockCount; block++) {
-        const blockStart = block * 7;
-        
-        for (let i = 0; i < 7; i++) {
-          if (remaining[blockStart + i] !== movementBlock2[i]) {
-            const colIndex = startIndex + blockStart + i;
-            let columnLetter = '';
-            if (colIndex < 26) {
-              columnLetter = String.fromCharCode(65 + colIndex);
-            } else {
-              columnLetter = String.fromCharCode(65 + Math.floor(colIndex / 26) - 1) + String.fromCharCode(65 + (colIndex % 26));
-            }
-            errors.push(
-              `Block ${block + 1}, Column ${columnLetter}${2} (Position ${colIndex + 1}): Expected "${movementBlock2[i]}" but found "${remaining[blockStart + i] || '(empty)'}"`
-            );
-          }
-        }
-      }
-
-      if (errors.length > 0) {
-        return {
-          isValid: false,
-          errors,
-          details: `Movement blocks have ${errors.length} column mismatch(es)`
-        };
-      }
-
-      console.log(`Valid: ${blockCount} movement block(s) found (7-column format)`);
-      return {
-        isValid: true,
-        errors: [],
-        details: `Valid template with ${blockCount} movement block(s)`
-      };
-    }
-
-    // Invalid structure - columns don't form complete blocks
     return {
       isValid: false,
       errors: [
-        `Invalid column structure: Got ${remaining.length} columns after asset details. Movement blocks must be 8 or 7 columns each.`
+        `Invalid column structure: Got ${remaining.length} columns after asset details. Movement blocks must be 14 columns (new format) or 8 columns (legacy format).`
       ],
       details: `Cannot form complete movement block(s) with ${remaining.length} remaining columns`
     };
@@ -519,8 +491,8 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
 
   const handleDownloadTemplate = () => {
     const link = document.createElement('a');
-    link.href = '/ppe-templates/PPE_SE_LATEST_TEMPLATE.xlsx';
-    link.download = 'PPE_SE_LATEST_TEMPLATE.xlsx';
+    link.href = '/ppe-templates/NEW_PPE_SE_LATEST_TEMPLATE.xlsx';
+    link.download = 'NEW_PPE_SE_LATEST_TEMPLATE.xlsx';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

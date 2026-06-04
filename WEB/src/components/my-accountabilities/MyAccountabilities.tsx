@@ -167,7 +167,7 @@ export function MyAccountabilities() {
 
         <Card className="shadow-sm min-h-[170px]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base">Supplies (ICS)</CardTitle>
+            <CardTitle className="text-base">Semi Expandables (ICS)</CardTitle>
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-orange-700">
               <ClipboardList className="h-4 w-4" />
             </span>
@@ -180,7 +180,7 @@ export function MyAccountabilities() {
 
         <Card className="shadow-sm min-h-[170px]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base">Total Supplies</CardTitle>
+            <CardTitle className="text-base">Total Semi Expandables</CardTitle>
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
               <Package className="h-4 w-4" />
             </span>
@@ -206,7 +206,7 @@ export function MyAccountabilities() {
                 {myPARs.length > 0 && <Badge variant="secondary" className="ml-2">{myPARs.length}</Badge>}
               </TabsTrigger>
               <TabsTrigger value="ics">
-                Supplies (ICS)
+                Semi Expandables (ICS)
                 {myICS.length > 0 && <Badge variant="secondary" className="ml-2">{myICS.length}</Badge>}
               </TabsTrigger>
             </TabsList>
@@ -242,11 +242,11 @@ export function MyAccountabilities() {
                     <Badge>{myICS.length}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Total Supply Items:</span>
+                    <span className="text-muted-foreground">Total Semi Expandable Items:</span>
                     <Badge>{totalSupplies}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Total Supply Value:</span>
+                    <span className="text-muted-foreground">Total Semi Expandable Value:</span>
                     <Badge variant="secondary">{formatCurrency(totalSuppliesValue)}</Badge>
                   </div>
                   <Separator />
@@ -279,7 +279,7 @@ export function MyAccountabilities() {
                       <TableRow><TableCell colSpan={7}>No PAR records found.</TableCell></TableRow>
                     ) : (
                       myPARs.map((par) => (
-                        <TableRow key={par.parIcsNumber} className="hover:bg-slate-50/80">
+                        <TableRow key={par.parIcsNumber} className="hover:bg-slate-50/80 cursor-pointer" onClick={() => handleViewPAR(par)}>
                           <TableCell className="font-medium">
                             <Badge variant="outline">{formatParIcsDisplay(par.parIcsNumber)}</Badge>
                           </TableCell>
@@ -327,7 +327,7 @@ export function MyAccountabilities() {
                       <TableRow><TableCell colSpan={7}>No ICS records found.</TableCell></TableRow>
                     ) : (
                       myICS.map((ics) => (
-                        <TableRow key={ics.parIcsNumber} className="hover:bg-slate-50/80">
+                        <TableRow key={ics.parIcsNumber} className="hover:bg-slate-50/80 cursor-pointer" onClick={() => handleViewICS(ics)}>
                           <TableCell className="font-medium">
                             <Badge variant="outline">{formatParIcsDisplay(ics.parIcsNumber)}</Badge>
                           </TableCell>
