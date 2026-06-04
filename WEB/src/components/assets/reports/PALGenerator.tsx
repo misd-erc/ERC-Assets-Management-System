@@ -18,10 +18,6 @@ const logoSrc =
     ? `${window.location.origin}/images/erc-logo.png`
     : "/mnt/data/erc-logo.png";
 
-// Auto-date (long format)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-
 const styles = StyleSheet.create({
   page: {
     padding: 20,
@@ -58,8 +54,6 @@ const styles = StyleSheet.create({
   metaLeft: { flex: 1 },
 
   metaRight: { width: 200 },
-
-  metaLabel: { fontSize: 8, fontWeight: "bold" },
 
   metaValue: { fontSize: 8, marginBottom: 2 },
 
@@ -169,7 +163,6 @@ const PALDocument = ({
   totalAmount,
   employeeName,
   position,
-  office,
   divisionService,
   employeeNumber,
 }: {
@@ -178,7 +171,6 @@ const PALDocument = ({
   totalAmount: number;
   employeeName: string;
   position: string;
-  office: string;
   divisionService: string;
   employeeNumber: string;
 }) => {
@@ -281,146 +273,132 @@ const PALDocument = ({
   );
 };
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function movementInvolvesEmployee(m: any, employeeId: number): boolean {
+  return (
+    m.plantillaEmployeeId === employeeId ||
+    m.nonPlantillaEmployeeId === employeeId ||
+    (Array.isArray(m.employee) && m.employee.some((e: any) => e.id === employeeId))
+  );
+}
+
+/**
+ * Returns true if the asset is currently assigned to this employee.
+ * Strategy:
+ *   1. Prefer a movement with isCurrent === true that involves this employee.
+ *   2. Fall back to the latest movement (by dateAssigned) that involves this employee,
+ *      provided there is no newer movement that assigns the asset to someone else.
+ *      This handles batch-uploaded data where isCurrent was not set.
+ */
+function isAssignedToEmployee(asset: any, employeeId: number): boolean {
+  const movements: any[] = asset.movements ?? [];
+  if (!movements.length) return false;
+
+  // 1. Check for an explicit isCurrent movement for this employee
+  const hasCurrent = movements.some((m) => {
+    const current =
+      m.isCurrent === true ||
+      m.isCurrent === 1 ||
+      (typeof m.isCurrent === "string" && m.isCurrent.toLowerCase() === "true");
+    return current && movementInvolvesEmployee(m, employeeId);
+  });
+  if (hasCurrent) return true;
+
+  // 2. No isCurrent flag set — look at the latest movement overall
+  const sorted = [...movements].sort((a, b) => {
+    const ta = a.dateAssigned ? new Date(a.dateAssigned).getTime() : 0;
+    const tb = b.dateAssigned ? new Date(b.dateAssigned).getTime() : 0;
+    return tb - ta;
+  });
+
+  // The latest movement determines current accountability
+  return movementInvolvesEmployee(sorted[0], employeeId);
+}
+
+async function buildPALData(employee: NormalizedEmployee) {
+  const [ppeAssets, seAssets] = await Promise.all([
+    getEmployeeAssets(employee.id, "PPE"),
+    getEmployeeAssets(employee.id, "SE"),
+  ]);
+
+  const employeeName = [
+    employee.firstName,
+    employee.middleName ? employee.middleName : null,
+    employee.lastName,
+    employee.suffixName ? employee.suffixName : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  let position = "N/A";
+  let divisionService = "N/A";
+  let employeeNumber = "N/A";
+
+  const empResp = await getEmployeeById(employee.id);
+  if (empResp.success && empResp.data.length > 0) {
+    const empData = empResp.data[0];
+    position = empData.position?.name || "N/A";
+    divisionService = empData.office?.name || "N/A";
+    employeeNumber = empData.employeeIdOriginal || "N/A";
+  }
+
+  let itemNumber = 1;
+
+  const ppeRows: PALRow[] = ppeAssets
+    .filter((a) => isAssignedToEmployee(a, employee.id))
+    .map((asset: any) => ({
+      no: itemNumber++,
+      description: asset.description ?? "",
+      propertyNo: asset.propertyNumber ?? "",
+      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+      amount: asset.unitValue ?? null,
+    }));
+
+  const seRows: PALRow[] = seAssets
+    .filter((a) => isAssignedToEmployee(a, employee.id))
+    .map((asset: any) => ({
+      no: itemNumber++,
+      description: asset.description ?? "",
+      propertyNo: asset.propertyNumber ?? "",
+      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+      amount: asset.unitValue ?? null,
+    }));
+
+  const totalAmount = [...ppeRows, ...seRows].reduce(
+    (sum, row) => sum + (row.amount ?? 0),
+    0
+  );
+
+  return { ppeRows, seRows, totalAmount, employeeName, position, divisionService, employeeNumber };
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
 export class PALGenerator {
   static async generatePALPreview(employee: NormalizedEmployee): Promise<string> {
-    const ppeAssets = await getEmployeeAssets(employee.id, 'PPE');
-    const seAssets = await getEmployeeAssets(employee.id, 'SE');
+    const data = await buildPALData(employee);
 
-    if (!ppeAssets.length && !seAssets.length) {
-      alert('No assets found for this employee. Cannot generate PAL preview.');
-      return '';
+    if (!data.ppeRows.length && !data.seRows.length) {
+      alert("No assets found for this employee. Cannot generate PAL preview.");
+      return "";
     }
 
-    const employeeName = `${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''} ${employee.lastName}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
-
-    // Fetch employee details to get position and office
-    const empResp = await getEmployeeById(employee.id);
-    let position = 'N/A';
-    let office = 'N/A';
-    let divisionService = 'N/A';
-    let employeeNumber = 'N/A';
-
-    if (empResp.success && empResp.data.length > 0) {
-      const empData = empResp.data[0];
-      position = empData.position?.name || 'N/A';
-      office = empData.office?.name || 'N/A';
-      divisionService = empData.office?.name || 'N/A';
-      employeeNumber = empData.employeeIdOriginal || 'N/A';
-    }
-
-    const isCurrentForEmployee = (asset: any) =>
-      asset.movements?.some((m: any) => {
-        const current = m.isCurrent === true || m.isCurrent === 1 || (typeof m.isCurrent === 'string' && m.isCurrent.toLowerCase() === 'true');
-        return current && (
-          m.plantillaEmployeeId === employee.id ||
-          m.nonPlantillaEmployeeId === employee.id ||
-          (Array.isArray(m.employee) && m.employee.some((e: any) => e.id === employee.id))
-        );
-      });
-
-    let itemNumber = 1;
-    const ppeRows: PALRow[] = ppeAssets.filter(isCurrentForEmployee).map((asset: any) => ({
-      no: itemNumber++,
-      description: asset.description ?? "",
-      propertyNo: asset.propertyNumber ?? "",
-      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-      amount: asset.unitValue ?? null,
-    }));
-    const seRows: PALRow[] = seAssets.filter(isCurrentForEmployee).map((asset: any) => ({
-      no: itemNumber++,
-      description: asset.description ?? "",
-      propertyNo: asset.propertyNumber ?? "",
-      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-      amount: asset.unitValue ?? null,
-    }));
-
-    const totalAmount = [...ppeRows, ...seRows].reduce((sum, row) => sum + (row.amount ?? 0), 0);
-
-    const blob = await pdf(
-      <PALDocument
-        ppeRows={ppeRows}
-        seRows={seRows}
-        totalAmount={totalAmount}
-        employeeName={employeeName}
-        position={position}
-        office={office}
-        divisionService={divisionService}
-        employeeNumber={employeeNumber}
-      />
-    ).toBlob();
-
+    const blob = await pdf(<PALDocument {...data} />).toBlob();
     return URL.createObjectURL(blob);
   }
 
   static async generatePAL(employee: NormalizedEmployee) {
-    const ppeAssets = await getEmployeeAssets(employee.id, 'PPE');
-    const seAssets = await getEmployeeAssets(employee.id, 'SE');
+    const data = await buildPALData(employee);
 
-    if (!ppeAssets.length && !seAssets.length) {
-      alert('No assets found for this employee. Cannot generate PAL report.');
+    if (!data.ppeRows.length && !data.seRows.length) {
+      alert("No assets found for this employee. Cannot generate PAL report.");
       return;
     }
 
-    const employeeName = `${employee.firstName}${employee.middleName ? ` ${employee.middleName}` : ''} ${employee.lastName}${employee.suffixName ? ` ${employee.suffixName}` : ''}`.trim();
-
-    // Fetch employee details to get position and office
-    const empResp = await getEmployeeById(employee.id);
-    let position = 'N/A';
-    let office = 'N/A';
-    let divisionService = 'N/A';
-    let employeeNumber = 'N/A';
-
-    if (empResp.success && empResp.data.length > 0) {
-      const empData = empResp.data[0];
-      position = empData.position?.name || 'N/A';
-      office = empData.office?.name || 'N/A';
-      divisionService = empData.office?.name || 'N/A';
-      employeeNumber = empData.employeeIdOriginal || 'N/A';
-    }
-
-    const isCurrentForEmployee = (asset: any) =>
-      asset.movements?.some((m: any) => {
-        const current = m.isCurrent === true || m.isCurrent === 1 || (typeof m.isCurrent === 'string' && m.isCurrent.toLowerCase() === 'true');
-        return current && (
-          m.plantillaEmployeeId === employee.id ||
-          m.nonPlantillaEmployeeId === employee.id ||
-          (Array.isArray(m.employee) && m.employee.some((e: any) => e.id === employee.id))
-        );
-      });
-
-    let itemNumber = 1;
-    const ppeRows: PALRow[] = ppeAssets.filter(isCurrentForEmployee).map((asset: any) => ({
-      no: itemNumber++,
-      description: asset.description ?? "",
-      propertyNo: asset.propertyNumber ?? "",
-      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-      amount: asset.unitValue ?? null,
-    }));
-    const seRows: PALRow[] = seAssets.filter(isCurrentForEmployee).map((asset: any) => ({
-      no: itemNumber++,
-      description: asset.description ?? "",
-      propertyNo: asset.propertyNumber ?? "",
-      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-      amount: asset.unitValue ?? null,
-    }));
-
-    const totalAmount = [...ppeRows, ...seRows].reduce((sum, row) => sum + (row.amount ?? 0), 0);
-
-    const blob = await pdf(
-      <PALDocument
-        ppeRows={ppeRows}
-        seRows={seRows}
-        totalAmount={totalAmount}
-        employeeName={employeeName}
-        position={position}
-        office={office}
-        divisionService={divisionService}
-        employeeNumber={employeeNumber}
-      />
-    ).toBlob();
-
+    const blob = await pdf(<PALDocument {...data} />).toBlob();
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
     link.download = `PAL_${Date.now()}.pdf`;
     link.click();
