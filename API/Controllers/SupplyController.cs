@@ -94,6 +94,13 @@ namespace API.Controllers
                         Email = x.Email,
                         Contact = x.Contact,
                         ContactPerson = x.ContactPerson,
+                        VendorType = x.VendorType,
+                        ContractStart = x.ContractStart,
+                        ContractEnd = x.ContractEnd,
+                        ProcurementTitle = x.ProcurementTitle,
+                        Terms = x.Terms,
+                        DeliveryDate = x.DeliveryDate,
+                        DeliveryDueDate = x.DeliveryDueDate,
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt
                     };
@@ -1242,9 +1249,9 @@ namespace API.Controllers
                 {
                     string searchLower = model.SearchString.ToLower();
                     supplyRISs = supplyRISs.Where(x =>
-                        (x.RISNumber.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.EntityName.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
-                        (x.FundCluster.ToString() ?? "").ToLowerInvariant().Contains(searchLower));
+                        (!string.IsNullOrEmpty(x.RISNumber) && x.RISNumber.ToLowerInvariant().Contains(searchLower)) ||
+                        (!string.IsNullOrEmpty(x.EntityName) && x.EntityName.ToLowerInvariant().Contains(searchLower)) ||
+                        (!string.IsNullOrEmpty(x.FundCluster) && x.FundCluster.ToLowerInvariant().Contains(searchLower)));
                 }
 
                 if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
@@ -1836,6 +1843,13 @@ namespace API.Controllers
                     Email = model.Email,
                     Contact = model.Contact,
                     ContactPerson = model.ContactPerson,
+                    VendorType = model.VendorType,
+                    ContractStart = model.ContractStart,
+                    ContractEnd = model.ContractEnd,
+                    ProcurementTitle = model.ProcurementTitle,
+                    Terms = model.Terms,
+                    DeliveryDate = model.DeliveryDate,
+                    DeliveryDueDate = model.DeliveryDueDate,
                     IsActive = model.IsActive
                 };
 

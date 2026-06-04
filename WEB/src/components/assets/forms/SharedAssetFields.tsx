@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Package, DollarSign, User, Plus, X, RotateCcw } from 'lucide-react';
 import ReactSelect from 'react-select';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { FormAsset, UnifiedMovement, NormalizedEmployee, Part } from '@/types/asset/UnifiedAsset';
 import { VwOffice, VwDivision } from '@/types/office';
 import { getConditions } from '@/api/asset/inventoryApi';

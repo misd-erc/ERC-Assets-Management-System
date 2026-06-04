@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks';

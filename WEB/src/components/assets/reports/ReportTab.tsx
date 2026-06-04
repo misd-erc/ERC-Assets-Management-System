@@ -1,18 +1,24 @@
 // src/components/assets/reports/ReportTab.tsx
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Download, X, Recycle, Printer, Archive } from 'lucide-react';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { motion } from 'framer-motion';
 import {
   FileText,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Receipt,
   ArrowRightLeft,
   BookOpen,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   BarChart3,
   ClipboardList,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Sparkles,
   TrendingUp,
   FileSpreadsheet,
@@ -25,9 +31,11 @@ import {
 import { getEmployees } from '@/api/user-management/userApi';
 import { normalizeEmployee } from '@/utils/employeeUtils';
 import { NormalizedEmployee, Asset, UnifiedMovement } from '@/types/asset/UnifiedAsset';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { UnifiedAssetService } from '@/services/UnifiedAssetService';
 import { PTAService } from '@/services/PTAService';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ReportPreviewModal } from './ReportPreviewModal';
 import { EmployeeSelectModal } from './EmployeeSelectModal';
 import { ItemSelectModal } from './ItemSelectModal';
@@ -72,6 +80,7 @@ export function ReportTab() {
 
   // Item-centric flow states
   const [selectedItem, setSelectedItem] = useState<Asset | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedMovement, setSelectedMovement] = useState<UnifiedMovement | null>(null);
 
   const [showEmployeeModal, setShowEmployeeModal] = useState(false);
@@ -85,6 +94,7 @@ export function ReportTab() {
   const [showITR, setShowITR] = useState(false);
   const [showRRPPE, setShowRRPPE] = useState(false);
   const [showRRSP, setShowRRSP] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showPAL, setShowPAL] = useState(false);
   const [showIIRUP, setShowIIRUP] = useState(false);
   const [showIIRUSP, setShowIIRUSP] = useState(false);

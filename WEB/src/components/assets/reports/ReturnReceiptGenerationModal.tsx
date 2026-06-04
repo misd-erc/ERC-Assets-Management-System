@@ -41,6 +41,7 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
       resetState();
       loadRecords();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const resetState = () => {

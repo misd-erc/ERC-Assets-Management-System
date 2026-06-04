@@ -1,4 +1,4 @@
-﻿// src/components/employment-type/EmploymentTypeTable.tsx
+// src/components/employment-type/EmploymentTypeTable.tsx
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

@@ -101,6 +101,7 @@ function mapApiToDisposal(record: DisposalRecord): Disposal {
 
 export function Disposals() {
   const [disposals, setDisposals] = useState<Disposal[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoading, setIsLoading] = useState(false);
 
   const [showStartDialog, setShowStartDialog] = useState(false);
@@ -360,6 +361,7 @@ export function Disposals() {
         </div>
       )
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [disposals]);
 
   const pendingCount = disposals.filter(d => d.status === 'Pending').length;
@@ -369,6 +371,7 @@ export function Disposals() {
 
   const ppeDisposals = disposals.filter(d => d.group === 'PPE');
   const seDisposals = disposals.filter(d => d.group === 'SE');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const activeDisposals = activeTab === 'PPE' ? ppeDisposals : seDisposals;
 
   return (

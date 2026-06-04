@@ -1,4 +1,4 @@
-﻿// src/components/employment-type/EmploymentTypeSearchBar.tsx
+// src/components/employment-type/EmploymentTypeSearchBar.tsx
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { useEmploymentType } from '@/hooks';

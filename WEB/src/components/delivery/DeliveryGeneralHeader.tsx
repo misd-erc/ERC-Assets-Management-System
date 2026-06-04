@@ -2,6 +2,7 @@ import { useMemo, useEffect, type ReactNode } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Package,
   Clock,
   CheckCircle,

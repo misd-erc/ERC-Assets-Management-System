@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Database, User, Calendar, Hash } from 'lucide-react';

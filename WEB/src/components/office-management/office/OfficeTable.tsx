@@ -1,4 +1,4 @@
-﻿// src/components/office/OfficeTable.tsx
+// src/components/office/OfficeTable.tsx
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

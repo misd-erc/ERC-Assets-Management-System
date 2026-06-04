@@ -1290,9 +1290,25 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyVendorContactPerson");
 
+                    b.Property<DateTime?>("ContractEnd")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyVendorContractEnd");
+
+                    b.Property<DateTime?>("ContractStart")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyVendorContractStart");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("SupplyVendorCreatedAt");
+
+                    b.Property<DateTime?>("DeliveryDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyVendorDeliveryDate");
+
+                    b.Property<DateTime?>("DeliveryDueDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyVendorDeliveryDueDate");
 
                     b.Property<string>("EmailEncrypted")
                         .HasColumnType("nvarchar(max)")
@@ -1309,6 +1325,18 @@ namespace PortalDB.Migrations
                     b.Property<string>("NameEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SupplyVendorName");
+
+                    b.Property<string>("ProcurementTitleEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyVendorProcurementTitle");
+
+                    b.Property<string>("TermsEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyVendorTerms");
+
+                    b.Property<string>("VendorTypeEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SupplyVendorType");
 
                     b.HasKey("Id");
 

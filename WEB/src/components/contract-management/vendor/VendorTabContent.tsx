@@ -1,4 +1,4 @@
-﻿// src/components/contract-management/vendor/VendorTabContent.tsx
+// src/components/contract-management/vendor/VendorTabContent.tsx
 import { useState, useEffect, useMemo } from 'react';
 import { useVendor, useSupplyItem } from '@/hooks';
 import { VendorTable } from './VendorTable';
@@ -21,6 +21,7 @@ export const VendorTabContent = () => {
   useEffect(() => { 
     fetchVendors();
     fetchSupplyItems(); 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const usageCounts = useMemo(() => {

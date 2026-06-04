@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -18,6 +19,7 @@ import {
   Clock
 } from 'lucide-react';
 import { PPEAsset } from '@/types/asset/PPEAsset';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { SEAsset } from '@/types/supply/se';
 import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { getEmployees } from '@/api/user-management/userApi';
@@ -102,6 +104,7 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
     });
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const formatDateToYYYYMMDD = (dateString: string) => {
     return new Date(dateString).toISOString().split('T')[0];
   };

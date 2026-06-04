@@ -32,6 +32,7 @@ interface EmployeeSelectorProps {
   onSelect: (employeeId: number) => void;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function EmployeeSelector({
@@ -40,6 +41,7 @@ export function EmployeeSelector({
   onSelect,
   placeholder = "Search for employee...",
   className,
+  disabled = false,
 }: EmployeeSelectorProps) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState("");
@@ -66,20 +68,24 @@ export function EmployeeSelector({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger asChild disabled={disabled}>
         <div className={cn("relative w-full", className)}>
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400 z-10" />
           <Input
             placeholder={placeholder}
             value={selected ? `${selected.firstName} ${selected.lastName}` : search}
             onChange={(e) => {
+              if (disabled) return;
               setSearch(e.target.value);
               setOpen(true);
             }}
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              if (!disabled) setOpen(true);
+            }}
             className="pl-10 pr-10"
+            disabled={disabled}
           />
-          {selected && (
+          {selected && !disabled && (
             <Button
               variant="ghost"
               size="sm"

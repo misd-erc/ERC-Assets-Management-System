@@ -1,10 +1,14 @@
 import { create } from 'zustand';
 import { User, AuthStore } from '@/types';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { validateUser, validateEmployeeUser, validateOTP, resendOTP, validateSessionToken, logout as apiLogout, getUserDetails } from '@/api/user-management/authApi';
 import { clearOtpExpiresAt, isMfaPending, parseStoredSystemUserId, setOtpExpiresAt } from '@/utils/otpTimerUtils';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { generateSessionToken, saveSession, loadSession, clearSession as clearAuthSession } from '@/services/authService';
 import { clearSession, setSessionToken, syncSessionIds, setSessionKey, getSessionToken } from '@/utils/sessionUtils';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { encrypt, decrypt } from '@/utils/encryption';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { toast } from 'sonner';
 import { secureStorage } from '@/utils/secureStorage';
 

@@ -2,16 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from "lucide-react";
 import { toast } from 'sonner';
 import { SearchableSelect } from './SearchableSelect';
 import { useOffice, useDivision } from '@/hooks';
 import { useRISStore } from '@/store/supply/risStore';
-import { getUsers } from '@/api';
 import { getSupplyRISById, getSupplyRISItems } from '@/api';
 import { getAuthParams } from '@/utils/auth';
-import { User } from '@/types';
 import { EditSupplyRIS, EditSupplyRISItem } from '@/types/supply/ris';
 import axiosInstance from '@/lib/axios';
 
@@ -52,7 +49,6 @@ export const IssuanceRISForm = ({
   const { saveRIS } = useRISStore();
 
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
 
   // RIS Form State
   const [risForm, setRisForm] = useState({
@@ -86,10 +82,6 @@ export const IssuanceRISForm = ({
   useEffect(() => {
     fetchOffices();
     fetchDivisions();
-
-    getUsers({ page: 1, pageSize: 10000 })
-      .then((res) => setUsers(res.data.items || []))
-      .catch((err) => console.error("Failed to load users", err));
   }, [fetchOffices, fetchDivisions]);
 
   useEffect(() => {
@@ -132,6 +124,7 @@ export const IssuanceRISForm = ({
               getSupplyRISItems(parentRISId)
                 .then((items) => {
                   console.log('[DEBUG] IssuanceRISForm - Fetched RIS items:', items);
+                  // eslint-disable-next-line eqeqeq
                   const item = items.find((i: any) => i.id == editItemId);
                   if (item) {
                     const newRisItemForm = {
@@ -171,6 +164,7 @@ export const IssuanceRISForm = ({
         .then((res) => {
           const items = res.data?.data?.items || [];
           console.log('[DEBUG] IssuanceRISForm - Fallback fetched all RIS items:', items);
+          // eslint-disable-next-line eqeqeq
           const item = items.find((i: any) => i.id == editItemId);
           if (item) {
             console.log('[DEBUG] IssuanceRISForm - Fallback found item:', item, 'Fetching RIS ID:', item.risId);
@@ -276,36 +270,12 @@ export const IssuanceRISForm = ({
       toast.error('Entity Name is required');
       return;
     }
-    if (!risForm.fundCluster?.trim()) {
-      toast.error('Fund Cluster is required');
-      return;
-    }
     if (!risForm.officeId || risForm.officeId === 0) {
       toast.error('Office is required');
       return;
     }
     if (!risForm.divisionId || risForm.divisionId === 0) {
       toast.error('Division is required');
-      return;
-    }
-    if (!risForm.responsibilityCenterCode?.trim()) {
-      toast.error('Responsibility Center Code is required');
-      return;
-    }
-    if (!risForm.risPurpose?.trim()) {
-      toast.error('Purpose is required');
-      return;
-    }
-    if (!risForm.risRequestedBySystemUserId || risForm.risRequestedBySystemUserId === 0) {
-      toast.error('Requested By system user is required');
-      return;
-    }
-    if (!risForm.risApprovedBySystemUserId || risForm.risApprovedBySystemUserId === 0) {
-      toast.error('Approved By system user is required');
-      return;
-    }
-    if (!risForm.risIssuedBySystemUserId || risForm.risIssuedBySystemUserId === 0) {
-      toast.error('Issued By system user is required');
       return;
     }
     if (risItemForm.requisitionQuantity <= 0) {
@@ -323,27 +293,25 @@ export const IssuanceRISForm = ({
 
     setLoading(true);
     try {
-      const { systemUserId } = getAuthParams();
-
       const headerData: EditSupplyRIS = {
         id: risForm.id || 0,
         entityName: risForm.entityName,
-        fundCluster: risForm.fundCluster,
+        fundCluster: undefined,
         officeId: risForm.officeId,
         divisionId: risForm.divisionId || 0,
-        responsibilityCenterCode: risForm.responsibilityCenterCode,
+        responsibilityCenterCode: undefined,
         risNumber: risForm.risNumber,
-        risPurpose: risForm.risPurpose,
-        risRequestedBySystemUserId: risForm.risRequestedBySystemUserId,
-        risRequestedDate: risForm.risRequestedDate,
+        risPurpose: undefined,
+        risRequestedBySystemUserId: undefined,
+        risRequestedDate: undefined,
 
         isApproved: true,
-        risApprovedBySystemUserId: risForm.risApprovedBySystemUserId || systemUserId,
-        risApprovedDate: risForm.risApprovedDate ? new Date(risForm.risApprovedDate).toISOString() : new Date().toISOString(),
-        risIssuedBySystemUserId: risForm.risIssuedBySystemUserId || systemUserId,
-        risIssuedDate: risForm.risIssuedDate ? new Date(risForm.risIssuedDate).toISOString() : new Date().toISOString(),
-        risReceivedBySystemUserId: risForm.risReceivedBySystemUserId || undefined,
-        risReceivedDate: risForm.risReceivedBySystemUserId && risForm.risReceivedDate ? new Date(risForm.risReceivedDate).toISOString() : undefined,
+        risApprovedBySystemUserId: undefined,
+        risApprovedDate: undefined,
+        risIssuedBySystemUserId: undefined,
+        risIssuedDate: undefined,
+        risReceivedBySystemUserId: undefined,
+        risReceivedDate: undefined,
 
         isActive: true,
         createdAt: risForm.createdAt ? new Date(risForm.createdAt).toISOString() : undefined,
@@ -400,22 +368,14 @@ export const IssuanceRISForm = ({
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">RIS Header Information</span>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 col-span-2">
           <Label className="text-slate-700 font-medium">Entity Name</Label>
           <Input value={risForm.entityName} onChange={(e) => setRisForm({ ...risForm, entityName: e.target.value })} className="bg-white border-slate-200 text-slate-900" />
         </div>
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Fund Cluster</Label>
-          <Input value={risForm.fundCluster} onChange={(e) => setRisForm({ ...risForm, fundCluster: e.target.value })} className="bg-white border-slate-200 text-slate-900" />
-        </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 col-span-2">
           <Label className="text-slate-700 font-medium">RIS Number <span className="text-red-500">*</span></Label>
           <Input required value={risForm.risNumber} onChange={(e) => setRisForm({ ...risForm, risNumber: e.target.value })} placeholder="e.g. RIS-2026-001" className="bg-white border-slate-200 text-slate-900" />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Responsibility Center Code (RCC) <span className="text-red-500">*</span></Label>
-          <Input required value={risForm.responsibilityCenterCode} onChange={(e) => setRisForm({ ...risForm, responsibilityCenterCode: e.target.value })} placeholder="e.g. RCC-123" className="bg-white border-slate-200 text-slate-900" />
         </div>
 
         <div className="space-y-2">
@@ -438,73 +398,9 @@ export const IssuanceRISForm = ({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Requested By <span className="text-red-500">*</span></Label>
-          <SearchableSelect
-            value={risForm.risRequestedBySystemUserId}
-            onChange={(val) => setRisForm({ ...risForm, risRequestedBySystemUserId: val })}
-            options={users.map(u => ({ id: u.id, name: `${u.firstName} ${u.lastName}` }))}
-            placeholder="Select Requester"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Date Requested</Label>
-          <Input type="date" value={risForm.risRequestedDate} onChange={(e) => setRisForm({ ...risForm, risRequestedDate: e.target.value })} className="bg-white border-slate-200 text-slate-900" />
-        </div>
-
-        {/* Approved By & Date */}
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Approved By <span className="text-red-500">*</span></Label>
-          <SearchableSelect
-            value={risForm.risApprovedBySystemUserId}
-            onChange={(val) => setRisForm({ ...risForm, risApprovedBySystemUserId: val })}
-            options={users.map(u => ({ id: u.id, name: `${u.firstName} ${u.lastName}` }))}
-            placeholder="Select Approver"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Date Approved</Label>
-          <Input type="date" value={risForm.risApprovedDate} onChange={(e) => setRisForm({ ...risForm, risApprovedDate: e.target.value })} className="bg-white border-slate-200 text-slate-900" />
-        </div>
-
-        {/* Issued By & Date */}
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Issued By <span className="text-red-500">*</span></Label>
-          <SearchableSelect
-            value={risForm.risIssuedBySystemUserId}
-            onChange={(val) => setRisForm({ ...risForm, risIssuedBySystemUserId: val })}
-            options={users.map(u => ({ id: u.id, name: `${u.firstName} ${u.lastName}` }))}
-            placeholder="Select Issuer"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Date Issued</Label>
-          <Input type="date" value={risForm.risIssuedDate} onChange={(e) => setRisForm({ ...risForm, risIssuedDate: e.target.value })} className="bg-white border-slate-200 text-slate-900" />
-        </div>
-
-        {/* Received By & Date */}
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Received By</Label>
-          <SearchableSelect
-            value={risForm.risReceivedBySystemUserId}
-            onChange={(val) => setRisForm({ ...risForm, risReceivedBySystemUserId: val })}
-            options={users.map(u => ({ id: u.id, name: `${u.firstName} ${u.lastName}` }))}
-            placeholder="Select Receiver"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-slate-700 font-medium">Date Received</Label>
-          <Input type="date" value={risForm.risReceivedDate} onChange={(e) => setRisForm({ ...risForm, risReceivedDate: e.target.value })} className="bg-white border-slate-200 text-slate-900" />
-        </div>
-
         <div className="space-y-2 col-span-2">
           <Label className="text-slate-700 font-medium">Created At</Label>
           <Input type="date" value={risForm.createdAt} onChange={(e) => setRisForm({ ...risForm, createdAt: e.target.value })} className="bg-white border-slate-200 text-slate-900" />
-        </div>
-
-        <div className="space-y-2 col-span-2">
-          <Label className="text-slate-700 font-medium">Purpose <span className="text-red-500">*</span></Label>
-          <Textarea required value={risForm.risPurpose} onChange={(e) => setRisForm({ ...risForm, risPurpose: e.target.value })} placeholder="Purpose of this requisition..." className="bg-white border-slate-200 text-slate-900 min-h-[60px]" />
         </div>
       </div>
 

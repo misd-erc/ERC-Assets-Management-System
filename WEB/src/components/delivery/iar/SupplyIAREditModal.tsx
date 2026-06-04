@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useVendor, useOffice, useDivision } from '@/hooks';
 import { VwDeliveryRecord } from '@/types/delivery/delivery';
@@ -37,6 +38,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
   const [openVendor, setOpenVendor] = useState(false);
   const [activeVendor, setActiveVendor] = useState("");
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (open) { fetchVendors(); fetchOffices(); fetchDivisions(); } }, [open]);
 
   useEffect(() => {

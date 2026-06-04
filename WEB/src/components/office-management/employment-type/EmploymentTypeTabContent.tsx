@@ -1,4 +1,4 @@
-﻿// src/components/employment-type/EmploymentTypeTabContent.tsx
+// src/components/employment-type/EmploymentTypeTabContent.tsx
 import { EmploymentTypeTable } from '@/components/office-management/employment-type/EmploymentTypeTable';
 import { EmploymentType, VwEmploymentType } from '@/types';
 

@@ -1,4 +1,4 @@
-﻿import { User, LoginCredentials } from '@/types/user';
+import { User, LoginCredentials } from '@/types/user';
 
 // Backend view model interfaces matching C# models
 export interface UserValidationViewModel {

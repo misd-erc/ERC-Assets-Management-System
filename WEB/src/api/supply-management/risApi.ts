@@ -148,7 +148,24 @@ export const editSupplyRIS = async (payload: EditSupplyRIS): Promise<{ id: numbe
   const { systemUserId, sessionKey } = getAuthParams();
 
   const requestPayload = {
-    ...payload,
+    Id: payload.id || 0,
+    EntityName: payload.entityName,
+    FundCluster: payload.fundCluster,
+    OfficeId: payload.officeId,
+    DivisionId: payload.divisionId,
+    ResponsibilityCenterCode: payload.responsibilityCenterCode,
+    RISNumber: payload.risNumber,
+    RISPurpose: payload.risPurpose,
+    RISRequestedBySystemUserId: payload.risRequestedBySystemUserId,
+    RISRequestedDate: payload.risRequestedDate,
+    RISApprovedBySystemUserId: payload.risApprovedBySystemUserId,
+    RISApprovedDate: payload.risApprovedDate,
+    RISIssuedBySystemUserId: payload.risIssuedBySystemUserId,
+    RISIssuedDate: payload.risIssuedDate,
+    RISReceivedBySystemUserId: payload.risReceivedBySystemUserId,
+    RISReceivedDate: payload.risReceivedDate,
+    IsApproved: payload.isApproved,
+    IsActive: payload.isActive,
     CreatedAt: payload.createdAt,
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,
@@ -166,7 +183,16 @@ export const editSupplyRISItem = async (payload: EditSupplyRISItem): Promise<{ i
   const { systemUserId, sessionKey } = getAuthParams();
 
   const requestPayload = {
-    ...payload,
+    Id: payload.id || 0,
+    RISId: payload.risId || 0,
+    StockNumber: payload.stockNumber,
+    UnitId: payload.unitId || 0,
+    ItemDescription: payload.itemDescription,
+    RequisitionQuantity: payload.requisitionQuantity || 0,
+    IsAvailable: payload.isAvailable ?? true,
+    IssueQuantity: payload.issueQuantity || 0,
+    ItemRemarks: payload.itemRemarks,
+    IsActive: payload.isActive ?? true,
     CreatedAt: payload.createdAt,
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,

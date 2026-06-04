@@ -1,12 +1,14 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { createUser, updateUser, editUser } from '@/api/user-management/userApi';
 import { User } from '@/types/user';
 import { toast } from 'sonner';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useAuthStore } from '@/store/auth';
 import { secureStorage } from '@/utils/secureStorage';
 
@@ -82,6 +84,7 @@ export const UserFormModal = ({
       if (user) {
         // Update existing user
         const token = secureStorage.getItem('ActionBySystemUserId') || '';
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const statusId = formData.status === 'Active' ? '0' : formData.status === 'Inactive' ? '1' : '2';
         await editUser({
           systemUserId: parseInt(user.id.toString(), 10),

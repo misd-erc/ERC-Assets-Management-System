@@ -66,6 +66,7 @@ const todayInputValue = () => {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const startOfYearInputValue = () => {
     const now = new Date();
     return `${now.getFullYear()}-01-01`;

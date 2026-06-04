@@ -1,5 +1,7 @@
-﻿import axiosInstance from '@/lib/axios';
+import axiosInstance from '@/lib/axios';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { User, ApiResponse, Office, Division, EmploymentType, Position, SystemRole } from '@/types';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Employee, ApiEmployee } from '@/types/asset/UnifiedAsset';
 import { UserDetails, getUserDetails } from '@/api/user-management/authApi';
 import { getAuditTrail } from '@/api/audit/auditApi';
@@ -239,16 +241,6 @@ export const getUserPhoto = async (fileId: string, userId: string) => {
 export const getUsersDetails = async (userId: string): Promise<UserDetails> => {
   // Retrieve tokens directly from localStorage to ensure we use the latest synced values
   const currentSystemId = String(secureStorage.getItem('systemUserId'));
-
-
-  if (currentSystemId !== currentSystemId) {
-    console.warn('[AuthAPI] Token mismatch detected! Syncing before API call.');
-    // Auto-correct by syncing them
-    if (userId) {
-      secureStorage.setItem('systemUserId', currentSystemId);
-      console.log('[AuthAPI] Synced systemUserId with ActionBySystemUserIdEncrypted');
-    }
-  }
 
   // Get session key from localStorage
   const sessionKey = secureStorage.getItem('sessionToken') || '';

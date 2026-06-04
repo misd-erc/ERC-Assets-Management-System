@@ -1,4 +1,4 @@
-﻿// src/components/contract-management/vendor/VendorDeleteModal.tsx
+// src/components/contract-management/vendor/VendorDeleteModal.tsx
 import { 
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle 

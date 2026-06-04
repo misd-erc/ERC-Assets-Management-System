@@ -47,7 +47,7 @@ export const useChatStore = create<ChatState>((set) => ({
     conversationsUpdatedNonce: 0,
     
     setIsOpen: (isOpen) => set({ isOpen }),
-    setActiveChat: (id, isGroup) => set({ activeChatId: id, isGroupChat: isGroup }),
+    setActiveChat: (id, isGroup) => set({ activeChatId: id, isGroupChat: isGroup, messages: [], hasMoreHistory: true }),
     setMessages: (messages) => set({ messages }),
     addMessage: (message: ChatMessage) => set((state) => {
         if (state.messages.some(m => m.id === message.id)) {

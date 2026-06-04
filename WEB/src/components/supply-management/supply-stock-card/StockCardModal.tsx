@@ -30,9 +30,10 @@ interface Props {
   stockNumber: string;
   description: string;
   totalCurrentStock?: number;
+  onSuccess?: () => void;
 }
 
-export const StockCardModal = ({ open, onOpenChange, stockNumber, description, totalCurrentStock }: Props) => {
+export const StockCardModal = ({ open, onOpenChange, stockNumber, description, totalCurrentStock, onSuccess }: Props) => {
   const { stockCardItems, loading, totalCount, fetchStockCardItems, reset, setPage, currentPage, pageSize } = useStockCard();
   const [bypassModalOpen, setBypassModalOpen] = useState(false);
 
@@ -276,6 +277,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
         totalCurrentStock={totalCurrentStock}
         onSuccess={() => {
           fetchStockCardItems(stockNumber, description, 1);
+          onSuccess?.();
         }}
       />
 
@@ -293,6 +295,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
         editId={selectedEditId}
         onSuccess={() => {
           fetchStockCardItems(stockNumber, description, 1);
+          onSuccess?.();
         }}
       />
 
@@ -313,6 +316,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
         parentRISId={selectedRISId}
         onSuccess={() => {
           fetchStockCardItems(stockNumber, description, 1);
+          onSuccess?.();
         }}
       />
     </>

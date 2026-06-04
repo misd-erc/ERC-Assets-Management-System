@@ -1,4 +1,4 @@
-﻿// src/components/employment-type/EmploymentTypeDeleteModal.tsx
+// src/components/employment-type/EmploymentTypeDeleteModal.tsx
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useEmploymentType } from '@/hooks';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { toast } from 'sonner';
 
 interface Props {

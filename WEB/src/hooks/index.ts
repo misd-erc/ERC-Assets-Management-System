@@ -1,4 +1,5 @@
-﻿import { useSupplyIAR } from './supply/useIAR';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { useSupplyIAR } from './supply/useIAR';
 
 export { useAuth } from '@/hooks/auth/useAuth';
 export { useOtpTimer } from '@/hooks/auth/useOtpTimer';

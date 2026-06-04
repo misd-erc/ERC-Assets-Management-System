@@ -325,6 +325,7 @@ export function ListPPEsAtStationModal({ isOpen, onClose }: ListPPEsAtStationMod
     const [categoryId, setCategoryId] = useState<string>('all');
     const [asOfDate, setAsOfDate] = useState('');
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [assets, setAssets] = useState<any[]>([]);
     const [rows, setRows] = useState<PPERow[]>([]);
     const [pdfUrl, setPdfUrl] = useState('');

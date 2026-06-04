@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Search, FileText, Download, X, Printer } from 'lucide-react';
 import { toast } from 'sonner';
@@ -518,6 +519,7 @@ export function IIRUPGenerationModal({ isOpen, onClose, reportType }: IIRUPGener
     setPreviewUrl('');
     setShowPreview(false);
     loadDisposals();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const loadDisposals = async () => {

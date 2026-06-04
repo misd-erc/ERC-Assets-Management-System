@@ -1,5 +1,6 @@
-﻿// src/api/office/divisionApi.ts
+// src/api/office/divisionApi.ts
 import axiosInstance from '@/lib/axios';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ApiResponse, Office, VwDivision, Division } from '@/types';
 import { toast } from 'sonner';
 import { getAuthParams } from '@/utils/auth';

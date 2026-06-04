@@ -46,6 +46,19 @@ export const StockCardTabContent = () => {
     );
   }, [params, fetchSupplyGroupedItems, categories]);
 
+  const handleRefresh = () => {
+    const selectedCategory = categories.find(c => c.name === params.category);
+    fetchSupplyGroupedItems(
+      params.page,
+      10,
+      params.search,
+      params.status === 'all' ? undefined : params.status,
+      selectedCategory?.id,
+      params.storageId === 'all' ? undefined : Number(params.storageId),
+      params.vendorId === 'all' ? undefined : Number(params.vendorId)
+    );
+  };
+
   const handleViewStockCard = (item: VwSupplyGroupedItem) => {
     setSelectedGroup(item);
     setModalOpen(true);
@@ -76,6 +89,7 @@ export const StockCardTabContent = () => {
         stockNumber={selectedGroup?.code || ''}
         description={selectedGroup?.description || ''}
         totalCurrentStock={selectedGroup?.totalCurrentStock}
+        onSuccess={handleRefresh}
       />
     </>
   );
