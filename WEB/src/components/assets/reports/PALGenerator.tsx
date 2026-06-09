@@ -305,14 +305,19 @@ function isAssignedToEmployee(asset: any, employeeId: number): boolean {
   });
   if (hasCurrent) return true;
 
-  // 2. No isCurrent flag set — look at the latest movement overall
-  const sorted = [...movements].sort((a, b) => {
+  // 2. No isCurrent flag set — use the latest ACTIVE movement as the effective holder.
+  // A deleted current holder (isActive=false) must not shadow the previous active assignment.
+  const sortByDate = (a: any, b: any) => {
     const ta = a.dateAssigned ? new Date(a.dateAssigned).getTime() : 0;
     const tb = b.dateAssigned ? new Date(b.dateAssigned).getTime() : 0;
     return tb - ta;
-  });
+  };
 
-  // The latest movement determines current accountability
+  const activeMovements = movements.filter((m) => m.isActive === true || m.isActive === 1);
+  const sorted = activeMovements.length
+    ? [...activeMovements].sort(sortByDate)
+    : [...movements].sort(sortByDate);
+
   return movementInvolvesEmployee(sorted[0], employeeId);
 }
 
