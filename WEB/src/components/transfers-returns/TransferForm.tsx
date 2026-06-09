@@ -16,7 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, AlertCircle, CheckCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  editMovement,
+  editMovementBulk,
   generateTransferNumber,
   generateParIcsNumber,
   getAssetsByEmployee,
@@ -268,36 +268,38 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
         };
       });
 
-      // Get the previous movements to mark as not current
-      const previousMovements = selectedItems.map(itemId => {
-        const item = employeeItems.find(i => String(i.id) === itemId);
-        if (item?.movements && Array.isArray(item.movements) && item.movements.length > 0) {
-          const sortedMovements = [...item.movements].sort((a, b) => {
-            const dateA = new Date(a.dateAssigned).getTime();
-            const dateB = new Date(b.dateAssigned).getTime();
-            return dateB - dateA;
-          });
-          const latestMovement = sortedMovements[0];
-          return {
-            ...latestMovement,
-            status: latestMovement.status || 'T', // Preserve original status, default to 'T' for transfer
-            plantillaEmployeeId: latestMovement.plantillaEmployeeId || null,
-            nonPlantillaEmployeeId: latestMovement.nonPlantillaEmployeeId || null,
-            isCurrent: false, // Mark previous as not current
-          };
-        }
-        return null;
-      }).filter(m => m !== null);
+      // Build previous movements (mark as not current)
+      const previousMovements = selectedItems
+        .map(itemId => {
+          const item = employeeItems.find(i => String(i.id) === itemId);
+          if (item?.movements && Array.isArray(item.movements) && item.movements.length > 0) {
+            const sortedMovements = [...item.movements].sort((a, b) =>
+              new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
+            );
+            const latest = sortedMovements[0];
+            return {
+              id: latest.id,
+              ptaId: latest.ptaId,
+              dateAssigned: latest.dateAssigned,
+              ptrItrNumber: latest.ptrItrNumber || '',
+              parIcsNumber: latest.parIcsNumber || '',
+              rrppeRrspNumber: latest.rrppeRrspNumber || '',
+              status: latest.status || 'T',
+              plantillaEmployeeId: latest.plantillaEmployeeId || null,
+              nonPlantillaEmployeeId: latest.nonPlantillaEmployeeId || null,
+              condition: latest.condition || 'Good',
+              actualOfficeId: latest.actualOfficeId || 0,
+              actualDivisionId: latest.actualDivisionId || 0,
+              isActive: true,
+              isCurrent: false,
+            };
+          }
+          return null;
+        })
+        .filter((m): m is NonNullable<typeof m> => m !== null);
 
-      // Submit all previous movements updates
-      for (const movement of previousMovements) {
-        await editMovement(movement);
-      }
-
-      // Submit all new movements
-      for (const movement of movements) {
-        await editMovement(movement);
-      }
+      // Send all previous + new movements in a single bulk request
+      await editMovementBulk([...previousMovements, ...movements]);
 
       setSuccess(true);
       toast.success(`${transferType} created successfully for ${selectedItems.length} item(s)`);

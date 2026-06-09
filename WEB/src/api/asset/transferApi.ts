@@ -160,6 +160,44 @@ export const getAssetsForTransfer = async (groupName?: 'ppe' | 'se'): Promise<an
   }
 };
 
+export interface MovementItemPayload {
+  id: number;
+  ptaId: number;
+  dateAssigned: string;
+  ptrItrNumber?: string;
+  parIcsNumber?: string;
+  rrppeRrspNumber?: string;
+  status?: string;
+  plantillaEmployeeId?: number | null;
+  nonPlantillaEmployeeId?: number | null;
+  condition?: string;
+  actualOfficeId?: number;
+  actualDivisionId?: number;
+  isActive?: boolean;
+  isCurrent?: boolean;
+}
+
+/**
+ * Create or update multiple movement records in a single request.
+ * Sends one POST to /Inventory/pta/movement/edit-bulk instead of N individual calls,
+ * eliminating IIS rate-limit 403s when transferring/returning many items at once.
+ */
+export const editMovementBulk = async (movements: MovementItemPayload[]): Promise<void> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  const payload = {
+    movements,
+    actionBySystemUserId: systemUserId,
+    sessionKey,
+  };
+
+  const response = await axiosInstance.post('/Inventory/pta/movement/edit-bulk', payload);
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Failed to save movement records');
+  }
+};
+
 /**
  * Create or update a movement record (PTR/ITR)
  * @param movementData - Movement record data

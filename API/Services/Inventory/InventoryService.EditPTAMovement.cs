@@ -76,5 +76,56 @@ public async Task<IActionResult> EditPTAMovement([FromBody] EditPTAMovementQuery
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
         }
+
+public async Task<IActionResult> EditPTAMovementBulk([FromBody] EditPTAMovementBulkQueryParams model)
+        {
+            if (model.Movements == null || model.Movements.Count == 0)
+                return BadRequest(ApiResponse<object>.Fail("INVALID_INPUT", "Movements list cannot be empty."));
+
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var resultIds = new List<long>();
+
+                foreach (var item in model.Movements)
+                {
+                    TblPTAMovement ptaMovement = new()
+                    {
+                        Id = item.Id,
+                        PTAId = item.PTAId,
+                        DateAssigned = item.DateAssigned,
+                        PTRITRNumber = item.PtrItrNumber,
+                        RRPPERRSPNumber = item.RrppeRrspNumber,
+                        PARICSNumber = item.ParIcsNumber,
+                        PlantillaEmployeeId = item.PlantillaEmployeeId,
+                        NonPlantillaEmployeeId = item.NonPlantillaEmployeeId,
+                        ActualOfficeId = item.ActualOfficeId,
+                        ActualDivisionId = item.ActualDivisionId,
+                        Remarks = item.Condition,
+                        IsActive = item.IsActive,
+                        Status = item.Status,
+                        IsCurrent = item.IsCurrent,
+                    };
+
+                    long id = await _editTools.PTA.EditTblPTAMovementAsync(ptaMovement, model.ActionBySystemUserId, context, isBatch: true);
+                    resultIds.Add(id);
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                await AuditTrailTool.LogActivityAsync(_options, $"Bulk edited {model.Movements.Count} PTA Movement(s)", actionBy: model.ActionBySystemUserId);
+
+                return Ok(ApiResponse<object>.Ok(new { PTAMovementIds = resultIds, Count = resultIds.Count }, $"{model.Movements.Count} PTA Movement(s) processed successfully."));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryService));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
     }
 }

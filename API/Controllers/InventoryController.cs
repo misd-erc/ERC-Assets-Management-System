@@ -94,6 +94,10 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> EditPTAMovement([FromBody] EditPTAMovementQueryParams model) => await _inventoryService.EditPTAMovement(model);
 
+        [HttpPost("pta/movement/edit-bulk")]
+        [ValidateSessionToken]
+        public async Task<IActionResult> EditPTAMovementBulk([FromBody] EditPTAMovementBulkQueryParams model) => await _inventoryService.EditPTAMovementBulk(model);
+
 
         [HttpGet("pta/movement/next-number")]
         [ValidateSessionToken]
