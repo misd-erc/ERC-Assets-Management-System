@@ -19,6 +19,11 @@ namespace PortalDB.Models.QueryParams.PTA
         public string? RrppeRrspFilter { get; set; }
 
         /// <summary>
+        /// Filter/search by PAR/ICS Number (partial match).
+        /// </summary>
+        public string? ParIcsFilter { get; set; }
+
+        /// <summary>
         /// Search by employee name (plantilla or non-plantilla) or employee ID original.
         /// </summary>
         public string? SearchEmployee { get; set; }

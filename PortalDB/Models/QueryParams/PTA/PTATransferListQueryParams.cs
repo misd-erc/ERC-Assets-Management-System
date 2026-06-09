@@ -24,6 +24,11 @@ namespace PortalDB.Models.QueryParams.PTA
         public string? PtrItrFilter { get; set; }
 
         /// <summary>
+        /// Filter/search by PAR/ICS Number (partial match).
+        /// </summary>
+        public string? ParIcsFilter { get; set; }
+
+        /// <summary>
         /// Filter by office ID.
         /// </summary>
         public long? OfficeId { get; set; }

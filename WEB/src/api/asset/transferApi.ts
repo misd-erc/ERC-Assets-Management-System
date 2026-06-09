@@ -454,6 +454,83 @@ export const getTransferDetailsByNumber = async (transferNumber: string): Promis
 };
 
 /**
+ * Get all movements and items for a specific RRPPE/RRSP return number
+ * @param returnNumber - The RRPPE or RRSP number (e.g., RRPPE-2026-01-001)
+ * @returns Promise with all movements and items for that return
+ */
+export const getReturnDetails = async (returnNumber: string): Promise<any> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+
+    const url = `${API_BASE_URL}/Inventory/pta/movement/return-details?returnNumber=${encodeURIComponent(returnNumber)}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch return details: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to fetch return details');
+    }
+
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching return details:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get all return details with normalized movement structure
+ * @param returnNumber - The RRPPE or RRSP number (e.g., RRPPE-2026-01-001)
+ * @returns Promise with formatted movements for display
+ */
+export const getReturnDetailsByNumber = async (returnNumber: string): Promise<any> => {
+  try {
+    const data = await getReturnDetails(returnNumber);
+
+    // Normalize movements for consistent display
+    const normalizedMovements = (data.movements || []).map((movement: any) => ({
+      movementId: movement.movementId || movement.id,
+      id: movement.movementId || movement.id,
+      ptaId: movement.ptaId,
+      dateAssigned: movement.dateAssigned,
+      rrppeRrspNumber: movement.rrppeRrspNumber,
+      paricsNumber: movement.paricsNumber,
+      fromEmployee: movement.fromEmployee,
+      toEmployee: movement.toEmployee,
+      office: movement.office,
+      division: movement.division,
+      status: movement.status,
+      condition: movement.condition,
+      remarks: movement.remarks,
+      isActive: movement.isActive,
+      items: movement.items || (movement.item ? [movement.item] : []),
+      createdAt: movement.createdAt,
+    }));
+
+    return {
+      returnNumber: data.returnNumber,
+      returnType: data.returnType,
+      movements: normalizedMovements,
+      totalItems: data.totalItems,
+      totalMovements: data.totalMovements,
+      totalValue: data.totalValue,
+    };
+  } catch (error) {
+    console.error('Error fetching and normalizing return details:', error);
+    throw error;
+  }
+};
+
+/**
  * Validate PTR/ITR number format
  * @param ptrItrNumber - The PTR/ITR number to validate
  * @returns boolean indicating if format is valid
@@ -505,6 +582,7 @@ export const getRRSPMovements = async (
 export const getPTAReturnList = async (params: {
   group?: 'PPE' | 'SE';
   rrppeRrspFilter?: string;
+  parIcsFilter?: string;
   searchEmployee?: string;
   officeId?: number;
   divisionId?: number;
@@ -524,6 +602,7 @@ export const getPTAReturnList = async (params: {
 
     if (params.group) url += `&Group=${encodeURIComponent(params.group)}`;
     if (params.rrppeRrspFilter) url += `&RrppeRrspFilter=${encodeURIComponent(params.rrppeRrspFilter)}`;
+    if (params.parIcsFilter) url += `&ParIcsFilter=${encodeURIComponent(params.parIcsFilter)}`;
     if (params.searchEmployee) url += `&SearchEmployee=${encodeURIComponent(params.searchEmployee)}`;
     if (params.officeId) url += `&OfficeId=${params.officeId}`;
     if (params.divisionId) url += `&DivisionId=${params.divisionId}`;
@@ -682,6 +761,7 @@ export const getPTATransferList = async (params: {
   searchEmployee?: string;
   ptrItrFilter?: string;
   rrppeRrspFilter?: string;
+  parIcsFilter?: string;
   officeId?: number;
   divisionId?: number;
   startDate?: string;
@@ -701,6 +781,7 @@ export const getPTATransferList = async (params: {
     if (params.group) url += `&Group=${encodeURIComponent(params.group)}`;
     if (params.ptrItrFilter) url += `&PtrItrFilter=${encodeURIComponent(params.ptrItrFilter)}`;
     if (params.rrppeRrspFilter) url += `&RrppeRrspFilter=${encodeURIComponent(params.rrppeRrspFilter)}`;
+    if (params.parIcsFilter) url += `&ParIcsFilter=${encodeURIComponent(params.parIcsFilter)}`;
     if (params.searchEmployee) url += `&SearchEmployee=${encodeURIComponent(params.searchEmployee)}`;
     if (params.officeId) url += `&OfficeId=${params.officeId}`;
     if (params.divisionId) url += `&DivisionId=${params.divisionId}`;

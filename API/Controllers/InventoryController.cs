@@ -155,6 +155,12 @@ namespace API.Controllers
         public async Task<IActionResult> GetPTATransferDetails([FromQuery] string transferNumber, [FromQuery] SoloQueryParams model) => await _inventoryService.GetPTATransferDetails(transferNumber, model);
 
 
+        [HttpGet("pta/movement/return-details")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetPTAReturnDetails([FromQuery] string returnNumber, [FromQuery] SoloQueryParams model) => await _inventoryService.GetPTAReturnDetails(returnNumber, model);
+
+
 
 
         [HttpPost("pta/category/edit")]
