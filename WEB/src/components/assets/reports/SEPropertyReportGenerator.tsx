@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { PTAService } from '@/services/PTAService';
+import { ReportSerialService, REPORT_NAMES } from '@/services/ReportSerialService';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
@@ -180,16 +181,30 @@ interface SEPropertyReportFilterModalProps {
 export function SEPropertyReportFilterModal({ isOpen, onClose, onGenerate }: SEPropertyReportFilterModalProps) {
   const [asOfDate, setAsOfDate] = useState('');
   const [serialNo, setSerialNo] = useState('');
+  const [loadingSerial, setLoadingSerial] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setLoadingSerial(true);
+    ReportSerialService.getNextSerial(REPORT_NAMES.SE_PROPERTY)
+      .then(serial => setSerialNo(serial))
+      .catch(() => toast.error('Failed to fetch serial number'))
+      .finally(() => setLoadingSerial(false));
+  }, [isOpen]);
 
   const handleGenerate = () => {
     if (!asOfDate) {
       toast.error('Please select a date');
       return;
     }
+    if (!serialNo) {
+      toast.error('Serial number not yet loaded');
+      return;
+    }
 
     onGenerate({
       asOfDate: new Date(asOfDate),
-      serialNo: serialNo.trim() || undefined,
+      serialNo,
     });
   };
 
@@ -206,13 +221,12 @@ export function SEPropertyReportFilterModal({ isOpen, onClose, onGenerate }: SEP
             <Input
               id="se-property-serial-number"
               type="text"
-              value={serialNo}
-              onChange={(e) => setSerialNo(e.target.value)}
-              className="col-span-4"
-              placeholder="Enter serial number"
+              value={loadingSerial ? 'Loading...' : serialNo}
+              readOnly
+              className="col-span-4 bg-muted cursor-not-allowed"
             />
 
-            <Label htmlFor="se-property-date" className="col-span-4">Date</Label>
+            <Label htmlFor="se-property-date" className="col-span-4">As of Date</Label>
             <Input
               id="se-property-date"
               type="date"
@@ -225,7 +239,7 @@ export function SEPropertyReportFilterModal({ isOpen, onClose, onGenerate }: SEP
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleGenerate}>Generate Report</Button>
+          <Button onClick={handleGenerate} disabled={loadingSerial}>Generate Report</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -256,6 +270,22 @@ export class SEPropertyReportGenerator {
     }).format(date);
   }
 
+  private static isValidIcs(parIcsNumber: string | undefined | null): boolean {
+    if (!parIcsNumber) return false;
+    const trimmed = parIcsNumber.trim();
+    return trimmed !== '' && trimmed !== 'N/A';
+  }
+
+  private static getOldestIcsDate(assets: any[]): Date | null {
+    let oldest: Date | null = null;
+    for (const asset of assets) {
+      if (!asset.latestMovement?.dateAssigned) continue;
+      const d = new Date(asset.latestMovement.dateAssigned);
+      if (!oldest || d < oldest) oldest = d;
+    }
+    return oldest;
+  }
+
   static async generatePreview(options: SEPropertyReportOptions): Promise<string> {
     const seAssets = await PTAService.getAllForSE(options.asOfDate);
     if (!seAssets.length) throw new Error('No SE assets found for the selected date.');
@@ -276,20 +306,39 @@ export class SEPropertyReportGenerator {
     a.href = url;
     a.download = '20._Annex-A.7-Report_of_SE_Property_Issued.pdf';
     a.click();
+
+    if (options.serialNo) {
+      try {
+        await ReportSerialService.saveSerial(REPORT_NAMES.SE_PROPERTY, options.serialNo);
+      } catch {
+        // non-critical — report still downloads
+      }
+    }
   }
 
   private static buildDocument(seAssets: any[], options: SEPropertyReportOptions) {
-    const finalAssets = seAssets.map(asset => {
-      const latestMovement = asset.movements
-        ?.filter((m: any) => m.parIcsNumber)
-        ?.sort(
-          (a: any, b: any) =>
-            new Date(b.dateAssigned).getTime() -
-            new Date(a.dateAssigned).getTime()
-        )[0];
-      const icsNo = latestMovement?.parIcsNumber || '';
-      return { ...asset, latestMovement, icsNo };
-    });
+    const asOfDateStr = options.asOfDate.toISOString().split('T')[0];
+
+    const finalAssets = seAssets
+      .map(asset => {
+        const latestMovement = asset.movements
+          ?.filter((m: any) => this.isValidIcs(m.parIcsNumber))
+          ?.sort(
+            (a: any, b: any) =>
+              new Date(b.dateAssigned).getTime() -
+              new Date(a.dateAssigned).getTime()
+          )[0];
+        const icsNo = latestMovement?.parIcsNumber || '';
+        return { ...asset, latestMovement, icsNo };
+      })
+      .filter(asset => {
+        if (!asset.latestMovement?.dateAssigned) return false;
+        return asset.latestMovement.dateAssigned.split('T')[0] === asOfDateStr;
+      });
+
+    const oldestDate = this.getOldestIcsDate(finalAssets);
+    const displayDate = oldestDate ?? options.asOfDate;
+
     return (
       <Document>
         <Page size="LEGAL" orientation="landscape" style={styles.page}>
@@ -313,7 +362,7 @@ export class SEPropertyReportGenerator {
               </View>
               <View style={styles.metaRightLine}>
                 <Text style={styles.metaLabel}>Date:</Text>
-                <Text style={styles.metaValue}>{this.formatHeaderDate(options.asOfDate)}</Text>
+                <Text style={styles.metaValue}>{this.formatHeaderDate(displayDate)}</Text>
               </View>
             </View>
           </View>

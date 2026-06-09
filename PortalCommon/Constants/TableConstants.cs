@@ -40,6 +40,8 @@ namespace PortalCommon.Constants
         public const string AuditTrail = "TblAuditTrail";
         public const string ErrorLog = "TblErrorLog";
 
+        public const string ReportSerial = "TblReportSerial";
+
         #endregion
 
         // Map: API-friendly name → Logical constant value (TblPPE)

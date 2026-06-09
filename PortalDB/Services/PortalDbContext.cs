@@ -13,6 +13,7 @@ using PortalDB.Entities.DBO.Notification;
 using PortalDB.Entities.DBO.Module;
 using PortalDB.Entities.DBO.Chat;
 using PortalDB.Entities.ASSET.PTA;
+using PortalDB.Entities.ASSET.Report;
 using PortalDB.Seeds.DBO.Module;
 using PortalDB.Entities.ASSET.Supply;
 using PortalDB.Entities.ASSET.Delivery;
@@ -93,6 +94,9 @@ namespace PortalDB.Services
         #region Delivery
         public DbSet<TblDeliveryRecord> TblDeliveryRecords { get; set; }
         public DbSet<TblDeliveryRecordItem> TblDeliveryRecordItems { get; set; }
+        #endregion
+        #region Report
+        public DbSet<TblReportSerial> TblReportSerials { get; set; }
         #endregion
         #endregion
 

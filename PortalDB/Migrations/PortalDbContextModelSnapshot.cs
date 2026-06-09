@@ -905,6 +905,46 @@ namespace PortalDB.Migrations
                     b.ToView("vwPTAs", "asset");
                 });
 
+            modelBuilder.Entity("PortalDB.Entities.ASSET.Report.TblReportSerial", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("ReportSerialId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("ReportSerialCreatedAt");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("int")
+                        .HasColumnName("ReportSerialMonth");
+
+                    b.Property<string>("ReportName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ReportSerialName");
+
+                    b.Property<string>("SerialNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ReportSerialNumber");
+
+                    b.Property<int>("Series")
+                        .HasColumnType("int")
+                        .HasColumnName("ReportSerialSeries");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int")
+                        .HasColumnName("ReportSerialYear");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblReportSerials", "asset");
+                });
+
             modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyIAR", b =>
                 {
                     b.Property<long>("Id")
