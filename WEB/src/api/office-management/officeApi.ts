@@ -90,10 +90,17 @@ export const editOffice = async (payload: EditOfficePayload): Promise<{ message:
     SessionKey: sessionKey,
   };
 
-  const response = await axiosInstance.post<ApiResponse<any>>('/Office/edit', requestPayload);
+  try {
+    const response = await axiosInstance.post<ApiResponse<any>>('/Office/edit', requestPayload);
 
-  if (!response.data.success) throw new Error(response.data.message || 'Failed to save office');
-  return { message: response.data.message ?? 'Success' };
+    if (!response.data.success) throw new Error(response.data.message || 'Failed to save office');
+    return { message: response.data.message ?? 'Success' };
+  } catch (error: any) {
+    if (error.response?.status === 400 && error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    throw error;
+  }
 };
 
 /* ------------------------------- DELETE ------------------------------- */

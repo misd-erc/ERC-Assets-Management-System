@@ -67,10 +67,21 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
                             .Where(m => m.PTAId.HasValue && allPtaIds.Contains(m.PTAId.Value))
                             .ToListAsync();
 
-                        // Keep only the latest movement per PTA
+                        // Keep the latest ACTIVE movement per PTA (IsActive=true = not soft-deleted).
+                        // If a current holder was deleted, the previous active movement becomes
+                        // the effective holder and must be matched by the employee filter.
                         var latestMovementByPta = rawMovements
                             .GroupBy(m => m.PTAId!.Value)
-                            .Select(g => g.OrderByDescending(m => m.CreatedAt).ThenByDescending(m => m.Id).First())
+                            .Select(g =>
+                            {
+                                var active = g.Where(m => m.IsActive)
+                                              .OrderByDescending(m => m.CreatedAt)
+                                              .ThenByDescending(m => m.Id)
+                                              .FirstOrDefault();
+                                return active ?? g.OrderByDescending(m => m.CreatedAt)
+                                                  .ThenByDescending(m => m.Id)
+                                                  .First();
+                            })
                             .ToDictionary(m => m.PTAId!.Value, m => m);
 
                         // Apply each movement-level filter in sequence
@@ -138,6 +149,9 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
                             ptas = ptas.Where(x => x != null && validPtaIds.Contains(x.Id));
                         }
                     }
+
+                    if (model.NoPropertyNumber == true)
+                        ptas = ptas.Where(x => string.IsNullOrWhiteSpace(x.PropertyNumber));
 
                     if (model.CategoryId != null && model.CategoryId != 0)
                         ptas = ptas.Where(x => x.CategoryId == model.CategoryId);

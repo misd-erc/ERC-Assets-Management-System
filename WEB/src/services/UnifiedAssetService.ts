@@ -130,6 +130,7 @@ export class UnifiedAssetService {
     PageNumber?: number;
     PageSize?: number;
     EmployeeId?: number;
+    noPropertyNumber?: boolean;
   }): Promise<{ items: Asset[]; totalCount: number }> {
     try {
       const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
@@ -181,6 +182,7 @@ export class UnifiedAssetService {
           OfficeId: officeId,
           DivisionId: divisionId,
           Condition: condition,
+          NoPropertyNumber: filters?.noPropertyNumber,
         });
         allItems = (ppeResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'PPE'));
         totalCount = ppeResponse.totalCount;
@@ -199,6 +201,7 @@ export class UnifiedAssetService {
           OfficeId: officeId,
           DivisionId: divisionId,
           Condition: condition,
+          NoPropertyNumber: filters?.noPropertyNumber,
         });
         allItems = (seResponse.items || []).map(item => this.mapApiToUnifiedAsset(item, 'SE'));
         totalCount = seResponse.totalCount;
@@ -218,6 +221,7 @@ export class UnifiedAssetService {
             OfficeId: officeId,
             DivisionId: divisionId,
             Condition: condition,
+            NoPropertyNumber: filters?.noPropertyNumber,
           }),
           seApi.list({
             SearchString: searchString,
@@ -233,6 +237,7 @@ export class UnifiedAssetService {
             OfficeId: officeId,
             DivisionId: divisionId,
             Condition: condition,
+            NoPropertyNumber: filters?.noPropertyNumber,
           }),
         ]);
         allItems = [

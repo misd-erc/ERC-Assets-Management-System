@@ -48,6 +48,15 @@ namespace API.Services.Inventory
                         allMovements = allMovements.Where(x => x.PTRITRNumber!.ToUpper().Contains(f.ToUpper())).ToList();
                 }
 
+                // 2b. PAR/ICS Number filter (partial match)
+                if (!string.IsNullOrWhiteSpace(model.ParIcsFilter))
+                {
+                    string f = model.ParIcsFilter.Trim().ToUpper();
+                    allMovements = allMovements
+                        .Where(x => !string.IsNullOrWhiteSpace(x.PARICSNumber) && x.PARICSNumber!.ToUpper().Contains(f))
+                        .ToList();
+                }
+
                 // 3. Date range filter
                 if (model.StartDate.HasValue)
                     allMovements = allMovements.Where(x => x.DateAssigned >= model.StartDate.Value).ToList();
@@ -88,69 +97,48 @@ namespace API.Services.Inventory
                         .ToList();
                 }
 
-                var ptaLookup = ptaMap.ToDictionary(p => p.Id, p => p);
+                // 7. Group movements by PTR/ITR number — one row per transfer record in the list,
+                // matching what the UI displays (a single transfer can span multiple item movements).
+                var groups = allMovements
+                    .GroupBy(x => x.PTRITRNumber!.Trim().ToUpperInvariant())
+                    .Select(g => new
+                    {
+                        Key = g.Key,
+                        Movements = g.ToList(),
+                        Latest = g.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.DateAssigned).First()
+                    })
+                    .ToList();
 
-                // 7. Employee name lookup
-                var employeeIds = allMovements
-                    .SelectMany(m => new[] { m.PlantillaEmployeeId, m.NonPlantillaEmployeeId })
+                // 8. Employee name lookup — only for employees referenced by the latest movement of each group
+                var employeeIds = groups
+                    .SelectMany(g => new[] { g.Latest.PlantillaEmployeeId, g.Latest.NonPlantillaEmployeeId })
                     .Where(id => id.HasValue)
                     .Select(id => id!.Value)
                     .Distinct()
                     .ToList();
 
                 var employeeNameMap = new Dictionary<long, string>();
-                var employeePositionMap = new Dictionary<long, string>();
-                var employeeOfficeMap = new Dictionary<long, string>();
-                var employeeDivisionMap = new Dictionary<long, string>();
+                var employeeTypeMap = new Dictionary<long, string>();
                 foreach (var empId in employeeIds)
                 {
                     var emp = await _getTools.Account.GetTblEmployeeAsync(empId, context);
                     if (emp != null)
                     {
                         employeeNameMap[empId] = $"{emp.FirstName} {emp.MiddleName} {emp.LastName}".Trim();
-
-                        long? resolvedPositionId = emp.PositionId;
-                        if (!resolvedPositionId.HasValue && emp.SystemUserId.HasValue)
+                        if (emp.EmploymentTypeId.HasValue)
                         {
-                            var systemUser = await _getTools.Account.GetTblSystemUserAsync(emp.SystemUserId.Value, context);
-                            resolvedPositionId = systemUser?.PositionId;
-                        }
-
-                        if (resolvedPositionId.HasValue)
-                        {
-                            var position = await _getTools.Office.GetTblPositionAsync(resolvedPositionId.Value, context);
-                            if (position != null)
-                                employeePositionMap[empId] = !string.IsNullOrWhiteSpace(position.Name)
-                                    ? position.Name
-                                    : (position.Acronym ?? string.Empty);
-                        }
-
-                        if (emp.OfficeId.HasValue)
-                        {
-                            var officeEntity = await _getTools.Office.GetTblOfficeAsync(emp.OfficeId.Value, context);
-                            if (officeEntity != null)
-                                employeeOfficeMap[empId] = !string.IsNullOrWhiteSpace(officeEntity.Acronym)
-                                    ? officeEntity.Acronym
-                                    : (officeEntity.Name ?? string.Empty);
-                        }
-
-                        if (emp.DivisionId.HasValue)
-                        {
-                            var divisionEntity = await _getTools.Office.GetTblDivisionAsync(emp.DivisionId.Value, context);
-                            if (divisionEntity != null)
-                                employeeDivisionMap[empId] = !string.IsNullOrWhiteSpace(divisionEntity.Acronym)
-                                    ? divisionEntity.Acronym
-                                    : (divisionEntity.Name ?? string.Empty);
+                            var employmentType = await _getTools.Office.GetTblEmploymentTypeAsync(emp.EmploymentTypeId.Value, context);
+                            employeeTypeMap[empId] = employmentType?.Name ?? string.Empty;
                         }
                     }
                 }
 
-                // Apply employee search filter
+                // Apply employee search filter at the group level (matches if any movement in the group matches)
                 if (!string.IsNullOrWhiteSpace(model.SearchEmployee))
                 {
                     string search = model.SearchEmployee.Trim().ToUpper();
 
-                    allMovements = allMovements.Where(m =>
+                    bool MovementMatchesEmployee(PortalDB.Entities.ASSET.PTA.TblPTAMovement m)
                     {
                         if (m.PlantillaEmployeeId.HasValue &&
                             employeeNameMap.TryGetValue(m.PlantillaEmployeeId.Value, out var pName) &&
@@ -171,91 +159,135 @@ namespace API.Services.Inventory
                             return true;
 
                         return false;
-                    }).ToList();
+                    }
+
+                    groups = groups.Where(g => g.Movements.Any(MovementMatchesEmployee)).ToList();
                 }
 
-                // 8. Sort — newest created/updated first
-                allMovements = allMovements
-                    .OrderByDescending(x => x.CreatedAt)
-                    .ThenByDescending(x => x.DateAssigned)
+                // 9. Sort groups — newest first
+                groups = groups
+                    .OrderByDescending(g => g.Latest.CreatedAt)
+                    .ThenByDescending(g => g.Latest.DateAssigned)
                     .ToList();
 
-                // 9. Pagination
-                int totalCount = allMovements.Count;
+                // 10. Pagination — by group (one row per transfer number)
+                int totalCount = groups.Count;
                 int skip = (model.PageNumber - 1) * model.PageSize;
-                var pagedMovements = allMovements.Skip(skip).Take(model.PageSize).ToList();
+                var pagedGroups = groups.Skip(skip).Take(model.PageSize).ToList();
 
-                // 10. Build result
+                // Resolve previous holder (FROM employee) for the representative movement of each paged group.
+                // For a transfer, the "To" employee is on the current movement; the "From" is whoever held the
+                // representative PTA immediately before this transfer movement.
+                var ptaIdsInPage = pagedGroups
+                    .Where(g => g.Latest.PTAId.HasValue)
+                    .Select(g => g.Latest.PTAId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                var allMovementsForPtas = await _getTools.PTA.GetTblPTAMovements(context)
+                    .Where(x => x.PTAId.HasValue && ptaIdsInPage.Contains(x.PTAId.Value) && !x.IsDeleted)
+                    .ToListAsync();
+
+                var movementsByPta = allMovementsForPtas
+                    .OrderBy(x => x.DateAssigned)
+                    .ThenBy(x => x.CreatedAt)
+                    .GroupBy(x => x.PTAId!.Value)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                var previousMovementByMovementId = new Dictionary<long, PortalDB.Entities.ASSET.PTA.TblPTAMovement>();
+                foreach (var grp in pagedGroups)
+                {
+                    var movement = grp.Latest;
+                    if (!movement.PTAId.HasValue) continue;
+                    if (!movementsByPta.TryGetValue(movement.PTAId.Value, out var history)) continue;
+
+                    var currentIndex = history.FindIndex(m => m.Id == movement.Id);
+                    if (currentIndex > 0)
+                        previousMovementByMovementId[movement.Id] = history[currentIndex - 1];
+                }
+
+                // Ensure previous holder IDs have display names in the map.
+                var previousHolderIds = previousMovementByMovementId.Values
+                    .SelectMany(pm => new[] { pm.PlantillaEmployeeId, pm.NonPlantillaEmployeeId })
+                    .Where(id => id.HasValue)
+                    .Select(id => id!.Value)
+                    .Distinct()
+                    .Where(id => !employeeNameMap.ContainsKey(id))
+                    .ToList();
+
+                foreach (var prevEmpId in previousHolderIds)
+                {
+                    var emp = await _getTools.Account.GetTblEmployeeAsync(prevEmpId, context);
+                    if (emp != null)
+                    {
+                        employeeNameMap[prevEmpId] = $"{emp.FirstName} {emp.MiddleName} {emp.LastName}".Trim();
+                        if (emp.EmploymentTypeId.HasValue)
+                        {
+                            var employmentType = await _getTools.Office.GetTblEmploymentTypeAsync(emp.EmploymentTypeId.Value, context);
+                            employeeTypeMap[prevEmpId] = employmentType?.Name ?? string.Empty;
+                        }
+                    }
+                }
+
+                // 11. Build lightweight result — only the fields the list view displays
                 var result = new List<object>();
 
-                foreach (var movement in pagedMovements)
+                foreach (var grp in pagedGroups)
                 {
+                    var movement = grp.Latest;
                     long? plantillaId = movement.PlantillaEmployeeId;
                     long? nonPlantillaId = movement.NonPlantillaEmployeeId;
+                    long? previousPlantillaId = null;
+                    long? previousNonPlantillaId = null;
+                    string? previousPlantillaName = null;
+                    string? previousNonPlantillaName = null;
+                    string? previousPlantillaIdOriginal = null;
+                    string? previousNonPlantillaIdOriginal = null;
+
+                    if (previousMovementByMovementId.TryGetValue(movement.Id, out var previousMovement))
+                    {
+                        previousPlantillaId = previousMovement.PlantillaEmployeeId;
+                        previousNonPlantillaId = previousMovement.NonPlantillaEmployeeId;
+                        previousPlantillaIdOriginal = previousMovement.PlantillaEmployeeIdOriginal;
+                        previousNonPlantillaIdOriginal = previousMovement.NonPlantillaEmployeeIdOriginal;
+
+                        if (previousPlantillaId.HasValue)
+                            employeeNameMap.TryGetValue(previousPlantillaId.Value, out previousPlantillaName);
+                        if (previousNonPlantillaId.HasValue)
+                            employeeNameMap.TryGetValue(previousNonPlantillaId.Value, out previousNonPlantillaName);
+                    }
 
                     employeeNameMap.TryGetValue(plantillaId ?? 0, out var plantillaName);
                     employeeNameMap.TryGetValue(nonPlantillaId ?? 0, out var nonPlantillaName);
-                    employeePositionMap.TryGetValue(plantillaId ?? 0, out var plantillaPosition);
-                    employeePositionMap.TryGetValue(nonPlantillaId ?? 0, out var nonPlantillaPosition);
-                    employeeOfficeMap.TryGetValue(plantillaId ?? 0, out var plantillaOffice);
-                    employeeOfficeMap.TryGetValue(nonPlantillaId ?? 0, out var nonPlantillaOffice);
-                    employeeDivisionMap.TryGetValue(plantillaId ?? 0, out var plantillaDivision);
-                    employeeDivisionMap.TryGetValue(nonPlantillaId ?? 0, out var nonPlantillaDivision);
-
-                    object? office = null;
-                    object? division = null;
-                    if (movement.ActualOfficeId.HasValue)
-                        office = await _getTools.Office.GetTblOfficeAsync(movement.ActualOfficeId.Value, context);
-                    if (movement.ActualDivisionId.HasValue)
-                        division = await _getTools.Office.GetTblDivisionAsync(movement.ActualDivisionId.Value, context);
-
-                    object? itemDetails = null;
-                    if (movement.PTAId.HasValue && ptaLookup.TryGetValue(movement.PTAId.Value, out var pta))
-                    {
-                        var category = await _getTools.PTA.GetTblPTACategoryAsync(pta.CategoryId, context);
-                        itemDetails = new
-                        {
-                            id = pta.Id,
-                            group = pta.Group,
-                            propertyNumber = pta.PropertyNumber,
-                            description = pta.Description,
-                            brand = pta.Brand,
-                            model = pta.Model,
-                            serialNumber = pta.SerialNumber,
-                            category = category?.Name,
-                            unitOfMeasurement = pta.UnitOfMeasurement,
-                            unitValue = pta.UnitValue,
-                            dateAcquired = pta.DateAcquired
-                        };
-                    }
+                    employeeTypeMap.TryGetValue(plantillaId ?? 0, out var plantillaType);
+                    employeeTypeMap.TryGetValue(nonPlantillaId ?? 0, out var nonPlantillaType);
 
                     result.Add(new
                     {
                         id = movement.Id,
+                        movementIds = grp.Movements.Select(m => m.Id).Distinct().ToList(),
                         ptaId = movement.PTAId,
                         ptrItrNumber = movement.PTRITRNumber,
                         parIcsNumber = movement.PARICSNumber,
                         dateAssigned = movement.DateAssigned,
                         status = movement.Status,
-                        remarks = movement.Remarks,
-                        isCurrent = movement.IsCurrent,
                         isActive = movement.IsActive,
                         createdAt = movement.CreatedAt,
+                        itemCount = grp.Movements.Select(m => m.PTAId).Where(id => id.HasValue).Distinct().Count(),
                         plantillaEmployeeId = plantillaId,
                         plantillaEmployeeName = plantillaName,
                         plantillaEmployeeIdOriginal = movement.PlantillaEmployeeIdOriginal,
-                        plantillaEmployeePosition = plantillaPosition,
-                        plantillaEmployeeOffice = plantillaOffice,
-                        plantillaEmployeeDivision = plantillaDivision,
+                        plantillaEmployeeType = plantillaType,
                         nonPlantillaEmployeeId = nonPlantillaId,
                         nonPlantillaEmployeeName = nonPlantillaName,
                         nonPlantillaEmployeeIdOriginal = movement.NonPlantillaEmployeeIdOriginal,
-                        nonPlantillaEmployeePosition = nonPlantillaPosition,
-                        nonPlantillaEmployeeOffice = nonPlantillaOffice,
-                        nonPlantillaEmployeeDivision = nonPlantillaDivision,
-                        office,
-                        division,
-                        item = itemDetails
+                        nonPlantillaEmployeeType = nonPlantillaType,
+                        previousPlantillaEmployeeId = previousPlantillaId,
+                        previousPlantillaEmployeeName = previousPlantillaName,
+                        previousPlantillaEmployeeIdOriginal = previousPlantillaIdOriginal,
+                        previousNonPlantillaEmployeeId = previousNonPlantillaId,
+                        previousNonPlantillaEmployeeName = previousNonPlantillaName,
+                        previousNonPlantillaEmployeeIdOriginal = previousNonPlantillaIdOriginal
                     });
                 }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -6,7 +6,7 @@ import { Badge } from '../ui/badge';
 import { Loader2, Search, Eye, User, Package, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements, getPTATransferList, getPTAReturnList, editMovement } from '@/api/asset/transferApi';
+import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements, getPTATransferList, getPTAReturnList, getTransferDetailsByNumber, getReturnDetailsByNumber, editMovement } from '@/api/asset/transferApi';
 import { getConditions } from '@/api/asset/inventoryApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { ApiEmployee } from '@/types/transfer';
@@ -129,30 +129,40 @@ const normalizeTransferListItem = (raw: any): Movement => ({
       return [fromEmployee, toEmployee].filter(Boolean) as EmployeeInfo[];
     }
 
-    return [
-      ...(raw.plantillaEmployeeName || raw.plantillaEmployeeId
-        ? [{
+    // Transfers: index 0 = From (previous holder), index 1 = To (current holder)
+    const fromEmployee = raw.previousNonPlantillaEmployeeName || raw.previousNonPlantillaEmployeeId
+      ? {
+          id: raw.previousNonPlantillaEmployeeId ?? 0,
+          fullName: raw.previousNonPlantillaEmployeeName,
+          employeeIdOriginal: raw.previousNonPlantillaEmployeeIdOriginal,
+          employeeType: 'Non-Plantilla',
+        }
+      : raw.previousPlantillaEmployeeName || raw.previousPlantillaEmployeeId
+        ? {
+            id: raw.previousPlantillaEmployeeId ?? 0,
+            fullName: raw.previousPlantillaEmployeeName,
+            employeeIdOriginal: raw.previousPlantillaEmployeeIdOriginal,
+            employeeType: 'Plantilla',
+          }
+        : null;
+
+    const toEmployee = raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
+      ? {
+          id: raw.nonPlantillaEmployeeId ?? 0,
+          fullName: raw.nonPlantillaEmployeeName,
+          employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal,
+          employeeType: 'Non-Plantilla',
+        }
+      : raw.plantillaEmployeeName || raw.plantillaEmployeeId
+        ? {
             id: raw.plantillaEmployeeId ?? 0,
             fullName: raw.plantillaEmployeeName,
             employeeIdOriginal: raw.plantillaEmployeeIdOriginal,
             employeeType: 'Plantilla',
-            position: raw.plantillaEmployeePosition ? { name: raw.plantillaEmployeePosition } : undefined,
-            office: raw.plantillaEmployeeOffice ? { acronym: raw.plantillaEmployeeOffice, name: raw.plantillaEmployeeOffice } : raw.office,
-            division: raw.plantillaEmployeeDivision ? { acronym: raw.plantillaEmployeeDivision, name: raw.plantillaEmployeeDivision } : raw.division,
-          }]
-        : []),
-      ...(raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
-        ? [{
-            id: raw.nonPlantillaEmployeeId ?? 0,
-            fullName: raw.nonPlantillaEmployeeName,
-            employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal,
-            employeeType: 'Non-Plantilla',
-            position: raw.nonPlantillaEmployeePosition ? { name: raw.nonPlantillaEmployeePosition } : undefined,
-            office: raw.nonPlantillaEmployeeOffice ? { acronym: raw.nonPlantillaEmployeeOffice, name: raw.nonPlantillaEmployeeOffice } : raw.office,
-            division: raw.nonPlantillaEmployeeDivision ? { acronym: raw.nonPlantillaEmployeeDivision, name: raw.nonPlantillaEmployeeDivision } : raw.division,
-          }]
-        : []),
-    ];
+          }
+        : null;
+
+    return [fromEmployee, toEmployee].filter(Boolean) as EmployeeInfo[];
   })(),
   items: raw.item ? [raw.item] : [],
 });
@@ -212,11 +222,16 @@ const mergeMovementsByTransfer = (items: Movement[]): Movement[] => {
 export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   function MovementsListComponent({ transferType }, ref) {
   const [searchInput, setSearchInput] = useState('');
+  const [parIcsInput, setParIcsInput] = useState('');
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  // Cache full movement details (items + employee info) keyed by transfer/return number,
+  // so View/Generate Report don't refetch on repeat clicks for the same record.
+  const detailsCacheRef = useRef(new Map<string, Movement>());
   const [pageNumber, setPageNumber] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -248,58 +263,39 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     nonPlantillaEmployeeId: null,
   });
 
-  // Load movements
-  const loadMovements = async (search?: string, page: number = 1, size: number = pageSize) => {
+  // Load movements — server now groups by transfer/return number and paginates server-side,
+  // so a single direct call returns exactly one lightweight row per record for the requested page.
+  const loadMovements = async (search?: string, page: number = 1, size: number = pageSize, parIcs?: string) => {
     try {
       setLoading(true);
+      const parIcsValue = (parIcs !== undefined ? parIcs : parIcsInput).trim() || undefined;
 
-      if (transferType === 'PTR' || transferType === 'ITR' || transferType === 'RRPPE' || transferType === 'RRSP') {
-        const normalizedItems: Movement[] = [];
-        const targetEndIndex = page * size;
-        let fetchPage = 1;
-        let totalRawPages = 1;
+      if (transferType === 'PTR' || transferType === 'ITR') {
+        const group = transferType === 'PTR' ? 'PPE' : 'SE';
+        const raw = await getPTATransferList({
+          group: group as 'PPE' | 'SE',
+          ptrItrFilter: search || undefined,
+          parIcsFilter: parIcsValue,
+          pageNumber: page,
+          pageSize: size,
+        });
+        setMovements((raw.items || []).map(normalizeTransferListItem));
+        setTotalCount(raw.totalCount || 0);
+        setPageNumber(page);
+        return;
+      }
 
-        while (fetchPage <= totalRawPages) {
-          if (transferType === 'PTR' || transferType === 'ITR') {
-            const group = transferType === 'PTR' ? 'PPE' : 'SE';
-            const raw = await getPTATransferList({
-              group: group as 'PPE' | 'SE',
-              ptrItrFilter: search || undefined,
-              pageNumber: fetchPage,
-              pageSize: size,
-            });
-            if (fetchPage === 1) {
-              totalRawPages = Math.max(1, Math.ceil((raw.totalCount || 0) / size));
-            }
-            normalizedItems.push(...(raw.items || []).map(normalizeTransferListItem));
-          } else {
-            const group = transferType === 'RRPPE' ? 'PPE' : 'SE';
-            const raw = await getPTAReturnList({
-              group,
-              rrppeRrspFilter: search || transferType,
-              pageNumber: fetchPage,
-              pageSize: size,
-            });
-            if (fetchPage === 1) {
-              totalRawPages = Math.max(1, Math.ceil((raw.totalCount || 0) / size));
-            }
-            normalizedItems.push(...(raw.items || []).map(normalizeTransferListItem));
-          }
-
-          const mergedSoFar = mergeMovementsByTransfer(normalizedItems);
-          if (mergedSoFar.length >= targetEndIndex || fetchPage >= totalRawPages) {
-            break;
-          }
-
-          fetchPage += 1;
-        }
-
-        const allMerged = mergeMovementsByTransfer(normalizedItems);
-        const startIndex = (page - 1) * size;
-        const pagedMerged = allMerged.slice(startIndex, startIndex + size);
-
-        setMovements(pagedMerged);
-        setTotalCount(allMerged.length);
+      if (transferType === 'RRPPE' || transferType === 'RRSP') {
+        const group = transferType === 'RRPPE' ? 'PPE' : 'SE';
+        const raw = await getPTAReturnList({
+          group,
+          rrppeRrspFilter: search || transferType,
+          parIcsFilter: parIcsValue,
+          pageNumber: page,
+          pageSize: size,
+        });
+        setMovements((raw.items || []).map(normalizeTransferListItem));
+        setTotalCount(raw.totalCount || 0);
         setPageNumber(page);
         return;
       }
@@ -329,6 +325,25 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transferType]);
 
+  // Debounce PAR/ICS Number filter input — wait for the user to stop typing before querying
+  const isFirstParIcsRun = useRef(true);
+  useEffect(() => {
+    if (isFirstParIcsRun.current) {
+      isFirstParIcsRun.current = false;
+      return;
+    }
+    if (transferType !== 'PTR' && transferType !== 'ITR' && transferType !== 'RRPPE' && transferType !== 'RRSP') {
+      return;
+    }
+
+    const handle = setTimeout(() => {
+      loadMovements(searchInput, 1, pageSize, parIcsInput);
+    }, 400);
+
+    return () => clearTimeout(handle);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parIcsInput]);
+
   // Handle search
   const handleSearch = async () => {
     if (!searchInput.trim()) {
@@ -338,10 +353,81 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     loadMovements(searchInput, 1);
   };
 
-  // Handle view details
-  const handleViewDetails = (movement: Movement) => {
+  // Resolve the transfer/return number a movement is keyed by
+  const getMovementNumber = (movement: Movement): string =>
+    movement.ptritrNumber || movement.rrppeRrspNumber || movement.rrpperrspNumber || '';
+
+  // Normalize the lazily-fetched detail response's employee shape ({ employee: {...}, employeeType }) into EmployeeInfo
+  const normalizeDetailEmployee = (raw: any): EmployeeInfo | null => {
+    const emp = raw?.employee;
+    if (!emp) return null;
+    return {
+      id: emp.id ?? 0,
+      fullName: emp.fullName,
+      employeeIdOriginal: emp.employeeIdOriginal,
+      employeeType: raw.employeeType,
+      position: emp.position,
+    };
+  };
+
+  // Lazy-load full item/employee details for a movement via the number-based detail endpoints,
+  // merging them into the lightweight list row. Cached per transfer/return number.
+  const loadFullMovementDetails = async (movement: Movement): Promise<Movement> => {
+    const number = getMovementNumber(movement);
+    if (!number) return movement;
+
+    const cached = detailsCacheRef.current.get(number);
+    if (cached) {
+      return { ...movement, items: cached.items, employee: cached.employee?.length ? cached.employee : movement.employee };
+    }
+
+    const isReturn = transferType === 'RRPPE' || transferType === 'RRSP';
+    const detail = isReturn
+      ? await getReturnDetailsByNumber(number)
+      : await getTransferDetailsByNumber(number);
+
+    const items: PTAItem[] = [];
+    (detail.movements || []).forEach((dm: any) => {
+      (dm.items || []).forEach((it: PTAItem) => {
+        if (!items.find(existing => existing.id === it.id)) items.push(it);
+      });
+    });
+
+    let employee = movement.employee;
+    if (isReturn) {
+      const representative = (detail.movements || [])[0];
+      if (representative) {
+        const merged = [
+          normalizeDetailEmployee(representative.fromEmployee),
+          normalizeDetailEmployee(representative.toEmployee),
+        ].filter(Boolean) as EmployeeInfo[];
+        if (merged.length) employee = merged;
+      }
+    }
+
+    const fullMovement: Movement = { ...movement, items, employee };
+    detailsCacheRef.current.set(number, fullMovement);
+    return fullMovement;
+  };
+
+  // Handle view details — lazily fetches full items/employee info on demand
+  const handleViewDetails = async (movement: Movement) => {
     setSelectedMovement(movement);
     setDetailsDialogOpen(true);
+
+    const number = getMovementNumber(movement);
+    if (!number || (movement.items && movement.items.length > 0)) return;
+
+    setDetailsLoading(true);
+    try {
+      const full = await loadFullMovementDetails(movement);
+      setSelectedMovement(full);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load movement details';
+      toast.error(message);
+    } finally {
+      setDetailsLoading(false);
+    }
   };
 
   // Handle edit details
@@ -493,24 +579,37 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
 
   const handleGenerateReport = async (movement: Movement) => {
     if (!movement) return;
+
+    let fullMovement = movement;
+    const number = getMovementNumber(movement);
+    if (number && (!movement.items || movement.items.length === 0)) {
+      try {
+        fullMovement = await loadFullMovementDetails(movement);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to load movement details';
+        toast.error(message);
+        return;
+      }
+    }
+
     const transferNumber =
-      movement.ptritrNumber ||
-      movement.rrppeRrspNumber ||
-      movement.rrpperrspNumber ||
+      fullMovement.ptritrNumber ||
+      fullMovement.rrppeRrspNumber ||
+      fullMovement.rrpperrspNumber ||
       '';
     const prefix = transferNumber.toUpperCase();
-    const items = movement.items || [];
-    const fromEmp = buildEmployee(movement.employee?.[0]);
-    const toEmp = buildEmployee(movement.employee?.[1]);
-    const transferDate = movement.dateAssigned || new Date().toISOString();
-    const transferType = (movement.status || 'REASSIGNMENT') as any;
-    const toEmpPosition = (movement.employee?.[1]?.position as any)?.name || '';
-    const toEmpOffice = (movement.employee?.[1]?.office as any)?.acronym || (movement.employee?.[1]?.office as any)?.name || '';
-    const toEmpDivision = (movement.employee?.[1]?.division as any)?.acronym || (movement.employee?.[1]?.division as any)?.name || '';
+    const items = fullMovement.items || [];
+    const fromEmp = buildEmployee(fullMovement.employee?.[0]);
+    const toEmp = buildEmployee(fullMovement.employee?.[1]);
+    const transferDate = fullMovement.dateAssigned || new Date().toISOString();
+    const transferType = (fullMovement.status || 'REASSIGNMENT') as any;
+    const toEmpPosition = (fullMovement.employee?.[1]?.position as any)?.name || '';
+    const toEmpOffice = (fullMovement.employee?.[1]?.office as any)?.acronym || (fullMovement.employee?.[1]?.office as any)?.name || '';
+    const toEmpDivision = (fullMovement.employee?.[1]?.division as any)?.acronym || (fullMovement.employee?.[1]?.division as any)?.name || '';
     const toEmployeePositionOffice = [toEmpPosition, [toEmpOffice, toEmpDivision].filter(Boolean).join(', ')].filter(Boolean).join(' - ');
 
-    const returnedByName = movement.employee?.[0]?.fullName || fromEmp.label || 'Unknown';
-    const returnedByPosition = (movement.employee?.[0] as any)?.position?.name || movement.employee?.[0]?.employeeType || '';
+    const returnedByName = fullMovement.employee?.[0]?.fullName || fromEmp.label || 'Unknown';
+    const returnedByPosition = (fullMovement.employee?.[0] as any)?.position?.name || fullMovement.employee?.[0]?.employeeType || '';
 
     try {
       setGenerating(true);
@@ -618,12 +717,23 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
               variant="outline"
               onClick={() => {
                 setSearchInput('');
-                loadMovements();
+                setParIcsInput('');
+                loadMovements(undefined, 1, pageSize, '');
               }}
             >
               Clear
             </Button>
           </div>
+
+          {(transferType === 'PTR' || transferType === 'ITR' || transferType === 'RRPPE' || transferType === 'RRSP') && (
+            <div className="flex gap-2 mt-2">
+              <Input
+                placeholder="Filter by PAR/ICS Number…"
+                value={parIcsInput}
+                onChange={(e) => setParIcsInput(e.target.value)}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -801,9 +911,9 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
           {selectedMovement ? (
             <div className="space-y-6">
               <div className="bg-blue-50 border border-blue-200 rounded p-4 text-base">
-                <p>
+                <p className="flex items-center gap-2">
                   <span className="font-semibold">Total Items:</span>{' '}
-                  {selectedMovement.items?.length || 0}
+                  {detailsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (selectedMovement.items?.length || 0)}
                 </p>
               </div>
 

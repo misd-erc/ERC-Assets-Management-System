@@ -30,6 +30,11 @@ namespace PortalDB.Models.QueryParams.Pagination
         public long? OfficeId { get; set; }
         public long? DivisionId { get; set; }
         public string? Condition { get; set; }
+
+        /// <summary>
+        /// If true, only returns assets that have no Property Number assigned.
+        /// </summary>
+        public bool? NoPropertyNumber { get; set; }
         [Required] public string? GroupName { get; set; }
         public string? GroupBy { get; set; }
         [Required] public long ActionBySystemUserId { get; set; }

@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using OfficeOpenXml;
 using API.Services.Dashboard;
 using API.Services.Inventory;
+using API.Services.Reports;
 using PortalCommon.Utilities;
 using PortalDB.Services;
 using PortalTools.Composition;
@@ -131,6 +132,7 @@ builder.Services.AddScoped<AuthTools>();
 builder.Services.AddScoped<ParserTools>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IReportsService, ReportsService>();
 #endregion
 
 #region CORS

@@ -66,6 +66,7 @@ export const ppeApi = {
 		OfficeId?: number;
 		DivisionId?: number;
 		Condition?: string;
+		NoPropertyNumber?: boolean;
 	}): Promise<{ items: PPEAsset[]; totalCount: number }> => {
 		const query = new URLSearchParams();
 
@@ -101,6 +102,10 @@ export const ppeApi = {
 
 		if (params.Condition) {
 			query.append('Condition', params.Condition);
+		}
+
+		if (params.NoPropertyNumber) {
+			query.append('NoPropertyNumber', 'true');
 		}
 
 		query.append('ActionBySystemUserId', params.ActionBySystemUserId);

@@ -31,6 +31,8 @@ namespace API.Services.Inventory
 
         Task<IActionResult> EditPTAMovement([FromBody] EditPTAMovementQueryParams model);
 
+        Task<IActionResult> EditPTAMovementBulk([FromBody] EditPTAMovementBulkQueryParams model);
+
         Task<IActionResult> GetNextTransferNumber([FromQuery] string transferType = "PTR", [FromQuery] SoloQueryParams model = null);
 
         Task<IActionResult> GetNextReturnNumber([FromQuery] string returnType = "RRPPE", [FromQuery] SoloQueryParams model = null);
@@ -50,6 +52,8 @@ namespace API.Services.Inventory
         Task<IActionResult> GetPTAReturnList([FromQuery] PTAReturnListQueryParams model);
 
         Task<IActionResult> GetPTATransferDetails([FromQuery] string transferNumber, [FromQuery] SoloQueryParams model);
+
+        Task<IActionResult> GetPTAReturnDetails([FromQuery] string returnNumber, [FromQuery] SoloQueryParams model);
 
         Task<IActionResult> EditPTACategory([FromBody] EditPTACategoryQueryParams model);
 

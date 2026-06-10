@@ -19,10 +19,12 @@ interface ChatState {
     setMessages: (messages: ChatMessage[]) => void;
     addMessage: (message: ChatMessage) => void;
     updateMessageUnsent: (messageId: number) => void;
+    updateMessageRead: (payload: { messageId: number, systemUserId: number }) => void;
     updateMessageReaction: (payload: { messageId: number, systemUserId: number, reactionType: string }) => void;
     removeMessageReaction: (payload: { messageId: number, systemUserId: number }) => void;
     setGroups: (groups: ChatGroup[]) => void;
     addGroup: (group: ChatGroup) => void;
+    removeGroup: (groupId: number) => void;
     setOnlineUsers: (users: number[]) => void;
     addOnlineUser: (userId: number) => void;
     removeOnlineUser: (userId: number) => void;
@@ -126,6 +128,16 @@ export const useChatStore = create<ChatState>((set) => ({
         messages: state.messages.map(m => m.id === messageId ? { ...m, isUnsent: true } : m),
         conversationsUpdatedNonce: state.conversationsUpdatedNonce + 1
     })),
+    updateMessageRead: (payload) => set((state) => ({
+        messages: state.messages.map(m => {
+            if (m.id === payload.messageId) {
+                const alreadyRecorded = m.readReceipts?.some(r => r.systemUserId === payload.systemUserId);
+                if (alreadyRecorded) return m;
+                return { ...m, readReceipts: [...(m.readReceipts || []), { systemUserId: payload.systemUserId, readAt: new Date().toISOString() }] };
+            }
+            return m;
+        })
+    })),
     updateMessageReaction: (payload) => set((state) => ({
         messages: state.messages.map(m => {
             if (m.id === payload.messageId) {
@@ -144,7 +156,11 @@ export const useChatStore = create<ChatState>((set) => ({
         })
     })),
     setGroups: (groups) => set({ groups }),
-    addGroup: (group) => set((state) => ({ groups: [...state.groups, group] })),
+    addGroup: (group) => set((state) => ({
+        // Avoid duplicate groups (e.g. GroupCreated fired twice)
+        groups: state.groups.some(g => g.id === group.id) ? state.groups : [...state.groups, group]
+    })),
+    removeGroup: (groupId) => set((state) => ({ groups: state.groups.filter(g => g.id !== groupId) })),
     setOnlineUsers: (users) => set({ onlineUsers: users }),
     addOnlineUser: (userId) => set((state) => ({ onlineUsers: [...new Set([...state.onlineUsers, userId])] })),
     removeOnlineUser: (userId) => set((state) => ({ onlineUsers: state.onlineUsers.filter(u => u !== userId) })),
