@@ -529,6 +529,11 @@ namespace API.Controllers
                 return Ok(ApiResponse<object>.Ok(new { OfficeId = officeId }, $"Office has been {(model.OfficeId == 0 ? "added" : "updated")}"));
 
             }
+            catch (InvalidOperationException ex)
+            {
+                await transaction.RollbackAsync();
+                return BadRequest(ApiResponse<object>.Fail("DUPLICATE_NAME", ex.Message));
+            }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();

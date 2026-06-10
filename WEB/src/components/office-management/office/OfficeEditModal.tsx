@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useOffice } from '@/hooks';
 import { Office } from '@/types';
+import { useOfficeStore } from '@/store/office';
 import { toast } from 'sonner';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Toggle } from '@/components/ui/toggle';
@@ -32,6 +33,7 @@ export const OfficeEditModal = ({
   onSuccess,
 }: Props) => {
   const { addOffice, updateOffice } = useOffice();
+  const offices = useOfficeStore((s) => s.vwOffices);
 
   // â”€â”€â”€â”€â”€â”€ STATE â”€â”€â”€â”€â”€â”€
   const [form, setForm] = useState<Partial<Office>>({
@@ -60,8 +62,19 @@ export const OfficeEditModal = ({
 
   // â”€â”€â”€â”€â”€â”€ SUBMIT â”€â”€â”€â”€â”€â”€
   const submit = async () => {
-    if (!form.name?.trim() || !form.acronym?.trim() || !form.generalCode?.trim()) {
-      toast.error('Name, Acronym, and Responsibility Service Code are required');
+    if (!form.name?.trim() || !form.acronym?.trim()) {
+      toast.error('Name and Acronym are required');
+      return;
+    }
+
+    const trimmedName = form.name.trim();
+    const duplicate = offices.find(
+      (o) =>
+        o.name.trim().toLowerCase() === trimmedName.toLowerCase() &&
+        o.id !== (mode === 'edit' ? office?.id : 0)
+    );
+    if (duplicate) {
+      toast.error(`An office with the name '${trimmedName}' already exists.`);
       return;
     }
 

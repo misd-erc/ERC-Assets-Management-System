@@ -10,12 +10,12 @@ namespace PortalDB.Models.QueryParams.Supply
     public class EditSupplyRISQueryParams
     {
         [Required] public long Id { get; set; }
-        [Required] public string? EntityName { get; set; }
+        public string? EntityName { get; set; }
         public string? FundCluster { get; set; }
-        [Required] public long? DivisionId { get; set; }
-        [Required] public long? OfficeId { get; set; }
+        public long? DivisionId { get; set; }
+        public long? OfficeId { get; set; }
         public string? ResponsibilityCenterCode { get; set; }
-        [Required] public string? RISNumber{ get; set; }
+        public string? RISNumber{ get; set; }
         public string? RISPurpose { get; set; }
         public long? RISRequestedBySystemUserId { get; set; }
         public DateTime? RISRequestedDate { get; set; }
