@@ -16,4 +16,5 @@ export interface SupplyStockCardItem {
   division?: any;
   supplyRISId?: number;
   supplyRisId?: number;
+  risNumber?: string;
 }
