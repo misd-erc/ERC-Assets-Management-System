@@ -163,6 +163,23 @@ export function AssetsTable({
     }
   };
 
+  const DISPOSAL_METHODS = ['Sale', 'Donation', 'Destruction', 'Return to Supplier'];
+
+  const getDisposalStatus = (condition?: string): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } | null => {
+    if (!condition) return null;
+
+    if (condition.toLowerCase() === 'defective for disposal') {
+      return { label: 'For Disposal', variant: 'secondary' };
+    }
+
+    const method = DISPOSAL_METHODS.find(m => m.toLowerCase() === condition.toLowerCase());
+    if (method) {
+      return { label: method, variant: 'outline' };
+    }
+
+    return null;
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
@@ -229,6 +246,7 @@ export function AssetsTable({
                 <TableHead>Category</TableHead>
                 <TableHead>Unit Value</TableHead>
                 <TableHead>Condition</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Group</TableHead>
                 <TableHead>Date Acquired</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -257,6 +275,16 @@ export function AssetsTable({
                       <Badge variant={getConditionBadgeVariant(latestMovement?.condition || 'Working')}>
                         {latestMovement?.condition || 'Working'}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {(() => {
+                        const disposalStatus = getDisposalStatus(latestMovement?.condition);
+                        return disposalStatus ? (
+                          <Badge variant={disposalStatus.variant}>{disposalStatus.label}</Badge>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       <Badge variant={asset.group === 'PPE' ? 'default' : 'secondary'}>

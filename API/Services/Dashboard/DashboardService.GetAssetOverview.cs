@@ -60,8 +60,11 @@ namespace API.Services.Dashboard
                     .OrderByDescending(x => x.Count)
                     .ToList();
 
+                var activePtaIds = ptas.Select(x => x.Id).ToHashSet();
+
                 var currentMovements = await _getTools.PTA.GetTblPTAMovements(context)
-                    .Where(x => x.IsCurrent && x.RemarksEncrypted != null && x.RemarksEncrypted != "")
+                    .Where(x => x.IsCurrent && x.RemarksEncrypted != null && x.RemarksEncrypted != ""
+                        && x.PTAId.HasValue && activePtaIds.Contains(x.PTAId.Value))
                     .ToListAsync();
 
                 result.ConditionBreakdown = currentMovements
