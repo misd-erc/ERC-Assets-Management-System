@@ -67,8 +67,8 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
       });
       await get().fetchOffices();
       toast.success('Office added');
-    } catch (error) {
-      toast.error('Failed to add office');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to add office');
       throw error;
     }
   },
@@ -84,8 +84,8 @@ export const useOfficeStore = create<OfficeState>((set, get) => ({
       });
       await get().fetchOffices();
       toast.success('Office updated');
-    } catch (error) {
-      toast.error('Failed to update office');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update office');
       throw error;
     }
   },

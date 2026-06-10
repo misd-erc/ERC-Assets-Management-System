@@ -35,6 +35,16 @@ namespace PortalTools.Services.GetEditTools.DBO.Office
                 bool isInsert = model.Id == 0;
                 TblOffice? existingOffice = null;
 
+                bool duplicateExists = await context.TblOffices
+                    .AsNoTracking()
+                    .AnyAsync(o => !o.IsDeleted
+                        && o.Id != model.Id
+                        && o.Name != null
+                        && o.Name.Trim().ToLower() == model.Name!.Trim().ToLower());
+
+                if (duplicateExists)
+                    throw new InvalidOperationException($"An office with the name '{model.Name}' already exists.");
+
                 if (isInsert)
                 {
                     await context.TblOffices.AddAsync(model);

@@ -4,15 +4,60 @@ import { ChatMessage, ChatGroup } from "../types/chat";
 
 class SignalRService {
     private hubConnection: signalR.HubConnection | null = null;
+    private registeredUserId: number | null = null;
+
+    /**
+     * Derives the hub base URL from the API URL env var.
+     * REACT_APP_API_URL typically ends with "/api" (e.g. "http://localhost:7702/api"),
+     * but the SignalR hub is mapped at "/hubs/chat" (without "/api"), so we strip it.
+     */
+    private getHubBaseUrl(): string {
+        const apiUrl = process.env.REACT_APP_API_URL || "https://localhost:7118/api";
+        // Remove trailing "/api" if present so the hub URL resolves correctly
+        return apiUrl.endsWith("/api") ? apiUrl.slice(0, -4) : apiUrl;
+    }
 
     public async startConnection(systemUserId: number) {
-        // Base API URL could come from env or config
-        const apiUrl = process.env.REACT_APP_API_URL || "https://localhost:7118"; 
+        // Guard: if already connected for the same user, just re-register to be safe
+        if (this.hubConnection) {
+            if (this.hubConnection.state === signalR.HubConnectionState.Connected) {
+                if (this.registeredUserId !== systemUserId) {
+                    await this.hubConnection.invoke("RegisterUser", systemUserId).catch(console.error);
+                    this.registeredUserId = systemUserId;
+                }
+                return;
+            }
+            // If still connecting/reconnecting, do nothing and let it finish
+            if (
+                this.hubConnection.state === signalR.HubConnectionState.Connecting ||
+                this.hubConnection.state === signalR.HubConnectionState.Reconnecting
+            ) {
+                return;
+            }
+            // Otherwise (disconnected/stopped), clean up before recreating
+            await this.stopConnection();
+        }
+
+        const baseUrl = this.getHubBaseUrl();
 
         this.hubConnection = new signalR.HubConnectionBuilder()
-            .withUrl(`${apiUrl}/hubs/chat`)
+            .withUrl(`${baseUrl}/hubs/chat`)
             .withAutomaticReconnect()
             .build();
+
+        // Re-register user after automatic reconnect so messages keep arriving
+        this.hubConnection.onreconnected(async (connectionId) => {
+            console.log("SignalR Reconnected:", connectionId);
+            if (this.registeredUserId !== null) {
+                await this.hubConnection?.invoke("RegisterUser", this.registeredUserId).catch(console.error);
+            }
+        });
+
+        // Clear registration state when fully disconnected
+        this.hubConnection.onclose(() => {
+            console.log("SignalR connection closed.");
+            this.registeredUserId = null;
+        });
 
         try {
             await this.hubConnection.start();
@@ -20,8 +65,10 @@ class SignalRService {
 
             // Register user
             await this.hubConnection.invoke("RegisterUser", systemUserId);
+            this.registeredUserId = systemUserId;
 
-            // Register event handlers
+            // --- Event Handlers ---
+
             this.hubConnection.on("ReceiveMessage", (message: ChatMessage) => {
                 const store = useChatStore.getState();
                 store.addMessage(message);
@@ -30,6 +77,12 @@ class SignalRService {
             this.hubConnection.on("MessageUnsent", (messageId: number) => {
                 const store = useChatStore.getState();
                 store.updateMessageUnsent(messageId);
+            });
+
+            // Real-time read receipt updates (double-check ticks)
+            this.hubConnection.on("MessageRead", (payload: { messageId: number, systemUserId: number }) => {
+                const store = useChatStore.getState();
+                store.updateMessageRead(payload);
             });
 
             this.hubConnection.on("ReactionUpdated", (payload: { messageId: number, systemUserId: number, reactionType: string }) => {
@@ -42,9 +95,18 @@ class SignalRService {
                 store.removeMessageReaction(payload);
             });
 
+            // When added to a group by someone else, also join the SignalR group channel
             this.hubConnection.on("GroupCreated", (group: ChatGroup) => {
                 const store = useChatStore.getState();
                 store.addGroup(group);
+                this.joinGroup(group.id).catch(console.error);
+            });
+
+            // When kicked or self-left, leave the SignalR group channel and remove from store
+            this.hubConnection.on("LeftGroup", (groupId: number) => {
+                this.leaveGroup(groupId).catch(console.error);
+                const store = useChatStore.getState();
+                store.removeGroup(groupId);
             });
 
             this.hubConnection.on("UserOnline", (userId: number) => {
@@ -79,14 +141,27 @@ class SignalRService {
         }
     }
 
+    public async stopConnection() {
+        if (this.hubConnection) {
+            try {
+                await this.hubConnection.stop();
+            } catch (err) {
+                console.warn("Error stopping SignalR connection:", err);
+            } finally {
+                this.hubConnection = null;
+                this.registeredUserId = null;
+            }
+        }
+    }
+
     public async joinGroup(groupId: number) {
-        if (this.hubConnection && this.hubConnection.state === 'Connected') {
+        if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
             await this.hubConnection.invoke("JoinChatGroup", groupId);
         }
     }
 
     public async leaveGroup(groupId: number) {
-        if (this.hubConnection && this.hubConnection.state === 'Connected') {
+        if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
             await this.hubConnection.invoke("LeaveChatGroup", groupId);
         }
     }
@@ -96,13 +171,13 @@ class SignalRService {
     }
 
     public async sendTypingStarted(receiverId?: number, groupId?: number) {
-        if (this.hubConnection && this.hubConnection.state === 'Connected') {
+        if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
             await this.hubConnection.invoke("TypingStarted", receiverId || null, groupId || null);
         }
     }
 
     public async sendTypingStopped(receiverId?: number, groupId?: number) {
-        if (this.hubConnection && this.hubConnection.state === 'Connected') {
+        if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
             await this.hubConnection.invoke("TypingStopped", receiverId || null, groupId || null);
         }
     }

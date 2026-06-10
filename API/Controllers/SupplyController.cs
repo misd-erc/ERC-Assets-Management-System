@@ -893,6 +893,7 @@ namespace API.Controllers
                         IsActive = evt.IsActive,
                         CreatedAt = evt.CreatedAt,
                         SupplyRISId = risId,
+                        RISNumber = parentRIS?.RISNumber,
 
                         // --- ADDED: Map Office and Division safely ---
                         Office = parentRIS != null

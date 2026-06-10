@@ -23,5 +23,6 @@ namespace PortalDB.Models.ResponseModels.Supply
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public long? SupplyRISId { get; set; }
+        public string? RISNumber { get; set; }
     }
 }
