@@ -254,7 +254,16 @@ export interface AvailablePtaAsset {
   category: string;
   unitValue: number;
   dateAcquired?: string;
+  condition?: string;
 }
+
+const getLatestMovementCondition = (movements: any[] | undefined): string => {
+  if (!movements || movements.length === 0) return '';
+  const sorted = [...movements].sort((a, b) =>
+    new Date(b.dateAssigned ?? 0).getTime() - new Date(a.dateAssigned ?? 0).getTime()
+  );
+  return sorted[0]?.condition ?? '';
+};
 
 export const getAvailablePTAs = async (group: string): Promise<AvailablePtaAsset[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
@@ -290,6 +299,51 @@ export const getAvailablePTAs = async (group: string): Promise<AvailablePtaAsset
     }));
   } catch (error) {
     console.error('Error fetching available PTAs:', error);
+    return [];
+  }
+};
+
+/**
+ * Fetch all PTAs for a group (not just those flagged "Defective For Disposal"),
+ * so any asset can be selected for a disposal request. Supports an optional
+ * search string matched against property number, description, category, etc.
+ */
+export const getAllPTAsForDisposal = async (group: string, search?: string): Promise<AvailablePtaAsset[]> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  try {
+    const response = await axiosInstance.get<ApiResponse<PaginatedData<any>>>(
+      '/Inventory/pta/se-ppe/all',
+      {
+        params: {
+          ActionBySystemUserId: systemUserId,
+          SessionKey: sessionKey,
+          GroupName: group,
+          PageNumber: 1,
+          PageSize: 1000,
+          ...(search ? { SearchString: search } : {}),
+        },
+      }
+    );
+
+    if (!response.data.success) return [];
+
+    const items: any[] = response.data.data?.items ?? [];
+    return items.map(pta => ({
+      id: Number(pta.id),
+      group: pta.group ?? group,
+      propertyNumber: pta.propertyNumber ?? '',
+      description: pta.description ?? '',
+      category:
+        typeof pta.category === 'object' && pta.category
+          ? (pta.category.name ?? '')
+          : (pta.category ?? ''),
+      unitValue: pta.unitValue ?? 0,
+      dateAcquired: pta.dateAcquired,
+      condition: getLatestMovementCondition(pta.movements),
+    }));
+  } catch (error) {
+    console.error('Error fetching PTAs:', error);
     return [];
   }
 };

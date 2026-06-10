@@ -19,11 +19,13 @@ namespace API.Controllers
     {
         private readonly DbContextOptions<PortalDbContext> _options;
         private readonly IPortalGetTools _getTools;
+        private readonly IPortalEditTools _editTools;
 
-        public DisposalController(DbContextOptions<PortalDbContext> options, IPortalGetTools getTools)
+        public DisposalController(DbContextOptions<PortalDbContext> options, IPortalGetTools getTools, IPortalEditTools editTools)
         {
             _options = options;
             _getTools = getTools;
+            _editTools = editTools;
         }
 
         #region Helpers
@@ -337,6 +339,53 @@ namespace API.Controllers
                     disposal.Remarks = string.IsNullOrWhiteSpace(disposal.Remarks)
                         ? model.Remarks
                         : $"{disposal.Remarks}\n{model.Remarks}";
+
+                // Reflect the disposal outcome on each asset's current condition/status
+                var disposalItemPTAIds = await context.TblDisposalItems
+                    .Where(x => x.DisposalId == disposalId && !x.IsDeleted)
+                    .Select(x => x.PTAId)
+                    .ToListAsync();
+
+                foreach (var ptaId in disposalItemPTAIds)
+                {
+                    if (!ptaId.HasValue)
+                        continue;
+
+                    var latestMovement = await context.TblPTAMovements
+                        .Where(m => !m.IsDeleted && m.PTAId == ptaId.Value)
+                        .OrderByDescending(m => m.IsCurrent)
+                        .ThenByDescending(m => m.CreatedAt)
+                        .FirstOrDefaultAsync();
+
+                    if (latestMovement != null)
+                    {
+                        await context.TblPTAMovements.Where(m => m.Id == latestMovement.Id)
+                            .ExecuteUpdateAsync(u => u.SetProperty(x => x.IsCurrent, false));
+                    }
+
+                    var newMovement = new TblPTAMovement
+                    {
+                        PTAId = ptaId,
+                        DateAssigned = disposal.DateDisposed,
+                        PTRITRNumber = latestMovement?.PTRITRNumber,
+                        RRPPERRSPNumber = latestMovement?.RRPPERRSPNumber,
+                        PARICSNumber = latestMovement?.PARICSNumber,
+                        PlantillaEmployeeId = latestMovement?.PlantillaEmployeeId,
+                        NonPlantillaEmployeeId = latestMovement?.NonPlantillaEmployeeId,
+                        ActualOfficeId = latestMovement?.ActualOfficeId,
+                        ActualDivisionId = latestMovement?.ActualDivisionId,
+                        Remarks = disposal.Method,
+                        Status = TblDisposal.DISPOSED,
+                        IsActive = true,
+                        IsCurrent = true,
+                    };
+
+                    await _editTools.PTA.EditTblPTAMovementAsync(newMovement, model.ActionBySystemUserId, context, isBatch: true);
+
+                    // Exclude the disposed asset from active asset counts/totals on the dashboard
+                    await context.TblPTAs.Where(p => p.Id == ptaId.Value)
+                        .ExecuteUpdateAsync(u => u.SetProperty(x => x.IsActive, false));
+                }
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();

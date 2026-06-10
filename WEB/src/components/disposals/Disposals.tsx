@@ -23,15 +23,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import { DataTable } from '@/components/common/DataTable';
 import { formatCurrency } from '@/utils/formatters';
-import { getStatusBadge } from '@/components/disposals/helpers';
+import { getStatusBadge, getConditionBadgeClass, isAlreadyDisposed } from '@/components/disposals/helpers';
 import { toast } from 'sonner';
 import {
   getDisposals,
   createDisposal,
   approveDisposal as approveDisposalApi,
   markDisposed as markDisposedApi,
-  getAvailablePTAs,
+  getAllPTAsForDisposal,
   type DisposalRecord,
+  type AvailablePtaAsset,
 } from '@/api/asset/disposalApi';
 
 export interface DisposalAsset {
@@ -129,6 +130,7 @@ export function Disposals() {
   const [availableAssets, setAvailableAssets] = useState<DisposalAsset[]>([]);
   const [assetsLoading, setAssetsLoading] = useState(false);
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const [assetSearchQuery, setAssetSearchQuery] = useState('');
 
   // Load disposals from API
   const loadDisposals = useCallback(async () => {
@@ -147,23 +149,23 @@ export function Disposals() {
     loadDisposals();
   }, [loadDisposals]);
 
-  // Load available PTAs when disposal dialog is open or group changes
+  // Load available PTAs when disposal dialog is open, group changes, or search query changes
   useEffect(() => {
     if (!showStartDialog) return;
     let cancelled = false;
     const load = async () => {
       setAssetsLoading(true);
       try {
-        const assets = await getAvailablePTAs(formData.group);
+        const assets = await getAllPTAsForDisposal(formData.group, assetSearchQuery || undefined);
         if (!cancelled) {
-          setAvailableAssets(assets.map(a => ({
+          setAvailableAssets(assets.map((a: AvailablePtaAsset) => ({
             id: String(a.id),
             code: a.propertyNumber,
             description: a.description,
             category: a.category,
             acquisitionCost: a.unitValue,
             currentValue: a.unitValue,
-            condition: '',
+            condition: a.condition || '',
             location: '',
             group: a.group as 'PPE' | 'SE',
           })));
@@ -174,12 +176,13 @@ export function Disposals() {
         if (!cancelled) setAssetsLoading(false);
       }
     };
-    load();
-    return () => { cancelled = true; };
-  }, [showStartDialog, formData.group]);
+    const timeout = setTimeout(load, 300);
+    return () => { cancelled = true; clearTimeout(timeout); };
+  }, [showStartDialog, formData.group, assetSearchQuery]);
 
   const handleStartDisposal = () => {
     setSelectedAssets([]);
+    setAssetSearchQuery('');
     setFormData({
       group: 'PPE',
       reason: 'End of Life',
@@ -294,6 +297,11 @@ export function Disposals() {
     );
   };
 
+  // Assets eligible for a new disposal request: matching group and not already disposed
+  const selectableAssets = useMemo(() =>
+    availableAssets.filter(a => a.group === formData.group && !isAlreadyDisposed(a.condition)),
+  [availableAssets, formData.group]);
+
   const columns = useMemo(() => [
     { key: 'disposalNumber', label: 'Disposal Number', sortable: true },
     { 
@@ -324,10 +332,10 @@ export function Disposals() {
       render: (value: string) => new Date(value).toLocaleDateString()
     },
     { 
-      key: 'status', 
-      label: 'Status', 
+      key: 'status',
+      label: 'Status',
       sortable: true,
-      render: (value: string) => getStatusBadge(value)
+      render: (value: string, row: Disposal) => getStatusBadge(value, row.method)
     },
     {
       key: 'actions',
@@ -533,7 +541,7 @@ export function Disposals() {
 
       {/* Start Disposal Dialog */}
       <Dialog open={showStartDialog} onOpenChange={setShowStartDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[80vw] !max-w-[80vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Start Disposal Process</DialogTitle>
             <DialogDescription>
@@ -613,13 +621,18 @@ export function Disposals() {
 
               <div className="space-y-2">
                 <Label>Select Assets for Disposal *</Label>
-                <div className="border rounded-lg p-4 space-y-2 max-h-96 overflow-y-auto">
+                <Input
+                  value={assetSearchQuery}
+                  onChange={(e) => setAssetSearchQuery(e.target.value)}
+                  placeholder="Search by property number, description, category..."
+                />
+                <div className="border rounded-lg p-4 space-y-2 max-h-[18rem] overflow-y-auto">
                   {assetsLoading ? (
                     <p className="text-sm text-slate-500 text-center py-4">Loading assets...</p>
-                  ) : availableAssets.filter(a => a.group === formData.group).length === 0 ? (
-                    <p className="text-sm text-slate-500 text-center py-4">No assets available for disposal.</p>
+                  ) : selectableAssets.length === 0 ? (
+                    <p className="text-sm text-slate-500 text-center py-4">No assets found.</p>
                   ) : (
-                    availableAssets.filter(a => a.group === formData.group).map((asset) => (
+                    selectableAssets.map((asset) => (
                     <div key={asset.id} className="flex items-center space-x-2 p-3 border dark:border-slate-700 rounded hover:bg-slate-50 dark:hover:bg-slate-700/60">
                       <Checkbox
                         checked={selectedAssets.includes(asset.id)}
@@ -636,9 +649,11 @@ export function Disposals() {
                         </div>
                         <div className="text-right">
                           <p className="font-medium">{formatCurrency(asset.currentValue)}</p>
-                          <Badge className="text-xs bg-orange-100 text-orange-800 border-0">
-                            {asset.condition}
-                          </Badge>
+                          {asset.condition && (
+                            <Badge className={`text-xs border-0 ${getConditionBadgeClass(asset.condition)}`}>
+                              {asset.condition}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -656,7 +671,7 @@ export function Disposals() {
                 )}
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="sticky bottom-0 bg-white dark:bg-slate-900 pt-2 pb-1 -mx-6 px-6 border-t dark:border-slate-700">
               <Button type="button" variant="outline" onClick={() => setShowStartDialog(false)}>
                 Cancel
               </Button>

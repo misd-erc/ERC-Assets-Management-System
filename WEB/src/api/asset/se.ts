@@ -46,6 +46,7 @@ export const seApi = {
 		OfficeId?: number;
 		DivisionId?: number;
 		Condition?: string;
+		NoPropertyNumber?: boolean;
 	}): Promise<{ items: SEAsset[]; totalCount: number }> => {
 		const query = new URLSearchParams();
 
@@ -81,6 +82,10 @@ export const seApi = {
 
 		if (params.Condition) {
 			query.append('Condition', params.Condition);
+		}
+
+		if (params.NoPropertyNumber) {
+			query.append('NoPropertyNumber', 'true');
 		}
 
 		query.append('ActionBySystemUserId', params.ActionBySystemUserId);

@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, AlertCircle, CheckCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  editMovement,
+  editMovementBulk,
   generateReturnNumber,
   getAssetsByEmployee,
 } from '@/api/asset/transferApi';
@@ -220,62 +220,57 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
       // Generate return number (async call to backend)
       const returnNumber = await generateReturnNumber(returnType);
 
-      // Create and submit movement records for each selected item
-      const submitPromises = selectedItemIds.map(async (itemId) => {
+      // Build all movements for bulk submission
+      const bulkMovements: Parameters<typeof editMovementBulk>[0] = [];
+
+      for (const itemId of selectedItemIds) {
         const item = employeeItems.find((i) => String(i.id) === itemId);
         const itemCondition = selectedItems[itemId]?.condition || item?.condition || 'Good';
 
+        // Mark previous movement as not current
+        if (item?.movements && Array.isArray(item.movements) && item.movements.length > 0) {
+          const sortedMovements = [...item.movements].sort(
+            (a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
+          );
+          const last = sortedMovements[0];
+          bulkMovements.push({
+            id: last.id,
+            ptaId: last.ptaId,
+            dateAssigned: last.dateAssigned,
+            ptrItrNumber: last.ptrItrNumber || '',
+            rrppeRrspNumber: last.rrppeRrspNumber || '',
+            parIcsNumber: last.parIcsNumber || '',
+            status: last.status || 'T',
+            plantillaEmployeeId: last.plantillaEmployeeId || null,
+            nonPlantillaEmployeeId: last.nonPlantillaEmployeeId || null,
+            condition: last.condition || 'Good',
+            actualOfficeId: last.actualOfficeId || 0,
+            actualDivisionId: last.actualDivisionId || 0,
+            isActive: true,
+            isCurrent: false,
+          });
+        }
+
         // New return movement
-        const newMovement = {
+        bulkMovements.push({
           id: 0,
           ptaId: parseInt(itemId),
           dateAssigned: new Date().toISOString(),
-          ptrItrNumber: '', // RRPPE or RRSP (the type)
-          rrppeRrspNumber: returnNumber, // The actual return number (RRPPE-2026-02-001)
+          ptrItrNumber: '',
+          rrppeRrspNumber: returnNumber,
           parIcsNumber: item?.parIcsNumber || '',
-          status: 'R', // Status is always "Return" for return records
-          plantillaEmployeeId: FIXED_RETURN_RECIPIENT.id, // Fixed recipient ID
+          status: 'R',
+          plantillaEmployeeId: FIXED_RETURN_RECIPIENT.id,
           nonPlantillaEmployeeId: null,
-          condition: itemCondition, // User-specified condition from form
-          actualOfficeId: 1, // Return storage location
-          actualDivisionId: 1, // Return storage division
+          condition: itemCondition,
+          actualOfficeId: 1,
+          actualDivisionId: 1,
           isActive: true,
-          isCurrent: true, // New movement is current
-        };
+          isCurrent: true,
+        });
+      }
 
-        // Submit new movement
-        await editMovement(newMovement as any);
-
-        // Get the previous movement to mark as not current
-        if (item?.movements && Array.isArray(item.movements) && item.movements.length > 0) {
-          const sortedMovements = [...item.movements].sort((a, b) => {
-            const dateA = new Date(a.dateAssigned).getTime();
-            const dateB = new Date(b.dateAssigned).getTime();
-            return dateB - dateA; // Most recent first
-          });
-          const lastMovement = sortedMovements[0];
-
-          // Update previous movement to mark as not current
-          await editMovement({
-            id: lastMovement.id,
-            ptaId: lastMovement.ptaId,
-            dateAssigned: lastMovement.dateAssigned,
-            ptrItrNumber: lastMovement.ptrItrNumber,
-            rrppeRrspNumber: lastMovement.rrppeRrspNumber,
-            parIcsNumber: lastMovement.parIcsNumber,
-            status: lastMovement.status || 'T',
-            plantillaEmployeeId: lastMovement.plantillaEmployeeId,
-            nonPlantillaEmployeeId: lastMovement.nonPlantillaEmployeeId,
-            condition: lastMovement.condition,
-            actualOfficeId: lastMovement.actualOfficeId,
-            actualDivisionId: lastMovement.actualDivisionId,
-            isActive: true,
-            isCurrent: false, // Mark as not current
-          } as any);
-        }
-      });
-
-      await Promise.all(submitPromises);
+      await editMovementBulk(bulkMovements);
 
       setSuccess(true);
       toast.success(`Return record created successfully: ${returnNumber}`);

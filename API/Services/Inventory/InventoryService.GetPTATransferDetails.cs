@@ -47,10 +47,14 @@ public async Task<IActionResult> GetPTATransferDetails([FromQuery] string transf
                     return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Transfer number (PTR/ITR) is required"));
                 }
 
-                // Get all movements for the specific PTR/ITR number
-                var allMovements = await _getTools.PTA.GetTblPTAMovements(context)
-                    .Where(x => !x.IsDeleted && x.PTRITRNumber != null && x.PTRITRNumber.ToUpper().Contains(transferNumber.ToUpper()))
-                    .ToListAsync();
+                // Get all movements for the specific PTR/ITR number.
+                // PTRITRNumber is [NotMapped] (encrypted), so EF can't translate the filter to SQL —
+                // materialize first, then filter in-memory against the decrypted value.
+                var allMovements = (await _getTools.PTA.GetTblPTAMovements(context)
+                        .Where(x => !x.IsDeleted)
+                        .ToListAsync())
+                    .Where(x => !string.IsNullOrWhiteSpace(x.PTRITRNumber) && x.PTRITRNumber!.ToUpper().Contains(transferNumber.ToUpper()))
+                    .ToList();
 
                 if (!allMovements.Any())
                 {
@@ -125,7 +129,7 @@ public async Task<IActionResult> GetPTATransferDetails([FromQuery] string transf
                         remarks = movement.Remarks,
                         status = movement.Status,
                         isActive = ptaMovementDetail.IsActive,
-                        items = new List<object> { new { ptaResponseModel.Id, ptaResponseModel.PropertyNumber, ptaResponseModel.Description, ptaResponseModel.Brand, ptaResponseModel.Model, ptaResponseModel.SerialNumber, ptaResponseModel.Category, ptaResponseModel.UnitOfMeasurement, ptaResponseModel.UnitValue, ptaResponseModel.DateAcquired, ptaResponseModel.Group } },
+                        items = new List<object> { new { ptaResponseModel.Id, ptaResponseModel.PropertyNumber, ptaResponseModel.Description, ptaResponseModel.Brand, ptaResponseModel.Model, ptaResponseModel.SerialNumber, category = ptaResponseModel.Category?.Name, ptaResponseModel.UnitOfMeasurement, ptaResponseModel.UnitValue, ptaResponseModel.DateAcquired, ptaResponseModel.Group } },
                         createdAt = ptaMovementDetail.CreatedAt
                     });
                 }

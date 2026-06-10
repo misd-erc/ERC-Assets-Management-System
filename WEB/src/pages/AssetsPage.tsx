@@ -31,6 +31,7 @@ export function AssetsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [ppeTotalCount, setPpeTotalCount] = useState(0);
   const [seTotalCount, setSeTotalCount] = useState(0);
+  const [noPropertyNumberCount, setNoPropertyNumberCount] = useState(0);
   const [pageSize, setPageSize] = useState(5);
 
   // Active tab
@@ -103,12 +104,14 @@ export function AssetsPage() {
   useEffect(() => {
     const fetchTabCounts = async () => {
       try {
-        const [ppeRes, seRes] = await Promise.all([
+        const [ppeRes, seRes, noPropRes] = await Promise.all([
           UnifiedAssetService.getAll({ group: 'PPE', PageNumber: 1, PageSize: 1 }),
           UnifiedAssetService.getAll({ group: 'SE', PageNumber: 1, PageSize: 1 }),
+          UnifiedAssetService.getAll({ noPropertyNumber: true, PageNumber: 1, PageSize: 1 }),
         ]);
         setPpeTotalCount(ppeRes.totalCount);
         setSeTotalCount(seRes.totalCount);
+        setNoPropertyNumberCount(noPropRes.totalCount);
       } catch {}
     };
     fetchTabCounts();
@@ -130,7 +133,8 @@ export function AssetsPage() {
         EmployeeId: appliedFilters.employeeFilter !== 'all' ? parseInt(appliedFilters.employeeFilter) : undefined,
         startDate: appliedFilters.startDate || undefined,
         endDate: appliedFilters.endDate || undefined,
-        group: activeTab !== 'all' ? activeTab : undefined,
+        group: activeTab !== 'all' && activeTab !== 'no-property' ? activeTab : undefined,
+        noPropertyNumber: activeTab === 'no-property' ? true : undefined,
         PageNumber: currentPage,
         PageSize: pageSize,
       };
@@ -141,6 +145,7 @@ export function AssetsPage() {
       setTotalPages(Math.ceil(response.totalCount / pageSize));
       if (activeTab === 'PPE') setPpeTotalCount(response.totalCount);
       else if (activeTab === 'SE') setSeTotalCount(response.totalCount);
+      else if (activeTab === 'no-property') setNoPropertyNumberCount(response.totalCount);
     } catch (error) {
       console.error('Error loading assets:', error);
       toast.error('Failed to load assets');
@@ -577,7 +582,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
   const handleExportExcel = async () => {
     try {
       setExporting(true);
-      const groupName = activeTab === 'all' ? 'All' : (activeTab as 'PPE' | 'SE');
+      const groupName = (activeTab === 'PPE' || activeTab === 'SE') ? activeTab : 'All';
       await ExcelExportService.exportToExcel({
         groupName,
         startDate: exportStartDate || undefined,
@@ -619,7 +624,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
 
           <Button variant="outline" onClick={() => setExportModalOpen(true)} className="gap-2 text-xs sm:text-sm">
             <Download className="size-4" />
-            <span className="hidden sm:inline">Export To Excel ({activeTab === 'all' ? 'ALL' : activeTab})</span>
+            <span className="hidden sm:inline">Export To Excel ({(activeTab === 'PPE' || activeTab === 'SE') ? activeTab : 'ALL'})</span>
             <span className="sm:hidden">Export</span>
           </Button>
 
@@ -665,7 +670,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="PPE" className="gap-2">
             PPE Assets
             <Badge variant="secondary" className="ml-1">{ppeTotalCount.toLocaleString()}</Badge>
@@ -673,6 +678,10 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
           <TabsTrigger value="SE" className="gap-2">
             SE Assets
             <Badge variant="secondary" className="ml-1">{seTotalCount.toLocaleString()}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="no-property" className="gap-2">
+            No Property Number
+            <Badge variant="secondary" className="ml-1">{noPropertyNumberCount.toLocaleString()}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -731,6 +740,58 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
         </TabsContent>
 
         <TabsContent value="SE" className="space-y-6">
+          {/* Filters - Collapsible */}
+          {showFilters && (
+            <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+              <AssetsFilters
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+                categoryFilter={categoryFilter}
+                onCategoryFilterChange={setCategoryFilter}
+                conditionFilter={conditionFilter}
+                onConditionFilterChange={setConditionFilter}
+                officeFilter={officeFilter}
+                onOfficeFilterChange={setOfficeFilter}
+                divisionFilter={divisionFilter}
+                onDivisionFilterChange={setDivisionFilter}
+                employeeFilter={employeeFilter}
+                onEmployeeFilterChange={setEmployeeFilter}
+                startDate={startDate}
+                onStartDateChange={setStartDate}
+                endDate={endDate}
+                onEndDateChange={setEndDate}
+                onClearFilters={handleClearFilters}
+                onApplyFilters={handleApplyFilters}
+                totalResults={totalCount}
+              />
+              <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
+                <Button onClick={handleApplyFilters} className="gap-2">
+                  Apply Filters
+                </Button>
+                <Button variant="outline" onClick={handleClearFilters}>
+                  Clear All
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Table */}
+          <AssetsTable
+            assets={assets}
+            loading={loading}
+            onViewDetails={handleViewDetails}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            onPageChange={handlePageChange}
+            pageSize={pageSize}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        </TabsContent>
+
+        <TabsContent value="no-property" className="space-y-6">
           {/* Filters - Collapsible */}
           {showFilters && (
             <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
