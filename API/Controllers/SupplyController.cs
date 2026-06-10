@@ -2059,7 +2059,9 @@ namespace API.Controllers
                                 int quantity = (deliveryRecordItem.ItemQuantity ?? 1) > 0 ? (deliveryRecordItem.ItemQuantity ?? 1) : 1;
                                 for (int i = 0; i < quantity; i++)
                                 {
-                                    string propertyNumber = $"{deliveryRecordItem.Code}-{i + 1:D3}";
+                                    string? propertyNumber = string.IsNullOrWhiteSpace(deliveryRecordItem.Code)
+                                        ? null
+                                        : $"{deliveryRecordItem.Code}-{i + 1:D3}";
 
                                     TblPTA pta = new()
                                     {

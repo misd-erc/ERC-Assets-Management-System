@@ -150,6 +150,9 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
                         }
                     }
 
+                    if (model.NoPropertyNumber == true)
+                        ptas = ptas.Where(x => string.IsNullOrWhiteSpace(x.PropertyNumber));
+
                     if (model.CategoryId != null && model.CategoryId != 0)
                         ptas = ptas.Where(x => x.CategoryId == model.CategoryId);
 
