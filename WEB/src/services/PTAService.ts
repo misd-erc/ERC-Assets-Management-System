@@ -12,6 +12,7 @@ export interface PTAData {
   unitValue: number;
   dateAcquired?: string;
   fiscalYear?: number;
+  isActive?: boolean;
   movements: Array<{
     id: number;
     ptaId: number;
@@ -59,8 +60,11 @@ export class PTAService {
       const data = await response.json();
       const ptaItems: PTAData[] = data.data?.items || [];
 
+      // Exclude assets that have already been disposed
+      const activeItems = ptaItems.filter(item => item.isActive !== false);
+
       // Convert PTA data to Asset format for RPCPPE generation
-      const assets: Asset[] = ptaItems.map(item => this.mapPTAToAsset(item));
+      const assets: Asset[] = activeItems.map(item => this.mapPTAToAsset(item));
 
       return assets;
     } catch (error) {

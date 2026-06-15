@@ -273,6 +273,80 @@ namespace API.Controllers
             }
         }
 
+        [HttpPut("update/{disposalId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> UpdateDisposal([FromBody] EditDisposalQueryParams model, [FromRoute] long disposalId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var disposal = await context.TblDisposals
+                    .FirstOrDefaultAsync(x => x.Id == disposalId && !x.IsDeleted);
+
+                if (disposal == null)
+                    return StatusCode(ApiStatusCode.NotFound, ApiResponse<object>.Fail(ErrorCodes.NOT_FOUND, "Disposal not found."));
+
+                if (disposal.Status != TblDisposal.PENDING)
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, $"Only pending disposals can be edited. Current status: {disposal.Status}"));
+
+                if (model.PTAIds == null || !model.PTAIds.Any())
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "At least one asset must be selected for disposal."));
+
+                disposal.Group = model.Group;
+                disposal.Reason = model.Reason;
+                disposal.Method = model.Method;
+                disposal.Buyer = model.Buyer;
+                disposal.Remarks = model.Remarks;
+
+                var existingItems = await context.TblDisposalItems
+                    .Where(i => i.DisposalId == disposalId && !i.IsDeleted)
+                    .ToListAsync();
+
+                var existingPTAIds = existingItems.Where(i => i.PTAId.HasValue).Select(i => i.PTAId!.Value).ToHashSet();
+                var newPTAIds = model.PTAIds.ToHashSet();
+
+                foreach (var item in existingItems)
+                {
+                    if (!item.PTAId.HasValue || !newPTAIds.Contains(item.PTAId.Value))
+                    {
+                        item.IsDeleted = true;
+                        item.IsActive = false;
+                    }
+                }
+
+                foreach (var ptaId in newPTAIds)
+                {
+                    if (!existingPTAIds.Contains(ptaId))
+                    {
+                        context.TblDisposalItems.Add(new TblDisposalItem
+                        {
+                            DisposalId = disposal.Id,
+                            PTAId = ptaId,
+                            IsActive = true,
+                            IsDeleted = false,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                    }
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                await AuditTrailTool.LogActivityAsync(_options, $"Updated Disposal {disposal.DisposalNumber}", actionBy: model.ActionBySystemUserId);
+
+                return Ok(ApiResponse<object>.Ok(new { DisposalId = disposalId }, $"Disposal {disposal.DisposalNumber} updated successfully"));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(DisposalController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         [HttpPost("approve/{disposalId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]

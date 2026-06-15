@@ -3,10 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Loader2, Search, Eye, User, Package, Pencil } from 'lucide-react';
+import { Loader2, Search, Eye, User, Package, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements, getPTATransferList, getPTAReturnList, getTransferDetailsByNumber, getReturnDetailsByNumber, editMovement } from '@/api/asset/transferApi';
+import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements, getPTATransferList, getPTAReturnList, getTransferDetailsByNumber, getReturnDetailsByNumber, editMovement, deleteMovement } from '@/api/asset/transferApi';
 import { getConditions } from '@/api/asset/inventoryApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { ApiEmployee } from '@/types/transfer';
@@ -16,6 +16,16 @@ import { ITRGenerator } from '@/components/assets/reports/ITRGenerator';
 import { ReturnReceiptGenerator } from '@/components/assets/reports/ReturnReceiptGenerator';
 import { type NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
 interface MovementsListProps {
@@ -232,6 +242,8 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   // Cache full movement details (items + employee info) keyed by transfer/return number,
   // so View/Generate Report don't refetch on repeat clicks for the same record.
   const detailsCacheRef = useRef(new Map<string, Movement>());
+  // Cache the raw per-movement records (one per item) keyed by transfer/return number, for editing.
+  const detailRecordsCacheRef = useRef(new Map<string, any[]>());
   const [pageNumber, setPageNumber] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize, setPageSize] = useState(10);
@@ -262,6 +274,20 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     plantillaEmployeeId: null,
     nonPlantillaEmployeeId: null,
   });
+  // One row per item/movement in the PTR/ITR/return being edited, so each item's condition
+  // can be edited individually.
+  const [editItemRecords, setEditItemRecords] = useState<{
+    movementId: number;
+    ptaId?: number;
+    item?: PTAItem;
+    condition: string;
+  }[]>([]);
+  const [editItemsLoading, setEditItemsLoading] = useState(false);
+
+  // Delete state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingMovement, setDeletingMovement] = useState<Movement | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Load movements — server now groups by transfer/return number and paginates server-side,
   // so a single direct call returns exactly one lightweight row per record for the requested page.
@@ -407,7 +433,27 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
 
     const fullMovement: Movement = { ...movement, items, employee };
     detailsCacheRef.current.set(number, fullMovement);
+    detailRecordsCacheRef.current.set(number, detail.movements || []);
     return fullMovement;
+  };
+
+  // Fetch the raw per-movement records (one per item, each with its own movementId/ptaId/condition)
+  // for a transfer/return number, used to edit each item's condition individually.
+  const loadMovementDetailRecords = async (movement: Movement): Promise<any[]> => {
+    const number = getMovementNumber(movement);
+    if (!number) return [];
+
+    const cached = detailRecordsCacheRef.current.get(number);
+    if (cached) return cached;
+
+    const isReturn = transferType === 'RRPPE' || transferType === 'RRSP';
+    const detail = isReturn
+      ? await getReturnDetailsByNumber(number)
+      : await getTransferDetailsByNumber(number);
+
+    const records = detail.movements || [];
+    detailRecordsCacheRef.current.set(number, records);
+    return records;
   };
 
   // Handle view details — lazily fetches full items/employee info on demand
@@ -496,7 +542,47 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       setEditFields(prev => ({ ...prev, condition: resolvedCondition }));
     }
 
+    // Load each item involved in this PTR/ITR/return so its condition can be edited individually
+    setEditItemRecords([]);
+    setEditItemsLoading(true);
+    const fallbackRecord = movement.id
+      ? [{
+          movementId: movement.id,
+          ptaId: movement.ptaId,
+          item: movement.items?.[0],
+          condition: resolvedCondition,
+        }]
+      : [];
+    try {
+      const records = await loadMovementDetailRecords(movement);
+      if (records.length > 0) {
+        setEditingMovement(prev => prev ? { ...prev, allMovementIds: records.map((r: any) => r.movementId) } : prev);
+        setEditItemRecords(records.map((r: any) => {
+          const itemRawCondition = (r.condition || '').trim();
+          const itemResolved =
+            (itemRawCondition && (matchCondition(itemRawCondition) || itemRawCondition)) || resolvedCondition || '';
+          return {
+            movementId: r.movementId,
+            ptaId: r.ptaId,
+            item: (r.items || [])[0],
+            condition: itemResolved,
+          };
+        }));
+      } else {
+        setEditItemRecords(fallbackRecord);
+      }
+    } catch {
+      // fall back to the current row's own item if the full item list can't be loaded
+      setEditItemRecords(fallbackRecord);
+    } finally {
+      setEditItemsLoading(false);
+    }
+
     setEditDialogOpen(true);
+  };
+
+  const handleItemConditionChange = (movementId: number, condition: string) => {
+    setEditItemRecords(prev => prev.map(r => r.movementId === movementId ? { ...r, condition } : r));
   };
 
   // Save edited movement details
@@ -525,12 +611,22 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       transferType === 'RRSP' ||
       (!transferType && !hasPtrItrNumber && hasReturnNumber);
 
+    const hasMissingCondition = ids.some(id => {
+      const itemRecord = editItemRecords.find(r => r.movementId === id);
+      return !(itemRecord?.condition || editFields.condition || editingMovement.condition);
+    });
+    if (hasMissingCondition) {
+      toast.error('Please select a condition for each item');
+      return;
+    }
+
     try {
       setEditSaving(true);
       for (const id of ids) {
+        const itemRecord = editItemRecords.find(r => r.movementId === id);
         await editMovement({
           id,
-          ptaId: editingMovement.ptaId ?? 0,
+          ptaId: itemRecord?.ptaId ?? editingMovement.ptaId ?? 0,
           dateAssigned: editFields.dateAssigned
             ? new Date(editFields.dateAssigned).toISOString()
             : editingMovement.dateAssigned || new Date().toISOString(),
@@ -542,15 +638,21 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
             ? editFields.transferNumber
             : undefined,
           status: editFields.status,
-          condition: editFields.condition,
-          actualOfficeId: (editingMovement as any).actualOfficeId ?? null,
-          actualDivisionId: (editingMovement as any).actualDivisionId ?? null,
+          condition: itemRecord?.condition || editFields.condition || editingMovement.condition || '',
+          actualOfficeId: (editingMovement as any).actualOfficeId ?? 0,
+          actualDivisionId: (editingMovement as any).actualDivisionId ?? 0,
           plantillaEmployeeId: editFields.plantillaEmployeeId ?? null,
           nonPlantillaEmployeeId: editFields.nonPlantillaEmployeeId ?? null,
           isActive: editingMovement.isActive,
           isCurrent: true,
         });
       }
+      const number = getMovementNumber(editingMovement);
+      if (number) {
+        detailsCacheRef.current.delete(number);
+        detailRecordsCacheRef.current.delete(number);
+      }
+
       toast.success('Movement details updated successfully');
       setEditDialogOpen(false);
       loadMovements(searchInput, pageNumber);
@@ -559,6 +661,51 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       toast.error(message);
     } finally {
       setEditSaving(false);
+    }
+  };
+
+  // Handle delete
+  const handleDeleteClick = (movement: Movement) => {
+    setDeletingMovement(movement);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingMovement) return;
+
+    const ids = deletingMovement.allMovementIds?.length
+      ? deletingMovement.allMovementIds
+      : deletingMovement.id
+      ? [deletingMovement.id]
+      : [];
+
+    if (ids.length === 0) {
+      toast.error('No movement IDs available to delete');
+      setDeleteDialogOpen(false);
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      for (const id of ids) {
+        await deleteMovement(id);
+      }
+
+      const number = getMovementNumber(deletingMovement);
+      if (number) {
+        detailsCacheRef.current.delete(number);
+        detailRecordsCacheRef.current.delete(number);
+      }
+
+      toast.success('Movement record deleted');
+      setDeleteDialogOpen(false);
+      setDeletingMovement(null);
+      loadMovements(searchInput, pageNumber);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete movement record';
+      toast.error(message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -603,9 +750,25 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     const toEmp = buildEmployee(fullMovement.employee?.[1]);
     const transferDate = fullMovement.dateAssigned || new Date().toISOString();
     const transferType = (fullMovement.status || 'REASSIGNMENT') as any;
-    const toEmpPosition = (fullMovement.employee?.[1]?.position as any)?.name || '';
-    const toEmpOffice = (fullMovement.employee?.[1]?.office as any)?.acronym || (fullMovement.employee?.[1]?.office as any)?.name || '';
-    const toEmpDivision = (fullMovement.employee?.[1]?.division as any)?.acronym || (fullMovement.employee?.[1]?.division as any)?.name || '';
+    let toEmpPosition = (fullMovement.employee?.[1]?.position as any)?.name || '';
+    let toEmpOffice = (fullMovement.employee?.[1]?.office as any)?.acronym || (fullMovement.employee?.[1]?.office as any)?.name || '';
+    let toEmpDivision = (fullMovement.employee?.[1]?.division as any)?.acronym || (fullMovement.employee?.[1]?.division as any)?.name || '';
+
+    // PTR/ITR transfer details don't include employee position/office, so look it up from the employee list
+    if (!toEmpPosition && !toEmpOffice && toEmp.id) {
+      try {
+        const empRes = await getEmployees();
+        const empData = (empRes.data?.items || []).find(e => e.id === toEmp.id) as any;
+        if (empData) {
+          toEmpPosition = empData.position?.name || empData.positionName || '';
+          toEmpOffice = empData.office?.acronym || empData.office?.name || empData.officeName || '';
+          toEmpDivision = empData.division?.acronym || empData.division?.name || empData.divisionName || '';
+        }
+      } catch {
+        // ignore — fall back to whatever we already have
+      }
+    }
+
     const toEmployeePositionOffice = [toEmpPosition, [toEmpOffice, toEmpDivision].filter(Boolean).join(', ')].filter(Boolean).join(' - ');
 
     const returnedByName = fullMovement.employee?.[0]?.fullName || fromEmp.label || 'Unknown';
@@ -614,7 +777,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     try {
       setGenerating(true);
       if (prefix.startsWith('PTR')) {
-        const url = await PTRGenerator.generatePTRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType, transferNumber);
+        const url = await PTRGenerator.generatePTRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType, transferNumber, undefined, undefined, toEmployeePositionOffice);
         const blob = await fetch(url).then(r => r.blob());
         const dlUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -835,6 +998,15 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
                             >
                               <Pencil className="w-4 h-4 mr-1" />
                               Edit
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => handleDeleteClick(movement)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Delete
                             </Button>
                           </div>
                         </TableCell>
@@ -1231,10 +1403,52 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
               </select>
             </div>
 
-            {/* Condition */}
+            {/* Items & per-item Condition */}
             <div className="space-y-1">
-              <label className="text-sm font-medium">Condition</label>
-              {conditions.length > 0 ? (
+              <label className="text-sm font-medium">
+                {editItemRecords.length > 1 ? `Items in this Movement (${editItemRecords.length})` : 'Condition'}
+              </label>
+              {editItemsLoading ? (
+                <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading items…
+                </div>
+              ) : editItemRecords.length > 0 ? (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {editItemRecords.map((rec) => (
+                    <div key={rec.movementId} className="border rounded p-2 space-y-1">
+                      {editItemRecords.length > 1 && (
+                        <div className="text-xs">
+                          <p className="font-mono font-semibold">{rec.item?.propertyNumber || 'N/A'}</p>
+                          <p className="text-muted-foreground">{rec.item?.description || ''}</p>
+                        </div>
+                      )}
+                      {conditions.length > 0 ? (
+                        <select
+                          className="w-full border rounded px-3 py-2 text-sm bg-background"
+                          value={rec.condition}
+                          onChange={(e) => handleItemConditionChange(rec.movementId, e.target.value)}
+                        >
+                          <option value="">— Select Condition —</option>
+                          {rec.condition &&
+                            !conditions.some(c => c.trim().toLowerCase() === rec.condition.trim().toLowerCase()) && (
+                              <option value={rec.condition}>{rec.condition}</option>
+                            )}
+                          {conditions.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <Input
+                          value={rec.condition}
+                          onChange={(e) => handleItemConditionChange(rec.movementId, e.target.value)}
+                          placeholder="e.g. Good"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : conditions.length > 0 ? (
                 <select
                   className="w-full border rounded px-3 py-2 text-sm bg-background"
                   value={editFields.condition}
@@ -1243,6 +1457,10 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
                   }
                 >
                   <option value="">— Select Condition —</option>
+                  {editFields.condition &&
+                    !conditions.some(c => c.trim().toLowerCase() === editFields.condition.trim().toLowerCase()) && (
+                      <option value={editFields.condition}>{editFields.condition}</option>
+                    )}
                   {conditions.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
@@ -1294,6 +1512,37 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Movement Record</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{' '}
+              {deletingMovement ? getMovementNumber(deletingMovement) || 'this record' : 'this record'}?
+              This action can be reversed only by a system administrator.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
