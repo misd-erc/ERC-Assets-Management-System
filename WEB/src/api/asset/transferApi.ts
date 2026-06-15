@@ -230,6 +230,23 @@ export const editMovement = async (movementData: Omit<MovementEditPayload, 'acti
 };
 
 /**
+ * Soft-delete a PTA movement record (PTR/ITR/RRPPE/RRSP)
+ * @param movementId - Id of the TblPTAMovement record to delete
+ */
+export const deleteMovement = async (movementId: number): Promise<void> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  const response = await axiosInstance.delete<ApiResponse<object>>(
+    `/Inventory/pta/movement/delete/${movementId}`,
+    { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
+  );
+
+  if (!response.data.success) {
+    throw new Error(response.data.message || 'Failed to delete movement record');
+  }
+};
+
+/**
  * Get movement history for a specific asset
  * @param ptaId - PTA ID of the asset
  * @returns Promise with array of movement records
