@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { printDisposal } from './printUtils';
-import { Plus, Trash2, FileText, AlertTriangle, DollarSign, CheckCircle, Clock, Archive, Eye, Printer } from 'lucide-react';
+import { Plus, Trash2, FileText, AlertTriangle, DollarSign, CheckCircle, Clock, Archive, Eye, Printer, Pencil } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,8 @@ import { toast } from 'sonner';
 import {
   getDisposals,
   createDisposal,
+  updateDisposal,
+  deleteDisposal as deleteDisposalApi,
   approveDisposal as approveDisposalApi,
   markDisposed as markDisposedApi,
   getAllPTAsForDisposal,
@@ -110,12 +112,16 @@ export function Disposals() {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showDisposedDialog, setShowDisposedDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedDisposal, setSelectedDisposal] = useState<Disposal | null>(null);
+  const [editingDisposalId, setEditingDisposalId] = useState<number | null>(null);
+  const [editingAssets, setEditingAssets] = useState<DisposalAsset[]>([]);
+  const [showAddAssets, setShowAddAssets] = useState(false);
 
   const [formData, setFormData] = useState({
     group: 'PPE' as 'PPE' | 'SE',
-    reason: 'End of Life' as const,
-    method: 'Sale' as const,
+    reason: 'End of Life' as Disposal['reason'],
+    method: 'Sale' as Disposal['method'],
     requestedBy: 'Current User',
     remarks: ''
   });
@@ -181,6 +187,9 @@ export function Disposals() {
   }, [showStartDialog, formData.group, assetSearchQuery]);
 
   const handleStartDisposal = () => {
+    setEditingDisposalId(null);
+    setEditingAssets([]);
+    setShowAddAssets(false);
     setSelectedAssets([]);
     setAssetSearchQuery('');
     setFormData({
@@ -193,6 +202,26 @@ export function Disposals() {
     setShowStartDialog(true);
   };
 
+  const handleEdit = (disposal: Disposal) => {
+    setEditingDisposalId(Number(disposal.id));
+    setEditingAssets(disposal.assets);
+    setShowAddAssets(false);
+    setSelectedAssets(disposal.assets.map(a => a.id));
+    setAssetSearchQuery('');
+    setFormData({
+      group: disposal.group,
+      reason: disposal.reason,
+      method: disposal.method,
+      requestedBy: 'Current User',
+      remarks: disposal.remarks || ''
+    });
+    setShowStartDialog(true);
+  };
+
+  const handleRemoveAsset = (assetId: string) => {
+    setSelectedAssets(prev => prev.filter(id => id !== assetId));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -202,6 +231,27 @@ export function Disposals() {
     }
 
     try {
+      if (editingDisposalId !== null) {
+        const success = await updateDisposal(editingDisposalId, {
+          id: editingDisposalId,
+          group: formData.group,
+          reason: formData.reason,
+          method: formData.method,
+          ptaIds: selectedAssets.map(id => Number(id)),
+          remarks: formData.remarks || undefined,
+        });
+
+        if (success) {
+          toast.success('Disposal request updated successfully');
+          setShowStartDialog(false);
+          setEditingDisposalId(null);
+          await loadDisposals();
+        } else {
+          toast.error('Failed to update disposal request');
+        }
+        return;
+      }
+
       const result = await createDisposal({
         id: 0,
         group: formData.group,
@@ -219,7 +269,7 @@ export function Disposals() {
         toast.error('Failed to create disposal request');
       }
     } catch {
-      toast.error('Failed to create disposal request');
+      toast.error(editingDisposalId !== null ? 'Failed to update disposal request' : 'Failed to create disposal request');
     }
   };
 
@@ -291,6 +341,29 @@ export function Disposals() {
     printDisposal(disposal);
   };
 
+  const handleDelete = (disposal: Disposal) => {
+    setSelectedDisposal(disposal);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedDisposal) return;
+    try {
+      const success = await deleteDisposalApi(Number(selectedDisposal.id));
+      if (success) {
+        toast.success(`Disposal ${selectedDisposal.disposalNumber} deleted`);
+        await loadDisposals();
+      } else {
+        toast.error('Failed to delete disposal');
+      }
+    } catch {
+      toast.error('Failed to delete disposal');
+    } finally {
+      setShowDeleteDialog(false);
+      setSelectedDisposal(null);
+    }
+  };
+
   const toggleAssetSelection = (assetId: string) => {
     setSelectedAssets(prev =>
       prev.includes(assetId) ? prev.filter(id => id !== assetId) : [...prev, assetId]
@@ -301,6 +374,18 @@ export function Disposals() {
   const selectableAssets = useMemo(() =>
     availableAssets.filter(a => a.group === formData.group && !isAlreadyDisposed(a.condition)),
   [availableAssets, formData.group]);
+
+  // Details for assets currently selected (in edit mode, falls back to the disposal's original items)
+  const selectedAssetDetails = useMemo(() =>
+    selectedAssets.map(id =>
+      availableAssets.find(a => a.id === id) ?? editingAssets.find(a => a.id === id)
+    ).filter((a): a is DisposalAsset => !!a),
+  [selectedAssets, availableAssets, editingAssets]);
+
+  // Assets available to add: matching group, not already disposed, and not already selected
+  const addableAssets = useMemo(() =>
+    selectableAssets.filter(a => !selectedAssets.includes(a.id)),
+  [selectableAssets, selectedAssets]);
 
   const columns = useMemo(() => [
     { key: 'disposalNumber', label: 'Disposal Number', sortable: true },
@@ -346,13 +431,21 @@ export function Disposals() {
             <Eye className="w-4 h-4" />
           </Button>
           {row.status === 'Pending' && (
-            <Button 
-              size="sm" 
-              className="bg-green-600 hover:bg-green-700"
-              onClick={() => handleApprove(row)}
-            >
-              Approve
-            </Button>
+            <>
+              <Button size="sm" variant="ghost" onClick={() => handleEdit(row)} className="h-8 w-8 p-0">
+                <Pencil className="w-4 h-4" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => handleDelete(row)} className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => handleApprove(row)}
+              >
+                Approve
+              </Button>
+            </>
           )}
           {row.status === 'Approved' && (
             <Button 
@@ -543,7 +636,7 @@ export function Disposals() {
       <Dialog open={showStartDialog} onOpenChange={setShowStartDialog}>
         <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[80vw] !max-w-[80vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Start Disposal Process</DialogTitle>
+            <DialogTitle>{editingDisposalId !== null ? 'Edit Disposal Request' : 'Start Disposal Process'}</DialogTitle>
             <DialogDescription>
               Select assets and specify disposal details
             </DialogDescription>
@@ -619,64 +712,167 @@ export function Disposals() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Select Assets for Disposal *</Label>
-                <Input
-                  value={assetSearchQuery}
-                  onChange={(e) => setAssetSearchQuery(e.target.value)}
-                  placeholder="Search by property number, description, category..."
-                />
-                <div className="border rounded-lg p-4 space-y-2 max-h-[18rem] overflow-y-auto">
-                  {assetsLoading ? (
-                    <p className="text-sm text-slate-500 text-center py-4">Loading assets...</p>
-                  ) : selectableAssets.length === 0 ? (
-                    <p className="text-sm text-slate-500 text-center py-4">No assets found.</p>
-                  ) : (
-                    selectableAssets.map((asset) => (
-                    <div key={asset.id} className="flex items-center space-x-2 p-3 border dark:border-slate-700 rounded hover:bg-slate-50 dark:hover:bg-slate-700/60">
-                      <Checkbox
-                        checked={selectedAssets.includes(asset.id)}
-                        onCheckedChange={() => toggleAssetSelection(asset.id)}
+              {editingDisposalId !== null ? (
+                <div className="space-y-2">
+                  <Label>Items in this Disposal *</Label>
+                  <div className="border rounded-lg p-4 space-y-2 max-h-[18rem] overflow-y-auto">
+                    {selectedAssetDetails.length === 0 ? (
+                      <p className="text-sm text-slate-500 text-center py-4">No assets selected.</p>
+                    ) : (
+                      selectedAssetDetails.map((asset) => (
+                        <div key={asset.id} className="flex items-center space-x-2 p-3 border dark:border-slate-700 rounded hover:bg-slate-50 dark:hover:bg-slate-700/60">
+                          <div className="flex-1 grid grid-cols-4 gap-2 text-sm">
+                            <div>
+                              <p className="font-medium">{asset.code}</p>
+                              <p className="text-xs text-slate-500">{asset.category}</p>
+                            </div>
+                            <div className="col-span-2">
+                              <p>{asset.description}</p>
+                              <p className="text-xs text-slate-500">{asset.location}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium">{formatCurrency(asset.currentValue)}</p>
+                              {asset.condition && (
+                                <Badge className={`text-xs border-0 ${getConditionBadgeClass(asset.condition)}`}>
+                                  {asset.condition}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleRemoveAsset(asset.id)}
+                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {selectedAssetDetails.length > 0 && (
+                    <p className="text-sm text-slate-600 mt-2">
+                      Selected {selectedAssetDetails.length} asset(s) - Total Value: {formatCurrency(
+                        selectedAssetDetails.reduce((sum, a) => sum + a.currentValue, 0)
+                      )}
+                    </p>
+                  )}
+
+                  {showAddAssets ? (
+                    <div className="space-y-2 pt-2">
+                      <Label>Add Assets</Label>
+                      <Input
+                        value={assetSearchQuery}
+                        onChange={(e) => setAssetSearchQuery(e.target.value)}
+                        placeholder="Search by property number, description, category..."
                       />
-                      <div className="flex-1 grid grid-cols-4 gap-2 text-sm">
-                        <div>
-                          <p className="font-medium">{asset.code}</p>
-                          <p className="text-xs text-slate-500">{asset.category}</p>
-                        </div>
-                        <div className="col-span-2">
-                          <p>{asset.description}</p>
-                          <p className="text-xs text-slate-500">{asset.location}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">{formatCurrency(asset.currentValue)}</p>
-                          {asset.condition && (
-                            <Badge className={`text-xs border-0 ${getConditionBadgeClass(asset.condition)}`}>
-                              {asset.condition}
-                            </Badge>
-                          )}
-                        </div>
+                      <div className="border rounded-lg p-4 space-y-2 max-h-[18rem] overflow-y-auto">
+                        {assetsLoading ? (
+                          <p className="text-sm text-slate-500 text-center py-4">Loading assets...</p>
+                        ) : addableAssets.length === 0 ? (
+                          <p className="text-sm text-slate-500 text-center py-4">No assets found.</p>
+                        ) : (
+                          addableAssets.map((asset) => (
+                            <div key={asset.id} className="flex items-center space-x-2 p-3 border dark:border-slate-700 rounded hover:bg-slate-50 dark:hover:bg-slate-700/60">
+                              <Checkbox
+                                checked={selectedAssets.includes(asset.id)}
+                                onCheckedChange={() => toggleAssetSelection(asset.id)}
+                              />
+                              <div className="flex-1 grid grid-cols-4 gap-2 text-sm">
+                                <div>
+                                  <p className="font-medium">{asset.code}</p>
+                                  <p className="text-xs text-slate-500">{asset.category}</p>
+                                </div>
+                                <div className="col-span-2">
+                                  <p>{asset.description}</p>
+                                  <p className="text-xs text-slate-500">{asset.location}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-medium">{formatCurrency(asset.currentValue)}</p>
+                                  {asset.condition && (
+                                    <Badge className={`text-xs border-0 ${getConditionBadgeClass(asset.condition)}`}>
+                                      {asset.condition}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
                       </div>
+                      <Button type="button" variant="outline" size="sm" onClick={() => setShowAddAssets(false)}>
+                        Done Adding
+                      </Button>
                     </div>
-                  ))
+                  ) : (
+                    <Button type="button" variant="outline" size="sm" onClick={() => setShowAddAssets(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Asset
+                    </Button>
                   )}
                 </div>
-                {selectedAssets.length > 0 && (
-                  <p className="text-sm text-slate-600 mt-2">
-                    Selected {selectedAssets.length} asset(s) - Total Value: {formatCurrency(
-                      availableAssets
-                        .filter(a => selectedAssets.includes(a.id))
-                        .reduce((sum, a) => sum + a.currentValue, 0)
+              ) : (
+                <div className="space-y-2">
+                  <Label>Select Assets for Disposal *</Label>
+                  <Input
+                    value={assetSearchQuery}
+                    onChange={(e) => setAssetSearchQuery(e.target.value)}
+                    placeholder="Search by property number, description, category..."
+                  />
+                  <div className="border rounded-lg p-4 space-y-2 max-h-[18rem] overflow-y-auto">
+                    {assetsLoading ? (
+                      <p className="text-sm text-slate-500 text-center py-4">Loading assets...</p>
+                    ) : selectableAssets.length === 0 ? (
+                      <p className="text-sm text-slate-500 text-center py-4">No assets found.</p>
+                    ) : (
+                      selectableAssets.map((asset) => (
+                      <div key={asset.id} className="flex items-center space-x-2 p-3 border dark:border-slate-700 rounded hover:bg-slate-50 dark:hover:bg-slate-700/60">
+                        <Checkbox
+                          checked={selectedAssets.includes(asset.id)}
+                          onCheckedChange={() => toggleAssetSelection(asset.id)}
+                        />
+                        <div className="flex-1 grid grid-cols-4 gap-2 text-sm">
+                          <div>
+                            <p className="font-medium">{asset.code}</p>
+                            <p className="text-xs text-slate-500">{asset.category}</p>
+                          </div>
+                          <div className="col-span-2">
+                            <p>{asset.description}</p>
+                            <p className="text-xs text-slate-500">{asset.location}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">{formatCurrency(asset.currentValue)}</p>
+                            {asset.condition && (
+                              <Badge className={`text-xs border-0 ${getConditionBadgeClass(asset.condition)}`}>
+                                {asset.condition}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
                     )}
-                  </p>
-                )}
-              </div>
+                  </div>
+                  {selectedAssets.length > 0 && (
+                    <p className="text-sm text-slate-600 mt-2">
+                      Selected {selectedAssets.length} asset(s) - Total Value: {formatCurrency(
+                        availableAssets
+                          .filter(a => selectedAssets.includes(a.id))
+                          .reduce((sum, a) => sum + a.currentValue, 0)
+                      )}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             <DialogFooter className="sticky bottom-0 bg-white dark:bg-slate-900 pt-2 pb-1 -mx-6 px-6 border-t dark:border-slate-700">
-              <Button type="button" variant="outline" onClick={() => setShowStartDialog(false)}>
+              <Button type="button" variant="outline" onClick={() => { setShowStartDialog(false); setEditingDisposalId(null); }}>
                 Cancel
               </Button>
               <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                Submit Disposal Request
+                {editingDisposalId !== null ? 'Save Changes' : 'Submit Disposal Request'}
               </Button>
             </DialogFooter>
           </form>
@@ -822,6 +1018,25 @@ export function Disposals() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmApprove} className="bg-green-600 hover:bg-green-700">
               Approve Disposal
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Disposal Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Disposal Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete disposal request {selectedDisposal?.disposalNumber}?
+              This action can be reversed only by a system administrator.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
