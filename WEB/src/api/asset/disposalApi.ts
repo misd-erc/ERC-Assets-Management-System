@@ -181,6 +181,33 @@ export const createDisposal = async (
   }
 };
 
+export const updateDisposal = async (
+  disposalId: number,
+  payload: CreateDisposalPayload
+): Promise<boolean> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  try {
+    const response = await axiosInstance.put<ApiResponse<object>>(
+      `/Disposal/update/${disposalId}`,
+      {
+        ...payload,
+        actionBySystemUserId: systemUserId,
+        sessionKey,
+      }
+    );
+
+    if (!response.data.success) {
+      console.error('Failed to update disposal:', response.data.message);
+    }
+
+    return response.data.success;
+  } catch (error) {
+    console.error('Error updating disposal:', error);
+    return false;
+  }
+};
+
 export const approveDisposal = async (disposalId: number): Promise<boolean> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
