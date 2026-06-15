@@ -750,9 +750,25 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     const toEmp = buildEmployee(fullMovement.employee?.[1]);
     const transferDate = fullMovement.dateAssigned || new Date().toISOString();
     const transferType = (fullMovement.status || 'REASSIGNMENT') as any;
-    const toEmpPosition = (fullMovement.employee?.[1]?.position as any)?.name || '';
-    const toEmpOffice = (fullMovement.employee?.[1]?.office as any)?.acronym || (fullMovement.employee?.[1]?.office as any)?.name || '';
-    const toEmpDivision = (fullMovement.employee?.[1]?.division as any)?.acronym || (fullMovement.employee?.[1]?.division as any)?.name || '';
+    let toEmpPosition = (fullMovement.employee?.[1]?.position as any)?.name || '';
+    let toEmpOffice = (fullMovement.employee?.[1]?.office as any)?.acronym || (fullMovement.employee?.[1]?.office as any)?.name || '';
+    let toEmpDivision = (fullMovement.employee?.[1]?.division as any)?.acronym || (fullMovement.employee?.[1]?.division as any)?.name || '';
+
+    // PTR/ITR transfer details don't include employee position/office, so look it up from the employee list
+    if (!toEmpPosition && !toEmpOffice && toEmp.id) {
+      try {
+        const empRes = await getEmployees();
+        const empData = (empRes.data?.items || []).find(e => e.id === toEmp.id) as any;
+        if (empData) {
+          toEmpPosition = empData.position?.name || empData.positionName || '';
+          toEmpOffice = empData.office?.acronym || empData.office?.name || empData.officeName || '';
+          toEmpDivision = empData.division?.acronym || empData.division?.name || empData.divisionName || '';
+        }
+      } catch {
+        // ignore — fall back to whatever we already have
+      }
+    }
+
     const toEmployeePositionOffice = [toEmpPosition, [toEmpOffice, toEmpDivision].filter(Boolean).join(', ')].filter(Boolean).join(' - ');
 
     const returnedByName = fullMovement.employee?.[0]?.fullName || fromEmp.label || 'Unknown';
@@ -761,7 +777,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     try {
       setGenerating(true);
       if (prefix.startsWith('PTR')) {
-        const url = await PTRGenerator.generatePTRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType, transferNumber);
+        const url = await PTRGenerator.generatePTRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, transferType, transferNumber, undefined, undefined, toEmployeePositionOffice);
         const blob = await fetch(url).then(r => r.blob());
         const dlUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');

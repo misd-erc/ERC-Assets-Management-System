@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getPTRTransferList, getTransferDetailsByNumber } from '@/api/asset/transferApi';
+import { getEmployees } from '@/api/user-management/userApi';
 import { PTRGenerator } from './PTRGenerator';
 
 interface PTRGenerationModalProps {
@@ -71,6 +72,10 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
     setLoading(true);
     try {
       const response = await getPTRTransferList(1, 1000);
+      const employeeResponse = await getEmployees().catch(() => ({ data: { items: [] } } as any));
+      const employeeById = new Map<number, any>(
+        ((employeeResponse as any)?.data?.items || []).map((emp: any) => [emp.id, emp])
+      );
       console.log('PTR Transfer List Response:', response);
       console.log('PTR Items:', response.items);
 
@@ -120,6 +125,22 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
           lastName: nonPlantillaParts.length > 1 ? nonPlantillaParts[nonPlantillaParts.length - 1] : ''
         } : null;
 
+        // Resolve receiving employee's position/office/division for the "Received by" section
+        const toEmpDetails = toEmpId ? employeeById.get(toEmpId) : null;
+        const toEmpPosition = item.plantillaEmployeeName
+          ? (item.plantillaEmployeePosition || toEmpDetails?.position?.name || '')
+          : (item.nonPlantillaEmployeePosition || toEmpDetails?.position?.name || '');
+        const toEmpOffice = item.plantillaEmployeeName
+          ? (item.plantillaEmployeeOffice || toEmpDetails?.office?.acronym || toEmpDetails?.office?.name || item.office?.acronym || item.office?.name || '')
+          : (item.nonPlantillaEmployeeOffice || toEmpDetails?.office?.acronym || toEmpDetails?.office?.name || item.office?.acronym || item.office?.name || '');
+        const toEmpDivision = item.plantillaEmployeeName
+          ? (item.plantillaEmployeeDivision || toEmpDetails?.division?.acronym || toEmpDetails?.division?.name || item.division?.acronym || item.division?.name || '')
+          : (item.nonPlantillaEmployeeDivision || toEmpDetails?.division?.acronym || toEmpDetails?.division?.name || item.division?.acronym || item.division?.name || '');
+        const toEmpPositionOffice = [
+          toEmpPosition,
+          [toEmpOffice, toEmpDivision].filter(Boolean).join(', '),
+        ].filter(Boolean).join(' - ');
+
         const baseRecord = existing || {
           ptrNumber: ptrNum,
           fromEmployee: existingDetails?.fromEmployeeName || 'N/A',
@@ -154,7 +175,8 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
           items: mergedItems,
           dateAssigned: updatedRecord.dateAssigned,
           remarks: item.remarks || existingDetails?.remarks,
-          status: item.status || existingDetails?.status
+          status: item.status || existingDetails?.status,
+          toEmployeePositionOffice: toEmpPositionOffice || existingDetails?.toEmployeePositionOffice || ''
         });
 
         return acc;
@@ -234,7 +256,8 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         ptrDetails.transferType || 'REASSIGNMENT',
         ptrDetails.transferNumber,
         signatureDate,
-        nonPlantillaEmp
+        nonPlantillaEmp,
+        ptrDetails.toEmployeePositionOffice || ''
       );
       setPreviewUrl(url);
       setShowPreview(true);

@@ -263,6 +263,7 @@ const PTRDocument = ({
   transferType,
   nonPlantillaEmployee,
   signatureDate,
+  toEmployeePositionOffice,
 }: {
   rows: PTRRow[];
   ptrNumber: string;
@@ -272,6 +273,7 @@ const PTRDocument = ({
   transferType: TransferType;
   nonPlantillaEmployee?: NormalizedEmployee | null;
   signatureDate?: string;
+  toEmployeePositionOffice?: string;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -430,7 +432,7 @@ const PTRDocument = ({
           </Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
-          <Text style={[styles.sigTopText, { marginBottom: 4, marginTop: 6 }]}>Accountable Officer</Text>
+          <Text style={[styles.sigTopText, { marginBottom: 4, marginTop: 6 }]}>{toEmployeePositionOffice || ' '}</Text>
           <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 2 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 2 }]}>Position/Office</Text>
           <View>
@@ -460,7 +462,8 @@ export class PTRGenerator {
     transferType: TransferType,
     existingNumber?: string,
     signatureDate?: string,
-    nonPlantillaEmployee?: NormalizedEmployee | null
+    nonPlantillaEmployee?: NormalizedEmployee | null,
+    toEmployeePositionOffice?: string
   ): Promise<string> {
     const ptrNumber = existingNumber || this.generatePTRNumber();
     const rows = this.buildRows(assets);
@@ -475,6 +478,7 @@ export class PTRGenerator {
         transferType={transferType}
         signatureDate={signatureDate}
         nonPlantillaEmployee={nonPlantillaEmployee}
+        toEmployeePositionOffice={toEmployeePositionOffice}
       />
     ).toBlob();
 
