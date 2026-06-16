@@ -196,11 +196,27 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
 
   const handleSelectITR = async (itrNumber: string) => {
     setSelectedITR(itrNumber);
-    
-    // Use the details we already loaded instead of making another API call
+
     const details = itrDetailsMap.get(itrNumber);
     if (details) {
-      setItrDetails(details);
+      try {
+        // list endpoint only returns itemCount; fetch real item details for the PDF
+        const transferDetails = await getTransferDetailsByNumber(itrNumber);
+        const allItems: any[] = [];
+        const seen = new Set<string | number>();
+        for (const movement of transferDetails.movements || []) {
+          for (const itm of movement.items || []) {
+            const key = itm.propertyNumber || itm.id;
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              allItems.push(itm);
+            }
+          }
+        }
+        setItrDetails({ ...details, items: allItems });
+      } catch {
+        setItrDetails(details);
+      }
       setCurrentStep('details');
     }
   };
