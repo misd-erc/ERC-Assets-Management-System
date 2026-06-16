@@ -196,11 +196,27 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
 
   const handleSelectPTR = async (ptrNumber: string) => {
     setSelectedPTR(ptrNumber);
-    
-    // Use the details we already loaded instead of making another API call
+
     const details = ptrDetailsMap.get(ptrNumber);
     if (details) {
-      setPtrDetails(details);
+      try {
+        // list endpoint only returns itemCount; fetch real item details for the PDF
+        const transferDetails = await getTransferDetailsByNumber(ptrNumber);
+        const allItems: any[] = [];
+        const seen = new Set<string | number>();
+        for (const movement of transferDetails.movements || []) {
+          for (const itm of movement.items || []) {
+            const key = itm.propertyNumber || itm.id;
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              allItems.push(itm);
+            }
+          }
+        }
+        setPtrDetails({ ...details, items: allItems });
+      } catch {
+        setPtrDetails(details);
+      }
       setCurrentStep('details');
     }
   };
