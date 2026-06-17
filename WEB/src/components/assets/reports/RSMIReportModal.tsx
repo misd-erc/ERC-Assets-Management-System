@@ -13,9 +13,22 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Filter, FileText, ChevronDown, ChevronRight, Download, AlertCircle, Printer } from 'lucide-react';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { Loader2, Filter, FileText, ChevronDown, ChevronRight, Download, AlertCircle, Printer, Check, ChevronsUpDown } from 'lucide-react';
 
 import { useRSMIReport } from '@/hooks/supply/useRSMIReport';
 import { getCategories } from '@/api/asset/inventoryApi';
@@ -220,6 +233,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const [categoryId, setCategoryId] = useState<string>('');
 
     const [categories, setCategories] = useState<any[]>([]);
+    const [categoryOpen, setCategoryOpen] = useState(false);
     const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
@@ -372,18 +386,67 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5 p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
                         <div className="space-y-1.5">
                             <Label className="text-slate-700 font-medium">Category</Label>
-                            <Select value={categoryId} onValueChange={setCategoryId}>
-                                <SelectTrigger className="bg-white border-slate-300 focus:ring-indigo-500 shadow-sm">
-                                    <SelectValue placeholder="Select Category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.map((cat) => (
-                                        <SelectItem key={cat.id} value={cat.id.toString()}>
-                                            {cat.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={categoryOpen}
+                                        className={cn(
+                                            "w-full justify-between font-normal h-10 px-3 bg-white hover:bg-slate-50/80 border-slate-300 hover:border-slate-400 active:scale-[0.99] transition-all rounded-md shadow-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500",
+                                            !categoryId && "text-slate-400"
+                                        )}
+                                    >
+                                        <span className="truncate">
+                                            {categoryId
+                                                ? categories.find((cat) => cat.id.toString() === categoryId)?.name ?? "Select Category"
+                                                : "Select Category"}
+                                        </span>
+                                        <ChevronsUpDown className={cn("ml-2 h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400", categoryOpen && "text-indigo-500")} />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border border-slate-200 bg-white overflow-hidden" align="start">
+                                    <Command className="bg-white">
+                                        <div className="p-2 bg-slate-50/50 border-b border-slate-100">
+                                            <div className="relative rounded-md border border-slate-200 bg-white shadow-sm focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                                                <CommandInput
+                                                    placeholder="Search category..."
+                                                    className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <CommandList className="max-h-60 overflow-y-auto p-1">
+                                            <CommandEmpty className="py-6 text-center text-sm text-slate-500">
+                                                No category found.
+                                            </CommandEmpty>
+                                            <CommandGroup>
+                                                {categories.map((cat) => (
+                                                    <CommandItem
+                                                        key={cat.id}
+                                                        value={cat.name}
+                                                        onSelect={() => {
+                                                            setCategoryId(cat.id.toString());
+                                                            setCategoryOpen(false);
+                                                        }}
+                                                        className={cn(
+                                                            "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-indigo-50 data-[selected=true]:text-indigo-700 text-slate-700 hover:bg-slate-50",
+                                                            categoryId === cat.id.toString() && "bg-indigo-50/60 font-medium text-indigo-700"
+                                                        )}
+                                                    >
+                                                        <span className="truncate flex-1">{cat.name}</span>
+                                                        <Check
+                                                            className={cn(
+                                                                "ml-2 h-4 w-4 shrink-0 transition-all duration-200",
+                                                                categoryId === cat.id.toString() ? "opacity-100 scale-100 text-indigo-600" : "opacity-0 scale-75"
+                                                            )}
+                                                        />
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
                         </div>
 
                         <div className="space-y-1.5">

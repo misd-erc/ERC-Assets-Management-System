@@ -14,13 +14,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -424,6 +417,9 @@ export function RLSDDPModal({ isOpen, onClose }: RLSDDPModalProps) {
     const [offices, setOffices] = useState<VwOffice[]>([]);
     const [conditions, setConditions] = useState<string[]>([]);
     const [employees, setEmployees] = useState<EmployeeDetail[]>([]);
+    const [officeOpen, setOfficeOpen] = useState(false);
+    const [conditionOpen, setConditionOpen] = useState(false);
+    const [departmentOpen, setDepartmentOpen] = useState(false);
     const [employeeOpen, setEmployeeOpen] = useState(false);
 
     // Filter fields
@@ -656,32 +652,134 @@ export function RLSDDPModal({ isOpen, onClose }: RLSDDPModalProps) {
                             <div className="flex flex-wrap items-end gap-3">
                                 <div className="flex flex-col gap-1 min-w-[180px] flex-1">
                                     <Label className="text-xs text-slate-500 font-medium">Office</Label>
-                                    <Select value={officeId} onValueChange={setOfficeId}>
-                                        <SelectTrigger className="bg-white border-slate-300 shadow-sm">
-                                            <SelectValue placeholder="All Offices" />
-                                        </SelectTrigger>
-                                        <SelectContent className="max-h-60 overflow-y-auto">
-                                            <SelectItem value="all">All Offices</SelectItem>
-                                            {offices.map((o) => (
-                                                <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover open={officeOpen} onOpenChange={setOfficeOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                aria-expanded={officeOpen}
+                                                className={cn(
+                                                    "w-full justify-between font-normal h-10 px-3 bg-white hover:bg-slate-50/80 border-slate-300 hover:border-slate-400 active:scale-[0.99] transition-all rounded-md shadow-sm focus:ring-2 focus:ring-rose-100 focus:border-rose-500",
+                                                    !officeId && "text-slate-400"
+                                                )}
+                                            >
+                                                <span className="truncate">
+                                                    {officeId === 'all'
+                                                        ? 'All Offices'
+                                                        : offices.find((o) => String(o.id) === officeId)?.name ?? 'All Offices'}
+                                                </span>
+                                                <ChevronsUpDown className={cn("ml-2 h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400", officeOpen && "text-rose-500")} />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border border-slate-200 bg-white overflow-hidden" align="start">
+                                            <Command className="bg-white">
+                                                <div className="p-2 bg-slate-50/50 border-b border-slate-100">
+                                                    <div className="relative rounded-md border border-slate-200 bg-white shadow-sm focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                                                        <CommandInput
+                                                            placeholder="Search office..."
+                                                            className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <CommandList className="max-h-60 overflow-y-auto p-1">
+                                                    <CommandEmpty className="py-6 text-center text-sm text-slate-500">No office found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        <CommandItem
+                                                            value="all"
+                                                            onSelect={() => { setOfficeId('all'); setOfficeOpen(false); }}
+                                                            className={cn(
+                                                                "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-rose-50 data-[selected=true]:text-rose-700 text-slate-700 hover:bg-slate-50",
+                                                                officeId === 'all' && "bg-rose-50/60 font-medium text-rose-700"
+                                                            )}
+                                                        >
+                                                            <span className="truncate flex-1">All Offices</span>
+                                                            <Check className={cn("ml-2 h-4 w-4 shrink-0 transition-all duration-200", officeId === 'all' ? "opacity-100 scale-100 text-rose-600" : "opacity-0 scale-75")} />
+                                                        </CommandItem>
+                                                        {offices.map((o) => (
+                                                            <CommandItem
+                                                                key={o.id}
+                                                                value={o.name}
+                                                                onSelect={() => { setOfficeId(String(o.id)); setOfficeOpen(false); }}
+                                                                className={cn(
+                                                                    "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-rose-50 data-[selected=true]:text-rose-700 text-slate-700 hover:bg-slate-50",
+                                                                    officeId === String(o.id) && "bg-rose-50/60 font-medium text-rose-700"
+                                                                )}
+                                                            >
+                                                                <span className="truncate flex-1">{o.name}</span>
+                                                                <Check className={cn("ml-2 h-4 w-4 shrink-0 transition-all duration-200", officeId === String(o.id) ? "opacity-100 scale-100 text-rose-600" : "opacity-0 scale-75")} />
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
 
                                 <div className="flex flex-col gap-1 min-w-[180px] flex-1">
                                     <Label className="text-xs text-slate-500 font-medium">Condition</Label>
-                                    <Select value={condition} onValueChange={setCondition}>
-                                        <SelectTrigger className="bg-white border-slate-300 shadow-sm">
-                                            <SelectValue placeholder="All Conditions" />
-                                        </SelectTrigger>
-                                        <SelectContent className="max-h-60 overflow-y-auto">
-                                            <SelectItem value="all">All Conditions</SelectItem>
-                                            {conditions.map((c) => (
-                                                <SelectItem key={c} value={c}>{c}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover open={conditionOpen} onOpenChange={setConditionOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                aria-expanded={conditionOpen}
+                                                className={cn(
+                                                    "w-full justify-between font-normal h-10 px-3 bg-white hover:bg-slate-50/80 border-slate-300 hover:border-slate-400 active:scale-[0.99] transition-all rounded-md shadow-sm focus:ring-2 focus:ring-rose-100 focus:border-rose-500",
+                                                    !condition && "text-slate-400"
+                                                )}
+                                            >
+                                                <span className="truncate">
+                                                    {condition === 'all'
+                                                        ? 'All Conditions'
+                                                        : condition}
+                                                </span>
+                                                <ChevronsUpDown className={cn("ml-2 h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400", conditionOpen && "text-rose-500")} />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border border-slate-200 bg-white overflow-hidden" align="start">
+                                            <Command className="bg-white">
+                                                <div className="p-2 bg-slate-50/50 border-b border-slate-100">
+                                                    <div className="relative rounded-md border border-slate-200 bg-white shadow-sm focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                                                        <CommandInput
+                                                            placeholder="Search condition..."
+                                                            className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <CommandList className="max-h-60 overflow-y-auto p-1">
+                                                    <CommandEmpty className="py-6 text-center text-sm text-slate-500">No condition found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        <CommandItem
+                                                            value="all"
+                                                            onSelect={() => { setCondition('all'); setConditionOpen(false); }}
+                                                            className={cn(
+                                                                "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-rose-50 data-[selected=true]:text-rose-700 text-slate-700 hover:bg-slate-50",
+                                                                condition === 'all' && "bg-rose-50/60 font-medium text-rose-700"
+                                                            )}
+                                                        >
+                                                            <span className="truncate flex-1">All Conditions</span>
+                                                            <Check className={cn("ml-2 h-4 w-4 shrink-0 transition-all duration-200", condition === 'all' ? "opacity-100 scale-100 text-rose-600" : "opacity-0 scale-75")} />
+                                                        </CommandItem>
+                                                        {conditions.map((c) => (
+                                                            <CommandItem
+                                                                key={c}
+                                                                value={c}
+                                                                onSelect={() => { setCondition(c); setConditionOpen(false); }}
+                                                                className={cn(
+                                                                    "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-rose-50 data-[selected=true]:text-rose-700 text-slate-700 hover:bg-slate-50",
+                                                                    condition === c && "bg-rose-50/60 font-medium text-rose-700"
+                                                                )}
+                                                            >
+                                                                <span className="truncate flex-1">{c}</span>
+                                                                <Check className={cn("ml-2 h-4 w-4 shrink-0 transition-all duration-200", condition === c ? "opacity-100 scale-100 text-rose-600" : "opacity-0 scale-75")} />
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
 
                                 <div className="flex flex-col gap-1 min-w-[140px]">
@@ -735,16 +833,55 @@ export function RLSDDPModal({ isOpen, onClose }: RLSDDPModalProps) {
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <Label className="text-xs text-slate-500 font-medium">Department / Office</Label>
-                                    <Select value={department} onValueChange={setDepartment}>
-                                        <SelectTrigger className="border-slate-300">
-                                            <SelectValue placeholder="Select office..." />
-                                        </SelectTrigger>
-                                        <SelectContent className="max-h-60 overflow-y-auto">
-                                            {offices.map((o) => (
-                                                <SelectItem key={o.id} value={o.name}>{o.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Popover open={departmentOpen} onOpenChange={setDepartmentOpen}>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                                variant="outline"
+                                                role="combobox"
+                                                aria-expanded={departmentOpen}
+                                                className={cn(
+                                                    "w-full justify-between font-normal h-10 px-3 bg-white hover:bg-slate-50/80 border-slate-300 hover:border-slate-400 active:scale-[0.99] transition-all rounded-md shadow-sm focus:ring-2 focus:ring-rose-100 focus:border-rose-500",
+                                                    !department && "text-slate-400"
+                                                )}
+                                            >
+                                                <span className="truncate">
+                                                    {department || 'Select office...'}
+                                                </span>
+                                                <ChevronsUpDown className={cn("ml-2 h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400", departmentOpen && "text-rose-500")} />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border border-slate-200 bg-white overflow-hidden" align="start">
+                                            <Command className="bg-white">
+                                                <div className="p-2 bg-slate-50/50 border-b border-slate-100">
+                                                    <div className="relative rounded-md border border-slate-200 bg-white shadow-sm focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
+                                                        <CommandInput
+                                                            placeholder="Search office..."
+                                                            className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <CommandList className="max-h-60 overflow-y-auto p-1">
+                                                    <CommandEmpty className="py-6 text-center text-sm text-slate-500">No office found.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {offices.map((o) => (
+                                                            <CommandItem
+                                                                key={o.id}
+                                                                value={o.name}
+                                                                onSelect={() => { setDepartment(o.name); setDepartmentOpen(false); }}
+                                                                className={cn(
+                                                                    "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-rose-50 data-[selected=true]:text-rose-700 text-slate-700 hover:bg-slate-50",
+                                                                    department === o.name && "bg-rose-50/60 font-medium text-rose-700"
+                                                                )}
+                                                            >
+                                                                <span className="truncate flex-1">{o.name}</span>
+                                                                <Check className={cn("ml-2 h-4 w-4 shrink-0 transition-all duration-200", department === o.name ? "opacity-100 scale-100 text-rose-600" : "opacity-0 scale-75")} />
+                                                            </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                </CommandList>
+                                            </Command>
+                                        </PopoverContent>
+                                    </Popover>
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <Label className="text-xs text-slate-500 font-medium">RLSDDP No.</Label>
