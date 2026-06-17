@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Loader2, Search, Download, Printer, FileText, ClipboardCheck, ChevronRight, ChevronDown, Package, Plus, Trash2, Users, UserCheck, BookmarkPlus, BookOpen, X } from 'lucide-react';
+import { Loader2, Search, Download, Printer, FileText, ClipboardCheck, ChevronRight, ChevronDown, Package, Plus, Trash2, Users, UserCheck, BookmarkPlus, BookOpen, X, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { getSupplyIARs } from '@/api/supply-management/iarApi';
@@ -421,6 +421,7 @@ const IARSignatoryModal: React.FC<IARSignatoryModalProps> = ({ isOpen, onClose, 
     const [templateName, setTemplateName] = useState('');
     const [savingTemplate, setSavingTemplate] = useState(false);
     const [templateLoading, setTemplateLoading] = useState(false);
+    const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
     const [employees, setEmployees] = useState<ApiEmployee[]>([]);
     const [memberEmployeeIds, setMemberEmployeeIds] = useState<Record<string, number | null>>({});
     const [conformeEmployeeId, setConformeEmployeeId] = useState<number | null>(null);
@@ -432,6 +433,7 @@ const IARSignatoryModal: React.FC<IARSignatoryModalProps> = ({ isOpen, onClose, 
             setTemplateName('');
             setSavingTemplate(false);
             setTemplateLoading(true);
+            setEditingTemplateId(null);
             setMemberEmployeeIds({});
             setConformeEmployeeId(null);
             setAcceptanceEmployeeId(null);
@@ -448,12 +450,18 @@ const IARSignatoryModal: React.FC<IARSignatoryModalProps> = ({ isOpen, onClose, 
 
     const handleSaveTemplate = async () => {
         if (!templateName.trim()) return;
-        const saved = await saveIARSignatoryTemplate(templateName.trim(), signatories);
+        const saved = await saveIARSignatoryTemplate(templateName.trim(), signatories, editingTemplateId ?? 0);
         if (saved) {
-            setTemplates(prev => [saved, ...prev]);
+            if (editingTemplateId) {
+                setTemplates(prev => prev.map(t => t.id === editingTemplateId ? saved : t));
+                setEditingTemplateId(null);
+                toast.success('Template updated');
+            } else {
+                setTemplates(prev => [saved, ...prev]);
+                toast.success('Template saved');
+            }
             setTemplateName('');
             setSavingTemplate(false);
-            toast.success('Template saved');
         } else {
             toast.error('Failed to save template');
         }
@@ -465,7 +473,22 @@ const IARSignatoryModal: React.FC<IARSignatoryModalProps> = ({ isOpen, onClose, 
             setMemberEmployeeIds({});
             setConformeEmployeeId(null);
             setAcceptanceEmployeeId(null);
+            setEditingTemplateId(null);
+            setTemplateName('');
+            setSavingTemplate(false);
         }
+    };
+
+    const handleEditTemplate = (tpl: IARSignatoryTemplateDto) => {
+        if (tpl.signatories) {
+            setSignatories(JSON.parse(JSON.stringify(tpl.signatories)));
+            setMemberEmployeeIds({});
+            setConformeEmployeeId(null);
+            setAcceptanceEmployeeId(null);
+        }
+        setEditingTemplateId(tpl.id);
+        setTemplateName(tpl.name);
+        setSavingTemplate(true);
     };
 
     const handleDeleteTemplate = async (id: number) => {
@@ -610,9 +633,9 @@ const IARSignatoryModal: React.FC<IARSignatoryModalProps> = ({ isOpen, onClose, 
                                     autoFocus
                                 />
                                 <Button size="sm" className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleSaveTemplate} disabled={!templateName.trim()}>
-                                    Save
+                                    {editingTemplateId ? 'Update' : 'Save'}
                                 </Button>
-                                <Button size="sm" variant="ghost" className="h-8" onClick={() => { setSavingTemplate(false); setTemplateName(''); }}>
+                                <Button size="sm" variant="ghost" className="h-8" onClick={() => { setSavingTemplate(false); setTemplateName(''); setEditingTemplateId(null); }}>
                                     <X className="w-3 h-3" />
                                 </Button>
                             </div>
@@ -631,6 +654,13 @@ const IARSignatoryModal: React.FC<IARSignatoryModalProps> = ({ isOpen, onClose, 
                                             onClick={() => handleLoadTemplate(tpl)}
                                         >
                                             {tpl.name}
+                                        </button>
+                                        <button
+                                            className="text-slate-400 hover:text-indigo-600 ml-1 transition-colors"
+                                            onClick={() => handleEditTemplate(tpl)}
+                                            title="Edit template"
+                                        >
+                                            <Pencil className="w-3 h-3" />
                                         </button>
                                         <button
                                             className="text-red-400 hover:text-red-600 ml-1 transition-colors"

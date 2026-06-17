@@ -2520,5 +2520,106 @@ namespace API.Controllers
             }
         }
         #endregion
+
+        #region RIS Signatory Templates
+        [HttpGet("ris/signatory-templates")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetRISSignatoryTemplates([FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var templates = await context.TblRISSignatoryTemplates
+                    .Where(t => t.IsActive)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .Select(t => new { t.Id, t.Name, t.SignatoryDataJson, t.CreatedAt })
+                    .ToListAsync();
+
+                return Ok(ApiResponse<object>.Ok(templates, "RIS signatory templates retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("ris/signatory-templates/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditRISSignatoryTemplate([FromBody] EditRISSignatoryTemplateQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                if (model.Id == 0)
+                {
+                    var newTemplate = new TblRISSignatoryTemplate
+                    {
+                        Name = model.Name.Trim(),
+                        SignatoryDataJson = model.SignatoryDataJson,
+                        CreatedBy = model.ActionBySystemUserId,
+                        CreatedAt = DateTime.UtcNow,
+                        IsActive = true
+                    };
+                    await context.TblRISSignatoryTemplates.AddAsync(newTemplate);
+                    await context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    await AuditTrailTool.LogActivityAsync(_options, "Created RIS Signatory Template", actionBy: model.ActionBySystemUserId);
+                    return Ok(ApiResponse<object>.Ok(new { newTemplate.Id, newTemplate.Name, newTemplate.SignatoryDataJson, newTemplate.CreatedAt }, "Template saved"));
+                }
+                else
+                {
+                    var existing = await context.TblRISSignatoryTemplates.FirstOrDefaultAsync(t => t.Id == model.Id && t.IsActive);
+                    if (existing == null)
+                        return BadRequest(ApiResponse<object>.Fail("NOT_FOUND", "Template not found."));
+
+                    existing.Name = model.Name.Trim();
+                    existing.SignatoryDataJson = model.SignatoryDataJson;
+                    context.TblRISSignatoryTemplates.Update(existing);
+                    await context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    await AuditTrailTool.LogActivityAsync(_options, "Updated RIS Signatory Template", actionBy: model.ActionBySystemUserId);
+                    return Ok(ApiResponse<object>.Ok(new { existing.Id, existing.Name, existing.SignatoryDataJson, existing.CreatedAt }, "Template updated"));
+                }
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpDelete("ris/signatory-templates/delete/{templateId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteRISSignatoryTemplate([FromQuery] SoloQueryParams model, [FromRoute] long templateId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                var template = await context.TblRISSignatoryTemplates.FirstOrDefaultAsync(t => t.Id == templateId && t.IsActive);
+                if (template == null)
+                    return BadRequest(ApiResponse<object>.Fail("NOT_FOUND", "Template not found."));
+
+                template.IsActive = false;
+                context.TblRISSignatoryTemplates.Update(template);
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Deleted RIS Signatory Template", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<object>.Ok((object?)null, "Template deleted"));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+        #endregion
     }
 }
