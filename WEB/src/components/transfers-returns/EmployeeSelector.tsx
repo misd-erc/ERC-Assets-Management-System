@@ -33,6 +33,7 @@ interface EmployeeSelectorProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  displayValue?: string;
 }
 
 export function EmployeeSelector({
@@ -42,9 +43,10 @@ export function EmployeeSelector({
   placeholder = "Search for employee...",
   className,
   disabled = false,
+  displayValue,
 }: EmployeeSelectorProps) {
   const [open, setOpen] = React.useState(false);
-  const [search, setSearch] = React.useState("");
+  const [search, setSearch] = React.useState(displayValue || "");
 
   const toSearchable = React.useCallback((value: unknown) => {
     if (value === null || value === undefined) return "";
@@ -52,6 +54,12 @@ export function EmployeeSelector({
   }, []);
 
   const selected = employees.find(emp => emp.id === value);
+
+  React.useEffect(() => {
+    if (value === null && displayValue !== undefined) {
+      setSearch(displayValue);
+    }
+  }, [displayValue, value]);
 
   const filteredEmployees = React.useMemo(() => {
     if (!search) return employees;

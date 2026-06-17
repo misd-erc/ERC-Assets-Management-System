@@ -6,7 +6,8 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogDescription
+    DialogDescription,
+    DialogFooter
 } from '@/components/ui/dialog';
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow
@@ -14,11 +15,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, Search, Download, Printer, FileText, ClipboardCheck, ChevronRight, ChevronDown, Package } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Loader2, Search, Download, Printer, FileText, ClipboardCheck, ChevronRight, ChevronDown, Package, Plus, Trash2, Users, UserCheck, BookmarkPlus, BookOpen, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { getSupplyIARs } from '@/api/supply-management/iarApi';
 import { getDeliveryRecordById, getDeliveryRecords } from '@/api/delivery/deliveryApi';
+import { getIARSignatoryTemplates, saveIARSignatoryTemplate, deleteIARSignatoryTemplate, IARSignatoryTemplateDto } from '@/api/supply-management/signatoryTemplateApi';
+import { getEmployees } from '@/api/user-management/userApi';
+import { EmployeeSelector } from '@/components/transfers-returns/EmployeeSelector';
+import { ApiEmployee } from '@/types/transfer';
 import { formatDate } from '@/utils/dateUtils';
 import { formatCurrency } from '@/utils/formatters';
 import { VwSupplyIAR } from '@/types';
@@ -135,9 +141,9 @@ const pdfStyles = StyleSheet.create({
     textSignName: { fontSize: 8.5, fontFamily: 'Times-Bold', textAlign: 'center' },
     textSignTitle: { fontSize: 8, textAlign: 'center', lineHeight: 1.2 },
 
-    conformeWrapper: { flexDirection: 'row', marginTop: 25, paddingHorizontal: 6, alignItems: 'flex-end' },
-    conformeInlineLabel: { fontSize: 8.5, width: 50, marginBottom: 2 },
-    conformeLineBlock: { flex: 1, alignItems: 'center' },
+    conformeWrapper: { flexDirection: 'column', marginTop: 25, paddingHorizontal: 6 },
+    conformeInlineLabel: { fontSize: 8.5, marginBottom: 6 },
+    conformeLineBlock: { alignItems: 'center' },
 
     // Footer Block Architecture
     footerRemarksPane: { padding: 4, minHeight: 45, borderTopWidth: 1, borderTopColor: '#000' },
@@ -148,13 +154,37 @@ const pdfStyles = StyleSheet.create({
 const formatPDFNumber = (n = 0) =>
     n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+// --- SIGNATORY TYPES ---
+export interface IARInspectionSignatory {
+    id: string;
+    name: string;
+    role: string;
+    committee: string;
+}
+
+export interface IARSignatories {
+    inspectionMembers: IARInspectionSignatory[];
+    conformeEndUser: { name: string; title: string };
+    acceptanceOfficer: { name: string; title: string };
+}
+
+const DEFAULT_SIGNATORIES: IARSignatories = {
+    inspectionMembers: [
+        { id: '1', name: '', role: '', committee: '' },
+    ],
+    conformeEndUser: { name: '', title: '' },
+    acceptanceOfficer: { name: '', title: '' },
+};
+
+
 // --- PDF DOCUMENT COMPONENT ---
 interface IARPDFProps {
     iar: VwSupplyIAR;
     items: any[];
+    signatories: IARSignatories;
 }
 
-const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items }) => {
+const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items, signatories }) => {
     const totalAmount = items.reduce((sum, item) => sum + ((item.itemQuantity || 0) * (item.unitCost || 0)), 0);
 
     return (
@@ -312,19 +342,21 @@ const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items }) => {
 
                             <Text style={pdfStyles.signSectionLabel}>Inspected by:</Text>
 
-                            <View style={pdfStyles.centerSignBlock}>
-                                <View style={pdfStyles.horizontalLine}></View>
-                                <Text style={pdfStyles.textSignName}>ARTURO D. PELARAZA</Text>
-                                <Text style={pdfStyles.textSignTitle}>Chairperson</Text>
-                                <Text style={pdfStyles.textSignTitle}>Technical Property Inspection Committee</Text>
-                            </View>
+                            {signatories.inspectionMembers.map((member) => (
+                                <View key={member.id} style={pdfStyles.centerSignBlock}>
+                                    <View style={pdfStyles.horizontalLine}></View>
+                                    <Text style={pdfStyles.textSignName}>{member.name}</Text>
+                                    <Text style={pdfStyles.textSignTitle}>{member.role}</Text>
+                                    <Text style={pdfStyles.textSignTitle}>{member.committee}</Text>
+                                </View>
+                            ))}
 
                             <View style={pdfStyles.conformeWrapper}>
                                 <Text style={pdfStyles.conformeInlineLabel}>Conforme:</Text>
                                 <View style={pdfStyles.conformeLineBlock}>
                                     <View style={pdfStyles.horizontalLine}></View>
-                                    <Text style={pdfStyles.textSignName}>CHERRY LYNN S. GONZALES</Text>
-                                    <Text style={pdfStyles.textSignTitle}>End-user</Text>
+                                    <Text style={pdfStyles.textSignName}>{signatories.conformeEndUser.name}</Text>
+                                    <Text style={pdfStyles.textSignTitle}>{signatories.conformeEndUser.title}</Text>
                                 </View>
                             </View>
                         </View>
@@ -356,8 +388,8 @@ const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items }) => {
 
                             <View style={pdfStyles.bottomSignBlock}>
                                 <View style={pdfStyles.horizontalLine}></View>
-                                <Text style={pdfStyles.textSignName}>ROSELLE M. GUINTU</Text>
-                                <Text style={pdfStyles.textSignTitle}>Administrative Officer IV</Text>
+                                <Text style={pdfStyles.textSignName}>{signatories.acceptanceOfficer.name}</Text>
+                                <Text style={pdfStyles.textSignTitle}>{signatories.acceptanceOfficer.title}</Text>
                             </View>
                         </View>
                     </View>
@@ -373,7 +405,389 @@ const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items }) => {
     );
 };
 
-// --- MODAL COMPONENT ---
+// --- SIGNATORY MODAL COMPONENT ---
+interface IARSignatoryModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: (signatories: IARSignatories) => void;
+    actionLabel: string;
+}
+
+const IARSignatoryModal: React.FC<IARSignatoryModalProps> = ({ isOpen, onClose, onConfirm, actionLabel }) => {
+    const [signatories, setSignatories] = useState<IARSignatories>(() =>
+        JSON.parse(JSON.stringify(DEFAULT_SIGNATORIES))
+    );
+    const [templates, setTemplates] = useState<IARSignatoryTemplateDto[]>([]);
+    const [templateName, setTemplateName] = useState('');
+    const [savingTemplate, setSavingTemplate] = useState(false);
+    const [templateLoading, setTemplateLoading] = useState(false);
+    const [employees, setEmployees] = useState<ApiEmployee[]>([]);
+    const [memberEmployeeIds, setMemberEmployeeIds] = useState<Record<string, number | null>>({});
+    const [conformeEmployeeId, setConformeEmployeeId] = useState<number | null>(null);
+    const [acceptanceEmployeeId, setAcceptanceEmployeeId] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setSignatories(JSON.parse(JSON.stringify(DEFAULT_SIGNATORIES)));
+            setTemplateName('');
+            setSavingTemplate(false);
+            setTemplateLoading(true);
+            setMemberEmployeeIds({});
+            setConformeEmployeeId(null);
+            setAcceptanceEmployeeId(null);
+            getIARSignatoryTemplates()
+                .then(setTemplates)
+                .finally(() => setTemplateLoading(false));
+            getEmployees(1, 10000).then((response) => {
+                if (response.success && response.data?.items) {
+                    setEmployees(response.data.items);
+                }
+            });
+        }
+    }, [isOpen]);
+
+    const handleSaveTemplate = async () => {
+        if (!templateName.trim()) return;
+        const saved = await saveIARSignatoryTemplate(templateName.trim(), signatories);
+        if (saved) {
+            setTemplates(prev => [saved, ...prev]);
+            setTemplateName('');
+            setSavingTemplate(false);
+            toast.success('Template saved');
+        } else {
+            toast.error('Failed to save template');
+        }
+    };
+
+    const handleLoadTemplate = (tpl: IARSignatoryTemplateDto) => {
+        if (tpl.signatories) {
+            setSignatories(JSON.parse(JSON.stringify(tpl.signatories)));
+            setMemberEmployeeIds({});
+            setConformeEmployeeId(null);
+            setAcceptanceEmployeeId(null);
+        }
+    };
+
+    const handleDeleteTemplate = async (id: number) => {
+        const ok = await deleteIARSignatoryTemplate(id);
+        if (ok) {
+            setTemplates(prev => prev.filter(t => t.id !== id));
+            toast.success('Template deleted');
+        } else {
+            toast.error('Failed to delete template');
+        }
+    };
+
+    const updateMember = (id: string, field: keyof IARInspectionSignatory, value: string) => {
+        setSignatories(prev => ({
+            ...prev,
+            inspectionMembers: prev.inspectionMembers.map(m =>
+                m.id === id ? { ...m, [field]: value } : m
+            )
+        }));
+    };
+
+    const addMember = () => {
+        const newId = Date.now().toString();
+        setSignatories(prev => ({
+            ...prev,
+            inspectionMembers: [
+                ...prev.inspectionMembers,
+                { id: newId, name: '', role: '', committee: '' }
+            ]
+        }));
+    };
+
+    const removeMember = (id: string) => {
+        setSignatories(prev => ({
+            ...prev,
+            inspectionMembers: prev.inspectionMembers.filter(m => m.id !== id)
+        }));
+        setMemberEmployeeIds(prev => {
+            const next = { ...prev };
+            delete next[id];
+            return next;
+        });
+    };
+
+    const handleSelectMemberEmployee = (memberId: string, employeeId: number | null) => {
+        if (employeeId === null) {
+            setMemberEmployeeIds(prev => ({ ...prev, [memberId]: null }));
+            updateMember(memberId, 'name', '');
+            return;
+        }
+        const emp = employees.find(e => e.id === employeeId);
+        if (emp) {
+            updateMember(memberId, 'name', `${emp.firstName} ${emp.lastName}`.toUpperCase());
+            if (emp.positionName) {
+                updateMember(memberId, 'role', emp.positionName);
+            }
+        }
+        setMemberEmployeeIds(prev => ({ ...prev, [memberId]: employeeId }));
+    };
+
+    const handleSelectConformeEmployee = (employeeId: number | null) => {
+        if (employeeId === null) {
+            setConformeEmployeeId(null);
+            setSignatories(prev => ({ ...prev, conformeEndUser: { ...prev.conformeEndUser, name: '' } }));
+            return;
+        }
+        const emp = employees.find(e => e.id === employeeId);
+        if (emp) {
+            setSignatories(prev => ({
+                ...prev,
+                conformeEndUser: {
+                    ...prev.conformeEndUser,
+                    name: `${emp.firstName} ${emp.lastName}`.toUpperCase(),
+                    title: emp.positionName || prev.conformeEndUser.title
+                }
+            }));
+        }
+        setConformeEmployeeId(employeeId);
+    };
+
+    const handleSelectAcceptanceEmployee = (employeeId: number | null) => {
+        if (employeeId === null) {
+            setAcceptanceEmployeeId(null);
+            setSignatories(prev => ({ ...prev, acceptanceOfficer: { ...prev.acceptanceOfficer, name: '' } }));
+            return;
+        }
+        const emp = employees.find(e => e.id === employeeId);
+        if (emp) {
+            setSignatories(prev => ({
+                ...prev,
+                acceptanceOfficer: {
+                    ...prev.acceptanceOfficer,
+                    name: `${emp.firstName} ${emp.lastName}`.toUpperCase(),
+                    title: emp.positionName || prev.acceptanceOfficer.title
+                }
+            }));
+        }
+        setAcceptanceEmployeeId(employeeId);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+            <DialogContent className="!max-w-2xl !w-[95vw] max-h-[90vh] flex flex-col p-0 gap-0 bg-white border-slate-200 shadow-2xl overflow-hidden">
+                <DialogHeader className="border-b border-slate-200 p-6 pb-5 bg-slate-50/50">
+                    <DialogTitle className="text-xl text-slate-900 flex items-center gap-2 font-bold tracking-tight">
+                        <Users className="w-5 h-5 text-indigo-600" />
+                        Configure Signatories
+                    </DialogTitle>
+                    <DialogDescription className="mt-1 text-slate-500">
+                        Set the names and roles that will appear on the printed IAR.
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div className="flex-1 min-h-0 overflow-y-auto p-6 space-y-6">
+
+                    {/* SAVED TEMPLATES */}
+                    <div>
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                                <BookOpen className="w-4 h-4 text-indigo-500" />
+                                Saved Templates
+                            </h3>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1"
+                                onClick={() => setSavingTemplate(v => !v)}
+                            >
+                                <BookmarkPlus className="w-3 h-3" />
+                                Save Current as Template
+                            </Button>
+                        </div>
+
+                        {savingTemplate && (
+                            <div className="flex gap-2 mb-2">
+                                <Input
+                                    className="h-8 text-sm flex-1"
+                                    placeholder="Template name (e.g. Standard Committee)"
+                                    value={templateName}
+                                    onChange={(e) => setTemplateName(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveTemplate(); }}
+                                    autoFocus
+                                />
+                                <Button size="sm" className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white" onClick={handleSaveTemplate} disabled={!templateName.trim()}>
+                                    Save
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-8" onClick={() => { setSavingTemplate(false); setTemplateName(''); }}>
+                                    <X className="w-3 h-3" />
+                                </Button>
+                            </div>
+                        )}
+
+                        {templateLoading ? (
+                            <p className="text-xs text-slate-400 italic flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Loading templates...</p>
+                        ) : templates.length === 0 ? (
+                            <p className="text-xs text-slate-400 italic">No templates saved yet. Fill in signatories below and save as a template.</p>
+                        ) : (
+                            <div className="flex flex-wrap gap-2">
+                                {templates.map(tpl => (
+                                    <div key={tpl.id} className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-md px-2 py-1">
+                                        <button
+                                            className="text-xs text-indigo-700 font-medium hover:text-indigo-900 transition-colors"
+                                            onClick={() => handleLoadTemplate(tpl)}
+                                        >
+                                            {tpl.name}
+                                        </button>
+                                        <button
+                                            className="text-red-400 hover:text-red-600 ml-1 transition-colors"
+                                            onClick={() => handleDeleteTemplate(tpl.id)}
+                                            title="Delete template"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="border-t border-slate-100" />
+
+                    {/* INSPECTION SECTION */}
+                    <div>
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                                <UserCheck className="w-4 h-4 text-indigo-500" />
+                                Inspection Signatories
+                            </h3>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs gap-1"
+                                onClick={addMember}
+                            >
+                                <Plus className="w-3 h-3" /> Add Member
+                            </Button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {signatories.inspectionMembers.map((member, idx) => (
+                                <div key={member.id} className="border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-medium text-slate-500">Signatory #{idx + 1}</span>
+                                        {signatories.inspectionMembers.length > 1 && (
+                                            <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-6 w-6 text-red-400 hover:text-red-600 hover:bg-red-50"
+                                                onClick={() => removeMember(member.id)}
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <div>
+                                            <Label className="text-xs text-slate-600 mb-1 block">Full Name</Label>
+                                            <EmployeeSelector
+                                                employees={employees}
+                                                value={memberEmployeeIds[member.id] || null}
+                                                onSelect={(employeeId) => handleSelectMemberEmployee(member.id, employeeId as number | null)}
+                                                displayValue={member.name}
+                                                placeholder="Search employee..."
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <Label className="text-xs text-slate-600 mb-1 block">Role/Position</Label>
+                                                <Input
+                                                    className="h-8 text-sm"
+                                                    value={member.role}
+                                                    onChange={(e) => updateMember(member.id, 'role', e.target.value)}
+                                                    placeholder="e.g. Chairperson"
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label className="text-xs text-slate-600 mb-1 block">Committee</Label>
+                                                <Input
+                                                    className="h-8 text-sm"
+                                                    value={member.committee}
+                                                    onChange={(e) => updateMember(member.id, 'committee', e.target.value)}
+                                                    placeholder="e.g. Technical Property..."
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* CONFORME / END-USER */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-slate-800 mb-3">Conforme (End-user)</h3>
+                        <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50 grid grid-cols-2 gap-2">
+                            <div>
+                                <Label className="text-xs text-slate-600 mb-1 block">Full Name</Label>
+                                <EmployeeSelector
+                                    employees={employees}
+                                    value={conformeEmployeeId}
+                                    onSelect={(employeeId) => handleSelectConformeEmployee(employeeId as number | null)}
+                                    displayValue={signatories.conformeEndUser.name}
+                                    placeholder="Search employee..."
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-xs text-slate-600 mb-1 block">Title</Label>
+                                <Input
+                                    className="h-8 text-sm"
+                                    value={signatories.conformeEndUser.title}
+                                    onChange={(e) => setSignatories(prev => ({ ...prev, conformeEndUser: { ...prev.conformeEndUser, title: e.target.value } }))}
+                                    placeholder="e.g. End-user"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ACCEPTANCE OFFICER */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-slate-800 mb-3">Acceptance Officer</h3>
+                        <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50 grid grid-cols-2 gap-2">
+                            <div>
+                                <Label className="text-xs text-slate-600 mb-1 block">Full Name</Label>
+                                <EmployeeSelector
+                                    employees={employees}
+                                    value={acceptanceEmployeeId}
+                                    onSelect={(employeeId) => handleSelectAcceptanceEmployee(employeeId as number | null)}
+                                    displayValue={signatories.acceptanceOfficer.name}
+                                    placeholder="Search employee..."
+                                />
+                            </div>
+                            <div>
+                                <Label className="text-xs text-slate-600 mb-1 block">Title/Position</Label>
+                                <Input
+                                    className="h-8 text-sm"
+                                    value={signatories.acceptanceOfficer.title}
+                                    onChange={(e) => setSignatories(prev => ({ ...prev, acceptanceOfficer: { ...prev.acceptanceOfficer, title: e.target.value } }))}
+                                    placeholder="e.g. AO III"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <DialogFooter className="border-t border-slate-200 p-4 bg-slate-50/50">
+                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                        onClick={() => onConfirm(signatories)}
+                        disabled={signatories.inspectionMembers.some(m => !m.name.trim()) || !signatories.conformeEndUser.name.trim() || !signatories.acceptanceOfficer.name.trim()}
+                    >
+                        {actionLabel === 'print' ? <Printer className="w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
+                        {actionLabel === 'print' ? 'Print Document' : 'Save as PDF'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+// --- MAIN MODAL COMPONENT ---
 interface IARReportModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -393,6 +807,9 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
     const [loading, setLoading] = useState(false);
     const [isPreviewLoading, setIsPreviewLoading] = useState(false);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+    const [signatoryModalOpen, setSignatoryModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState<'print' | 'download' | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -476,52 +893,58 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
         }
     };
 
-    const handleExportPDF = async () => {
+    const handleExportPDF = () => {
         if (!selectedIar || isPreviewLoading || !selectedDelivery) return;
+        setPendingAction('download');
+        setSignatoryModalOpen(true);
+    };
+
+    const handlePrintPDF = () => {
+        if (!selectedIar || isPreviewLoading || !selectedDelivery) return;
+        setPendingAction('print');
+        setSignatoryModalOpen(true);
+    };
+
+    const handleSignatoryConfirm = async (signatories: IARSignatories) => {
+        setSignatoryModalOpen(false);
+        if (!selectedIar || !selectedDelivery) return;
         setIsGeneratingPDF(true);
 
         try {
             const blob = await pdf(
-                <IARPDFDocument iar={selectedIar} items={selectedDelivery.items || []} />
+                <IARPDFDocument iar={selectedIar} items={selectedDelivery.items || []} signatories={signatories} />
             ).toBlob();
 
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `IAR_${selectedIar.iarNumber}.pdf`;
-            a.click();
 
-            setTimeout(() => URL.revokeObjectURL(url), 5000);
+            if (pendingAction === 'download') {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `IAR_${selectedIar.iarNumber}.pdf`;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+            } else {
+                const w = window.open(url);
+                if (w) { w.addEventListener('load', () => w.print()); }
+                setTimeout(() => URL.revokeObjectURL(url), 60000);
+            }
         } catch (err) {
             console.error("Failed to generate PDF", err);
             toast.error("Failed to generate PDF");
         } finally {
             setIsGeneratingPDF(false);
-        }
-    };
-
-    const handlePrintPDF = async () => {
-        if (!selectedIar || isPreviewLoading || !selectedDelivery) return;
-        setIsGeneratingPDF(true);
-
-        try {
-            const blob = await pdf(
-                <IARPDFDocument iar={selectedIar} items={selectedDelivery.items || []} />
-            ).toBlob();
-
-            const url = URL.createObjectURL(blob);
-            const w = window.open(url);
-            if (w) { w.addEventListener('load', () => w.print()); }
-            setTimeout(() => URL.revokeObjectURL(url), 60000);
-        } catch (err) {
-            console.error("Failed to print PDF", err);
-            toast.error("Failed to print PDF");
-        } finally {
-            setIsGeneratingPDF(false);
+            setPendingAction(null);
         }
     };
 
     return (
+        <>
+        <IARSignatoryModal
+            isOpen={signatoryModalOpen}
+            onClose={() => { setSignatoryModalOpen(false); setPendingAction(null); }}
+            onConfirm={handleSignatoryConfirm}
+            actionLabel={pendingAction || 'print'}
+        />
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
             <DialogContent className="!max-w-6xl !w-[95vw] max-h-[90vh] flex flex-col p-0 bg-white border-slate-200 shadow-2xl overflow-hidden">
 
@@ -710,5 +1133,6 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
                 </div>
             </DialogContent>
         </Dialog>
+        </>
     );
 };
