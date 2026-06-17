@@ -772,7 +772,25 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     const toEmployeePositionOffice = [toEmpPosition, [toEmpOffice, toEmpDivision].filter(Boolean).join(', ')].filter(Boolean).join(' - ');
 
     const returnedByName = fullMovement.employee?.[0]?.fullName || fromEmp.label || 'Unknown';
-    const returnedByPosition = (fullMovement.employee?.[0] as any)?.position?.name || fullMovement.employee?.[0]?.employeeType || '';
+    let returnedByEmpPosition = (fullMovement.employee?.[0] as any)?.position?.name || '';
+    let returnedByEmpOffice = (fullMovement.employee?.[0] as any)?.office?.acronym || (fullMovement.employee?.[0] as any)?.office?.name || '';
+    let returnedByEmpDivision = (fullMovement.employee?.[0] as any)?.division?.acronym || (fullMovement.employee?.[0] as any)?.division?.name || '';
+
+    if (!returnedByEmpPosition && !returnedByEmpOffice && fromEmp.id) {
+      try {
+        const empRes = await getEmployees();
+        const empData = (empRes.data?.items || []).find((e: any) => e.id === fromEmp.id) as any;
+        if (empData) {
+          returnedByEmpPosition = empData.position?.name || empData.positionName || '';
+          returnedByEmpOffice = empData.office?.acronym || empData.office?.name || empData.officeName || '';
+          returnedByEmpDivision = empData.division?.acronym || empData.division?.name || empData.divisionName || '';
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    const returnedByPosition = [returnedByEmpPosition, [returnedByEmpOffice, returnedByEmpDivision].filter(Boolean).join(', ')].filter(Boolean).join(' - ');
 
     try {
       setGenerating(true);
