@@ -115,7 +115,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
               <TableHeader className="bg-slate-50 sticky top-0 z-10 shadow-sm border-b border-slate-200">
                 <TableRow>
                   <TableHead className="w-[120px]">Date</TableHead>
-                  <TableHead className="w-[140px]">RIS Number/No.</TableHead>
+                  <TableHead className="w-[140px]">Reference No.</TableHead>
                   <TableHead className="w-[100px]">Type</TableHead>
                   <TableHead className="text-right">Receipt QTY</TableHead>
                   <TableHead className="text-right">Issued QTY</TableHead>
@@ -147,7 +147,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
                           {formatDate(item.createdAt)}
                         </TableCell>
                         <TableCell className="font-medium text-slate-700">
-                          {item.risNumber || item.stockNumber}
+                          {item.addedStockQuantity > 0 ? item.iarNumber : item.risNumber}
                         </TableCell>
 
                         {/* ADDED: Missing Badge Render */}

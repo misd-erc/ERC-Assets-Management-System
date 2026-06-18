@@ -17,4 +17,5 @@ export interface SupplyStockCardItem {
   supplyRISId?: number;
   supplyRisId?: number;
   risNumber?: string;
+  iarNumber?: string;
 }

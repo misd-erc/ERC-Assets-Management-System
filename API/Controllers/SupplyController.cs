@@ -773,7 +773,8 @@ namespace API.Controllers
                         ItemRemarks = (string?)null,
                         UnitId = x.MeasurementUnitId,
                         Type = "Addition",
-                        SupplyRISId = (long?)null
+                        SupplyRISId = (long?)null,
+                        IARId = x.IARId
                     })
                     .ToList();
 
@@ -879,6 +880,12 @@ namespace API.Controllers
                         ? await _getTools.Supply.GetTblSupplyRISAsync(risId.Value, context)
                         : null;
 
+                    // --- Fetch Parent IAR for addition events ---
+                    long? iarId = evt.Type == "Addition" ? evt.IARId : null;
+                    var parentIAR = iarId.HasValue
+                        ? await _getTools.Supply.GetTblSupplyIARAsync(iarId.Value, context)
+                        : null;
+
                     responseItems.Add(new SupplyStockCardItemViewModel
                     {
                         Id = evt.Id,
@@ -894,6 +901,7 @@ namespace API.Controllers
                         CreatedAt = evt.CreatedAt,
                         SupplyRISId = risId,
                         RISNumber = parentRIS?.RISNumber,
+                        IARNumber = parentIAR?.IARNumber,
 
                         // --- ADDED: Map Office and Division safely ---
                         Office = parentRIS != null
