@@ -20,6 +20,10 @@ import { PendingApprovalsCard } from '@/components/dashboard/PendingApprovalsCar
 import { getDashboardSummary, DashboardSummary, getPTADashboard, PTADashboardData, getSupplyStats, DashboardSupplyStats } from '@/api/dashboard/dashboardApi';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { PPEDetailModal } from '@/components/dashboard/modals/PPEDetailModal';
+import { SEDetailModal } from '@/components/dashboard/modals/SEDetailModal';
+import { SupplyDetailModal } from '@/components/dashboard/modals/SupplyDetailModal';
+import { TotalAssetModal } from '@/components/dashboard/modals/TotalAssetModal';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface DashboardProps {
@@ -49,6 +53,7 @@ function Dashboard() {
   const [ptaData, setPtaData] = useState<PTADashboardData | null>(null);
   const [supplyStats, setSupplyStats] = useState<DashboardSupplyStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeModal, setActiveModal] = useState<'ppe' | 'se' | 'supply' | 'total' | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -108,6 +113,7 @@ function Dashboard() {
   // TOR-required dashboard metrics with dynamic values
   const kpiData = [
     {
+      id: 'ppe' as const,
       title: 'PPE Total',
       value: formatCurrency(ppeAmount),
       count: `${totalPPE.toLocaleString()} items`,
@@ -118,6 +124,7 @@ function Dashboard() {
       color: 'bg-blue-50 text-blue-600 border-blue-200'
     },
     {
+      id: 'se' as const,
       title: 'SE Total',
       value: formatCurrency(seAmount),
       count: `${totalSE.toLocaleString()} items`,
@@ -128,6 +135,7 @@ function Dashboard() {
       color: 'bg-green-50 text-green-600 border-green-200'
     },
     {
+      id: 'supply' as const,
       title: 'Supply Total',
       value: formatCurrency(supplyStats?.totalValue || 0),
       count: `${(supplyStats?.totalQuantity || 0).toLocaleString()} qty`,
@@ -138,6 +146,7 @@ function Dashboard() {
       color: 'bg-amber-50 text-amber-600 border-amber-200'
     },
     {
+      id: 'total' as const,
       title: 'Total Asset Value',
       value: formatCurrency(totalAmount),
       count: `${totalAssets.toLocaleString()} items`,
@@ -181,7 +190,14 @@ function Dashboard() {
       {/* KPI Cards - Enhanced Grid with Amounts in ₱ */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpiData.map((kpi) => (
-          <Card key={kpi.title} className={`hover:shadow-lg transition-all duration-200 border-2 ${kpi.color.includes('border') ? kpi.color.split(' ').pop() : 'border-slate-200'}`}>
+          <Card
+            key={kpi.title}
+            className={`hover:shadow-lg transition-all duration-200 border-2 cursor-pointer ${kpi.color.includes('border') ? kpi.color.split(' ').pop() : 'border-slate-200'}`}
+            onClick={() => setActiveModal(kpi.id)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveModal(kpi.id); } }}
+          >
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -326,6 +342,12 @@ function Dashboard() {
         <RecentActivitiesCard />
         <PendingApprovalsCard />
       </div>
+
+      {/* KPI Detail Modals */}
+      <PPEDetailModal open={activeModal === 'ppe'} onClose={() => setActiveModal(null)} ptaData={ptaData} formatCurrency={formatCurrency} />
+      <SEDetailModal open={activeModal === 'se'} onClose={() => setActiveModal(null)} ptaData={ptaData} formatCurrency={formatCurrency} />
+      <SupplyDetailModal open={activeModal === 'supply'} onClose={() => setActiveModal(null)} supplyStats={supplyStats} formatCurrency={formatCurrency} />
+      <TotalAssetModal open={activeModal === 'total'} onClose={() => setActiveModal(null)} ptaData={ptaData} supplyStats={supplyStats} formatCurrency={formatCurrency} />
     </div>
   );
 }
