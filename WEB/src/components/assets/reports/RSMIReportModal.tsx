@@ -28,6 +28,7 @@ import {
     CommandList,
 } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
+import { getAcronym } from '@/utils/formatters';
 import { Loader2, Filter, FileText, ChevronDown, ChevronRight, Download, AlertCircle, Printer, Check, ChevronsUpDown } from 'lucide-react';
 
 import { useRSMIReport } from '@/hooks/supply/useRSMIReport';
@@ -158,7 +159,7 @@ const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsm
                     <View style={pdfStyles.colStock}><Text style={pdfStyles.cellHeader}>Stock No</Text></View>
                     <View style={pdfStyles.colItem}><Text style={pdfStyles.cellHeader}>Item</Text></View>
                     <View style={pdfStyles.colRis}><Text style={pdfStyles.cellHeader}>RIS No</Text></View>
-                    <View style={pdfStyles.colRc}><Text style={pdfStyles.cellHeader}>RC Code</Text></View>
+                    <View style={pdfStyles.colRc}><Text style={pdfStyles.cellHeader}>Office</Text></View>
                     <View style={pdfStyles.colQty}><Text style={pdfStyles.cellHeader}>Qty. Issued</Text></View>
                 </View>
 
@@ -180,7 +181,7 @@ const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsm
                                         <Text style={pdfStyles.cellTextCenter}>{item.risNumber ?? ''}</Text>
                                     </View>
                                     <View style={pdfStyles.colRc}>
-                                        <Text style={pdfStyles.cellTextCenter}>{item.responsibilityCenterCode ?? ''}</Text>
+                                        <Text style={pdfStyles.cellTextCenter}>{item.officeName ? `${getAcronym(item.officeName)} ${getAcronym(item.divisionName)}` : ''}</Text>
                                     </View>
                                     <View style={pdfStyles.colQty}>
                                         <Text style={pdfStyles.cellTextRight}>{qty}</Text>
@@ -558,7 +559,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                                                         <TableHeader className="bg-slate-100/50">
                                                                             <TableRow className="hover:bg-transparent">
                                                                                 <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600">RIS Number</TableHead>
-                                                                                <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600">Responsibility Center</TableHead>
+                                                                                <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600">Office</TableHead>
                                                                                 <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600 text-right">Quantity Issued</TableHead>
                                                                             </TableRow>
                                                                         </TableHeader>
@@ -569,7 +570,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                                                                         {detail.risNumber || 'N/A'}
                                                                                     </TableCell>
                                                                                     <TableCell className="py-2.5 text-xs text-slate-600">
-                                                                                        {detail.responsibilityCenterCode || 'N/A'}
+                                                                                        {detail.officeName ? `${getAcronym(detail.officeName)} ${getAcronym(detail.divisionName)}` : 'N/A'}
                                                                                     </TableCell>
                                                                                     <TableCell className="py-2.5 text-xs text-right font-bold text-slate-900">
                                                                                         {detail.issueQuantity}

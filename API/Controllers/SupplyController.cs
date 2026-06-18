@@ -1718,7 +1718,7 @@ namespace API.Controllers
                 // 1. Get supply RIS within date range
                 var supplyRISs = await _getTools.Supply.GetTblSupplyRISs(context)
                     .Where(x => x.CreatedAt >= startDate && x.CreatedAt <= endDate)
-                    .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode })
+                    .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode, x.OfficeId, x.DivisionId })
                     .ToListAsync();
 
                 if (!supplyRISs.Any())
@@ -1788,7 +1788,19 @@ namespace API.Controllers
                 }
 
                 // Build a map of RIS details by RIS ID for quick lookup
-                var risDetails = supplyRISs.ToDictionary(r => r.Id, r => new { r.RISNumber, r.ResponsibilityCenterCode });
+                var risDetails = supplyRISs.ToDictionary(r => r.Id, r => new { r.RISNumber, r.ResponsibilityCenterCode, r.OfficeId, r.DivisionId });
+
+                // Fetch office and division names
+                var officeIds = supplyRISs.Where(r => r.OfficeId.HasValue).Select(r => r.OfficeId.Value).Distinct().ToList();
+                var divisionIds = supplyRISs.Where(r => r.DivisionId.HasValue).Select(r => r.DivisionId.Value).Distinct().ToList();
+
+                var offices = await _getTools.Office.GetTblOffices(context)
+                    .Where(o => officeIds.Contains(o.Id))
+                    .ToDictionaryAsync(o => o.Id, o => o.Name);
+
+                var divisions = await _getTools.Office.GetVwDivisions(context)
+                    .Where(d => divisionIds.Contains(d.Id.Value))
+                    .ToDictionaryAsync(d => d.Id.Value, d => d.Name);
 
                 // Group RIS items by (StockNumber, Description) and compute total and details
                 var decryptedRISItems = supplyRISItems
@@ -1810,11 +1822,20 @@ namespace API.Controllers
                         StockNumber = g.Key.StockNumber,
                         ItemDescription = g.Key.Description,
                         Total = g.Sum(x => x.IssueQuantity),
-                        Items = g.Select(x => new FilteredRMSIItemDetailResponseModel
+                        Items = g.Select(x =>
                         {
-                            RISNumber = risDetails.TryGetValue(x.RISId.Value, out var ris) ? ris.RISNumber : string.Empty,
-                            ResponsibilityCenterCode = risDetails.TryGetValue(x.RISId.Value, out ris) ? ris.ResponsibilityCenterCode : string.Empty,
-                            IssueQuantity = x.IssueQuantity
+                            var hasRis = risDetails.TryGetValue(x.RISId.Value, out var ris);
+                            var officeId = hasRis && ris.OfficeId.HasValue ? ris.OfficeId.Value : (long?)null;
+                            var divisionId = hasRis && ris.DivisionId.HasValue ? ris.DivisionId.Value : (long?)null;
+
+                            return new FilteredRMSIItemDetailResponseModel
+                            {
+                                RISNumber = hasRis ? ris.RISNumber : string.Empty,
+                                ResponsibilityCenterCode = hasRis ? ris.ResponsibilityCenterCode : string.Empty,
+                                OfficeName = officeId.HasValue && offices.TryGetValue(officeId.Value, out var officeName) ? officeName : string.Empty,
+                                DivisionName = divisionId.HasValue && divisions.TryGetValue(divisionId.Value, out var divisionName) ? divisionName : string.Empty,
+                                IssueQuantity = x.IssueQuantity
+                            };
                         }).ToList()
                     })
                     .ToList();

@@ -20,6 +20,7 @@ import { useSupplyItem } from '@/hooks';
 import { useStockCard } from '@/hooks/supply/useStockCard';
 import { useStockCardStore } from '@/store/office/stockCardStore';
 import { formatDate } from '@/utils/dateUtils';
+import { getAcronym } from '@/utils/formatters';
 import { SupplyStockCardItem } from '@/types/supply/stockcard';
 
 import {
@@ -31,12 +32,6 @@ import {
     StyleSheet
 } from '@react-pdf/renderer';
 
-// --- HELPER FUNCTION ---
-const getAcronym = (text: string | undefined | null): string => {
-    if (!text) return '';
-    const ignoredWords = ['and', 'of', 'the', 'in', 'for', 'on', 'with', 'at', 'to', 'a', 'an'];
-    return text.split(' ').filter(word => !ignoredWords.includes(word.toLowerCase())).map(word => word.charAt(0)).join('').toUpperCase();
-};
 
 // --- PDF STYLES (Flat Headers & No Double Lines) ---
 const pdfStyles = StyleSheet.create({

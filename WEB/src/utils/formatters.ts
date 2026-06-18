@@ -16,3 +16,9 @@ export const getStockStatusColor = (status: string) => {
     default: return 'bg-gray-100 text-gray-800';
   }
 };
+
+export const getAcronym = (text: string | undefined | null): string => {
+  if (!text) return '';
+  const ignoredWords = ['and', 'of', 'the', 'in', 'for', 'on', 'with', 'at', 'to', 'a', 'an'];
+  return text.split(' ').filter(word => !ignoredWords.includes(word.toLowerCase())).map(word => word.charAt(0)).join('').toUpperCase();
+};

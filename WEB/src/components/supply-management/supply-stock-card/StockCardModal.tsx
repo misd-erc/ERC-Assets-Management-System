@@ -18,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useStockCard } from '@/hooks/supply/useStockCard';
 import { formatDate } from '@/utils/dateUtils';
+import { getAcronym } from '@/utils/formatters';
 import { SupplyStockCardItem } from '@/types/supply/stockcard';
 import { ChevronLeft, ChevronRight, ClipboardList, Plus, Loader2, Pencil } from 'lucide-react';
 import { IssuanceBypassModal } from './IssuanceBypassModal';
@@ -42,20 +43,6 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
   const [risEditOpen, setRisEditOpen] = useState(false);
   const [selectedEditId, setSelectedEditId] = useState<number | undefined>(undefined);
   const [selectedRISId, setSelectedRISId] = useState<number | undefined>(undefined);
-
-  const getAcronym = (text: string | undefined | null): string => {
-    if (!text) return ''; // Safely handle empty/undefined data
-
-    // Add any other connecting words you want to ignore here
-    const ignoredWords: string[] = ['and', 'of', 'the', 'in', 'for', 'on', 'with', 'at', 'to', 'a', 'an'];
-
-    return text
-      .split(' ') // Split the sentence into an array of words
-      .filter((word: string) => !ignoredWords.includes(word.toLowerCase())) // Remove the connecting words
-      .map((word: string) => word.charAt(0)) // Grab the first letter of what's left
-      .join('') // Put them back together
-      .toUpperCase(); // Ensure it's fully capitalized
-  };
 
   useEffect(() => {
     if (open && stockNumber && description) {
