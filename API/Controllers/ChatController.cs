@@ -283,7 +283,9 @@ namespace API.Controllers
                     AttachmentName = attachmentName,
                     AttachmentType = attachmentType,
                     chatMessage.IsUnsent,
-                    chatMessage.CreatedAt
+                    chatMessage.CreatedAt,
+                    ReadReceipts = Array.Empty<object>(),
+                    Reactions = Array.Empty<object>()
                 };
 
                 // Notify via SignalR
@@ -365,13 +367,16 @@ namespace API.Controllers
         }
 
         [HttpPost("unsend/{messageId}")]
-        public async Task<IActionResult> UnsendMessage([FromRoute] long messageId)
+        public async Task<IActionResult> UnsendMessage([FromRoute] long messageId, [FromQuery] long systemUserId)
         {
             await using var context = new PortalDbContext(_options);
             try
             {
                 var message = await context.TblChatMessages.FirstOrDefaultAsync(x => x.Id == messageId);
                 if (message == null) return BadRequest(ApiResponse<object>.Fail("NOT_FOUND", "Message not found"));
+
+                if (message.SenderId != systemUserId)
+                    return BadRequest(ApiResponse<object>.Fail("FORBIDDEN", "Only the sender can unsend this message."));
 
                 // Delete file from Azure if it exists
                 if (message.FileStorageId.HasValue)

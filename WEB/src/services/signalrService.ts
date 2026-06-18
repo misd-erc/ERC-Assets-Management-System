@@ -136,6 +136,16 @@ class SignalRService {
                 store.removeTypingUser(chatKey, payload.senderId);
             });
 
+            this.hubConnection.on("GroupDeleted", (groupId: number) => {
+                const store = useChatStore.getState();
+                store.removeGroup(groupId);
+            });
+
+            this.hubConnection.on("ConversationDeleted", (partnerUserId: number) => {
+                const store = useChatStore.getState();
+                store.removeConversation(partnerUserId);
+            });
+
         } catch (err) {
             console.error("Error while starting SignalR connection: " + err);
         }

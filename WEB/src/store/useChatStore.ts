@@ -25,6 +25,7 @@ interface ChatState {
     setGroups: (groups: ChatGroup[]) => void;
     addGroup: (group: ChatGroup) => void;
     removeGroup: (groupId: number) => void;
+    removeConversation: (partnerUserId: number) => void;
     setOnlineUsers: (users: number[]) => void;
     addOnlineUser: (userId: number) => void;
     removeOnlineUser: (userId: number) => void;
@@ -107,7 +108,15 @@ export const useChatStore = create<ChatState>((set) => ({
         let updatedMessages = [...state.messages];
         if (isRelevant) {
             if (message.id > 0) {
-                const tempIndex = state.messages.findIndex(m => m.id < 0 && m.senderId === message.senderId && m.message === message.message);
+                // Replace any temp message (id < 0) from the same sender for the same conversation
+                const tempIndex = state.messages.findIndex(m => {
+                    if (m.id >= 0) return false;
+                    if (m.senderId !== message.senderId) return false;
+                    if (isMessageForGroup) {
+                        return m.groupId === message.groupId;
+                    }
+                    return m.receiverId === message.receiverId;
+                });
                 if (tempIndex !== -1) {
                     updatedMessages[tempIndex] = message;
                 } else {
@@ -161,6 +170,9 @@ export const useChatStore = create<ChatState>((set) => ({
         groups: state.groups.some(g => g.id === group.id) ? state.groups : [...state.groups, group]
     })),
     removeGroup: (groupId) => set((state) => ({ groups: state.groups.filter(g => g.id !== groupId) })),
+    removeConversation: (partnerUserId) => set((state) => ({
+        conversationsUpdatedNonce: state.conversationsUpdatedNonce + 1
+    })),
     setOnlineUsers: (users) => set({ onlineUsers: users }),
     addOnlineUser: (userId) => set((state) => ({ onlineUsers: [...new Set([...state.onlineUsers, userId])] })),
     removeOnlineUser: (userId) => set((state) => ({ onlineUsers: state.onlineUsers.filter(u => u !== userId) })),
