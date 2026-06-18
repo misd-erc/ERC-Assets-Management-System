@@ -110,7 +110,9 @@ namespace PortalTools.Services
                 for (int c = 1; c <= colCount; c++)
                 {
                     var cellValue = ws.Cells[r, c].Value;
-                    row[c - 1] = cellValue?.ToString()?.Trim() ?? string.Empty;
+                    row[c - 1] = cellValue is IFormattable fmt
+                        ? fmt.ToString(null, CultureInfo.InvariantCulture)?.Trim() ?? string.Empty
+                        : cellValue?.ToString()?.Trim() ?? string.Empty;
                 }
                 rows.Add(row);
             }

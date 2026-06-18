@@ -120,6 +120,7 @@ export function Disposals() {
 
   const [formData, setFormData] = useState({
     group: 'PPE' as 'PPE' | 'SE',
+    disposalNumber: '',
     reason: 'End of Life' as Disposal['reason'],
     method: 'Sale' as Disposal['method'],
     requestedBy: 'Current User',
@@ -210,6 +211,7 @@ export function Disposals() {
     setAssetSearchQuery('');
     setFormData({
       group: disposal.group,
+      disposalNumber: disposal.disposalNumber,
       reason: disposal.reason,
       method: disposal.method,
       requestedBy: 'Current User',
@@ -234,6 +236,7 @@ export function Disposals() {
       if (editingDisposalId !== null) {
         const success = await updateDisposal(editingDisposalId, {
           id: editingDisposalId,
+          disposalNumber: formData.disposalNumber || undefined,
           group: formData.group,
           reason: formData.reason,
           method: formData.method,
@@ -430,26 +433,24 @@ export function Disposals() {
           <Button size="sm" variant="ghost" onClick={() => handleView(row)} className="h-8 w-8 p-0">
             <Eye className="w-4 h-4" />
           </Button>
+          <Button size="sm" variant="ghost" onClick={() => handleEdit(row)} className="h-8 w-8 p-0">
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => handleDelete(row)} className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
+            <Trash2 className="w-4 h-4" />
+          </Button>
           {row.status === 'Pending' && (
-            <>
-              <Button size="sm" variant="ghost" onClick={() => handleEdit(row)} className="h-8 w-8 p-0">
-                <Pencil className="w-4 h-4" />
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => handleDelete(row)} className="h-8 w-8 p-0 text-red-600 hover:text-red-700">
-                <Trash2 className="w-4 h-4" />
-              </Button>
-              <Button
-                size="sm"
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => handleApprove(row)}
-              >
-                Approve
-              </Button>
-            </>
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => handleApprove(row)}
+            >
+              Approve
+            </Button>
           )}
           {row.status === 'Approved' && (
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               className="bg-blue-600 hover:bg-blue-700"
               onClick={() => handleMarkDisposed(row)}
             >
@@ -643,6 +644,17 @@ export function Disposals() {
           </DialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 py-4">
+              {editingDisposalId !== null && (
+                <div className="space-y-2">
+                  <Label>{formData.group === 'PPE' ? 'IIRUP Number' : 'IIRSP Number'}</Label>
+                  <Input
+                    value={formData.disposalNumber}
+                    onChange={(e) => setFormData(prev => ({ ...prev, disposalNumber: e.target.value }))}
+                    placeholder="e.g. IIRUP-2026-001"
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 col-span-2">
                   <Label>Asset Type *</Label>

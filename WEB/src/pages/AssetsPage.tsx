@@ -680,7 +680,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
             <Badge variant="secondary" className="ml-1">{seTotalCount.toLocaleString()}</Badge>
           </TabsTrigger>
           <TabsTrigger value="no-property" className="gap-2">
-            No Property Number
+            For Asset Booking (No Property Number)
             <Badge variant="secondary" className="ml-1">{noPropertyNumberCount.toLocaleString()}</Badge>
           </TabsTrigger>
         </TabsList>

@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search, FileText, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
-import { getPTAReturnList } from '@/api/asset/transferApi';
+import { getPTAReturnList, getReturnDetailsByNumber } from '@/api/asset/transferApi';
+import { getEmployees } from '@/api/user-management/userApi';
 import { ReturnReceiptGenerator } from './ReturnReceiptGenerator';
 
 type ReturnType = 'RRPPE' | 'RRSP';
@@ -60,12 +61,14 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
     setLoading(true);
     try {
       const group = returnType === 'RRPPE' ? 'PPE' : 'SE';
-      const response = await getPTAReturnList({
-        group,
-        rrppeRrspFilter: returnType,
-        pageNumber: 1,
-        pageSize: 1000,
-      });
+      const [response, employeeResponse] = await Promise.all([
+        getPTAReturnList({ group, rrppeRrspFilter: returnType, pageNumber: 1, pageSize: 1000 }),
+        getEmployees().catch(() => ({ data: { items: [] } } as any)),
+      ]);
+
+      const employeeById = new Map<number, any>(
+        ((employeeResponse as any)?.data?.items || []).map((emp: any) => [emp.id, emp])
+      );
 
       const grouped = new Map<string, ReturnRecord>();
       const detailMap = new Map<string, any>();
@@ -75,47 +78,40 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
         if (!number || !number.toUpperCase().startsWith(returnType)) return;
 
         const existingDetail = detailMap.get(number);
-        const newItems = raw.item ? [raw.item] : (raw.items || []);
-        const mergedItems = [...(existingDetail?.items || []), ...newItems];
-        const uniqueItems = mergedItems.reduce((acc: any[], it: any) => {
-          const exists = acc.find(
-            (x) =>
-              (x.id != null && x.id === it.id) ||
-              (x.propertyNumber && x.propertyNumber === it.propertyNumber),
-          );
-          if (!exists) acc.push(it);
-          return acc;
-        }, []);
+
+        // "Returned by" is the PREVIOUS holder (the end user who is returning the property)
+        const returnedById: number | null = raw.previousPlantillaEmployeeId || raw.previousNonPlantillaEmployeeId || null;
+        const returnedByName: string = raw.previousPlantillaEmployeeName || raw.previousNonPlantillaEmployeeName || 'Unknown';
+
+        // Build position/office string for the returner from the employee list
+        const returnedByEmp = returnedById ? employeeById.get(returnedById) : null;
+        const retPosition = returnedByEmp?.position?.name || '';
+        const retOffice = returnedByEmp?.office?.acronym || returnedByEmp?.office?.name || '';
+        const retDivision = returnedByEmp?.division?.acronym || returnedByEmp?.division?.name || '';
+        const returnedByPositionOffice = [
+          retPosition,
+          [retOffice, retDivision].filter(Boolean).join(', '),
+        ].filter(Boolean).join(' - ');
 
         const isNonPlantilla = !!raw.nonPlantillaEmployeeId;
-
-        // "Returned by" is always the plantilla PAR-holder
-        const plantillaName = raw.plantillaEmployeeName || 'Unknown';
-        const plantillaPosition =
-          raw.plantillaEmployeePosition ||
-          raw.plantillaEmployeeType ||
-          '';
-
-        // Sub-PAR is the non-plantilla employee (if any)
         const nonPlantillaName = raw.nonPlantillaEmployeeName || '';
 
-        const returnedBy = existingDetail?.returnedBy || plantillaName;
+        const returnedBy = existingDetail?.returnedBy || returnedByName;
 
         detailMap.set(number, {
           number,
-          items: uniqueItems,
+          items: existingDetail?.items || [],
           dateAssigned: raw.dateAssigned || existingDetail?.dateAssigned,
           returnedBy,
-          returnedByPosition: existingDetail?.returnedByPosition || plantillaPosition,
+          returnedByPosition: existingDetail?.returnedByPosition || returnedByPositionOffice,
           isNonPlantilla: existingDetail?.isNonPlantilla ?? isNonPlantilla,
-          nonPlantillaEmployeeName:
-            existingDetail?.nonPlantillaEmployeeName || nonPlantillaName || '',
+          nonPlantillaEmployeeName: existingDetail?.nonPlantillaEmployeeName || nonPlantillaName || '',
         });
 
         grouped.set(number, {
           number,
           returnedBy,
-          itemCount: uniqueItems.length,
+          itemCount: raw.itemCount || 0,
           dateAssigned: raw.dateAssigned,
         });
       });
@@ -135,11 +131,30 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
     return records.filter(r => r.number.toLowerCase().includes(q));
   }, [records, search]);
 
-  const handleSelect = (number: string) => {
+  const handleSelect = async (number: string) => {
     setSelected(number);
     const d = detailsMap.get(number);
-    setDetails(d || null);
-    setCurrentStep('details');
+    if (d) {
+      try {
+        // list endpoint only returns itemCount; fetch real item details for the PDF
+        const returnDetails = await getReturnDetailsByNumber(number);
+        const allItems: any[] = [];
+        const seen = new Set<string | number>();
+        for (const movement of returnDetails.movements || []) {
+          for (const itm of movement.items || []) {
+            const key = itm.propertyNumber || itm.id;
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              allItems.push({ ...itm, condition: movement.condition || itm.condition });
+            }
+          }
+        }
+        setDetails({ ...d, items: allItems });
+      } catch {
+        setDetails(d);
+      }
+      setCurrentStep('details');
+    }
   };
 
   const generatePreview = async () => {

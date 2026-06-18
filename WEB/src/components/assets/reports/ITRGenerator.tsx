@@ -603,7 +603,7 @@ export class ITRGenerator {
         propertyNo: asset.propertyNumber ?? "",
         description: asset.description ?? "",
         amount: asset.unitValue ?? null,
-        condition: latestMovement?.condition ?? "Good",
+        condition: latestMovement?.condition || (asset as any).condition || "Good",
       };
     });
   }

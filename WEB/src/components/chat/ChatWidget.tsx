@@ -435,13 +435,13 @@ export const ChatWidget: React.FC = () => {
         
         if (activeChatId) {
             if (!typingTimeoutRef.current) {
-                signalRService.sendTypingStarted(isGroupChat ? undefined : activeChatId, isGroupChat ? activeChatId : undefined);
+                signalRService.sendTypingStarted(isGroupChat ? undefined : (activeChatId ?? undefined), isGroupChat ? (activeChatId ?? undefined) : undefined);
             } else {
                 clearTimeout(typingTimeoutRef.current);
             }
             
             typingTimeoutRef.current = setTimeout(() => {
-                signalRService.sendTypingStopped(isGroupChat ? undefined : activeChatId, isGroupChat ? activeChatId : undefined);
+                signalRService.sendTypingStopped(isGroupChat ? undefined : (activeChatId ?? undefined), isGroupChat ? (activeChatId ?? undefined) : undefined);
                 typingTimeoutRef.current = null;
             }, 2000);
         }
@@ -457,6 +457,8 @@ export const ChatWidget: React.FC = () => {
         const tempMessage: ChatMessage = {
             id: tempId,
             senderId: currentUserId,
+            receiverId: isGroupChat ? undefined : (activeChatId ?? undefined),
+            groupId: isGroupChat ? (activeChatId ?? undefined) : undefined,
             message: originalMessageInput || undefined,
             isUnsent: false,
             createdAt: new Date().toISOString(),
@@ -484,7 +486,7 @@ export const ChatWidget: React.FC = () => {
         if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
             typingTimeoutRef.current = null;
-            signalRService.sendTypingStopped(isGroupChat ? undefined : activeChatId, isGroupChat ? activeChatId : undefined);
+            signalRService.sendTypingStopped(isGroupChat ? undefined : (activeChatId ?? undefined), isGroupChat ? (activeChatId ?? undefined) : undefined);
         }
 
         try {
@@ -774,11 +776,20 @@ export const ChatWidget: React.FC = () => {
                 setGroups(groups.map(g => g.id === updatedGroup.id ? updatedGroup : g));
             };
 
+            const onGroupDeleted = (groupId: number) => {
+                if (activeChatId === groupId) {
+                    setActiveChat(null, false);
+                    setShowGroupSettings(false);
+                    setView('list');
+                }
+            };
+
             conn.on("AdminStatusUpdated", onAdminStatusUpdated);
             conn.on("MemberAdded", onMemberAdded);
             conn.on("MemberRemoved", onMemberRemoved);
             conn.on("LeftGroup", onLeftGroup);
             conn.on("GroupSettingsUpdated", onGroupSettingsUpdated);
+            conn.on("GroupDeleted", onGroupDeleted);
 
             return () => {
                 conn.off("AdminStatusUpdated", onAdminStatusUpdated);
@@ -786,6 +797,7 @@ export const ChatWidget: React.FC = () => {
                 conn.off("MemberRemoved", onMemberRemoved);
                 conn.off("LeftGroup", onLeftGroup);
                 conn.off("GroupSettingsUpdated", onGroupSettingsUpdated);
+                conn.off("GroupDeleted", onGroupDeleted);
             };
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps

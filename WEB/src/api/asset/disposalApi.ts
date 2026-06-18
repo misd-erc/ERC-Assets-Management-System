@@ -64,6 +64,7 @@ export interface DisposalRecord {
 
 export interface CreateDisposalPayload {
   id: number;
+  disposalNumber?: string;
   group: string;
   reason: string;
   method: string;

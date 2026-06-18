@@ -209,7 +209,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
             const key = itm.propertyNumber || itm.id;
             if (key && !seen.has(key)) {
               seen.add(key);
-              allItems.push(itm);
+              allItems.push({ ...itm, condition: movement.condition || itm.condition });
             }
           }
         }
