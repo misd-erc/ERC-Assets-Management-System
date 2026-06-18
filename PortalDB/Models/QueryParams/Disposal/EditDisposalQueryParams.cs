@@ -6,6 +6,7 @@ namespace PortalDB.Models.QueryParams.Disposal
     public class EditDisposalQueryParams
     {
         [Required] public long Id { get; set; }
+        public string? DisposalNumber { get; set; }
         [Required] public string Group { get; set; } = string.Empty;
         [Required] public string Reason { get; set; } = string.Empty;
         [Required] public string Method { get; set; } = string.Empty;

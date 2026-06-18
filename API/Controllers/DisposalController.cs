@@ -289,11 +289,11 @@ namespace API.Controllers
                 if (disposal == null)
                     return StatusCode(ApiStatusCode.NotFound, ApiResponse<object>.Fail(ErrorCodes.NOT_FOUND, "Disposal not found."));
 
-                if (disposal.Status != TblDisposal.PENDING)
-                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, $"Only pending disposals can be edited. Current status: {disposal.Status}"));
-
                 if (model.PTAIds == null || !model.PTAIds.Any())
                     return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "At least one asset must be selected for disposal."));
+
+                if (!string.IsNullOrWhiteSpace(model.DisposalNumber))
+                    disposal.DisposalNumber = model.DisposalNumber.Trim();
 
                 disposal.Group = model.Group;
                 disposal.Reason = model.Reason;
