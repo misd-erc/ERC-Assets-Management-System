@@ -45,6 +45,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
   const [toPlantillaEmployee, setToPlantillaEmployee] = useState<ApiEmployee | null>(null);
   const [toNonPlantillaEmployee, setToNonPlantillaEmployee] = useState<ApiEmployee | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [itemConditions, setItemConditions] = useState<Record<string, string>>({});
 
   // Data Loading States
   const [employees, setEmployees] = useState<ApiEmployee[]>([]);
@@ -71,6 +72,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       setToPlantillaEmployee(null);
       setToNonPlantillaEmployee(null);
       setSelectedItems([]);
+      setItemConditions({});
       setError(null);
       setSuccess(false);
       setLoading(false);
@@ -260,7 +262,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           status: 'T',
           plantillaEmployeeId: toPlantillaEmployee?.id || null,
           nonPlantillaEmployeeId: toNonPlantillaEmployee?.id || null,
-          condition: item?.condition || 'Good',
+          condition: itemConditions[itemId] || item?.condition || 'Good',
           actualOfficeId: recipient?.office?.id || 0,
           actualDivisionId: recipient?.division?.id || 0,
           isActive: true,
@@ -399,7 +401,16 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
 
     switch (currentStep) {
       case 'from-employee': setCurrentStep('select-items'); break;
-      case 'select-items': setCurrentStep('to-employee'); break;
+      case 'select-items': {
+        const initialConditions: Record<string, string> = {};
+        selectedItems.forEach(itemId => {
+          const item = employeeItems.find(i => String(i.id) === itemId);
+          initialConditions[itemId] = item?.condition || 'Good';
+        });
+        setItemConditions(initialConditions);
+        setCurrentStep('to-employee');
+        break;
+      }
       case 'to-employee': handleSubmit(new Event('submit') as any); break;
     }
   };
@@ -654,6 +665,38 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                       <div className="bg-white border border-slate-200 rounded p-4">
                         <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Transfer Type</p>
                         <p className="text-base font-semibold text-slate-900 px-3 py-1 bg-blue-100 inline-block rounded">{transferLabel}</p>
+                      </div>
+                      <div className="bg-white border border-slate-200 rounded p-4 space-y-2">
+                        <p className="text-xs text-gray-500 uppercase font-semibold mb-3">Items &amp; Condition</p>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {selectedItems.map(itemId => {
+                            const item = employeeItems.find(i => String(i.id) === itemId);
+                            if (!item) return null;
+                            return (
+                              <div key={itemId} className="flex items-center gap-3 py-2 border-b last:border-0">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-slate-800 truncate">{item.propertyNumber}</p>
+                                  <p className="text-xs text-gray-500 truncate">{item.description}</p>
+                                </div>
+                                <Select
+                                  value={itemConditions[itemId] || 'Good'}
+                                  onValueChange={(val) => setItemConditions(prev => ({ ...prev, [itemId]: val }))}
+                                >
+                                  <SelectTrigger className="w-36 h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Working">Working</SelectItem>
+                                    <SelectItem value="Serviceable">Serviceable</SelectItem>
+                                    <SelectItem value="Not Working">Not Working</SelectItem>
+                                    <SelectItem value="Unserviceable">Unserviceable</SelectItem>
+                                    <SelectItem value="Good">Good</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   )}
