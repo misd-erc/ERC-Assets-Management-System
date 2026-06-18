@@ -276,8 +276,8 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                           ? getEmployeeName(movement.nonPlantillaEmployeeId)
                           : '-'}
                       </TableCell>
-                      <TableCell>{(movement as any).office?.name || '-'}</TableCell>
-                      <TableCell>{(movement as any).division?.name || '-'}</TableCell>
+                      <TableCell>{(movement as any).employee?.[0]?.office?.name || (movement as any).office?.name || '-'}</TableCell>
+                      <TableCell>{(movement as any).employee?.[0]?.division?.name || (movement as any).division?.name || '-'}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getConditionIcon(movement.condition || '')}
@@ -518,8 +518,8 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                           ? getEmployeeName(movement.nonPlantillaEmployeeId)
                           : '-'}
                       </TableCell>
-                      <TableCell>{(movement as any).office?.name || '-'}</TableCell>
-                      <TableCell>{(movement as any).division?.name || '-'}</TableCell>
+                      <TableCell>{(movement as any).employee?.[0]?.office?.name || (movement as any).office?.name || '-'}</TableCell>
+                      <TableCell>{(movement as any).employee?.[0]?.division?.name || (movement as any).division?.name || '-'}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {getConditionIcon(movement.condition || '')}
