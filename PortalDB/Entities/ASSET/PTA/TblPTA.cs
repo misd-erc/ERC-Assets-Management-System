@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using System.Globalization;
 using PortalCommon.Utilities;
 
 namespace PortalDB.Entities.ASSET.PTA
@@ -95,8 +96,8 @@ namespace PortalDB.Entities.ASSET.PTA
         [NotMapped]
         public double? UnitValue
         {
-            get => string.IsNullOrEmpty(UnitValueEncrypted) ? null : double.Parse(EncryptionHelper.Decrypt(UnitValueEncrypted));
-            set => UnitValueEncrypted = string.IsNullOrEmpty(value.ToString()) ? null : EncryptionHelper.Encrypt(value.ToString());
+            get => string.IsNullOrEmpty(UnitValueEncrypted) ? null : double.Parse(EncryptionHelper.Decrypt(UnitValueEncrypted), CultureInfo.InvariantCulture);
+            set => UnitValueEncrypted = value == null ? null : EncryptionHelper.Encrypt(value.Value.ToString(CultureInfo.InvariantCulture));
         }
 
         [Column("PTADateAcquired")]
