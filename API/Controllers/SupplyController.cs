@@ -2650,5 +2650,106 @@ namespace API.Controllers
             }
         }
         #endregion
+
+        #region RSMI Signatory Templates
+        [HttpGet("rsmi/signatory-templates")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetRSMISignatoryTemplates([FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var templates = await context.TblRSMISignatoryTemplates
+                    .Where(t => t.IsActive)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .Select(t => new { t.Id, t.Name, t.SignatoryDataJson, t.CreatedAt })
+                    .ToListAsync();
+
+                return Ok(ApiResponse<object>.Ok(templates, "RSMI signatory templates retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("rsmi/signatory-templates/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditRSMISignatoryTemplate([FromBody] EditRSMISignatoryTemplateQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                if (model.Id == 0)
+                {
+                    var newTemplate = new TblRSMISignatoryTemplate
+                    {
+                        Name = model.Name.Trim(),
+                        SignatoryDataJson = model.SignatoryDataJson,
+                        CreatedBy = model.ActionBySystemUserId,
+                        CreatedAt = DateTime.UtcNow,
+                        IsActive = true
+                    };
+                    await context.TblRSMISignatoryTemplates.AddAsync(newTemplate);
+                    await context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    await AuditTrailTool.LogActivityAsync(_options, "Created RSMI Signatory Template", actionBy: model.ActionBySystemUserId);
+                    return Ok(ApiResponse<object>.Ok(new { newTemplate.Id, newTemplate.Name, newTemplate.SignatoryDataJson, newTemplate.CreatedAt }, "Template saved"));
+                }
+                else
+                {
+                    var existing = await context.TblRSMISignatoryTemplates.FirstOrDefaultAsync(t => t.Id == model.Id && t.IsActive);
+                    if (existing == null)
+                        return BadRequest(ApiResponse<object>.Fail("NOT_FOUND", "Template not found."));
+
+                    existing.Name = model.Name.Trim();
+                    existing.SignatoryDataJson = model.SignatoryDataJson;
+                    context.TblRSMISignatoryTemplates.Update(existing);
+                    await context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    await AuditTrailTool.LogActivityAsync(_options, "Updated RSMI Signatory Template", actionBy: model.ActionBySystemUserId);
+                    return Ok(ApiResponse<object>.Ok(new { existing.Id, existing.Name, existing.SignatoryDataJson, existing.CreatedAt }, "Template updated"));
+                }
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpDelete("rsmi/signatory-templates/delete/{templateId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteRSMISignatoryTemplate([FromQuery] SoloQueryParams model, [FromRoute] long templateId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                var template = await context.TblRSMISignatoryTemplates.FirstOrDefaultAsync(t => t.Id == templateId && t.IsActive);
+                if (template == null)
+                    return BadRequest(ApiResponse<object>.Fail("NOT_FOUND", "Template not found."));
+
+                template.IsActive = false;
+                context.TblRSMISignatoryTemplates.Update(template);
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Deleted RSMI Signatory Template", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<object>.Ok((object?)null, "Template deleted"));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+        #endregion
     }
 }
