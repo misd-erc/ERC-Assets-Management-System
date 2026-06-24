@@ -100,20 +100,51 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
                                 .ToHashSet();
                         }
 
-                        if (model.OfficeId.HasValue && model.OfficeId.Value != 0)
+                        if ((model.OfficeId.HasValue && model.OfficeId.Value != 0) ||
+                            (model.DivisionId.HasValue && model.DivisionId.Value != 0))
                         {
-                            var offId = model.OfficeId.Value;
-                            matchingPtaIds = matchingPtaIds
-                                .Where(ptaId => latestMovementByPta[ptaId].ActualOfficeId == offId)
-                                .ToHashSet();
-                        }
+                            var plantillaEmpIds = latestMovementByPta.Values
+                                .Where(m => m.PlantillaEmployeeId.HasValue)
+                                .Select(m => m.PlantillaEmployeeId!.Value)
+                                .Distinct()
+                                .ToList();
 
-                        if (model.DivisionId.HasValue && model.DivisionId.Value != 0)
-                        {
-                            var divId = model.DivisionId.Value;
-                            matchingPtaIds = matchingPtaIds
-                                .Where(ptaId => latestMovementByPta[ptaId].ActualDivisionId == divId)
-                                .ToHashSet();
+                            var employeeLookup = await context.Set<TblEmployee>()
+                                .AsNoTracking()
+                                .Where(e => plantillaEmpIds.Contains(e.Id))
+                                .ToDictionaryAsync(e => e.Id, e => new { e.OfficeId, e.DivisionId });
+
+                            if (model.OfficeId.HasValue && model.OfficeId.Value != 0)
+                            {
+                                var offId = model.OfficeId.Value;
+                                matchingPtaIds = matchingPtaIds
+                                    .Where(ptaId =>
+                                    {
+                                        var mv = latestMovementByPta[ptaId];
+                                        if (mv.ActualOfficeId.HasValue && mv.ActualOfficeId.Value != 0)
+                                            return mv.ActualOfficeId.Value == offId;
+                                        if (mv.PlantillaEmployeeId.HasValue && employeeLookup.TryGetValue(mv.PlantillaEmployeeId.Value, out var emp))
+                                            return emp.OfficeId == offId;
+                                        return false;
+                                    })
+                                    .ToHashSet();
+                            }
+
+                            if (model.DivisionId.HasValue && model.DivisionId.Value != 0)
+                            {
+                                var divId = model.DivisionId.Value;
+                                matchingPtaIds = matchingPtaIds
+                                    .Where(ptaId =>
+                                    {
+                                        var mv = latestMovementByPta[ptaId];
+                                        if (mv.ActualDivisionId.HasValue && mv.ActualDivisionId.Value != 0)
+                                            return mv.ActualDivisionId.Value == divId;
+                                        if (mv.PlantillaEmployeeId.HasValue && employeeLookup.TryGetValue(mv.PlantillaEmployeeId.Value, out var emp))
+                                            return emp.DivisionId == divId;
+                                        return false;
+                                    })
+                                    .ToHashSet();
+                            }
                         }
 
                         if (!string.IsNullOrWhiteSpace(model.Condition))
@@ -123,8 +154,8 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
                                 .Where(ptaId =>
                                 {
                                     var mv = latestMovementByPta[ptaId];
-                                    return !string.IsNullOrWhiteSpace(mv.Status) &&
-                                           mv.Status.Trim().ToUpper().Contains(condFilter);
+                                    return !string.IsNullOrWhiteSpace(mv.Remarks) &&
+                                           mv.Remarks.Trim().ToUpper().Contains(condFilter);
                                 })
                                 .ToHashSet();
                         }
@@ -176,10 +207,10 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
                     }
 
                     if (model.StartDate.HasValue)
-                        ptas = ptas.Where(x => x.CreatedAt >= model.StartDate.Value);
+                        ptas = ptas.Where(x => x.DateAcquired.HasValue && x.DateAcquired.Value >= model.StartDate.Value);
 
                     if (model.EndDate.HasValue)
-                        ptas = ptas.Where(x => x.CreatedAt <= model.EndDate.Value);
+                        ptas = ptas.Where(x => x.DateAcquired.HasValue && x.DateAcquired.Value <= model.EndDate.Value);
 
                     int totalCount = ptas.Count();
 
