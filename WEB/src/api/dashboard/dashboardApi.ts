@@ -105,12 +105,25 @@ export interface SupplyCategoryBreakdownItem {
   value: number;
 }
 
+export interface SupplyStockHealthItem {
+  code: string;
+  description: string;
+  category: string;
+  stockOnHand: number;
+  unitCost: number;
+  totalValue: number;
+  reorderPoint: number;
+  isLowStock: boolean;
+}
+
 export interface DashboardSupplyStats {
   totalItems: number;
   totalQuantity: number;
   totalValue: number;
   lowStockCount: number;
+  sufficientStockCount: number;
   categoryBreakdown: SupplyCategoryBreakdownItem[];
+  stockHealthItems: SupplyStockHealthItem[];
 }
 
 export const getSupplyStats = async (): Promise<DashboardSupplyStats> => {

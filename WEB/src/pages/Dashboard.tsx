@@ -154,7 +154,7 @@ function Dashboard() {
       title: 'Supply Total',
       value: formatCurrency(supplyStats?.totalValue || 0),
       count: `${(supplyStats?.totalQuantity || 0).toLocaleString()} qty`,
-      description: `${(supplyStats?.totalItems || 0).toLocaleString()} unique items`,
+      description: 'Supply Items',
       changeType: 'neutral' as const,
       change: supplyStats?.lowStockCount ? `${supplyStats.lowStockCount} low stock` : 'All stocks sufficient',
       icon: AlertTriangle,
@@ -300,7 +300,7 @@ function Dashboard() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">{formatCurrency(supplyValue)}</p>
-                      <p className="text-xs text-slate-500">{(supplyStats?.totalQuantity || 0).toLocaleString()} qty · {(supplyStats?.totalItems || 0).toLocaleString()} unique items</p>
+                      <p className="text-xs text-slate-500">{(supplyStats?.totalQuantity || 0).toLocaleString()} qty</p>
                     </div>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2">
