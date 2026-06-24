@@ -178,7 +178,7 @@ export class RPCPPEPdfGenerator {
                 <Text style={[styles.td, styles.center, { width: this.colWidth(8) }]}>-</Text>
                 <Text style={[styles.td, styles.center, { width: this.colWidth(9) }]}>-</Text>
                 <Text style={[styles.td, { width: this.colWidth(10) }]}>
-                  in good condition
+                  {asset.condition || ''}
                 </Text>
               </View>
             ))}
@@ -313,7 +313,7 @@ export class RPCPPEPdfGenerator {
                 <Text style={[styles.td, styles.center, { width: this.colWidth(8) }]}>-</Text>
                 <Text style={[styles.td, styles.center, { width: this.colWidth(9) }]}>-</Text>
                 <Text style={[styles.td, { width: this.colWidth(10) }]}>
-                  in good condition
+                  {asset.condition || ''}
                 </Text>
               </View>
             ))}
