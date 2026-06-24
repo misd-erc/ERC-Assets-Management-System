@@ -23,7 +23,9 @@ import { toast } from 'sonner';
 import { PPEDetailModal } from '@/components/dashboard/modals/PPEDetailModal';
 import { SEDetailModal } from '@/components/dashboard/modals/SEDetailModal';
 import { SupplyDetailModal } from '@/components/dashboard/modals/SupplyDetailModal';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { TotalAssetModal } from '@/components/dashboard/modals/TotalAssetModal';
+import { SEStockIssuedModal } from '@/components/dashboard/modals/SEStockIssuedModal';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface DashboardProps {
@@ -53,7 +55,7 @@ function Dashboard() {
   const [ptaData, setPtaData] = useState<PTADashboardData | null>(null);
   const [supplyStats, setSupplyStats] = useState<DashboardSupplyStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeModal, setActiveModal] = useState<'ppe' | 'se' | 'supply' | 'total' | null>(null);
+  const [activeModal, setActiveModal] = useState<'ppe' | 'se' | 'se-stock' | 'supply' | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -88,6 +90,8 @@ function Dashboard() {
   const seAmount = ptaData?.totalSEValue || 0;
   const ppePercentage = ptaData?.totalPPEValuePercentage || 0;
   const sePercentage = ptaData?.totalSEValuePercentage || 0;
+  const seIssued = ptaData?.totalSEIssued || 0;
+  const seStock = ptaData?.totalSEStock || 0;
   
   // Calculate totals
   const totalAssets = totalPPE + totalSE;
@@ -125,7 +129,7 @@ function Dashboard() {
     },
     {
       id: 'se' as const,
-      title: 'SE Total',
+      title: 'Semi-Expendable Total',
       value: formatCurrency(seAmount),
       count: `${totalSE.toLocaleString()} items`,
       description: 'Semi-Expendable Items',
@@ -135,26 +139,26 @@ function Dashboard() {
       color: 'bg-green-50 text-green-600 border-green-200'
     },
     {
+      id: 'se-stock' as const,
+      title: 'Semi-Expendable',
+      value: `${totalSE.toLocaleString()}`,
+      count: `${seIssued.toLocaleString()} Issued`,
+      description: `${seStock.toLocaleString()} In Stock`,
+      changeType: 'positive' as const,
+      change: 'Issuance & Stock Status',
+      icon: Package,
+      color: 'bg-teal-50 text-teal-600 border-teal-200'
+    },
+    {
       id: 'supply' as const,
       title: 'Supply Total',
       value: formatCurrency(supplyStats?.totalValue || 0),
       count: `${(supplyStats?.totalQuantity || 0).toLocaleString()} qty`,
-      description: `${(supplyStats?.totalItems || 0).toLocaleString()} unique items`,
+      description: 'Supply Items',
       changeType: 'neutral' as const,
       change: supplyStats?.lowStockCount ? `${supplyStats.lowStockCount} low stock` : 'All stocks sufficient',
       icon: AlertTriangle,
       color: 'bg-amber-50 text-amber-600 border-amber-200'
-    },
-    {
-      id: 'total' as const,
-      title: 'Total Asset Value',
-      value: formatCurrency(totalAmount),
-      count: `${totalAssets.toLocaleString()} items`,
-      description: 'Combined Assets Worth',
-      changeType: 'positive' as const,
-      change: 'PPE & SE Combined',
-      icon: TrendingUp,
-      color: 'bg-indigo-50 text-indigo-600 border-indigo-200'
     },
   ];
 
@@ -296,7 +300,7 @@ function Dashboard() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">{formatCurrency(supplyValue)}</p>
-                      <p className="text-xs text-slate-500">{(supplyStats?.totalQuantity || 0).toLocaleString()} qty · {(supplyStats?.totalItems || 0).toLocaleString()} unique items</p>
+                      <p className="text-xs text-slate-500">{(supplyStats?.totalQuantity || 0).toLocaleString()} qty</p>
                     </div>
                   </div>
                   <div className="w-full bg-slate-100 rounded-full h-2">
@@ -347,7 +351,7 @@ function Dashboard() {
       <PPEDetailModal open={activeModal === 'ppe'} onClose={() => setActiveModal(null)} ptaData={ptaData} formatCurrency={formatCurrency} />
       <SEDetailModal open={activeModal === 'se'} onClose={() => setActiveModal(null)} ptaData={ptaData} formatCurrency={formatCurrency} />
       <SupplyDetailModal open={activeModal === 'supply'} onClose={() => setActiveModal(null)} supplyStats={supplyStats} formatCurrency={formatCurrency} />
-      <TotalAssetModal open={activeModal === 'total'} onClose={() => setActiveModal(null)} ptaData={ptaData} supplyStats={supplyStats} formatCurrency={formatCurrency} />
+      <SEStockIssuedModal open={activeModal === 'se-stock'} onClose={() => setActiveModal(null)} ptaData={ptaData} />
     </div>
   );
 }
