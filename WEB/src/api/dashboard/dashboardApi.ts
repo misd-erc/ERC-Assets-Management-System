@@ -8,6 +8,12 @@ export interface DashboardSummary {
   supplies: { count: number; amount: number };
 }
 
+export interface PTACategoryBreakdownItem {
+  name: string;
+  count: number;
+  value: number;
+}
+
 export interface PTADashboardData {
   totalPPE: number;
   totalSE: number;
@@ -15,6 +21,10 @@ export interface PTADashboardData {
   totalPPEValuePercentage: number;
   totalSEValue: number;
   totalSEValuePercentage: number;
+  totalSEIssued: number;
+  totalSEStock: number;
+  ppeCategoryBreakdown: PTACategoryBreakdownItem[];
+  seCategoryBreakdown: PTACategoryBreakdownItem[];
 }
 
 export interface MonthlyMovementItem {
@@ -89,11 +99,18 @@ export const getDisposalStats = async (): Promise<DashboardDisposalStats> => {
   return response.data.data;
 };
 
+export interface SupplyCategoryBreakdownItem {
+  name: string;
+  quantity: number;
+  value: number;
+}
+
 export interface DashboardSupplyStats {
   totalItems: number;
   totalQuantity: number;
   totalValue: number;
   lowStockCount: number;
+  categoryBreakdown: SupplyCategoryBreakdownItem[];
 }
 
 export const getSupplyStats = async (): Promise<DashboardSupplyStats> => {

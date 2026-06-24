@@ -59,12 +59,45 @@ namespace API.Services.Dashboard
                     })
                     .ToList();
 
+                var categories = await context.TblPTACategories.AsNoTracking().Where(x => !x.IsDeleted).ToListAsync();
+                var catDict = categories.ToDictionary(c => c.Id, c => c.Name ?? "Uncategorized");
+
+                var catBreakdown = supplyItems
+                    .GroupBy(x => x.CategoryId.HasValue && catDict.ContainsKey(x.CategoryId.Value)
+                        ? catDict[x.CategoryId.Value] : "Uncategorized")
+                    .Select(g =>
+                    {
+                        var itemCodes = g.Select(x => (x.Code, x.Description)).Distinct().ToList();
+                        long qty = 0;
+                        decimal val = 0;
+                        foreach (var code in itemCodes)
+                        {
+                            var itemsForCode = g.Where(x => x.Code == code.Code && x.Description == code.Description).ToList();
+                            var totalStock = itemsForCode.Sum(x => x.Quantity ?? 0);
+                            var key = (code.Code, code.Description);
+                            var issued = issuedStockGroup.GetValueOrDefault(key, 0);
+                            var stockOnHand = Math.Max(0, totalStock - issued);
+                            var unitCost = itemsForCode.First().UnitCost ?? 0;
+                            qty += stockOnHand;
+                            val += stockOnHand * unitCost;
+                        }
+                        return new SupplyCategoryBreakdownItem
+                        {
+                            Name = g.Key,
+                            Quantity = qty,
+                            Value = val
+                        };
+                    })
+                    .OrderByDescending(x => x.Value)
+                    .ToList();
+
                 var result = new DashboardSupplyStatsResponseModel
                 {
                     TotalItems = groups.Count,
                     TotalQuantity = groups.Sum(x => (long)x.StockOnHand),
                     TotalValue = groups.Sum(x => (decimal)x.TotalValue),
-                    LowStockCount = groups.Count(x => x.IsLowStock)
+                    LowStockCount = groups.Count(x => x.IsLowStock),
+                    CategoryBreakdown = catBreakdown
                 };
 
                 await transaction.CommitAsync();

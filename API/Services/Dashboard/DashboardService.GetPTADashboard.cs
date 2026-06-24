@@ -33,6 +33,46 @@ namespace API.Services.Dashboard
                 ptaDash.TotalSEValuePercentage = ptaDash.TotalPPEValue + ptaDash.TotalSEValue == 0 ? 0 :
                     Math.Round((ptaDash.TotalSEValue / (ptaDash.TotalPPEValue + ptaDash.TotalSEValue)) * 100, 2);
 
+                var activeSEIds = ptas.Where(x => x.Group == TblPTA.SE && x.IsActive).Select(x => x.Id).ToHashSet();
+                var seIdsWithCurrentMovement = await _getTools.PTA.GetTblPTAMovements(context)
+                    .Where(x => x.PTAId.HasValue && activeSEIds.Contains(x.PTAId.Value) && x.IsCurrent)
+                    .Select(x => x.PTAId!.Value)
+                    .Distinct()
+                    .ToListAsync();
+                ptaDash.TotalSEIssued = seIdsWithCurrentMovement.Count;
+                ptaDash.TotalSEStock = ptaDash.TotalSE - ptaDash.TotalSEIssued;
+
+                var categories = await context.TblPTACategories.AsNoTracking().Where(x => !x.IsDeleted).ToListAsync();
+                var catDict = categories.ToDictionary(c => c.Id, c => c.Name ?? "Uncategorized");
+
+                var activePtas = ptas.Where(x => x.IsActive).ToList();
+
+                ptaDash.PPECategoryBreakdown = activePtas
+                    .Where(x => x.Group == TblPTA.PPE)
+                    .GroupBy(x => x.CategoryId.HasValue && catDict.ContainsKey(x.CategoryId.Value)
+                        ? catDict[x.CategoryId.Value] : "Uncategorized")
+                    .Select(g => new PTACategoryBreakdownItem
+                    {
+                        Name = g.Key,
+                        Count = g.Count(),
+                        Value = (decimal)g.Sum(x => x.UnitValue ?? 0)
+                    })
+                    .OrderByDescending(x => x.Value)
+                    .ToList();
+
+                ptaDash.SECategoryBreakdown = activePtas
+                    .Where(x => x.Group == TblPTA.SE)
+                    .GroupBy(x => x.CategoryId.HasValue && catDict.ContainsKey(x.CategoryId.Value)
+                        ? catDict[x.CategoryId.Value] : "Uncategorized")
+                    .Select(g => new PTACategoryBreakdownItem
+                    {
+                        Name = g.Key,
+                        Count = g.Count(),
+                        Value = (decimal)g.Sum(x => x.UnitValue ?? 0)
+                    })
+                    .OrderByDescending(x => x.Value)
+                    .ToList();
+
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
