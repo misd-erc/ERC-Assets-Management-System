@@ -205,6 +205,15 @@ const RISPDFDocument: React.FC<RISPDFProps> = ({ ris, items, signatories }) => {
                             <View style={pdfStyles.sigColDataLast}><Text style={pdfStyles.sigHeaderText}>Received by:</Text></View>
                         </View>
 
+                        {/* Signature */}
+                        <View style={[pdfStyles.sigRow, { minHeight: 35 }]}>
+                            <View style={pdfStyles.sigColLabel}><Text style={pdfStyles.sigLabelText}>Signature :</Text></View>
+                            <View style={pdfStyles.sigColData}><Text>{' '}</Text></View>
+                            <View style={pdfStyles.sigColData}><Text>{' '}</Text></View>
+                            <View style={pdfStyles.sigColData}><Text>{' '}</Text></View>
+                            <View style={pdfStyles.sigColDataLast}><Text>{' '}</Text></View>
+                        </View>
+
                         {/* Printed Name */}
                         <View style={pdfStyles.sigRow}>
                             <View style={pdfStyles.sigColLabel}><Text style={pdfStyles.sigLabelText}>Printed Name :</Text></View>
@@ -215,12 +224,21 @@ const RISPDFDocument: React.FC<RISPDFProps> = ({ ris, items, signatories }) => {
                         </View>
 
                         {/* Designation */}
-                        <View style={pdfStyles.sigRowLast}>
+                        <View style={pdfStyles.sigRow}>
                             <View style={pdfStyles.sigColLabel}><Text style={pdfStyles.sigLabelText}>Designation :</Text></View>
                             <View style={pdfStyles.sigColData}><Text style={pdfStyles.sigValueText}>{signatories.requestedBy.designation}</Text></View>
                             <View style={pdfStyles.sigColData}><Text style={pdfStyles.sigValueText}>{signatories.approvedBy.designation}</Text></View>
                             <View style={pdfStyles.sigColData}><Text style={pdfStyles.sigValueText}>{signatories.issuedBy.designation}</Text></View>
                             <View style={pdfStyles.sigColDataLast}><Text style={pdfStyles.sigValueText}>{signatories.receivedBy.designation}</Text></View>
+                        </View>
+
+                        {/* Date */}
+                        <View style={pdfStyles.sigRowLast}>
+                            <View style={pdfStyles.sigColLabel}><Text style={pdfStyles.sigLabelText}>Date :</Text></View>
+                            <View style={pdfStyles.sigColData}><Text>{' '}</Text></View>
+                            <View style={pdfStyles.sigColData}><Text>{' '}</Text></View>
+                            <View style={pdfStyles.sigColData}><Text>{' '}</Text></View>
+                            <View style={pdfStyles.sigColDataLast}><Text>{' '}</Text></View>
                         </View>
                     </View>
 
