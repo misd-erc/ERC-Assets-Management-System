@@ -773,7 +773,8 @@ namespace API.Controllers
                         ItemRemarks = (string?)null,
                         UnitId = x.MeasurementUnitId,
                         Type = "Addition",
-                        SupplyRISId = (long?)null
+                        SupplyRISId = (long?)null,
+                        IARId = x.IARId
                     })
                     .ToList();
 
@@ -879,6 +880,12 @@ namespace API.Controllers
                         ? await _getTools.Supply.GetTblSupplyRISAsync(risId.Value, context)
                         : null;
 
+                    // --- Fetch Parent IAR for addition events ---
+                    long? iarId = evt.Type == "Addition" ? evt.IARId : null;
+                    var parentIAR = iarId.HasValue
+                        ? await _getTools.Supply.GetTblSupplyIARAsync(iarId.Value, context)
+                        : null;
+
                     responseItems.Add(new SupplyStockCardItemViewModel
                     {
                         Id = evt.Id,
@@ -894,6 +901,7 @@ namespace API.Controllers
                         CreatedAt = evt.CreatedAt,
                         SupplyRISId = risId,
                         RISNumber = parentRIS?.RISNumber,
+                        IARNumber = parentIAR?.IARNumber,
 
                         // --- ADDED: Map Office and Division safely ---
                         Office = parentRIS != null
@@ -1710,7 +1718,7 @@ namespace API.Controllers
                 // 1. Get supply RIS within date range
                 var supplyRISs = await _getTools.Supply.GetTblSupplyRISs(context)
                     .Where(x => x.CreatedAt >= startDate && x.CreatedAt <= endDate)
-                    .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode })
+                    .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode, x.OfficeId, x.DivisionId })
                     .ToListAsync();
 
                 if (!supplyRISs.Any())
@@ -1780,7 +1788,19 @@ namespace API.Controllers
                 }
 
                 // Build a map of RIS details by RIS ID for quick lookup
-                var risDetails = supplyRISs.ToDictionary(r => r.Id, r => new { r.RISNumber, r.ResponsibilityCenterCode });
+                var risDetails = supplyRISs.ToDictionary(r => r.Id, r => new { r.RISNumber, r.ResponsibilityCenterCode, r.OfficeId, r.DivisionId });
+
+                // Fetch office and division names
+                var officeIds = supplyRISs.Where(r => r.OfficeId.HasValue).Select(r => r.OfficeId.Value).Distinct().ToList();
+                var divisionIds = supplyRISs.Where(r => r.DivisionId.HasValue).Select(r => r.DivisionId.Value).Distinct().ToList();
+
+                var offices = await _getTools.Office.GetTblOffices(context)
+                    .Where(o => officeIds.Contains(o.Id))
+                    .ToDictionaryAsync(o => o.Id, o => o.Name);
+
+                var divisions = await _getTools.Office.GetVwDivisions(context)
+                    .Where(d => divisionIds.Contains(d.Id.Value))
+                    .ToDictionaryAsync(d => d.Id.Value, d => d.Name);
 
                 // Group RIS items by (StockNumber, Description) and compute total and details
                 var decryptedRISItems = supplyRISItems
@@ -1802,11 +1822,20 @@ namespace API.Controllers
                         StockNumber = g.Key.StockNumber,
                         ItemDescription = g.Key.Description,
                         Total = g.Sum(x => x.IssueQuantity),
-                        Items = g.Select(x => new FilteredRMSIItemDetailResponseModel
+                        Items = g.Select(x =>
                         {
-                            RISNumber = risDetails.TryGetValue(x.RISId.Value, out var ris) ? ris.RISNumber : string.Empty,
-                            ResponsibilityCenterCode = risDetails.TryGetValue(x.RISId.Value, out ris) ? ris.ResponsibilityCenterCode : string.Empty,
-                            IssueQuantity = x.IssueQuantity
+                            var hasRis = risDetails.TryGetValue(x.RISId.Value, out var ris);
+                            var officeId = hasRis && ris.OfficeId.HasValue ? ris.OfficeId.Value : (long?)null;
+                            var divisionId = hasRis && ris.DivisionId.HasValue ? ris.DivisionId.Value : (long?)null;
+
+                            return new FilteredRMSIItemDetailResponseModel
+                            {
+                                RISNumber = hasRis ? ris.RISNumber : string.Empty,
+                                ResponsibilityCenterCode = hasRis ? ris.ResponsibilityCenterCode : string.Empty,
+                                OfficeName = officeId.HasValue && offices.TryGetValue(officeId.Value, out var officeName) ? officeName : string.Empty,
+                                DivisionName = divisionId.HasValue && divisions.TryGetValue(divisionId.Value, out var divisionName) ? divisionName : string.Empty,
+                                IssueQuantity = x.IssueQuantity
+                            };
                         }).ToList()
                     })
                     .ToList();
@@ -2611,6 +2640,107 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, "Deleted RIS Signatory Template", actionBy: model.ActionBySystemUserId);
+                return Ok(ApiResponse<object>.Ok((object?)null, "Template deleted"));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+        #endregion
+
+        #region RSMI Signatory Templates
+        [HttpGet("rsmi/signatory-templates")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetRSMISignatoryTemplates([FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var templates = await context.TblRSMISignatoryTemplates
+                    .Where(t => t.IsActive)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .Select(t => new { t.Id, t.Name, t.SignatoryDataJson, t.CreatedAt })
+                    .ToListAsync();
+
+                return Ok(ApiResponse<object>.Ok(templates, "RSMI signatory templates retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("rsmi/signatory-templates/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditRSMISignatoryTemplate([FromBody] EditRSMISignatoryTemplateQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                if (model.Id == 0)
+                {
+                    var newTemplate = new TblRSMISignatoryTemplate
+                    {
+                        Name = model.Name.Trim(),
+                        SignatoryDataJson = model.SignatoryDataJson,
+                        CreatedBy = model.ActionBySystemUserId,
+                        CreatedAt = DateTime.UtcNow,
+                        IsActive = true
+                    };
+                    await context.TblRSMISignatoryTemplates.AddAsync(newTemplate);
+                    await context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    await AuditTrailTool.LogActivityAsync(_options, "Created RSMI Signatory Template", actionBy: model.ActionBySystemUserId);
+                    return Ok(ApiResponse<object>.Ok(new { newTemplate.Id, newTemplate.Name, newTemplate.SignatoryDataJson, newTemplate.CreatedAt }, "Template saved"));
+                }
+                else
+                {
+                    var existing = await context.TblRSMISignatoryTemplates.FirstOrDefaultAsync(t => t.Id == model.Id && t.IsActive);
+                    if (existing == null)
+                        return BadRequest(ApiResponse<object>.Fail("NOT_FOUND", "Template not found."));
+
+                    existing.Name = model.Name.Trim();
+                    existing.SignatoryDataJson = model.SignatoryDataJson;
+                    context.TblRSMISignatoryTemplates.Update(existing);
+                    await context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    await AuditTrailTool.LogActivityAsync(_options, "Updated RSMI Signatory Template", actionBy: model.ActionBySystemUserId);
+                    return Ok(ApiResponse<object>.Ok(new { existing.Id, existing.Name, existing.SignatoryDataJson, existing.CreatedAt }, "Template updated"));
+                }
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpDelete("rsmi/signatory-templates/delete/{templateId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteRSMISignatoryTemplate([FromQuery] SoloQueryParams model, [FromRoute] long templateId)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                var template = await context.TblRSMISignatoryTemplates.FirstOrDefaultAsync(t => t.Id == templateId && t.IsActive);
+                if (template == null)
+                    return BadRequest(ApiResponse<object>.Fail("NOT_FOUND", "Template not found."));
+
+                template.IsActive = false;
+                context.TblRSMISignatoryTemplates.Update(template);
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                await AuditTrailTool.LogActivityAsync(_options, "Deleted RSMI Signatory Template", actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<object>.Ok((object?)null, "Template deleted"));
             }
             catch (Exception ex)

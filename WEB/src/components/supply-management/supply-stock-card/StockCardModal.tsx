@@ -18,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { useStockCard } from '@/hooks/supply/useStockCard';
 import { formatDate } from '@/utils/dateUtils';
+import { getAcronym } from '@/utils/formatters';
 import { SupplyStockCardItem } from '@/types/supply/stockcard';
 import { ChevronLeft, ChevronRight, ClipboardList, Plus, Loader2, Pencil } from 'lucide-react';
 import { IssuanceBypassModal } from './IssuanceBypassModal';
@@ -42,20 +43,6 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
   const [risEditOpen, setRisEditOpen] = useState(false);
   const [selectedEditId, setSelectedEditId] = useState<number | undefined>(undefined);
   const [selectedRISId, setSelectedRISId] = useState<number | undefined>(undefined);
-
-  const getAcronym = (text: string | undefined | null): string => {
-    if (!text) return ''; // Safely handle empty/undefined data
-
-    // Add any other connecting words you want to ignore here
-    const ignoredWords: string[] = ['and', 'of', 'the', 'in', 'for', 'on', 'with', 'at', 'to', 'a', 'an'];
-
-    return text
-      .split(' ') // Split the sentence into an array of words
-      .filter((word: string) => !ignoredWords.includes(word.toLowerCase())) // Remove the connecting words
-      .map((word: string) => word.charAt(0)) // Grab the first letter of what's left
-      .join('') // Put them back together
-      .toUpperCase(); // Ensure it's fully capitalized
-  };
 
   useEffect(() => {
     if (open && stockNumber && description) {
@@ -115,7 +102,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
               <TableHeader className="bg-slate-50 sticky top-0 z-10 shadow-sm border-b border-slate-200">
                 <TableRow>
                   <TableHead className="w-[120px]">Date</TableHead>
-                  <TableHead className="w-[140px]">RIS Number/No.</TableHead>
+                  <TableHead className="w-[140px]">Reference No.</TableHead>
                   <TableHead className="w-[100px]">Type</TableHead>
                   <TableHead className="text-right">Receipt QTY</TableHead>
                   <TableHead className="text-right">Issued QTY</TableHead>
@@ -147,7 +134,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
                           {formatDate(item.createdAt)}
                         </TableCell>
                         <TableCell className="font-medium text-slate-700">
-                          {item.risNumber || item.stockNumber}
+                          {item.addedStockQuantity > 0 ? item.iarNumber : item.risNumber}
                         </TableCell>
 
                         {/* ADDED: Missing Badge Render */}

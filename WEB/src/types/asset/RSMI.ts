@@ -1,6 +1,8 @@
 export interface FilteredRMSIItemDetailResponseModel {
   risNumber?: string | null;
   responsibilityCenterCode?: string | null;
+  officeName?: string | null;
+  divisionName?: string | null;
   issueQuantity: number; // Assuming this is also a long/int in your C# detail model
 }
 

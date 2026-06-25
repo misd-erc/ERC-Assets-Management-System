@@ -2,6 +2,7 @@ import axiosInstance from '@/lib/axios';
 import { getAuthParams } from '@/utils/auth';
 import { IARSignatories } from '@/components/assets/reports/IARReportModal';
 import { RISSignatories } from '@/components/assets/reports/RISReportModal';
+import { RSMISignatories } from '@/components/assets/reports/RSMIReportModal';
 
 export interface IARSignatoryTemplateDto {
   id: number;
@@ -17,6 +18,14 @@ export interface RISSignatoryTemplateDto {
   signatoryDataJson: string;
   createdAt: string;
   signatories?: RISSignatories;
+}
+
+export interface RSMISignatoryTemplateDto {
+  id: number;
+  name: string;
+  signatoryDataJson: string;
+  createdAt: string;
+  signatories?: RSMISignatories;
 }
 
 const parseTemplate = (raw: any): IARSignatoryTemplateDto => {
@@ -107,6 +116,54 @@ export const deleteRISSignatoryTemplate = async (templateId: number): Promise<bo
   try {
     const { systemUserId, sessionKey } = getAuthParams();
     const response = await axiosInstance.delete(`/Supply/ris/signatory-templates/delete/${templateId}`, {
+      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+    });
+    return response.data.success === true;
+  } catch {
+    return false;
+  }
+};
+
+const parseRSMITemplate = (raw: any): RSMISignatoryTemplateDto => {
+  let signatories: RSMISignatories | undefined;
+  try { signatories = JSON.parse(raw.signatoryDataJson); } catch { /* leave undefined */ }
+  return { id: raw.id, name: raw.name, signatoryDataJson: raw.signatoryDataJson, createdAt: raw.createdAt, signatories };
+};
+
+export const getRSMISignatoryTemplates = async (): Promise<RSMISignatoryTemplateDto[]> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const response = await axiosInstance.get('/Supply/rsmi/signatory-templates', {
+      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+    });
+    if (!response.data.success) return [];
+    return (response.data.data as any[]).map(parseRSMITemplate);
+  } catch {
+    return [];
+  }
+};
+
+export const saveRSMISignatoryTemplate = async (name: string, signatories: RSMISignatories, id: number = 0): Promise<RSMISignatoryTemplateDto | null> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const response = await axiosInstance.post('/Supply/rsmi/signatory-templates/edit', {
+      Id: id,
+      Name: name,
+      SignatoryDataJson: JSON.stringify(signatories),
+      ActionBySystemUserId: systemUserId,
+      SessionKey: sessionKey,
+    });
+    if (!response.data.success) return null;
+    return parseRSMITemplate(response.data.data);
+  } catch {
+    return null;
+  }
+};
+
+export const deleteRSMISignatoryTemplate = async (templateId: number): Promise<boolean> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const response = await axiosInstance.delete(`/Supply/rsmi/signatory-templates/delete/${templateId}`, {
       params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
     });
     return response.data.success === true;

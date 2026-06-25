@@ -20,6 +20,7 @@ import { useSupplyItem } from '@/hooks';
 import { useStockCard } from '@/hooks/supply/useStockCard';
 import { useStockCardStore } from '@/store/office/stockCardStore';
 import { formatDate } from '@/utils/dateUtils';
+import { getAcronym } from '@/utils/formatters';
 import { SupplyStockCardItem } from '@/types/supply/stockcard';
 
 import {
@@ -31,12 +32,6 @@ import {
     StyleSheet
 } from '@react-pdf/renderer';
 
-// --- HELPER FUNCTION ---
-const getAcronym = (text: string | undefined | null): string => {
-    if (!text) return '';
-    const ignoredWords = ['and', 'of', 'the', 'in', 'for', 'on', 'with', 'at', 'to', 'a', 'an'];
-    return text.split(' ').filter(word => !ignoredWords.includes(word.toLowerCase())).map(word => word.charAt(0)).join('').toUpperCase();
-};
 
 // --- PDF STYLES (Flat Headers & No Double Lines) ---
 const pdfStyles = StyleSheet.create({
@@ -144,11 +139,12 @@ const StockCardPDFDocument: React.FC<StockCardPDFProps> = ({ items, stockNumber,
                         const office = item.office?.name ? `${getAcronym(item.office.name)} ${getAcronym(item.division?.name)}` : '';
                         const receipt = item.addedStockQuantity > 0 ? item.addedStockQuantity : '';
                         const issue = item.issuedStockQuantity > 0 ? item.issuedStockQuantity : '';
+                        const reference = item.addedStockQuantity > 0 ? item.iarNumber : item.risNumber;
 
                         return (
                             <View key={idx} style={pdfStyles.tableRow} wrap={false}>
                                 <View style={[pdfStyles.colDate, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{formatDate(item.createdAt)}</Text></View>
-                                <View style={[pdfStyles.colRef, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{item.stockNumber}</Text></View>
+                                <View style={[pdfStyles.colRef, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{reference || ''}</Text></View>
                                 <View style={[pdfStyles.colReceiptQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{receipt}</Text></View>
                                 <View style={[pdfStyles.colIssueQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{issue}</Text></View>
                                 <View style={[pdfStyles.colOffice, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{office}</Text></View>
@@ -477,7 +473,7 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
                                                                                 {previewData.map((item, idx) => (
                                                                                     <TableRow key={idx} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
                                                                                         <TableCell className="py-2.5 text-xs text-slate-500">{formatDate(item.createdAt)}</TableCell>
-                                                                                        <TableCell className="py-2.5 text-xs text-center font-medium text-slate-700">{item.stockNumber}</TableCell>
+                                                                                        <TableCell className="py-2.5 text-xs text-center font-medium text-slate-700">{item.addedStockQuantity > 0 ? item.iarNumber : item.risNumber}</TableCell>
                                                                                         <TableCell className="py-2.5 text-xs text-center font-medium text-emerald-600">{item.addedStockQuantity > 0 ? `+${item.addedStockQuantity}` : '—'}</TableCell>
                                                                                         <TableCell className="py-2.5 text-xs text-center font-medium text-rose-600">{item.issuedStockQuantity > 0 ? `-${item.issuedStockQuantity}` : '—'}</TableCell>
                                                                                         <TableCell className="py-2.5 text-xs text-center text-slate-500">{item.office?.name ? `${getAcronym(item.office?.name)} ${getAcronym(item.division?.name)}` : '—'}</TableCell>
