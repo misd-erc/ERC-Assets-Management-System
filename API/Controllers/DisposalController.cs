@@ -1,4 +1,5 @@
 using API.Attributes;
+using API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
@@ -20,12 +21,14 @@ namespace API.Controllers
         private readonly DbContextOptions<PortalDbContext> _options;
         private readonly IPortalGetTools _getTools;
         private readonly IPortalEditTools _editTools;
+        private readonly NotificationBroadcastService _notificationService;
 
-        public DisposalController(DbContextOptions<PortalDbContext> options, IPortalGetTools getTools, IPortalEditTools editTools)
+        public DisposalController(DbContextOptions<PortalDbContext> options, IPortalGetTools getTools, IPortalEditTools editTools, NotificationBroadcastService notificationService)
         {
             _options = options;
             _getTools = getTools;
             _editTools = editTools;
+            _notificationService = notificationService;
         }
 
         #region Helpers
@@ -263,6 +266,13 @@ namespace API.Controllers
 
                 await AuditTrailTool.LogActivityAsync(_options, $"Created Disposal {disposalNumber}", actionBy: model.ActionBySystemUserId);
 
+                await _notificationService.NotifyModuleUsersAsync(
+                    context,
+                    NotificationConstants.DISPOSAL_REQUESTED,
+                    $"Disposal {disposalNumber} has been submitted for approval",
+                    NotificationConstants.Modules.DISPOSAL,
+                    model.ActionBySystemUserId);
+
                 return Ok(ApiResponse<object>.Created(new { DisposalId = disposal.Id, DisposalNumber = disposalNumber }, $"Disposal {disposalNumber} created successfully"));
             }
             catch (Exception ex)
@@ -375,6 +385,17 @@ namespace API.Controllers
 
                 await AuditTrailTool.LogActivityAsync(_options, $"Approved Disposal {disposal.DisposalNumber}", actionBy: model.ActionBySystemUserId);
 
+                if (disposal.RequestedBySystemUserId.HasValue)
+                {
+                    await _notificationService.NotifyUserAsync(
+                        context,
+                        NotificationConstants.DISPOSAL_APPROVED,
+                        $"Disposal {disposal.DisposalNumber} has been approved",
+                        disposal.RequestedBySystemUserId.Value,
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.DISPOSAL);
+                }
+
                 return Ok(ApiResponse<object>.Ok(new { DisposalId = disposalId }, $"Disposal {disposal.DisposalNumber} approved successfully"));
             }
             catch (Exception ex)
@@ -466,6 +487,17 @@ namespace API.Controllers
 
                 await AuditTrailTool.LogActivityAsync(_options, $"Marked Disposal {disposal.DisposalNumber} as Disposed", actionBy: model.ActionBySystemUserId);
 
+                if (disposal.RequestedBySystemUserId.HasValue)
+                {
+                    await _notificationService.NotifyUserAsync(
+                        context,
+                        NotificationConstants.DISPOSAL_COMPLETED,
+                        $"Disposal {disposal.DisposalNumber} has been marked as disposed",
+                        disposal.RequestedBySystemUserId.Value,
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.DISPOSAL);
+                }
+
                 return Ok(ApiResponse<object>.Ok(new { DisposalId = disposalId }, $"Disposal {disposal.DisposalNumber} marked as disposed"));
             }
             catch (Exception ex)
@@ -501,6 +533,17 @@ namespace API.Controllers
                 await transaction.CommitAsync();
 
                 await AuditTrailTool.LogActivityAsync(_options, $"Rejected Disposal {disposal.DisposalNumber}", actionBy: model.ActionBySystemUserId);
+
+                if (disposal.RequestedBySystemUserId.HasValue)
+                {
+                    await _notificationService.NotifyUserAsync(
+                        context,
+                        NotificationConstants.DISPOSAL_REJECTED,
+                        $"Disposal {disposal.DisposalNumber} has been rejected",
+                        disposal.RequestedBySystemUserId.Value,
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.DISPOSAL);
+                }
 
                 return Ok(ApiResponse<object>.Ok(new { DisposalId = disposalId }, $"Disposal {disposal.DisposalNumber} rejected"));
             }
