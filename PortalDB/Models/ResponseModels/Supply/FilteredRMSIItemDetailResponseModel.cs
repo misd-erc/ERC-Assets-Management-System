@@ -8,6 +8,8 @@ namespace PortalDB.Models.ResponseModels.Supply
     {
         public string? RISNumber { get; set; }
         public string? ResponsibilityCenterCode { get; set; }
+        public string? OfficeName { get; set; }
+        public string? DivisionName { get; set; }
         public long IssueQuantity { get; set; }
     }
 }
