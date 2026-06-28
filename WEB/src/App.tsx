@@ -1,5 +1,5 @@
 import React, { useEffect, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/auth';
 import { LoginScreen } from '@/components/auth/LoginScreen';
 import { MFAVerification } from '@/components/auth/MFAVerification';
@@ -202,6 +202,17 @@ function AppContent() {
 export default function App() {
   return (
     <Router>
+      <AppShell />
+    </Router>
+  );
+}
+
+function AppShell() {
+  const { pathname } = useLocation();
+  const showChatWidget = pathname !== '/mfa';
+
+  return (
+    <>
       {/* <ErrorBoundary> */}
         <Suspense fallback={
           <div className="min-h-screen flex items-center justify-center">
@@ -215,9 +226,9 @@ export default function App() {
             <AppContent />
           </div>
         </Suspense>
-        <ChatWidget />
+        {showChatWidget && <ChatWidget />}
         <Toaster />
       {/* </ErrorBoundary> */}
-    </Router>
+    </>
   );
 }

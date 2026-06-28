@@ -5,6 +5,7 @@ import { ChatMessage, ChatGroup } from "../types/chat";
 class SignalRService {
     private hubConnection: signalR.HubConnection | null = null;
     private registeredUserId: number | null = null;
+    private joinedGroupIds = new Set<number>();
 
     /**
      * Derives the hub base URL from the API URL env var.
@@ -22,8 +23,8 @@ class SignalRService {
         if (this.hubConnection) {
             if (this.hubConnection.state === signalR.HubConnectionState.Connected) {
                 if (this.registeredUserId !== systemUserId) {
-                    await this.hubConnection.invoke("RegisterUser", systemUserId).catch(console.error);
-                    this.registeredUserId = systemUserId;
+                    await this.stopConnection();
+                    return this.startConnection(systemUserId);
                 }
                 return;
             }
@@ -51,6 +52,7 @@ class SignalRService {
             if (this.registeredUserId !== null) {
                 await this.hubConnection?.invoke("RegisterUser", this.registeredUserId).catch(console.error);
             }
+            await Promise.all([...this.joinedGroupIds].map(groupId => this.joinGroup(groupId).catch(console.error)));
         });
 
         // Clear registration state when fully disconnected
@@ -160,17 +162,20 @@ class SignalRService {
             } finally {
                 this.hubConnection = null;
                 this.registeredUserId = null;
+                this.joinedGroupIds.clear();
             }
         }
     }
 
     public async joinGroup(groupId: number) {
+        this.joinedGroupIds.add(groupId);
         if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
             await this.hubConnection.invoke("JoinChatGroup", groupId);
         }
     }
 
     public async leaveGroup(groupId: number) {
+        this.joinedGroupIds.delete(groupId);
         if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
             await this.hubConnection.invoke("LeaveChatGroup", groupId);
         }

@@ -18,6 +18,8 @@ interface ChatState {
     setActiveChat: (id: number | null, isGroup: boolean) => void;
     setMessages: (messages: ChatMessage[]) => void;
     addMessage: (message: ChatMessage) => void;
+    replaceMessage: (tempId: number, message: ChatMessage) => void;
+    markMessageFailed: (tempId: number) => void;
     updateMessageUnsent: (messageId: number) => void;
     updateMessageRead: (payload: { messageId: number, systemUserId: number }) => void;
     updateMessageReaction: (payload: { messageId: number, systemUserId: number, reactionType: string }) => void;
@@ -107,24 +109,7 @@ export const useChatStore = create<ChatState>((set) => ({
 
         let updatedMessages = [...state.messages];
         if (isRelevant) {
-            if (message.id > 0) {
-                // Replace any temp message (id < 0) from the same sender for the same conversation
-                const tempIndex = state.messages.findIndex(m => {
-                    if (m.id >= 0) return false;
-                    if (m.senderId !== message.senderId) return false;
-                    if (isMessageForGroup) {
-                        return m.groupId === message.groupId;
-                    }
-                    return m.receiverId === message.receiverId;
-                });
-                if (tempIndex !== -1) {
-                    updatedMessages[tempIndex] = message;
-                } else {
-                    updatedMessages.push(message);
-                }
-            } else {
-                updatedMessages.push(message);
-            }
+            updatedMessages.push(message);
         }
         
         return { 
@@ -133,6 +118,15 @@ export const useChatStore = create<ChatState>((set) => ({
             conversationsUpdatedNonce: state.conversationsUpdatedNonce + 1
         };
     }),
+    replaceMessage: (tempId, message) => set((state) => ({
+        messages: state.messages.some(m => m.id === message.id)
+            ? state.messages.filter(m => m.id !== tempId)
+            : state.messages.map(m => m.id === tempId ? message : m),
+        conversationsUpdatedNonce: state.conversationsUpdatedNonce + 1
+    })),
+    markMessageFailed: (tempId) => set((state) => ({
+        messages: state.messages.map(m => m.id === tempId ? { ...m, sendFailed: true } : m)
+    })),
     updateMessageUnsent: (messageId) => set((state) => ({
         messages: state.messages.map(m => m.id === messageId ? { ...m, isUnsent: true } : m),
         conversationsUpdatedNonce: state.conversationsUpdatedNonce + 1
