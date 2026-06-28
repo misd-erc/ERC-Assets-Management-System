@@ -763,7 +763,7 @@ namespace API.Controllers
 
                 // Now filter in memory (Client-side evaluation) to safely use decrypted properties
                 var additionEvents = allSupplyItems
-                    .Where(x => x.Code == targetCode && x.Description == targetDesc)
+                    .Where(x => x.Code == targetCode && x.Description == targetDesc && (x.Quantity ?? 0) > 0)
                     .Select(x => new
                     {
                         x.Id,
@@ -797,7 +797,7 @@ namespace API.Controllers
 
                 // Now filter by the [NotMapped] decrypted properties in memory
                 var issuanceEvents = filteredRisItems
-                    .Where(x => x.StockNumber == targetCode && x.ItemDescription == targetDesc)
+                    .Where(x => x.StockNumber == targetCode && x.ItemDescription == targetDesc && x.IssueQuantity > 0)
                     .Select(x => new
                     {
                         x.Id,
