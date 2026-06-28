@@ -1709,7 +1709,7 @@ namespace API.Controllers
         [HttpGet("rmsi-items/filter/{categoryId}/{startDate}/{endDate}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> FilterRMSIItems([FromQuery] SoloQueryParams model, [FromRoute] long categoryId, [FromRoute] DateTime startDate, [FromRoute] DateTime endDate)
+        public async Task<IActionResult> FilterRMSIItems([FromQuery] PaginationGenericQueryParams model, [FromRoute] long categoryId, [FromRoute] DateTime startDate, [FromRoute] DateTime endDate)
         {
             await using var context = new PortalDbContext(_options);
 
@@ -1723,8 +1723,11 @@ namespace API.Controllers
 
                 if (!supplyRISs.Any())
                 {
-                    return Ok(ApiResponse<List<FilteredRMSIItemGroupResponseModel>>.Ok(
+                    return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.OkPaginated(
                         new List<FilteredRMSIItemGroupResponseModel>(),
+                        model.PageNumber,
+                        model.PageSize,
+                        0,
                         "No items found"
                     ));
                 }
@@ -1745,8 +1748,11 @@ namespace API.Controllers
 
                 if (!supplyRISItems.Any())
                 {
-                    return Ok(ApiResponse<List<FilteredRMSIItemGroupResponseModel>>.Ok(
+                    return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.OkPaginated(
                         new List<FilteredRMSIItemGroupResponseModel>(),
+                        model.PageNumber,
+                        model.PageSize,
+                        0,
                         "No items found"
                     ));
                 }
@@ -1771,7 +1777,7 @@ namespace API.Controllers
                         x.Description,
                         x.CategoryId
                     })
-                    .Where(x => x.CategoryId == categoryId)
+                    .Where(x => categoryId == 0 || x.CategoryId == categoryId)
                     .ToList();
 
                 // Filter pairs that exist in supply items (i.e., belong to the category)
@@ -1781,8 +1787,11 @@ namespace API.Controllers
 
                 if (!validPairs.Any())
                 {
-                    return Ok(ApiResponse<List<FilteredRMSIItemGroupResponseModel>>.Ok(
+                    return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.OkPaginated(
                         new List<FilteredRMSIItemGroupResponseModel>(),
+                        model.PageNumber,
+                        model.PageSize,
+                        0,
                         "No items found for the selected category"
                     ));
                 }
@@ -1840,8 +1849,17 @@ namespace API.Controllers
                     })
                     .ToList();
 
-                return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.Ok(
-                    grouped,
+                int totalCount = grouped.Count;
+                var pagedGroups = grouped
+                    .Skip((model.PageNumber - 1) * model.PageSize)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.OkPaginated(
+                    pagedGroups,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
                     "Filtered RIS items retrieved"
                 ));
             }
