@@ -65,7 +65,7 @@ export const AddSupplyStockForm = ({
     fetchSupplyStorageLocations();
     fetchVendors();
 
-    getCategories()
+    getCategories('Supply Management')
       .then(setCategories)
       .catch((err) => console.error("Failed to load categories", err));
   }, [fetchSupplyUnits, fetchSupplyStorageLocations, fetchVendors]);
