@@ -77,7 +77,7 @@ export function MultiSelect({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
+                  value={option.label}
                   onSelect={() => toggleSelection(option.value)}
                 >
                   <Check

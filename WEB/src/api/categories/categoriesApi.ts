@@ -33,7 +33,7 @@ interface ApiResponse<T> {
 
 /* ======================== CATEGORIES ======================== */
 
-export const getCategories = async (): Promise<Category[]> => {
+export const getCategories = async (moduleName?: string): Promise<Category[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -49,7 +49,7 @@ export const getCategories = async (): Promise<Category[]> => {
     const data = response.data.data;
     const items = Array.isArray(data) ? data : (data as any)?.items || (data as any)?.Items;
 
-    return Array.isArray(items) 
+    const categories = Array.isArray(items)
       ? items.map((c: any) => ({
           id: c.id ?? c.Id,
           name: c.name ?? c.Name,
@@ -59,6 +59,10 @@ export const getCategories = async (): Promise<Category[]> => {
           isActive: c.isActive ?? c.IsActive ?? true
         }))
       : [];
+
+    return moduleName
+      ? categories.filter(category => category.modules.some((module: SystemModule) => module.name === moduleName))
+      : categories;
   } catch (error) {
     console.error('Error fetching categories:', error);
     return [];
