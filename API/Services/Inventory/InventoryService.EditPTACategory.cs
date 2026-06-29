@@ -53,6 +53,20 @@ public async Task<IActionResult> EditPTACategory([FromBody] EditPTACategoryQuery
 
                 long ptaCategoryId = await _editTools.PTA.EditTblPTACategoryAsync(ptaCategory, model.ActionBySystemUserId, context);
 
+                await context.TblPTACategoryModules
+                    .Where(x => x.CategoryId == ptaCategoryId)
+                    .ExecuteSoftDeleteAsync(context);
+
+                var moduleIds = model.ModuleIds.Distinct().ToList();
+                if (moduleIds.Count > 0)
+                {
+                    await context.TblPTACategoryModules.AddRangeAsync(moduleIds.Select(moduleId => new TblPTACategoryModule
+                    {
+                        CategoryId = ptaCategoryId,
+                        ModuleId = moduleId
+                    }));
+                }
+
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok(new { PTACategoryId = ptaCategoryId }, $"PTA Category has been {(model.Id == 0 ? "added" : "updated")}"));

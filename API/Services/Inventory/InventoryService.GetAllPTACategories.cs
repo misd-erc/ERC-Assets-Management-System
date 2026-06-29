@@ -68,6 +68,23 @@ public async Task<IActionResult> GetAllPTACategories([FromQuery] PaginationGener
                     .Take(model.PageSize)
                     .ToList();
 
+                var categoryIds = ppeCategoryList.Select(x => x.Id).ToList();
+                var categoryModules = await context.TblPTACategoryModules
+                    .AsNoTracking()
+                    .Where(x => categoryIds.Contains(x.CategoryId) && !x.IsDeleted)
+                    .Join(context.TblSystemModules.AsNoTracking().Where(x => !x.IsDeleted),
+                        cm => cm.ModuleId,
+                        sm => sm.Id,
+                        (cm, sm) => new { cm.CategoryId, Module = sm })
+                    .ToListAsync();
+
+                foreach (var category in ppeCategoryList)
+                {
+                    var modules = categoryModules.Where(x => x.CategoryId == category.Id).Select(x => x.Module).ToList();
+                    category.ModuleIds = modules.Select(x => x.Id).ToList();
+                    category.Modules = modules;
+                }
+
                 var ppeCategoriesResponses = ppeCategoryList;
 
                 await context.SaveChangesAsync();

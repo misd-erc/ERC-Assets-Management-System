@@ -306,6 +306,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
             try
             {
                 TblPTACategory? ptaCategoryModel = await _getTools.PTA.GetTblPTACategoryAsync(id, context);
+                await context.TblPTACategoryModules.Where(x => x.CategoryId == id).ExecuteSoftDeleteAsync(context);
                 await context.TblPTACategories.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
                 await AuditTrailTool.LogActivityAsync(_options, $"Deleted a PTA Category", actionBy: actionBySystemUserId,
                     linkedAuditTrailId: AuditTrailTool.TrackChanges(context, ptaCategoryModel, null, nameof(TblPTACategory), actionBySystemUserId, "Delete"));
@@ -386,4 +387,3 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
 
     }
 }
-
