@@ -12,17 +12,20 @@ namespace API.Services.Inventory
         private readonly IPortalGetTools _getTools;
         private readonly IPortalEditTools _editTools;
         private readonly ParserTools _parserTools;
+        private readonly NotificationBroadcastService _notificationService;
 
         public InventoryService(
             DbContextOptions<PortalDbContext> options,
             IPortalGetTools getTools,
             IPortalEditTools editTools,
-            ParserTools parserTools)
+            ParserTools parserTools,
+            NotificationBroadcastService notificationService)
         {
             _options = options;
             _getTools = getTools;
             _editTools = editTools;
             _parserTools = parserTools;
+            _notificationService = notificationService;
         }
     }
 }

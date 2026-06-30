@@ -33,6 +33,8 @@ interface AssetsFiltersProps {
   onClearFilters: () => void;
   onApplyFilters?: () => void;
   totalResults: number;
+  /** Restrict the Category dropdown to this module ('PPE' or 'SE'). Omit to show both, excluding 'Supply'. */
+  moduleFilter?: string;
 }
 
 export function AssetsFilters({
@@ -55,11 +57,12 @@ export function AssetsFilters({
   onClearFilters,
   onApplyFilters,
   totalResults,
+  moduleFilter,
 }: AssetsFiltersProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') onApplyFilters?.();
   };
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string; module?: string }[]>([]);
   const [conditions, setConditions] = useState<string[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
@@ -97,7 +100,9 @@ export function AssetsFilters({
     loadFilters();
   }, []);
 
-
+  const visibleCategories = categories.filter(c =>
+    moduleFilter ? c.module === moduleFilter : c.module !== 'Supply'
+  );
 
   return (
     <Card>
@@ -144,7 +149,7 @@ export function AssetsFilters({
                 >
                   <span className="truncate">
                     {categoryFilter && categoryFilter !== 'all'
-                      ? categories.find(c => c.id.toString() === categoryFilter)?.name ?? 'All Categories'
+                      ? visibleCategories.find(c => c.id.toString() === categoryFilter)?.name ?? 'All Categories'
                       : 'All Categories'}
                   </span>
                   <ChevronsUpDown className={cn("ml-2 size-4 shrink-0 transition-transform duration-200 text-slate-400", categoryOpen && "text-blue-500")} />
@@ -171,7 +176,7 @@ export function AssetsFilters({
                         <span className="truncate flex-1">All Categories</span>
                         <Check className={cn("ml-2 size-4 shrink-0 transition-all duration-200", categoryFilter === 'all' ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75")} />
                       </CommandItem>
-                      {categories.map(category => (
+                      {visibleCategories.map(category => (
                         <CommandItem
                           key={category.id}
                           value={category.name}

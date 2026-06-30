@@ -48,6 +48,7 @@ public async Task<IActionResult> EditPTACategory([FromBody] EditPTACategoryQuery
                     Id = model.Id,
                     Name = model.Name,
                     GeneralCode = model.GeneralCode,
+                    Module = model.Module,
                     IsActive = model.IsActive
                 };
 

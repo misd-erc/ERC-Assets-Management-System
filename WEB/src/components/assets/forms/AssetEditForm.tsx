@@ -53,7 +53,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
   const [submitted, setSubmitted] = useState(false);
   const [offices, setOffices] = useState<VwOffice[]>([]);
   const [divisions, setDivisions] = useState<VwDivision[]>([]);
-  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
+  const [categories, setCategories] = useState<{ id: number; name: string; module?: string }[]>([]);
   const [legends, setLegends] = useState<{ id: number; name: string; description?: string }[]>([]);
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -422,7 +422,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
         handlePlantillaEmployeeSelect={handlePlantillaEmployeeSelect}
         handleNonPlantillaEmployeeSelect={handleNonPlantillaEmployeeSelect}
         employees={employees}
-        categories={categories}
+        categories={categories.filter(c => c.module === 'PPE' || c.module === 'SE')}
         legends={legends}
         offices={offices}
         divisions={divisions}

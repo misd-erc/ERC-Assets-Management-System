@@ -1,4 +1,5 @@
 using API.Attributes;
+using API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
@@ -26,17 +27,20 @@ namespace API.Controllers
         private readonly IPortalGetTools _getTools;
         private readonly IPortalEditTools _editTools;
         private readonly ParserTools _parserTools;
+        private readonly NotificationBroadcastService _notificationService;
 
         public DeliveryController(DbContextOptions<PortalDbContext> options,
             IPortalGetTools getTools,
             IPortalEditTools editTools,
-            ParserTools parserTools)
+            ParserTools parserTools,
+            NotificationBroadcastService notificationService)
 
         {
             _options = options;
             _getTools = getTools;
             _editTools = editTools;
             _parserTools = parserTools;
+            _notificationService = notificationService;
         }
 
         #region GET
@@ -397,6 +401,17 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                if (model.Id == 0)
+                {
+                    await _notificationService.NotifyModuleUsersAsync(
+                        context,
+                        NotificationConstants.DELIVERY_CREATED,
+                        $"New delivery record {model.DRNumber} has been created",
+                        NotificationConstants.Modules.DELIVERY_RECEIPT,
+                        model.ActionBySystemUserId);
+                }
+
                 return Ok(ApiResponse<object>.Ok(new { DeliveryRecordId = deliveryRecordId }, $"Delivery Record has been {(model.Id == 0 ? "added" : "updated")}"));
 
             }

@@ -19,18 +19,23 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataTable } from '@/components/common/DataTable';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 import { getCategories, createCategory, updateCategory, deleteCategory, Category } from '@/api/categories/categoriesApi';
 import { toast } from 'sonner';
 
+const CATEGORY_MODULES = ['Supply', 'PPE', 'SE'];
+
 export function CategoryManagement() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [moduleFilter, setModuleFilter] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ name: '', generalCode: '', isActive: true });
+  const [formData, setFormData] = useState({ name: '', generalCode: '', module: '', isActive: true });
 
   // Fetch categories on mount
   useEffect(() => {
@@ -44,10 +49,15 @@ export function CategoryManagement() {
     setLoading(false);
   };
 
-  const filtered = categories.filter(cat =>
-    cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cat.generalCode.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = categories.filter(cat => {
+    const matchesSearch =
+      cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cat.generalCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cat.module.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesModule = !moduleFilter || cat.module === moduleFilter;
+
+    return matchesSearch && matchesModule;
+  });
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.generalCode.trim()) {
@@ -59,14 +69,14 @@ export function CategoryManagement() {
     let result;
 
     if (editingId) {
-      result = await updateCategory(editingId, formData.name, formData.generalCode, formData.isActive);
+      result = await updateCategory(editingId, formData.name, formData.generalCode, formData.module, formData.isActive);
       if (result) {
         toast.success('Category updated successfully');
       } else {
         toast.error('Failed to update category');
       }
     } else {
-      result = await createCategory(formData.name, formData.generalCode);
+      result = await createCategory(formData.name, formData.generalCode, formData.module);
       if (result) {
         toast.success('Category created successfully');
       } else {
@@ -77,7 +87,7 @@ export function CategoryManagement() {
     setLoading(false);
     if (result) {
       await fetchCategories();
-      setFormData({ name: '', generalCode: '', isActive: true });
+      setFormData({ name: '', generalCode: '', module: '', isActive: true });
       setEditingId(null);
       setIsOpen(false);
     }
@@ -88,6 +98,7 @@ export function CategoryManagement() {
     setFormData({
       name: category.name,
       generalCode: category.generalCode,
+      module: category.module,
       isActive: category.isActive
     });
     setIsOpen(true);
@@ -98,17 +109,23 @@ export function CategoryManagement() {
     const result = await deleteCategory(id);
     setLoading(false);
 
-    if (result) {
+    if (result.success) {
       toast.success('Category deleted successfully');
       await fetchCategories();
     } else {
-      toast.error('Failed to delete category');
+      toast.error(result.message || 'Failed to delete category');
     }
   };
 
   const columns = [
     { key: 'name', label: 'Category Name' },
     { key: 'generalCode', label: 'Code' },
+    {
+      key: 'module',
+      label: 'Module',
+      render: (_: any, row: Category) => row.module || '-'
+    },
+    { key: 'itemCount', label: 'Items', render: (v: number) => v ?? 0 },
     { key: 'isActive', label: 'Status', render: (v: boolean) => v ? 'Active' : 'Inactive' },
     {
       key: 'actions',
@@ -122,28 +139,40 @@ export function CategoryManagement() {
           >
             <Edit className="w-4 h-4" />
           </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" variant="outline" className="text-red-600">
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogTitle>Delete Category</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete "{row.name}"? This action cannot be undone.
-              </AlertDialogDescription>
-              <div className="flex justify-end gap-2">
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => handleDelete(row.id)}
-                  className="bg-red-600"
-                >
-                  Delete
-                </AlertDialogAction>
-              </div>
-            </AlertDialogContent>
-          </AlertDialog>
+          {row.itemCount > 0 ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-red-600"
+              disabled
+              title={`Cannot delete — ${row.itemCount} item(s) still linked`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          ) : (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline" className="text-red-600">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete "{row.name}"? This action cannot be undone.
+                </AlertDialogDescription>
+                <div className="flex justify-end gap-2">
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => handleDelete(row.id)}
+                    className="bg-red-600"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </div>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       )
     }
@@ -165,13 +194,13 @@ export function CategoryManagement() {
           <DialogTrigger asChild>
             <Button onClick={() => {
               setEditingId(null);
-              setFormData({ name: '', generalCode: '', isActive: true });
+              setFormData({ name: '', generalCode: '', module: '', isActive: true });
             }}>
               <Plus className="w-4 h-4 mr-2" />
               Add Category
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-2xl overflow-hidden">
             <DialogHeader>
               <DialogTitle className="text-xl">
                 {editingId ? 'Edit Category' : 'Add New Category'}
@@ -207,6 +236,25 @@ export function CategoryManagement() {
                   disabled={loading}
                 />
               </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">
+                  Module
+                </Label>
+                <Select
+                  value={formData.module}
+                  onValueChange={(value) => setFormData({ ...formData, module: value })}
+                  disabled={loading}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select module" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORY_MODULES.map(module => (
+                      <SelectItem key={module} value={module}>{module}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-md">
                 <input
                   type="checkbox"
@@ -240,6 +288,15 @@ export function CategoryManagement() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <Tabs value={moduleFilter || 'all'} onValueChange={(value) => setModuleFilter(value === 'all' ? '' : value)}>
+        <TabsList>
+          <TabsTrigger value="all">All</TabsTrigger>
+          {CATEGORY_MODULES.map(module => (
+            <TabsTrigger key={module} value={module}>{module}</TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       <div className="border rounded-lg overflow-hidden">
         <DataTable

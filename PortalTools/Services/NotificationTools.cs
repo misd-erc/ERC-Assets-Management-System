@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PortalDB.Entities.DBO.Notification;
 using PortalDB.Services;
 using System;
@@ -10,16 +10,13 @@ namespace PortalTools.Services
 {
     public static class NotificationTools
     {
-        /// <summary>
-        /// Creates a single system notification using the provided DbContext.
-        /// Logs audit trail and returns the new notification ID.
-        /// </summary>
-        public static async Task<long> CreateNotificationAsync(
+        public static async Task<TblSystemNotification> CreateNotificationAsync(
             PortalDbContext context,
             string title,
             string description,
             long recipientSystemUserId,
-            long actionBySystemUserId)
+            long actionBySystemUserId,
+            long? moduleId = null)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
@@ -29,14 +26,14 @@ namespace PortalTools.Services
                 Description = description,
                 SystemUserId = recipientSystemUserId,
                 CreatedBySystemUserId = actionBySystemUserId,
+                ModuleId = moduleId,
                 CreatedAt = DateTime.UtcNow,
                 IsDeleted = false
             };
 
             await context.TblSystemNotifications.AddAsync(notification);
-            await context.SaveChangesAsync(); // Save notification first
+            await context.SaveChangesAsync();
 
-            // Log audit (after SaveChanges so Id is populated)
             AuditTrailTool.TrackChanges(
                 context,
                 null!,
@@ -46,26 +43,23 @@ namespace PortalTools.Services
                 "Insert"
             );
 
-            await context.SaveChangesAsync(); // Save audit
-            return notification.Id;
+            await context.SaveChangesAsync();
+            return notification;
         }
 
-        /// <summary>
-        /// Creates multiple notifications in a single batch using the same DbContext.
-        /// Returns the number of notifications created.
-        /// </summary>
-        public static async Task<int> CreateBatchNotificationsAsync(
+        public static async Task<List<TblSystemNotification>> CreateBatchNotificationsAsync(
             PortalDbContext context,
             string title,
             string description,
             IEnumerable<long> recipientSystemUserIds,
-            long actionBySystemUserId)
+            long actionBySystemUserId,
+            long? moduleId = null)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
             if (recipientSystemUserIds == null) throw new ArgumentNullException(nameof(recipientSystemUserIds));
 
             var userIds = recipientSystemUserIds.Distinct().ToList();
-            if (!userIds.Any()) return 0;
+            if (!userIds.Any()) return new List<TblSystemNotification>();
 
             var notifications = userIds.Select(userId => new TblSystemNotification
             {
@@ -73,14 +67,14 @@ namespace PortalTools.Services
                 Description = description,
                 SystemUserId = userId,
                 CreatedBySystemUserId = actionBySystemUserId,
+                ModuleId = moduleId,
                 CreatedAt = DateTime.UtcNow,
                 IsDeleted = false
             }).ToList();
 
             await context.TblSystemNotifications.AddRangeAsync(notifications);
-            await context.SaveChangesAsync(); // One DB round-trip for all inserts
+            await context.SaveChangesAsync();
 
-            // Batch audit logging
             foreach (var notif in notifications)
             {
                 AuditTrailTool.TrackChanges(
@@ -93,8 +87,26 @@ namespace PortalTools.Services
                 );
             }
 
-            await context.SaveChangesAsync(); // One round-trip for all audit entries
-            return notifications.Count;
+            await context.SaveChangesAsync();
+            return notifications;
+        }
+
+        public static async Task<List<long>> GetUserIdsWithModuleAccessAsync(
+            PortalDbContext context,
+            long moduleId)
+        {
+            var roleIds = await context.TblSystemRoleScopes
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted && x.IsActive && x.ModuleId == moduleId)
+                .Select(x => x.RoleId)
+                .Distinct()
+                .ToListAsync();
+
+            return await context.TblSystemUsers
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted && x.IsActive && roleIds.Contains(x.SystemRoleId))
+                .Select(x => x.Id)
+                .ToListAsync();
         }
     }
 }

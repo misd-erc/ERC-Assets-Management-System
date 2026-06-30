@@ -24,6 +24,7 @@ using PortalTools.Services;
 using PortalTools.Services.GetEditTools.ASSET.PTA;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Office;
+using PortalCommon.Constants;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Globalization;
@@ -66,6 +67,31 @@ public async Task<IActionResult> EditPTAMovement([FromBody] EditPTAMovementQuery
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                long? recipientEmployeeId = model.PlantillaEmployeeId ?? model.NonPlantillaEmployeeId;
+                if (recipientEmployeeId.HasValue)
+                {
+                    var employee = await context.TblEmployees
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(e => e.Id == recipientEmployeeId.Value && !e.IsDeleted);
+
+                    if (employee?.SystemUserId.HasValue == true)
+                    {
+                        string notifTitle = model.Id == 0
+                            ? NotificationConstants.ASSET_ASSIGNED
+                            : NotificationConstants.ASSET_TRANSFERRED;
+                        string notifDesc = model.Id == 0
+                            ? "An asset has been assigned to you"
+                            : "An asset transfer has been updated for you";
+
+                        await _notificationService.NotifyUserAsync(
+                            context, notifTitle, notifDesc,
+                            employee.SystemUserId.Value,
+                            model.ActionBySystemUserId,
+                            NotificationConstants.Modules.TRANSFERS_RETURNS);
+                    }
+                }
+
                 return Ok(ApiResponse<object>.Ok(new { PTAMovementId = ptaMovementId }, $"PTA Movement has been {(model.Id == 0 ? "added" : "updated")}"));
 
             }
@@ -117,6 +143,31 @@ public async Task<IActionResult> EditPTAMovementBulk([FromBody] EditPTAMovementB
                 await transaction.CommitAsync();
 
                 await AuditTrailTool.LogActivityAsync(_options, $"Bulk edited {model.Movements.Count} PTA Movement(s)", actionBy: model.ActionBySystemUserId);
+
+                var recipientEmployeeIds = model.Movements
+                    .Select(m => m.PlantillaEmployeeId ?? m.NonPlantillaEmployeeId)
+                    .Where(id => id.HasValue)
+                    .Select(id => id!.Value)
+                    .Distinct()
+                    .ToList();
+
+                foreach (var empId in recipientEmployeeIds)
+                {
+                    var employee = await context.TblEmployees
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(e => e.Id == empId && !e.IsDeleted);
+
+                    if (employee?.SystemUserId.HasValue == true)
+                    {
+                        await _notificationService.NotifyUserAsync(
+                            context,
+                            NotificationConstants.ASSET_TRANSFERRED,
+                            "Assets have been assigned/transferred to you",
+                            employee.SystemUserId.Value,
+                            model.ActionBySystemUserId,
+                            NotificationConstants.Modules.TRANSFERS_RETURNS);
+                    }
+                }
 
                 return Ok(ApiResponse<object>.Ok(new { PTAMovementIds = resultIds, Count = resultIds.Count }, $"{model.Movements.Count} PTA Movement(s) processed successfully."));
             }

@@ -1,162 +1,210 @@
 import * as signalR from "@microsoft/signalr";
 import { useChatStore } from "../store/useChatStore";
+import { useNotificationStore } from "../store/notification";
 import { ChatMessage, ChatGroup } from "../types/chat";
+import { SystemNotification } from "../types/notification";
 
 class SignalRService {
-    private hubConnection: signalR.HubConnection | null = null;
+    private chatConnection: signalR.HubConnection | null = null;
+    private notificationConnection: signalR.HubConnection | null = null;
     private registeredUserId: number | null = null;
+    private joinedGroupIds = new Set<number>();
 
-    /**
-     * Derives the hub base URL from the API URL env var.
-     * REACT_APP_API_URL typically ends with "/api" (e.g. "http://localhost:7702/api"),
-     * but the SignalR hub is mapped at "/hubs/chat" (without "/api"), so we strip it.
-     */
     private getHubBaseUrl(): string {
         const apiUrl = process.env.REACT_APP_API_URL || "https://localhost:7118/api";
-        // Remove trailing "/api" if present so the hub URL resolves correctly
         return apiUrl.endsWith("/api") ? apiUrl.slice(0, -4) : apiUrl;
     }
 
     public async startConnection(systemUserId: number) {
-        // Guard: if already connected for the same user, just re-register to be safe
-        if (this.hubConnection) {
-            if (this.hubConnection.state === signalR.HubConnectionState.Connected) {
+        await Promise.all([
+            this.startChatConnection(systemUserId),
+            this.startNotificationConnection(systemUserId),
+        ]);
+    }
+
+    private async startChatConnection(systemUserId: number) {
+        if (this.chatConnection) {
+            if (this.chatConnection.state === signalR.HubConnectionState.Connected) {
                 if (this.registeredUserId !== systemUserId) {
-                    await this.hubConnection.invoke("RegisterUser", systemUserId).catch(console.error);
+                    await this.chatConnection.invoke("RegisterUser", systemUserId).catch(console.error);
                     this.registeredUserId = systemUserId;
                 }
                 return;
             }
-            // If still connecting/reconnecting, do nothing and let it finish
             if (
-                this.hubConnection.state === signalR.HubConnectionState.Connecting ||
-                this.hubConnection.state === signalR.HubConnectionState.Reconnecting
+                this.chatConnection.state === signalR.HubConnectionState.Connecting ||
+                this.chatConnection.state === signalR.HubConnectionState.Reconnecting
             ) {
                 return;
             }
-            // Otherwise (disconnected/stopped), clean up before recreating
-            await this.stopConnection();
+            await this.stopChatConnection();
         }
 
         const baseUrl = this.getHubBaseUrl();
 
-        this.hubConnection = new signalR.HubConnectionBuilder()
+        this.chatConnection = new signalR.HubConnectionBuilder()
             .withUrl(`${baseUrl}/hubs/chat`)
             .withAutomaticReconnect()
             .build();
 
-        // Re-register user after automatic reconnect so messages keep arriving
-        this.hubConnection.onreconnected(async (connectionId) => {
-            console.log("SignalR Reconnected:", connectionId);
+        this.chatConnection.onreconnected(async () => {
             if (this.registeredUserId !== null) {
-                await this.hubConnection?.invoke("RegisterUser", this.registeredUserId).catch(console.error);
+                await this.chatConnection?.invoke("RegisterUser", this.registeredUserId).catch(console.error);
             }
+            await Promise.all([...this.joinedGroupIds].map(groupId => this.joinGroup(groupId).catch(console.error)));
         });
 
-        // Clear registration state when fully disconnected
-        this.hubConnection.onclose(() => {
-            console.log("SignalR connection closed.");
+        this.chatConnection.onclose(() => {
             this.registeredUserId = null;
         });
 
         try {
-            await this.hubConnection.start();
-            console.log("SignalR Connected.");
+            await this.chatConnection.start();
+            console.log("SignalR Chat Connected.");
 
-            // Register user
-            await this.hubConnection.invoke("RegisterUser", systemUserId);
+            await this.chatConnection.invoke("RegisterUser", systemUserId);
             this.registeredUserId = systemUserId;
 
-            // --- Event Handlers ---
-
-            this.hubConnection.on("ReceiveMessage", (message: ChatMessage) => {
+            this.chatConnection.on("ReceiveMessage", (message: ChatMessage) => {
                 const store = useChatStore.getState();
                 store.addMessage(message);
             });
 
-            this.hubConnection.on("MessageUnsent", (messageId: number) => {
+            this.chatConnection.on("MessageUnsent", (messageId: number) => {
                 const store = useChatStore.getState();
                 store.updateMessageUnsent(messageId);
             });
 
-            // Real-time read receipt updates (double-check ticks)
-            this.hubConnection.on("MessageRead", (payload: { messageId: number, systemUserId: number }) => {
+            this.chatConnection.on("MessageRead", (payload: { messageId: number, systemUserId: number }) => {
                 const store = useChatStore.getState();
                 store.updateMessageRead(payload);
             });
 
-            this.hubConnection.on("ReactionUpdated", (payload: { messageId: number, systemUserId: number, reactionType: string }) => {
+            this.chatConnection.on("ReactionUpdated", (payload: { messageId: number, systemUserId: number, reactionType: string }) => {
                 const store = useChatStore.getState();
                 store.updateMessageReaction(payload);
             });
 
-            this.hubConnection.on("ReactionRemoved", (payload: { messageId: number, systemUserId: number }) => {
+            this.chatConnection.on("ReactionRemoved", (payload: { messageId: number, systemUserId: number }) => {
                 const store = useChatStore.getState();
                 store.removeMessageReaction(payload);
             });
 
-            // When added to a group by someone else, also join the SignalR group channel
-            this.hubConnection.on("GroupCreated", (group: ChatGroup) => {
+            this.chatConnection.on("GroupCreated", (group: ChatGroup) => {
                 const store = useChatStore.getState();
                 store.addGroup(group);
                 this.joinGroup(group.id).catch(console.error);
             });
 
-            // When kicked or self-left, leave the SignalR group channel and remove from store
-            this.hubConnection.on("LeftGroup", (groupId: number) => {
+            this.chatConnection.on("LeftGroup", (groupId: number) => {
                 this.leaveGroup(groupId).catch(console.error);
                 const store = useChatStore.getState();
                 store.removeGroup(groupId);
             });
 
-            this.hubConnection.on("UserOnline", (userId: number) => {
+            this.chatConnection.on("UserOnline", (userId: number) => {
                 const store = useChatStore.getState();
                 store.addOnlineUser(userId);
             });
 
-            this.hubConnection.on("UserOffline", (userId: number) => {
+            this.chatConnection.on("UserOffline", (userId: number) => {
                 const store = useChatStore.getState();
                 store.removeOnlineUser(userId);
             });
 
-            this.hubConnection.on("OnlineUsersList", (users: number[]) => {
+            this.chatConnection.on("OnlineUsersList", (users: number[]) => {
                 const store = useChatStore.getState();
                 store.setOnlineUsers(users);
             });
 
-            this.hubConnection.on("UserTyping", (payload: { senderId: number, groupId?: number }) => {
+            this.chatConnection.on("UserTyping", (payload: { senderId: number, groupId?: number }) => {
                 const store = useChatStore.getState();
                 const chatKey = payload.groupId ? `group_${payload.groupId}` : `user_${payload.senderId}`;
                 store.addTypingUser(chatKey, payload.senderId);
             });
 
-            this.hubConnection.on("UserStoppedTyping", (payload: { senderId: number, groupId?: number }) => {
+            this.chatConnection.on("UserStoppedTyping", (payload: { senderId: number, groupId?: number }) => {
                 const store = useChatStore.getState();
                 const chatKey = payload.groupId ? `group_${payload.groupId}` : `user_${payload.senderId}`;
                 store.removeTypingUser(chatKey, payload.senderId);
             });
 
-            this.hubConnection.on("GroupDeleted", (groupId: number) => {
+            this.chatConnection.on("GroupDeleted", (groupId: number) => {
                 const store = useChatStore.getState();
                 store.removeGroup(groupId);
             });
 
-            this.hubConnection.on("ConversationDeleted", (partnerUserId: number) => {
+            this.chatConnection.on("ConversationDeleted", (partnerUserId: number) => {
                 const store = useChatStore.getState();
                 store.removeConversation(partnerUserId);
             });
 
         } catch (err) {
-            console.error("Error while starting SignalR connection: " + err);
+            console.error("Error while starting SignalR Chat connection: " + err);
         }
     }
 
-    public async stopConnection() {
-        if (this.hubConnection) {
+    private async startNotificationConnection(systemUserId: number) {
+        if (this.notificationConnection) {
+            if (this.notificationConnection.state === signalR.HubConnectionState.Connected) {
+                return;
+            }
+            if (
+                this.notificationConnection.state === signalR.HubConnectionState.Connecting ||
+                this.notificationConnection.state === signalR.HubConnectionState.Reconnecting
+            ) {
+                return;
+            }
+            await this.stopNotificationConnection();
+        }
+
+        const baseUrl = this.getHubBaseUrl();
+
+        this.notificationConnection = new signalR.HubConnectionBuilder()
+            .withUrl(`${baseUrl}/hubs/notification`)
+            .withAutomaticReconnect()
+            .build();
+
+        this.notificationConnection.onreconnected(async () => {
+            if (this.registeredUserId !== null) {
+                await this.notificationConnection?.invoke("RegisterUser", this.registeredUserId).catch(console.error);
+            }
+        });
+
+        try {
+            await this.notificationConnection.start();
+            console.log("SignalR Notification Connected.");
+
+            await this.notificationConnection.invoke("RegisterUser", systemUserId);
+
+            this.notificationConnection.on("ReceiveNotification", (notification: SystemNotification) => {
+                const store = useNotificationStore.getState();
+                store.addNotification(notification);
+            });
+
+        } catch (err) {
+            console.error("Error while starting SignalR Notification connection: " + err);
+        }
+    }
+
+    private async stopChatConnection() {
+        if (this.chatConnection) {
             try {
-                await this.hubConnection.stop();
+                await this.chatConnection.stop();
             } catch (err) {
-                console.warn("Error stopping SignalR connection:", err);
+                console.warn("Error stopping SignalR Chat connection:", err);
+            } finally {
+                this.chatConnection = null;
+            }
+        }
+    }
+
+    private async stopNotificationConnection() {
+        if (this.notificationConnection) {
+            try {
+                await this.notificationConnection.stop();
+            } catch (err) {
+                console.warn("Error stopping SignalR Notification connection:", err);
             } finally {
                 this.hubConnection = null;
                 this.registeredUserId = null;
@@ -177,18 +225,22 @@ class SignalRService {
     }
 
     public get connection() {
-        return this.hubConnection;
+        return this.chatConnection;
+    }
+
+    public get notifConnection() {
+        return this.notificationConnection;
     }
 
     public async sendTypingStarted(receiverId?: number, groupId?: number) {
-        if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-            await this.hubConnection.invoke("TypingStarted", receiverId || null, groupId || null);
+        if (this.chatConnection && this.chatConnection.state === signalR.HubConnectionState.Connected) {
+            await this.chatConnection.invoke("TypingStarted", receiverId || null, groupId || null);
         }
     }
 
     public async sendTypingStopped(receiverId?: number, groupId?: number) {
-        if (this.hubConnection && this.hubConnection.state === signalR.HubConnectionState.Connected) {
-            await this.hubConnection.invoke("TypingStopped", receiverId || null, groupId || null);
+        if (this.chatConnection && this.chatConnection.state === signalR.HubConnectionState.Connected) {
+            await this.chatConnection.invoke("TypingStopped", receiverId || null, groupId || null);
         }
     }
 }

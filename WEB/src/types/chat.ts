@@ -1,5 +1,6 @@
 export interface ChatMessage {
     id: number;
+    clientTempId?: number;
     senderId: number;
     receiverId?: number;
     groupId?: number;
@@ -10,6 +11,7 @@ export interface ChatMessage {
     attachmentType?: string;
     isUnsent: boolean;
     isSystemMessage?: boolean;
+    sendFailed?: boolean;
     createdAt: string;
     readReceipts: ReadReceipt[];
     reactions: ChatReaction[];

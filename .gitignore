@@ -6,3 +6,4 @@ publish
 API/Properties/launchSettings.json
 API/API.sln.DotSettings.user
 WEB/amsstaging.sql
+.DS_Store

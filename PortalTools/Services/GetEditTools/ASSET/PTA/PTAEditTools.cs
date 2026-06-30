@@ -282,6 +282,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                         .ExecuteUpdateAsync(u => u
                             .SetProperty(x => x.Name, model.Name)
                             .SetProperty(x => x.GeneralCode, model.GeneralCode)
+                            .SetProperty(x => x.Module, model.Module)
                             .SetProperty(x => x.IsActive, model.IsActive));
                 }
 
@@ -386,4 +387,3 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
 
     }
 }
-

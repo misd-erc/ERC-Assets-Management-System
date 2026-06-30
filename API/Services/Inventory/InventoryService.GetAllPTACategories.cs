@@ -68,6 +68,25 @@ public async Task<IActionResult> GetAllPTACategories([FromQuery] PaginationGener
                     .Take(model.PageSize)
                     .ToList();
 
+                var categoryIds = ppeCategoryList.Select(x => x.Id).ToList();
+                var ptaCounts = await context.TblPTAs.AsNoTracking()
+                    .Where(x => x.CategoryId != null && categoryIds.Contains(x.CategoryId.Value) && !x.IsDeleted && x.IsActive)
+                    .GroupBy(x => x.CategoryId)
+                    .Select(g => new { CategoryId = g.Key, Count = g.Count() })
+                    .ToListAsync();
+                var supplyCounts = await context.TblSupplyItems.AsNoTracking()
+                    .Where(x => x.CategoryId != null && categoryIds.Contains(x.CategoryId.Value) && !x.IsDeleted && x.IsActive)
+                    .GroupBy(x => x.CategoryId)
+                    .Select(g => new { CategoryId = g.Key, Count = g.Count() })
+                    .ToListAsync();
+
+                foreach (var category in ppeCategoryList)
+                {
+                    category.ItemCount =
+                        (ptaCounts.FirstOrDefault(x => x.CategoryId == category.Id)?.Count ?? 0) +
+                        (supplyCounts.FirstOrDefault(x => x.CategoryId == category.Id)?.Count ?? 0);
+                }
+
                 var ppeCategoriesResponses = ppeCategoryList;
 
                 await context.SaveChangesAsync();

@@ -1,4 +1,5 @@
 using API.Attributes;
+using API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
@@ -32,17 +33,20 @@ namespace API.Controllers
         private readonly IPortalGetTools _getTools;
         private readonly IPortalEditTools _editTools;
         private readonly ParserTools _parserTools;
+        private readonly NotificationBroadcastService _notificationService;
 
         public SupplyController(DbContextOptions<PortalDbContext> options,
             IPortalGetTools getTools,
             IPortalEditTools editTools,
-            ParserTools parserTools)
+            ParserTools parserTools,
+            NotificationBroadcastService notificationService)
 
         {
             _options = options;
             _getTools = getTools;
             _editTools = editTools;
             _parserTools = parserTools;
+            _notificationService = notificationService;
         }
 
         #region GET
@@ -763,7 +767,7 @@ namespace API.Controllers
 
                 // Now filter in memory (Client-side evaluation) to safely use decrypted properties
                 var additionEvents = allSupplyItems
-                    .Where(x => x.Code == targetCode && x.Description == targetDesc)
+                    .Where(x => x.Code == targetCode && x.Description == targetDesc && (x.Quantity ?? 0) > 0)
                     .Select(x => new
                     {
                         x.Id,
@@ -797,7 +801,7 @@ namespace API.Controllers
 
                 // Now filter by the [NotMapped] decrypted properties in memory
                 var issuanceEvents = filteredRisItems
-                    .Where(x => x.StockNumber == targetCode && x.ItemDescription == targetDesc)
+                    .Where(x => x.StockNumber == targetCode && x.ItemDescription == targetDesc && x.IssueQuantity > 0)
                     .Select(x => new
                     {
                         x.Id,
@@ -1709,7 +1713,7 @@ namespace API.Controllers
         [HttpGet("rmsi-items/filter/{categoryId}/{startDate}/{endDate}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
-        public async Task<IActionResult> FilterRMSIItems([FromQuery] SoloQueryParams model, [FromRoute] long categoryId, [FromRoute] DateTime startDate, [FromRoute] DateTime endDate)
+        public async Task<IActionResult> FilterRMSIItems([FromQuery] PaginationGenericQueryParams model, [FromRoute] long categoryId, [FromRoute] DateTime startDate, [FromRoute] DateTime endDate)
         {
             await using var context = new PortalDbContext(_options);
 
@@ -1723,8 +1727,11 @@ namespace API.Controllers
 
                 if (!supplyRISs.Any())
                 {
-                    return Ok(ApiResponse<List<FilteredRMSIItemGroupResponseModel>>.Ok(
+                    return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.OkPaginated(
                         new List<FilteredRMSIItemGroupResponseModel>(),
+                        model.PageNumber,
+                        model.PageSize,
+                        0,
                         "No items found"
                     ));
                 }
@@ -1745,8 +1752,11 @@ namespace API.Controllers
 
                 if (!supplyRISItems.Any())
                 {
-                    return Ok(ApiResponse<List<FilteredRMSIItemGroupResponseModel>>.Ok(
+                    return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.OkPaginated(
                         new List<FilteredRMSIItemGroupResponseModel>(),
+                        model.PageNumber,
+                        model.PageSize,
+                        0,
                         "No items found"
                     ));
                 }
@@ -1771,7 +1781,7 @@ namespace API.Controllers
                         x.Description,
                         x.CategoryId
                     })
-                    .Where(x => x.CategoryId == categoryId)
+                    .Where(x => categoryId == 0 || x.CategoryId == categoryId)
                     .ToList();
 
                 // Filter pairs that exist in supply items (i.e., belong to the category)
@@ -1781,8 +1791,11 @@ namespace API.Controllers
 
                 if (!validPairs.Any())
                 {
-                    return Ok(ApiResponse<List<FilteredRMSIItemGroupResponseModel>>.Ok(
+                    return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.OkPaginated(
                         new List<FilteredRMSIItemGroupResponseModel>(),
+                        model.PageNumber,
+                        model.PageSize,
+                        0,
                         "No items found for the selected category"
                     ));
                 }
@@ -1840,8 +1853,17 @@ namespace API.Controllers
                     })
                     .ToList();
 
-                return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.Ok(
-                    grouped,
+                int totalCount = grouped.Count;
+                var pagedGroups = grouped
+                    .Skip((model.PageNumber - 1) * model.PageSize)
+                    .Take(model.PageSize)
+                    .ToList();
+
+                return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.OkPaginated(
+                    pagedGroups,
+                    model.PageNumber,
+                    model.PageSize,
+                    totalCount,
                     "Filtered RIS items retrieved"
                 ));
             }
@@ -2155,6 +2177,17 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                if (supplyIAR.IsApproved && !wasAlreadyApproved)
+                {
+                    await _notificationService.NotifyModuleUsersAsync(
+                        context,
+                        NotificationConstants.IAR_APPROVED,
+                        $"IAR {supplyIAR.IARNumber} has been approved and delivery marked as received",
+                        NotificationConstants.Modules.DELIVERY_RECEIPT,
+                        model.ActionBySystemUserId);
+                }
+
                 return Ok(ApiResponse<object>.Ok(new { SupplyIARId = supplyIARId }, $"Supply IAR has been {(model.Id == 0 ? "added" : "updated")}"));
 
             }
@@ -2176,6 +2209,13 @@ namespace API.Controllers
 
             try
             {
+                bool wasAlreadyApproved = false;
+                if (model.Id > 0)
+                {
+                    TblSupplyRIS? existingRIS = await _getTools.Supply.GetTblSupplyRISAsync(model.Id, context);
+                    wasAlreadyApproved = existingRIS?.IsApproved == true;
+                }
+
                 TblSupplyRIS supplyRIS = new()
                 {
                     Id = model.Id,
@@ -2208,6 +2248,8 @@ namespace API.Controllers
                 //    foreach (var SupplyRISItem in SupplyRISItems)
                 //    {
                 //        //Dito magbabawas ng quantity if approved
+                //        // TODO: After implementing quantity deduction, add low stock check:
+                //        // if (supplyItem.Quantity <= supplyItem.ReorderPoint) → send SUPPLY_LOW_STOCK notification
                 //    }
                 //}
 
@@ -2217,6 +2259,28 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                if (model.Id == 0)
+                {
+                    await _notificationService.NotifyModuleUsersAsync(
+                        context,
+                        NotificationConstants.RIS_SUBMITTED,
+                        $"New RIS {supplyRIS.RISNumber} has been submitted for approval",
+                        NotificationConstants.Modules.SUPPLY_MANAGEMENT,
+                        model.ActionBySystemUserId);
+                }
+
+                if (supplyRIS.IsApproved && !wasAlreadyApproved && supplyRIS.RISRequestedBySystemUserId.HasValue)
+                {
+                    await _notificationService.NotifyUserAsync(
+                        context,
+                        NotificationConstants.RIS_APPROVED,
+                        $"RIS {supplyRIS.RISNumber} has been approved",
+                        supplyRIS.RISRequestedBySystemUserId.Value,
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.SUPPLY_MANAGEMENT);
+                }
+
                 return Ok(ApiResponse<object>.Ok(new { SupplyRISId = supplyRISId }, $"Supply RIS has been {(model.Id == 0 ? "added" : "updated")}"));
 
             }

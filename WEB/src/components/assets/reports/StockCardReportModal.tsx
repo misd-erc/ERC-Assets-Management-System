@@ -176,12 +176,14 @@ interface StockCardReportModalProps {
 }
 
 export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalProps) => {
-    const { vwSupplyGroups, loading: loadingGroups, fetchSupplyGroupedItems } = useSupplyItem();
+    const { vwSupplyGroups, totalGroups, loading: loadingGroups, fetchSupplyGroupedItems } = useSupplyItem();
     const { fetchStockCardItems } = useStockCard();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSearchQuery, setActiveSearchQuery] = useState('');
     const [hasSearched, setHasSearched] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
 
     const [selectedGroup, setSelectedGroup] = useState<{ stockNumber: string, description: string, unit: string, reorderPoint: string | number } | null>(null);
     const [previewData, setPreviewData] = useState<SupplyStockCardItem[]>([]);
@@ -193,26 +195,28 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
         if (isOpen) {
             setSearchTerm('');
             setActiveSearchQuery('');
-            setHasSearched(false);
+            setHasSearched(true);
+            setCurrentPage(1);
             setSelectedGroup(null);
             setPreviewData([]);
+            fetchSupplyGroupedItems(1, pageSize, '');
         }
-    }, [isOpen]);
+    }, [isOpen, fetchSupplyGroupedItems]);
 
     const handleSearchSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!searchTerm.trim()) return;
 
         setHasSearched(true);
-        setActiveSearchQuery(searchTerm);
+        setActiveSearchQuery(searchTerm.trim());
+        setCurrentPage(1);
         setSelectedGroup(null);
         setPreviewData([]);
 
-        await fetchSupplyGroupedItems();
+        await fetchSupplyGroupedItems(1, pageSize, searchTerm.trim());
     };
 
     const filteredGroups = useMemo(() => {
-        if (!activeSearchQuery.trim()) return [];
+        if (!activeSearchQuery.trim()) return vwSupplyGroups;
 
         const query = activeSearchQuery.toLowerCase();
         return vwSupplyGroups.filter(
@@ -247,6 +251,14 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
         } finally {
             setIsPreviewLoading(false);
         }
+    };
+
+    const totalPages = Math.ceil(totalGroups / pageSize);
+    const handlePageChange = async (page: number) => {
+        setCurrentPage(page);
+        setSelectedGroup(null);
+        setPreviewData([]);
+        await fetchSupplyGroupedItems(page, pageSize, activeSearchQuery.trim());
     };
 
     const handleExportPDF = async () => {
@@ -358,7 +370,6 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
                         </div>
                         <Button
                             type="submit"
-                            disabled={!searchTerm.trim()}
                             className="bg-slate-900 hover:bg-slate-800 text-white shadow-sm shrink-0 px-6"
                         >
                             Search
@@ -504,7 +515,7 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
                                                     <Archive className="w-8 h-8 text-slate-300" />
                                                 </div>
                                                 <p className="font-medium text-slate-900 text-lg">No items found</p>
-                                                <p className="text-sm">We couldn't find anything matching "{searchTerm}".</p>
+                                                <p className="text-sm">{activeSearchQuery ? `We couldn't find anything matching "${activeSearchQuery}".` : 'No stock card records available.'}</p>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -512,6 +523,18 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
                             </TableBody>
                         </Table>
                     </div>
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-end gap-2 pt-4">
+                            <Button variant="outline" size="sm" disabled={currentPage === 1 || loadingGroups} onClick={() => handlePageChange(currentPage - 1)}>
+                                Previous
+                            </Button>
+                            <span className="text-sm text-slate-600">Page {currentPage} of {totalPages}</span>
+                            <Button variant="outline" size="sm" disabled={currentPage === totalPages || loadingGroups} onClick={() => handlePageChange(currentPage + 1)}>
+                                Next
+                            </Button>
+                        </div>
+                    )}
 
                 </div>
             </DialogContent>

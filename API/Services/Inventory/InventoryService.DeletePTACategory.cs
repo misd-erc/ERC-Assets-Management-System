@@ -43,6 +43,14 @@ public async Task<IActionResult> DeletePTACategory([FromQuery] SoloQueryParams m
             try
             {
 
+                int linkedCount =
+                    await context.TblPTAs.CountAsync(x => x.CategoryId == ptaCategoryId && !x.IsDeleted && x.IsActive) +
+                    await context.TblSupplyItems.CountAsync(x => x.CategoryId == ptaCategoryId && !x.IsDeleted && x.IsActive);
+
+                if (linkedCount > 0)
+                    return Ok(ApiResponse<object>.Fail(ErrorCodes.OPERATION_FAILED,
+                        $"Cannot delete this category — {linkedCount} item(s) are still linked to it."));
+
                 bool isDeleted = await _editTools.PTA.DeleteTblPTACategoryAsync(ptaCategoryId, model.ActionBySystemUserId, context);
 
                 if (!isDeleted)

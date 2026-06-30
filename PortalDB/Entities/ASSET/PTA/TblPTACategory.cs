@@ -34,6 +34,11 @@ namespace PortalDB.Entities.ASSET.PTA
         [Column("PTACategoryCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [Column("PTACategoryModule")]
+        public string? Module { get; set; }
+
+        [NotMapped]
+        public int ItemCount { get; set; }
 
     }
 }

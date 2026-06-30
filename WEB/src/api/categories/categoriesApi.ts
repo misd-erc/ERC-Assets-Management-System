@@ -5,7 +5,9 @@ export interface Category {
   id: number;
   name: string;
   generalCode: string;
+  module: string;
   isActive: boolean;
+  itemCount: number;
 }
 
 export interface Legend {
@@ -25,7 +27,7 @@ interface ApiResponse<T> {
 
 /* ======================== CATEGORIES ======================== */
 
-export const getCategories = async (): Promise<Category[]> => {
+export const getCategories = async (moduleName?: string): Promise<Category[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -41,21 +43,27 @@ export const getCategories = async (): Promise<Category[]> => {
     const data = response.data.data;
     const items = Array.isArray(data) ? data : (data as any)?.items || (data as any)?.Items;
 
-    return Array.isArray(items) 
+    const categories = Array.isArray(items)
       ? items.map((c: any) => ({
           id: c.id ?? c.Id,
           name: c.name ?? c.Name,
           generalCode: c.generalCode ?? c.GeneralCode,
-          isActive: c.isActive ?? c.IsActive ?? true
+          module: c.module ?? c.Module ?? '',
+          isActive: c.isActive ?? c.IsActive ?? true,
+          itemCount: c.itemCount ?? c.ItemCount ?? 0
         }))
       : [];
+
+    return moduleName
+      ? categories.filter(category => category.module === moduleName)
+      : categories;
   } catch (error) {
     console.error('Error fetching categories:', error);
     return [];
   }
 };
 
-export const createCategory = async (name: string, generalCode: string): Promise<Category | null> => {
+export const createCategory = async (name: string, generalCode: string, module: string): Promise<Category | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -63,6 +71,7 @@ export const createCategory = async (name: string, generalCode: string): Promise
       id: 0,
       name,
       generalCode,
+      module,
       isActive: true,
       actionBySystemUserId: systemUserId,
       sessionKey,
@@ -80,7 +89,7 @@ export const createCategory = async (name: string, generalCode: string): Promise
   }
 };
 
-export const updateCategory = async (id: number, name: string, generalCode: string, isActive: boolean): Promise<Category | null> => {
+export const updateCategory = async (id: number, name: string, generalCode: string, module: string, isActive: boolean): Promise<Category | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -88,6 +97,7 @@ export const updateCategory = async (id: number, name: string, generalCode: stri
       id,
       name,
       generalCode,
+      module,
       isActive,
       actionBySystemUserId: systemUserId,
       sessionKey,
@@ -105,7 +115,7 @@ export const updateCategory = async (id: number, name: string, generalCode: stri
   }
 };
 
-export const deleteCategory = async (id: number): Promise<boolean> => {
+export const deleteCategory = async (id: number): Promise<{ success: boolean; message?: string }> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -115,13 +125,13 @@ export const deleteCategory = async (id: number): Promise<boolean> => {
 
     if (!response.data.success) {
       console.error('Failed to delete category:', response.data.message);
-      return false;
+      return { success: false, message: response.data.message };
     }
 
-    return true;
+    return { success: true };
   } catch (error) {
     console.error('Error deleting category:', error);
-    return false;
+    return { success: false };
   }
 };
 

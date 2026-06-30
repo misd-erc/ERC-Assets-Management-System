@@ -129,6 +129,7 @@ builder.Services.AddScoped<ChatGetTools>();
 builder.Services.AddScoped<ChatEditTools>();
 
 builder.Services.AddScoped<AuthTools>();
+builder.Services.AddScoped<API.Services.NotificationBroadcastService>();
 builder.Services.AddScoped<ParserTools>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
@@ -196,6 +197,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<API.Hubs.ChatHub>("/hubs/chat");
+app.MapHub<API.Hubs.NotificationHub>("/hubs/notification");
 
 app.UseDefaultFiles();
 app.UseStaticFiles();

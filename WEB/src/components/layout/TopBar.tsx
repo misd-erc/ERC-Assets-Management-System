@@ -18,6 +18,7 @@ import { ProfileDropdown } from '@/components/layout/ProfileDropdown';
 import { GlobalSearch } from '@/components/layout/GlobalSearch';
 import { NotificationCenter } from '@/components/layout/NotificationCenter';
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useNotificationStore } from '@/store/notification';
 
 interface TopbarProps {
   onMenuClick?: () => void;
@@ -33,7 +34,8 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile: propIsMob
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const { logout } = useAuth();
   const { isDark, toggle: toggleDark } = useDarkMode();
-  
+  const { unreadCount, fetchUnreadCount } = useNotificationStore();
+
   // Always call useMediaQuery unconditionally
   const mediaQueryIsMobile = useMediaQuery("(max-width: 768px)");
   // Use prop if provided, otherwise use hook result
@@ -44,6 +46,11 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile: propIsMob
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
+
+  // Fetch unread count on mount
+  useEffect(() => {
+    fetchUnreadCount();
+  }, [fetchUnreadCount]);
 
   // Open search on Ctrl+K / Cmd+K
   useEffect(() => {
@@ -123,17 +130,19 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile: propIsMob
             {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
           </Button>
 
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="relative shrink-0" 
+          <Button
+            variant="ghost"
+            size="sm"
+            className="relative shrink-0"
             aria-label="Notifications"
             onClick={() => setNotificationsOpen(true)}
           >
             <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-            <Badge className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-[9px] sm:text-xs bg-red-500">
-              3
-            </Badge>
+            {unreadCount > 0 && (
+              <Badge className="absolute -top-1 -right-1 h-4 w-4 sm:h-5 sm:w-5 flex items-center justify-center p-0 text-[9px] sm:text-xs bg-red-500">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Badge>
+            )}
           </Button>
 
           <ProfileDropdown

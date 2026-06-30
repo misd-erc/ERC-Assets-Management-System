@@ -10,18 +10,25 @@ interface ApiResponse<T> {
     data: T;
 }
 
+interface PaginatedResponse<T> {
+    items: T[];
+    totalCount: number;
+}
+
 export const supplyReportsApi = {
     fetchRSMIFiltered: async (
         categoryId: string | number,
         startDate: string,
-        endDate: string
-    ): Promise<FilteredRMSIItemGroupResponseModel[]> => {
+        endDate: string,
+        pageNumber: number = 1,
+        pageSize: number = 10
+    ): Promise<PaginatedResponse<FilteredRMSIItemGroupResponseModel>> => {
 
         // 1. Grab the auth credentials just like in issuanceApi
         const { systemUserId, sessionKey } = getAuthParams();
 
         // 2. Make the request, appending the auth credentials to the params
-        const response = await axiosInstance.get<ApiResponse<FilteredRMSIItemGroupResponseModel[]>>(
+        const response = await axiosInstance.get<ApiResponse<PaginatedResponse<FilteredRMSIItemGroupResponseModel>>>(
             `/supply/rmsi-items/filter/${categoryId}/${startDate}/${endDate}`,
             {
                 params: {
@@ -29,11 +36,13 @@ export const supplyReportsApi = {
                     SystemUserId: systemUserId,
                     ActionBySystemUserId: systemUserId, // Passed both just to be safe with your backend model
                     SessionKey: sessionKey,
+                    PageNumber: pageNumber,
+                    PageSize: pageSize,
                 },
             }
         );
 
         // 3. Return the data payload
-        return response.data.data || [];
+        return response.data.data || { items: [], totalCount: 0 };
     }
 };
