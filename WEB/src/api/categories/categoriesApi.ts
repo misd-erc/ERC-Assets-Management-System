@@ -5,7 +5,15 @@ export interface Category {
   id: number;
   name: string;
   generalCode: string;
+  moduleIds: number[];
+  modules: SystemModule[];
   isActive: boolean;
+}
+
+export interface SystemModule {
+  id: number;
+  name: string;
+  acronym: string;
 }
 
 export interface Legend {
@@ -25,7 +33,7 @@ interface ApiResponse<T> {
 
 /* ======================== CATEGORIES ======================== */
 
-export const getCategories = async (): Promise<Category[]> => {
+export const getCategories = async (moduleName?: string): Promise<Category[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -41,21 +49,56 @@ export const getCategories = async (): Promise<Category[]> => {
     const data = response.data.data;
     const items = Array.isArray(data) ? data : (data as any)?.items || (data as any)?.Items;
 
-    return Array.isArray(items) 
+    const categories = Array.isArray(items)
       ? items.map((c: any) => ({
           id: c.id ?? c.Id,
           name: c.name ?? c.Name,
           generalCode: c.generalCode ?? c.GeneralCode,
+          moduleIds: c.moduleIds ?? c.ModuleIds ?? [],
+          modules: c.modules ?? c.Modules ?? [],
           isActive: c.isActive ?? c.IsActive ?? true
         }))
       : [];
+
+    return moduleName
+      ? categories.filter(category => category.modules.some((module: SystemModule) => module.name === moduleName))
+      : categories;
   } catch (error) {
     console.error('Error fetching categories:', error);
     return [];
   }
 };
 
-export const createCategory = async (name: string, generalCode: string): Promise<Category | null> => {
+export const getSystemModules = async (): Promise<SystemModule[]> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  try {
+    const response = await axiosInstance.get<ApiResponse<{ items: SystemModule[] }>>('/Users/system-modules/all', {
+      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey, PageSize: 1000 },
+    });
+
+    if (!response.data.success) {
+      console.error('Failed to fetch system modules:', response.data.message);
+      return [];
+    }
+
+    const data = response.data.data;
+    const items = Array.isArray(data) ? data : (data as any)?.items || (data as any)?.Items;
+
+    return Array.isArray(items)
+      ? items.map((m: any) => ({
+          id: m.id ?? m.Id,
+          name: m.name ?? m.Name,
+          acronym: m.acronym ?? m.Acronym,
+        }))
+      : [];
+  } catch (error) {
+    console.error('Error fetching system modules:', error);
+    return [];
+  }
+};
+
+export const createCategory = async (name: string, generalCode: string, moduleIds: number[]): Promise<Category | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -63,6 +106,7 @@ export const createCategory = async (name: string, generalCode: string): Promise
       id: 0,
       name,
       generalCode,
+      moduleIds,
       isActive: true,
       actionBySystemUserId: systemUserId,
       sessionKey,
@@ -80,7 +124,7 @@ export const createCategory = async (name: string, generalCode: string): Promise
   }
 };
 
-export const updateCategory = async (id: number, name: string, generalCode: string, isActive: boolean): Promise<Category | null> => {
+export const updateCategory = async (id: number, name: string, generalCode: string, moduleIds: number[], isActive: boolean): Promise<Category | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -88,6 +132,7 @@ export const updateCategory = async (id: number, name: string, generalCode: stri
       id,
       name,
       generalCode,
+      moduleIds,
       isActive,
       actionBySystemUserId: systemUserId,
       sessionKey,

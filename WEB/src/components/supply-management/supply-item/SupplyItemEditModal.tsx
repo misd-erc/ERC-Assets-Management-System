@@ -135,7 +135,7 @@ export const SupplyItemEditModal = ({ open, onOpenChange, mode, supplyItem, grou
 
   const fetchCategoriesData = async () => {
     try {
-      const data = await getCategories();
+      const data = await getCategories('Supply Management');
       setCategories(data);
     } catch (error) {
       console.error('Failed to fetch categories:', error);

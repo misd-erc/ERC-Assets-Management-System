@@ -81,6 +81,8 @@ export const ChatWidget: React.FC = () => {
         updateMessageReaction,
         removeMessageReaction,
         updateMessageUnsent,
+        replaceMessage,
+        markMessageFailed,
         conversationsUpdatedNonce
     } = useChatStore();
 
@@ -315,7 +317,7 @@ export const ChatWidget: React.FC = () => {
         setIsLoadingHistory(true);
         try {
             let url = isGroupChat 
-                ? `/chat/history/group/${activeChatId}?limit=20` 
+                ? `/chat/history/group/${activeChatId}?currentUserId=${currentUserId}&limit=20`
                 : `/chat/history/direct/${activeChatId}?currentUserId=${currentUserId}`;
 
             if (!initial && messages.length > 0) {
@@ -463,7 +465,8 @@ export const ChatWidget: React.FC = () => {
             isUnsent: false,
             createdAt: new Date().toISOString(),
             readReceipts: [],
-            reactions: []
+            reactions: [],
+            clientTempId: tempId
         };
         
         // Add to store immediately to make the UI lively and instant
@@ -495,11 +498,11 @@ export const ChatWidget: React.FC = () => {
             });
             const data = response.data;
             if (data.success) {
-                // Manually trigger replacement of temporary message with real message
-                store.addMessage(data.data);
+                replaceMessage(tempId, data.data);
             }
             setTimeout(scrollToBottom, 100);
         } catch (error) {
+            markMessageFailed(tempId);
             console.error('Failed to send message', error);
         }
     };
@@ -816,6 +819,7 @@ export const ChatWidget: React.FC = () => {
         if (diffHrs < 24) return `${diffHrs}h`;
         return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     };
+    const attachmentUrl = (messageId: number) => `${axiosInstance.defaults.baseURL}/chat/message/${messageId}/attachment?systemUserId=${currentUserId}`;
 
     if (!isOpen) {
         const directCount = Object.values(unreadCounts.direct || {}).reduce((a, b) => a + b, 0);
@@ -1142,7 +1146,7 @@ export const ChatWidget: React.FC = () => {
                                             isConsecutive 
                                                 ? (isSender ? '!rounded-tr-2xl !rounded-r-md' : '!rounded-tl-2xl !rounded-l-md') 
                                                 : ''
-                                        } ${msg.id < 0 ? 'opacity-65' : ''} transition-all`}
+                                        } ${msg.id < 0 ? 'opacity-65' : ''} ${msg.sendFailed ? 'ring-1 ring-red-300' : ''} transition-all`}
                                     >
                                          {msg.replyToMessageId && (() => {
                                              const repliedMsg = messages.find(m => m.id === msg.replyToMessageId);
@@ -1171,10 +1175,10 @@ export const ChatWidget: React.FC = () => {
                                                         {msg.attachmentType?.startsWith('image/') ? (
                                                             <div 
                                                                 className="cursor-pointer overflow-hidden rounded relative inline-block group/img"
-                                                                onClick={() => setMaximizedMedia({ url: `${axiosInstance.defaults.baseURL}/chat/message/${msg.id}/attachment`, type: 'image', name: msg.attachmentName || 'Image' })}
+                                                                onClick={() => setMaximizedMedia({ url: attachmentUrl(msg.id), type: 'image', name: msg.attachmentName || 'Image' })}
                                                             >
                                                                 <img 
-                                                                    src={`${axiosInstance.defaults.baseURL}/chat/message/${msg.id}/attachment`} 
+                                                                    src={attachmentUrl(msg.id)}
                                                                     alt={msg.attachmentName || "Attachment"} 
                                                                     className="max-w-[250px] max-h-[250px] object-cover bg-white/20 transition-transform duration-200 group-hover/img:scale-[1.02]"
                                                                     onError={(e) => {
@@ -1187,7 +1191,7 @@ export const ChatWidget: React.FC = () => {
                                                                     <Maximize2 size={24} className="text-white opacity-0 group-hover/img:opacity-100 drop-shadow-md" />
                                                                 </div>
                                                                 <a 
-                                                                    href={`${axiosInstance.defaults.baseURL}/chat/message/${msg.id}/attachment`}
+                                                                    href={attachmentUrl(msg.id)}
                                                                     target="_blank"
                                                                     rel="noreferrer"
                                                                     className="hidden items-center bg-white/10 hover:bg-white/20 border border-white/20 rounded px-3 py-2 transition-colors w-max max-w-full mt-1"
@@ -1200,14 +1204,14 @@ export const ChatWidget: React.FC = () => {
                                                         ) : msg.attachmentType?.startsWith('video/') ? (
                                                             <div className="cursor-pointer overflow-hidden rounded relative inline-block group/vid">
                                                                 <video 
-                                                                    src={`${axiosInstance.defaults.baseURL}/chat/message/${msg.id}/attachment`} 
+                                                                    src={attachmentUrl(msg.id)}
                                                                     className="max-w-[250px] max-h-[250px] object-cover bg-black rounded"
                                                                     controls
                                                                 />
                                                             </div>
                                                         ) : (
                                                             <a 
-                                                                href={`${axiosInstance.defaults.baseURL}/chat/message/${msg.id}/attachment`} 
+                                                                href={attachmentUrl(msg.id)}
                                                                 target="_blank" 
                                                                 rel="noreferrer"
                                                                 className="flex items-center bg-white/10 hover:bg-white/20 border border-white/20 rounded px-3 py-2 transition-colors w-max max-w-full"
@@ -1297,6 +1301,9 @@ export const ChatWidget: React.FC = () => {
 
                                 {isSender && msg.readReceipts?.length > 0 && !isConsecutive && (
                                     <span className="text-[8.5px] text-slate-400/80 mt-0.5 pr-1">Read</span>
+                                )}
+                                {msg.sendFailed && (
+                                    <span className="text-[8.5px] text-red-500 mt-0.5 pr-1">Failed to send</span>
                                 )}
 
                                 {msg.reactions && msg.reactions.length > 0 && (

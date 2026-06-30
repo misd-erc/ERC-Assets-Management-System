@@ -154,6 +154,9 @@ const pdfStyles = StyleSheet.create({
     }
 });
 
+const DEFAULT_RSMI_START_DATE = '1900-01-01';
+const DEFAULT_RSMI_END_DATE = '9999-12-31';
+
 // --- SIGNATORY TYPES ---
 export interface RSMISignatory {
     name: string;
@@ -572,6 +575,8 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [categoryId, setCategoryId] = useState<string>('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
 
     const [categories, setCategories] = useState<any[]>([]);
     const [categoryOpen, setCategoryOpen] = useState(false);
@@ -580,15 +585,16 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-    const { data, loading, error, fetchReport } = useRSMIReport();
-
+    const { data, totalCount, loading, error, fetchReport } = useRSMIReport();
     useEffect(() => {
         if (isOpen) {
             getCategories().then(categoriesData => {
                 setCategories(categoriesData);
             });
+            setCurrentPage(1);
+            fetchReport(0, DEFAULT_RSMI_START_DATE, DEFAULT_RSMI_END_DATE, 1, pageSize);
         }
-    }, [isOpen]);
+    }, [isOpen, fetchReport]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -624,9 +630,18 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
 
     const handleGenerateReport = async () => {
         if (!startDate || !endDate || !categoryId) return;
-        await fetchReport(categoryId, startDate, endDate);
+        setCurrentPage(1);
+        await fetchReport(categoryId, startDate, endDate, 1, pageSize);
         setExpandedRows({});
         setSelectedItems(new Set());
+    };
+
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const handlePageChange = async (page: number) => {
+        setCurrentPage(page);
+        setExpandedRows({});
+        setSelectedItems(new Set());
+        await fetchReport(categoryId || 0, startDate || DEFAULT_RSMI_START_DATE, endDate || DEFAULT_RSMI_END_DATE, page, pageSize);
     };
 
     const [signatoryModalOpen, setSignatoryModalOpen] = useState(false);
@@ -953,6 +968,18 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                             </TableBody>
                         </Table>
                     </div>
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-end gap-2 pt-4">
+                            <Button variant="outline" size="sm" disabled={currentPage === 1 || loading} onClick={() => handlePageChange(currentPage - 1)}>
+                                Previous
+                            </Button>
+                            <span className="text-sm text-slate-600">Page {currentPage} of {totalPages}</span>
+                            <Button variant="outline" size="sm" disabled={currentPage === totalPages || loading} onClick={() => handlePageChange(currentPage + 1)}>
+                                Next
+                            </Button>
+                        </div>
+                    )}
 
                 </div>
             </DialogContent>

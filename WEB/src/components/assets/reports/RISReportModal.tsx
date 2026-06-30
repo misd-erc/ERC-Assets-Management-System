@@ -535,11 +535,13 @@ interface RISReportModalProps {
 }
 
 export const RISReportModal = ({ isOpen, onClose }: RISReportModalProps) => {
-    const { risList, currentRISItems, loading, fetchRISs, fetchRISItems } = useRISStore();
+    const { risList, totalRis, currentRISItems, loading, fetchRISs, fetchRISItems } = useRISStore();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [activeSearchQuery, setActiveSearchQuery] = useState('');
     const [hasSearched, setHasSearched] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
 
     const [selectedRis, setSelectedRis] = useState<VwSupplyRIS | null>(null);
     const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -549,25 +551,26 @@ export const RISReportModal = ({ isOpen, onClose }: RISReportModalProps) => {
         if (isOpen) {
             setSearchTerm('');
             setActiveSearchQuery('');
-            setHasSearched(false);
+            setHasSearched(true);
+            setCurrentPage(1);
             setSelectedRis(null);
+            fetchRISs(1, pageSize, '');
         }
-    }, [isOpen]);
+    }, [isOpen, fetchRISs]);
 
     const handleSearchSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!searchTerm.trim()) return;
 
         setHasSearched(true);
-        setActiveSearchQuery(searchTerm);
+        setActiveSearchQuery(searchTerm.trim());
+        setCurrentPage(1);
         setSelectedRis(null);
 
-        // Fetch data when searching
-        await fetchRISs();
+        await fetchRISs(1, pageSize, searchTerm.trim());
     };
 
     const filteredRISList = useMemo(() => {
-        if (!activeSearchQuery.trim()) return [];
+        if (!activeSearchQuery.trim()) return risList;
 
         const query = activeSearchQuery.toLowerCase();
         return risList.filter(
@@ -594,6 +597,13 @@ export const RISReportModal = ({ isOpen, onClose }: RISReportModalProps) => {
         } finally {
             setIsPreviewLoading(false);
         }
+    };
+
+    const totalPages = Math.ceil(totalRis / pageSize);
+    const handlePageChange = async (page: number) => {
+        setCurrentPage(page);
+        setSelectedRis(null);
+        await fetchRISs(page, pageSize, activeSearchQuery.trim());
     };
 
     const [signatoryModalOpen, setSignatoryModalOpen] = useState(false);
@@ -702,7 +712,6 @@ export const RISReportModal = ({ isOpen, onClose }: RISReportModalProps) => {
                         </div>
                         <Button
                             type="submit"
-                            disabled={!searchTerm.trim()}
                             className="bg-slate-900 hover:bg-slate-800 text-white shadow-sm shrink-0 px-6"
                         >
                             Search
@@ -829,7 +838,7 @@ export const RISReportModal = ({ isOpen, onClose }: RISReportModalProps) => {
                                                     <FileText className="w-8 h-8 text-slate-300" />
                                                 </div>
                                                 <p className="font-medium text-slate-900 text-lg">No records found</p>
-                                                <p className="text-sm">We couldn't find anything matching "{activeSearchQuery}".</p>
+                                                <p className="text-sm">{activeSearchQuery ? `We couldn't find anything matching "${activeSearchQuery}".` : 'No RIS records available.'}</p>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -837,6 +846,18 @@ export const RISReportModal = ({ isOpen, onClose }: RISReportModalProps) => {
                             </TableBody>
                         </Table>
                     </div>
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-end gap-2 pt-4">
+                            <Button variant="outline" size="sm" disabled={currentPage === 1 || loading} onClick={() => handlePageChange(currentPage - 1)}>
+                                Previous
+                            </Button>
+                            <span className="text-sm text-slate-600">Page {currentPage} of {totalPages}</span>
+                            <Button variant="outline" size="sm" disabled={currentPage === totalPages || loading} onClick={() => handlePageChange(currentPage + 1)}>
+                                Next
+                            </Button>
+                        </div>
+                    )}
 
                 </div>
             </DialogContent>

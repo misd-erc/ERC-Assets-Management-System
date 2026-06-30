@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PortalDB.Entities.DBO.Module;
 using PortalCommon.Utilities;
 
 namespace PortalDB.Entities.ASSET.PTA
@@ -34,6 +35,11 @@ namespace PortalDB.Entities.ASSET.PTA
         [Column("PTACategoryCreatedAt")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        [NotMapped]
+        public List<long> ModuleIds { get; set; } = new();
+
+        [NotMapped]
+        public List<TblSystemModule> Modules { get; set; } = new();
 
     }
 }

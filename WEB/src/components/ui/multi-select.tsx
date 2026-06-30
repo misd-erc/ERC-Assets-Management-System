@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, X } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/components/ui/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Badge } from "@/components/ui/badge";
 
 interface MultiSelectOption {
   label: string;
@@ -50,10 +49,6 @@ export function MultiSelect({
     }
   };
 
-  const removeSelection = (value: string) => {
-    onSelectionChange(selected.filter(item => item !== value));
-  };
-
   const selectedLabels = selected
     .map(val => options.find(opt => opt.value === val)?.label)
     .filter(Boolean);
@@ -65,19 +60,11 @@ export function MultiSelect({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn("w-full justify-between gap-2", className)}
         >
-          <div className="flex flex-wrap gap-1">
-            {selectedLabels.length > 0 ? (
-              selectedLabels.map((label, idx) => (
-                <Badge key={idx} variant="secondary" className="mr-1">
-                  {label}
-                </Badge>
-              ))
-            ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
-            )}
-          </div>
+          <span className={cn("min-w-0 flex-1 truncate text-left", selectedLabels.length === 0 && "text-muted-foreground")}>
+            {selectedLabels.length > 0 ? selectedLabels.join(", ") : placeholder}
+          </span>
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -90,7 +77,7 @@ export function MultiSelect({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
+                  value={option.label}
                   onSelect={() => toggleSelection(option.value)}
                 >
                   <Check

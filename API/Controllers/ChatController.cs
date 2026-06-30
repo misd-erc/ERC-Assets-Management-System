@@ -99,11 +99,16 @@ namespace API.Controllers
         }
 
         [HttpGet("history/group/{groupId}")]
-        public async Task<IActionResult> GetGroupHistory([FromRoute] long groupId, [FromQuery] long? beforeMessageId, [FromQuery] int limit = 20)
+        public async Task<IActionResult> GetGroupHistory([FromRoute] long groupId, [FromQuery] long currentUserId, [FromQuery] long? beforeMessageId, [FromQuery] int limit = 20)
         {
             await using var context = new PortalDbContext(_options);
             try
             {
+                if (!await CanAccessGroupAsync(context, groupId, currentUserId))
+                {
+                    return Forbid();
+                }
+
                 var query = _getTools.Chat.GetChatMessages(context)
                     .Where(m => m.GroupId == groupId);
 
@@ -162,7 +167,7 @@ namespace API.Controllers
             try
             {
                 var unreadDirectMessages = await _getTools.Chat.GetChatMessages(context)
-                    .Where(m => m.ReceiverId == systemUserId)
+                    .Where(m => m.ReceiverId == systemUserId && !m.IsDeletedForReceiver && !m.IsUnsent)
                     .GroupJoin(
                         _getTools.Chat.GetChatReadReceipts(context).Where(r => r.SystemUserId == systemUserId),
                         m => m.Id,
@@ -180,7 +185,7 @@ namespace API.Controllers
                     .ToListAsync();
 
                 var unreadGroupMessages = await _getTools.Chat.GetChatMessages(context)
-                    .Where(m => m.GroupId != null && userGroupIds.Contains(m.GroupId.Value) && m.SenderId != systemUserId)
+                    .Where(m => m.GroupId != null && userGroupIds.Contains(m.GroupId.Value) && m.SenderId != systemUserId && !m.IsUnsent)
                     .GroupJoin(
                         _getTools.Chat.GetChatReadReceipts(context).Where(r => r.SystemUserId == systemUserId),
                         m => m.Id,
@@ -451,9 +456,14 @@ namespace API.Controllers
             await using var context = new PortalDbContext(_options);
             try
             {
-                var messagesQuery = _getTools.Chat.GetChatMessages(context).Where(m => m.SenderId != req.SystemUserId);
+                var messagesQuery = _getTools.Chat.GetChatMessages(context).Where(m => m.SenderId != req.SystemUserId && !m.IsUnsent);
                 if (req.IsGroup)
                 {
+                    if (!await CanAccessGroupAsync(context, req.TargetId, req.SystemUserId))
+                    {
+                        return Forbid();
+                    }
+
                     messagesQuery = messagesQuery.Where(m => m.GroupId == req.TargetId);
                 }
                 else
@@ -461,7 +471,16 @@ namespace API.Controllers
                     messagesQuery = messagesQuery.Where(m => m.GroupId == null && m.SenderId == req.TargetId && m.ReceiverId == req.SystemUserId);
                 }
 
-                var unreadMessages = await messagesQuery.ToListAsync();
+                var unreadMessages = await messagesQuery
+                    .GroupJoin(
+                        _getTools.Chat.GetChatReadReceipts(context).Where(r => r.SystemUserId == req.SystemUserId),
+                        m => m.Id,
+                        r => r.ChatMessageId,
+                        (m, r) => new { Message = m, Receipts = r }
+                    )
+                    .Where(x => !x.Receipts.Any())
+                    .Select(x => x.Message)
+                    .ToListAsync();
                 var receipts = unreadMessages.Select(m => new TblChatMessageReadReceipt
                 {
                     ChatMessageId = m.Id,
@@ -471,9 +490,11 @@ namespace API.Controllers
                 if (receipts.Any())
                 {
                     await _editTools.Chat.SaveReadReceiptsAsync(receipts, context);
-                    
-                    // We can also notify the sender(s) that their messages were read if needed,
-                    // but bulk read usually doesn't need to fire SignalR for every single message to avoid spam.
+
+                    foreach (var message in unreadMessages)
+                    {
+                        await _hubContext.Clients.Group($"User_{message.SenderId}").SendAsync("MessageRead", new { messageId = message.Id, systemUserId = req.SystemUserId });
+                    }
                 }
 
                 return Ok(ApiResponse<object>.Ok((object?)null, "Conversation marked as read"));
@@ -1093,7 +1114,7 @@ namespace API.Controllers
         }
 
         [HttpGet("message/{messageId}/attachment")]
-        public async Task<IActionResult> GetMessageAttachment([FromRoute] long messageId)
+        public async Task<IActionResult> GetMessageAttachment([FromRoute] long messageId, [FromQuery] long systemUserId)
         {
             await using var context = new PortalDbContext(_options);
             try
@@ -1101,6 +1122,11 @@ namespace API.Controllers
                 var message = await context.TblChatMessages.FirstOrDefaultAsync(m => m.Id == messageId && !m.IsDeleted && !m.IsUnsent);
                 if (message == null || !message.FileStorageId.HasValue)
                     return NotFound(ApiResponse<object>.Fail("NO_ATTACHMENT", "No attachment found or message unsent."));
+
+                if (!await CanAccessMessageAsync(context, message, systemUserId))
+                {
+                    return Forbid();
+                }
 
                 var fileRecord = await context.TblFileStorages.FirstOrDefaultAsync(f => f.Id == message.FileStorageId.Value && f.IsActive);
                 if (fileRecord == null || string.IsNullOrEmpty(fileRecord.BlobName))
@@ -1118,6 +1144,23 @@ namespace API.Controllers
                 return StatusCode(500, ApiResponse<object>.Fail("SERVER_ERROR", ex.Message));
             }
         }
+
+        private static Task<bool> CanAccessMessageAsync(PortalDbContext context, TblChatMessage message, long systemUserId)
+        {
+            if (message.GroupId.HasValue)
+            {
+                return CanAccessGroupAsync(context, message.GroupId.Value, systemUserId);
+            }
+
+            return Task.FromResult(message.SenderId == systemUserId || message.ReceiverId == systemUserId);
+        }
+
+        private static Task<bool> CanAccessGroupAsync(PortalDbContext context, long groupId, long systemUserId) =>
+            context.TblChatGroupMembers.AnyAsync(m =>
+                m.ChatGroupId == groupId &&
+                m.SystemUserId == systemUserId &&
+                !m.IsDeleted &&
+                m.IsActive);
 
         [HttpPost("seed-sample-data")]
         public async Task<IActionResult> SeedSampleData()
