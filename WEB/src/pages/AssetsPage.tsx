@@ -711,6 +711,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
                 onClearFilters={handleClearFilters}
                 onApplyFilters={handleApplyFilters}
                 totalResults={totalCount}
+                moduleFilter="PPE"
               />
               <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
                 <Button onClick={handleApplyFilters} className="gap-2">
@@ -763,6 +764,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
                 onClearFilters={handleClearFilters}
                 onApplyFilters={handleApplyFilters}
                 totalResults={totalCount}
+                moduleFilter="SE"
               />
               <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
                 <Button onClick={handleApplyFilters} className="gap-2">

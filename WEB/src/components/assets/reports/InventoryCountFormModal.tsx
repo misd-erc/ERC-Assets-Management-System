@@ -390,9 +390,9 @@ export function InventoryCountFormModal({ isOpen, onClose }: InventoryCountFormM
             setSelectedIds(new Set());
             fetchAssets(group, '', '', '');
 
-            // Fetch categories once when modal opens
+            // Fetch categories for the active PPE/SE group
             setCategoriesLoading(true);
-            getCategories()
+            getCategories(group)
                 .then((data) => setCategories(data.filter((c) => c.isActive !== false)))
                 .catch(() => toast.error('Failed to load categories'))
                 .finally(() => setCategoriesLoading(false));

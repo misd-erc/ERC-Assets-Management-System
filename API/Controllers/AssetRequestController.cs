@@ -1,4 +1,5 @@
 using API.Attributes;
+using API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
@@ -23,11 +24,13 @@ namespace API.Controllers
 
         private readonly DbContextOptions<PortalDbContext> _options;
         private readonly IPortalGetTools _getTools;
+        private readonly NotificationBroadcastService _notificationService;
 
-        public AssetRequestController(DbContextOptions<PortalDbContext> options, IPortalGetTools getTools)
+        public AssetRequestController(DbContextOptions<PortalDbContext> options, IPortalGetTools getTools, NotificationBroadcastService notificationService)
         {
             _options = options;
             _getTools = getTools;
+            _notificationService = notificationService;
         }
 
         #region Helpers
@@ -436,6 +439,13 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Created Asset Request {request.RequestNumber}", actionBy: model.ActionBySystemUserId);
 
+                await _notificationService.NotifyModuleUsersAsync(
+                    context,
+                    NotificationConstants.REQUEST_SUBMITTED,
+                    $"Asset request {request.RequestNumber} has been submitted for review",
+                    NotificationConstants.Modules.APPROVALS,
+                    model.ActionBySystemUserId);
+
                 return Ok(ApiResponse<object>.Ok(new
                 {
                     requestId = request.Id,
@@ -715,6 +725,28 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Assigned Asset Request {req.RequestNumber}", actionBy: model.ActionBySystemUserId);
 
+                if (req.AssignedPersonnelSystemUserId.HasValue)
+                {
+                    await _notificationService.NotifyUserAsync(
+                        context,
+                        NotificationConstants.REQUEST_ASSIGNED,
+                        $"You have been assigned to asset request {req.RequestNumber}",
+                        req.AssignedPersonnelSystemUserId.Value,
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.APPROVALS);
+                }
+
+                if (req.AssignedCommitteeSystemUserId.HasValue)
+                {
+                    await _notificationService.NotifyUserAsync(
+                        context,
+                        NotificationConstants.REQUEST_ASSIGNED,
+                        $"You have been assigned as committee for asset request {req.RequestNumber}",
+                        req.AssignedCommitteeSystemUserId.Value,
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.APPROVALS);
+                }
+
                 return Ok(ApiResponse<object>.Ok(new { requestId = req.Id, status = req.Status }, "Request assignment updated successfully."));
             }
             catch (Exception ex)
@@ -782,6 +814,37 @@ namespace API.Controllers
 
                 await transaction.CommitAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Updated Asset Request {req.RequestNumber} status to {nextStatus}", actionBy: model.ActionBySystemUserId);
+
+                if (nextStatus == TblAssetRequest.REJECTED)
+                {
+                    await _notificationService.NotifyUserAsync(
+                        context,
+                        NotificationConstants.REQUEST_REJECTED,
+                        $"Asset request {req.RequestNumber} has been rejected",
+                        req.EmployeeSystemUserId,
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.APPROVALS);
+                }
+                else if (nextStatus == TblAssetRequest.ASSIGNED && req.AssignedPersonnelSystemUserId.HasValue)
+                {
+                    await _notificationService.NotifyUserAsync(
+                        context,
+                        NotificationConstants.REQUEST_ASSIGNED,
+                        $"You have been assigned to asset request {req.RequestNumber}",
+                        req.AssignedPersonnelSystemUserId.Value,
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.APPROVALS);
+                }
+                else
+                {
+                    await _notificationService.NotifyUserAsync(
+                        context,
+                        NotificationConstants.REQUEST_STATUS_UPDATED,
+                        $"Asset request {req.RequestNumber} status updated to {nextStatus}",
+                        req.EmployeeSystemUserId,
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.APPROVALS);
+                }
 
                 return Ok(ApiResponse<object>.Ok(new { requestId = req.Id, status = req.Status }, "Request status updated successfully."));
             }

@@ -588,7 +588,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const { data, totalCount, loading, error, fetchReport } = useRSMIReport();
     useEffect(() => {
         if (isOpen) {
-            getCategories().then(categoriesData => {
+            getCategories('Supply').then(categoriesData => {
                 setCategories(categoriesData);
             });
             setCurrentPage(1);

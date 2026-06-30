@@ -28,6 +28,9 @@ namespace PortalDB.Entities.DBO.Notification
         [Column("SystemNotificationBySystemUserId")]
         public long? CreatedBySystemUserId { get; set; }
 
+        [Column("SystemNotificationModuleId")]
+        public long? ModuleId { get; set; }
+
         [Column("SystemNotificationIsDeleted")]
         public bool IsDeleted { get; set; } = false;
 

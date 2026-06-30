@@ -1,4 +1,5 @@
 using API.Attributes;
+using API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
@@ -32,17 +33,20 @@ namespace API.Controllers
         private readonly IPortalGetTools _getTools;
         private readonly IPortalEditTools _editTools;
         private readonly ParserTools _parserTools;
+        private readonly NotificationBroadcastService _notificationService;
 
         public SupplyController(DbContextOptions<PortalDbContext> options,
             IPortalGetTools getTools,
             IPortalEditTools editTools,
-            ParserTools parserTools)
+            ParserTools parserTools,
+            NotificationBroadcastService notificationService)
 
         {
             _options = options;
             _getTools = getTools;
             _editTools = editTools;
             _parserTools = parserTools;
+            _notificationService = notificationService;
         }
 
         #region GET
@@ -2173,6 +2177,17 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                if (supplyIAR.IsApproved && !wasAlreadyApproved)
+                {
+                    await _notificationService.NotifyModuleUsersAsync(
+                        context,
+                        NotificationConstants.IAR_APPROVED,
+                        $"IAR {supplyIAR.IARNumber} has been approved and delivery marked as received",
+                        NotificationConstants.Modules.DELIVERY_RECEIPT,
+                        model.ActionBySystemUserId);
+                }
+
                 return Ok(ApiResponse<object>.Ok(new { SupplyIARId = supplyIARId }, $"Supply IAR has been {(model.Id == 0 ? "added" : "updated")}"));
 
             }
@@ -2194,6 +2209,13 @@ namespace API.Controllers
 
             try
             {
+                bool wasAlreadyApproved = false;
+                if (model.Id > 0)
+                {
+                    TblSupplyRIS? existingRIS = await _getTools.Supply.GetTblSupplyRISAsync(model.Id, context);
+                    wasAlreadyApproved = existingRIS?.IsApproved == true;
+                }
+
                 TblSupplyRIS supplyRIS = new()
                 {
                     Id = model.Id,
@@ -2226,6 +2248,8 @@ namespace API.Controllers
                 //    foreach (var SupplyRISItem in SupplyRISItems)
                 //    {
                 //        //Dito magbabawas ng quantity if approved
+                //        // TODO: After implementing quantity deduction, add low stock check:
+                //        // if (supplyItem.Quantity <= supplyItem.ReorderPoint) → send SUPPLY_LOW_STOCK notification
                 //    }
                 //}
 
@@ -2235,6 +2259,28 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                if (model.Id == 0)
+                {
+                    await _notificationService.NotifyModuleUsersAsync(
+                        context,
+                        NotificationConstants.RIS_SUBMITTED,
+                        $"New RIS {supplyRIS.RISNumber} has been submitted for approval",
+                        NotificationConstants.Modules.SUPPLY_MANAGEMENT,
+                        model.ActionBySystemUserId);
+                }
+
+                if (supplyRIS.IsApproved && !wasAlreadyApproved && supplyRIS.RISRequestedBySystemUserId.HasValue)
+                {
+                    await _notificationService.NotifyUserAsync(
+                        context,
+                        NotificationConstants.RIS_APPROVED,
+                        $"RIS {supplyRIS.RISNumber} has been approved",
+                        supplyRIS.RISRequestedBySystemUserId.Value,
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.SUPPLY_MANAGEMENT);
+                }
+
                 return Ok(ApiResponse<object>.Ok(new { SupplyRISId = supplyRISId }, $"Supply RIS has been {(model.Id == 0 ? "added" : "updated")}"));
 
             }

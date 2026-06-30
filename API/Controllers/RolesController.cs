@@ -1,4 +1,5 @@
 ﻿using API.Attributes;
+using API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
@@ -28,15 +29,18 @@ namespace API.Controllers
         private readonly DbContextOptions<PortalDbContext> _options;
         private readonly IPortalGetTools _getTools;
         private readonly IPortalEditTools _editTools;
+        private readonly NotificationBroadcastService _notificationService;
 
         public RolesController(
             DbContextOptions<PortalDbContext> options,
             IPortalEditTools editTools,
-            IPortalGetTools getTools)
+            IPortalGetTools getTools,
+            NotificationBroadcastService notificationService)
         {
             _options = options;
             _getTools = getTools;
             _editTools = editTools;
+            _notificationService = notificationService;
         }
 
         #region GET
@@ -186,6 +190,28 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                if (model.SystemRoleId > 0)
+                {
+                    var affectedUserIds = await context.TblSystemUsers
+                        .AsNoTracking()
+                        .Where(u => !u.IsDeleted && u.IsActive && u.SystemRoleId == model.SystemRoleId)
+                        .Select(u => u.Id)
+                        .ToListAsync();
+
+                    var recipientIds = affectedUserIds.Where(id => id != model.ActionBySystemUserId).ToList();
+
+                    foreach (var recipientId in recipientIds)
+                    {
+                        await _notificationService.NotifyUserAsync(
+                            context,
+                            NotificationConstants.ROLE_UPDATED,
+                            "Your role permissions have been updated",
+                            recipientId,
+                            model.ActionBySystemUserId,
+                            NotificationConstants.Modules.ROLES_MANAGEMENT);
+                    }
+                }
 
                 return Ok(ApiResponse<object>.Ok(
                     new { SystemRoleId = systemRoleId },

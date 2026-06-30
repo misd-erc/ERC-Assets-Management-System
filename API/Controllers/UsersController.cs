@@ -1,6 +1,8 @@
 ﻿using API.Attributes;
+using API.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.CallRecords;
@@ -13,6 +15,7 @@ using PortalDB.Entities.DBO.Notification;
 using PortalDB.Entities.DBO.Office;
 using PortalDB.Entities.DBO.Office.Division;
 using PortalDB.Models.QueryParams.Account;
+using PortalDB.Models.QueryParams.Notification;
 using PortalDB.Models.QueryParams.OTP;
 using PortalDB.Models.QueryParams.Pagination;
 using PortalDB.Models.QueryParams.Universal;
@@ -37,16 +40,19 @@ namespace API.Controllers
         private readonly IPortalGetTools _getTools;
         private readonly IPortalEditTools _editTools;
 		private readonly AuthTools _authTools;
+        private readonly IHubContext<NotificationHub> _notificationHub;
 
         public UsersController(DbContextOptions<PortalDbContext> options,
-            IPortalGetTools get, 
+            IPortalGetTools get,
             IPortalEditTools edit,
-            AuthTools authTools)
+            AuthTools authTools,
+            IHubContext<NotificationHub> notificationHub)
         {
             _options = options;
             _getTools = get;
             _editTools = edit;
             _authTools = authTools;
+            _notificationHub = notificationHub;
 		}
 
         #region GET
@@ -478,6 +484,160 @@ namespace API.Controllers
             }
         }
 
+        // GET api/users/system-notification/my/{systemUserId}
+        [HttpGet("system-notification/my/{systemUserId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetMyNotifications([FromQuery] SoloQueryParams model, [FromRoute] long systemUserId)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                var notifications = await _getTools.Notification.GetNotificationsForUserAsync(systemUserId, context);
+
+                var readNotificationIds = await context.TblSystemNotificationReads
+                    .AsNoTracking()
+                    .Where(x => !x.IsDeleted && x.SystemUserId == systemUserId)
+                    .Select(x => x.NotificationId)
+                    .ToListAsync();
+
+                var response = notifications.Select(n => new
+                {
+                    n.Id,
+                    n.Title,
+                    n.Description,
+                    n.SystemUserId,
+                    n.CreatedBySystemUserId,
+                    n.ModuleId,
+                    n.CreatedAt,
+                    IsRead = readNotificationIds.Contains(n.Id)
+                }).ToList();
+
+                return Ok(ApiResponse<object>.Ok(response, "Notifications retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // GET api/users/system-notification/unread-count/{systemUserId}
+        [HttpGet("system-notification/unread-count/{systemUserId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetUnreadNotificationCount([FromQuery] SoloQueryParams model, [FromRoute] long systemUserId)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                int unreadCount = await _getTools.Notification.GetUnreadCountForUserAsync(systemUserId, context);
+                return Ok(ApiResponse<object>.Ok(new { UnreadCount = unreadCount }, "Unread count retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // POST api/users/system-notification/mark-read
+        [HttpPost("system-notification/mark-read")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> MarkNotificationAsRead([FromBody] MarkNotificationReadParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                await _editTools.Notification.MarkNotificationAsReadAsync(model.NotificationId, model.ActionBySystemUserId, context);
+                return Ok(ApiResponse<object>.Ok((object?)null, "Notification marked as read"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // POST api/users/system-notification/mark-all-read
+        [HttpPost("system-notification/mark-all-read")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> MarkAllNotificationsAsRead([FromBody] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                int count = await _editTools.Notification.MarkAllNotificationsAsReadAsync(model.ActionBySystemUserId, context);
+                return Ok(ApiResponse<object>.Ok(new { MarkedCount = count }, "All notifications marked as read"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // DELETE api/users/system-notification/{notificationId}/{systemUserId}
+        [HttpDelete("system-notification/{notificationId}/{systemUserId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteNotification([FromQuery] SoloQueryParams model, [FromRoute] long notificationId, [FromRoute] long systemUserId)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                bool deleted = await _editTools.Notification.DeleteNotificationForUserAsync(notificationId, systemUserId, context);
+                if (!deleted)
+                    return NotFound(ApiResponse<object>.Fail(ErrorCodes.NOT_FOUND, "Notification not found"));
+
+                return Ok(ApiResponse<object>.Ok((object?)null, "Notification deleted"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        // POST api/users/system-notification/send
+        [HttpPost("system-notification/send")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> SendNotification([FromBody] SendNotificationParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                if (model.RecipientSystemUserId.HasValue)
+                {
+                    var notification = await NotificationTools.CreateNotificationAsync(
+                        context, model.Title, model.Description, model.RecipientSystemUserId.Value,
+                        model.ActionBySystemUserId, model.ModuleId);
+
+                    await _notificationHub.Clients.Group($"User_{model.RecipientSystemUserId.Value}")
+                        .SendAsync("ReceiveNotification", notification);
+                }
+                else if (model.ModuleId.HasValue)
+                {
+                    var userIds = await NotificationTools.GetUserIdsWithModuleAccessAsync(context, model.ModuleId.Value);
+                    var notifications = await NotificationTools.CreateBatchNotificationsAsync(
+                        context, model.Title, model.Description, userIds, model.ActionBySystemUserId, model.ModuleId);
+
+                    await _notificationHub.Clients.Group($"Module_{model.ModuleId.Value}")
+                        .SendAsync("ReceiveNotification", notifications.FirstOrDefault());
+                }
+
+                return Ok(ApiResponse<object>.Ok((object?)null, "Notification sent"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(UsersController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         // GET api/users/system-modules/all
         [HttpGet("system-modules/all")]
         [ValidateSessionToken]
@@ -682,12 +842,14 @@ namespace API.Controllers
 
                 if(oldUserInfo != null && oldUserInfo.StatusId != TblSystemUserStatus.Dictionary[TblSystemUserStatus.INACTIVE] && model.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.INACTIVE])
                 {
-                    //email and notify user that the account is set to inactive
-                    await NotificationTools.CreateNotificationAsync(context,
+                    var notif = await NotificationTools.CreateNotificationAsync(context,
                         NotificationConstants.INACTIVE_ACCOUNT,
                         $"User account has been deactivated",
                         systemUserId,
-                        model.ActionBySystemUserId);
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.USER_MANAGEMENT);
+
+                    await _notificationHub.Clients.Group($"User_{systemUserId}").SendAsync("ReceiveNotification", notif);
 
                     await EmailTools.SendSystemEmailAsync(
                         _options,
@@ -703,12 +865,14 @@ namespace API.Controllers
                 }
                 else if (oldUserInfo != null && oldUserInfo.StatusId != TblSystemUserStatus.Dictionary[TblSystemUserStatus.SUSPENDED] && model.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.SUSPENDED])
                 {
-                    //email and notify user that the account is set to suspended
-                    await NotificationTools.CreateNotificationAsync(context,
+                    var notif = await NotificationTools.CreateNotificationAsync(context,
                         NotificationConstants.SUSPENDED_ACCOUNT,
                         $"User account has been suspended",
                         systemUserId,
-                        model.ActionBySystemUserId);
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.USER_MANAGEMENT);
+
+                    await _notificationHub.Clients.Group($"User_{systemUserId}").SendAsync("ReceiveNotification", notif);
 
                     await EmailTools.SendSystemEmailAsync(
                         _options,
@@ -724,12 +888,14 @@ namespace API.Controllers
                 }
                 else if (oldUserInfo != null && oldUserInfo.StatusId != TblSystemUserStatus.Dictionary[TblSystemUserStatus.ACTIVE] && model.StatusId == TblSystemUserStatus.Dictionary[TblSystemUserStatus.ACTIVE])
                 {
-                    //email and notify user that the account is set to active
-                    await NotificationTools.CreateNotificationAsync(context,
+                    var notif = await NotificationTools.CreateNotificationAsync(context,
                         NotificationConstants.ACTIVE_ACCOUNT,
                         $"User account has been activated",
                         systemUserId,
-                        model.ActionBySystemUserId);
+                        model.ActionBySystemUserId,
+                        NotificationConstants.Modules.USER_MANAGEMENT);
+
+                    await _notificationHub.Clients.Group($"User_{systemUserId}").SendAsync("ReceiveNotification", notif);
 
                     await EmailTools.SendSystemEmailAsync(
                         _options,

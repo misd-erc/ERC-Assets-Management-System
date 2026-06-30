@@ -11,7 +11,7 @@ interface ApiResponse<T> {
 /* ------------------------------- GET ------------------------------- */
 
 // UPDATED: Added isActive to the return type
-export const getCategories = async (moduleName?: string): Promise<{ id: number; name: string; generalCode?: string; isActive?: boolean }[]> => {
+export const getCategories = async (moduleName?: string): Promise<{ id: number; name: string; generalCode?: string; module?: string; isActive?: boolean }[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -28,16 +28,16 @@ export const getCategories = async (moduleName?: string): Promise<{ id: number; 
     const items = Array.isArray(data) ? data : (data as any)?.items;
 
     // UPDATED: Included isActive in the returned object
-    const categories = items?.map((item: any) => ({ 
-        id: item.id ?? item.Id, 
-        name: item.name ?? item.Name, 
+    const categories = items?.map((item: any) => ({
+        id: item.id ?? item.Id,
+        name: item.name ?? item.Name,
         generalCode: item.generalCode ?? item.GeneralCode,
-        modules: item.modules ?? item.Modules ?? [],
+        module: item.module ?? item.Module ?? '',
         isActive: item.isActive ?? item.IsActive ?? true // <--- Critical Fix
     })) || [];
 
     return moduleName
-      ? categories.filter((category: any) => category.modules.some((module: any) => (module.name ?? module.Name) === moduleName))
+      ? categories.filter((category: any) => category.module === moduleName)
       : categories;
   } catch (error) {
     console.error('Error fetching categories:', error);

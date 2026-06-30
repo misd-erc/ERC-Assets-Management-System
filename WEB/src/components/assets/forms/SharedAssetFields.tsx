@@ -23,7 +23,7 @@ interface SharedAssetFieldsProps {
   handlePlantillaEmployeeSelect: (index: number, employeeId: number) => void;
   handleNonPlantillaEmployeeSelect: (index: number, employeeId: number) => void;
   employees: NormalizedEmployee[];
-  categories: { id: number; name: string }[];
+  categories: { id: number; name: string; module?: string }[];
   legends: { id: number; name: string; description?: string }[];
   offices: VwOffice[];
   divisions: VwDivision[];
@@ -134,7 +134,14 @@ export function SharedAssetFields({
                 <SelectContent className="max-h-60 overflow-y-auto">
                   {categories.map(category => (
                     <SelectItem key={category.id} value={category.id.toString()}>
-                      {category.name}
+                      <span className="flex items-center justify-between gap-2 w-full">
+                        <span className="truncate">{category.name}</span>
+                        {category.module && (
+                          <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                            {category.module}
+                          </span>
+                        )}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>

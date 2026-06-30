@@ -72,7 +72,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
 
   fetchCategories: async () => {
     try {
-      const categories = await getCategories('Supply Management');
+      const categories = await getCategories('Supply');
       set({ categories });
     } catch {
       toast.error('Failed to load categories');

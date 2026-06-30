@@ -37,7 +37,7 @@ export function RPCPPEFilterModal({ isOpen, onClose, onGenerate }: RPCPPEFilterM
 
   useEffect(() => {
     if (isOpen) {
-      getCategories().then(categoriesData => {
+      getCategories('PPE').then(categoriesData => {
         setCategories(categoriesData);
       });
     }
