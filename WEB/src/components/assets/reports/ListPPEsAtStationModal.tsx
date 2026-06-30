@@ -18,26 +18,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command';
-import { cn } from '@/lib/utils';
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { ppeApi } from '@/api/asset/ppe';
 import { getOffices } from '@/api/office-management/officeApi';
 import { getCategories } from '@/api/asset/inventoryApi';
 import { VwOffice } from '@/types/office';
 import { getAuthParams } from '@/utils/auth';
 import { toast } from 'sonner';
-import { Loader2, Printer, Download, Search, Check, ChevronsUpDown } from 'lucide-react';
+import { Loader2, Printer, Download, Search } from 'lucide-react';
 import {
     Document,
     Page,
@@ -329,9 +322,7 @@ export function ListPPEsAtStationModal({ isOpen, onClose }: ListPPEsAtStationMod
     const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
 
     const [officeId, setOfficeId] = useState<string>('all');
-    const [officeOpen, setOfficeOpen] = useState(false);
     const [categoryId, setCategoryId] = useState<string>('all');
-    const [categoryOpen, setCategoryOpen] = useState(false);
     const [asOfDate, setAsOfDate] = useState('');
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -498,138 +489,36 @@ export function ListPPEsAtStationModal({ isOpen, onClose }: ListPPEsAtStationMod
                     <div className="flex flex-wrap items-end gap-3 mb-5">
                         <div className="flex flex-col gap-1 min-w-[200px] flex-1">
                             <Label className="text-xs text-slate-500 font-medium">Office / Station</Label>
-                            <Popover open={officeOpen} onOpenChange={setOfficeOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={officeOpen}
-                                        className={cn(
-                                            "w-full justify-between font-normal h-10 px-3 bg-white hover:bg-slate-50/80 border-slate-300 hover:border-slate-400 active:scale-[0.99] transition-all rounded-md shadow-sm focus:ring-2 focus:ring-sky-100 focus:border-sky-500",
-                                            !officeId && "text-slate-400"
-                                        )}
-                                    >
-                                        <span className="truncate">
-                                            {officeId === 'all'
-                                                ? 'All Offices'
-                                                : offices.find((o) => String(o.id) === officeId)?.name ?? 'All Offices'}
-                                        </span>
-                                        <ChevronsUpDown className={cn("ml-2 h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400", officeOpen && "text-sky-500")} />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border border-slate-200 bg-white overflow-hidden" align="start">
-                                    <Command className="bg-white">
-                                        <div className="p-2 bg-slate-50/50 border-b border-slate-100">
-                                            <div className="relative rounded-md border border-slate-200 bg-white shadow-sm focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
-                                                <CommandInput
-                                                    placeholder="Search office..."
-                                                    className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
-                                                />
-                                            </div>
-                                        </div>
-                                        <CommandList className="max-h-60 overflow-y-auto p-1">
-                                            <CommandEmpty className="py-6 text-center text-sm text-slate-500">
-                                                No office found.
-                                            </CommandEmpty>
-                                            <CommandGroup>
-                                                <CommandItem
-                                                    value="all"
-                                                    onSelect={() => { setOfficeId('all'); setOfficeOpen(false); }}
-                                                    className={cn(
-                                                        "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-sky-50 data-[selected=true]:text-sky-700 text-slate-700 hover:bg-slate-50",
-                                                        officeId === 'all' && "bg-sky-50/60 font-medium text-sky-700"
-                                                    )}
-                                                >
-                                                    <span className="truncate flex-1">All Offices</span>
-                                                    <Check className={cn("ml-2 h-4 w-4 shrink-0 transition-all duration-200", officeId === 'all' ? "opacity-100 scale-100 text-sky-600" : "opacity-0 scale-75")} />
-                                                </CommandItem>
-                                                {offices.map((o) => (
-                                                    <CommandItem
-                                                        key={o.id}
-                                                        value={o.name}
-                                                        onSelect={() => { setOfficeId(String(o.id)); setOfficeOpen(false); }}
-                                                        className={cn(
-                                                            "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-sky-50 data-[selected=true]:text-sky-700 text-slate-700 hover:bg-slate-50",
-                                                            officeId === String(o.id) && "bg-sky-50/60 font-medium text-sky-700"
-                                                        )}
-                                                    >
-                                                        <span className="truncate flex-1">{o.name}</span>
-                                                        <Check className={cn("ml-2 h-4 w-4 shrink-0 transition-all duration-200", officeId === String(o.id) ? "opacity-100 scale-100 text-sky-600" : "opacity-0 scale-75")} />
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
+                            <Select value={officeId} onValueChange={setOfficeId}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="All Offices" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-60 overflow-y-auto">
+                                    <SelectItem value="all">All Offices</SelectItem>
+                                    {offices.map((o) => (
+                                        <SelectItem key={o.id} value={String(o.id)}>
+                                            {o.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="flex flex-col gap-1 min-w-[180px] flex-1">
                             <Label className="text-xs text-slate-500 font-medium">Category</Label>
-                            <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={categoryOpen}
-                                        className={cn(
-                                            "w-full justify-between font-normal h-10 px-3 bg-white hover:bg-slate-50/80 border-slate-300 hover:border-slate-400 active:scale-[0.99] transition-all rounded-md shadow-sm focus:ring-2 focus:ring-sky-100 focus:border-sky-500",
-                                            !categoryId && "text-slate-400"
-                                        )}
-                                    >
-                                        <span className="truncate">
-                                            {categoryId === 'all'
-                                                ? 'All Categories'
-                                                : categories.find((c) => String(c.id) === categoryId)?.name ?? 'All Categories'}
-                                        </span>
-                                        <ChevronsUpDown className={cn("ml-2 h-4 w-4 shrink-0 transition-transform duration-200 text-slate-400", categoryOpen && "text-sky-500")} />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl shadow-xl border border-slate-200 bg-white overflow-hidden" align="start">
-                                    <Command className="bg-white">
-                                        <div className="p-2 bg-slate-50/50 border-b border-slate-100">
-                                            <div className="relative rounded-md border border-slate-200 bg-white shadow-sm focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-100 transition-all overflow-hidden [&_[cmdk-input-wrapper]]:border-none">
-                                                <CommandInput
-                                                    placeholder="Search category..."
-                                                    className="h-9 text-sm placeholder:text-slate-400 focus-visible:ring-0 focus-visible:outline-none border-none shadow-none"
-                                                />
-                                            </div>
-                                        </div>
-                                        <CommandList className="max-h-60 overflow-y-auto p-1">
-                                            <CommandEmpty className="py-6 text-center text-sm text-slate-500">
-                                                No category found.
-                                            </CommandEmpty>
-                                            <CommandGroup>
-                                                <CommandItem
-                                                    value="all"
-                                                    onSelect={() => { setCategoryId('all'); setCategoryOpen(false); }}
-                                                    className={cn(
-                                                        "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-sky-50 data-[selected=true]:text-sky-700 text-slate-700 hover:bg-slate-50",
-                                                        categoryId === 'all' && "bg-sky-50/60 font-medium text-sky-700"
-                                                    )}
-                                                >
-                                                    <span className="truncate flex-1">All Categories</span>
-                                                    <Check className={cn("ml-2 h-4 w-4 shrink-0 transition-all duration-200", categoryId === 'all' ? "opacity-100 scale-100 text-sky-600" : "opacity-0 scale-75")} />
-                                                </CommandItem>
-                                                {categories.map((c) => (
-                                                    <CommandItem
-                                                        key={c.id}
-                                                        value={c.name}
-                                                        onSelect={() => { setCategoryId(String(c.id)); setCategoryOpen(false); }}
-                                                        className={cn(
-                                                            "flex items-center justify-between rounded-lg px-3 py-2.5 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-sky-50 data-[selected=true]:text-sky-700 text-slate-700 hover:bg-slate-50",
-                                                            categoryId === String(c.id) && "bg-sky-50/60 font-medium text-sky-700"
-                                                        )}
-                                                    >
-                                                        <span className="truncate flex-1">{c.name}</span>
-                                                        <Check className={cn("ml-2 h-4 w-4 shrink-0 transition-all duration-200", categoryId === String(c.id) ? "opacity-100 scale-100 text-sky-600" : "opacity-0 scale-75")} />
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
+                            <Select value={categoryId} onValueChange={setCategoryId}>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="All Categories" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-60 overflow-y-auto">
+                                    <SelectItem value="all">All Categories</SelectItem>
+                                    {categories.map((c) => (
+                                        <SelectItem key={c.id} value={String(c.id)}>
+                                            {c.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="flex flex-col gap-1 min-w-[160px]">
