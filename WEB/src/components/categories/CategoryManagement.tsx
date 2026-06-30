@@ -19,26 +19,27 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MultiSelect } from '@/components/ui/multi-select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DataTable } from '@/components/common/DataTable';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
-import { getCategories, createCategory, updateCategory, deleteCategory, getSystemModules, Category, SystemModule } from '@/api/categories/categoriesApi';
+import { getCategories, createCategory, updateCategory, deleteCategory, Category } from '@/api/categories/categoriesApi';
 import { toast } from 'sonner';
+
+const CATEGORY_MODULES = ['Supply', 'PPE', 'SE'];
 
 export function CategoryManagement() {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [modules, setModules] = useState<SystemModule[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [moduleFilterIds, setModuleFilterIds] = useState<number[]>([]);
+  const [moduleFilter, setModuleFilter] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ name: '', generalCode: '', moduleIds: [] as number[], isActive: true });
+  const [formData, setFormData] = useState({ name: '', generalCode: '', module: '', isActive: true });
 
   // Fetch categories on mount
   useEffect(() => {
     fetchCategories();
-    fetchModules();
   }, []);
 
   const fetchCategories = async () => {
@@ -48,19 +49,12 @@ export function CategoryManagement() {
     setLoading(false);
   };
 
-  const fetchModules = async () => {
-    const data = await getSystemModules();
-    setModules(data);
-  };
-
   const filtered = categories.filter(cat => {
     const matchesSearch =
       cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cat.generalCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cat.modules.some(module => module.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesModule =
-      moduleFilterIds.length === 0 ||
-      cat.moduleIds.some(moduleId => moduleFilterIds.includes(moduleId));
+      cat.module.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesModule = !moduleFilter || cat.module === moduleFilter;
 
     return matchesSearch && matchesModule;
   });
@@ -75,14 +69,14 @@ export function CategoryManagement() {
     let result;
 
     if (editingId) {
-      result = await updateCategory(editingId, formData.name, formData.generalCode, formData.moduleIds, formData.isActive);
+      result = await updateCategory(editingId, formData.name, formData.generalCode, formData.module, formData.isActive);
       if (result) {
         toast.success('Category updated successfully');
       } else {
         toast.error('Failed to update category');
       }
     } else {
-      result = await createCategory(formData.name, formData.generalCode, formData.moduleIds);
+      result = await createCategory(formData.name, formData.generalCode, formData.module);
       if (result) {
         toast.success('Category created successfully');
       } else {
@@ -93,7 +87,7 @@ export function CategoryManagement() {
     setLoading(false);
     if (result) {
       await fetchCategories();
-      setFormData({ name: '', generalCode: '', moduleIds: [], isActive: true });
+      setFormData({ name: '', generalCode: '', module: '', isActive: true });
       setEditingId(null);
       setIsOpen(false);
     }
@@ -104,7 +98,7 @@ export function CategoryManagement() {
     setFormData({
       name: category.name,
       generalCode: category.generalCode,
-      moduleIds: category.moduleIds,
+      module: category.module,
       isActive: category.isActive
     });
     setIsOpen(true);
@@ -115,11 +109,11 @@ export function CategoryManagement() {
     const result = await deleteCategory(id);
     setLoading(false);
 
-    if (result) {
+    if (result.success) {
       toast.success('Category deleted successfully');
       await fetchCategories();
     } else {
-      toast.error('Failed to delete category');
+      toast.error(result.message || 'Failed to delete category');
     }
   };
 
@@ -127,10 +121,11 @@ export function CategoryManagement() {
     { key: 'name', label: 'Category Name' },
     { key: 'generalCode', label: 'Code' },
     {
-      key: 'modules',
+      key: 'module',
       label: 'Module',
-      render: (_: any, row: Category) => row.modules.length ? row.modules.map(module => module.name).join(', ') : '-'
+      render: (_: any, row: Category) => row.module || '-'
     },
+    { key: 'itemCount', label: 'Items', render: (v: number) => v ?? 0 },
     { key: 'isActive', label: 'Status', render: (v: boolean) => v ? 'Active' : 'Inactive' },
     {
       key: 'actions',
@@ -144,28 +139,40 @@ export function CategoryManagement() {
           >
             <Edit className="w-4 h-4" />
           </Button>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" variant="outline" className="text-red-600">
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogTitle>Delete Category</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete "{row.name}"? This action cannot be undone.
-              </AlertDialogDescription>
-              <div className="flex justify-end gap-2">
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => handleDelete(row.id)}
-                  className="bg-red-600"
-                >
-                  Delete
-                </AlertDialogAction>
-              </div>
-            </AlertDialogContent>
-          </AlertDialog>
+          {row.itemCount > 0 ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-red-600"
+              disabled
+              title={`Cannot delete — ${row.itemCount} item(s) still linked`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          ) : (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline" className="text-red-600">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete "{row.name}"? This action cannot be undone.
+                </AlertDialogDescription>
+                <div className="flex justify-end gap-2">
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => handleDelete(row.id)}
+                    className="bg-red-600"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </div>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       )
     }
@@ -174,32 +181,20 @@ export function CategoryManagement() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-1 items-center gap-3">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <Input
-              placeholder="Search categories..."
-              className="pl-9"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <MultiSelect
-            options={modules.map(module => ({
-              label: module.name,
-              value: module.id.toString()
-            }))}
-            selected={moduleFilterIds.map(String)}
-            onSelectionChange={(selected) => setModuleFilterIds(selected.map(Number))}
-            placeholder="Modules"
-            className="max-w-xs"
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <Input
+            placeholder="Search categories..."
+            className="pl-9"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => {
               setEditingId(null);
-              setFormData({ name: '', generalCode: '', moduleIds: [], isActive: true });
+              setFormData({ name: '', generalCode: '', module: '', isActive: true });
             }}>
               <Plus className="w-4 h-4 mr-2" />
               Add Category
@@ -245,16 +240,20 @@ export function CategoryManagement() {
                 <Label className="text-sm font-medium text-slate-700">
                   Module
                 </Label>
-                <MultiSelect
-                  options={modules.map(module => ({
-                    label: module.name,
-                    value: module.id.toString()
-                  }))}
-                  selected={formData.moduleIds.map(String)}
-                  onSelectionChange={(selected) => setFormData({ ...formData, moduleIds: selected.map(Number) })}
-                  placeholder="Select modules"
-                  className="min-w-0"
-                />
+                <Select
+                  value={formData.module}
+                  onValueChange={(value) => setFormData({ ...formData, module: value })}
+                  disabled={loading}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select module" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORY_MODULES.map(module => (
+                      <SelectItem key={module} value={module}>{module}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-md">
                 <input
@@ -289,6 +288,15 @@ export function CategoryManagement() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <Tabs value={moduleFilter || 'all'} onValueChange={(value) => setModuleFilter(value === 'all' ? '' : value)}>
+        <TabsList>
+          <TabsTrigger value="all">All</TabsTrigger>
+          {CATEGORY_MODULES.map(module => (
+            <TabsTrigger key={module} value={module}>{module}</TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       <div className="border rounded-lg overflow-hidden">
         <DataTable

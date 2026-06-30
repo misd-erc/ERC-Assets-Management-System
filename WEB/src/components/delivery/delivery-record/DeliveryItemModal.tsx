@@ -62,7 +62,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
       fetchVendors();
       fetchSupplyStorageLocations();
       fetchSupplyUniqueRawItems();
-      getCategories('Delivery & Receipt of Items').then(setCategories);
+      getCategories('Supply').then(setCategories);
       resetForm();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -342,7 +342,7 @@ export function ListPPEsAtStationModal({ isOpen, onClose }: ListPPEsAtStationMod
     // Load offices and categories when modal opens
     useEffect(() => {
         if (!isOpen) return;
-        Promise.all([getOffices(), getCategories()]).then(([offs, cats]) => {
+        Promise.all([getOffices(), getCategories('PPE')]).then(([offs, cats]) => {
             setOffices(offs);
             setCategories(cats);
         });

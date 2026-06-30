@@ -5,15 +5,9 @@ export interface Category {
   id: number;
   name: string;
   generalCode: string;
-  moduleIds: number[];
-  modules: SystemModule[];
+  module: string;
   isActive: boolean;
-}
-
-export interface SystemModule {
-  id: number;
-  name: string;
-  acronym: string;
+  itemCount: number;
 }
 
 export interface Legend {
@@ -54,14 +48,14 @@ export const getCategories = async (moduleName?: string): Promise<Category[]> =>
           id: c.id ?? c.Id,
           name: c.name ?? c.Name,
           generalCode: c.generalCode ?? c.GeneralCode,
-          moduleIds: c.moduleIds ?? c.ModuleIds ?? [],
-          modules: c.modules ?? c.Modules ?? [],
-          isActive: c.isActive ?? c.IsActive ?? true
+          module: c.module ?? c.Module ?? '',
+          isActive: c.isActive ?? c.IsActive ?? true,
+          itemCount: c.itemCount ?? c.ItemCount ?? 0
         }))
       : [];
 
     return moduleName
-      ? categories.filter(category => category.modules.some((module: SystemModule) => module.name === moduleName))
+      ? categories.filter(category => category.module === moduleName)
       : categories;
   } catch (error) {
     console.error('Error fetching categories:', error);
@@ -69,36 +63,7 @@ export const getCategories = async (moduleName?: string): Promise<Category[]> =>
   }
 };
 
-export const getSystemModules = async (): Promise<SystemModule[]> => {
-  const { systemUserId, sessionKey } = getAuthParams();
-
-  try {
-    const response = await axiosInstance.get<ApiResponse<{ items: SystemModule[] }>>('/Users/system-modules/all', {
-      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey, PageSize: 1000 },
-    });
-
-    if (!response.data.success) {
-      console.error('Failed to fetch system modules:', response.data.message);
-      return [];
-    }
-
-    const data = response.data.data;
-    const items = Array.isArray(data) ? data : (data as any)?.items || (data as any)?.Items;
-
-    return Array.isArray(items)
-      ? items.map((m: any) => ({
-          id: m.id ?? m.Id,
-          name: m.name ?? m.Name,
-          acronym: m.acronym ?? m.Acronym,
-        }))
-      : [];
-  } catch (error) {
-    console.error('Error fetching system modules:', error);
-    return [];
-  }
-};
-
-export const createCategory = async (name: string, generalCode: string, moduleIds: number[]): Promise<Category | null> => {
+export const createCategory = async (name: string, generalCode: string, module: string): Promise<Category | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -106,7 +71,7 @@ export const createCategory = async (name: string, generalCode: string, moduleId
       id: 0,
       name,
       generalCode,
-      moduleIds,
+      module,
       isActive: true,
       actionBySystemUserId: systemUserId,
       sessionKey,
@@ -124,7 +89,7 @@ export const createCategory = async (name: string, generalCode: string, moduleId
   }
 };
 
-export const updateCategory = async (id: number, name: string, generalCode: string, moduleIds: number[], isActive: boolean): Promise<Category | null> => {
+export const updateCategory = async (id: number, name: string, generalCode: string, module: string, isActive: boolean): Promise<Category | null> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -132,7 +97,7 @@ export const updateCategory = async (id: number, name: string, generalCode: stri
       id,
       name,
       generalCode,
-      moduleIds,
+      module,
       isActive,
       actionBySystemUserId: systemUserId,
       sessionKey,
@@ -150,7 +115,7 @@ export const updateCategory = async (id: number, name: string, generalCode: stri
   }
 };
 
-export const deleteCategory = async (id: number): Promise<boolean> => {
+export const deleteCategory = async (id: number): Promise<{ success: boolean; message?: string }> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
   try {
@@ -160,13 +125,13 @@ export const deleteCategory = async (id: number): Promise<boolean> => {
 
     if (!response.data.success) {
       console.error('Failed to delete category:', response.data.message);
-      return false;
+      return { success: false, message: response.data.message };
     }
 
-    return true;
+    return { success: true };
   } catch (error) {
     console.error('Error deleting category:', error);
-    return false;
+    return { success: false };
   }
 };
 

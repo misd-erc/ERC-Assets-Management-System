@@ -48,24 +48,11 @@ public async Task<IActionResult> EditPTACategory([FromBody] EditPTACategoryQuery
                     Id = model.Id,
                     Name = model.Name,
                     GeneralCode = model.GeneralCode,
+                    Module = model.Module,
                     IsActive = model.IsActive
                 };
 
                 long ptaCategoryId = await _editTools.PTA.EditTblPTACategoryAsync(ptaCategory, model.ActionBySystemUserId, context);
-
-                await context.TblPTACategoryModules
-                    .Where(x => x.CategoryId == ptaCategoryId)
-                    .ExecuteSoftDeleteAsync(context);
-
-                var moduleIds = model.ModuleIds.Distinct().ToList();
-                if (moduleIds.Count > 0)
-                {
-                    await context.TblPTACategoryModules.AddRangeAsync(moduleIds.Select(moduleId => new TblPTACategoryModule
-                    {
-                        CategoryId = ptaCategoryId,
-                        ModuleId = moduleId
-                    }));
-                }
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
