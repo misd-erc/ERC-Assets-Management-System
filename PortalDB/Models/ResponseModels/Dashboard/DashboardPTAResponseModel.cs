@@ -14,6 +14,8 @@ namespace PortalDB.Models.ResponseModels.Dashboard
         public decimal TotalSEValuePercentage { get; set; }
         public long TotalSEIssued { get; set; }
         public long TotalSEStock { get; set; }
+        public decimal TotalSEIssuedValue { get; set; }
+        public decimal TotalSEStockValue { get; set; }
         public List<PTACategoryBreakdownItem> PPECategoryBreakdown { get; set; } = new();
         public List<PTACategoryBreakdownItem> SECategoryBreakdown { get; set; } = new();
     }

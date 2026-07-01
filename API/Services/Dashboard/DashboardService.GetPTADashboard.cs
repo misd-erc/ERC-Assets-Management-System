@@ -42,6 +42,12 @@ namespace API.Services.Dashboard
                 ptaDash.TotalSEIssued = seIdsWithCurrentMovement.Count;
                 ptaDash.TotalSEStock = ptaDash.TotalSE - ptaDash.TotalSEIssued;
 
+                var issuedPtaIds = seIdsWithCurrentMovement.ToHashSet();
+                ptaDash.TotalSEIssuedValue = (decimal)(ptas
+                    .Where(x => x.Group == TblPTA.SE && x.IsActive && issuedPtaIds.Contains(x.Id))
+                    .Sum(x => (double?)x.UnitValue) ?? 0);
+                ptaDash.TotalSEStockValue = ptaDash.TotalSEValue - ptaDash.TotalSEIssuedValue;
+
                 var categories = await context.TblPTACategories.AsNoTracking().Where(x => !x.IsDeleted).ToListAsync();
                 var catDict = categories.ToDictionary(c => c.Id, c => c.Name ?? "Uncategorized");
 

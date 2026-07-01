@@ -23,6 +23,8 @@ export interface PTADashboardData {
   totalSEValuePercentage: number;
   totalSEIssued: number;
   totalSEStock: number;
+  totalSEIssuedValue: number;
+  totalSEStockValue: number;
   ppeCategoryBreakdown: PTACategoryBreakdownItem[];
   seCategoryBreakdown: PTACategoryBreakdownItem[];
 }

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, Package, Layers } from 'lucide-react';
+import { Loader2, Package } from 'lucide-react';
 import { PTADashboardData } from '@/api/dashboard/dashboardApi';
 import { listSePpeItemsNoMovement, PtaItem } from '@/api/asset/ptaMovementApi';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface Props {
   open: boolean;
@@ -34,18 +34,6 @@ export function SEStockIssuedModal({ open, onClose, ptaData }: Props) {
     { name: 'Issued', value: issuedCount },
     { name: 'In Stock', value: inStockCount },
   ];
-
-  const categoryGroups = inStockItems.reduce<Record<string, number>>((acc, item) => {
-    const raw = item.category || 'Uncategorized';
-    const cat = raw.replace(/^Semi.Expendable\s*-\s*/i, '');
-    acc[cat] = (acc[cat] || 0) + 1;
-    return acc;
-  }, {});
-  const categoryList = Object.entries(categoryGroups)
-    .sort(([, a], [, b]) => b - a)
-    .map(([name, count]) => ({ name, count }));
-
-  const COLORS_CAT = ['#0d9488', '#0891b2', '#7c3aed', '#e11d48', '#ea580c', '#65a30d', '#6366f1', '#db2777'];
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -119,29 +107,6 @@ export function SEStockIssuedModal({ open, onClose, ptaData }: Props) {
               </div>
             </div>
 
-            {/* In-Stock by Category — horizontal bar chart */}
-            {categoryList.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                  <Layers className="w-4 h-4" /> In-Stock by Category
-                </h3>
-                <div className="bg-slate-50 rounded-xl p-4 border">
-                  <ResponsiveContainer width="100%" height={Math.max(categoryList.length * 40, 120)}>
-                    <BarChart data={categoryList} layout="vertical" margin={{ left: 10, right: 30, top: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                      <XAxis type="number" tick={{ fontSize: 11 }} />
-                      <YAxis type="category" dataKey="name" width={180} tick={{ fontSize: 11 }} />
-                      <Tooltip formatter={(val: number) => val.toLocaleString()} />
-                      <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={20}>
-                        {categoryList.map((_, i) => (
-                          <Cell key={i} fill={COLORS_CAT[i % COLORS_CAT.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </DialogContent>
