@@ -4,7 +4,7 @@ import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTit
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Check, ChevronDown, Plus, Search, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, FileText, Plus, Search, Trash2, X } from 'lucide-react';
 import { cn } from '@/components/ui/utils';
 import { PtaItem } from '@/api/asset/ptaMovementApi';
 import { NormalizedEmployee } from '@/types/asset/UnifiedAsset';
@@ -194,7 +194,6 @@ function ItemPicker({ options, selectedId, onSelect }: ItemPickerProps) {
     setTimeout(() => inputRef.current?.focus(), 0);
   };
 
-  // Close on outside click
   const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
     if (!containerRef.current?.contains(e.relatedTarget as Node)) {
       setOpen(false);
@@ -203,7 +202,6 @@ function ItemPicker({ options, selectedId, onSelect }: ItemPickerProps) {
 
   return (
     <div ref={containerRef} className="relative w-full" onBlur={handleBlur}>
-      {/* Trigger / selected display */}
       {!open ? (
         <button
           type="button"
@@ -237,7 +235,6 @@ function ItemPicker({ options, selectedId, onSelect }: ItemPickerProps) {
           </div>
         </button>
       ) : (
-        /* Search input */
         <div className="flex items-center rounded-md border border-ring ring-2 ring-ring bg-background px-3 h-11 gap-2">
           <Search className="h-4 w-4 text-muted-foreground shrink-0" />
           <input
@@ -260,7 +257,6 @@ function ItemPicker({ options, selectedId, onSelect }: ItemPickerProps) {
         </div>
       )}
 
-      {/* Inline dropdown results */}
       {open && (
         <div className="absolute w-full mt-1 rounded-md border border-border bg-popover shadow-lg overflow-hidden z-50">
           <div className="max-h-64 overflow-y-auto">
@@ -328,7 +324,10 @@ export function PPEIssuanceForm({
   onSubmit,
   onClose,
 }: PPEIssuanceFormProps) {
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const pickedCount = items.filter((i) => i.ptaId > 0).length;
+  const validItems = items.filter((i) => i.ptaId > 0);
 
   const plantillaOptions: EmployeeOption[] = employees
     .filter((e) => e.employmentTypeName === 'Plantilla' || e.employmentTypeName === 'Contractual')
@@ -345,6 +344,102 @@ export function PPEIssuanceForm({
       label: e.label,
       name: `${e.lastName}, ${e.firstName}${e.middleName ? ' ' + e.middleName : ''}`.trim(),
     }));
+
+  const selectedPlantillaEmployee = plantillaOptions.find((o) => o.value === form.plantillaEmployeeId);
+  const selectedOffice = offices.find((o) => o.id.toString() === form.officeId);
+
+  if (showConfirm) {
+    return (
+      <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <FileText className="w-6 h-6 text-blue-600" />
+            <div>
+              <DialogTitle className="text-xl">Review PAR/ICS Numbers</DialogTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Edit the generated numbers below if needed, then confirm to save.
+              </p>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Issuance summary */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2 text-sm">
+            <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">Issuance Summary</p>
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Accountable Employee</p>
+                <p className="font-semibold">{selectedPlantillaEmployee?.label || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Office</p>
+                <p className="font-semibold">{selectedOffice?.name || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Date Assigned</p>
+                <p className="font-semibold">{form.issuedDate || '—'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total Items</p>
+                <p className="font-bold text-blue-600 text-base">{validItems.length}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Editable PAR/ICS numbers per item */}
+          <div className="space-y-3">
+            <p className="text-sm font-semibold">PAR/ICS Numbers per Item</p>
+            {validItems.map((item, idx) => {
+              const originalIndex = items.indexOf(item);
+              const pta = sePpeItems.find((s) => s.id === item.ptaId);
+              return (
+                <div key={`confirm-item-${originalIndex}`} className="rounded-lg border border-slate-200 p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Item #{idx + 1}</p>
+                      <p className="font-semibold text-sm mt-1 truncate">{item.itemName || pta?.description || '—'}</p>
+                      {pta?.propertyNumber && (
+                        <p className="text-xs text-muted-foreground">Property #: {pta.propertyNumber}</p>
+                      )}
+                    </div>
+                    <Badge variant="secondary" className="shrink-0">{item.itemGroup}</Badge>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-blue-800">
+                      {item.itemGroup === 'PPE' ? 'PAR' : 'ICS'} Number
+                    </Label>
+                    <Input
+                      value={item.parIcsNumber}
+                      onChange={(e) => onItemChange(originalIndex, 'parIcsNumber', e.target.value)}
+                      className="font-mono font-semibold text-sm h-9 border-blue-200 focus:border-blue-400"
+                      placeholder={`e.g. ${item.itemGroup === 'PPE' ? 'PAR' : 'ICS'}-2026-07-001`}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2 pt-2">
+          <Button variant="outline" onClick={() => setShowConfirm(false)} disabled={saving}>
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back to Edit
+          </Button>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            onClick={onSubmit}
+            disabled={saving || validItems.some((i) => !i.parIcsNumber.trim())}
+          >
+            {saving ? 'Saving…' : 'Confirm & Save Issuance'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    );
+  }
 
   return (
     <DialogContent className="max-w-6xl w-full max-h-[94vh] overflow-y-auto">
@@ -465,7 +560,6 @@ export function PPEIssuanceForm({
                     selectedItem ? 'border-primary/40 bg-primary/5' : 'border-dashed'
                   )}
                 >
-                  {/* Row header */}
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                       Item #{index + 1}
@@ -482,7 +576,6 @@ export function PPEIssuanceForm({
                     </Button>
                   </div>
 
-                  {/* Searchable picker */}
                   <div className="space-y-1.5">
                     <Label>SE/PPE Item</Label>
                     <ItemPicker
@@ -497,7 +590,6 @@ export function PPEIssuanceForm({
                     )}
                   </div>
 
-                  {/* Selected item detail strip */}
                   {selectedItem && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-1">
                       <div className="space-y-1">
@@ -545,8 +637,11 @@ export function PPEIssuanceForm({
         <Button variant="outline" onClick={onClose} disabled={saving}>
           Cancel
         </Button>
-        <Button onClick={onSubmit} disabled={saving}>
-          {saving ? 'Saving…' : 'Save Issuance'}
+        <Button
+          onClick={() => setShowConfirm(true)}
+          disabled={saving || pickedCount === 0}
+        >
+          Review & Confirm
         </Button>
       </DialogFooter>
     </DialogContent>

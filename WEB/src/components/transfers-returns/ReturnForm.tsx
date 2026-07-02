@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, AlertCircle, CheckCircle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, ChevronRight, ChevronLeft, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   editMovementBulk,
@@ -30,7 +30,7 @@ interface ReturnFormProps {
   onSuccess?: () => void;
 }
 
-type Step = 'from-employee' | 'select-items-and-condition';
+type Step = 'from-employee' | 'select-items-and-condition' | 'confirm';
 
 // Fixed return recipient (Cherry Lynn S. Gonzales, ID: 521)
 const FIXED_RETURN_RECIPIENT = {
@@ -48,6 +48,9 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
   // Form State
   const [fromEmployee, setFromEmployee] = useState<ApiEmployee | null>(null);
   const [selectedItems, setSelectedItems] = useState<{ [key: string]: { selected: boolean; condition: string } }>({});
+
+  // Generated number (editable before final save)
+  const [generatedReturnNumber, setGeneratedReturnNumber] = useState('');
 
   // Data Loading States
   const [employees, setEmployees] = useState<ApiEmployee[]>([]);
@@ -73,6 +76,7 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
       setCurrentStep('from-employee');
       setFromEmployee(null);
       setSelectedItems({});
+      setGeneratedReturnNumber('');
       setError(null);
       setSuccess(false);
       setLoading(false);
@@ -87,19 +91,15 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
         setDataLoading(true);
         setError(null);
 
-        // Load employees
         const empResponse = await getEmployees();
         setEmployees(empResponse.data?.items || []);
 
-        // Load offices
         const officesData = await getOffices();
         setOffices(officesData || []);
 
-        // Load divisions
         const divisionsData = await getDivisions();
         setDivisions(divisionsData || []);
 
-        // Load conditions
         const conditionsData = await getConditions();
         setConditions(conditionsData || []);
       } catch (err) {
@@ -129,14 +129,9 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
         setItemsLoading(true);
         setError(null);
 
-        // Fetch assets for the selected employee
         const items = await getAssetsByEmployee(fromEmployee.id, groupName);
-
-        // Filter out items that don't have active movements
         const validItems = items.filter((item: any) => item && item.id);
         setEmployeeItems(validItems);
-
-        // Reset selected items when employee changes
         setSelectedItems({});
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load employee items';
@@ -152,17 +147,14 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromEmployee]);
 
-  // Handle employee selection
   const handleEmployeeSelect = (employeeId: number) => {
     const emp = employees.find(e => e.id === employeeId);
     setFromEmployee(emp || null);
   };
 
-  // Handle item selection or condition change
   const handleItemChange = (itemId: string, selected?: boolean, condition?: string) => {
     setSelectedItems((prev) => {
       const current = prev[itemId] || { selected: false, condition: 'Good' };
-
       return {
         ...prev,
         [itemId]: {
@@ -173,34 +165,59 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
     });
   };
 
-  // Handle next button
   const handleNext = () => {
     if (!fromEmployee) {
       toast.error('Please select an employee');
       return;
     }
-
     if (employeeItems.length === 0) {
       toast.error('No items available for this employee');
       return;
     }
-
     setCurrentStep('select-items-and-condition');
   };
 
-  // Handle back button
   const handleBack = () => {
-    if (currentStep === 'select-items-and-condition') {
-      setCurrentStep('from-employee');
+    if (currentStep === 'select-items-and-condition') setCurrentStep('from-employee');
+    else if (currentStep === 'confirm') setCurrentStep('select-items-and-condition');
+  };
+
+  // Generate return number then advance to confirm step
+  const handleGenerateAndConfirm = async () => {
+    const selectedItemIds = Object.entries(selectedItems)
+      .filter(([, data]) => data.selected)
+      .map(([itemId]) => itemId);
+
+    if (selectedItemIds.length === 0) {
+      toast.error('Please select at least one item to return');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const returnNumber = await generateReturnNumber(returnType);
+      setGeneratedReturnNumber(returnNumber);
+      setCurrentStep('confirm');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to generate return number';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  // Final save using the (possibly edited) generated number
+  const handleFinalSave = async () => {
     if (!fromEmployee) {
       toast.error('Please select an employee');
+      return;
+    }
+
+    if (!generatedReturnNumber.trim()) {
+      toast.error('Return number cannot be empty');
       return;
     }
 
@@ -217,17 +234,12 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
       setLoading(true);
       setError(null);
 
-      // Generate return number (async call to backend)
-      const returnNumber = await generateReturnNumber(returnType);
-
-      // Build all movements for bulk submission
       const bulkMovements: Parameters<typeof editMovementBulk>[0] = [];
 
       for (const itemId of selectedItemIds) {
         const item = employeeItems.find((i) => String(i.id) === itemId);
         const itemCondition = selectedItems[itemId]?.condition || item?.condition || 'Good';
 
-        // Mark previous movement as not current
         if (item?.movements && Array.isArray(item.movements) && item.movements.length > 0) {
           const sortedMovements = [...item.movements].sort(
             (a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
@@ -251,13 +263,12 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
           });
         }
 
-        // New return movement
         bulkMovements.push({
           id: 0,
           ptaId: parseInt(itemId),
           dateAssigned: new Date().toISOString(),
           ptrItrNumber: '',
-          rrppeRrspNumber: returnNumber,
+          rrppeRrspNumber: generatedReturnNumber,
           parIcsNumber: item?.parIcsNumber || '',
           status: 'R',
           plantillaEmployeeId: FIXED_RETURN_RECIPIENT.id,
@@ -273,9 +284,8 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
       await editMovementBulk(bulkMovements);
 
       setSuccess(true);
-      toast.success(`Return record created successfully: ${returnNumber}`);
+      toast.success(`Return record created successfully: ${generatedReturnNumber}`);
 
-      // Close form after a short delay
       setTimeout(() => {
         onClose();
         onSuccess?.();
@@ -291,15 +301,17 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
 
   if (!isOpen) return null;
 
-  const selectedEmployeeName = fromEmployee 
+  const selectedEmployeeName = fromEmployee
     ? `${fromEmployee.firstName} ${fromEmployee.lastName}`.trim()
     : '';
   const selectedEmployeeOffice = fromEmployee?.office ? (typeof fromEmployee.office === 'string' ? fromEmployee.office : fromEmployee.office.name) : 'Unknown';
   const selectedEmployeePosition = fromEmployee?.position ? (typeof fromEmployee.position === 'string' ? fromEmployee.position : fromEmployee.position.name) : fromEmployee?.positionName || 'N/A';
 
+  const selectedItemIds = Object.entries(selectedItems).filter(([, d]) => d.selected).map(([id]) => id);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-2xl">
+      <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{returnType === 'RRPPE' ? 'Return PPE' : 'Return SE'}</DialogTitle>
           <DialogDescription>
@@ -327,7 +339,7 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             {/* Step 1: Select From Employee */}
             {currentStep === 'from-employee' && (
               <div className="space-y-4">
@@ -347,18 +359,10 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
                   <Card className="bg-slate-50 border-slate-200">
                     <CardContent className="pt-4">
                       <div className="space-y-2 text-sm">
-                        <p>
-                          <span className="font-semibold">Name:</span> {selectedEmployeeName}
-                        </p>
-                        <p>
-                          <span className="font-semibold">Position:</span> {selectedEmployeePosition}
-                        </p>
-                        <p>
-                          <span className="font-semibold">Office:</span> {selectedEmployeeOffice}
-                        </p>
-                        <p>
-                          <span className="font-semibold">Items Available:</span> {employeeItems.length} {groupName} item(s)
-                        </p>
+                        <p><span className="font-semibold">Name:</span> {selectedEmployeeName}</p>
+                        <p><span className="font-semibold">Position:</span> {selectedEmployeePosition}</p>
+                        <p><span className="font-semibold">Office:</span> {selectedEmployeeOffice}</p>
+                        <p><span className="font-semibold">Items Available:</span> {employeeItems.length} {groupName} item(s)</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -371,7 +375,7 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
               <div className="space-y-4">
                 <div>
                   <h3 className="text-base font-semibold mb-4">
-                    Select Items to Return & Set Condition
+                    Select Items to Return &amp; Set Condition
                   </h3>
 
                   {itemsLoading ? (
@@ -446,23 +450,57 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
                 <Card className="bg-blue-50 border-blue-200 p-4">
                   <div className="space-y-2 text-sm">
                     <p className="font-semibold text-blue-900">Return Recipient (Fixed)</p>
-                    <p className="text-blue-800">
-                      <span className="font-medium">Name:</span> {FIXED_RETURN_RECIPIENT.name}
-                    </p>
-                    <p className="text-blue-800">
-                      <span className="font-medium">Type:</span> {FIXED_RETURN_RECIPIENT.employmentType}
-                    </p>
-                    <p className="text-blue-800">
-                      <span className="font-medium">Office:</span> {FIXED_RETURN_RECIPIENT.office}
-                    </p>
+                    <p className="text-blue-800"><span className="font-medium">Name:</span> {FIXED_RETURN_RECIPIENT.name}</p>
+                    <p className="text-blue-800"><span className="font-medium">Type:</span> {FIXED_RETURN_RECIPIENT.employmentType}</p>
+                    <p className="text-blue-800"><span className="font-medium">Office:</span> {FIXED_RETURN_RECIPIENT.office}</p>
                   </div>
                 </Card>
               </div>
             )}
 
+            {/* Step 3: Confirm — review and edit the generated return number */}
+            {currentStep === 'confirm' && (
+              <div className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-6 h-6 text-blue-600" />
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Review Generated Number</h3>
+                    <p className="text-sm text-gray-600">You can edit the number below if it is incorrect before saving.</p>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-5 space-y-3">
+                  <Label className="text-base font-bold text-blue-900 block">
+                    {returnType} Number ({returnType === 'RRPPE' ? 'Report on the Return of PPE' : 'Report on the Return of Semi-Expendable Property'})
+                  </Label>
+                  <Input
+                    value={generatedReturnNumber}
+                    onChange={(e) => setGeneratedReturnNumber(e.target.value)}
+                    className="text-base font-mono font-semibold h-11 border-blue-300 focus:border-blue-500"
+                    placeholder={`e.g. ${returnType}-2026-07-001`}
+                  />
+                  <p className="text-xs text-blue-700">Format: {returnType}-yyyy-mm-NNN</p>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2 text-sm">
+                  <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">Return Summary</p>
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold uppercase">Employee</p>
+                      <p className="font-semibold text-slate-900 mt-1">{selectedEmployeeName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold uppercase">Items Selected</p>
+                      <p className="font-bold text-blue-600 text-lg mt-1">{selectedItemIds.length}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Form Actions */}
             <div className="flex gap-3 justify-end pt-4 border-t">
-              {currentStep === 'select-items-and-condition' && (
+              {currentStep !== 'from-employee' && (
                 <Button
                   type="button"
                   variant="outline"
@@ -487,18 +525,39 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
 
               {currentStep === 'select-items-and-condition' && (
                 <Button
-                  type="submit"
+                  type="button"
+                  onClick={handleGenerateAndConfirm}
                   disabled={loading || Object.values(selectedItems).every((v) => !v.selected)}
                 >
                   {loading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Creating Return...
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      Review &amp; Confirm
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {currentStep === 'confirm' && (
+                <Button
+                  type="button"
+                  onClick={handleFinalSave}
+                  disabled={loading || !generatedReturnNumber.trim()}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
                     </>
                   ) : (
                     <>
                       <CheckCircle className="h-4 w-4 mr-2" />
-                      Create Return Record
+                      Save Return Record
                     </>
                   )}
                 </Button>
@@ -513,7 +572,7 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
                 Cancel
               </Button>
             </div>
-          </form>
+          </div>
         )}
       </DialogContent>
     </Dialog>
