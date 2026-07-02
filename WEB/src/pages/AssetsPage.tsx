@@ -72,6 +72,12 @@ export function AssetsPage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadConfirmDialogOpen, setUploadConfirmDialogOpen] = useState(false);
 
+  // Batch upload row-level issues (rejected file or partially-failed rows)
+  const [uploadIssuesOpen, setUploadIssuesOpen] = useState(false);
+  const [uploadIssuesTitle, setUploadIssuesTitle] = useState('');
+  const [uploadIssuesMessage, setUploadIssuesMessage] = useState('');
+  const [uploadIssueRows, setUploadIssueRows] = useState<BatchUploadIssueRow[]>([]);
+
   // Excel export
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [exportStartDate, setExportStartDate] = useState('');
@@ -185,6 +191,14 @@ export function AssetsPage() {
       toast.error('Failed to delete asset');
     }
   };
+
+interface BatchUploadIssueRow {
+  propertyNumber?: string;
+  field?: string;
+  employeeId?: string;
+  dateAssigned?: string;
+  reason?: string;
+}
 
 interface ValidationResult {
   isValid: boolean;
@@ -444,7 +458,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
       if (result.success) {
         // Format the batch upload summary
         const summaryData = result.data as any;
-        const summary = typeof summaryData === 'object' ? summaryData : { assets: { inserted: 0, updated: 0 }, movements: { inserted: 0, updated: 0 }, failed: 0 };
+        const summary = typeof summaryData === 'object' ? summaryData : { assets: { inserted: 0, updated: 0 }, movements: { inserted: 0, updated: 0 }, failed: 0, failedDetails: [] };
         const totalProcessed = (summary.assets?.inserted || 0) + (summary.assets?.updated || 0);
         const totalMovements = (summary.movements?.inserted || 0) + (summary.movements?.updated || 0);
         const failed = summary.failed || 0;
@@ -456,6 +470,14 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
             `✓ ${totalMovements} movements (${summary.movements?.inserted || 0} new, ${summary.movements?.updated || 0} updated)\n` +
             `✗ ${failed} records failed`
           );
+
+          const rows: BatchUploadIssueRow[] = Array.isArray(summary.failedDetails)
+            ? summary.failedDetails.map((d: any) => ({ propertyNumber: d.propertyNumber, reason: d.reason }))
+            : [];
+          setUploadIssuesTitle('Batch Upload Completed with Issues');
+          setUploadIssuesMessage(`${failed} row(s) could not be processed. The rest of the file was saved successfully — fix the rows below and re-upload just those if needed.`);
+          setUploadIssueRows(rows);
+          setUploadIssuesOpen(true);
         } else if (totalProcessed > 0 || totalMovements > 0) {
           toast.success(
             `Upload completed successfully:\n` +
@@ -467,6 +489,25 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
         }
       } else {
         toast.error(result.message || 'Failed to upload file');
+
+        // Validation-pass rejections return the offending rows in `data` so the user
+        // can see exactly what to fix (e.g. Employee IDs that don't exist yet).
+        const rows: BatchUploadIssueRow[] = Array.isArray(result.data)
+          ? (result.data as any[]).map((d) => ({
+              propertyNumber: d.propertyNumber,
+              field: d.field,
+              employeeId: d.employeeId,
+              dateAssigned: d.dateAssigned,
+              reason: d.reason,
+            }))
+          : [];
+
+        if (rows.length > 0) {
+          setUploadIssuesTitle('Batch Upload Rejected — Nothing Was Saved');
+          setUploadIssuesMessage(result.message || 'Fix the rows below in your file, then re-upload.');
+          setUploadIssueRows(rows);
+          setUploadIssuesOpen(true);
+        }
       }
 
       // Reset the file input element to allow selecting the same file again
@@ -989,6 +1030,43 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Batch Upload Issues — shows exactly which rows failed and why */}
+      <Dialog open={uploadIssuesOpen} onOpenChange={setUploadIssuesOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{uploadIssuesTitle}</DialogTitle>
+            <DialogDescription>{uploadIssuesMessage}</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-auto border rounded-md">
+            <table className="w-full text-sm border-collapse">
+              <thead className="sticky top-0 bg-slate-100">
+                <tr className="border-b">
+                  <th className="text-left p-2 font-medium">Property Number</th>
+                  <th className="text-left p-2 font-medium">Field</th>
+                  <th className="text-left p-2 font-medium">Employee ID</th>
+                  <th className="text-left p-2 font-medium">Date Assigned</th>
+                  <th className="text-left p-2 font-medium">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {uploadIssueRows.map((row, idx) => (
+                  <tr key={idx} className="border-b last:border-0">
+                    <td className="p-2">{row.propertyNumber || '-'}</td>
+                    <td className="p-2">{row.field || '-'}</td>
+                    <td className="p-2">{row.employeeId || '-'}</td>
+                    <td className="p-2">{row.dateAssigned ? new Date(row.dateAssigned).toLocaleDateString() : '-'}</td>
+                    <td className="p-2 text-red-600">{row.reason || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button onClick={() => setUploadIssuesOpen(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Excel Export Modal */}
       <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>

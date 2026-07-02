@@ -10,7 +10,7 @@ export const ppeApi = {
 		actionBySystemUserId: string,
 		sessionKey: string,
 		onProgress?: (percent: number) => void
-	): Promise<{ success: boolean; code: string; message: string; data: string }> => {
+	): Promise<{ success: boolean; code: string; message: string; data: unknown }> => {
 		return new Promise((resolve, reject) => {
 			const formData = new FormData();
 			formData.append('file', file);
@@ -36,13 +36,12 @@ export const ppeApi = {
 			}
 
 			xhr.onload = () => {
-				if (xhr.status >= 200 && xhr.status < 300) {
-					try {
-						resolve(JSON.parse(xhr.responseText));
-					} catch {
-						reject(new Error('Invalid JSON response'));
-					}
-				} else {
+				// Resolve on any response that has a parseable body — even 4xx/5xx responses
+				// carry the structured error (message + per-row validation details) that the
+				// UI needs to show the user. Only reject when the body itself isn't usable.
+				try {
+					resolve(JSON.parse(xhr.responseText));
+				} catch {
 					reject(new Error('Failed to batch upload PPE assets'));
 				}
 			};
