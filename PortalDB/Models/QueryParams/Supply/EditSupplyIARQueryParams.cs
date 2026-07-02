@@ -9,6 +9,7 @@ namespace PortalDB.Models.QueryParams.Supply
     {
         public long Id { get; set; }
         public long? RecordId { get; set; }
+        public List<long> RecordIds { get; set; } = new();
         public string? CenterCode { get; set; } = string.Empty;
         public string? EntityName { get; set; } = string.Empty;
         public string? FundCluster { get; set; } = string.Empty;

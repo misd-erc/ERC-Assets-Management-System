@@ -154,6 +154,9 @@ const pdfStyles = StyleSheet.create({
 const formatPDFNumber = (n = 0) =>
     n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
+const toDateInput = (date: any) => date ? String(date).split('T')[0] : '';
+const formatPrintDate = (date: string) => date ? formatDate(date) : ' ';
+
 // --- SIGNATORY TYPES ---
 export interface IARInspectionSignatory {
     id: string;
@@ -168,6 +171,16 @@ export interface IARSignatories {
     acceptanceOfficer: { name: string; title: string };
 }
 
+interface IARPrintDates {
+    iarDate: string;
+    invoiceDate: string;
+    poDate: string;
+    drDate: string;
+    actualDeliveryDate: string;
+    inspectedDate: string;
+    acceptedDate: string;
+}
+
 const DEFAULT_SIGNATORIES: IARSignatories = {
     inspectionMembers: [
         { id: '1', name: '', role: '', committee: '' },
@@ -176,15 +189,36 @@ const DEFAULT_SIGNATORIES: IARSignatories = {
     acceptanceOfficer: { name: '', title: '' },
 };
 
+const emptyIARPrintDates = (): IARPrintDates => ({
+    iarDate: '',
+    invoiceDate: '',
+    poDate: '',
+    drDate: '',
+    actualDeliveryDate: '',
+    inspectedDate: '',
+    acceptedDate: '',
+});
+
+const getIARPrintDates = (iar: VwSupplyIAR): IARPrintDates => ({
+    iarDate: toDateInput(iar.iarNumberDate),
+    invoiceDate: toDateInput(iar.iarInvoiceNumberDate),
+    poDate: toDateInput(iar.poDate),
+    drDate: toDateInput(iar.actualDeliveryDate),
+    actualDeliveryDate: toDateInput(iar.actualDeliveryDate),
+    inspectedDate: toDateInput(iar.actualDeliveryDate),
+    acceptedDate: toDateInput(iar.iarNumberDate),
+});
+
 
 // --- PDF DOCUMENT COMPONENT ---
 interface IARPDFProps {
     iar: VwSupplyIAR;
     items: any[];
     signatories: IARSignatories;
+    printDates: IARPrintDates;
 }
 
-const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items, signatories }) => {
+const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items, signatories, printDates }) => {
     const totalAmount = items.reduce((sum, item) => sum + ((item.itemQuantity || 0) * (item.unitCost || 0)), 0);
 
     return (
@@ -222,7 +256,7 @@ const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items, signatories }) => {
                             </View>
                             <View style={pdfStyles.iarMetaRow}>
                                 <Text style={pdfStyles.iarLabel}>Date:</Text>
-                                <Text style={pdfStyles.iarValueLine}>{formatDate(iar.iarNumberDate)}</Text>
+                                <Text style={pdfStyles.iarValueLine}>{formatPrintDate(printDates.iarDate)}</Text>
                             </View>
                         </View>
                     </View>
@@ -239,7 +273,7 @@ const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items, signatories }) => {
                         </View>
                         <View style={pdfStyles.colSIDate}>
                             <Text style={pdfStyles.labelText}>Date :</Text>
-                            <Text style={pdfStyles.valueUnderline}>{formatDate(iar.iarInvoiceNumberDate)}</Text>
+                            <Text style={pdfStyles.valueUnderline}>{formatPrintDate(printDates.invoiceDate)}</Text>
                         </View>
                     </View>
 
@@ -249,7 +283,7 @@ const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items, signatories }) => {
                             <Text style={pdfStyles.labelText}>P.O. No. :</Text>
                             <Text style={[pdfStyles.valueUnderline, { flex: 0.5 }]}>{iar.poNumber}</Text>
                             <Text style={[pdfStyles.labelText, { marginLeft: 4 }]}>Date :</Text>
-                            <Text style={[pdfStyles.valueUnderline, { flex: 0.5 }]}>{formatDate(iar.poDate)}</Text>
+                            <Text style={[pdfStyles.valueUnderline, { flex: 0.5 }]}>{formatPrintDate(printDates.poDate)}</Text>
                         </View>
                         <View style={pdfStyles.colDRNo}>
                             <Text style={pdfStyles.labelText}>D.R. No. :</Text>
@@ -257,7 +291,7 @@ const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items, signatories }) => {
                         </View>
                         <View style={pdfStyles.colDRDate}>
                             <Text style={pdfStyles.labelText}>Date :</Text>
-                            <Text style={pdfStyles.valueUnderline}>{formatDate(iar.actualDeliveryDate)}</Text>
+                            <Text style={pdfStyles.valueUnderline}>{formatPrintDate(printDates.drDate)}</Text>
                         </View>
                     </View>
 
@@ -269,7 +303,7 @@ const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items, signatories }) => {
                         </View>
                         <View style={pdfStyles.colActualDel}>
                             <Text style={pdfStyles.labelText}>Date of Actual Delivery :</Text>
-                            <Text style={pdfStyles.valueUnderline}>{formatDate(iar.actualDeliveryDate)}</Text>
+                            <Text style={pdfStyles.valueUnderline}>{formatPrintDate(printDates.actualDeliveryDate)}</Text>
                         </View>
                     </View>
 
@@ -326,7 +360,7 @@ const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items, signatories }) => {
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     <Text style={pdfStyles.innerLineLabel}>Date Inspected: </Text>
                                     <Text style={pdfStyles.innerLineValue}>
-                                        {iar.actualDeliveryDate ? formatDate(iar.actualDeliveryDate) : ' '}
+                                        {formatPrintDate(printDates.inspectedDate)}
                                     </Text>
                                 </View>
                             </View>
@@ -367,7 +401,7 @@ const IARPDFDocument: React.FC<IARPDFProps> = ({ iar, items, signatories }) => {
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                     <Text style={pdfStyles.innerLineLabel}>Date Accepted: </Text>
                                     <Text style={pdfStyles.innerLineValue}>
-                                        {iar.iarNumberDate ? formatDate(iar.iarNumberDate) : ' '}
+                                        {formatPrintDate(printDates.acceptedDate)}
                                     </Text>
                                 </View>
                             </View>
@@ -832,7 +866,8 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
     const [iarList, setIarList] = useState<VwSupplyIAR[]>([]);
     const [deliveryRecords, setDeliveryRecords] = useState<VwDeliveryRecord[]>([]);
     const [selectedIar, setSelectedIar] = useState<VwSupplyIAR | null>(null);
-    const [selectedDelivery, setSelectedDelivery] = useState<VwDeliveryRecord | null>(null);
+    const [selectedDeliveryRecords, setSelectedDeliveryRecords] = useState<VwDeliveryRecord[]>([]);
+    const [printDates, setPrintDates] = useState<IARPrintDates>(() => emptyIARPrintDates());
 
     const [loading, setLoading] = useState(false);
     const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -847,7 +882,8 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
             setActiveSearchQuery('');
             setHasSearched(true);
             setSelectedIar(null);
-            setSelectedDelivery(null);
+            setSelectedDeliveryRecords([]);
+            setPrintDates(emptyIARPrintDates());
 
             setLoading(true);
             Promise.all([
@@ -874,7 +910,8 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
         setHasSearched(true);
         setActiveSearchQuery(searchTerm);
         setSelectedIar(null);
-        setSelectedDelivery(null);
+        setSelectedDeliveryRecords([]);
+        setPrintDates(emptyIARPrintDates());
         setLoading(true);
 
         try {
@@ -895,24 +932,27 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
     const handleSelectRow = async (iar: VwSupplyIAR) => {
         if (selectedIar?.id === iar.id) {
             setSelectedIar(null);
-            setSelectedDelivery(null);
+            setSelectedDeliveryRecords([]);
+            setPrintDates(emptyIARPrintDates());
             return;
         }
 
         setSelectedIar(iar);
+        setPrintDates(getIARPrintDates(iar));
 
-        const match = deliveryRecords.find(dr => dr.id === iar.recordId || dr.drNumber?.toString() === iar.drNumber?.toString());
+        const recordIds = iar.recordIds?.length ? iar.recordIds : (iar.recordId ? [iar.recordId] : []);
+        const matches = deliveryRecords.filter(dr => recordIds.includes(dr.id));
 
-        if (match && match.items && match.items.length > 0) {
-            setSelectedDelivery(match);
+        if (matches.length === recordIds.length && matches.every(dr => dr.items && dr.items.length > 0)) {
+            setSelectedDeliveryRecords(matches);
         } else {
             setIsPreviewLoading(true);
             try {
-                if (iar.recordId) {
-                    const delivery = await getDeliveryRecordById(iar.recordId);
-                    setSelectedDelivery(delivery);
+                if (recordIds.length) {
+                    const fetched = (await Promise.all(recordIds.map(id => getDeliveryRecordById(id)))).filter(Boolean) as VwDeliveryRecord[];
+                    setSelectedDeliveryRecords(fetched);
                 } else {
-                    setSelectedDelivery(null);
+                    setSelectedDeliveryRecords([]);
                     toast.error("No linked delivery record details found.");
                 }
             } catch (error) {
@@ -923,26 +963,32 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
         }
     };
 
+    const selectedDeliveryItems = selectedDeliveryRecords.flatMap(dr => dr.items || []);
+
+    const updatePrintDate = (key: keyof IARPrintDates, value: string) => {
+        setPrintDates(prev => ({ ...prev, [key]: value }));
+    };
+
     const handleExportPDF = () => {
-        if (!selectedIar || isPreviewLoading || !selectedDelivery) return;
+        if (!selectedIar || isPreviewLoading || selectedDeliveryItems.length === 0) return;
         setPendingAction('download');
         setSignatoryModalOpen(true);
     };
 
     const handlePrintPDF = () => {
-        if (!selectedIar || isPreviewLoading || !selectedDelivery) return;
+        if (!selectedIar || isPreviewLoading || selectedDeliveryItems.length === 0) return;
         setPendingAction('print');
         setSignatoryModalOpen(true);
     };
 
     const handleSignatoryConfirm = async (signatories: IARSignatories) => {
         setSignatoryModalOpen(false);
-        if (!selectedIar || !selectedDelivery) return;
+        if (!selectedIar || selectedDeliveryItems.length === 0) return;
         setIsGeneratingPDF(true);
 
         try {
             const blob = await pdf(
-                <IARPDFDocument iar={selectedIar} items={selectedDelivery.items || []} signatories={signatories} />
+                <IARPDFDocument iar={selectedIar} items={selectedDeliveryItems} signatories={signatories} printDates={printDates} />
             ).toBlob();
 
             const url = URL.createObjectURL(blob);
@@ -976,7 +1022,7 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
             actionLabel={pendingAction || 'print'}
         />
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogContent className="!max-w-6xl !w-[95vw] max-h-[90vh] flex flex-col p-0 bg-white border-slate-200 shadow-2xl overflow-hidden">
+            <DialogContent className="!max-w-[96vw] !w-[96vw] max-h-[90vh] flex flex-col p-0 bg-white border-slate-200 shadow-2xl overflow-hidden">
 
                 <DialogHeader className="border-b border-slate-200 p-6 pb-5 bg-slate-50/50">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -993,7 +1039,7 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
                             <Button
                                 variant="outline"
                                 className="shadow-sm font-medium transition-all"
-                                disabled={!selectedIar || isGeneratingPDF || isPreviewLoading || !selectedDelivery}
+                                disabled={!selectedIar || isGeneratingPDF || isPreviewLoading || selectedDeliveryItems.length === 0}
                                 onClick={handlePrintPDF}
                             >
                                 <Printer className="w-4 h-4 mr-2" />
@@ -1001,7 +1047,7 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
                             </Button>
                             <Button
                                 className="shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all"
-                                disabled={!selectedIar || isGeneratingPDF || isPreviewLoading || !selectedDelivery}
+                                disabled={!selectedIar || isGeneratingPDF || isPreviewLoading || selectedDeliveryItems.length === 0}
                                 onClick={handleExportPDF}
                             >
                                 {isGeneratingPDF ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
@@ -1100,7 +1146,29 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
                                                                         <Loader2 className="w-6 h-6 animate-spin mb-2" />
                                                                         <p className="text-sm font-medium">Fetching delivered items list...</p>
                                                                     </div>
-                                                                ) : selectedDelivery && selectedDelivery.items && selectedDelivery.items.length > 0 ? (
+                                                                ) : selectedDeliveryItems.length > 0 ? (
+                                                                    <div className="space-y-4">
+                                                                    <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+                                                                        {[
+                                                                            ['iarDate', 'IAR Date'],
+                                                                            ['invoiceDate', 'Invoice Date'],
+                                                                            ['poDate', 'PO Date'],
+                                                                            ['drDate', 'DR Date'],
+                                                                            ['actualDeliveryDate', 'Actual Delivery'],
+                                                                            ['inspectedDate', 'Date Inspected'],
+                                                                            ['acceptedDate', 'Date Accepted'],
+                                                                        ].map(([key, label]) => (
+                                                                            <div key={key} className="space-y-1">
+                                                                                <Label className="text-xs text-slate-600">{label}</Label>
+                                                                                <Input
+                                                                                    type="date"
+                                                                                    value={printDates[key as keyof IARPrintDates]}
+                                                                                    onChange={(e) => updatePrintDate(key as keyof IARPrintDates, e.target.value)}
+                                                                                    className="h-8 text-xs bg-white"
+                                                                                />
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
                                                                     <div className="rounded-lg border border-slate-200 bg-white overflow-hidden shadow-sm">
                                                                         <Table>
                                                                             <TableHeader className="bg-slate-100/50">
@@ -1114,7 +1182,7 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
                                                                                 </TableRow>
                                                                             </TableHeader>
                                                                             <TableBody>
-                                                                                {selectedDelivery.items.map((item, idx) => (
+                                                                                {selectedDeliveryItems.map((item, idx) => (
                                                                                     <TableRow key={idx} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
                                                                                         <TableCell className="py-2.5 text-xs font-medium text-slate-700">{item.code || '—'}</TableCell>
                                                                                         <TableCell className="py-2.5 text-xs text-slate-800">
@@ -1130,10 +1198,11 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
                                                                             </TableBody>
                                                                         </Table>
                                                                     </div>
+                                                                    </div>
                                                                 ) : (
                                                                     <div className="flex flex-col items-center justify-center py-6 text-slate-500 bg-white rounded-lg border border-dashed border-slate-200">
                                                                         <FileText className="w-8 h-8 text-slate-300 mb-2" />
-                                                                        <p className="text-sm font-medium">No items found for this linked Delivery Record.</p>
+                                                                        <p className="text-sm font-medium">No items found for the linked Delivery Record(s).</p>
                                                                     </div>
                                                                 )}
                                                             </div>

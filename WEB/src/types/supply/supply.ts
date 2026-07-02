@@ -85,6 +85,7 @@ export interface SupplyUnit {
 export interface SupplyIAR {
   id: number;
   recordId: number;
+  recordIds?: number[];
   centerCode: string;
   entityName: string;
   fundCluster: string;
@@ -106,6 +107,7 @@ export interface SupplyIAR {
 export interface VwSupplyIAR {
   id: number;
   recordId: number;
+  recordIds?: number[];
   drNumber: string;
   centerCode: string;
   entityName: string;
