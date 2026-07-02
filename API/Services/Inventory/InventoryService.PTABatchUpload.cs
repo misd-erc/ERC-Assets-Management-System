@@ -24,6 +24,7 @@ using PortalTools.Services;
 using PortalTools.Services.GetEditTools.ASSET.PTA;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Office;
+using PortalCommon.Utilities;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Globalization;
@@ -52,6 +53,90 @@ public async Task<IActionResult> PTABatchUpload([FromQuery] SoloQueryParams mode
                 List<PTAItem> items = _parserTools.ParsePtaFile(file);
                 if (!items.Any())
                     return Ok(new List<PTAItem>());
+
+                // ---- VALIDATION PASS: reject the whole upload if any referenced Employee ID can't be resolved ----
+                // An ID not yet in the system is still fine IF the row also carries a Firstname/Lastname for it —
+                // that's enough to auto-create the employee during processing. Only IDs that appear with NO name
+                // anywhere in the file (nothing to create a record from) block the upload.
+                var referencedEmployeeIds = items
+                    .Where(i => i?.AnnualCount != null)
+                    .SelectMany(i => i!.AnnualCount!)
+                    .SelectMany(m => new[] { m.PlantillaEmployeeId, m.NonPlantillaEmployeeId })
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Select(id => id.Trim())
+                    .Distinct()
+                    .ToList();
+
+                if (referencedEmployeeIds.Any())
+                {
+                    var encryptedIdMap = referencedEmployeeIds.ToDictionary(id => id, id => EncryptionHelper.Encrypt(id));
+                    var existingEncryptedIds = (await context.TblEmployees
+                        .Where(e => !e.IsDeleted && e.EmployeeIdOriginalEncrypted != null)
+                        .Select(e => e.EmployeeIdOriginalEncrypted)
+                        .ToListAsync())
+                        .ToHashSet();
+
+                    // An ID is "creatable" if any occurrence of it in the file (Plantilla or Non-Plantilla) has a name.
+                    var idsWithName = new HashSet<string>();
+                    foreach (var item in items)
+                    {
+                        if (item?.AnnualCount == null) continue;
+                        foreach (var movement in item.AnnualCount)
+                        {
+                            if (!string.IsNullOrWhiteSpace(movement.PlantillaEmployeeId) &&
+                                (!string.IsNullOrWhiteSpace(movement.PlantillaFirstname) || !string.IsNullOrWhiteSpace(movement.PlantillaLastname)))
+                                idsWithName.Add(movement.PlantillaEmployeeId.Trim());
+
+                            if (!string.IsNullOrWhiteSpace(movement.NonPlantillaEmployeeId) &&
+                                (!string.IsNullOrWhiteSpace(movement.NonPlantillaFirstname) || !string.IsNullOrWhiteSpace(movement.NonPlantillaLastname)))
+                                idsWithName.Add(movement.NonPlantillaEmployeeId.Trim());
+                        }
+                    }
+
+                    var missingEmployeeIds = encryptedIdMap
+                        .Where(kvp => !existingEncryptedIds.Contains(kvp.Value) && !idsWithName.Contains(kvp.Key))
+                        .Select(kvp => kvp.Key)
+                        .ToHashSet();
+
+                    if (missingEmployeeIds.Any())
+                    {
+                        var validationErrors = new List<object>();
+                        foreach (var item in items)
+                        {
+                            if (item?.AnnualCount == null) continue;
+                            foreach (var movement in item.AnnualCount)
+                            {
+                                if (!string.IsNullOrWhiteSpace(movement.PlantillaEmployeeId) && missingEmployeeIds.Contains(movement.PlantillaEmployeeId.Trim()))
+                                {
+                                    validationErrors.Add(new
+                                    {
+                                        PropertyNumber = item.PropertyNumber,
+                                        Field = "Plantilla Employee ID",
+                                        EmployeeId = movement.PlantillaEmployeeId,
+                                        DateAssigned = movement.DateAssigned,
+                                        Reason = "Employee ID not found in the system, and no Firstname/Lastname was given to create one"
+                                    });
+                                }
+                                if (!string.IsNullOrWhiteSpace(movement.NonPlantillaEmployeeId) && missingEmployeeIds.Contains(movement.NonPlantillaEmployeeId.Trim()))
+                                {
+                                    validationErrors.Add(new
+                                    {
+                                        PropertyNumber = item.PropertyNumber,
+                                        Field = "Non-Plantilla Employee ID",
+                                        EmployeeId = movement.NonPlantillaEmployeeId,
+                                        DateAssigned = movement.DateAssigned,
+                                        Reason = "Employee ID not found in the system, and no Firstname/Lastname was given to create one"
+                                    });
+                                }
+                            }
+                        }
+
+                        await transaction.RollbackAsync();
+                        return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Custom(false, ErrorCodes.VALIDATION_FAILED,
+                            $"Batch upload rejected: {missingEmployeeIds.Count} employee ID(s) were not found in the system and had no name to create a new record from. Please add a Firstname/Lastname or correct the ID, then re-upload.",
+                            validationErrors));
+                    }
+                }
 
                 int insertedAssetCount = 0;
                 int updatedAssetCount = 0;
@@ -259,7 +344,7 @@ public async Task<IActionResult> PTABatchUpload([FromQuery] SoloQueryParams mode
                                 if (plantillaEmployee == null &&
                                     (!string.IsNullOrWhiteSpace(movement.PlantillaFirstname) || !string.IsNullOrWhiteSpace(movement.PlantillaLastname)))
                                 {
-                                    // Employee ID not found — create a new employee record so the item is accountable
+                                    // Employee ID not found but a name is present (pre-validated) — create it so the item is accountable.
                                     Console.WriteLine($"[BATCH_UPLOAD] Plantilla employee '{movement.PlantillaEmployeeId}' not found. Creating new employee record.");
 
                                     long? plantillaPositionId = null;
@@ -267,7 +352,6 @@ public async Task<IActionResult> PTABatchUpload([FromQuery] SoloQueryParams mode
                                     {
                                         var pos = await _getTools.Office.GetTblPositionByNameAsync(movement.PlantillaPosition.Trim(), context);
                                         plantillaPositionId = pos?.Id;
-                                        Console.WriteLine($"[BATCH_UPLOAD] Plantilla position '{movement.PlantillaPosition}' → {(plantillaPositionId.HasValue ? plantillaPositionId.ToString() : "not found")}");
                                     }
 
                                     TblEmployee newEmp = new()
@@ -303,7 +387,7 @@ public async Task<IActionResult> PTABatchUpload([FromQuery] SoloQueryParams mode
                                 if (nonPlantillaEmployee == null &&
                                     (!string.IsNullOrWhiteSpace(movement.NonPlantillaFirstname) || !string.IsNullOrWhiteSpace(movement.NonPlantillaLastname)))
                                 {
-                                    // Employee ID not found — create a new employee record
+                                    // Employee ID not found but a name is present (pre-validated) — create it.
                                     Console.WriteLine($"[BATCH_UPLOAD] Non-plantilla employee '{movement.NonPlantillaEmployeeId}' not found. Creating new employee record.");
 
                                     long? nonPlantillaPositionId = null;
@@ -311,7 +395,6 @@ public async Task<IActionResult> PTABatchUpload([FromQuery] SoloQueryParams mode
                                     {
                                         var pos = await _getTools.Office.GetTblPositionByNameAsync(movement.NonPlantillaPosition.Trim(), context);
                                         nonPlantillaPositionId = pos?.Id;
-                                        Console.WriteLine($"[BATCH_UPLOAD] Non-plantilla position '{movement.NonPlantillaPosition}' → {(nonPlantillaPositionId.HasValue ? nonPlantillaPositionId.ToString() : "not found")}");
                                     }
 
                                     TblEmployee newEmp = new()
@@ -346,8 +429,11 @@ public async Task<IActionResult> PTABatchUpload([FromQuery] SoloQueryParams mode
                                 ? movement.Status 
                                 : PortalCommon.Constants.PTAMovementConstants.NEW;
 
-                            // Skip movements with no employee assigned
-                            if (plantillaEmployeeId == null && nonPlantillaEmployeeId == null)
+                            // Skip only if there is no employee reference at all (not even a raw ID).
+                            // (Employee IDs are pre-validated to exist, so plantillaEmployeeId/nonPlantillaEmployeeId
+                            // should only be null here when the corresponding raw ID was blank in the file.)
+                            if (plantillaEmployeeId == null && nonPlantillaEmployeeId == null &&
+                                string.IsNullOrWhiteSpace(movement.PlantillaEmployeeId) && string.IsNullOrWhiteSpace(movement.NonPlantillaEmployeeId))
                             {
                                 Console.WriteLine($"[BATCH_UPLOAD] Skipping movement for {item.PropertyNumber}: No employee assigned");
                                 continue;

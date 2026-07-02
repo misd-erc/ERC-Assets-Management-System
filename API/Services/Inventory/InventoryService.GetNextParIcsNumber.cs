@@ -52,17 +52,16 @@ public async Task<IActionResult> GetNextParIcsNumber([FromQuery] string parType 
                 var month = now.Month.ToString("D2");
                 var yearMonth = $"{year}-{month}";
 
-                // Get all movements for the current month and PAR/ICS type
+                // Get all movements for the given PAR/ICS type regardless of month
                 var movements = await _getTools.PTA.GetTblPTAMovements(context).ToListAsync();
 
-                var currentMonthMovements = movements
+                var allTypeMovements = movements
                     .Where(x => !string.IsNullOrEmpty(x.PARICSNumber) &&
-                                x.PARICSNumber.ToUpper().StartsWith(parType.ToUpper()) &&
-                                x.PARICSNumber.Contains(yearMonth))
+                                x.PARICSNumber.ToUpper().StartsWith(parType.ToUpper()))
                     .ToList();
 
-                // Extract sequence numbers from the PAR/ICS numbers (format: PAR-yyyy-mm-001 / ICS-yyyy-mm-001)
-                var sequenceNumbers = currentMonthMovements
+                // Extract sequence numbers from all PAR/ICS numbers (format: PAR-yyyy-mm-001 / ICS-yyyy-mm-001)
+                var sequenceNumbers = allTypeMovements
                     .Select(x =>
                     {
                         var parts = x.PARICSNumber.Split('-');
@@ -80,7 +79,7 @@ public async Task<IActionResult> GetNextParIcsNumber([FromQuery] string parType 
 
                 var nextNumber = $"{parType.ToUpper()}-{yearMonth}-{nextSequence:D3}";
 
-                Console.WriteLine($"[NEXT_PAR_NUMBER] Type: {parType}, Year-Month: {yearMonth}, Max Sequence: {maxSequence}, Next: {nextNumber}");
+                Console.WriteLine($"[NEXT_PAR_NUMBER] Type: {parType}, Year-Month: {yearMonth}, Global Max Sequence: {maxSequence}, Next: {nextNumber}");
 
                 return Ok(ApiResponse<object>.Ok(new { parNumber = nextNumber, sequence = nextSequence }, "Next PAR/ICS number generated successfully"));
             }

@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, AlertCircle, CheckCircle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, ChevronRight, ChevronLeft, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   editMovementBulk,
@@ -34,7 +34,7 @@ interface TransferFormProps {
   onSuccess?: () => void;
 }
 
-type Step = 'from-employee' | 'select-items' | 'to-employee';
+type Step = 'from-employee' | 'select-items' | 'to-employee' | 'confirm';
 
 export function TransferForm({ isOpen, onClose, transferType, onSuccess }: TransferFormProps) {
   // Step Management
@@ -46,6 +46,10 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
   const [toNonPlantillaEmployee, setToNonPlantillaEmployee] = useState<ApiEmployee | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemConditions, setItemConditions] = useState<Record<string, string>>({});
+
+  // Generated numbers (editable before final save)
+  const [generatedTransferNumber, setGeneratedTransferNumber] = useState('');
+  const [generatedParIcsNumber, setGeneratedParIcsNumber] = useState('');
 
   // Data Loading States
   const [employees, setEmployees] = useState<ApiEmployee[]>([]);
@@ -73,6 +77,8 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       setToNonPlantillaEmployee(null);
       setSelectedItems([]);
       setItemConditions({});
+      setGeneratedTransferNumber('');
+      setGeneratedParIcsNumber('');
       setError(null);
       setSuccess(false);
       setLoading(false);
@@ -87,15 +93,12 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
         setDataLoading(true);
         setError(null);
 
-        // Load employees
         const empResponse = await getEmployees();
         setEmployees(empResponse.data?.items || []);
 
-        // Load offices
         const officesData = await getOffices();
         setOffices(officesData || []);
 
-        // Load divisions
         const divisionsData = await getDivisions();
         setDivisions(divisionsData || []);
       } catch (err) {
@@ -125,7 +128,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
         setError(null);
         const items = await getAssetsByEmployee(fromEmployee.id, groupName);
         setEmployeeItems(items);
-        setSelectedItems([]); // Reset selected items when changing employee
+        setSelectedItems([]);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load items for employee';
         setError(message);
@@ -139,21 +142,16 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     loadItemsForEmployee();
   }, [fromEmployee?.id, groupName]);
 
-  // Handle items selection
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleItemsChange = (itemIds: string[]) => {
     setSelectedItems(itemIds);
   };
 
-  // Check if item is currently held by employee.
-  // Do NOT rely on the isCurrent flag — it can be stale or incorrectly set.
-  // Instead, take the latest movement by createdAt/id and verify the employee match.
   const isCurrentHolder = (item: any, employeeId: number | undefined): boolean => {
     if (!employeeId) return false;
 
     if (item.movements && Array.isArray(item.movements) && item.movements.length > 0) {
       const sorted = [...item.movements].sort((a, b) => {
-        // Prefer createdAt, fall back to dateAssigned, then id
         const tA = a.createdAt
           ? new Date(a.createdAt).getTime()
           : new Date(a.dateAssigned ?? 0).getTime();
@@ -171,66 +169,47 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       );
     }
 
-    // No movements recorded — fall back to direct assignment fields if present
     return (
       item.plantillaEmployeeId === employeeId ||
       item.nonPlantillaEmployeeId === employeeId
     );
   };
 
-  // Check if item has been transferred out (has a toEmployee assigned)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const hasBeenTransferredOut = (item: any): boolean => {
     if (!item.movements || !Array.isArray(item.movements) || item.movements.length === 0) {
       return false;
     }
-    
-    // Get the most recent movement
     const sortedMovements = [...item.movements].sort((a, b) => {
       const dateA = new Date(a.dateAssigned).getTime();
       const dateB = new Date(b.dateAssigned).getTime();
-      return dateB - dateA; // Most recent first
+      return dateB - dateA;
     });
-    
     const latestMovement = sortedMovements[0];
-    // Check if the latest movement has a toEmployee assigned
     return !!latestMovement.toEmployee;
   };
 
-  // Navigate to next step
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleNextStep = () => {
     if (currentStep === 'from-employee') {
-      if (!fromEmployee) {
-        toast.error('Please select a From Employee');
-        return;
-      }
+      if (!fromEmployee) { toast.error('Please select a From Employee'); return; }
       setCurrentStep('select-items');
     } else if (currentStep === 'select-items') {
-      if (selectedItems.length === 0) {
-        toast.error('Please select at least one item');
-        return;
-      }
+      if (selectedItems.length === 0) { toast.error('Please select at least one item'); return; }
       setCurrentStep('to-employee');
     }
   };
 
-  // Navigate to previous step
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handlePrevStep = () => {
-    if (currentStep === 'select-items') {
-      setCurrentStep('from-employee');
-    } else if (currentStep === 'to-employee') {
-      setCurrentStep('select-items');
-    }
+    if (currentStep === 'select-items') setCurrentStep('from-employee');
+    else if (currentStep === 'to-employee') setCurrentStep('select-items');
+    else if (currentStep === 'confirm') setCurrentStep('to-employee');
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  // Generate numbers then advance to confirm step
+  const handleGenerateAndConfirm = async () => {
     const recipient = toPlantillaEmployee ?? toNonPlantillaEmployee;
-
     if (!fromEmployee || selectedItems.length === 0 || !recipient) {
       toast.error('Please complete all steps');
       return;
@@ -240,25 +219,51 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       setLoading(true);
       setError(null);
 
-      // Generate transfer and PAR/ICS numbers (async calls to backend)
       const [transferNumber, parIcsNumber] = await Promise.all([
         generateTransferNumber(transferType),
         generateParIcsNumber(transferType === 'PTR' ? 'PAR' : 'ICS'),
       ]);
 
-      if (!parIcsNumber) {
-        throw new Error('Failed to generate PAR/ICS number');
-      }
+      if (!parIcsNumber) throw new Error('Failed to generate PAR/ICS number');
 
-      // Create movement records for each selected item
+      setGeneratedTransferNumber(transferNumber);
+      setGeneratedParIcsNumber(parIcsNumber);
+      setCurrentStep('confirm');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to generate numbers';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Final save using the (possibly edited) generated numbers
+  const handleFinalSave = async () => {
+    const recipient = toPlantillaEmployee ?? toNonPlantillaEmployee;
+
+    if (!fromEmployee || selectedItems.length === 0 || !recipient) {
+      toast.error('Please complete all steps');
+      return;
+    }
+
+    if (!generatedTransferNumber.trim() || !generatedParIcsNumber.trim()) {
+      toast.error('Transfer numbers cannot be empty');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
       const movements = selectedItems.map(itemId => {
         const item = employeeItems.find(i => String(i.id) === itemId);
         return {
           id: 0,
           ptaId: parseInt(itemId),
           dateAssigned: new Date().toISOString(),
-          ptrItrNumber: transferNumber,
-          parIcsNumber,
+          ptrItrNumber: generatedTransferNumber,
+          parIcsNumber: generatedParIcsNumber,
           status: 'T',
           plantillaEmployeeId: toPlantillaEmployee?.id || null,
           nonPlantillaEmployeeId: toNonPlantillaEmployee?.id || null,
@@ -266,11 +271,10 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           actualOfficeId: recipient?.office?.id || 0,
           actualDivisionId: recipient?.division?.id || 0,
           isActive: true,
-          isCurrent: true, // New movement is current
+          isCurrent: true,
         };
       });
 
-      // Build previous movements (mark as not current)
       const previousMovements = selectedItems
         .map(itemId => {
           const item = employeeItems.find(i => String(i.id) === itemId);
@@ -300,16 +304,14 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
         })
         .filter((m): m is NonNullable<typeof m> => m !== null);
 
-      // Send all previous + new movements in a single bulk request
       await editMovementBulk([...previousMovements, ...movements]);
 
       setSuccess(true);
       toast.success(`${transferType} created successfully for ${selectedItems.length} item(s)`);
 
-      // Reset form
       setTimeout(() => {
         onClose();
-        onSuccess?.(); // This will trigger API call to refresh the movement list
+        onSuccess?.();
       }, 1500);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save transfer record';
@@ -353,27 +355,13 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     return true;
   });
 
-  // Filter employees who are current holders for Step 3 (To Employee)
   const getCurrentHolderEmployees = (type: 'plantilla' | 'nonplantilla') => {
     const currentEmployeeId = fromEmployee?.id;
     if (!currentEmployeeId) {
       return type === 'plantilla' ? plantillaEmployees : nonPlantillaEmployees;
     }
-
-    // Get all employees who currently hold any items of the selected group
-    const allEmployeeIds = new Set<number>();
-    selectedItems.forEach(itemId => {
-      const item = employeeItems.find(i => String(i.id) === itemId);
-      if (item && item.currentHolderId) {
-        allEmployeeIds.add(item.currentHolderId);
-      }
-    });
-
-    // Filter to only show employees who have items (current holders)
-    // Also exclude the from employee
     const filteredList = (type === 'plantilla' ? plantillaEmployees : nonPlantillaEmployees)
       .filter(e => e.id !== currentEmployeeId);
-
     return filteredList;
   };
 
@@ -384,6 +372,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     if (currentStep === 'from-employee') return 1;
     if (currentStep === 'select-items') return 2;
     if (currentStep === 'to-employee') return 3;
+    if (currentStep === 'confirm') return 4;
     return 1;
   };
 
@@ -392,6 +381,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       case 'from-employee': return !!fromEmployee;
       case 'select-items': return selectedItems.length > 0;
       case 'to-employee': return !!toPlantillaEmployee || !!toNonPlantillaEmployee;
+      case 'confirm': return !!generatedTransferNumber.trim() && !!generatedParIcsNumber.trim();
       default: return false;
     }
   };
@@ -411,7 +401,8 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
         setCurrentStep('to-employee');
         break;
       }
-      case 'to-employee': handleSubmit(new Event('submit') as any); break;
+      case 'to-employee': handleGenerateAndConfirm(); break;
+      case 'confirm': handleFinalSave(); break;
     }
   };
 
@@ -419,8 +410,11 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     switch (currentStep) {
       case 'select-items': setCurrentStep('from-employee'); break;
       case 'to-employee': setCurrentStep('select-items'); break;
+      case 'confirm': setCurrentStep('to-employee'); break;
     }
   };
+
+  const recipient = toPlantillaEmployee ?? toNonPlantillaEmployee;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -428,12 +422,12 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
         <DialogHeader className="pb-6 border-b">
           <DialogTitle className="text-2xl font-bold">{transferLabel}</DialogTitle>
           <div className="mt-2 flex items-center justify-between">
-            <p className="text-sm text-gray-600">Step {getStepNumber()} of 3</p>
+            <p className="text-sm text-gray-600">Step {getStepNumber()} of 4</p>
             <div className="flex gap-1">
-              {[1, 2, 3].map(step => (
+              {[1, 2, 3, 4].map(step => (
                 <div
                   key={step}
-                  className={`h-1 w-12 rounded-full transition-colors ${
+                  className={`h-1 w-10 rounded-full transition-colors ${
                     step <= getStepNumber() ? 'bg-blue-600' : 'bg-gray-300'
                   }`}
                 />
@@ -525,7 +519,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                       {fromEmployee?.firstName} {fromEmployee?.lastName} currently holds <span className="font-bold text-blue-600">{employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length}</span> item(s)
                     </p>
                   </div>
-                  
+
                   {itemsLoading ? (
                     <div className="flex items-center justify-center py-12">
                       <Loader2 className="w-8 h-8 animate-spin mr-3 text-blue-600" />
@@ -598,15 +592,12 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-6">
-                        <Label className="text-base font-bold text-amber-900 mb-3 block">👤 Plantilla Employee</Label>
+                        <Label className="text-base font-bold text-amber-900 mb-3 block">Plantilla Employee</Label>
                         <EmployeeSelector
                           employees={plantillaEmployeesForStep3}
                           value={toPlantillaEmployee?.id || null}
                           onSelect={(empId) => {
-                            if (!empId) {
-                              setToPlantillaEmployee(null);
-                              return;
-                            }
+                            if (!empId) { setToPlantillaEmployee(null); return; }
                             const emp = employees.find(e => e.id === empId);
                             setToPlantillaEmployee(emp || null);
                           }}
@@ -624,15 +615,12 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
 
                     <div className="space-y-4">
                       <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
-                        <Label className="text-base font-bold text-purple-900 mb-3 block">👤 Non-Plantilla Employee</Label>
+                        <Label className="text-base font-bold text-purple-900 mb-3 block">Non-Plantilla Employee</Label>
                         <EmployeeSelector
                           employees={nonPlantillaEmployeesForStep3}
                           value={toNonPlantillaEmployee?.id || null}
                           onSelect={(empId) => {
-                            if (!empId) {
-                              setToNonPlantillaEmployee(null);
-                              return;
-                            }
+                            if (!empId) { setToNonPlantillaEmployee(null); return; }
                             const emp = employees.find(e => e.id === empId);
                             setToNonPlantillaEmployee(emp || null);
                           }}
@@ -661,10 +649,6 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                           <p className="text-xs text-gray-500 uppercase font-semibold">Items</p>
                           <p className="text-lg font-bold text-blue-600 mt-1">{selectedItems.length} item(s)</p>
                         </div>
-                      </div>
-                      <div className="bg-white border border-slate-200 rounded p-4">
-                        <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Transfer Type</p>
-                        <p className="text-base font-semibold text-slate-900 px-3 py-1 bg-blue-100 inline-block rounded">{transferLabel}</p>
                       </div>
                       <div className="bg-white border border-slate-200 rounded p-4 space-y-2">
                         <p className="text-xs text-gray-500 uppercase font-semibold mb-3">Items &amp; Condition</p>
@@ -704,6 +688,71 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
               </div>
             )}
 
+            {/* Step 4: Confirm — review and edit generated numbers before saving */}
+            {currentStep === 'confirm' && (
+              <div className="py-8 px-6 max-h-[70vh] overflow-y-auto">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-7 h-7 text-blue-600" />
+                      <h3 className="text-2xl font-bold text-gray-900">Review Generated Numbers</h3>
+                    </div>
+                    <p className="text-base text-gray-600">
+                      The system generated the numbers below. You can edit them before saving if they are incorrect.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-5 space-y-3">
+                      <Label className="text-base font-bold text-blue-900 block">
+                        {transferType} Number
+                      </Label>
+                      <Input
+                        value={generatedTransferNumber}
+                        onChange={(e) => setGeneratedTransferNumber(e.target.value)}
+                        className="text-base font-mono font-semibold h-11 border-blue-300 focus:border-blue-500"
+                        placeholder="e.g. 2026-07-001"
+                      />
+                      <p className="text-xs text-blue-700">Format: yyyy-mm-NNN</p>
+                    </div>
+
+                    <div className="bg-green-50 border-2 border-green-300 rounded-lg p-5 space-y-3">
+                      <Label className="text-base font-bold text-green-900 block">
+                        {transferType === 'PTR' ? 'PAR' : 'ICS'} Number
+                      </Label>
+                      <Input
+                        value={generatedParIcsNumber}
+                        onChange={(e) => setGeneratedParIcsNumber(e.target.value)}
+                        className="text-base font-mono font-semibold h-11 border-green-300 focus:border-green-500"
+                        placeholder={`e.g. ${transferType === 'PTR' ? 'PAR' : 'ICS'}-2026-07-001`}
+                      />
+                      <p className="text-xs text-green-700">Format: {transferType === 'PTR' ? 'PAR' : 'ICS'}-yyyy-mm-NNN</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-5 space-y-3">
+                    <p className="text-sm font-bold text-slate-700 uppercase tracking-wide">Transfer Summary</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold uppercase">From</p>
+                        <p className="font-semibold text-slate-900 mt-1">{fromEmployee?.firstName} {fromEmployee?.lastName}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold uppercase">To</p>
+                        <p className="font-semibold text-slate-900 mt-1">
+                          {recipient?.firstName} {recipient?.lastName}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold uppercase">Items</p>
+                        <p className="font-bold text-blue-600 text-lg mt-1">{selectedItems.length}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Navigation Buttons */}
             <div className="flex justify-between pt-6 px-6 border-t gap-4">
               <Button
@@ -721,10 +770,13 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                 disabled={!canGoNext() || loading || itemsLoading}
                 className="px-8 py-6 text-base font-semibold bg-blue-600 hover:bg-blue-700"
               >
-                {currentStep === 'to-employee' ? (
+                {loading && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
+                {currentStep === 'confirm' ? (
+                  'Save Transfer'
+                ) : currentStep === 'to-employee' ? (
                   <>
-                    {loading && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
-                    Complete Transfer
+                    Review & Confirm
+                    <ChevronRight className="w-5 h-5 ml-2" />
                   </>
                 ) : (
                   <>

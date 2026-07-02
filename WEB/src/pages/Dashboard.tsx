@@ -25,7 +25,6 @@ import { SEDetailModal } from '@/components/dashboard/modals/SEDetailModal';
 import { SupplyDetailModal } from '@/components/dashboard/modals/SupplyDetailModal';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { TotalAssetModal } from '@/components/dashboard/modals/TotalAssetModal';
-import { SEStockIssuedModal } from '@/components/dashboard/modals/SEStockIssuedModal';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface DashboardProps {
@@ -55,7 +54,7 @@ function Dashboard() {
   const [ptaData, setPtaData] = useState<PTADashboardData | null>(null);
   const [supplyStats, setSupplyStats] = useState<DashboardSupplyStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeModal, setActiveModal] = useState<'ppe' | 'se' | 'se-stock' | 'supply' | null>(null);
+  const [activeModal, setActiveModal] = useState<'ppe' | 'se' | 'supply' | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -92,6 +91,8 @@ function Dashboard() {
   const sePercentage = ptaData?.totalSEValuePercentage || 0;
   const seIssued = ptaData?.totalSEIssued || 0;
   const seStock = ptaData?.totalSEStock || 0;
+  const seIssuedValue = ptaData?.totalSEIssuedValue || 0;
+  const seStockValue = ptaData?.totalSEStockValue || 0;
   
   // Calculate totals
   const totalAssets = totalPPE + totalSE;
@@ -114,53 +115,6 @@ function Dashboard() {
     return `\u20B1${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  // TOR-required dashboard metrics with dynamic values
-  const kpiData = [
-    {
-      id: 'ppe' as const,
-      title: 'PPE Total',
-      value: formatCurrency(ppeAmount),
-      count: `${totalPPE.toLocaleString()} items`,
-      description: 'Property, Plant & Equipment',
-      changeType: 'positive' as const,
-      change: `${ppePercentage.toFixed(1)}% of total value`,
-      icon: Package,
-      color: 'bg-blue-50 text-blue-600 border-blue-200'
-    },
-    {
-      id: 'se' as const,
-      title: 'Semi-Expendable Total',
-      value: formatCurrency(seAmount),
-      count: `${totalSE.toLocaleString()} items`,
-      description: 'Semi-Expendable Items',
-      changeType: 'positive' as const,
-      change: `${sePercentage.toFixed(1)}% of total value`,
-      icon: Package,
-      color: 'bg-green-50 text-green-600 border-green-200'
-    },
-    {
-      id: 'se-stock' as const,
-      title: 'Semi-Expendable',
-      value: `${totalSE.toLocaleString()}`,
-      count: `${seIssued.toLocaleString()} Issued`,
-      description: `${seStock.toLocaleString()} In Stock`,
-      changeType: 'positive' as const,
-      change: 'Issuance & Stock Status',
-      icon: Package,
-      color: 'bg-teal-50 text-teal-600 border-teal-200'
-    },
-    {
-      id: 'supply' as const,
-      title: 'Supply Total',
-      value: formatCurrency(supplyStats?.totalValue || 0),
-      count: `${(supplyStats?.totalQuantity || 0).toLocaleString()} qty`,
-      description: 'Supply Items',
-      changeType: 'neutral' as const,
-      change: supplyStats?.lowStockCount ? `${supplyStats.lowStockCount} low stock` : 'All stocks sufficient',
-      icon: AlertTriangle,
-      color: 'bg-amber-50 text-amber-600 border-amber-200'
-    },
-  ];
 
   if (isLoading) {
     return (
@@ -191,43 +145,125 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Cards - Enhanced Grid with Amounts in ₱ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpiData.map((kpi) => (
-          <Card
-            key={kpi.title}
-            className={`hover:shadow-lg transition-all duration-200 border-2 cursor-pointer ${kpi.color.includes('border') ? kpi.color.split(' ').pop() : 'border-slate-200'}`}
-            onClick={() => setActiveModal(kpi.id)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveModal(kpi.id); } }}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{kpi.title}</p>
-                    <div className={`p-2 rounded-lg ${kpi.color.split(' border')[0]}`}>
-                      <kpi.icon className="w-5 h-5" />
-                    </div>
-                  </div>
-                  <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{kpi.value}</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 font-medium mb-1">{kpi.count}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">{kpi.description}</p>
-                  <div className="flex items-center">
-                    {kpi.changeType === 'neutral' && supplyStats?.lowStockCount
-                      ? <AlertTriangle className="w-3 h-3 text-amber-500 mr-1" />
-                      : <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
-                    }
-                    <span className={`text-xs font-medium ${kpi.changeType === 'neutral' && supplyStats?.lowStockCount ? 'text-amber-500' : 'text-green-600'}`}>
-                      {kpi.change}
-                    </span>
-                  </div>
-                </div>
+      {/* KPI Cards - 3 Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* PPE Card */}
+        <Card
+          className="hover:shadow-lg transition-all duration-200 border-2 border-blue-200 cursor-pointer"
+          onClick={() => setActiveModal('ppe')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveModal('ppe'); } }}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Property, Plant & Equipment</p>
+              <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
+                <Package className="w-5 h-5" />
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            </div>
+
+            <div className="px-2 py-1 -mx-2">
+              <div className="flex items-baseline gap-2 mb-0.5">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(ppeAmount)}</p>
+                <span className="text-sm font-bold text-blue-600">Total Value</span>
+              </div>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{totalPPE.toLocaleString()} items</p>
+            </div>
+
+            <div className="border-t border-slate-200 dark:border-slate-700 mt-3 pt-2 flex items-center justify-between">
+              <span className="text-xs text-slate-500 dark:text-slate-400">Share of total assets</span>
+              <span className="text-sm font-bold text-blue-700 dark:text-blue-400">{ppePercentage.toFixed(1)}%</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Semi-Expendable Card */}
+        <Card
+          className="hover:shadow-lg transition-all duration-200 border-2 border-green-200 cursor-pointer"
+          onClick={() => setActiveModal('se')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveModal('se'); } }}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Semi-Expendable Property</p>
+              <div className="p-2 rounded-lg bg-green-50 text-green-600">
+                <Package className="w-5 h-5" />
+              </div>
+            </div>
+
+            {/* Issued */}
+            <div className="px-2 py-1 -mx-2 mb-1">
+              <div className="flex items-baseline gap-2 mb-0.5">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(seIssuedValue)}</p>
+                <span className="text-sm font-bold text-green-600">Issued</span>
+              </div>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{seIssued.toLocaleString()} items</p>
+            </div>
+
+            <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
+
+            {/* In Stock */}
+            <div className="px-2 py-1 -mx-2">
+              <div className="flex items-baseline gap-2 mb-0.5">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(seStockValue)}</p>
+                <span className="text-sm font-bold text-teal-600">On Stock</span>
+              </div>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{seStock.toLocaleString()} items</p>
+            </div>
+
+            <div className="border-t border-slate-200 dark:border-slate-700 mt-3 pt-2 flex items-center justify-between">
+              <span className="text-xs text-slate-500 dark:text-slate-400">Total</span>
+              <div className="text-right">
+                <span className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(seIssuedValue + seStockValue)}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">/ {(seIssued + seStock).toLocaleString()} items</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Supply and Materials Card */}
+        <Card
+          className="hover:shadow-lg transition-all duration-200 border-2 border-amber-200 cursor-pointer"
+          onClick={() => setActiveModal('supply')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveModal('supply'); } }}
+        >
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between mb-4">
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Supply and Materials</p>
+              <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="px-2 py-1 -mx-2">
+              <div className="flex items-baseline gap-2 mb-0.5">
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(supplyStats?.totalValue || 0)}</p>
+                <span className="text-sm font-bold text-amber-600">Total Value</span>
+              </div>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{(supplyStats?.totalQuantity || 0).toLocaleString()} qty</p>
+            </div>
+
+            <div className="border-t border-slate-200 dark:border-slate-700 my-3" />
+
+            <div className="flex items-center justify-between px-2 -mx-2">
+              <div className="flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-green-600" />
+                <span className="text-sm font-bold text-green-700 dark:text-green-500">{(supplyStats?.sufficientStockCount || 0).toLocaleString()}</span>
+                <span className="text-xs text-slate-500">sufficient</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                <span className="text-sm font-bold text-amber-600">{(supplyStats?.lowStockCount || 0).toLocaleString()}</span>
+                <span className="text-xs text-slate-500">low stock</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Asset Value Breakdown Summary */}
@@ -351,7 +387,6 @@ function Dashboard() {
       <PPEDetailModal open={activeModal === 'ppe'} onClose={() => setActiveModal(null)} ptaData={ptaData} formatCurrency={formatCurrency} />
       <SEDetailModal open={activeModal === 'se'} onClose={() => setActiveModal(null)} ptaData={ptaData} formatCurrency={formatCurrency} />
       <SupplyDetailModal open={activeModal === 'supply'} onClose={() => setActiveModal(null)} supplyStats={supplyStats} formatCurrency={formatCurrency} />
-      <SEStockIssuedModal open={activeModal === 'se-stock'} onClose={() => setActiveModal(null)} ptaData={ptaData} />
     </div>
   );
 }
