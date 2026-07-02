@@ -194,7 +194,7 @@ namespace API.Controllers
 
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system user information for user {user.Id}", actionBy: model.ActionBySystemUserId);
+                await AuditTrailTool.LogActivityAsync(_options, $"Viewed system user information for {user.FirstName} {user.LastName}".Trim(), actionBy: model.ActionBySystemUserId);
                 return Ok(ApiResponse<object>.Ok(userBasicResponse, $"System user have been retrieved"));
 
             }

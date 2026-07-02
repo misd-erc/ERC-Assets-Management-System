@@ -141,9 +141,21 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
           lastName: nonPlantillaParts.length > 1 ? nonPlantillaParts[nonPlantillaParts.length - 1] : ''
         } : null;
 
+        // FROM employee — previous holder before the transfer (returned by backend as previousPlantilla/NonPlantillaEmployeeName)
+        const fromEmpFullName = item.previousPlantillaEmployeeName || item.previousNonPlantillaEmployeeName
+          || existingDetails?.fromEmployeeName
+          || 'N/A';
+        const fromEmpId = item.previousPlantillaEmployeeId ?? item.previousNonPlantillaEmployeeId ?? existingDetails?.fromEmployeeId;
+        const fromEmpParts = (fromEmpFullName && fromEmpFullName !== 'N/A') ? fromEmpFullName.trim().split(/\s+/) : null;
+        const fromEmpObj = fromEmpParts ? {
+          firstName: fromEmpParts[0] || '',
+          middleName: fromEmpParts.length > 2 ? fromEmpParts.slice(1, -1).join(' ') : '',
+          lastName: fromEmpParts.length > 1 ? fromEmpParts[fromEmpParts.length - 1] : ''
+        } : { firstName: 'N/A', middleName: '', lastName: '' };
+
         const baseRecord = existing || {
           itrNumber: itrNum,
-          fromEmployee: existingDetails?.fromEmployeeName || 'N/A',
+          fromEmployee: fromEmpFullName,
           toEmployee: toEmpFullName,
           itemCount: 0,
           dateAssigned: item.dateAssigned,
@@ -163,9 +175,9 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         detailsMap.set(itrNum, {
           transferNumber: itrNum,
           transferType: updatedRecord.transferType || 'TRANSFER',
-          fromEmployeeId: existingDetails?.fromEmployeeId,
-          fromEmployeeName: existingDetails?.fromEmployeeName || 'N/A',
-          fromEmployee: existingDetails?.fromEmployee || { firstName: 'N/A', middleName: '', lastName: '' },
+          fromEmployeeId: fromEmpId ?? existingDetails?.fromEmployeeId,
+          fromEmployeeName: fromEmpFullName,
+          fromEmployee: fromEmpObj,
           toEmployeeId: toEmpId ?? existingDetails?.toEmployeeId,
           toEmployeeName: toEmpFullName,
           toEmployee: toEmpObj,

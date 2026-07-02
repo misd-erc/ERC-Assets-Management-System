@@ -53,18 +53,16 @@ public async Task<IActionResult> GetNextReturnNumber([FromQuery] string returnTy
                 var month = now.Month.ToString("D2");
                 var yearMonth = $"{year}-{month}";
 
-                // Get all movements for the current month and type
+                // Get all movements for the given return type regardless of month
                 var movements = await _getTools.PTA.GetTblPTAMovements(context).ToListAsync();
 
-                // Filter for current month and return type
-                var currentMonthMovements = movements
-                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && 
-                                x.RRPPERRSPNumber.ToUpper().StartsWith(returnType.ToUpper()) &&
-                                x.RRPPERRSPNumber.Contains(yearMonth))
+                var allTypeMovements = movements
+                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) &&
+                                x.RRPPERRSPNumber.ToUpper().StartsWith(returnType.ToUpper()))
                     .ToList();
 
-                // Extract sequence numbers from the RRPPE/RRSP numbers (format: RRPPE-yyyy-mm-001)
-                var sequenceNumbers = currentMonthMovements
+                // Extract sequence numbers from all RRPPE/RRSP numbers (format: RRPPE-yyyy-mm-001)
+                var sequenceNumbers = allTypeMovements
                     .Select(x =>
                     {
                         var parts = x.RRPPERRSPNumber.Split('-');
@@ -84,7 +82,7 @@ public async Task<IActionResult> GetNextReturnNumber([FromQuery] string returnTy
                 // Format the new return number
                 var nextNumber = $"{returnType.ToUpper()}-{yearMonth}-{nextSequence:D3}";
 
-                Console.WriteLine($"[NEXT_RETURN_NUMBER] Type: {returnType}, Year-Month: {yearMonth}, Max Sequence: {maxSequence}, Next: {nextNumber}");
+                Console.WriteLine($"[NEXT_RETURN_NUMBER] Type: {returnType}, Year-Month: {yearMonth}, Global Max Sequence: {maxSequence}, Next: {nextNumber}");
 
                 return Ok(ApiResponse<object>.Ok(new { returnNumber = nextNumber, sequence = nextSequence }, "Next return number generated successfully"));
             }

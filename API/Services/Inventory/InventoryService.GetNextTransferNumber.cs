@@ -53,31 +53,31 @@ public async Task<IActionResult> GetNextTransferNumber([FromQuery] string transf
                 var month = now.Month.ToString("D2");
                 var yearMonth = $"{year}-{month}";
 
-                // Keep validating the requested transfer type, but numbering is now shared
-                // across transfer records and no longer includes a PTR/ITR prefix.
+                // PTR = PPE transfers, ITR = SE transfers.
+                // The number format yyyy-mm-NNN has no prefix, so we separate the sequences
+                // by looking at the Group of the PTA associated with each movement.
+                string targetGroup = transferType.Equals("PTR", StringComparison.OrdinalIgnoreCase)
+                    ? TblPTA.PPE
+                    : TblPTA.SE;
+
+                var ptaGroupMap = await context.TblPTAs
+                    .AsNoTracking()
+                    .Where(p => !p.IsDeleted)
+                    .ToDictionaryAsync(p => p.Id, p => p.Group ?? string.Empty);
+
                 var movements = await _getTools.PTA.GetTblPTAMovements(context).ToListAsync();
 
-                // Extract sequence numbers from legacy and new formats:
-                // PTR-yyyy-mm-001, ITR-yyyy-mm-001, yyyy-mm-001
+                // Only look at movements for the relevant asset group (PPE for PTR, SE for ITR)
                 var sequenceNumbers = movements
-                    .Where(x => !string.IsNullOrWhiteSpace(x.PTRITRNumber))
+                    .Where(x => !string.IsNullOrWhiteSpace(x.PTRITRNumber) &&
+                                x.PTAId.HasValue &&
+                                ptaGroupMap.TryGetValue(x.PTAId.Value, out var grp) &&
+                                string.Equals(grp, targetGroup, StringComparison.OrdinalIgnoreCase))
                     .Select(x =>
                     {
-                        var transferNumber = x.PTRITRNumber;
-                        if (string.IsNullOrWhiteSpace(transferNumber))
-                        {
-                            return 0;
-                        }
-
-                        var parts = transferNumber.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        var parts = x.PTRITRNumber!.Split('-', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                         var sequencePart = parts.Length >= 3 ? parts[^1] : null;
-
-                        if (sequencePart != null && int.TryParse(sequencePart, out var sequence))
-                        {
-                            return sequence;
-                        }
-
-                        return 0;
+                        return sequencePart != null && int.TryParse(sequencePart, out var seq) ? seq : 0;
                     })
                     .Where(x => x > 0)
                     .ToList();
@@ -87,7 +87,7 @@ public async Task<IActionResult> GetNextTransferNumber([FromQuery] string transf
 
                 var nextNumber = $"{yearMonth}-{nextSequence:D3}";
 
-                Console.WriteLine($"[NEXT_NUMBER] Type: {transferType}, Year-Month: {yearMonth}, Max Sequence: {maxSequence}, Next: {nextNumber}");
+                Console.WriteLine($"[NEXT_NUMBER] Type: {transferType} ({targetGroup}), Year-Month: {yearMonth}, Max Sequence: {maxSequence}, Next: {nextNumber}");
 
                 return Ok(ApiResponse<object>.Ok(new { transferNumber = nextNumber, sequence = nextSequence }, "Next transfer number generated successfully"));
             }
