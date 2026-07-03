@@ -567,6 +567,7 @@ interface RSMIReportModalProps {
 export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
     const [categoryId, setCategoryId] = useState<string>('');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
@@ -581,7 +582,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     useEffect(() => {
         if (isOpen) {
             getCategories('Supply').then(categoriesData => {
-                setCategories(categoriesData);
+                setCategories(categoriesData.filter((category: any) => category.module === 'Supply'));
             });
             setCurrentPage(1);
             fetchReport(0, DEFAULT_RSMI_START_DATE, DEFAULT_RSMI_END_DATE, 1, pageSize);
@@ -660,11 +661,11 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                 selectedItems.has(group.stockNumber ?? `unknown-stock-${index}`)
             );
 
-            const reportDate = startDate ? new Date(startDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' }) : new Date().toLocaleDateString('en-PH');
+            const printableReportDate = reportDate ? new Date(reportDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' }) : '';
             const rsmiNumber = `RSMI-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
 
             const blob = await pdf(
-                <RSMIPDFDocument data={selectedData} reportDate={reportDate} rsmiNumber={rsmiNumber} signatories={signatories} />
+                <RSMIPDFDocument data={selectedData} reportDate={printableReportDate} rsmiNumber={rsmiNumber} signatories={signatories} />
             ).toBlob();
 
             const url = URL.createObjectURL(blob);
@@ -739,7 +740,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                 <div className="p-6 flex-1 min-h-0 flex flex-col bg-white overflow-y-auto">
 
                     {/* FILTER SECTION - Polished Card Look */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5 p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5 p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
                         <div className="space-y-1.5">
                             <Label className="text-slate-700 font-medium">Category</Label>
                             <Select value={categoryId} onValueChange={setCategoryId}>
@@ -773,6 +774,16 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                 className="bg-white border-slate-300 focus-visible:ring-indigo-500 shadow-sm"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-slate-700 font-medium">Report Date</Label>
+                            <Input
+                                type="date"
+                                className="bg-white border-slate-300 focus-visible:ring-indigo-500 shadow-sm"
+                                value={reportDate}
+                                onChange={(e) => setReportDate(e.target.value)}
                             />
                         </div>
 

@@ -32,6 +32,7 @@ import {
     StyleSheet
 } from '@react-pdf/renderer';
 
+const toDateInput = (date: any) => date ? String(date).split('T')[0] : '';
 
 // --- PDF STYLES (Flat Headers & No Double Lines) ---
 const pdfStyles = StyleSheet.create({
@@ -261,6 +262,12 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
         await fetchSupplyGroupedItems(page, pageSize, activeSearchQuery.trim());
     };
 
+    const updatePreviewDate = (index: number, value: string) => {
+        setPreviewData(items => items.map((item, idx) =>
+            idx === index ? { ...item, createdAt: value } : item
+        ));
+    };
+
     const handleExportPDF = async () => {
         if (!selectedGroup || isPreviewLoading) return;
         setIsGeneratingPDF(true);
@@ -483,7 +490,14 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
                                                                             <TableBody>
                                                                                 {previewData.map((item, idx) => (
                                                                                     <TableRow key={idx} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
-                                                                                        <TableCell className="py-2.5 text-xs text-slate-500">{formatDate(item.createdAt)}</TableCell>
+                                                                                        <TableCell className="py-2.5 text-xs text-slate-500">
+                                                                                            <Input
+                                                                                                type="date"
+                                                                                                value={toDateInput(item.createdAt)}
+                                                                                                onChange={(e) => updatePreviewDate(idx, e.target.value)}
+                                                                                                className="h-8 text-xs bg-white"
+                                                                                            />
+                                                                                        </TableCell>
                                                                                         <TableCell className="py-2.5 text-xs text-center font-medium text-slate-700">{item.addedStockQuantity > 0 ? item.iarNumber : item.risNumber}</TableCell>
                                                                                         <TableCell className="py-2.5 text-xs text-center font-medium text-emerald-600">{item.addedStockQuantity > 0 ? `+${item.addedStockQuantity}` : '—'}</TableCell>
                                                                                         <TableCell className="py-2.5 text-xs text-center font-medium text-rose-600">{item.issuedStockQuantity > 0 ? `-${item.issuedStockQuantity}` : '—'}</TableCell>

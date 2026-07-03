@@ -1147,6 +1147,38 @@ namespace PortalDB.Migrations
                     b.ToTable("tblSupplyIARs", "asset");
                 });
 
+            modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyIARDeliveryRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyIARDeliveryRecordId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("SupplyIARDeliveryRecordCreatedAt");
+
+                    b.Property<long>("DeliveryRecordId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DeliveryRecordId");
+
+                    b.Property<long>("SupplyIARId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyIARId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeliveryRecordId")
+                        .IsUnique();
+
+                    b.HasIndex("SupplyIARId", "DeliveryRecordId")
+                        .IsUnique();
+
+                    b.ToTable("tblSupplyIARDeliveryRecords", "asset");
+                });
+
             modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblSupplyItem", b =>
                 {
                     b.Property<long>("Id")

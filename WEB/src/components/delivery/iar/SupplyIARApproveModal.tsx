@@ -16,13 +16,13 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   record: VwSupplyIAR | null;
-  deliveryRecord: VwDeliveryRecord | null;
+  deliveryRecords: VwDeliveryRecord[];
   loadingDeliveryRecord?: boolean;
   onConfirm: () => Promise<void>;
 }
 
-export const SupplyIARApproveModal = ({ open, onOpenChange, record, deliveryRecord, loadingDeliveryRecord, onConfirm }: Props) => {
-  const deliveryItems = deliveryRecord?.items || [];
+export const SupplyIARApproveModal = ({ open, onOpenChange, record, deliveryRecords, loadingDeliveryRecord, onConfirm }: Props) => {
+  const deliveryItems = deliveryRecords.flatMap(dr => dr.items || []);
   const canApprove = !loadingDeliveryRecord && deliveryItems.length > 0;
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
