@@ -89,12 +89,10 @@ function Dashboard() {
   const seAmount = ptaData?.totalSEValue || 0;
   const ppePercentage = ptaData?.totalPPEValuePercentage || 0;
   const sePercentage = ptaData?.totalSEValuePercentage || 0;
-  // Issued/On Stock split is unreliable on the backend for now, so show everything as
-  // Issued (matching the SE total) and On Stock as 0 until that's fixed.
-  const seIssued = totalSE;
-  const seStock = 0;
-  const seIssuedValue = seAmount;
-  const seStockValue = 0;
+  const seIssued = ptaData?.totalSEIssued || 0;
+  const seStock = ptaData?.totalSEStock || 0;
+  const seIssuedValue = ptaData?.totalSEIssuedValue || 0;
+  const seStockValue = ptaData?.totalSEStockValue || 0;
   
   // Calculate totals
   const totalAssets = totalPPE + totalSE;
