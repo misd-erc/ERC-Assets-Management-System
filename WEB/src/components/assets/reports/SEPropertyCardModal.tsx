@@ -403,31 +403,38 @@ const SEPCDocument: React.FC<SEPCDocumentProps> = ({ asset, entityName, fundClus
 );
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
+const SE_PAGE_SIZE = 100;
+
 export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProps) {
     const [assets, setAssets] = useState<any[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
+    const [pageNumber, setPageNumber] = useState(1);
     const [loading, setLoading] = useState(false);
     const [printing, setPrinting] = useState(false);
     const [saving, setSaving] = useState(false);
     const [searchInput, setSearchInput] = useState('');
-    const [searchString, setSearchString] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedAsset, setSelectedAsset] = useState<any | null>(null);
 
     const [entityName, setEntityName] = useState(DEFAULT_ENTITY_NAME);
     const [fundCluster, setFundCluster] = useState(DEFAULT_FUND_CLUSTER);
 
-    const fetchAssets = useCallback(async (search: string) => {
+    const totalPages = Math.max(1, Math.ceil(totalCount / SE_PAGE_SIZE));
+
+    const fetchAssets = useCallback(async (search: string, page: number) => {
         setLoading(true);
         try {
             const { systemUserId, sessionKey } = getAuthParams();
             const result = await seApi.list({
                 GroupName: 'SE',
-                PageNumber: 1,
-                PageSize: 10000,
+                PageNumber: page,
+                PageSize: SE_PAGE_SIZE,
                 SearchString: search || undefined,
                 ActionBySystemUserId: String(systemUserId),
                 SessionKey: sessionKey,
             });
             setAssets(result.items);
+            setTotalCount(result.totalCount);
         } catch {
             toast.error('Failed to load SE assets');
         } finally {
@@ -435,21 +442,32 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
         }
     }, []);
 
+    // Reset to page 1 (and reset list state) each time the modal is opened
     useEffect(() => {
         if (isOpen) {
-            fetchAssets('');
+            setSearchInput('');
+            setDebouncedSearch('');
+            setPageNumber(1);
         }
-    }, [isOpen, fetchAssets]);
+    }, [isOpen]);
 
+    // Debounce raw typing into a search term, and jump back to page 1 on every new search
     useEffect(() => {
         const t = setTimeout(() => {
-            if (isOpen) fetchAssets(searchString);
+            setDebouncedSearch(searchInput);
+            setPageNumber(1);
         }, 400);
         return () => clearTimeout(t);
-    }, [searchString, isOpen, fetchAssets]);
+    }, [searchInput]);
+
+    // Single source of truth for fetching: re-run whenever the page or the debounced search changes
+    useEffect(() => {
+        if (isOpen) fetchAssets(debouncedSearch, pageNumber);
+    }, [isOpen, pageNumber, debouncedSearch, fetchAssets]);
 
     const handleSearch = () => {
-        setSearchString(searchInput);
+        setDebouncedSearch(searchInput);
+        setPageNumber(1);
     };
 
     const handleSelectAsset = async (asset: any) => {
@@ -552,10 +570,7 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                                 <Input
                                     placeholder="Search SE assets…"
                                     value={searchInput}
-                                    onChange={(e) => {
-                                        setSearchInput(e.target.value);
-                                        setSearchString(e.target.value);
-                                    }}
+                                    onChange={(e) => setSearchInput(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                     className="flex-1"
                                 />
@@ -568,9 +583,36 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                                     {loading ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
                                 </Button>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                {assets.length} asset{assets.length !== 1 ? 's' : ''} found
-                            </p>
+                            <div className="flex items-center justify-between mt-1">
+                                <p className="text-xs text-muted-foreground">
+                                    {totalCount.toLocaleString()} asset{totalCount !== 1 ? 's' : ''} found
+                                </p>
+                                {totalCount > SE_PAGE_SIZE && (
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-6 px-2 text-xs"
+                                            onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+                                            disabled={loading || pageNumber <= 1}
+                                        >
+                                            Prev
+                                        </Button>
+                                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                            Page {pageNumber} of {totalPages}
+                                        </span>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-6 px-2 text-xs"
+                                            onClick={() => setPageNumber((p) => Math.min(totalPages, p + 1))}
+                                            disabled={loading || pageNumber >= totalPages}
+                                        >
+                                            Next
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex-1 min-h-0 overflow-y-auto">
