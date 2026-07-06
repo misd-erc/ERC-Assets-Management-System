@@ -12,7 +12,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   record: VwSupplyIAR | null;
-  deliveryRecord: VwDeliveryRecord | null;
+  deliveryRecords: VwDeliveryRecord[];
   loadingDeliveryRecord?: boolean;
 }
 
@@ -28,10 +28,10 @@ const getItemTypeLabel = (typeId: number | undefined | null): string => {
   }
 };
 
-export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord, loadingDeliveryRecord }: Props) => {
+export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecords, loadingDeliveryRecord }: Props) => {
   if (!record) return null;
 
-  const deliveryItems = deliveryRecord?.items || [];
+  const deliveryItems = deliveryRecords.flatMap(dr => dr.items || []);
 
   // Calculate the total value of all delivered items
   const totalItemsValue = deliveryItems.reduce(
@@ -63,7 +63,7 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord,
               </div>
 
               {/* Linked Delivery Record */}
-              {deliveryRecord && (
+              {deliveryRecords.length > 0 && (
                   <>
                     <div className="col-span-2 border-t pt-4"></div>
                     <div className="col-span-2 bg-blue-50/50 p-3 rounded-md border border-blue-100">
@@ -73,16 +73,16 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecord,
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                         <div>
-                          <span className="text-muted-foreground text-xs">DR Number:</span>
-                          <div className="font-medium text-blue-700">{deliveryRecord.drNumber}</div>
+                          <span className="text-muted-foreground text-xs">DR Number(s):</span>
+                          <div className="font-medium text-blue-700">{deliveryRecords.map(dr => dr.drNumber).join(', ')}</div>
                         </div>
                         <div>
-                          <span className="text-muted-foreground text-xs">Delivery Date:</span>
-                          <div className="font-medium">{formatDate(deliveryRecord.deliveryDate)}</div>
+                          <span className="text-muted-foreground text-xs">Delivery Date(s):</span>
+                          <div className="font-medium">{deliveryRecords.map(dr => formatDate(dr.deliveryDate)).join(', ')}</div>
                         </div>
                         <div className="col-span-2">
                           <span className="text-muted-foreground text-xs">Items:</span>
-                          <div className="font-medium">{deliveryRecord.items?.length || 0} item(s)</div>
+                          <div className="font-medium">{deliveryItems.length} item(s)</div>
                         </div>
                       </div>
                     </div>

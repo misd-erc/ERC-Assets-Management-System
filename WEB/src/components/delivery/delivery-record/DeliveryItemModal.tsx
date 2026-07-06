@@ -266,12 +266,12 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                     setActiveCategory(c ? c.name : "");
                   }
                 }}>
-                  <PopoverTrigger asChild disabled={isExistingItem && item.categoryId !== 0}>
+                  <PopoverTrigger asChild disabled={isExistingItem}>
                     <Button
                         variant="outline"
                         role="combobox"
                         className={`w-full justify-between [&>span]:truncate text-left font-normal px-3 hover:bg-slate-50 border-slate-200 shadow-sm transition-colors ${
-                            isExistingItem && item.categoryId !== 0 ? "bg-slate-50 opacity-70" : "bg-white"
+                            isExistingItem ? "bg-slate-50 opacity-70" : "bg-white"
                         }`}
                     >
                     <span className="truncate text-slate-700">

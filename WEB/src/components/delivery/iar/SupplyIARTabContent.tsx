@@ -49,7 +49,7 @@ export const SupplyIARTabContent = () => {
   const [isApproveOpen, setIsApproveOpen] = useState(false);
 
   const [selectedRecord, setSelectedRecord] = useState<VwSupplyIAR | null>(null);
-  const [selectedDeliveryRecord, setSelectedDeliveryRecord] = useState<VwDeliveryRecord | null>(null);
+  const [selectedDeliveryRecords, setSelectedDeliveryRecords] = useState<VwDeliveryRecord[]>([]);
   const [loadingDeliveryRecord, setLoadingDeliveryRecord] = useState(false);
   const [mode, setMode] = useState<'add' | 'edit'>('add');
 
@@ -74,12 +74,12 @@ export const SupplyIARTabContent = () => {
     getVendors().then(setVendors);
   }, [fetchDeliveryRecordsSummary, fetchSupplyIARSummary, fetchOffices, fetchDivisions]);
 
-  const loadLinkedDeliveryRecord = useCallback(async (recordId: number) => {
+  const loadLinkedDeliveryRecords = useCallback(async (recordIds: number[]) => {
     setLoadingDeliveryRecord(true);
-    setSelectedDeliveryRecord(null);
+    setSelectedDeliveryRecords([]);
     try {
-      const dr = await getDeliveryRecordById(recordId);
-      setSelectedDeliveryRecord(dr);
+      const records = (await Promise.all(recordIds.map(id => getDeliveryRecordById(id)))).filter(Boolean) as VwDeliveryRecord[];
+      setSelectedDeliveryRecords(records);
     } finally {
       setLoadingDeliveryRecord(false);
     }
@@ -114,20 +114,22 @@ export const SupplyIARTabContent = () => {
   const handleView = (record: VwSupplyIAR) => {
     setSelectedRecord(record);
     setIsViewOpen(true);
-    if (record.recordId) {
-      loadLinkedDeliveryRecord(record.recordId);
+    const recordIds = record.recordIds?.length ? record.recordIds : (record.recordId ? [record.recordId] : []);
+    if (recordIds.length) {
+      loadLinkedDeliveryRecords(recordIds);
     } else {
-      setSelectedDeliveryRecord(null);
+      setSelectedDeliveryRecords([]);
     }
   };
 
   const handleApproveClick = (record: VwSupplyIAR) => {
     setSelectedRecord(record);
     setIsApproveOpen(true);
-    if (record.recordId) {
-      loadLinkedDeliveryRecord(record.recordId);
+    const recordIds = record.recordIds?.length ? record.recordIds : (record.recordId ? [record.recordId] : []);
+    if (recordIds.length) {
+      loadLinkedDeliveryRecords(recordIds);
     } else {
-      setSelectedDeliveryRecord(null);
+      setSelectedDeliveryRecords([]);
     }
   };
 
@@ -139,6 +141,7 @@ export const SupplyIARTabContent = () => {
         officeId: selectedRecord.office?.id,
         divisionId: selectedRecord.division?.id,
         deliveryRecordId: selectedRecord.recordId,
+        recordIds: selectedRecord.recordIds?.length ? selectedRecord.recordIds : (selectedRecord.recordId ? [selectedRecord.recordId] : []),
         isApproved: true,
         isActive: selectedRecord.isActive ?? true
       };
@@ -159,7 +162,7 @@ export const SupplyIARTabContent = () => {
   const availableDeliveryRecords = vwDeliveryRecordsSummary.filter(dr => {
     const isUnreceived = !dr.isReceived;
     const isLinkedToOtherIAR = iarsSummary.some(iar =>
-      iar.recordId === dr.id &&
+      (iar.recordIds?.length ? iar.recordIds : (iar.recordId ? [iar.recordId] : [])).includes(dr.id) &&
       iar.id !== selectedRecord?.id
     );
     return isUnreceived && !isLinkedToOtherIAR;
@@ -215,7 +218,7 @@ export const SupplyIARTabContent = () => {
         open={isApproveOpen}
         onOpenChange={setIsApproveOpen}
         record={selectedRecord}
-        deliveryRecord={selectedDeliveryRecord}
+        deliveryRecords={selectedDeliveryRecords}
         loadingDeliveryRecord={loadingDeliveryRecord}
         onConfirm={handleConfirmApprove}
       />
@@ -224,7 +227,7 @@ export const SupplyIARTabContent = () => {
         open={isViewOpen}
         onOpenChange={setIsViewOpen}
         record={selectedRecord}
-        deliveryRecord={selectedDeliveryRecord}
+        deliveryRecords={selectedDeliveryRecords}
         loadingDeliveryRecord={loadingDeliveryRecord}
       />
     </>

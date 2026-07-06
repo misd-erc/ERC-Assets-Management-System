@@ -43,6 +43,20 @@ namespace API.Controllers
             _notificationService = notificationService;
         }
 
+        private async Task<TblSupplyIAR?> GetLinkedIARAsync(PortalDbContext context, long deliveryRecordId)
+        {
+            var linkedIARId = await context.TblSupplyIARDeliveryRecords
+                .Where(x => x.DeliveryRecordId == deliveryRecordId)
+                .Select(x => (long?)x.SupplyIARId)
+                .FirstOrDefaultAsync();
+
+            if (linkedIARId.HasValue)
+                return await _getTools.Supply.GetTblSupplyIARAsync(linkedIARId.Value, context);
+
+            return await _getTools.Supply.GetTblSupplyIARs(context)
+                .FirstOrDefaultAsync(x => x.RecordId == deliveryRecordId);
+        }
+
         #region GET
         [HttpGet("record/all")]
         [ValidateSessionToken]
@@ -85,7 +99,7 @@ namespace API.Controllers
                         if (!matches)
                         {
                             // Check linked IAR for more search matches
-                            var iar = _getTools.Supply.GetTblSupplyIARs(context).FirstOrDefault(z => z.RecordId == x.Id);
+                            var iar = await GetLinkedIARAsync(context, x.Id);
                             if (iar != null)
                             {
                                 matches = (iar.IARNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
@@ -141,7 +155,7 @@ namespace API.Controllers
                         mappedItems.Add(mappedItemModel);
                     }
 
-                    TblSupplyIAR? z = _getTools.Supply.GetTblSupplyIARs(context).FirstOrDefault(iar => iar.RecordId == x.Id);
+                    TblSupplyIAR? z = await GetLinkedIARAsync(context, x.Id);
                     var supplyIARModel = new SupplyIARResponseModel();
                     if (z != null)
                     {
@@ -248,7 +262,7 @@ namespace API.Controllers
                     });
                 }
 
-                TblSupplyIAR? linkedIar = _getTools.Supply.GetTblSupplyIARs(context).FirstOrDefault(iar => iar.RecordId == deliveryRecord.Id);
+                TblSupplyIAR? linkedIar = await GetLinkedIARAsync(context, deliveryRecord.Id);
                 SupplyIARResponseModel? supplyIARModel = null;
 
                 if (linkedIar != null)
@@ -319,6 +333,7 @@ namespace API.Controllers
                 {
                     var items = await _getTools.Delivery.GetTblDeliveryRecordItemsByRecordId(x.Id, context).ToListAsync();
                     decimal totalAmount = items.Sum(y => (y.ItemQuantity ?? 0) * (y.UnitCost ?? 0));
+                    var linkedIAR = await GetLinkedIARAsync(context, x.Id);
 
                     responses.Add(new DeliveryRecordResponseModel
                     {
@@ -328,15 +343,14 @@ namespace API.Controllers
                         IsReceived = x.IsReceived,
                         TotalAmount = totalAmount,
                         CreatedAt = x.CreatedAt,
-                        SupplyIAR = _getTools.Supply.GetTblSupplyIARs(context)
-                            .Where(z => z.RecordId == x.Id)
-                            .Select(z => new SupplyIARResponseModel
+                        SupplyIAR = linkedIAR == null
+                            ? null
+                            : new SupplyIARResponseModel
                             {
-                                Id = z.Id,
-                                IsApproved = z.IsApproved,
-                                IARNumber = z.IARNumber
-                            })
-                            .FirstOrDefault()
+                                Id = linkedIAR.Id,
+                                IsApproved = linkedIAR.IsApproved,
+                                IARNumber = linkedIAR.IARNumber
+                            }
                     });
                 }
 
@@ -374,16 +388,26 @@ namespace API.Controllers
                 };
 
                 long deliveryRecordId = await _editTools.Delivery.EditTblDeliveryRecordAsync(deliveryRecord, model.ActionBySystemUserId, context);
+                var supplyItemsQuery = _getTools.Supply.GetTblSupplyItems(context);
+                var supplyItems = supplyItemsQuery == null ? [] : await supplyItemsQuery.ToListAsync();
 
                 foreach (var x in model.Items)
                 {
+                    var matchingSupplyItem = x.ItemTypeId == 1
+                        ? supplyItems
+                            .Where(s => string.Equals(s.Code, x.Code, StringComparison.OrdinalIgnoreCase)
+                                && string.Equals(s.Description, x.ItemDescription, StringComparison.OrdinalIgnoreCase))
+                            .OrderByDescending(s => s.CreatedAt)
+                            .FirstOrDefault()
+                        : null;
+
                     TblDeliveryRecordItem deliveryRecordItem = new()
                     {
                         Id = x.Id,
                         RecordId = deliveryRecordId,
                         Code = x.Code,
                         ItemTypeId = x.ItemTypeId,
-                        CategoryId = x.CategoryId,
+                        CategoryId = matchingSupplyItem?.CategoryId ?? x.CategoryId,
                         ItemDescription = x.ItemDescription,
                         ItemSpecification = x.ItemSpecification,
                         ItemQuantity = x.ItemQuantity,

@@ -18,11 +18,14 @@ namespace API.Services.Inventory
 
             try
             {
-                // 1. Load all current non-deleted movements.
-                // RRPPERRSPNumber is [NotMapped] (encrypted), so we filter in-memory after materialization.
-                var allMovements = await _getTools.PTA.GetTblPTAMovements(context)
-                    .Where(x => x.IsCurrent == true && !x.IsDeleted)
-                    .ToListAsync();
+                // 1. Load non-deleted movements. When reporting on full history (IncludeHistory),
+                // every movement that ever carried a RRPPE/RRSP number is kept; otherwise only
+                // each asset's current (IsCurrent) movement is used, matching the live Returns list.
+                var movementsQuery = _getTools.PTA.GetTblPTAMovements(context);
+                if (!model.IncludeHistory)
+                    movementsQuery = movementsQuery.Where(x => x.IsCurrent == true);
+
+                var allMovements = await movementsQuery.ToListAsync();
 
                 // 2. Keep only rows with a valid RRPPE/RRSP number.
                 //    Exclude null, whitespace, and known placeholder values.
@@ -79,10 +82,14 @@ namespace API.Services.Inventory
                     .Distinct()
                     .ToList();
 
-                var ptaMap = await context.TblPTAs
-                    .AsNoTracking()
-                    .Where(p => ptaIds.Contains(p.Id) && !p.IsDeleted)
-                    .ToListAsync();
+                // In history mode, don't require the asset itself to still be non-deleted — a return
+                // receipt is a historical record and must stay reportable even if the asset was later
+                // disposed. The live Returns list (IncludeHistory=false) keeps the stricter behavior.
+                var ptaMapQuery = context.TblPTAs.AsNoTracking().Where(p => ptaIds.Contains(p.Id));
+                if (!model.IncludeHistory)
+                    ptaMapQuery = ptaMapQuery.Where(p => !p.IsDeleted);
+
+                var ptaMap = await ptaMapQuery.ToListAsync();
 
                 // 7. Group filter (PPE / SE)
                 if (!string.IsNullOrWhiteSpace(model.Group) &&

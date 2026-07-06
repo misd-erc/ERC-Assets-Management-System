@@ -49,6 +49,30 @@ namespace API.Controllers
             _notificationService = notificationService;
         }
 
+        private async Task<List<long>> GetIARRecordIdsAsync(PortalDbContext context, long iarId, long? fallbackRecordId)
+        {
+            var recordIds = await context.TblSupplyIARDeliveryRecords
+                .Where(x => x.SupplyIARId == iarId)
+                .Select(x => x.DeliveryRecordId)
+                .ToListAsync();
+
+            if (recordIds.Count == 0 && fallbackRecordId.HasValue)
+                recordIds.Add(fallbackRecordId.Value);
+
+            return recordIds;
+        }
+
+        private async Task<string> GetIARDRNumbersAsync(PortalDbContext context, List<long> recordIds)
+        {
+            if (recordIds.Count == 0) return "";
+
+            var deliveryRecords = await _getTools.Delivery.GetTblDeliveryRecords(context)
+                .Where(x => recordIds.Contains(x.Id))
+                .ToListAsync();
+
+            return string.Join(", ", deliveryRecords.Select(x => x.DRNumber).Where(x => !string.IsNullOrWhiteSpace(x)));
+        }
+
         #region GET
         [HttpGet("vendor/all")]
         [ValidateSessionToken]
@@ -1077,19 +1101,19 @@ namespace API.Controllers
                     var searchResults = new List<TblSupplyIAR>();
                     foreach (var x in supplyIARs)
                     {
+                        var recordIds = await GetIARRecordIdsAsync(context, x.Id, x.RecordId);
                         bool matches = (x.IARNumber ?? "").ToLowerInvariant().Contains(searchLower) ||
                                        (x.IARNumberDate.ToString() ?? "").ToLowerInvariant().Contains(searchLower) ||
                                        (x.PONumber ?? "").ToLowerInvariant().Contains(searchLower) ||
                                        (x.EntityName ?? "").ToLowerInvariant().Contains(searchLower) ||
                                        (x.FundCluster ?? "").ToLowerInvariant().Contains(searchLower);
 
-                        if (!matches && x.RecordId.HasValue)
+                        if (!matches && recordIds.Count > 0)
                         {
-                            var dr = _getTools.Delivery.GetTblDeliveryRecords(context).FirstOrDefault(d => d.Id == x.RecordId.Value);
-                            if (dr != null)
-                            {
-                                matches = (dr.DRNumber ?? "").ToLowerInvariant().Contains(searchLower);
-                            }
+                            var linkedDRs = await _getTools.Delivery.GetTblDeliveryRecords(context)
+                                .Where(d => recordIds.Contains(d.Id))
+                                .ToListAsync();
+                            matches = linkedDRs.Any(d => (d.DRNumber ?? "").ToLowerInvariant().Contains(searchLower));
                         }
 
                         if (matches) searchResults.Add(x);
@@ -1111,11 +1135,13 @@ namespace API.Controllers
 
                 foreach (var x in supplyIARsList)
                 {
+                    var recordIds = await GetIARRecordIdsAsync(context, x.Id, x.RecordId);
                     var supplyIARModel = new SupplyIARResponseModel
                     {
                         Id = x.Id,
-                        RecordId = x.RecordId ?? 0,
-                        DRNumber = _getTools.Delivery.GetTblDeliveryRecords(context).Where(y => y.Id == x.RecordId).FirstOrDefault()?.DRNumber ?? "",
+                        RecordId = recordIds.FirstOrDefault(),
+                        RecordIds = recordIds,
+                        DRNumber = await GetIARDRNumbersAsync(context, recordIds),
                         CenterCode = x.ResponsibilityCenterCode,
                         EntityName = x.EntityName,
                         FundCluster = x.FundCluster,
@@ -1174,11 +1200,13 @@ namespace API.Controllers
                     return StatusCode(ApiStatusCode.NotFound, ApiResponse<object>.NotFound("Supply IAR not found."));
                 }
 
+                var recordIds = await GetIARRecordIdsAsync(context, supplyIAR.Id, supplyIAR.RecordId);
                 var supplyIARModel = new SupplyIARResponseModel
                 {
                     Id = supplyIAR.Id,
-                    RecordId = supplyIAR.RecordId ?? 0,
-                    DRNumber = _getTools.Delivery.GetTblDeliveryRecords(context).Where(y => y.Id == supplyIAR.RecordId).FirstOrDefault()?.DRNumber ?? "",
+                    RecordId = recordIds.FirstOrDefault(),
+                    RecordIds = recordIds,
+                    DRNumber = await GetIARDRNumbersAsync(context, recordIds),
                     CenterCode = supplyIAR.ResponsibilityCenterCode,
                     EntityName = supplyIAR.EntityName,
                     FundCluster = supplyIAR.FundCluster,
@@ -1225,13 +1253,15 @@ namespace API.Controllers
                 var responses = new List<SupplyIARResponseModel>();
                 foreach (var x in supplyIARs)
                 {
+                    var recordIds = await GetIARRecordIdsAsync(context, x.Id, x.RecordId);
                     responses.Add(new SupplyIARResponseModel
                     {
                         Id = x.Id,
                         IARNumber = x.IARNumber,
                         IARNumberDate = x.IARNumberDate,
                         IsApproved = x.IsApproved,
-                        RecordId = x.RecordId ?? 0,
+                        RecordId = recordIds.FirstOrDefault(),
+                        RecordIds = recordIds,
                         CreatedAt = x.CreatedAt
                     });
                 }
@@ -2062,6 +2092,27 @@ namespace API.Controllers
 
             try
             {
+                var selectedRecordIds = (model.RecordIds?.Count > 0 ? model.RecordIds : model.RecordId.HasValue ? new List<long> { model.RecordId.Value } : new List<long>())
+                    .Where(x => x > 0)
+                    .Distinct()
+                    .ToList();
+
+                if (selectedRecordIds.Count == 0)
+                {
+                    await transaction.RollbackAsync();
+                    return BadRequest(ApiResponse<object>.BadRequest("At least one Delivery Record is required."));
+                }
+
+                bool hasLinkedDR = await context.TblSupplyIARDeliveryRecords
+                    .AnyAsync(x => selectedRecordIds.Contains(x.DeliveryRecordId) && x.SupplyIARId != model.Id)
+                    || await context.TblSupplyIARs
+                        .AnyAsync(x => x.RecordId.HasValue && selectedRecordIds.Contains(x.RecordId.Value) && x.Id != model.Id);
+
+                if (hasLinkedDR)
+                {
+                    await transaction.RollbackAsync();
+                    return BadRequest(ApiResponse<object>.BadRequest("One or more Delivery Records are already linked to another IAR."));
+                }
 
                 bool wasAlreadyApproved = false;
                 if (model.Id > 0)
@@ -2073,7 +2124,7 @@ namespace API.Controllers
                 TblSupplyIAR supplyIAR = new()
                 {
                     Id = model.Id,
-                    RecordId = model.RecordId,
+                    RecordId = selectedRecordIds.First(),
                     EntityName = model.EntityName,
                     ResponsibilityCenterCode = model.CenterCode,
                     FundCluster = model.FundCluster,
@@ -2094,12 +2145,24 @@ namespace API.Controllers
                 long supplyIARId = await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
                 supplyIAR.Id = supplyIARId;
 
+                var existingLinks = await context.TblSupplyIARDeliveryRecords
+                    .Where(x => x.SupplyIARId == supplyIARId)
+                    .ToListAsync();
+                context.TblSupplyIARDeliveryRecords.RemoveRange(existingLinks);
+                await context.TblSupplyIARDeliveryRecords.AddRangeAsync(selectedRecordIds.Select(recordId => new TblSupplyIARDeliveryRecord
+                {
+                    SupplyIARId = supplyIARId,
+                    DeliveryRecordId = recordId
+                }));
+
                 if (supplyIAR.IsApproved && !wasAlreadyApproved)
                 {
                     supplyIAR.IsApproved = true;
                     supplyIAR.ApprovedOn = DateTime.UtcNow;
 
-                    List<TblDeliveryRecord>? deliveryRecords = _getTools.Delivery.GetTblDeliveryRecords(context)?.Where(x => x.Id == supplyIAR.RecordId).ToList();
+                    var supplyItemsQuery = _getTools.Supply.GetTblSupplyItems(context);
+                    var supplyItems = supplyItemsQuery == null ? [] : await supplyItemsQuery.ToListAsync();
+                    List<TblDeliveryRecord>? deliveryRecords = _getTools.Delivery.GetTblDeliveryRecords(context)?.Where(x => selectedRecordIds.Contains(x.Id)).ToList();
                     foreach (var deliveryRecord in deliveryRecords)
                     {
                         deliveryRecord.IsReceived = true;
@@ -2109,11 +2172,17 @@ namespace API.Controllers
                         {
                             if (deliveryRecordItem.ItemTypeId == 1)
                             {
+                                var matchingSupplyItem = supplyItems
+                                    .Where(s => string.Equals(s.Code, deliveryRecordItem.Code, StringComparison.OrdinalIgnoreCase)
+                                        && string.Equals(s.Description, deliveryRecordItem.ItemDescription, StringComparison.OrdinalIgnoreCase))
+                                    .OrderByDescending(s => s.CreatedAt)
+                                    .FirstOrDefault();
+
                                 TblSupplyItem? supplyItem = new TblSupplyItem()
                                 {
                                     Code = deliveryRecordItem.Code,
                                     IARId = supplyIAR.Id,
-                                    CategoryId = deliveryRecordItem.CategoryId,
+                                    CategoryId = matchingSupplyItem?.CategoryId ?? deliveryRecordItem.CategoryId,
                                     Description = deliveryRecordItem.ItemDescription,
                                     MeasurementUnitId = deliveryRecordItem.UnitId,
                                     UnitCost = deliveryRecordItem.UnitCost,

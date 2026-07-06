@@ -49,6 +49,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
         officeId: record.office?.id || 0,
         divisionId: record.division?.id || 0,
         recordId: record.recordId || 0,
+        recordIds: record.recordIds?.length ? record.recordIds : (record.recordId ? [record.recordId] : []),
         iarNumberDate: record.iarNumberDate?.split('T')[0] || '',
         poDate: record.poDate?.split('T')[0] || '',
         iarInvoiceNumberDate: record.iarInvoiceNumberDate?.split('T')[0] || '',
@@ -65,6 +66,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
         officeId: 0, 
         divisionId: 0,
         recordId: 0,
+        recordIds: [],
         iarNumber: '',
         iarNumberDate: '',
         iarInvoiceNumber: '',
@@ -77,6 +79,19 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
   }, [mode, record, open]);
 
   const filteredDivisions = vwDivisions.filter((d: any) => d.office?.id === formData.officeId);
+  const selectedRecordIds: number[] = formData.recordIds?.length ? formData.recordIds : (formData.recordId ? [formData.recordId] : []);
+  const selectedDRNumbers = availableDeliveryRecords
+    .filter((dr: any) => selectedRecordIds.includes(dr.id))
+    .map((dr: any) => dr.drNumber)
+    .join(', ');
+
+  const toggleDeliveryRecord = (id: number) => {
+    const nextIds = selectedRecordIds.includes(id)
+      ? selectedRecordIds.filter(recordId => recordId !== id)
+      : [...selectedRecordIds, id];
+
+    setFormData({ ...formData, recordIds: nextIds, recordId: nextIds[0] || 0 });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,8 +100,8 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
         <form onSubmit={async (e) => { 
           e.preventDefault(); 
           
-          if (!formData.recordId || formData.recordId === 0) {
-            toast.error('Linked Delivery Record is required');
+          if (selectedRecordIds.length === 0) {
+            toast.error('At least one Delivery Record is required');
             return;
           }
           if (!formData.iarNumber?.trim()) {
@@ -125,7 +140,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
               <Popover open={openRecord} onOpenChange={(open) => {
                 setOpenRecord(open);
                 if (open) {
-                  const record = availableDeliveryRecords.find((dr: any) => dr.id === formData.recordId);
+                  const record = availableDeliveryRecords.find((dr: any) => selectedRecordIds.includes(dr.id));
                   setActiveRecord(record ? record.drNumber : "");
                 }
               }}>
@@ -136,8 +151,8 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                       className="w-full justify-between [&>span]:truncate text-left font-normal px-3 bg-white hover:bg-slate-50 border-slate-200 shadow-sm transition-colors"
                   >
                   <span className="truncate text-slate-700">
-                    {formData.recordId
-                        ? availableDeliveryRecords.find((dr: any) => dr.id === formData.recordId)?.drNumber || "Select Delivery Record"
+                    {selectedRecordIds.length
+                        ? selectedDRNumbers || `${selectedRecordIds.length} delivery record(s) selected`
                         : "Select or search DR Number"}
                   </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400" />
@@ -168,7 +183,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                       <CommandGroup className="p-1.5">
                         {/* Clear Selection Option */}
                         <CommandItem
-                            onSelect={() => { setFormData({ ...formData, recordId: 0 }); setOpenRecord(false); }}
+                            onSelect={() => { setFormData({ ...formData, recordId: 0, recordIds: [] }); }}
                             className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer text-slate-500 italic hover:bg-slate-50"
                         >
                           <span>Clear Selection</span>
@@ -179,8 +194,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                                 key={dr.id}
                                 value={dr.drNumber} // This is what the search filters against
                                 onSelect={() => {
-                                  setFormData({ ...formData, recordId: dr.id });
-                                  setOpenRecord(false);
+                                  toggleDeliveryRecord(dr.id);
                                 }}
                                 className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700"
                             >
@@ -192,7 +206,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                               </div>
                               <Check
                                   className={`ml-2 h-4 w-4 shrink-0 transition-all ${
-                                      formData.recordId === dr.id ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
+                                      selectedRecordIds.includes(dr.id) ? "opacity-100 scale-100 text-blue-600" : "opacity-0 scale-75"
                                   }`}
                               />
                             </CommandItem>

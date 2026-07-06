@@ -111,6 +111,8 @@ export interface RISSignatories {
     receivedBy: RISSignatory;
 }
 
+type RISSignatureDates = Record<keyof RISSignatories, string>;
+
 const DEFAULT_RIS_SIGNATORIES: RISSignatories = {
     requestedBy: { name: '', designation: '' },
     approvedBy: { name: '', designation: '' },
@@ -118,16 +120,24 @@ const DEFAULT_RIS_SIGNATORIES: RISSignatories = {
     receivedBy: { name: '', designation: '' },
 };
 
+const DEFAULT_RIS_SIGNATURE_DATES: RISSignatureDates = {
+    requestedBy: '',
+    approvedBy: '',
+    issuedBy: '',
+    receivedBy: '',
+};
+
+const formatPrintDate = (date: string) => date ? formatDate(date) : ' ';
+
 // --- PDF DOCUMENT COMPONENT ---
 interface RISPDFProps {
     ris: VwSupplyRIS;
     items: VwSupplyRISItem[];
     signatories: RISSignatories;
+    signatureDates: RISSignatureDates;
 }
 
-const RISPDFDocument: React.FC<RISPDFProps> = ({ ris, items, signatories }) => {
-    const getSafeDate = (date: any) => date ? formatDate(date) : '';
-
+const RISPDFDocument: React.FC<RISPDFProps> = ({ ris, items, signatories, signatureDates }) => {
     return (
         <Document>
             <Page size="A4" style={pdfStyles.page} orientation="portrait">
@@ -235,10 +245,10 @@ const RISPDFDocument: React.FC<RISPDFProps> = ({ ris, items, signatories }) => {
                         {/* Date */}
                         <View style={pdfStyles.sigRowLast}>
                             <View style={pdfStyles.sigColLabel}><Text style={pdfStyles.sigLabelText}>Date :</Text></View>
-                            <View style={pdfStyles.sigColData}><Text>{' '}</Text></View>
-                            <View style={pdfStyles.sigColData}><Text>{' '}</Text></View>
-                            <View style={pdfStyles.sigColData}><Text>{' '}</Text></View>
-                            <View style={pdfStyles.sigColDataLast}><Text>{' '}</Text></View>
+                            <View style={pdfStyles.sigColData}><Text style={pdfStyles.sigValueText}>{formatPrintDate(signatureDates.requestedBy)}</Text></View>
+                            <View style={pdfStyles.sigColData}><Text style={pdfStyles.sigValueText}>{formatPrintDate(signatureDates.approvedBy)}</Text></View>
+                            <View style={pdfStyles.sigColData}><Text style={pdfStyles.sigValueText}>{formatPrintDate(signatureDates.issuedBy)}</Text></View>
+                            <View style={pdfStyles.sigColDataLast}><Text style={pdfStyles.sigValueText}>{formatPrintDate(signatureDates.receivedBy)}</Text></View>
                         </View>
                     </View>
 
@@ -252,7 +262,7 @@ const RISPDFDocument: React.FC<RISPDFProps> = ({ ris, items, signatories }) => {
 interface RISSignatoryModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (signatories: RISSignatories) => void;
+    onConfirm: (signatories: RISSignatories, signatureDates: RISSignatureDates) => void;
     actionLabel: string;
 }
 
@@ -260,6 +270,7 @@ const RISSignatoryModal: React.FC<RISSignatoryModalProps> = ({ isOpen, onClose, 
     const [signatories, setSignatories] = useState<RISSignatories>(() =>
         JSON.parse(JSON.stringify(DEFAULT_RIS_SIGNATORIES))
     );
+    const [signatureDates, setSignatureDates] = useState<RISSignatureDates>(() => ({ ...DEFAULT_RIS_SIGNATURE_DATES }));
     const [templates, setTemplates] = useState<RISSignatoryTemplateDto[]>([]);
     const [templateName, setTemplateName] = useState('');
     const [savingTemplate, setSavingTemplate] = useState(false);
@@ -274,6 +285,7 @@ const RISSignatoryModal: React.FC<RISSignatoryModalProps> = ({ isOpen, onClose, 
     useEffect(() => {
         if (isOpen) {
             setSignatories(JSON.parse(JSON.stringify(DEFAULT_RIS_SIGNATORIES)));
+            setSignatureDates({ ...DEFAULT_RIS_SIGNATURE_DATES });
             setTemplateName('');
             setSavingTemplate(false);
             setTemplateLoading(true);
@@ -505,6 +517,15 @@ const RISSignatoryModal: React.FC<RISSignatoryModalProps> = ({ isOpen, onClose, 
                                             placeholder="e.g. Chief Administrative Officer"
                                         />
                                     </div>
+                                    <div>
+                                        <Label className="text-xs text-slate-600 mb-1 block">Date</Label>
+                                        <Input
+                                            type="date"
+                                            className="h-8 text-sm"
+                                            value={signatureDates[key]}
+                                            onChange={(e) => setSignatureDates(prev => ({ ...prev, [key]: e.target.value }))}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -516,7 +537,7 @@ const RISSignatoryModal: React.FC<RISSignatoryModalProps> = ({ isOpen, onClose, 
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
                     <Button
                         className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                        onClick={() => onConfirm(signatories)}
+                        onClick={() => onConfirm(signatories, signatureDates)}
                         disabled={!allFilled}
                     >
                         {actionLabel === 'print' ? <Printer className="w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
@@ -621,14 +642,14 @@ export const RISReportModal = ({ isOpen, onClose }: RISReportModalProps) => {
         setSignatoryModalOpen(true);
     };
 
-    const handleSignatoryConfirm = async (signatories: RISSignatories) => {
+    const handleSignatoryConfirm = async (signatories: RISSignatories, signatureDates: RISSignatureDates) => {
         setSignatoryModalOpen(false);
         if (!selectedRis) return;
         setIsGeneratingPDF(true);
 
         try {
             const blob = await pdf(
-                <RISPDFDocument ris={selectedRis} items={currentRISItems} signatories={signatories} />
+                <RISPDFDocument ris={selectedRis} items={currentRISItems} signatories={signatories} signatureDates={signatureDates} />
             ).toBlob();
 
             const url = URL.createObjectURL(blob);

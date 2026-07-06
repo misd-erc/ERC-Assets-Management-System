@@ -54,20 +54,30 @@ const mapVwSupplyGroupedItem = (raw: any): VwSupplyGroupedItem => ({
   createdAt: raw.createdAt,
 });
 
-const mapVwSupplyUniqueRawItem = (raw: any): VwSupplyUniqueRawItem => ({
-  id: raw.id,
-  code: raw.code,
-  category: raw.category,
-  description: raw.description,
-  measurementUnit: raw.measurementUnit,
-  // currentStock: raw.currentStock,
-  // unitCost: raw.unitCost,
-  // reorderPoint: raw.reorderPoint,
-  storageLocation: raw.storageLocation,
-  vendor: raw.vendor,
-  isActive: raw.isActive ?? true,
-  createdAt: raw.createdAt,
-});
+const mapVwSupplyUniqueRawItem = (raw: any): VwSupplyUniqueRawItem => {
+  const category = raw.category ?? raw.Category;
+  return {
+    id: raw.id ?? raw.Id,
+    code: raw.code ?? raw.Code,
+    category: category ? {
+      id: category.id ?? category.Id,
+      name: category.name ?? category.Name,
+      generalCode: category.generalCode ?? category.GeneralCode,
+      module: category.module ?? category.Module ?? '',
+      isActive: category.isActive ?? category.IsActive ?? true,
+      itemCount: category.itemCount ?? category.ItemCount ?? 0,
+    } : null,
+    description: raw.description ?? raw.Description,
+    measurementUnit: raw.measurementUnit ?? raw.MeasurementUnit,
+    // currentStock: raw.currentStock,
+    // unitCost: raw.unitCost,
+    // reorderPoint: raw.reorderPoint,
+    storageLocation: raw.storageLocation ?? raw.StorageLocation,
+    vendor: raw.vendor ?? raw.Vendor,
+    isActive: raw.isActive ?? raw.IsActive ?? true,
+    createdAt: raw.createdAt ?? raw.CreatedAt,
+  };
+};
 
 
 /* ------------------------------- GET ------------------------------- */
@@ -260,6 +270,4 @@ export const editSupplyItem = async (payload: SupplyItem): Promise<{ message: st
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save supply');
   return { message: response.data.message ?? 'Success' };
 };
-
-
 
