@@ -12,6 +12,8 @@ export interface PTACategoryBreakdownItem {
   name: string;
   count: number;
   value: number;
+  issuedCount: number;
+  stockCount: number;
 }
 
 export interface PTADashboardData {

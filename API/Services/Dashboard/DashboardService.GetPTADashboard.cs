@@ -74,7 +74,9 @@ namespace API.Services.Dashboard
                     {
                         Name = g.Key,
                         Count = g.Count(),
-                        Value = (decimal)g.Sum(x => x.UnitValue ?? 0)
+                        Value = (decimal)g.Sum(x => x.UnitValue ?? 0),
+                        IssuedCount = g.Count(x => issuedPtaIds.Contains(x.Id)),
+                        StockCount = g.Count(x => !issuedPtaIds.Contains(x.Id))
                     })
                     .OrderByDescending(x => x.Value)
                     .ToList();
