@@ -645,6 +645,9 @@ export const getPTAReturnList = async (params: {
   endDate?: string;
   pageNumber?: number;
   pageSize?: number;
+  /** Include every historical movement that ever carried a RRPPE/RRSP number (for reporting),
+   * instead of only each asset's current movement. */
+  includeHistory?: boolean;
 }): Promise<{ items: any[]; totalCount: number; pageNumber: number; pageSize: number }> => {
   try {
     const { systemUserId, sessionKey } = getAuthParams();
@@ -657,6 +660,7 @@ export const getPTAReturnList = async (params: {
 
     if (params.group) url += `&Group=${encodeURIComponent(params.group)}`;
     if (params.rrppeRrspFilter) url += `&RrppeRrspFilter=${encodeURIComponent(params.rrppeRrspFilter)}`;
+    if (params.includeHistory) url += `&IncludeHistory=true`;
     if (params.parIcsFilter) url += `&ParIcsFilter=${encodeURIComponent(params.parIcsFilter)}`;
     if (params.searchEmployee) url += `&SearchEmployee=${encodeURIComponent(params.searchEmployee)}`;
     if (params.officeId) url += `&OfficeId=${params.officeId}`;
