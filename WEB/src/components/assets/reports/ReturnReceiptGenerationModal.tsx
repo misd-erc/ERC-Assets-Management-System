@@ -62,7 +62,11 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
     try {
       const group = returnType === 'RRPPE' ? 'PPE' : 'SE';
       const [response, employeeResponse] = await Promise.all([
-        getPTAReturnList({ group, rrppeRrspFilter: returnType, pageNumber: 1, pageSize: 1000 }),
+        // Classify by the linked asset's Group (not the RRPPE/RRSP number's text prefix — plenty
+        // of valid records don't carry it), and include full history since this is a reporting
+        // screen: every past return needs to be selectable and re-printable, not just the
+        // current state of each asset.
+        getPTAReturnList({ group, pageNumber: 1, pageSize: 1000, includeHistory: true }),
         getEmployees().catch(() => ({ data: { items: [] } } as any)),
       ]);
 
@@ -75,7 +79,9 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
 
       (response.items || []).forEach((raw: any) => {
         const number = raw.rrppeRrspNumber || raw.rrpperrspNumber || '';
-        if (!number || !number.toUpperCase().startsWith(returnType)) return;
+        // Classification already happened server-side via the asset's Group — don't re-filter
+        // by text prefix here, or valid non-prefixed numbers (e.g. "2026-04-026") get dropped.
+        if (!number) return;
 
         const existingDetail = detailMap.get(number);
 
