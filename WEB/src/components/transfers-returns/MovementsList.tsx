@@ -316,7 +316,10 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
         const group = transferType === 'RRPPE' ? 'PPE' : 'SE';
         const raw = await getPTAReturnList({
           group,
-          rrppeRrspFilter: search || transferType,
+          // Classify by the linked asset's Group (via `group` above), not by the RRPPE/RRSP
+          // number's text prefix — plenty of valid records don't carry that prefix at all.
+          // Only pass this through when the user actually typed something to search for.
+          rrppeRrspFilter: search || undefined,
           parIcsFilter: parIcsValue,
           pageNumber: page,
           pageSize: size,
