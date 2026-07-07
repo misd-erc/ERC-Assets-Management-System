@@ -1,21 +1,43 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Package } from 'lucide-react';
+import { Package, PackageCheck, PackageMinus } from 'lucide-react';
 import { PTADashboardData } from '@/api/dashboard/dashboardApi';
+import { useEffect, useState } from 'react';
+
+type ViewMode = 'all' | 'issued' | 'stock';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   ptaData: PTADashboardData | null;
   formatCurrency: (amount: number) => string;
+  initialViewMode?: ViewMode;
 }
 
-export function SEDetailModal({ open, onClose, ptaData, formatCurrency }: Props) {
+export function SEDetailModal({ open, onClose, ptaData, formatCurrency, initialViewMode = 'all' }: Props) {
+  const [viewMode, setViewMode] = useState<ViewMode>('all');
+
+  useEffect(() => {
+    if (open) setViewMode(initialViewMode);
+  }, [open, initialViewMode]);
+
   const totalSE = ptaData?.totalSE || 0;
   const totalValue = ptaData?.totalSEValue || 0;
+  const seIssued = ptaData?.totalSEIssued || 0;
+  const seStock = ptaData?.totalSEStock || 0;
+  const seIssuedValue = ptaData?.totalSEIssuedValue || 0;
+  const seStockValue = ptaData?.totalSEStockValue || 0;
   const breakdown = ptaData?.seCategoryBreakdown || [];
 
+  const showIssued = viewMode === 'all' || viewMode === 'issued';
+  const showStock = viewMode === 'all' || viewMode === 'stock';
+
+  const handleClose = () => {
+    setViewMode('all');
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
@@ -41,6 +63,51 @@ export function SEDetailModal({ open, onClose, ptaData, formatCurrency }: Props)
             </div>
           </div>
 
+          {/* Issued vs On Stock - click to filter the table below */}
+          <div className="border rounded-lg overflow-hidden">
+            <div className="bg-slate-100 px-4 py-2.5 border-b flex items-center justify-between">
+              <p className="text-sm font-semibold text-slate-700">Issued vs On Stock</p>
+              {viewMode !== 'all' && (
+                <button
+                  onClick={() => setViewMode('all')}
+                  className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
+                >
+                  Show both
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 divide-x">
+              <div
+                className={`p-4 cursor-pointer hover:bg-green-50 transition-colors ${viewMode === 'issued' ? 'bg-green-50' : ''}`}
+                onClick={() => setViewMode(viewMode === 'issued' ? 'all' : 'issued')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setViewMode(viewMode === 'issued' ? 'all' : 'issued'); } }}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <PackageMinus className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium text-slate-700">Issued</span>
+                </div>
+                <p className="text-2xl font-bold text-green-700">{formatCurrency(seIssuedValue)}</p>
+                <p className="text-xs text-slate-500 mt-1">{seIssued.toLocaleString()} items &middot; click to view column</p>
+              </div>
+              <div
+                className={`p-4 cursor-pointer hover:bg-teal-50 transition-colors ${viewMode === 'stock' ? 'bg-teal-50' : ''}`}
+                onClick={() => setViewMode(viewMode === 'stock' ? 'all' : 'stock')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setViewMode(viewMode === 'stock' ? 'all' : 'stock'); } }}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <PackageCheck className="w-4 h-4 text-teal-600" />
+                  <span className="text-sm font-medium text-slate-700">On Stock</span>
+                </div>
+                <p className="text-2xl font-bold text-teal-700">{formatCurrency(seStockValue)}</p>
+                <p className="text-xs text-slate-500 mt-1">{seStock.toLocaleString()} items &middot; click to view column</p>
+              </div>
+            </div>
+          </div>
+
           {/* RPCPPE-style Category Breakdown Table */}
           {breakdown.length > 0 && (
             <div className="border rounded-lg overflow-hidden">
@@ -49,8 +116,8 @@ export function SEDetailModal({ open, onClose, ptaData, formatCurrency }: Props)
                   <tr className="bg-green-600 text-white">
                     <th className="text-left p-3 font-semibold">Category</th>
                     <th className="text-right p-3 font-semibold w-28">Units</th>
-                    <th className="text-right p-3 font-semibold w-24">Issued</th>
-                    <th className="text-right p-3 font-semibold w-24">On Stock</th>
+                    {showIssued && <th className="text-right p-3 font-semibold w-24">Issued</th>}
+                    {showStock && <th className="text-right p-3 font-semibold w-24">On Stock</th>}
                     <th className="text-right p-3 font-semibold w-40">Amount</th>
                   </tr>
                 </thead>
@@ -59,8 +126,8 @@ export function SEDetailModal({ open, onClose, ptaData, formatCurrency }: Props)
                     <tr key={cat.name} className={`border-t ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-green-50/50 transition-colors`}>
                       <td className="p-3 text-slate-700 font-medium">{cat.name}</td>
                       <td className="p-3 text-right text-slate-800">{cat.count.toLocaleString()} units</td>
-                      <td className="p-3 text-right text-green-700 font-medium">{(cat.issuedCount || 0).toLocaleString()}</td>
-                      <td className="p-3 text-right text-teal-700 font-medium">{(cat.stockCount || 0).toLocaleString()}</td>
+                      {showIssued && <td className="p-3 text-right text-green-700 font-medium">{(cat.issuedCount || 0).toLocaleString()}</td>}
+                      {showStock && <td className="p-3 text-right text-teal-700 font-medium">{(cat.stockCount || 0).toLocaleString()}</td>}
                       <td className="p-3 text-right text-slate-800 font-medium">{formatCurrency(cat.value)}</td>
                     </tr>
                   ))}
@@ -69,8 +136,8 @@ export function SEDetailModal({ open, onClose, ptaData, formatCurrency }: Props)
                   <tr className="border-t-2 border-green-300 bg-green-50 font-bold">
                     <td className="p-3 text-green-900">Total</td>
                     <td className="p-3 text-right text-green-900">{totalSE.toLocaleString()} units</td>
-                    <td className="p-3 text-right text-green-900">{breakdown.reduce((sum, c) => sum + (c.issuedCount || 0), 0).toLocaleString()}</td>
-                    <td className="p-3 text-right text-green-900">{breakdown.reduce((sum, c) => sum + (c.stockCount || 0), 0).toLocaleString()}</td>
+                    {showIssued && <td className="p-3 text-right text-green-900">{breakdown.reduce((sum, c) => sum + (c.issuedCount || 0), 0).toLocaleString()}</td>}
+                    {showStock && <td className="p-3 text-right text-green-900">{breakdown.reduce((sum, c) => sum + (c.stockCount || 0), 0).toLocaleString()}</td>}
                     <td className="p-3 text-right text-green-900">{formatCurrency(totalValue)}</td>
                   </tr>
                 </tfoot>

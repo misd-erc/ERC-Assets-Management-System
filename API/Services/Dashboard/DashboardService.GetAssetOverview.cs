@@ -63,13 +63,27 @@ namespace API.Services.Dashboard
                 var activePtaIds = ptas.Select(x => x.Id).ToHashSet();
 
                 var currentMovements = await _getTools.PTA.GetTblPTAMovements(context)
-                    .Where(x => x.IsCurrent && x.RemarksEncrypted != null && x.RemarksEncrypted != ""
-                        && x.PTAId.HasValue && activePtaIds.Contains(x.PTAId.Value))
+                    .Where(x => x.IsCurrent && x.PTAId.HasValue && activePtaIds.Contains(x.PTAId.Value))
                     .ToListAsync();
 
-                result.ConditionBreakdown = currentMovements
-                    .GroupBy(m => CultureInfo.CurrentCulture.TextInfo.ToTitleCase(m.Remarks?.Trim() ?? ""))
-                    .Where(g => !string.IsNullOrWhiteSpace(g.Key))
+                // Assets with no recorded condition remark are assumed Serviceable (usable),
+                // so every active PPE/SE item is accounted for in the breakdown.
+                const string defaultCondition = "Serviceable";
+
+                var remarksByPtaId = currentMovements
+                    .Where(m => m.PTAId.HasValue)
+                    .GroupBy(m => m.PTAId!.Value)
+                    .ToDictionary(g => g.Key, g => g.First().Remarks);
+
+                result.ConditionBreakdown = activePtaIds
+                    .Select(id =>
+                    {
+                        var remarks = remarksByPtaId.TryGetValue(id, out var r) ? r?.Trim() : null;
+                        return string.IsNullOrWhiteSpace(remarks)
+                            ? defaultCondition
+                            : CultureInfo.CurrentCulture.TextInfo.ToTitleCase(remarks);
+                    })
+                    .GroupBy(condition => condition)
                     .Select(g => new ConditionBreakdownItem { Condition = g.Key, Count = g.Count() })
                     .OrderByDescending(x => x.Count)
                     .ToList();

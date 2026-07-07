@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Badge } from '@/components/ui/badge';
 import {
@@ -9,13 +9,13 @@ import {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Trash2,
   AlertTriangle,
-  TrendingUp
+  TrendingUp,
+  XCircle
 } from 'lucide-react';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { useData } from '@/hooks/data/useData';
 import { AssetOverviewChart } from '@/components/dashboard/AssetOverviewChart';
 import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
-import { PendingApprovalsCard } from '@/components/dashboard/PendingApprovalsCard';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getDashboardSummary, DashboardSummary, getPTADashboard, PTADashboardData, getSupplyStats, DashboardSupplyStats } from '@/api/dashboard/dashboardApi';
 import { useState, useEffect } from 'react';
@@ -55,6 +55,7 @@ function Dashboard() {
   const [supplyStats, setSupplyStats] = useState<DashboardSupplyStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeModal, setActiveModal] = useState<'ppe' | 'se' | 'supply' | null>(null);
+  const [seModalView, setSeModalView] = useState<'all' | 'issued' | 'stock'>('all');
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -84,19 +85,21 @@ function Dashboard() {
 
   // Use PTA dashboard data or fallbacks
   const totalPPE = ptaData?.totalPPE || 0;
-  const totalSE = ptaData?.totalSE || 0;
   const ppeAmount = ptaData?.totalPPEValue || 0;
-  const seAmount = ptaData?.totalSEValue || 0;
   const ppePercentage = ptaData?.totalPPEValuePercentage || 0;
-  const sePercentage = ptaData?.totalSEValuePercentage || 0;
   const seIssued = ptaData?.totalSEIssued || 0;
   const seStock = ptaData?.totalSEStock || 0;
   const seIssuedValue = ptaData?.totalSEIssuedValue || 0;
   const seStockValue = ptaData?.totalSEStockValue || 0;
-  
-  // Calculate totals
-  const totalAssets = totalPPE + totalSE;
-  const totalAmount = ppeAmount + seAmount;
+
+  const ppeCategoryPieData = (ptaData?.ppeCategoryBreakdown ?? []).map(c => ({ name: c.name, value: c.count }));
+  const seCategoryPieData = (ptaData?.seCategoryBreakdown ?? []).map(c => ({ name: c.name, value: c.count }));
+
+  const supplyCategoryPieData = (supplyStats?.categoryBreakdown ?? []).map(c => ({ name: c.name, value: c.quantity }));
+
+  const supplyStockHealthItems = supplyStats?.stockHealthItems ?? [];
+  const supplyOutOfStockCount = supplyStockHealthItems.filter(i => i.stockOnHand === 0).length;
+  const supplyLowStockCount = supplyStockHealthItems.filter(i => i.isLowStock && i.stockOnHand > 0).length;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const pendingRequests = 47; // Awaiting approval
@@ -107,11 +110,6 @@ function Dashboard() {
 
   // Format currency in Philippine Peso
   const formatCurrency = (amount: number) => {
-    if (amount >= 1000000) {
-      return `\u20B1${(amount / 1000000).toFixed(2)}M`;
-    } else if (amount >= 1000) {
-      return `\u20B1${(amount / 1000).toFixed(2)}K`;
-    }
     return `\u20B1${amount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
@@ -181,10 +179,10 @@ function Dashboard() {
         {/* Semi-Expendable Card */}
         <Card
           className="hover:shadow-lg transition-all duration-200 border-2 border-green-200 cursor-pointer"
-          onClick={() => setActiveModal('se')}
+          onClick={() => { setSeModalView('all'); setActiveModal('se'); }}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActiveModal('se'); } }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSeModalView('all'); setActiveModal('se'); } }}
         >
           <CardContent className="p-6">
             <div className="flex items-start justify-between mb-4">
@@ -195,10 +193,17 @@ function Dashboard() {
             </div>
 
             {/* Issued */}
-            <div className="px-2 py-1 -mx-2 mb-1">
+            <div
+              className="px-2 py-1 -mx-2 mb-1 rounded-md hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors"
+              onClick={(e) => { e.stopPropagation(); setSeModalView('issued'); setActiveModal('se'); }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setSeModalView('issued'); setActiveModal('se'); } }}
+            >
+              <span className="text-sm font-bold text-green-600 block mb-0.5">Issued</span>
               <div className="flex items-baseline gap-2 mb-0.5">
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(seIssuedValue)}</p>
-                <span className="text-sm font-bold text-green-600">Issued</span>
+                <span className="text-sm font-bold text-green-600">Total Value</span>
               </div>
               <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{seIssued.toLocaleString()} items</p>
             </div>
@@ -206,10 +211,17 @@ function Dashboard() {
             <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
 
             {/* In Stock */}
-            <div className="px-2 py-1 -mx-2">
+            <div
+              className="px-2 py-1 -mx-2 rounded-md hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-colors"
+              onClick={(e) => { e.stopPropagation(); setSeModalView('stock'); setActiveModal('se'); }}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setSeModalView('stock'); setActiveModal('se'); } }}
+            >
+              <span className="text-sm font-bold text-teal-600 block mb-0.5">On Stock</span>
               <div className="flex items-baseline gap-2 mb-0.5">
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(seStockValue)}</p>
-                <span className="text-sm font-bold text-teal-600">On Stock</span>
+                <span className="text-sm font-bold text-teal-600">Total Value</span>
               </div>
               <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{seStock.toLocaleString()} items</p>
             </div>
@@ -250,142 +262,46 @@ function Dashboard() {
 
             <div className="border-t border-slate-200 dark:border-slate-700 my-3" />
 
-            <div className="flex items-center justify-between px-2 -mx-2">
-              <div className="flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-green-600" />
-                <span className="text-sm font-bold text-green-700 dark:text-green-500">{(supplyStats?.sufficientStockCount || 0).toLocaleString()}</span>
-                <span className="text-xs text-slate-500">sufficient</span>
+            <div className="grid grid-cols-3 gap-1 px-2 -mx-2 text-center">
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                  <span className="text-sm font-bold text-green-700 dark:text-green-500">{(supplyStats?.sufficientStockCount || 0).toLocaleString()}</span>
+                </div>
+                <span className="text-[11px] text-slate-500 leading-tight">sufficient</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-sm font-bold text-amber-600">{(supplyStats?.lowStockCount || 0).toLocaleString()}</span>
-                <span className="text-xs text-slate-500">low stock</span>
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                  <span className="text-sm font-bold text-amber-600">{supplyLowStockCount.toLocaleString()}</span>
+                </div>
+                <span className="text-[11px] text-slate-500 leading-tight">low stock</span>
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <div className="flex items-center gap-1">
+                  <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+                  <span className="text-sm font-bold text-red-600">{supplyOutOfStockCount.toLocaleString()}</span>
+                </div>
+                <span className="text-[11px] text-slate-500 leading-tight">out of stock</span>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Asset Value Breakdown Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Asset Portfolio Summary</CardTitle>
-          <CardDescription>
-            Breakdown of total asset value of ₱{((totalAmount + (supplyStats?.totalValue || 0)) / 1000000).toFixed(2)}M (PPE, SE & Supply)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* PPE Breakdown */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-                  <span className="text-sm font-medium">Property, Plant & Equipment (PPE)</span>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold">{formatCurrency(ppeAmount)}</p>
-                  <p className="text-xs text-slate-500">{totalPPE.toLocaleString()} items</p>
-                </div>
-              </div>
-              <div className="w-full bg-slate-100 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full"
-                  style={{ width: `${totalAmount > 0 ? ppePercentage.toFixed(1) : 0}%` }}
-                ></div>
-              </div>
-              <p className="text-xs text-slate-600 text-right">
-                {ppePercentage.toFixed(1)}% of total asset value
-              </p>
-            </div>
-
-            {/* SE Breakdown */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 rounded-full bg-green-600"></div>
-                  <span className="text-sm font-medium">Semi-Expendables (SE)</span>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold">{formatCurrency(seAmount)}</p>
-                  <p className="text-xs text-slate-500">{totalSE.toLocaleString()} items</p>
-                </div>
-              </div>
-              <div className="w-full bg-slate-100 rounded-full h-2">
-                <div
-                  className="bg-green-600 h-2 rounded-full"
-                  style={{ width: `${totalAmount > 0 ? sePercentage.toFixed(1) : 0}%` }}
-                ></div>
-              </div>
-              <p className="text-xs text-slate-600 text-right">
-                {sePercentage.toFixed(1)}% of total asset value
-              </p>
-            </div>
-
-            {/* Supply Breakdown */}
-            {(() => {
-              const supplyValue = supplyStats?.totalValue || 0;
-              const grandTotal = totalAmount + supplyValue;
-              const supplyPct = grandTotal > 0 ? (supplyValue / grandTotal) * 100 : 0;
-              return (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                      <span className="text-sm font-medium">Supply Items</span>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">{formatCurrency(supplyValue)}</p>
-                      <p className="text-xs text-slate-500">{(supplyStats?.totalQuantity || 0).toLocaleString()} qty</p>
-                    </div>
-                  </div>
-                  <div className="w-full bg-slate-100 rounded-full h-2">
-                    <div
-                      className="bg-amber-500 h-2 rounded-full"
-                      style={{ width: `${supplyPct.toFixed(1)}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-slate-600 text-right">
-                    {supplyPct.toFixed(1)}% of total asset value
-                  </p>
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* Total Summary */}
-          <div className="mt-6 pt-6 border-t">
-            <div className="flex items-center justify-between bg-indigo-50 p-4 rounded-lg border-2 border-indigo-200">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-indigo-600 rounded-lg">
-                  <TrendingUp className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-600">Total Asset Portfolio</p>
-                  <p className="text-xs text-slate-500">All categories combined</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-indigo-900">{formatCurrency(totalAmount + (supplyStats?.totalValue || 0))}</p>
-                <p className="text-xs text-indigo-600 font-medium">{(totalAssets + (supplyStats?.totalQuantity || 0)).toLocaleString()} total items</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Asset Overview Chart */}
-      <AssetOverviewChart />
+      <AssetOverviewChart
+        ppeCategoryData={ppeCategoryPieData}
+        seCategoryData={seCategoryPieData}
+        supplyCategoryData={supplyCategoryPieData}
+      />
 
-      {/* Recent Activities & Disposal Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RecentActivitiesCard />
-        <PendingApprovalsCard />
-      </div>
+      {/* Recent Activities */}
+      <RecentActivitiesCard />
 
       {/* KPI Detail Modals */}
       <PPEDetailModal open={activeModal === 'ppe'} onClose={() => setActiveModal(null)} ptaData={ptaData} formatCurrency={formatCurrency} />
-      <SEDetailModal open={activeModal === 'se'} onClose={() => setActiveModal(null)} ptaData={ptaData} formatCurrency={formatCurrency} />
+      <SEDetailModal open={activeModal === 'se'} onClose={() => setActiveModal(null)} ptaData={ptaData} formatCurrency={formatCurrency} initialViewMode={seModalView} />
       <SupplyDetailModal open={activeModal === 'supply'} onClose={() => setActiveModal(null)} supplyStats={supplyStats} formatCurrency={formatCurrency} />
     </div>
   );
