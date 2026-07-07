@@ -15,6 +15,7 @@ import {
   Trash2,
   QrCode,
   ClipboardCheck,
+  PackageCheck,
 } from "lucide-react";
 
 // CONFIG MAP FOR KNOWN MODULES
@@ -141,8 +142,16 @@ export const moduleConfig: Record<string, any> = {
     id: "delivery-receipt-items",
     title: "Delivery & Receipt of Items",
     group: "Core Operations",
-    icon: Package,  
-    implemented: true, 
+    icon: Package,
+    implemented: true,
+  },
+
+  BK: {
+    id: "asset-booking",
+    title: "Asset Booking",
+    group: "Core Operations",
+    icon: PackageCheck,
+    implemented: true,
   },
 
   RC: {
@@ -186,4 +195,4 @@ export const fallbackModule = {
 };
 
 // ADMIN OVERRIDES
-export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "ASSTAG", "TR", "SM", "DRI", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC", "APR", "DOP", "MYACC"];
+export const adminOverrideModules = ["DB", "PPESE", "PPEISS", "ASSTAG", "TR", "SM", "DRI", "BK", "CM", "CATM", "UM", "RM", "OM", "AL", "SYSSET", "RC", "APR", "DOP", "MYACC"];

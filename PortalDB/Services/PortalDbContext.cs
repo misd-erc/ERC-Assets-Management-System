@@ -17,6 +17,7 @@ using PortalDB.Entities.ASSET.Report;
 using PortalDB.Seeds.DBO.Module;
 using PortalDB.Entities.ASSET.Supply;
 using PortalDB.Entities.ASSET.Delivery;
+using PortalDB.Entities.ASSET.Booking;
 
 namespace PortalDB.Services
 {
@@ -98,6 +99,9 @@ namespace PortalDB.Services
         #region Delivery
         public DbSet<TblDeliveryRecord> TblDeliveryRecords { get; set; }
         public DbSet<TblDeliveryRecordItem> TblDeliveryRecordItems { get; set; }
+        #endregion
+        #region Booking
+        public DbSet<TblAssetBookingItem> TblAssetBookingItems { get; set; }
         #endregion
         #region Report
         public DbSet<TblReportSerial> TblReportSerials { get; set; }
