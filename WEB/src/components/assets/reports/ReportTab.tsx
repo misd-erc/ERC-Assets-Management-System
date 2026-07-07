@@ -41,10 +41,12 @@ import { EmployeeSelectModal } from './EmployeeSelectModal';
 import { ItemSelectModal } from './ItemSelectModal';
 import { ItemMovementsModal } from './ItemMovementsModal';
 import { RPCPPEFilterModal } from './RPCPPEFilterModal';
+import { RPCSPFilterModal, RPCSPReportType } from './RPCSPFilterModal';
 import { PARGenerator } from './PARGenerator';
 import { ICSGenerator } from './ICSGenerator';
 import { PALGenerator } from './PALGenerator';
 import { RPCPPEPdfGenerator } from './RPCPPEExcelGenerator';
+import { RPCSPPdfGenerator, RPCSPRow } from './RPCSPExcelGenerator';
 import { SESPIExcelGenerator, SESPIFilterModal } from './SESPIGenerator';
 import { RegistrySPIByEmployeeGenerator, RegistrySPIEmployeeFilterModal } from './RegistrySPIByEmployeeGenerator';
 import { SEPropertyReportGenerator, SEPropertyReportFilterModal } from './SEPropertyReportGenerator';
@@ -69,11 +71,15 @@ import { IARReportModal } from "./IARReportModal";
 export function ReportTab() {
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<NormalizedEmployee | null>(null);
-  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | 'SESPI-REPORT' | 'RPCPPE' | 'PAL' | 'PTR' | 'ITR' | 'RRPPE' | 'RRSP' | null>(null);
+  const [selectedReport, setSelectedReport] = useState<'PAR' | 'ICS' | 'SESPI' | 'SESPI-REPORT' | 'RPCPPE' | 'RPCSP' | 'PAL' | 'PTR' | 'ITR' | 'RRPPE' | 'RRSP' | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [rpcppeDate, setRpcppeDate] = useState<Date | null>(null);
   const [rpcppeCategoryId, setRpcppeCategoryId] = useState<number | undefined>(undefined);
+  const [rpcspReportType, setRpcspReportType] = useState<RPCSPReportType>('ISSUED');
+  const [rpcspDate, setRpcspDate] = useState<Date | null>(null);
+  const [rpcspCategoryId, setRpcspCategoryId] = useState<number | undefined>(undefined);
+  const [rpcspRows, setRpcspRows] = useState<RPCSPRow[]>([]);
   const [sespiDate, setSespiDate] = useState<Date | null>(null);
   const [sePropertyReportSerialNo, setSePropertyReportSerialNo] = useState('');
   const [sespiEmployee, setSespiEmployee] = useState<NormalizedEmployee | null>(null);
@@ -88,6 +94,7 @@ export function ReportTab() {
   const [showItemMovementsModal, setShowItemMovementsModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showRPCPPE, setShowRPCPPE] = useState(false);
+  const [showRPCSP, setShowRPCSP] = useState(false);
   const [showSESPI, setShowSESPI] = useState(false);
   const [showSEPropertyReport, setShowSEPropertyReport] = useState(false);
   const [showPTR, setShowPTR] = useState(false);
@@ -131,6 +138,7 @@ export function ReportTab() {
     setShowPreview(false);
     setShowEmployeeModal(false);
     setShowRPCPPE(false);
+    setShowRPCSP(false);
     setShowSESPI(false);
     setShowSEPropertyReport(false);
     setShowPTR(false);
@@ -253,6 +261,14 @@ export function ReportTab() {
         console.error('RPCPPE generation failed:', error);
         toast.error('RPCPPE generation failed');
       }
+    } else if (selectedReport === 'RPCSP') {
+      try {
+        await RPCSPPdfGenerator.generate(rpcspRows, rpcspReportType, rpcspDate!, rpcspCategoryId);
+        toast.success('RPCSP PDF generated');
+      } catch (error) {
+        console.error('RPCSP generation failed:', error);
+        toast.error('RPCSP generation failed');
+      }
     } else if (selectedReport === 'PAR') {
       // Download from the already-generated preview (which includes signatureDate)
       if (previewUrl) {
@@ -322,6 +338,38 @@ export function ReportTab() {
     }
 
     setShowRPCPPE(false);
+  };
+
+  const handleRPCSPGenerate = async (asOfDate: Date, reportType: RPCSPReportType, categoryId?: number) => {
+    try {
+      const rows = await RPCSPPdfGenerator.getRows(reportType, categoryId);
+
+      if (!rows.length) {
+        toast.error('No items found for selected criteria');
+        return;
+      }
+
+      // Generate preview
+      setLoadingPreview(true);
+      const url = await RPCSPPdfGenerator.generatePreview(rows, reportType, asOfDate, categoryId);
+      setPreviewUrl(url);
+      setLoadingPreview(false);
+
+      // Store parameters for download
+      setRpcspRows(rows);
+      setRpcspDate(asOfDate);
+      setRpcspReportType(reportType);
+      setRpcspCategoryId(categoryId);
+
+      // Show preview modal
+      setSelectedReport('RPCSP');
+      setShowPreview(true);
+    } catch (error) {
+      console.error('RPCSP preview generation failed:', error);
+      toast.error('RPCSP preview generation failed');
+    }
+
+    setShowRPCSP(false);
   };
 
   const handleSESPIGenerate = async (asOfDate: Date, employee: NormalizedEmployee) => {
@@ -409,6 +457,13 @@ export function ReportTab() {
       icon: FileSpreadsheet,
       bgColor: 'bg-blue-600',
       action: () => setShowRPCPPE(true)
+    },
+    {
+      title: 'RPCSP',
+      subtitle: 'Physical Count of Semi-Expendable Property',
+      icon: FileSpreadsheet,
+      bgColor: 'bg-violet-600',
+      action: () => setShowRPCSP(true)
     },
     {
       title: 'IAR',
@@ -663,6 +718,7 @@ export function ReportTab() {
                             selectedReport === 'PTR' ? 'Property Transfer Report (PTR)' :
                                 selectedReport === 'ITR' ? 'Inventory Transfer Report (ITR)' :
                                     selectedReport === 'RPCPPE' ? 'Report on the Physical Count of Property, Plant and Equipment (RPCPPE)' :
+                                        selectedReport === 'RPCSP' ? 'Report on the Physical Count of Semi-Expendable Property (RPCSP)' :
                                         selectedReport === 'PAL' ? 'Property Accountability List (PAL)' :
                                             selectedReport === 'SESPI' ? 'Registry SPI Semi-Expandable Property (SESPI)' :
                                                 selectedReport === 'SESPI-REPORT' ? 'Report of Semi-Expandable Property Issued' :
@@ -775,6 +831,12 @@ export function ReportTab() {
             isOpen={showRPCPPE}
             onClose={() => setShowRPCPPE(false)}
             onGenerate={handleRPCPPEGenerate}
+        />
+
+        <RPCSPFilterModal
+            isOpen={showRPCSP}
+            onClose={() => setShowRPCSP(false)}
+            onGenerate={handleRPCSPGenerate}
         />
 
         <PTRGenerationModal

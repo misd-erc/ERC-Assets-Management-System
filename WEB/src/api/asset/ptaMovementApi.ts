@@ -62,6 +62,9 @@ export interface PtaItem {
   brand?: string;
   model?: string;
   condition?: string;
+  unitOfMeasurement?: string;
+  unitValue?: number;
+  dateAcquired?: string;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -260,6 +263,23 @@ export const listSePpeItems = async (groupName?: 'PPE' | 'SE'): Promise<PtaItem[
 export const listSePpeItemsNoMovement = async (groupName?: 'PPE' | 'SE'): Promise<PtaItem[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
   try {
+    // PageSize was hardcoded at 1000, silently truncating results once on-stock counts
+    // grew past that (SE alone can be 2000+) — probe totalCount first, then fetch it all.
+    const probe = await axiosInstance.get<ApiResponse<{ items: any[]; totalCount: number }>>(
+      '/Inventory/pta/se-ppe/no-movement',
+      {
+        params: {
+          ActionBySystemUserId: systemUserId,
+          SessionKey: sessionKey,
+          PageNumber: 1,
+          PageSize: 1,
+          ...(groupName ? { GroupName: groupName } : {}),
+        },
+      }
+    );
+    const totalCount = probe.data.data?.totalCount ?? 0;
+    if (!probe.data.success || totalCount === 0) return [];
+
     const response = await axiosInstance.get<ApiResponse<{ items: any[]; totalCount: number }>>(
       '/Inventory/pta/se-ppe/no-movement',
       {
@@ -267,7 +287,7 @@ export const listSePpeItemsNoMovement = async (groupName?: 'PPE' | 'SE'): Promis
           ActionBySystemUserId: systemUserId,
           SessionKey: sessionKey,
           PageNumber: 1,
-          PageSize: 1000,
+          PageSize: totalCount,
           ...(groupName ? { GroupName: groupName } : {}),
         },
       }
@@ -291,6 +311,9 @@ export const listSePpeItemsNoMovement = async (groupName?: 'PPE' | 'SE'): Promis
       brand: item.brand || '',
       model: item.model || '',
       condition: item.condition || '',
+      unitOfMeasurement: item.unitOfMeasurement || '',
+      unitValue: item.unitValue ?? 0,
+      dateAcquired: item.dateAcquired || '',
     }));
   } catch (error) {
     console.error('[PTA] Error fetching SE/PPE items (no movement):', error);
