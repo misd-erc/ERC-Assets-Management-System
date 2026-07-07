@@ -9,7 +9,7 @@ import { AuditTrailResponse, ActivityResponse } from '@/types/audit';
  * @param pageSize - Number of items per page (default: 10)
  * @returns Promise<AuditTrailResponse>
  */
-export const getAuditTrail = async (token: string, sessionKey: string, page: number = 1, pageSize: number = 10): Promise<AuditTrailResponse> => {
+export const getAuditTrail = async (token: string, sessionKey: string, page: number = 1, pageSize: number = 100): Promise<AuditTrailResponse> => {
   try {
         const response = await axiosInstance.get(
       `/Logs/audit-trail/all/${encodeURIComponent(token)}?ActionBySystemUserId=${encodeURIComponent(token)}&SessionKey=${encodeURIComponent(sessionKey)}&pageNumber=${page}&pageSize=${pageSize}`
@@ -22,7 +22,7 @@ export const getAuditTrail = async (token: string, sessionKey: string, page: num
   }
 };
 
-export const getAllAuditTrail = async (token: string, sessionKey: string, page: number = 1, pageSize: number = 10): Promise<AuditTrailResponse> => {
+export const getAllAuditTrail = async (token: string, sessionKey: string, page: number = 1, pageSize: number = 100): Promise<AuditTrailResponse> => {
   try {
         const response = await axiosInstance.get(
       `/Logs/audit-trail/all?ActionBySystemUserId=${encodeURIComponent(token)}&SessionKey=${encodeURIComponent(sessionKey)}&pageNumber=${page}&pageSize=${pageSize}`
@@ -44,7 +44,7 @@ export const getAllAuditTrail = async (token: string, sessionKey: string, page: 
  * @param pageSize - Number of items per page (default: 10)
  * @returns Promise<ActivityResponse>
  */
-export const getActivities = async (token: string, sessionKey: string, page: number = 1, pageSize: number = 10): Promise<ActivityResponse> => {
+export const getActivities = async (token: string, sessionKey: string, page: number = 1, pageSize: number = 100): Promise<ActivityResponse> => {
   try {
     const response = await axiosInstance.get(
       `/Logs/activities/all/${encodeURIComponent(token)}?ActionBySystemUserId=${encodeURIComponent(token)}&SessionKey=${encodeURIComponent(sessionKey)}&pageNumber=${page}&pageSize=${pageSize}`
@@ -55,7 +55,6 @@ export const getActivities = async (token: string, sessionKey: string, page: num
     throw error;
   }
 };
-
 
 
 

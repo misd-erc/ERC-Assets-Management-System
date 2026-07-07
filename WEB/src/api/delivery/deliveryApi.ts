@@ -35,7 +35,7 @@ const mapVwDeliveryRecord = (raw: any): VwDeliveryRecord => ({
 
 export const getDeliveryRecords = async (
   pageNumber: number = 1,
-  pageSize: number = 10,
+  pageSize: number = 10000,
   search: string = '',
   status: string = 'all'
 ): Promise<{ items: VwDeliveryRecord[], totalCount: number }> => {

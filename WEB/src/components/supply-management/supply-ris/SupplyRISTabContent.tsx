@@ -8,6 +8,8 @@ import { SupplyRISDeleteModal } from './SupplyRISDeleteModal';
 import { VwSupplyRIS } from '@/types/supply/ris';
 import { toast } from 'sonner';
 
+const PAGE_SIZE = 100;
+
 export const SupplyRISTabContent = () => {
   const { risList, totalRis, loading, fetchRISs, deleteRIS, updateRISApproval } = useRISStore();
   const { vwOffices, fetchOffices } = useOfficeStore();
@@ -36,7 +38,7 @@ export const SupplyRISTabContent = () => {
   useEffect(() => {
     fetchRISs(
       params.page,
-      10,
+      PAGE_SIZE,
       params.search,
       params.status === 'all' ? undefined : params.status,
       params.officeId === 'all' ? undefined : Number(params.officeId),

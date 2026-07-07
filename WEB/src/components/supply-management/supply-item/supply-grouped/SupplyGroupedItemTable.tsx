@@ -151,7 +151,7 @@ interface Props {
   onParamsChange: (params: { page: number; search: string; status: string; category?: string; storageId?: string; vendorId?: string }) => void;
 }
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 100;
 
 export const SupplyGroupedItemTable = ({
   data,

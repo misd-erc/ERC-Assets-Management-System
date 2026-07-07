@@ -840,7 +840,6 @@ const IARSignatoryModal: React.FC<IARSignatoryModalProps> = ({ isOpen, onClose, 
                     <Button
                         className="bg-indigo-600 hover:bg-indigo-700 text-white"
                         onClick={() => onConfirm(signatories)}
-                        disabled={signatories.inspectionMembers.some(m => !m.name.trim()) || !signatories.conformeEndUser.name.trim() || !signatories.acceptanceOfficer.name.trim()}
                     >
                         {actionLabel === 'print' ? <Printer className="w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
                         {actionLabel === 'print' ? 'Print Document' : 'Save as PDF'}
@@ -887,8 +886,8 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
 
             setLoading(true);
             Promise.all([
-                getSupplyIARs(1, 200, ''),
-                getDeliveryRecords(1, 200, '', 'all')
+                getSupplyIARs(1, 10000, ''),
+                getDeliveryRecords(1, 10000, '', 'all')
             ])
                 .then(([iarResult, deliveryResult]) => {
                     const iarsWithDR = iarResult.items.filter(iar => iar.drNumber !== undefined && iar.drNumber !== null && String(iar.drNumber).trim() !== '');
@@ -916,8 +915,8 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
 
         try {
             const [iarResult, deliveryResult] = await Promise.all([
-                getSupplyIARs(1, 200, searchTerm),
-                getDeliveryRecords(1, 200, searchTerm, 'all')
+                getSupplyIARs(1, 10000, searchTerm),
+                getDeliveryRecords(1, 10000, searchTerm, 'all')
             ]);
             const iarsWithDR = iarResult.items.filter(iar => iar.drNumber !== undefined && iar.drNumber !== null && String(iar.drNumber).trim() !== '');
             setIarList(iarsWithDR);

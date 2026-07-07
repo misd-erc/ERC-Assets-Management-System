@@ -1,5 +1,6 @@
 using PortalTools.Services.GetEditTools.ASSET.PTA;
 using PortalTools.Services.GetEditTools.ASSET.Supply;
+using PortalTools.Services.GetEditTools.ASSET.Booking;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
 using PortalTools.Services.GetEditTools.DBO.Office;
@@ -21,6 +22,7 @@ public class PortalEditTools : IPortalEditTools
         PTAEditTools pta,
         SupplyEditTools supply,
         DeliveryEditTools delivery,
+        BookingEditTools booking,
         ChatEditTools chat
     )
     {
@@ -31,6 +33,7 @@ public class PortalEditTools : IPortalEditTools
         PTA = pta;
         Supply = supply;
         Delivery = delivery;
+        Booking = booking;
         Chat = chat;
     }
 
@@ -41,5 +44,6 @@ public class PortalEditTools : IPortalEditTools
     public PTAEditTools PTA { get; }
     public SupplyEditTools Supply { get; }
     public DeliveryEditTools Delivery { get; }
+    public BookingEditTools Booking { get; }
     public ChatEditTools Chat { get; }
 }

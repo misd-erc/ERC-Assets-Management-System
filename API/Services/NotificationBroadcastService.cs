@@ -25,7 +25,10 @@ namespace API.Services
             string title,
             string description,
             long moduleId,
-            long excludeSystemUserId)
+            long excludeSystemUserId,
+            string? actionType = null,
+            long? entityId = null,
+            string? entityLabel = null)
         {
             var userIds = await NotificationTools.GetUserIdsWithModuleAccessAsync(context, moduleId);
             userIds = userIds.Where(id => id != excludeSystemUserId).ToList();
@@ -33,7 +36,7 @@ namespace API.Services
             if (!userIds.Any()) return;
 
             var notifications = await NotificationTools.CreateBatchNotificationsAsync(
-                context, title, description, userIds, excludeSystemUserId, moduleId);
+                context, title, description, userIds, excludeSystemUserId, moduleId, actionType, entityId, entityLabel);
 
             foreach (var notif in notifications)
             {

@@ -22,6 +22,123 @@ namespace PortalDB.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("PortalDB.Entities.ASSET.Booking.TblAssetBookingItem", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("AssetBookingItemId");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("BookedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("AssetBookingItemBookedAt");
+
+                    b.Property<long?>("BookedBySystemUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("AssetBookingItemBookedBySystemUserId");
+
+                    b.Property<long?>("CategoryId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("PTACategoryId");
+
+                    b.Property<string>("CodeEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("AssetBookingItemCode");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("AssetBookingItemCreatedAt");
+
+                    b.Property<DateTime?>("DeliveryDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("AssetBookingItemDeliveryDate");
+
+                    b.Property<long?>("DeliveryRecordId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DeliveryRecordId");
+
+                    b.Property<long?>("DeliveryRecordItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("DeliveryRecordItemId");
+
+                    b.Property<string>("DescriptionEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("AssetBookingItemDescription");
+
+                    b.Property<long?>("FinalizedPTAId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("FinalizedPTAId");
+
+                    b.Property<long?>("FinalizedSupplyItemId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("FinalizedSupplyItemId");
+
+                    b.Property<string>("Group")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("AssetBookingItemGroup");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("AssetBookingItemIsActive");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit")
+                        .HasColumnName("AssetBookingItemIsDeleted");
+
+                    b.Property<long?>("MeasurementUnitId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyUnitId");
+
+                    b.Property<int?>("Quantity")
+                        .HasColumnType("int")
+                        .HasColumnName("AssetBookingItemQuantity");
+
+                    b.Property<int?>("ReorderPoint")
+                        .HasColumnType("int")
+                        .HasColumnName("AssetBookingItemReorderPoint");
+
+                    b.Property<string>("SpecificationEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("AssetBookingItemSpecification");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("AssetBookingItemStatus");
+
+                    b.Property<long?>("StorageLocationId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyStorageLocationId");
+
+                    b.Property<string>("SuggestedPropertyNumberEncrypted")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("AssetBookingItemSuggestedPropertyNumber");
+
+                    b.Property<long?>("SupplyIARId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyIARId");
+
+                    b.Property<decimal?>("UnitCost")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("AssetBookingItemUnitCost");
+
+                    b.Property<int?>("UnitSequence")
+                        .HasColumnType("int")
+                        .HasColumnName("AssetBookingItemUnitSequence");
+
+                    b.Property<long?>("VendorId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SupplyVendorId");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("tblAssetBookingItems", "asset");
+                });
+
             modelBuilder.Entity("PortalDB.Entities.ASSET.Delivery.TblDeliveryRecord", b =>
                 {
                     b.Property<long>("Id")
@@ -2186,6 +2303,10 @@ namespace PortalDB.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<string>("ActionType")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SystemNotificationActionType");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("SystemNotificationCreatedAt");
@@ -2197,6 +2318,14 @@ namespace PortalDB.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("SystemNotificationDescription");
+
+                    b.Property<long?>("EntityId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("SystemNotificationEntityId");
+
+                    b.Property<string>("EntityLabel")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("SystemNotificationEntityLabel");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit")

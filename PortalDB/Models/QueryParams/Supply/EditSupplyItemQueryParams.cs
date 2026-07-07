@@ -23,4 +23,11 @@ namespace PortalDB.Models.QueryParams.Supply
         [Required] public long ActionBySystemUserId { get; set; }
         [Required] public string SessionKey { get; set; } = string.Empty;
     }
+
+    public class DeleteSupplyItemsQueryParams
+    {
+        [Required] public List<long> Ids { get; set; } = new();
+        [Required] public long ActionBySystemUserId { get; set; }
+        [Required] public string SessionKey { get; set; } = string.Empty;
+    }
 }

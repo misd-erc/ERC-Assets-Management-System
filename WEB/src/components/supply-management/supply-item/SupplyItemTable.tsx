@@ -5,7 +5,12 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
@@ -150,11 +155,12 @@ interface Props {
   onView: (item: VwSupplyItem) => void;
   onEdit: (item: VwSupplyItem) => void;
   onDelete: (item: VwSupplyItem) => void;
+  onBatchDelete?: (ids: number[]) => Promise<void>;
   onParamsChange: (params: { page: number; search: string; category: string; status: string; storageId?: string; vendorId?: string }) => void;
   hideAddButton?: boolean;
 }
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 100;
 
 export const SupplyItemTable = ({
   data,
@@ -173,12 +179,15 @@ export const SupplyItemTable = ({
   onView,
   onEdit,
   onDelete,
+  onBatchDelete,
   onParamsChange,
   hideAddButton = false
 }: Props) => {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [isSorting, setIsSorting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getStockStatusLabel = (item: VwSupplyItem) => {
@@ -247,6 +256,30 @@ export const SupplyItemTable = ({
     });
   }, [data, sortConfig]);
 
+  useEffect(() => {
+    const visibleIds = new Set(data.map(item => item.id));
+    setSelectedIds(prev => prev.filter(id => visibleIds.has(id)));
+  }, [data]);
+
+  const visibleIds = useMemo(() => sortedData.map(item => item.id), [sortedData]);
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.includes(id));
+  const someVisibleSelected = selectedIds.length > 0 && !allVisibleSelected;
+
+  const toggleAllVisible = (checked: boolean) => {
+    setSelectedIds(checked ? visibleIds : []);
+  };
+
+  const toggleItem = (id: number, checked: boolean) => {
+    setSelectedIds(prev => checked ? [...new Set([...prev, id])] : prev.filter(itemId => itemId !== id));
+  };
+
+  const confirmBatchDelete = async () => {
+    if (!onBatchDelete || selectedIds.length === 0) return;
+    await onBatchDelete(selectedIds);
+    setSelectedIds([]);
+    setBatchDeleteOpen(false);
+  };
+
   const updateParams = (updates: Partial<{ page: number; search: string; category: string; status: string; storageId: string; vendorId: string }>) => {
     onParamsChange({
       page: updates.page ?? page,
@@ -278,6 +311,16 @@ export const SupplyItemTable = ({
               <CardDescription>Manage supply items with stock monitoring</CardDescription>
             </div>
             <div className="flex items-center gap-3">
+              {selectedIds.length > 0 && (
+                <Button
+                  variant="destructive"
+                  onClick={() => setBatchDeleteOpen(true)}
+                  className="shrink-0 shadow-sm"
+                  disabled={loading || !onBatchDelete}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> Delete selected ({selectedIds.length})
+                </Button>
+              )}
               {!hideAddButton && (
                 <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700 shrink-0 shadow-sm" disabled={loading}>
                   <Plus className="w-4 h-4 mr-2" /> Add Item
@@ -457,6 +500,14 @@ export const SupplyItemTable = ({
           <Table>
             <TableHeader className="bg-slate-50/80">
               <TableRow>
+                <TableHead className="w-[44px]">
+                  <Checkbox
+                    checked={allVisibleSelected}
+                    indeterminate={someVisibleSelected}
+                    onCheckedChange={(checked) => toggleAllVisible(Boolean(checked))}
+                    aria-label="Select all visible inventory items"
+                  />
+                </TableHead>
                 <TableHead className="w-[150px] cursor-pointer hover:text-blue-600" onClick={() => handleSort('code')}>
                   <div className="flex items-center gap-1">
                     Item Code <ArrowUpDown className="w-3 h-3" />
@@ -501,8 +552,8 @@ export const SupplyItemTable = ({
               {loading && data.length === 0 ? (
                 Array.from({ length: 5 }).map((_, index) => (
                   <TableRow key={`skeleton-${index}`}>
-                    {/* 10 columns to match the 10 TableHead items */}
-                    {Array.from({ length: 10 }).map((_, colIndex) => (
+                    {/* 11 columns to match the 11 TableHead items */}
+                    {Array.from({ length: 11 }).map((_, colIndex) => (
                       <TableCell key={`skel-col-${colIndex}`}>
                         <div className="h-4 bg-slate-200 rounded animate-pulse w-full"></div>
                       </TableCell>
@@ -518,6 +569,13 @@ export const SupplyItemTable = ({
 
                   return (
                     <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.includes(item.id)}
+                          onCheckedChange={(checked) => toggleItem(item.id, Boolean(checked))}
+                          aria-label={`Select ${item.description || item.code || 'inventory item'}`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="font-medium text-slate-900">{item.code}</div>
                         {item.iarId && (
@@ -568,11 +626,9 @@ export const SupplyItemTable = ({
                             <DropdownMenuItem onClick={() => onEdit(item)} className="cursor-pointer">
                               <Edit className="w-4 h-4 mr-2 text-blue-500" /> Edit Item
                             </DropdownMenuItem>
-                            {/* {!item.iarId && (
-                              <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-700">
-                                <Trash2 className="w-4 h-4 mr-2" /> Delete Item
-                              </DropdownMenuItem>
-                            )} */}
+                            <DropdownMenuItem onClick={() => onDelete(item)} className="text-red-600 cursor-pointer focus:bg-red-50 focus:text-red-700">
+                              <Trash2 className="w-4 h-4 mr-2" /> Delete Item
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -582,7 +638,7 @@ export const SupplyItemTable = ({
               ) : (
                 // EMPTY STATE
                 <TableRow>
-                  <TableCell colSpan={10} className="h-48 text-center">
+                  <TableCell colSpan={11} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center text-slate-500 space-y-3">
                       <div className="p-3 bg-slate-50 rounded-full">
                         <PackageSearch className="w-8 h-8 text-slate-400" />
@@ -615,6 +671,22 @@ export const SupplyItemTable = ({
           </div>
         )}
       </CardContent>
+      <AlertDialog open={batchDeleteOpen} onOpenChange={setBatchDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete selected items?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will delete {selectedIds.length} selected supply item(s). This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBatchDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

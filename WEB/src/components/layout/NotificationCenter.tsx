@@ -20,7 +20,7 @@ import {
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useEffect, useState } from 'react';
 import { useNotificationStore } from '@/store/notification';
-import { MODULE_NAMES } from '@/types/notification';
+import { MODULE_NAMES, SystemNotification } from '@/types/notification';
 import { sendNotification } from '@/api/notification/notificationApi';
 import { getAuthParams } from '@/utils/auth';
 import { Send } from 'lucide-react';
@@ -29,9 +29,10 @@ import { toast } from 'sonner';
 interface NotificationCenterProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onNavigate?: (module: string) => void;
 }
 
-export function NotificationCenter({ open, onOpenChange }: NotificationCenterProps) {
+export function NotificationCenter({ open, onOpenChange, onNavigate }: NotificationCenterProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const {
     notifications,
@@ -136,9 +137,23 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
     }
   };
 
-  const handleNotificationClick = (notificationId: number, isRead: boolean) => {
-    if (!isRead) {
-      markAsRead(notificationId);
+  // IAR notifications carry an actionType so a click can jump straight to where the IAR came from
+  // (Delivery & Receipt) or, once approved, to the Asset Booking tab matching its item type(s).
+  const handleNotificationClick = (notification: SystemNotification) => {
+    if (!notification.isRead) {
+      markAsRead(notification.id);
+    }
+
+    if (notification.actionType === 'IAR_SUBMITTED' && notification.entityId) {
+      sessionStorage.setItem('_notifNav', JSON.stringify({ iarId: notification.entityId }));
+      onNavigate?.('delivery-receipt-items');
+      onOpenChange(false);
+    } else if (notification.actionType === 'IAR_APPROVED') {
+      const label = (notification.entityLabel || '').toLowerCase();
+      const tab = label.includes('supply') ? 'supply' : label.includes('ppe') ? 'ppe' : label.includes('se') ? 'se' : 'supply';
+      sessionStorage.setItem('_notifNav', JSON.stringify({ tab }));
+      onNavigate?.('asset-booking');
+      onOpenChange(false);
     }
   };
 
@@ -221,7 +236,7 @@ export function NotificationCenter({ open, onOpenChange }: NotificationCenterPro
                       className={`p-3 sm:p-4 rounded-lg border transition-colors hover:bg-gray-50 relative cursor-pointer ${
                         !notification.isRead ? 'bg-blue-50/50 border-blue-200' : 'bg-background'
                       }`}
-                      onClick={() => handleNotificationClick(notification.id, notification.isRead)}
+                      onClick={() => handleNotificationClick(notification)}
                     >
                       <div className="flex items-start space-x-2 sm:space-x-3">
                         <div className={`p-1.5 sm:p-2 rounded-full shrink-0 ${getNotificationColor(notification.title)}`}>

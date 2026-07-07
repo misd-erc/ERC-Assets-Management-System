@@ -10,8 +10,10 @@ import { VwSupplyItem } from '@/types';
 import { getCategories } from '@/api/categories/categoriesApi';
 import { getVendors } from '@/api';
 
+const PAGE_SIZE = 100;
+
 export const SupplyItemTabContent = () => {
-  const { vwSupplies, totalSupplies, loading, fetchSupplyItems, categories, fetchCategories } = useSupplyItem();
+  const { vwSupplies, totalSupplies, loading, fetchSupplyItems, categories, fetchCategories, deleteSupplyItems } = useSupplyItem();
   const { storagelocations, fetchSupplyStorageLocations } = useSupplyStorageLocationStore();
   const [vendors, setVendors] = useState<any[]>([]);
   
@@ -40,10 +42,10 @@ export const SupplyItemTabContent = () => {
   useEffect(() => {
     // Find the category ID if a category filter is selected
     const selectedCategory = categories.find(c => c.name === params.category);
-    
+
     fetchSupplyItems(
       params.page,
-      10,
+      PAGE_SIZE,
       params.search,
       selectedCategory?.id,
       params.status === 'all' ? undefined : params.status,
@@ -51,6 +53,20 @@ export const SupplyItemTabContent = () => {
       params.vendorId === 'all' ? undefined : Number(params.vendorId)
     );
   }, [params, fetchSupplyItems, categories]);
+
+  const refreshItems = async () => {
+    const selectedCategory = categories.find(c => c.name === params.category);
+
+    await fetchSupplyItems(
+      params.page,
+      PAGE_SIZE,
+      params.search,
+      selectedCategory?.id,
+      params.status === 'all' ? undefined : params.status,
+      params.storageId === 'all' ? undefined : Number(params.storageId),
+      params.vendorId === 'all' ? undefined : Number(params.vendorId)
+    );
+  };
 
   const handleAdd = () => {
     setSelectedItem(null);
@@ -73,6 +89,11 @@ export const SupplyItemTabContent = () => {
   const handleDelete = (item: VwSupplyItem) => {
     setSelectedItem(item);
     setIsDeleteOpen(true);
+  };
+
+  const handleBatchDelete = async (ids: number[]) => {
+    await deleteSupplyItems(ids);
+    await refreshItems();
   };
 
   if (loading && vwSupplies.length === 0) {
@@ -99,6 +120,7 @@ export const SupplyItemTabContent = () => {
         onView={handleView}
         onEdit={handleEdit} 
         onDelete={handleDelete} 
+        onBatchDelete={handleBatchDelete}
       />
       
       <SupplyItemEditModal 
@@ -112,6 +134,7 @@ export const SupplyItemTabContent = () => {
         open={isDeleteOpen} 
         onOpenChange={setIsDeleteOpen} 
         supplyItem={selectedItem} 
+        onSuccess={refreshItems}
       />
     </>
   );

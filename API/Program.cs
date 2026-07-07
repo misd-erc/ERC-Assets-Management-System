@@ -10,6 +10,7 @@ using PortalTools.Composition;
 using PortalTools.Services;
 using PortalTools.Services.GetEditTools.ASSET.PTA;
 using PortalTools.Services.GetEditTools.ASSET.Supply;
+using PortalTools.Services.GetEditTools.ASSET.Booking;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
 using PortalTools.Services.GetEditTools.DBO.Office;
@@ -125,6 +126,8 @@ builder.Services.AddScoped<SupplyGetTools>();
 builder.Services.AddScoped<SupplyEditTools>();
 builder.Services.AddScoped<DeliveryGetTools>();
 builder.Services.AddScoped<DeliveryEditTools>();
+builder.Services.AddScoped<BookingGetTools>();
+builder.Services.AddScoped<BookingEditTools>();
 builder.Services.AddScoped<ChatGetTools>();
 builder.Services.AddScoped<ChatEditTools>();
 
