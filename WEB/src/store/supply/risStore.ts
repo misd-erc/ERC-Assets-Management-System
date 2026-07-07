@@ -59,7 +59,7 @@ export const useRISStore = create<RISState>((set, get) => ({
   setLoading: (loading) => set({ loading }),
   setSearchQuery: (query) => set({ searchQuery: query }),
 
-  fetchRISs: async (page = 1, pageSize = 10, search = '', status, officeId, divisionId, startDate, endDate) => {
+  fetchRISs: async (page = 1, pageSize = 10000, search = '', status, officeId, divisionId, startDate, endDate) => {
     set({ loading: true });
     try {
       const result = await getSupplyRISs(page, pageSize, search, status, officeId, divisionId, startDate, endDate);
@@ -74,7 +74,7 @@ export const useRISStore = create<RISState>((set, get) => ({
   fetchRISSummary: async () => {
     try {
       // Fetch a larger set for dashboard accuracy
-      const result = await getSupplyRISs(1, 1000, '', undefined);
+      const result = await getSupplyRISs(1, 10000, '', undefined);
       set({ risSummary: result.items });
     } catch {
       toast.error('Failed to load RIS summary');

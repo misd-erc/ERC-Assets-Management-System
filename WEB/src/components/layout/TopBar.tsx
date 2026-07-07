@@ -162,6 +162,7 @@ export const TopBar: React.FC<TopbarProps> = ({ onMenuClick, isMobile: propIsMob
       <NotificationCenter
         open={notificationsOpen}
         onOpenChange={setNotificationsOpen}
+        onNavigate={onNavigate}
       />
 
       {/* Logout Confirmation Dialog */}

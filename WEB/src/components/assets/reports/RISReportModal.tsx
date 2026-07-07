@@ -402,8 +402,6 @@ const RISSignatoryModal: React.FC<RISSignatoryModalProps> = ({ isOpen, onClose, 
         receivedBy: 'Received by',
     };
 
-    const allFilled = Object.values(signatories).every(s => s.name.trim() !== '');
-
     return (
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
             <DialogContent className="!max-w-2xl !w-[95vw] max-h-[90vh] flex flex-col p-0 gap-0 bg-white border-slate-200 shadow-2xl overflow-hidden">
@@ -538,7 +536,6 @@ const RISSignatoryModal: React.FC<RISSignatoryModalProps> = ({ isOpen, onClose, 
                     <Button
                         className="bg-indigo-600 hover:bg-indigo-700 text-white"
                         onClick={() => onConfirm(signatories, signatureDates)}
-                        disabled={!allFilled}
                     >
                         {actionLabel === 'print' ? <Printer className="w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
                         {actionLabel === 'print' ? 'Print Document' : 'Save as PDF'}
@@ -562,7 +559,7 @@ export const RISReportModal = ({ isOpen, onClose }: RISReportModalProps) => {
     const [activeSearchQuery, setActiveSearchQuery] = useState('');
     const [hasSearched, setHasSearched] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 10;
+    const pageSize = 100;
 
     const [selectedRis, setSelectedRis] = useState<VwSupplyRIS | null>(null);
     const [isPreviewLoading, setIsPreviewLoading] = useState(false);

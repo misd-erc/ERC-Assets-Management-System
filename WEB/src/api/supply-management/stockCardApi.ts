@@ -17,7 +17,7 @@ export const getStockCardItems = async (
   stockNumber: string,
   description: string,
   pageNumber: number = 1,
-  pageSize: number = 10
+  pageSize: number = 10000
 ): Promise<PaginatedResponse<SupplyStockCardItem>> => {
   const { systemUserId, sessionKey } = getAuthParams();
 

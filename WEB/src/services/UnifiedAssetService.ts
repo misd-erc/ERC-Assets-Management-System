@@ -254,6 +254,77 @@ export class UnifiedAssetService {
     }
   }
 
+  // "OnStock" = PTA has zero movements ever (never assigned/transferred to anyone).
+  // Backed by the existing GET /Inventory/pta/se-ppe/no-movement endpoint (GroupName is required there).
+  private static async listNoMovement(params: {
+    SearchString?: string;
+    PageNumber: number;
+    PageSize: number;
+    ActionBySystemUserId: string;
+    SessionKey: string;
+    GroupName: string;
+    CategoryId?: number;
+    Condition?: string;
+  }): Promise<{ items: any[]; totalCount: number }> {
+    const query = new URLSearchParams();
+
+    if (params.SearchString) query.append('SearchString', params.SearchString);
+    query.append('PageNumber', params.PageNumber.toString());
+    query.append('PageSize', params.PageSize.toString());
+    if (params.CategoryId) query.append('CategoryId', params.CategoryId.toString());
+    if (params.Condition) query.append('Condition', params.Condition);
+    query.append('ActionBySystemUserId', params.ActionBySystemUserId);
+    query.append('SessionKey', params.SessionKey);
+    query.append('GroupName', params.GroupName);
+
+    const apiBaseUrl = process.env.REACT_APP_API_URL || '';
+    const url = `${apiBaseUrl}/Inventory/pta/se-ppe/no-movement?${query.toString()}`;
+
+    const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error('Failed to fetch on-stock asset list');
+
+    const data = await response.json();
+    return { items: data.data?.items || [], totalCount: data.data?.totalCount || 0 };
+  }
+
+  static async getAllNoMovement(filters?: {
+    category?: string;
+    condition?: string;
+    search?: string;
+    group: 'PPE' | 'SE';
+    PageNumber?: number;
+    PageSize?: number;
+  }): Promise<{ items: Asset[]; totalCount: number }> {
+    try {
+      const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';
+      const sessionKey = secureStorage.getItem('sessionToken') || '';
+
+      const pageNumber = filters?.PageNumber || 1;
+      const pageSize = Math.min(filters?.PageSize || 10, 100);
+      const searchString = filters?.search || '';
+      const categoryId = filters?.category && filters.category !== 'all' ? parseInt(filters.category) || undefined : undefined;
+      const condition = filters?.condition && filters.condition !== 'all' ? filters.condition : undefined;
+      const group: AssetGroup = filters?.group || 'PPE';
+
+      const response = await this.listNoMovement({
+        SearchString: searchString,
+        PageNumber: pageNumber,
+        PageSize: pageSize,
+        ActionBySystemUserId: actionBySystemUserId,
+        SessionKey: sessionKey,
+        GroupName: group.toLowerCase(),
+        CategoryId: categoryId,
+        Condition: condition,
+      });
+
+      const items = (response.items || []).map(item => this.mapApiToUnifiedAsset(item, group));
+      return { items, totalCount: response.totalCount };
+    } catch (error) {
+      console.error('Error fetching on-stock assets:', error);
+      throw error;
+    }
+  }
+
   static async getById(id: number): Promise<Asset> {
     try {
       const actionBySystemUserId = secureStorage.getItem('systemUserId') || '';

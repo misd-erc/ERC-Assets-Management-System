@@ -67,10 +67,24 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
     };
   }, []);
 
+  // Asset Booking only makes sense for users who can both manage supplies and encode PPE/SE assets,
+  // so it's hidden unless the user's role already has both scopes (no separate "Asset Booking" scope needed).
+  const hasBookingAccess = useMemo(() => {
+    const scope = userDetails?.systemRole?.[0]?.scope || [];
+    const scopeNames = new Set(
+      scope
+        .filter((s: any) => s?.isActive && !s?.isDeleted && s?.module)
+        .map((s: any) => s.module.name)
+    );
+    return scopeNames.has('Supply Management') && scopeNames.has('PPE & SE');
+  }, [userDetails]);
+
   const navigationGroups: NavigationGroup[] = useMemo(() => {
     const grouped: Record<string, NavigationItem[]> = {};
 
     adminOverrideModules.forEach((acronym) => {
+      if (acronym === 'BK' && !hasBookingAccess) return;
+
       const config = moduleConfig[acronym] || {
         ...fallbackModule,
         id: acronym.toLowerCase(),
@@ -117,7 +131,7 @@ export function AppSidebar({ activeModule, onModuleChange, open = true, onOpenCh
     });
 
     return dashboardGroup ? [dashboardGroup, ...otherGroups] : otherGroups;
-  }, []);
+  }, [hasBookingAccess]);
 
   const handleClick = (item: NavigationItem) => {
     if (item.implemented) {

@@ -206,7 +206,7 @@ export const ChatWidget: React.FC = () => {
         setIsSearching(true);
         try {
             if (search && search.trim() !== '') {
-                const response = await getUsers({ page: 1, pageSize: 50, searchString: search });
+                const response = await getUsers({ page: 1, pageSize: 10000, searchString: search });
                 if (response?.data?.items) {
                     let searchResults = response.data.items.filter(u => u.id !== currentUserId);
                     // Keep the currently active direct chat user in the list so header doesn't break
@@ -1667,7 +1667,7 @@ export const ChatWidget: React.FC = () => {
                                         return;
                                     }
                                     try {
-                                        const response = await getUsers({ page: 1, pageSize: 50, searchString: val });
+                                        const response = await getUsers({ page: 1, pageSize: 10000, searchString: val });
                                         if (response?.data?.items) {
                                             const filtered = response.data.items.filter(u => 
                                                 u.id !== currentUserId && 

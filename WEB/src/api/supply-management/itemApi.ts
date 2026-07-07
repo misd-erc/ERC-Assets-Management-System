@@ -84,7 +84,7 @@ const mapVwSupplyUniqueRawItem = (raw: any): VwSupplyUniqueRawItem => {
 
 export const getSupplyItems = async (
   pageNumber: number = 1,
-  pageSize: number = 10,
+  pageSize: number = 10000,
   search: string = '',
   categoryId?: number,
   status?: string,
@@ -124,7 +124,7 @@ export const getSupplyItems = async (
 
 export const getVwSupplyGroupedItems = async (
   pageNumber: number = 1,
-  pageSize: number = 10,
+  pageSize: number = 10000,
   search: string = '',
   status?: string,
   categoryId?: number,
@@ -164,7 +164,7 @@ export const getVwSupplyGroupedItems = async (
 export const getVwSupplyGroupedItemLists = async (
   id: number,
   pageNumber: number = 1,
-  pageSize: number = 10,
+  pageSize: number = 10000,
   search: string = '',
   categoryId?: number,
   status?: string,
@@ -270,4 +270,3 @@ export const editSupplyItem = async (payload: SupplyItem): Promise<{ message: st
   if (!response.data.success) throw new Error(response.data.message || 'Failed to save supply');
   return { message: response.data.message ?? 'Success' };
 };
-

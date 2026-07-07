@@ -1,5 +1,6 @@
 using PortalTools.Services.GetEditTools.ASSET.PTA;
 using PortalTools.Services.GetEditTools.ASSET.Supply;
+using PortalTools.Services.GetEditTools.ASSET.Booking;
 using PortalTools.Services.GetEditTools.DBO.Account;
 using PortalTools.Services.GetEditTools.DBO.Notification;
 using PortalTools.Services.GetEditTools.DBO.Office;
@@ -19,5 +20,6 @@ public interface IPortalGetTools
     PTAGetTools PTA { get; }
     SupplyGetTools Supply { get; }
     DeliveryGetTools Delivery { get; }
+    BookingGetTools Booking { get; }
     ChatGetTools Chat { get; }
 }

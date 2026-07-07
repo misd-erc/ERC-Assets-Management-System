@@ -9,6 +9,7 @@ using PortalCommon.Constants;
 using PortalDB.Entities.ASSET.Delivery;
 using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Entities.ASSET.Supply;
+using PortalDB.Entities.ASSET.Booking;
 using PortalDB.Models.QueryParams.Pagination;
 using PortalDB.Models.QueryParams.PTA;
 using PortalDB.Models.QueryParams.Supply;
@@ -71,6 +72,27 @@ namespace API.Controllers
                 .ToListAsync();
 
             return string.Join(", ", deliveryRecords.Select(x => x.DRNumber).Where(x => !string.IsNullOrWhiteSpace(x)));
+        }
+
+        // Distinct asset-group labels (Supply/PPE/SE) across an IAR's linked delivery records, used to
+        // tag IAR notifications so staff can tell what kind of delivery it is, and to route notification
+        // clicks to the right Asset Booking tab.
+        private async Task<string> GetIARItemTypesSummaryAsync(PortalDbContext context, List<long> recordIds)
+        {
+            if (recordIds.Count == 0) return "";
+
+            var itemTypeIds = await context.TblDeliveryRecordItems
+                .Where(x => !x.IsDeleted && x.RecordId.HasValue && recordIds.Contains(x.RecordId.Value))
+                .Select(x => x.ItemTypeId)
+                .Distinct()
+                .ToListAsync();
+
+            var labels = new List<string>();
+            if (itemTypeIds.Contains(1)) labels.Add("Supply");
+            if (itemTypeIds.Contains(2)) labels.Add("PPE");
+            if (itemTypeIds.Contains(3)) labels.Add("SE");
+
+            return string.Join(", ", labels);
         }
 
         #region GET
@@ -2178,10 +2200,13 @@ namespace API.Controllers
                                     .OrderByDescending(s => s.CreatedAt)
                                     .FirstOrDefault();
 
-                                TblSupplyItem? supplyItem = new TblSupplyItem()
+                                TblAssetBookingItem bookingItem = new()
                                 {
+                                    Group = TblAssetBookingItem.GROUP_SUPPLY,
+                                    SupplyIARId = supplyIAR.Id,
+                                    DeliveryRecordId = deliveryRecord.Id,
+                                    DeliveryRecordItemId = deliveryRecordItem.Id,
                                     Code = deliveryRecordItem.Code,
-                                    IARId = supplyIAR.Id,
                                     CategoryId = matchingSupplyItem?.CategoryId ?? deliveryRecordItem.CategoryId,
                                     Description = deliveryRecordItem.ItemDescription,
                                     MeasurementUnitId = deliveryRecordItem.UnitId,
@@ -2189,17 +2214,16 @@ namespace API.Controllers
                                     ReorderPoint = deliveryRecordItem.ReorderPoint,
                                     StorageLocationId = deliveryRecordItem.StorageLocationId,
                                     VendorId = deliveryRecordItem.VendorId,
-                                    Quantity = deliveryRecordItem.ItemQuantity
+                                    Quantity = deliveryRecordItem.ItemQuantity,
+                                    DeliveryDate = deliveryRecord.DeliveryDate,
+                                    Status = TblAssetBookingItem.STATUS_PENDING
                                 };
 
-                                await _editTools.Supply.EditTblSupplyItemAsync(supplyItem, model.ActionBySystemUserId, context);
+                                await _editTools.Booking.EditTblAssetBookingItemAsync(bookingItem, model.ActionBySystemUserId, context, isBatch: true);
                             }
                             else if (deliveryRecordItem.ItemTypeId == 2 || deliveryRecordItem.ItemTypeId == 3)
                             {
                                 string ptaGroup = deliveryRecordItem.ItemTypeId == 2 ? TblPTA.PPE : TblPTA.SE;
-
-                                TblSupplyUnit? unit = await _getTools.Supply.GetTblSupplyUnitAsync(deliveryRecordItem.UnitId, context);
-                                string unitName = unit?.Name ?? string.Empty;
 
                                 int quantity = (deliveryRecordItem.ItemQuantity ?? 1) > 0 ? (deliveryRecordItem.ItemQuantity ?? 1) : 1;
                                 for (int i = 0; i < quantity; i++)
@@ -2208,37 +2232,42 @@ namespace API.Controllers
                                         ? null
                                         : $"{deliveryRecordItem.Code}-{i + 1:D3}";
 
-                                    TblPTA pta = new()
+                                    TblAssetBookingItem bookingItem = new()
                                     {
                                         Group = ptaGroup,
-                                        PropertyNumber = propertyNumber,
+                                        SupplyIARId = supplyIAR.Id,
+                                        DeliveryRecordId = deliveryRecord.Id,
+                                        DeliveryRecordItemId = deliveryRecordItem.Id,
+                                        UnitSequence = i + 1,
+                                        SuggestedPropertyNumber = propertyNumber,
                                         CategoryId = deliveryRecordItem.CategoryId,
-                                        LegendId = null,
                                         Description = deliveryRecordItem.ItemDescription,
-                                        Brand = null,
-                                        Model = deliveryRecordItem.ItemSpecification,
-                                        SerialNumber = null,
-                                        UnitOfMeasurement = unitName,
-                                        UnitValue = deliveryRecordItem.UnitCost.HasValue
-                                            ? (double)deliveryRecordItem.UnitCost.Value
-                                            : null,
-                                        DateAcquired = deliveryRecord.DeliveryDate,
-                                        FiscalDate = deliveryRecord.DeliveryDate,
-                                        IsActive = true
+                                        Specification = deliveryRecordItem.ItemSpecification,
+                                        MeasurementUnitId = deliveryRecordItem.UnitId,
+                                        UnitCost = deliveryRecordItem.UnitCost,
+                                        Quantity = 1,
+                                        DeliveryDate = deliveryRecord.DeliveryDate,
+                                        Status = TblAssetBookingItem.STATUS_PENDING
                                     };
 
-                                    if (ptaGroup == TblPTA.PPE)
-                                        pta.EstimatedUsefulLife = 0;
-
-                                    await _editTools.PTA.EditTblPTAAsync(pta, model.ActionBySystemUserId, context, isBatch: true);
+                                    // Unit name and PTA/PTAMovement creation are deferred to booking time
+                                    // (BookingController), so a later edit to the unit is still honored.
+                                    await _editTools.Booking.EditTblAssetBookingItemAsync(bookingItem, model.ActionBySystemUserId, context, isBatch: true);
                                 }
                             }
                         }
 
                         await _editTools.Delivery.EditTblDeliveryRecordAsync(deliveryRecord, model.ActionBySystemUserId, context);
                     }
-                    
+
                     // Update the IAR again to set ApprovedOn
+                    await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
+                }
+                else if (wasAlreadyApproved && !supplyIAR.IsApproved)
+                {
+                    // IAR un-approved: cancel any still-pending staged booking items tied to it so they
+                    // can no longer be booked. Already-Booked items are left untouched (one-way approval).
+                    await _editTools.Booking.CancelPendingBySupplyIARIdAsync(supplyIAR.Id, context);
                     await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
                 }
 
@@ -2247,14 +2276,40 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                if (supplyIAR.IsApproved && !wasAlreadyApproved)
+                if (model.Id == 0)
                 {
+                    string itemTypesSummary = await GetIARItemTypesSummaryAsync(context, selectedRecordIds);
+                    string submittedTitle = string.IsNullOrEmpty(itemTypesSummary)
+                        ? NotificationConstants.IAR_SUBMITTED
+                        : $"{NotificationConstants.IAR_SUBMITTED} ({itemTypesSummary})";
+
                     await _notificationService.NotifyModuleUsersAsync(
                         context,
-                        NotificationConstants.IAR_APPROVED,
+                        submittedTitle,
+                        $"IAR {supplyIAR.IARNumber} has been submitted for approval",
+                        NotificationConstants.Modules.DELIVERY_RECEIPT,
+                        model.ActionBySystemUserId,
+                        actionType: NotificationConstants.ActionTypes.IAR_SUBMITTED,
+                        entityId: supplyIARId,
+                        entityLabel: itemTypesSummary);
+                }
+
+                if (supplyIAR.IsApproved && !wasAlreadyApproved)
+                {
+                    string itemTypesSummary = await GetIARItemTypesSummaryAsync(context, selectedRecordIds);
+                    string approvedTitle = string.IsNullOrEmpty(itemTypesSummary)
+                        ? NotificationConstants.IAR_APPROVED
+                        : $"{NotificationConstants.IAR_APPROVED} ({itemTypesSummary})";
+
+                    await _notificationService.NotifyModuleUsersAsync(
+                        context,
+                        approvedTitle,
                         $"IAR {supplyIAR.IARNumber} has been approved and delivery marked as received",
                         NotificationConstants.Modules.DELIVERY_RECEIPT,
-                        model.ActionBySystemUserId);
+                        model.ActionBySystemUserId,
+                        actionType: NotificationConstants.ActionTypes.IAR_APPROVED,
+                        entityId: supplyIAR.Id,
+                        entityLabel: itemTypesSummary);
                 }
 
                 return Ok(ApiResponse<object>.Ok(new { SupplyIARId = supplyIARId }, $"Supply IAR has been {(model.Id == 0 ? "added" : "updated")}"));
@@ -2482,6 +2537,33 @@ namespace API.Controllers
                 await transaction.CommitAsync();
                 return Ok(ApiResponse<object>.Ok($"Supply Item has been deleted"));
 
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
+        [HttpPost("item/delete-batch")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteSupplyItems([FromBody] DeleteSupplyItemsQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                int deleted = await _editTools.Supply.DeleteTblSupplyItemsAsync(model.Ids, model.ActionBySystemUserId, context);
+
+                if (deleted == 0)
+                    return Ok(ApiResponse<object>.OperationFailed("No Supply Items were deleted"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { Deleted = deleted }, $"{deleted} Supply Item(s) have been deleted"));
             }
             catch (Exception ex)
             {

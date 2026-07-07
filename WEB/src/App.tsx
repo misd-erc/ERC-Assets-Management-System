@@ -17,6 +17,7 @@ import { decrypt } from '@/utils/encryption';
 import { secureStorage } from './utils/secureStorage';
 import { isMfaPending } from '@/utils/otpTimerUtils';
 import { ChatWidget } from './components/chat/ChatWidget';
+import { CloudVerificationWatcher } from '@/components/system/CloudVerificationWatcher';
 
 
 // Helper: Returns the route the current user should land on after auth
@@ -227,6 +228,7 @@ function AppShell() {
           </div>
         </Suspense>
         {showChatWidget && <ChatWidget />}
+        <CloudVerificationWatcher />
         <Toaster />
       {/* </ErrorBoundary> */}
     </>

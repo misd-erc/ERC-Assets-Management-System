@@ -66,6 +66,24 @@ export const SupplyIARTabContent = () => {
     fetchSupplyIARs();
   }, [fetchSupplyIARs, page, searchQuery, status, vendorId, officeId, divisionId]);
 
+  // Auto-open the IAR referenced by a pending "IAR submitted" notification click, once it's loaded.
+  useEffect(() => {
+    const raw = sessionStorage.getItem('_notifNav');
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      if (!parsed.iarId) return;
+      const match = iars.find(i => i.id === parsed.iarId);
+      if (match) {
+        handleView(match);
+        sessionStorage.removeItem('_notifNav');
+      }
+    } catch {
+      sessionStorage.removeItem('_notifNav');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [iars]);
+
   useEffect(() => {
     fetchDeliveryRecordsSummary();
     fetchSupplyIARSummary();

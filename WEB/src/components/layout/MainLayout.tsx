@@ -20,6 +20,7 @@ import ContractManagement from "@/pages/ContractManagement";
 import TransfersReturnsPage from "@/pages/TransfersReturnsPage";
 import { SupplyManagement } from "@/pages/SupplyManagement";
 import DeliveryManagement from "@/pages/DeliveryManagement";
+import BookingPage from "@/pages/BookingPage";
 import ReportsCenter from "@/pages/ReportsCenter";
 import PPEIssuancePage from "@/pages/PPEIssuancePage";
 import DisposalsPage from "@/pages/disposals/DisposalsPage";
@@ -57,6 +58,9 @@ export default function MainLayout() {
 
       case "delivery-receipt-items":
         return <DeliveryManagement />;
+
+      case "asset-booking":
+        return <BookingPage />;
 
       case "contract-management":
         return <ContractManagement />;

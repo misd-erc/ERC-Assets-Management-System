@@ -20,6 +20,8 @@ interface Props {
   groupedItem: VwSupplyGroupedItem | null;
 }
 
+const PAGE_SIZE = 100;
+
 export const SupplyGroupItemsModal = ({ open, onOpenChange, groupedItem }: Props) => {
   const {
     vwSupplyGroupItems,
@@ -28,7 +30,8 @@ export const SupplyGroupItemsModal = ({ open, onOpenChange, groupedItem }: Props
     fetchSupplyGroupedItemLists,
     fetchSupplyGroupedItems,
     categories,
-    fetchCategories
+    fetchCategories,
+    deleteSupplyItems
   } = useSupplyItem();
 
   const {
@@ -65,7 +68,7 @@ export const SupplyGroupItemsModal = ({ open, onOpenChange, groupedItem }: Props
       fetchSupplyGroupedItemLists(
         groupedItem.id,
         params.page,
-        10,
+        PAGE_SIZE,
         params.search,
         categoryId,
         params.status === 'all' ? undefined : params.status,
@@ -102,6 +105,11 @@ export const SupplyGroupItemsModal = ({ open, onOpenChange, groupedItem }: Props
       await fetchSupplyGroupedItemLists(groupedItem.id);
     }
     await fetchSupplyGroupedItems();
+  };
+
+  const handleBatchDelete = async (ids: number[]) => {
+    await deleteSupplyItems(ids);
+    await refreshAfterChange();
   };
 
   if (!groupedItem) return null;
@@ -158,6 +166,7 @@ export const SupplyGroupItemsModal = ({ open, onOpenChange, groupedItem }: Props
                     onView={handleView}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    onBatchDelete={handleBatchDelete}
                     hideAddButton
                 />
               </div>

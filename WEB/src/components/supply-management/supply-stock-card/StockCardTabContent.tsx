@@ -6,6 +6,8 @@ import { VwSupplyGroupedItem } from '@/types';
 import { useSupplyStorageLocationStore } from '@/store/supply';
 import { getVendors } from '@/api';
 
+const PAGE_SIZE = 100;
+
 export const StockCardTabContent = () => {
   const { vwSupplyGroups, totalGroups, loading, fetchSupplyGroupedItems, categories, fetchCategories } = useSupplyItem();
   const { storagelocations, fetchSupplyStorageLocations } = useSupplyStorageLocationStore();
@@ -37,7 +39,7 @@ export const StockCardTabContent = () => {
 
     fetchSupplyGroupedItems(
       params.page,
-      10,
+      PAGE_SIZE,
       params.search,
       params.status === 'all' ? undefined : params.status,
       selectedCategory?.id,
@@ -50,7 +52,7 @@ export const StockCardTabContent = () => {
     const selectedCategory = categories.find(c => c.name === params.category);
     fetchSupplyGroupedItems(
       params.page,
-      10,
+      PAGE_SIZE,
       params.search,
       params.status === 'all' ? undefined : params.status,
       selectedCategory?.id,

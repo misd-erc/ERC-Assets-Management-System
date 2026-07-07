@@ -20,7 +20,7 @@ export const useRSMIReportStore = create<RSMIReportState>((set) => ({
     loading: false,
     error: null,
 
-    fetchReport: async (categoryId, startDate, endDate, page = 1, pageSize = 10) => {
+    fetchReport: async (categoryId, startDate, endDate, page = 1, pageSize = 100) => {
         set({ loading: true, error: null });
         try {
             const data = await supplyReportsApi.fetchRSMIFiltered(categoryId, startDate, endDate, page, pageSize);

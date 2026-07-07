@@ -5,6 +5,9 @@ export interface SystemNotification {
   systemUserId: number | null;
   createdBySystemUserId: number | null;
   moduleId: number | null;
+  actionType: string | null;
+  entityId: number | null;
+  entityLabel: string | null;
   createdAt: string;
   isRead: boolean;
 }

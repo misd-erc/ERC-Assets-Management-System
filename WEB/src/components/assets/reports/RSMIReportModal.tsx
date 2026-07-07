@@ -409,8 +409,6 @@ const RSMISignatoryModal: React.FC<RSMISignatoryModalProps> = ({ isOpen, onClose
         approvedBy: 'Approved by',
     };
 
-    const allFilled = Object.values(signatories).every(s => s.name.trim() !== '');
-
     return (
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
             <DialogContent className="!max-w-2xl !w-[95vw] max-h-[90vh] flex flex-col p-0 gap-0 bg-white border-slate-200 shadow-2xl overflow-hidden">
@@ -547,7 +545,6 @@ const RSMISignatoryModal: React.FC<RSMISignatoryModalProps> = ({ isOpen, onClose
                     <Button
                         className="bg-indigo-600 hover:bg-indigo-700 text-white"
                         onClick={() => onConfirm(signatories)}
-                        disabled={!allFilled}
                     >
                         {actionLabel === 'print' ? <Printer className="w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
                         {actionLabel === 'print' ? 'Print Document' : 'Save as PDF'}
@@ -570,7 +567,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
     const [categoryId, setCategoryId] = useState<string>('');
     const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 10;
+    const pageSize = 100;
 
     const [categories, setCategories] = useState<any[]>([]);
     const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
