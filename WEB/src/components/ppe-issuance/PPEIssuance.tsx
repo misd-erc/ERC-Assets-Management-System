@@ -3,13 +3,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { HardHat, RefreshCcw, ShieldCheck, Users, RotateCcw, Eye, Search, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
-import { createIssuance, getIssuanceStats, getNextParNumber, IssuanceListParams, listIssuances, renewIssuance } from '@/api/asset/issuanceApi';
-import { listSePpeItemsNoMovement, PtaItem } from '@/api/asset/ptaMovementApi';
+import { HardHat, RefreshCcw, ShieldCheck, RotateCcw, Eye, Search, ChevronLeft, ChevronRight, Printer, PackageCheck, Pencil, Trash2 } from 'lucide-react';
+import {
+  createIssuance,
+  deleteIssuanceGroup,
+  getIssuanceStats,
+  getNextParNumber,
+  IssuanceListParams,
+  listIssuances,
+  renewIssuance,
+  updateIssuanceGroup,
+  UpdateIssuanceGroupPayload,
+} from '@/api/asset/issuanceApi';
+import { getSePpeNoMovementCount, listSePpeItemsNoMovement, PtaItem } from '@/api/asset/ptaMovementApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { getOffices } from '@/api/office-management/officeApi';
 import { getDivisions } from '@/api/office-management/divisionApi';
@@ -19,6 +30,7 @@ import { VwOffice, VwDivision } from '@/types/office';
 import { toast } from 'sonner';
 import { PPEIssuanceForm } from './PPEIssuanceForm';
 import { PPEIssuanceRenewForm } from './PPEIssuanceRenewForm';
+import { PPEIssuanceEditForm } from './PPEIssuanceEditForm';
 import { PARGenerator } from '@/components/assets/reports/PARGenerator';
 import { ICSGenerator } from '@/components/assets/reports/ICSGenerator';
 
@@ -65,7 +77,9 @@ const defaultItemState = (): IssuanceItemFormState => ({
 });
 
 export function PPEIssuance() {
-  const [stats, setStats] = useState<IssuanceStats>({ totalActive: 0, totalNew: 0, totalRenew: 0 });
+  const [stats, setStats] = useState<IssuanceStats>({ ppeActive: 0, seActive: 0, ppeRenew: 0, seRenew: 0 });
+  const [onStockPPECount, setOnStockPPECount] = useState(0);
+  const [onStockSECount, setOnStockSECount] = useState(0);
   const [records, setRecords] = useState<IssuanceRecord[]>([]);
   const [sePpeItems, setSePpeItems] = useState<PtaItem[]>([]);
   const [employees, setEmployees] = useState<NormalizedEmployee[]>([]);
@@ -85,8 +99,12 @@ export function PPEIssuance() {
   const [saving, setSaving] = useState(false);
   const [detailRecords, setDetailRecords] = useState<IssuanceRecord[] | null>(null);
   const [detailSignatureDate, setDetailSignatureDate] = useState(new Date().toISOString().split('T')[0]);
+  const [editingGroup, setEditingGroup] = useState<IssuanceRecord[] | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState<IssuanceRecord[] | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Filters & pagination
+  const [activeGroupTab, setActiveGroupTab] = useState<'ppe' | 'se'>('ppe');
   const [searchEmployee, setSearchEmployee] = useState('');
   const [parIcsFilter, setParIcsFilter] = useState('');
   const [pageNumber, setPageNumber] = useState(1);
@@ -102,10 +120,11 @@ export function PPEIssuance() {
     refreshData();
     fetchEmployees();
     fetchOfficesAndDivisions();
+    fetchOnStockCounts();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-fetch whenever filters, page number, or page size change (skip first mount)
+  // Re-fetch whenever the active group tab, filters, page number, or page size change (skip first mount)
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -113,12 +132,20 @@ export function PPEIssuance() {
     }
     fetchIssuanceData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchEmployee, parIcsFilter, pageNumber, pageSize]);
+  }, [activeGroupTab, searchEmployee, parIcsFilter, pageNumber, pageSize]);
+
+  // Switching tabs re-fetches that group's own page from the server, instead of
+  // client-side filtering whatever rows happened to already be loaded for the other group.
+  const handleTabChange = (value: string) => {
+    setActiveGroupTab(value as 'ppe' | 'se');
+    setPageNumber(1);
+  };
 
   const fetchIssuanceData = async (overrides?: Partial<IssuanceListParams>) => {
     setLoading(true);
     try {
       const result = await listIssuances({
+        group: activeGroupTab === 'ppe' ? 'PPE' : 'SE',
         searchEmployee: searchEmployee || undefined,
         parIcsFilter: parIcsFilter || undefined,
         pageNumber,
@@ -141,7 +168,7 @@ export function PPEIssuance() {
     try {
       const [statValues, result] = await Promise.all([
         getIssuanceStats(),
-        listIssuances({ pageNumber: 1, pageSize }),
+        listIssuances({ group: activeGroupTab === 'ppe' ? 'PPE' : 'SE', pageNumber: 1, pageSize }),
       ]);
       setStats(statValues);
       setRecords(result.items);
@@ -181,18 +208,57 @@ export function PPEIssuance() {
     setPageNumber(1);
   };
 
-  // All records from the API are already filtered (status NEW/RENEW, isCurrent=true)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const filteredActive = useMemo(() => records, [records]);
-  const filteredPPE = useMemo(() => records.filter((r) => r.itemGroup === 'PPE'), [records]);
-  const filteredSE = useMemo(() => records.filter((r) => r.itemGroup === 'SE'), [records]);
-
-  // Unique PAR/ICS groups (for tab count display)
-  const ppeParIcsCount = useMemo(() => new Set(filteredPPE.map((r) => r.parIcsNumber)).size, [filteredPPE]);
-  const seParIcsCount = useMemo(() => new Set(filteredSE.map((r) => r.parIcsNumber)).size, [filteredSE]);
-
   const handleViewParIcs = (parIcsNumber: string, source: IssuanceRecord[]) => {
     setDetailRecords(source.filter((r) => r.parIcsNumber === parIcsNumber));
+  };
+
+  const handleEditParIcs = (parIcsNumber: string, source: IssuanceRecord[]) => {
+    setEditingGroup(source.filter((r) => r.parIcsNumber === parIcsNumber));
+  };
+
+  const handleUpdateGroup = async (updates: UpdateIssuanceGroupPayload) => {
+    if (!editingGroup) return;
+    setSaving(true);
+    try {
+      const ok = await updateIssuanceGroup(editingGroup, updates);
+      if (!ok) {
+        toast.error('Unable to update issuance');
+        return;
+      }
+      toast.success('Issuance updated');
+      setEditingGroup(null);
+      refreshData();
+    } catch (error) {
+      console.error('Failed to update issuance', error);
+      toast.error('Unable to update issuance');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteParIcs = (parIcsNumber: string, source: IssuanceRecord[]) => {
+    setDeletingGroup(source.filter((r) => r.parIcsNumber === parIcsNumber));
+  };
+
+  const confirmDeleteGroup = async () => {
+    if (!deletingGroup) return;
+    setDeleting(true);
+    try {
+      const ok = await deleteIssuanceGroup(deletingGroup);
+      if (!ok) {
+        toast.error('Unable to delete issuance');
+        return;
+      }
+      toast.success('Issuance deleted');
+      setDeletingGroup(null);
+      refreshData();
+      fetchOnStockCounts();
+    } catch (error) {
+      console.error('Failed to delete issuance', error);
+      toast.error('Unable to delete issuance');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   // ptaIds that already have an active current movement — cannot be re-issued as NEW
@@ -260,6 +326,20 @@ export function PPEIssuance() {
       setDivisions(divisionsData);
     } catch (error) {
       console.error('Failed to load offices/divisions', error);
+    }
+  }
+
+  // Items not yet issued (no current movement) — tells the user how much stock is available to issue
+  async function fetchOnStockCounts() {
+    try {
+      const [ppeCount, seCount] = await Promise.all([
+        getSePpeNoMovementCount('PPE'),
+        getSePpeNoMovementCount('SE'),
+      ]);
+      setOnStockPPECount(ppeCount);
+      setOnStockSECount(seCount);
+    } catch (error) {
+      console.error('Failed to load on-stock counts', error);
     }
   }
 
@@ -386,6 +466,7 @@ export function PPEIssuance() {
       setItems([defaultItemState()]);
       setPageNumber(1);
       refreshData();
+      fetchOnStockCounts();
     } catch (error) {
       console.error('Failed to create issuance', error);
       toast.error('Unable to save issuance');
@@ -465,12 +546,13 @@ export function PPEIssuance() {
         </div>
       </div>
 
+      {/* PPE stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <Card>
           <CardContent className="p-3 sm:p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total Active Issued Items</p>
-              <p className="text-2xl font-semibold">{loading ? '...' : stats.totalActive}</p>
+              <p className="text-sm text-muted-foreground">PPE Active Issued Items</p>
+              <p className="text-2xl font-semibold">{loading ? '...' : stats.ppeActive}</p>
             </div>
             <ShieldCheck className="w-8 h-8 text-blue-600" />
           </CardContent>
@@ -478,19 +560,50 @@ export function PPEIssuance() {
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total NEW Issuances</p>
-              <p className="text-2xl font-semibold">{loading ? '...' : stats.totalNew}</p>
+              <p className="text-sm text-muted-foreground">PPE RENEW Issuances</p>
+              <p className="text-2xl font-semibold">{loading ? '...' : stats.ppeRenew}</p>
             </div>
-            <Users className="w-8 h-8 text-emerald-600" />
+            <RefreshCcw className="w-8 h-8 text-blue-600" />
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">Total RENEW Issuances</p>
-              <p className="text-2xl font-semibold">{loading ? '...' : stats.totalRenew}</p>
+              <p className="text-sm text-muted-foreground">On-Stock PPE</p>
+              <p className="text-2xl font-semibold">{onStockPPECount}</p>
             </div>
-            <RefreshCcw className="w-8 h-8 text-amber-600" />
+            <PackageCheck className="w-8 h-8 text-indigo-600" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* SE stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <Card>
+          <CardContent className="p-3 sm:p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">SE Active Issued Items</p>
+              <p className="text-2xl font-semibold">{loading ? '...' : stats.seActive}</p>
+            </div>
+            <ShieldCheck className="w-8 h-8 text-emerald-600" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">SE RENEW Issuances</p>
+              <p className="text-2xl font-semibold">{loading ? '...' : stats.seRenew}</p>
+            </div>
+            <RefreshCcw className="w-8 h-8 text-emerald-600" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">On-Stock SE</p>
+              <p className="text-2xl font-semibold">{onStockSECount}</p>
+            </div>
+            <PackageCheck className="w-8 h-8 text-teal-600" />
           </CardContent>
         </Card>
       </div>
@@ -530,17 +643,29 @@ export function PPEIssuance() {
             </Button>
           </div>
 
-          <Tabs defaultValue="ppe">
+          <Tabs value={activeGroupTab} onValueChange={handleTabChange}>
             <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="ppe">PPE ({loading ? '...' : ppeParIcsCount} PAR)</TabsTrigger>
-              <TabsTrigger value="se">SE ({loading ? '...' : seParIcsCount} ICS)</TabsTrigger>
+              <TabsTrigger value="ppe">PPE ({loading ? '...' : stats.ppeActive} PAR)</TabsTrigger>
+              <TabsTrigger value="se">SE ({loading ? '...' : stats.seActive} ICS)</TabsTrigger>
             </TabsList>
 
             <TabsContent value="ppe" className="pt-4">
-              <IssuanceTable records={filteredPPE} loading={loading} onView={(parIcsNumber) => handleViewParIcs(parIcsNumber, filteredPPE)} />
+              <IssuanceTable
+                records={records}
+                loading={loading}
+                onView={(parIcsNumber) => handleViewParIcs(parIcsNumber, records)}
+                onEdit={(parIcsNumber) => handleEditParIcs(parIcsNumber, records)}
+                onDelete={(parIcsNumber) => handleDeleteParIcs(parIcsNumber, records)}
+              />
             </TabsContent>
             <TabsContent value="se" className="pt-4">
-              <IssuanceTable records={filteredSE} loading={loading} onView={(parIcsNumber) => handleViewParIcs(parIcsNumber, filteredSE)} />
+              <IssuanceTable
+                records={records}
+                loading={loading}
+                onView={(parIcsNumber) => handleViewParIcs(parIcsNumber, records)}
+                onEdit={(parIcsNumber) => handleEditParIcs(parIcsNumber, records)}
+                onDelete={(parIcsNumber) => handleDeleteParIcs(parIcsNumber, records)}
+              />
             </TabsContent>
           </Tabs>
 
@@ -709,6 +834,40 @@ export function PPEIssuance() {
           />
         ) : null}
       </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingGroup} onOpenChange={(open) => { if (!open) setEditingGroup(null); }}>
+        {editingGroup ? (
+          <PPEIssuanceEditForm
+            group={editingGroup}
+            employees={employees}
+            offices={offices}
+            divisions={divisions}
+            saving={saving}
+            onSubmit={handleUpdateGroup}
+            onClose={() => setEditingGroup(null)}
+          />
+        ) : null}
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingGroup} onOpenChange={(open) => { if (!open) setDeletingGroup(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Issuance — {deletingGroup?.[0]?.parIcsNumber}</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove {deletingGroup?.length ?? 0} item{deletingGroup && deletingGroup.length !== 1 ? 's' : ''} under this PAR/ICS number.
+              The item{deletingGroup && deletingGroup.length !== 1 ? 's' : ''} will become available for a new issuance again. This action cannot be undone from this screen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteGroup} disabled={deleting} className="bg-red-600 hover:bg-red-700">
+              {deleting ? 'Deleting…' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -717,10 +876,14 @@ function IssuanceTable({
   records,
   loading,
   onView,
+  onEdit,
+  onDelete,
 }: {
   records: IssuanceRecord[];
   loading: boolean;
   onView: (parIcsNumber: string) => void;
+  onEdit: (parIcsNumber: string) => void;
+  onDelete: (parIcsNumber: string) => void;
 }) {
   // Group by parIcsNumber, preserving order of first appearance
   // Must be called before any early returns (Rules of Hooks)
@@ -753,7 +916,7 @@ function IssuanceTable({
           <TableHead>Type</TableHead>
           <TableHead>Issued Date</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead className="w-10"></TableHead>
+          <TableHead className="w-28"></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -792,9 +955,17 @@ function IssuanceTable({
                 </Badge>
               </TableCell>
               <TableCell>
-                <Button variant="ghost" size="icon" onClick={() => onView(first.parIcsNumber)}>
-                  <Eye className="w-4 h-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => onView(first.parIcsNumber)} title="View">
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => onEdit(first.parIcsNumber)} title="Edit">
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => onDelete(first.parIcsNumber)} title="Delete" className="text-destructive hover:text-destructive">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           );

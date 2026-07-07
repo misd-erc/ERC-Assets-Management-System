@@ -2,8 +2,11 @@ import axiosInstance from '@/lib/axios';
 import { IssuanceRecord, IssuanceStats } from '@/types/issuance';
 import { getAuthParams } from '@/utils/auth';
 import {
+  deleteMovement,
   editMovement,
+  editMovementBulk,
   getNextParNumber as fetchNextParNumber,
+  MovementItemPayload,
 } from './ptaMovementApi';
 
 /* Re-export so existing imports keep working */
@@ -161,13 +164,38 @@ const fetchIssuanceList = async (params: IssuanceListParams = {}): Promise<Issua
 /*  Public API functions                                                        */
 /* -------------------------------------------------------------------------- */
 
+const countGroups = (items: IssuanceRecord[]) => new Set(items.map((r) => r.parIcsNumber)).size;
+
 export const getIssuanceStats = async (): Promise<IssuanceStats> => {
-  // Fetch a lightweight count — pageSize=1 just to get totalCount; or fetch all
-  const result = await fetchIssuanceList({ pageSize: 1000 });
-  const totalActive = result.totalCount;
-  const totalNew = result.items.filter((r) => r.parIcsNumber?.toUpperCase().startsWith('PAR')).length;
-  const totalRenew = result.items.filter((r) => r.parIcsNumber?.toUpperCase().startsWith('ICS')).length;
-  return { totalActive, totalNew, totalRenew };
+  const emptyStats: IssuanceStats = { ppeActive: 0, seActive: 0, ppeRenew: 0, seRenew: 0 };
+
+  // Fetch PPE and SE separately using the backend's own group filter (matches the
+  // authoritative PTA.Group field) instead of pulling everything unfiltered and bucketing
+  // by itemGroup client-side — a movement whose linked PTA item didn't resolve falls back
+  // to itemGroup 'PPE' (see mapIssuanceItem), which silently inflates PPE counts with
+  // orphaned records. Group-filtered queries correctly exclude those instead of guessing.
+  const [ppeProbe, seProbe] = await Promise.all([
+    fetchIssuanceList({ group: 'PPE', pageSize: 1 }),
+    fetchIssuanceList({ group: 'SE', pageSize: 1 }),
+  ]);
+  if (ppeProbe.totalCount === 0 && seProbe.totalCount === 0) return emptyStats;
+
+  const [ppeResult, seResult] = await Promise.all([
+    ppeProbe.totalCount > 0 ? fetchIssuanceList({ group: 'PPE', pageSize: ppeProbe.totalCount }) : Promise.resolve({ items: [] as IssuanceRecord[] }),
+    seProbe.totalCount > 0 ? fetchIssuanceList({ group: 'SE', pageSize: seProbe.totalCount }) : Promise.resolve({ items: [] as IssuanceRecord[] }),
+  ]);
+  const ppeItems = ppeResult.items;
+  const seItems = seResult.items;
+
+  return {
+    // Count distinct PAR/ICS groups, not raw item rows — one PAR/ICS can carry several items.
+    ppeActive: countGroups(ppeItems),
+    seActive: countGroups(seItems),
+    // Classify by actual issuance type (NEW vs RENEW), not by PAR/ICS number prefix —
+    // that prefix reflects item group (PPE vs SE), not issuance type.
+    ppeRenew: countGroups(ppeItems.filter((r) => r.issuanceType === 'RENEW')),
+    seRenew: countGroups(seItems.filter((r) => r.issuanceType === 'RENEW')),
+  };
 };
 
 export const listIssuances = async (params: IssuanceListParams = {}): Promise<IssuanceListResult> => {
@@ -232,4 +260,52 @@ export const renewIssuance = async (
     actionBySystemUserId: systemUserId,
     sessionKey,
   });
+};
+
+export interface UpdateIssuanceGroupPayload {
+  parIcsNumber: string;
+  employeeId: number;
+  subEmployeeId?: number;
+  actualOfficeId: number;
+  actualDivisionId: number;
+  issuedDate: string;
+  /** Remarks/notes shown as "notes" in IssuanceRecord — stored server-side as the movement's Condition/Remarks field. */
+  notes?: string;
+}
+
+/**
+ * Update the shared fields (PAR/ICS number, employee, office, division, date, notes) across
+ * every movement record under one PAR/ICS group in a single bulk request.
+ * Each record keeps its own ptaId / issuance type; the new PAR/ICS number is applied to all of them.
+ */
+export const updateIssuanceGroup = async (
+  records: IssuanceRecord[],
+  updates: UpdateIssuanceGroupPayload
+): Promise<boolean> => {
+  const dateAssigned = updates.issuedDate ? new Date(updates.issuedDate).toISOString() : new Date().toISOString();
+  const movements: MovementItemPayload[] = records.map((r) => ({
+    id: r.id,
+    ptaId: r.ptaId,
+    dateAssigned,
+    ptrItrNumber: r.ptrItrNumber || '',
+    parIcsNumber: updates.parIcsNumber,
+    rrppeRrspNumber: r.rrppeRrspNumber || '',
+    status: r.issuanceType,
+    plantillaEmployeeId: updates.employeeId,
+    nonPlantillaEmployeeId: updates.subEmployeeId || 0,
+    condition: updates.notes || 'Working',
+    actualOfficeId: updates.actualOfficeId,
+    actualDivisionId: updates.actualDivisionId,
+    isActive: true,
+    isCurrent: true,
+  }));
+  return editMovementBulk(movements);
+};
+
+/**
+ * Soft-delete every movement record under one PAR/ICS group.
+ */
+export const deleteIssuanceGroup = async (records: IssuanceRecord[]): Promise<boolean> => {
+  const results = await Promise.all(records.map((r) => deleteMovement(r.id)));
+  return results.every(Boolean);
 };

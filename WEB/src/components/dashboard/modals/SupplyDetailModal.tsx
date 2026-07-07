@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PackageOpen, ChevronLeft, CheckCircle, AlertTriangle } from 'lucide-react';
+import { PackageOpen, ChevronLeft, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { DashboardSupplyStats, SupplyStockHealthItem } from '@/api/dashboard/dashboardApi';
 import { useState } from 'react';
 
@@ -10,7 +10,7 @@ interface Props {
   formatCurrency: (amount: number) => string;
 }
 
-type ViewMode = 'summary' | 'sufficient' | 'low-stock';
+type ViewMode = 'summary' | 'sufficient' | 'low-stock' | 'out-of-stock';
 
 export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>('summary');
@@ -20,7 +20,8 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
   const breakdown = supplyStats?.categoryBreakdown || [];
   const stockHealthItems = supplyStats?.stockHealthItems || [];
   const sufficientCount = supplyStats?.sufficientStockCount || 0;
-  const lowStockCount = supplyStats?.lowStockCount || 0;
+  const outOfStockCount = stockHealthItems.filter(i => i.stockOnHand === 0).length;
+  const lowStockCount = stockHealthItems.filter(i => i.isLowStock && i.stockOnHand > 0).length;
 
   const handleClose = () => {
     setViewMode('summary');
@@ -32,7 +33,9 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
       case 'sufficient':
         return stockHealthItems.filter(i => !i.isLowStock);
       case 'low-stock':
-        return stockHealthItems.filter(i => i.isLowStock);
+        return stockHealthItems.filter(i => i.isLowStock && i.stockOnHand > 0);
+      case 'out-of-stock':
+        return stockHealthItems.filter(i => i.stockOnHand === 0);
       default:
         return [];
     }
@@ -44,12 +47,26 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
         return `Sufficient Stock (${sufficientCount})`;
       case 'low-stock':
         return `Low Stock (${lowStockCount})`;
+      case 'out-of-stock':
+        return `Out of Stock (${outOfStockCount})`;
       default:
         return '';
     }
   };
 
   const filteredItems = getFilteredItems();
+
+  const getViewAccent = () => {
+    switch (viewMode) {
+      case 'low-stock':
+        return { header: 'bg-amber-600', footer: 'border-amber-300 bg-amber-50' };
+      case 'out-of-stock':
+        return { header: 'bg-red-600', footer: 'border-red-300 bg-red-50' };
+      default:
+        return { header: 'bg-green-700', footer: 'border-green-300 bg-green-50' };
+    }
+  };
+  const viewAccent = getViewAccent();
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -84,7 +101,7 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
               <div className="bg-slate-100 px-4 py-2.5 border-b">
                 <p className="text-sm font-semibold text-slate-700">Stock Health</p>
               </div>
-              <div className="grid grid-cols-2 divide-x">
+              <div className="grid grid-cols-3 divide-x">
                 <div
                   className="p-4 cursor-pointer hover:bg-green-50 transition-colors"
                   onClick={() => setViewMode('sufficient')}
@@ -100,17 +117,31 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
                   <p className="text-xs text-slate-500 mt-1">Click to view items</p>
                 </div>
                 <div
-                  className="p-4 cursor-pointer hover:bg-red-50 transition-colors"
+                  className="p-4 cursor-pointer hover:bg-amber-50 transition-colors"
                   onClick={() => setViewMode('low-stock')}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setViewMode('low-stock'); } }}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <AlertTriangle className="w-4 h-4 text-amber-500" />
                     <span className="text-sm font-medium text-slate-700">Low Stock</span>
                   </div>
-                  <p className="text-3xl font-bold text-red-600">{lowStockCount}</p>
+                  <p className="text-3xl font-bold text-amber-600">{lowStockCount}</p>
+                  <p className="text-xs text-slate-500 mt-1">Click to view items</p>
+                </div>
+                <div
+                  className="p-4 cursor-pointer hover:bg-red-50 transition-colors"
+                  onClick={() => setViewMode('out-of-stock')}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setViewMode('out-of-stock'); } }}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <XCircle className="w-4 h-4 text-red-500" />
+                    <span className="text-sm font-medium text-slate-700">Out of Stock</span>
+                  </div>
+                  <p className="text-3xl font-bold text-red-600">{outOfStockCount}</p>
                   <p className="text-xs text-slate-500 mt-1">Click to view items</p>
                 </div>
               </div>
@@ -165,7 +196,7 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
             <div className="border rounded-lg overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className={`text-white ${viewMode === 'low-stock' ? 'bg-red-600' : 'bg-green-700'}`}>
+                  <tr className={`text-white ${viewAccent.header}`}>
                     <th className="text-left p-2.5 font-semibold w-10">#</th>
                     <th className="text-left p-2.5 font-semibold">Item Description</th>
                     <th className="text-left p-2.5 font-semibold w-36">Category</th>
@@ -193,7 +224,7 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
                 </tbody>
                 {filteredItems.length > 0 && (
                   <tfoot>
-                    <tr className={`border-t-2 font-bold ${viewMode === 'low-stock' ? 'border-red-300 bg-red-50' : 'border-green-300 bg-green-50'}`}>
+                    <tr className={`border-t-2 font-bold ${viewAccent.footer}`}>
                       <td className="p-2.5" colSpan={3}>Total</td>
                       <td className="p-2.5 text-right">{filteredItems.reduce((s, i) => s + i.stockOnHand, 0).toLocaleString()}</td>
                       <td className="p-2.5 text-right">{formatCurrency(filteredItems.reduce((s, i) => s + i.totalValue, 0))}</td>
