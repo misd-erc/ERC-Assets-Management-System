@@ -285,11 +285,46 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
             try
             {
                 TblSupplyItem? supplyItemModel = await _getTools.Supply.GetTblSupplyItemAsync(id, context);
-                await context.TblSupplyItems.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+                if (supplyItemModel == null)
+                    return false;
+
+                await context.TblSupplyItems.Where(x => x.Id == id).ExecuteDeleteAsync();
                 await AuditTrailTool.LogActivityAsync(_options, $"Deleted a Supply Item", actionBy: actionBySystemUserId,
                     linkedAuditTrailId: AuditTrailTool.TrackChanges(context, supplyItemModel, null, nameof(TblSupplyItem), actionBySystemUserId, "Delete"));
 
                 return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyEditTools));
+                throw;
+            }
+        }
+
+        public async Task<int> DeleteTblSupplyItemsAsync(List<long> ids, long actionBySystemUserId, PortalDbContext context)
+        {
+            ids = ids?.Where(x => x > 0).Distinct().ToList() ?? new List<long>();
+            if (ids.Count == 0)
+                return 0;
+
+            try
+            {
+                var supplyItems = await context.TblSupplyItems.AsNoTracking()
+                    .Where(x => ids.Contains(x.Id))
+                    .ToListAsync();
+
+                if (supplyItems.Count == 0)
+                    return 0;
+
+                foreach (var item in supplyItems)
+                {
+                    AuditTrailTool.TrackChanges(context, item, null, nameof(TblSupplyItem), actionBySystemUserId, "Delete");
+                }
+
+                int deleted = await context.TblSupplyItems.Where(x => ids.Contains(x.Id)).ExecuteDeleteAsync();
+                await AuditTrailTool.LogActivityAsync(_options, $"Deleted {deleted} Supply Item(s)", actionBy: actionBySystemUserId);
+
+                return deleted;
             }
             catch (DbUpdateException ex)
             {
@@ -560,4 +595,3 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
         }
     }
 }
-

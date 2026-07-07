@@ -412,7 +412,7 @@ export function PropertyCardReportModal({ isOpen, onClose }: PropertyCardReportM
             const result = await ppeApi.list({
                 GroupName: 'PPE',
                 PageNumber: 1,
-                PageSize: 100,
+                PageSize: 10000,
                 SearchString: search || undefined,
                 ActionBySystemUserId: String(systemUserId),
                 SessionKey: sessionKey,

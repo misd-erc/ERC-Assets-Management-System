@@ -28,7 +28,7 @@ export const useRolesStore = create<RolesStore>((set, get) => ({
   error: null,
   totalCount: 0,
   currentPage: 1,
-  pageSize: 10,
+  pageSize: 100,
 
   fetchRoles: async (params: PaginationGenericQueryParams) => {
     set({ loading: true, error: null });
@@ -89,6 +89,5 @@ export const useRolesStore = create<RolesStore>((set, get) => ({
   setError: (error: string | null) => set({ error }),
   clearError: () => set({ error: null }),
 }));
-
 
 

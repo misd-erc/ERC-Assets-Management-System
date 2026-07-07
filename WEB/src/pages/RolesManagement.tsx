@@ -30,7 +30,7 @@ export function RolesManagement() {
       console.log('[RolesManagement] Fetching roles with systemUserId:', systemUserId);
       fetchRoles({
         pageNumber: 1,
-        pageSize: 10,
+        pageSize: 100,
         actionBySystemUserId: systemUserId,
       });
     } else {
@@ -40,7 +40,7 @@ export function RolesManagement() {
         console.log('[RolesManagement] Found systemUserId in localStorage:', storedSystemUserId);
         fetchRoles({
           pageNumber: 1,
-          pageSize: 10,
+          pageSize: 100,
           actionBySystemUserId: storedSystemUserId,
         });
       } else {
@@ -189,7 +189,7 @@ export function RolesManagement() {
       // Refresh the roles list after deletion
       fetchRoles({
         pageNumber: 1,
-        pageSize: 10,
+        pageSize: 100,
         actionBySystemUserId: userId,
       });
       toast.success('Role deleted successfully');
@@ -298,7 +298,6 @@ export function RolesManagement() {
     </div>
   );
 }
-
 
 
 

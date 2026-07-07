@@ -5,6 +5,8 @@ import { SupplyGroupedItemTable } from './SupplyGroupedItemTable';
 import { SupplyGroupItemsModal } from './SupplyGroupItemsModal';
 import { VwSupplyGroupedItem } from '@/types';
 
+const PAGE_SIZE = 100;
+
 export const SupplyGroupedTabContent = () => {
   const { vwSupplyGroups, totalGroups, loading, fetchSupplyGroupedItems } = useSupplyItem();
   const [selectedGroup, setSelectedGroup] = useState<VwSupplyGroupedItem | null>(null);
@@ -19,7 +21,7 @@ export const SupplyGroupedTabContent = () => {
   useEffect(() => {
     fetchSupplyGroupedItems(
       params.page,
-      10,
+      PAGE_SIZE,
       params.search,
       params.status === 'all' ? undefined : params.status
     );

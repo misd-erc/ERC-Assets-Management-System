@@ -39,7 +39,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
   searchQuery: '',
   totalCount: 0,
   page: 1,
-  pageSize: 10,
+  pageSize: 100,
   status: 'all',
 
   setDeliveryRecords: (deliveryRecord) => set({ vwDeliveryRecords: deliveryRecord }),

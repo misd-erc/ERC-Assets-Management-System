@@ -184,7 +184,7 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
     const [activeSearchQuery, setActiveSearchQuery] = useState('');
     const [hasSearched, setHasSearched] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 10;
+    const pageSize = 100;
 
     const [selectedGroup, setSelectedGroup] = useState<{ stockNumber: string, description: string, unit: string, reorderPoint: string | number } | null>(null);
     const [previewData, setPreviewData] = useState<SupplyStockCardItem[]>([]);
@@ -242,7 +242,7 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
             await fetchStockCardItems(code, description, 1);
             const items = useStockCardStore.getState().stockCardItems;
 
-            useStockCardStore.setState({ pageSize: 10 });
+            useStockCardStore.setState({ pageSize: 100 });
             useStockCardStore.getState().reset();
 
             setPreviewData(items);

@@ -44,7 +44,7 @@ interface Props {
   onDelete: (id: number, name: string) => void;
 }
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 100;
 
 export const PositionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
   const { searchQuery } = usePosition();

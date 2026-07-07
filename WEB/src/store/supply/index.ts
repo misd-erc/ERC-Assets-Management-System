@@ -50,6 +50,7 @@ interface SupplyItemState {
   addSupplyItem: (supply: Partial<SupplyItem>) => Promise<void>;
   updateSupplyItem: (id: number, updates: Partial<SupplyItem>) => Promise<void>;
   deleteSupplyItem: (id: number) => Promise<void>;
+  deleteSupplyItems: (ids: number[]) => Promise<void>;
 }
 
 export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
@@ -79,7 +80,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
     }
   },
 
-  fetchSupplyGroupedItemLists: async (id, page = 1, pageSize = 10, search = '', categoryId, status, storageLocationId, vendorId) => {
+  fetchSupplyGroupedItemLists: async (id, page = 1, pageSize = 10000, search = '', categoryId, status, storageLocationId, vendorId) => {
     set({ loading: true, vwSupplyGroupItems: [], totalGroupItems: 0 });
     try {
       const result = await getVwSupplyGroupedItemLists(id, page, pageSize, search, categoryId, status, storageLocationId, vendorId);
@@ -91,7 +92,7 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
     }
   },
 
-  fetchSupplyItems: async (page = 1, pageSize = 10, search = '', categoryId, status, storageLocationId, vendorId) => {
+  fetchSupplyItems: async (page = 1, pageSize = 10000, search = '', categoryId, status, storageLocationId, vendorId) => {
     set({ loading: true });
     try {
       const result = await getSupplyItems(page, pageSize, search, categoryId, status, storageLocationId, vendorId);
@@ -105,14 +106,14 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
 
   fetchSupplySummary: async () => {
     try {
-      const result = await getVwSupplyGroupedItems(1, 1000, '', undefined, undefined);
+      const result = await getVwSupplyGroupedItems(1, 10000, '', undefined, undefined);
       set({ vwSuppliesSummary: result.items, totalSupplies: result.totalCount });
     } catch {
       toast.error('Failed to load supply summary');
     }
   },
 
-  fetchSupplyGroupedItems: async (page = 1, pageSize = 10, search = '', status, categoryId, storageLocationId, vendorId) => {
+  fetchSupplyGroupedItems: async (page = 1, pageSize = 10000, search = '', status, categoryId, storageLocationId, vendorId) => {
     set({ loading: true });
     try {
       const result = await getVwSupplyGroupedItems(page, pageSize, search, status, categoryId, storageLocationId, vendorId);
@@ -202,6 +203,26 @@ export const useSupplyItemStore = create<SupplyItemState>((set, get) => ({
       toast.success('Supply Item deleted');
     } catch {
       toast.error('Failed to delete supply Item');
+    }
+  },
+
+  deleteSupplyItems: async (ids) => {
+    const uniqueIds = [...new Set(ids)].filter(Boolean);
+    if (uniqueIds.length === 0) return;
+
+    try {
+      const { systemUserId, sessionKey } = getAuthParams();
+      await axiosInstance.post('/Supply/item/delete-batch', {
+        Ids: uniqueIds,
+        ActionBySystemUserId: systemUserId,
+        SessionKey: sessionKey,
+      });
+      await get().fetchSupplyItems();
+      await get().fetchSupplySummary();
+      toast.success(`${uniqueIds.length} Supply Item(s) deleted`);
+    } catch {
+      toast.error('Failed to delete supply Items');
+      throw new Error('Failed to delete supply Items');
     }
   },
 }));
@@ -416,7 +437,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
   loading: false,
   searchQuery: '',
   page: 1,
-  pageSize: 10,
+  pageSize: 100,
   status: 'all',
   vendorId: undefined,
   officeId: undefined,

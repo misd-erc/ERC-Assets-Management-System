@@ -29,7 +29,7 @@ export interface GetUsersParams {
 
 export const getUsers = async ({
   page = 1,
-  pageSize = 10,
+  pageSize = 10000,
   searchString,
   statusFilter,
   roleFilter,
@@ -91,7 +91,7 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
   // return response.data;
 
   // Mock implementation
-  const response = await getUsers({ page: 1, pageSize: 10 });
+  const response = await getUsers({ page: 1, pageSize: 100 });
   const user = response.data.items.find(u => u.id === parseInt(id, 10));
   if (!user) throw new Error('User not found');
   return { ...user, ...updates };
@@ -132,7 +132,7 @@ export const validateUserSession = async (): Promise<UserDetails> => {
  * @param pageSize - Number of items per page (default: 10)
  * @returns Promise<AuditTrailResponse>
  */
-export const getUserAuditTrail = async (page: number = 1, pageSize: number = 10) => {
+export const getUserAuditTrail = async (page: number = 1, pageSize: number = 1000) => {
   // Get system user ID and session key from localStorage
   const systemUserId = secureStorage.getItem('systemUserId') || '';
   const sessionKey = secureStorage.getItem('sessionToken') || '';
@@ -331,9 +331,6 @@ export const batchUpdateEmployees = async (employees: EmployeeUpdatePayload[]): 
 
   return response.data;
 };
-
-
-
 
 
 

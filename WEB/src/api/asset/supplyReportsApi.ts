@@ -21,7 +21,7 @@ export const supplyReportsApi = {
         startDate: string,
         endDate: string,
         pageNumber: number = 1,
-        pageSize: number = 10
+        pageSize: number = 100
     ): Promise<PaginatedResponse<FilteredRMSIItemGroupResponseModel>> => {
 
         // 1. Grab the auth credentials just like in issuanceApi

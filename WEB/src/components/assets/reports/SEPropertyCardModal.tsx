@@ -422,7 +422,7 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
             const result = await seApi.list({
                 GroupName: 'SE',
                 PageNumber: 1,
-                PageSize: 100,
+                PageSize: 10000,
                 SearchString: search || undefined,
                 ActionBySystemUserId: String(systemUserId),
                 SessionKey: sessionKey,

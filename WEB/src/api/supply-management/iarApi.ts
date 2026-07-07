@@ -19,7 +19,7 @@ interface ListResponse<T> {
 
 export const getSupplyIARs = async (
   pageNumber: number = 1,
-  pageSize: number = 10,
+  pageSize: number = 10000,
   search: string = '',
   status: string = 'all',
   vendorId?: number,

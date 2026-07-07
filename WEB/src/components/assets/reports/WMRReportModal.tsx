@@ -404,7 +404,7 @@ export const WMRReportModal = ({ isOpen, onClose }: WMRReportModalProps) => {
                 startDate: startDate || undefined,
                 endDate: endDate || undefined,
                 pageNumber: 1,
-                pageSize: 100,
+                pageSize: 10000,
             });
             setRecords(response.items);
             if (!response.items.some((item) => item.id === selectedRecordId)) {

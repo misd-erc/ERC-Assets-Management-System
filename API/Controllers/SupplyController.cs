@@ -2491,6 +2491,33 @@ namespace API.Controllers
             }
         }
 
+        [HttpPost("item/delete-batch")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteSupplyItems([FromBody] DeleteSupplyItemsQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            await using var transaction = await context.Database.BeginTransactionAsync();
+
+            try
+            {
+                int deleted = await _editTools.Supply.DeleteTblSupplyItemsAsync(model.Ids, model.ActionBySystemUserId, context);
+
+                if (deleted == 0)
+                    return Ok(ApiResponse<object>.OperationFailed("No Supply Items were deleted"));
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return Ok(ApiResponse<object>.Ok(new { Deleted = deleted }, $"{deleted} Supply Item(s) have been deleted"));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(SupplyController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         [HttpDelete("storage-location/delete/{supplyStorageLocationId}")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]
