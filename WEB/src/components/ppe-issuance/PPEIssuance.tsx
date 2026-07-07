@@ -77,7 +77,7 @@ const defaultItemState = (): IssuanceItemFormState => ({
 });
 
 export function PPEIssuance() {
-  const [stats, setStats] = useState<IssuanceStats>({ ppeActive: 0, seActive: 0, ppeNew: 0, seNew: 0, ppeRenew: 0, seRenew: 0 });
+  const [stats, setStats] = useState<IssuanceStats>({ ppeActive: 0, seActive: 0, ppeRenew: 0, seRenew: 0 });
   const [onStockPPECount, setOnStockPPECount] = useState(0);
   const [onStockSECount, setOnStockSECount] = useState(0);
   const [records, setRecords] = useState<IssuanceRecord[]>([]);
@@ -645,8 +645,8 @@ export function PPEIssuance() {
 
           <Tabs value={activeGroupTab} onValueChange={handleTabChange}>
             <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="ppe">PPE ({loading ? '...' : stats.ppeParIcsCount} PAR)</TabsTrigger>
-              <TabsTrigger value="se">SE ({loading ? '...' : stats.seParIcsCount} ICS)</TabsTrigger>
+              <TabsTrigger value="ppe">PPE ({loading ? '...' : stats.ppeActive} PAR)</TabsTrigger>
+              <TabsTrigger value="se">SE ({loading ? '...' : stats.seActive} ICS)</TabsTrigger>
             </TabsList>
 
             <TabsContent value="ppe" className="pt-4">

@@ -41,13 +41,14 @@ export interface IssuanceRecord {
 }
 
 export interface IssuanceStats {
+  /**
+   * Count of distinct PAR/ICS numbers (groups), not raw item rows — a single PAR/ICS can
+   * carry several items, so counting rows would overstate how many issuances actually exist.
+   * Used for both the "Active Issued Items" cards and the tab labels.
+   */
   ppeActive: number;
   seActive: number;
-  ppeNew: number;
-  seNew: number;
+  /** Distinct PAR/ICS groups whose latest movement is a RENEW. */
   ppeRenew: number;
   seRenew: number;
-  /** Count of distinct PAR/ICS numbers across the WHOLE dataset (not just the current page) — for tab labels. */
-  ppeParIcsCount: number;
-  seParIcsCount: number;
 }

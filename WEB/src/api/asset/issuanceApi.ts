@@ -164,32 +164,37 @@ const fetchIssuanceList = async (params: IssuanceListParams = {}): Promise<Issua
 /*  Public API functions                                                        */
 /* -------------------------------------------------------------------------- */
 
+const countGroups = (items: IssuanceRecord[]) => new Set(items.map((r) => r.parIcsNumber)).size;
+
 export const getIssuanceStats = async (): Promise<IssuanceStats> => {
-  const emptyStats: IssuanceStats = {
-    ppeActive: 0, seActive: 0, ppeNew: 0, seNew: 0, ppeRenew: 0, seRenew: 0, ppeParIcsCount: 0, seParIcsCount: 0,
-  };
+  const emptyStats: IssuanceStats = { ppeActive: 0, seActive: 0, ppeRenew: 0, seRenew: 0 };
 
-  // First probe totalCount cheaply, then fetch exactly that many rows so the
-  // breakdown below isn't silently truncated once totalCount grows past a hardcoded page size.
-  const countProbe = await fetchIssuanceList({ pageSize: 1 });
-  if (countProbe.totalCount === 0) return emptyStats;
+  // Fetch PPE and SE separately using the backend's own group filter (matches the
+  // authoritative PTA.Group field) instead of pulling everything unfiltered and bucketing
+  // by itemGroup client-side — a movement whose linked PTA item didn't resolve falls back
+  // to itemGroup 'PPE' (see mapIssuanceItem), which silently inflates PPE counts with
+  // orphaned records. Group-filtered queries correctly exclude those instead of guessing.
+  const [ppeProbe, seProbe] = await Promise.all([
+    fetchIssuanceList({ group: 'PPE', pageSize: 1 }),
+    fetchIssuanceList({ group: 'SE', pageSize: 1 }),
+  ]);
+  if (ppeProbe.totalCount === 0 && seProbe.totalCount === 0) return emptyStats;
 
-  const result = await fetchIssuanceList({ pageSize: countProbe.totalCount });
-  const ppeItems = result.items.filter((r) => r.itemGroup === 'PPE');
-  const seItems = result.items.filter((r) => r.itemGroup === 'SE');
+  const [ppeResult, seResult] = await Promise.all([
+    ppeProbe.totalCount > 0 ? fetchIssuanceList({ group: 'PPE', pageSize: ppeProbe.totalCount }) : Promise.resolve({ items: [] as IssuanceRecord[] }),
+    seProbe.totalCount > 0 ? fetchIssuanceList({ group: 'SE', pageSize: seProbe.totalCount }) : Promise.resolve({ items: [] as IssuanceRecord[] }),
+  ]);
+  const ppeItems = ppeResult.items;
+  const seItems = seResult.items;
 
   return {
-    ppeActive: ppeItems.length,
-    seActive: seItems.length,
+    // Count distinct PAR/ICS groups, not raw item rows — one PAR/ICS can carry several items.
+    ppeActive: countGroups(ppeItems),
+    seActive: countGroups(seItems),
     // Classify by actual issuance type (NEW vs RENEW), not by PAR/ICS number prefix —
     // that prefix reflects item group (PPE vs SE), not issuance type.
-    ppeNew: ppeItems.filter((r) => r.issuanceType === 'NEW').length,
-    seNew: seItems.filter((r) => r.issuanceType === 'NEW').length,
-    ppeRenew: ppeItems.filter((r) => r.issuanceType === 'RENEW').length,
-    seRenew: seItems.filter((r) => r.issuanceType === 'RENEW').length,
-    // Distinct PAR/ICS groups across the whole dataset, for the tab labels
-    ppeParIcsCount: new Set(ppeItems.map((r) => r.parIcsNumber)).size,
-    seParIcsCount: new Set(seItems.map((r) => r.parIcsNumber)).size,
+    ppeRenew: countGroups(ppeItems.filter((r) => r.issuanceType === 'RENEW')),
+    seRenew: countGroups(seItems.filter((r) => r.issuanceType === 'RENEW')),
   };
 };
 
