@@ -41,7 +41,13 @@ export interface IssuanceRecord {
 }
 
 export interface IssuanceStats {
-  totalActive: number;
-  totalNew: number;
-  totalRenew: number;
+  ppeActive: number;
+  seActive: number;
+  ppeNew: number;
+  seNew: number;
+  ppeRenew: number;
+  seRenew: number;
+  /** Count of distinct PAR/ICS numbers across the WHOLE dataset (not just the current page) — for tab labels. */
+  ppeParIcsCount: number;
+  seParIcsCount: number;
 }

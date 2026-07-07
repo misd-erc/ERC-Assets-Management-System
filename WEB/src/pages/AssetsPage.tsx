@@ -31,8 +31,6 @@ export function AssetsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [ppeTotalCount, setPpeTotalCount] = useState(0);
   const [seTotalCount, setSeTotalCount] = useState(0);
-  const [onStockPPECount, setOnStockPPECount] = useState(0);
-  const [onStockSECount, setOnStockSECount] = useState(0);
   const [pageSize, setPageSize] = useState(5);
 
   // Active tab
@@ -111,16 +109,12 @@ export function AssetsPage() {
   useEffect(() => {
     const fetchTabCounts = async () => {
       try {
-        const [ppeRes, seRes, onStockPpeRes, onStockSeRes] = await Promise.all([
+        const [ppeRes, seRes] = await Promise.all([
           UnifiedAssetService.getAll({ group: 'PPE', PageNumber: 1, PageSize: 1 }),
           UnifiedAssetService.getAll({ group: 'SE', PageNumber: 1, PageSize: 1 }),
-          UnifiedAssetService.getAllNoMovement({ group: 'PPE', PageNumber: 1, PageSize: 1 }),
-          UnifiedAssetService.getAllNoMovement({ group: 'SE', PageNumber: 1, PageSize: 1 }),
         ]);
         setPpeTotalCount(ppeRes.totalCount);
         setSeTotalCount(seRes.totalCount);
-        setOnStockPPECount(onStockPpeRes.totalCount);
-        setOnStockSECount(onStockSeRes.totalCount);
       } catch {}
     };
     fetchTabCounts();
@@ -134,37 +128,25 @@ export function AssetsPage() {
     try {
       setLoading(true);
 
-      const isOnStockTab = activeTab === 'onstock-ppe' || activeTab === 'onstock-se';
-      const response = isOnStockTab
-        ? await UnifiedAssetService.getAllNoMovement({
-            search: appliedFilters.searchTerm || undefined,
-            category: appliedFilters.categoryFilter !== 'all' ? appliedFilters.categoryFilter : undefined,
-            condition: appliedFilters.conditionFilter !== 'all' ? appliedFilters.conditionFilter : undefined,
-            group: activeTab === 'onstock-ppe' ? 'PPE' : 'SE',
-            PageNumber: currentPage,
-            PageSize: pageSize,
-          })
-        : await UnifiedAssetService.getAll({
-            search: appliedFilters.searchTerm || undefined,
-            category: appliedFilters.categoryFilter !== 'all' ? appliedFilters.categoryFilter : undefined,
-            condition: appliedFilters.conditionFilter !== 'all' ? appliedFilters.conditionFilter : undefined,
-            office: appliedFilters.officeFilter !== 'all' ? appliedFilters.officeFilter : undefined,
-            division: appliedFilters.divisionFilter !== 'all' ? appliedFilters.divisionFilter : undefined,
-            EmployeeId: appliedFilters.employeeFilter !== 'all' ? parseInt(appliedFilters.employeeFilter) : undefined,
-            startDate: appliedFilters.startDate || undefined,
-            endDate: appliedFilters.endDate || undefined,
-            group: activeTab !== 'all' ? activeTab : undefined,
-            PageNumber: currentPage,
-            PageSize: pageSize,
-          });
+      const response = await UnifiedAssetService.getAll({
+        search: appliedFilters.searchTerm || undefined,
+        category: appliedFilters.categoryFilter !== 'all' ? appliedFilters.categoryFilter : undefined,
+        condition: appliedFilters.conditionFilter !== 'all' ? appliedFilters.conditionFilter : undefined,
+        office: appliedFilters.officeFilter !== 'all' ? appliedFilters.officeFilter : undefined,
+        division: appliedFilters.divisionFilter !== 'all' ? appliedFilters.divisionFilter : undefined,
+        EmployeeId: appliedFilters.employeeFilter !== 'all' ? parseInt(appliedFilters.employeeFilter) : undefined,
+        startDate: appliedFilters.startDate || undefined,
+        endDate: appliedFilters.endDate || undefined,
+        group: activeTab !== 'all' ? activeTab : undefined,
+        PageNumber: currentPage,
+        PageSize: pageSize,
+      });
 
       setAssets(response.items);
       setTotalCount(response.totalCount);
       setTotalPages(Math.ceil(response.totalCount / pageSize));
       if (activeTab === 'PPE') setPpeTotalCount(response.totalCount);
       else if (activeTab === 'SE') setSeTotalCount(response.totalCount);
-      else if (activeTab === 'onstock-ppe') setOnStockPPECount(response.totalCount);
-      else if (activeTab === 'onstock-se') setOnStockSECount(response.totalCount);
     } catch (error) {
       console.error('Error loading assets:', error);
       toast.error('Failed to load assets');
@@ -724,7 +706,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="PPE" className="gap-2">
             PPE Assets
             <Badge variant="secondary" className="ml-1">{ppeTotalCount.toLocaleString()}</Badge>
@@ -732,14 +714,6 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
           <TabsTrigger value="SE" className="gap-2">
             SE Assets
             <Badge variant="secondary" className="ml-1">{seTotalCount.toLocaleString()}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="onstock-ppe" className="gap-2">
-            OnStock PPE
-            <Badge variant="secondary" className="ml-1">{onStockPPECount.toLocaleString()}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="onstock-se" className="gap-2">
-            OnStock SE
-            <Badge variant="secondary" className="ml-1">{onStockSECount.toLocaleString()}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -799,112 +773,6 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
         </TabsContent>
 
         <TabsContent value="SE" className="space-y-6">
-          {/* Filters - Collapsible */}
-          {showFilters && (
-            <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-              <AssetsFilters
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                categoryFilter={categoryFilter}
-                onCategoryFilterChange={setCategoryFilter}
-                conditionFilter={conditionFilter}
-                onConditionFilterChange={setConditionFilter}
-                officeFilter={officeFilter}
-                onOfficeFilterChange={setOfficeFilter}
-                divisionFilter={divisionFilter}
-                onDivisionFilterChange={setDivisionFilter}
-                employeeFilter={employeeFilter}
-                onEmployeeFilterChange={setEmployeeFilter}
-                startDate={startDate}
-                onStartDateChange={setStartDate}
-                endDate={endDate}
-                onEndDateChange={setEndDate}
-                onClearFilters={handleClearFilters}
-                onApplyFilters={handleApplyFilters}
-                totalResults={totalCount}
-                moduleFilter="SE"
-              />
-              <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
-                <Button onClick={handleApplyFilters} className="gap-2">
-                  Apply Filters
-                </Button>
-                <Button variant="outline" onClick={handleClearFilters}>
-                  Clear All
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Table */}
-          <AssetsTable
-            assets={assets}
-            loading={loading}
-            onViewDetails={handleViewDetails}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalCount={totalCount}
-            onPageChange={handlePageChange}
-            pageSize={pageSize}
-            onPageSizeChange={handlePageSizeChange}
-          />
-        </TabsContent>
-
-        <TabsContent value="onstock-ppe" className="space-y-6">
-          {/* Filters - Collapsible */}
-          {showFilters && (
-            <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-              <AssetsFilters
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                categoryFilter={categoryFilter}
-                onCategoryFilterChange={setCategoryFilter}
-                conditionFilter={conditionFilter}
-                onConditionFilterChange={setConditionFilter}
-                officeFilter={officeFilter}
-                onOfficeFilterChange={setOfficeFilter}
-                divisionFilter={divisionFilter}
-                onDivisionFilterChange={setDivisionFilter}
-                employeeFilter={employeeFilter}
-                onEmployeeFilterChange={setEmployeeFilter}
-                startDate={startDate}
-                onStartDateChange={setStartDate}
-                endDate={endDate}
-                onEndDateChange={setEndDate}
-                onClearFilters={handleClearFilters}
-                onApplyFilters={handleApplyFilters}
-                totalResults={totalCount}
-                moduleFilter="PPE"
-              />
-              <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
-                <Button onClick={handleApplyFilters} className="gap-2">
-                  Apply Filters
-                </Button>
-                <Button variant="outline" onClick={handleClearFilters}>
-                  Clear All
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Table */}
-          <AssetsTable
-            assets={assets}
-            loading={loading}
-            onViewDetails={handleViewDetails}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalCount={totalCount}
-            onPageChange={handlePageChange}
-            pageSize={pageSize}
-            onPageSizeChange={handlePageSizeChange}
-          />
-        </TabsContent>
-
-        <TabsContent value="onstock-se" className="space-y-6">
           {/* Filters - Collapsible */}
           {showFilters && (
             <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">

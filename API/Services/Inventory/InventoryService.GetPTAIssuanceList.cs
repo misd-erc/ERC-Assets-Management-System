@@ -122,8 +122,8 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
 
                 var ptaLookup = ptaMap.ToDictionary(p => p.Id, p => p);
 
-                // 7. Employee search � resolve names in-memory for movements still in set
-                //    Build a name/id-original lookup first to avoid per-row async calls during filter
+                // 7. Employee search — resolve names in-memory for movements still in set
+                //    Batch-load all referenced employees in a single query instead of one-by-one (avoids N+1)
                 var employeeIds = allMovements
                     .SelectMany(m => new[] { m.PlantillaEmployeeId, m.NonPlantillaEmployeeId })
                     .Where(id => id.HasValue)
@@ -131,13 +131,13 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
                     .Distinct()
                     .ToList();
 
-                var employeeNameMap = new Dictionary<long, string>();
-                foreach (var empId in employeeIds)
-                {
-                    var emp = await _getTools.Account.GetTblEmployeeAsync(empId, context);
-                    if (emp != null)
-                        employeeNameMap[empId] = $"{emp.FirstName} {emp.MiddleName} {emp.LastName}".Trim();
-                }
+                var employees = await context.TblEmployees
+                    .AsNoTracking()
+                    .Where(e => !e.IsDeleted && employeeIds.Contains(e.Id))
+                    .ToListAsync();
+                var employeeNameMap = employees.ToDictionary(
+                    e => e.Id,
+                    e => $"{e.FirstName} {e.MiddleName} {e.LastName}".Trim());
 
                 // Apply employee search filter
                 if (!string.IsNullOrWhiteSpace(model.SearchEmployee))
@@ -183,7 +183,43 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
                 int skip = (model.PageNumber - 1) * model.PageSize;
                 var pagedMovements = allMovements.Skip(skip).Take(model.PageSize).ToList();
 
-                // 10. Build result for the current page
+                // 10. Batch-load offices/divisions/categories referenced by the paged rows
+                //     instead of one-at-a-time lookups per row (avoids N+1)
+                var pagedOfficeIds = pagedMovements
+                    .Where(m => m.ActualOfficeId.HasValue)
+                    .Select(m => m.ActualOfficeId!.Value)
+                    .Distinct()
+                    .ToList();
+                var pagedDivisionIds = pagedMovements
+                    .Where(m => m.ActualDivisionId.HasValue)
+                    .Select(m => m.ActualDivisionId!.Value)
+                    .Distinct()
+                    .ToList();
+                var pagedCategoryIds = pagedMovements
+                    .Where(m => m.PTAId.HasValue && ptaLookup.ContainsKey(m.PTAId.Value))
+                    .Select(m => ptaLookup[m.PTAId!.Value].CategoryId)
+                    .Where(id => id.HasValue)
+                    .Select(id => id!.Value)
+                    .Distinct()
+                    .ToList();
+
+                var officeMap = (await context.TblOffices
+                        .AsNoTracking()
+                        .Where(o => !o.IsDeleted && pagedOfficeIds.Contains(o.Id))
+                        .ToListAsync())
+                    .ToDictionary(o => o.Id, o => (object)o);
+                var divisionMap = (await context.TblDivisions
+                        .AsNoTracking()
+                        .Where(d => !d.IsDeleted && pagedDivisionIds.Contains(d.Id))
+                        .ToListAsync())
+                    .ToDictionary(d => d.Id, d => (object)d);
+                var categoryMap = (await context.TblPTACategories
+                        .AsNoTracking()
+                        .Where(c => !c.IsDeleted && pagedCategoryIds.Contains(c.Id))
+                        .ToListAsync())
+                    .ToDictionary(c => c.Id, c => c.Name);
+
+                // 11. Build result for the current page
                 var result = new List<object>();
 
                 foreach (var movement in pagedMovements)
@@ -198,15 +234,17 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
                     object? office = null;
                     object? division = null;
                     if (movement.ActualOfficeId.HasValue)
-                        office = await _getTools.Office.GetTblOfficeAsync(movement.ActualOfficeId.Value, context);
+                        officeMap.TryGetValue(movement.ActualOfficeId.Value, out office);
                     if (movement.ActualDivisionId.HasValue)
-                        division = await _getTools.Office.GetTblDivisionAsync(movement.ActualDivisionId.Value, context);
+                        divisionMap.TryGetValue(movement.ActualDivisionId.Value, out division);
 
                     // Resolve PTA item details
                     object? itemDetails = null;
                     if (movement.PTAId.HasValue && ptaLookup.TryGetValue(movement.PTAId.Value, out var pta))
                     {
-                        var category = await _getTools.PTA.GetTblPTACategoryAsync(pta.CategoryId, context);
+                        string? categoryName = pta.CategoryId.HasValue && categoryMap.TryGetValue(pta.CategoryId.Value, out var catName)
+                            ? catName
+                            : null;
                         itemDetails = new
                         {
                             id = pta.Id,
@@ -216,7 +254,7 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
                             brand = pta.Brand,
                             model = pta.Model,
                             serialNumber = pta.SerialNumber,
-                            category = category?.Name,
+                            category = categoryName,
                             unitOfMeasurement = pta.UnitOfMeasurement,
                             unitValue = pta.UnitValue,
                             dateAcquired = pta.DateAcquired

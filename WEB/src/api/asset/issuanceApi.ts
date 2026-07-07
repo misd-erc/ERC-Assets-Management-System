@@ -2,8 +2,11 @@ import axiosInstance from '@/lib/axios';
 import { IssuanceRecord, IssuanceStats } from '@/types/issuance';
 import { getAuthParams } from '@/utils/auth';
 import {
+  deleteMovement,
   editMovement,
+  editMovementBulk,
   getNextParNumber as fetchNextParNumber,
+  MovementItemPayload,
 } from './ptaMovementApi';
 
 /* Re-export so existing imports keep working */
@@ -162,12 +165,32 @@ const fetchIssuanceList = async (params: IssuanceListParams = {}): Promise<Issua
 /* -------------------------------------------------------------------------- */
 
 export const getIssuanceStats = async (): Promise<IssuanceStats> => {
-  // Fetch a lightweight count — pageSize=1 just to get totalCount; or fetch all
-  const result = await fetchIssuanceList({ pageSize: 1000 });
-  const totalActive = result.totalCount;
-  const totalNew = result.items.filter((r) => r.parIcsNumber?.toUpperCase().startsWith('PAR')).length;
-  const totalRenew = result.items.filter((r) => r.parIcsNumber?.toUpperCase().startsWith('ICS')).length;
-  return { totalActive, totalNew, totalRenew };
+  const emptyStats: IssuanceStats = {
+    ppeActive: 0, seActive: 0, ppeNew: 0, seNew: 0, ppeRenew: 0, seRenew: 0, ppeParIcsCount: 0, seParIcsCount: 0,
+  };
+
+  // First probe totalCount cheaply, then fetch exactly that many rows so the
+  // breakdown below isn't silently truncated once totalCount grows past a hardcoded page size.
+  const countProbe = await fetchIssuanceList({ pageSize: 1 });
+  if (countProbe.totalCount === 0) return emptyStats;
+
+  const result = await fetchIssuanceList({ pageSize: countProbe.totalCount });
+  const ppeItems = result.items.filter((r) => r.itemGroup === 'PPE');
+  const seItems = result.items.filter((r) => r.itemGroup === 'SE');
+
+  return {
+    ppeActive: ppeItems.length,
+    seActive: seItems.length,
+    // Classify by actual issuance type (NEW vs RENEW), not by PAR/ICS number prefix —
+    // that prefix reflects item group (PPE vs SE), not issuance type.
+    ppeNew: ppeItems.filter((r) => r.issuanceType === 'NEW').length,
+    seNew: seItems.filter((r) => r.issuanceType === 'NEW').length,
+    ppeRenew: ppeItems.filter((r) => r.issuanceType === 'RENEW').length,
+    seRenew: seItems.filter((r) => r.issuanceType === 'RENEW').length,
+    // Distinct PAR/ICS groups across the whole dataset, for the tab labels
+    ppeParIcsCount: new Set(ppeItems.map((r) => r.parIcsNumber)).size,
+    seParIcsCount: new Set(seItems.map((r) => r.parIcsNumber)).size,
+  };
 };
 
 export const listIssuances = async (params: IssuanceListParams = {}): Promise<IssuanceListResult> => {
@@ -232,4 +255,52 @@ export const renewIssuance = async (
     actionBySystemUserId: systemUserId,
     sessionKey,
   });
+};
+
+export interface UpdateIssuanceGroupPayload {
+  parIcsNumber: string;
+  employeeId: number;
+  subEmployeeId?: number;
+  actualOfficeId: number;
+  actualDivisionId: number;
+  issuedDate: string;
+  /** Remarks/notes shown as "notes" in IssuanceRecord — stored server-side as the movement's Condition/Remarks field. */
+  notes?: string;
+}
+
+/**
+ * Update the shared fields (PAR/ICS number, employee, office, division, date, notes) across
+ * every movement record under one PAR/ICS group in a single bulk request.
+ * Each record keeps its own ptaId / issuance type; the new PAR/ICS number is applied to all of them.
+ */
+export const updateIssuanceGroup = async (
+  records: IssuanceRecord[],
+  updates: UpdateIssuanceGroupPayload
+): Promise<boolean> => {
+  const dateAssigned = updates.issuedDate ? new Date(updates.issuedDate).toISOString() : new Date().toISOString();
+  const movements: MovementItemPayload[] = records.map((r) => ({
+    id: r.id,
+    ptaId: r.ptaId,
+    dateAssigned,
+    ptrItrNumber: r.ptrItrNumber || '',
+    parIcsNumber: updates.parIcsNumber,
+    rrppeRrspNumber: r.rrppeRrspNumber || '',
+    status: r.issuanceType,
+    plantillaEmployeeId: updates.employeeId,
+    nonPlantillaEmployeeId: updates.subEmployeeId || 0,
+    condition: updates.notes || 'Working',
+    actualOfficeId: updates.actualOfficeId,
+    actualDivisionId: updates.actualDivisionId,
+    isActive: true,
+    isCurrent: true,
+  }));
+  return editMovementBulk(movements);
+};
+
+/**
+ * Soft-delete every movement record under one PAR/ICS group.
+ */
+export const deleteIssuanceGroup = async (records: IssuanceRecord[]): Promise<boolean> => {
+  const results = await Promise.all(records.map((r) => deleteMovement(r.id)));
+  return results.every(Boolean);
 };
