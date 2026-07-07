@@ -20,6 +20,17 @@ interface Props {
   onSave: (item: any) => void;
 }
 
+// Category module scoping matches CATEGORY_MODULES in components/categories/CategoryManagement.tsx.
+// Service/Subscription/Consultancy (4-6) have no category module of their own.
+const getCategoryModule = (itemTypeId: number): string | null => {
+  switch (itemTypeId) {
+    case 1: return 'Supply';
+    case 2: return 'PPE';
+    case 3: return 'SE';
+    default: return null;
+  }
+};
+
 export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
   const { units, fetchSupplyUnits } = useSupplyUnit();
   const { vendors, fetchVendors } = useVendor();
@@ -62,11 +73,25 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
       fetchVendors();
       fetchSupplyStorageLocations();
       fetchSupplyUniqueRawItems();
-      getCategories('Supply').then(setCategories);
       resetForm();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // Category options are scoped per item type (Supply/PPE/SE each have their own category set),
+  // so they must be refetched whenever the selected item type changes, not just on modal open.
+  useEffect(() => {
+    if (!open) return;
+
+    const categoryModule = getCategoryModule(item.itemTypeId);
+    if (!categoryModule) {
+      setCategories([]);
+      return;
+    }
+
+    getCategories(categoryModule).then(setCategories);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, item.itemTypeId]);
 
   const resetForm = () => {
     setIsNewItem(false);
@@ -165,6 +190,8 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
 
   const isSupply = item.itemTypeId === 1;
   const isExistingItem = isSupply && !isNewItem && item.code !== '';
+  // Category and Item Code aren't needed yet for PPE/SE at delivery entry — they're completed later during Asset Booking.
+  const showCategoryAndCode = item.itemTypeId !== 2 && item.itemTypeId !== 3;
 
   return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -239,7 +266,8 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                                   value={type.label}
                                   onSelect={() => {
                                     const typeId = type.id;
-                                    setItem({ ...item, itemTypeId: typeId });
+                                    // Reset category since the previous selection belongs to a different item type's category set
+                                    setItem({ ...item, itemTypeId: typeId, categoryId: 0 });
                                     if (typeId !== 1) setIsNewItem(true);
                                     setOpenItemType(false);
                                   }}
@@ -257,8 +285,9 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
               </div>
 
               {/* CATEGORY */}
+              {showCategoryAndCode && (
               <div className="space-y-2 min-w-0 flex flex-col">
-                <Label className="text-slate-700 font-medium">Category</Label>
+                <Label className="text-slate-700 font-medium">Category <span className="text-muted-foreground font-normal">(optional)</span></Label>
                 <Popover open={openCategory} onOpenChange={(open) => {
                   setOpenCategory(open);
                   if (open) {
@@ -319,11 +348,13 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                   </PopoverContent>
                 </Popover>
               </div>
+              )}
             </div>
 
             {/* ITEM CODE */}
+            {showCategoryAndCode && (
             <div className="space-y-2 min-w-0 flex flex-col">
-              <Label className="text-slate-700 font-medium">Item Code</Label>
+              <Label className="text-slate-700 font-medium">Item Code <span className="text-muted-foreground font-normal">(optional)</span></Label>
               {isSupply ? (
                   isNewItem ? (
                       <div className="flex gap-2">
@@ -331,7 +362,6 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                             value={item.code}
                             onChange={e => setItem({...item, code: e.target.value})}
                             placeholder="Enter new item code"
-                            required
                             className="border-slate-300 focus-visible:ring-blue-500 shadow-sm"
                         />
                         <Button
@@ -414,6 +444,7 @@ export const DeliveryItemModal = ({ open, onOpenChange, onSave }: Props) => {
                   />
               )}
             </div>
+            )}
 
             <div className="space-y-2">
               <Label>Description</Label>
