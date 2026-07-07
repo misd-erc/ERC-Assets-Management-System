@@ -19,7 +19,15 @@ namespace PortalCommon.Constants
         public static readonly string DELIVERY_RECEIVED = "Delivery Received";
 
         // IAR notifications
+        public static readonly string IAR_SUBMITTED = "New IAR Submitted";
         public static readonly string IAR_APPROVED = "IAR Approved";
+
+        // ActionType values for notification click-navigation (see TblSystemNotification.ActionType)
+        public static class ActionTypes
+        {
+            public const string IAR_SUBMITTED = "IAR_SUBMITTED";
+            public const string IAR_APPROVED = "IAR_APPROVED";
+        }
 
         // RIS notifications
         public static readonly string RIS_SUBMITTED = "New RIS Submitted";

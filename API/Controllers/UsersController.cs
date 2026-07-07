@@ -509,6 +509,9 @@ namespace API.Controllers
                     n.SystemUserId,
                     n.CreatedBySystemUserId,
                     n.ModuleId,
+                    n.ActionType,
+                    n.EntityId,
+                    n.EntityLabel,
                     n.CreatedAt,
                     IsRead = readNotificationIds.Contains(n.Id)
                 }).ToList();

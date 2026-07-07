@@ -6,7 +6,21 @@ import { PendingItemsList, PendingItemsListRef } from './PendingItemsList';
 import { getBookingStatistics } from '@/api/booking/bookingApi';
 import { BookingStatistics } from '@/types/booking';
 
+// Consume a pending notification deep-link (from an "IAR approved" click) to open the matching tab.
+const getInitialTab = (): string => {
+  const raw = sessionStorage.getItem('_notifNav');
+  if (!raw) return 'supply';
+  sessionStorage.removeItem('_notifNav');
+  try {
+    const parsed = JSON.parse(raw);
+    return ['supply', 'ppe', 'se'].includes(parsed.tab) ? parsed.tab : 'supply';
+  } catch {
+    return 'supply';
+  }
+};
+
 export function Booking() {
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const supplyListRef = useRef<PendingItemsListRef>(null);
   const ppeListRef = useRef<PendingItemsListRef>(null);
   const seListRef = useRef<PendingItemsListRef>(null);
@@ -105,7 +119,7 @@ export function Booking() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="supply" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="supply">Supply</TabsTrigger>
               <TabsTrigger value="ppe">PPE</TabsTrigger>

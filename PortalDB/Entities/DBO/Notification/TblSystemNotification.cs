@@ -31,6 +31,17 @@ namespace PortalDB.Entities.DBO.Notification
         [Column("SystemNotificationModuleId")]
         public long? ModuleId { get; set; }
 
+        // Lets the frontend deep-link a click: ActionType picks the destination (e.g. "IAR_SUBMITTED"),
+        // EntityId is the referenced record's id, EntityLabel is a short display hint (e.g. "Supply, PPE").
+        [Column("SystemNotificationActionType")]
+        public string? ActionType { get; set; }
+
+        [Column("SystemNotificationEntityId")]
+        public long? EntityId { get; set; }
+
+        [Column("SystemNotificationEntityLabel")]
+        public string? EntityLabel { get; set; }
+
         [Column("SystemNotificationIsDeleted")]
         public bool IsDeleted { get; set; } = false;
 

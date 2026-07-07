@@ -16,7 +16,10 @@ namespace PortalTools.Services
             string description,
             long recipientSystemUserId,
             long actionBySystemUserId,
-            long? moduleId = null)
+            long? moduleId = null,
+            string? actionType = null,
+            long? entityId = null,
+            string? entityLabel = null)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
 
@@ -27,6 +30,9 @@ namespace PortalTools.Services
                 SystemUserId = recipientSystemUserId,
                 CreatedBySystemUserId = actionBySystemUserId,
                 ModuleId = moduleId,
+                ActionType = actionType,
+                EntityId = entityId,
+                EntityLabel = entityLabel,
                 CreatedAt = DateTime.UtcNow,
                 IsDeleted = false
             };
@@ -53,7 +59,10 @@ namespace PortalTools.Services
             string description,
             IEnumerable<long> recipientSystemUserIds,
             long actionBySystemUserId,
-            long? moduleId = null)
+            long? moduleId = null,
+            string? actionType = null,
+            long? entityId = null,
+            string? entityLabel = null)
         {
             if (context == null) throw new ArgumentNullException(nameof(context));
             if (recipientSystemUserIds == null) throw new ArgumentNullException(nameof(recipientSystemUserIds));
@@ -68,6 +77,9 @@ namespace PortalTools.Services
                 SystemUserId = userId,
                 CreatedBySystemUserId = actionBySystemUserId,
                 ModuleId = moduleId,
+                ActionType = actionType,
+                EntityId = entityId,
+                EntityLabel = entityLabel,
                 CreatedAt = DateTime.UtcNow,
                 IsDeleted = false
             }).ToList();

@@ -74,6 +74,27 @@ namespace API.Controllers
             return string.Join(", ", deliveryRecords.Select(x => x.DRNumber).Where(x => !string.IsNullOrWhiteSpace(x)));
         }
 
+        // Distinct asset-group labels (Supply/PPE/SE) across an IAR's linked delivery records, used to
+        // tag IAR notifications so staff can tell what kind of delivery it is, and to route notification
+        // clicks to the right Asset Booking tab.
+        private async Task<string> GetIARItemTypesSummaryAsync(PortalDbContext context, List<long> recordIds)
+        {
+            if (recordIds.Count == 0) return "";
+
+            var itemTypeIds = await context.TblDeliveryRecordItems
+                .Where(x => !x.IsDeleted && x.RecordId.HasValue && recordIds.Contains(x.RecordId.Value))
+                .Select(x => x.ItemTypeId)
+                .Distinct()
+                .ToListAsync();
+
+            var labels = new List<string>();
+            if (itemTypeIds.Contains(1)) labels.Add("Supply");
+            if (itemTypeIds.Contains(2)) labels.Add("PPE");
+            if (itemTypeIds.Contains(3)) labels.Add("SE");
+
+            return string.Join(", ", labels);
+        }
+
         #region GET
         [HttpGet("vendor/all")]
         [ValidateSessionToken]
@@ -2255,14 +2276,40 @@ namespace API.Controllers
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                if (supplyIAR.IsApproved && !wasAlreadyApproved)
+                if (model.Id == 0)
                 {
+                    string itemTypesSummary = await GetIARItemTypesSummaryAsync(context, selectedRecordIds);
+                    string submittedTitle = string.IsNullOrEmpty(itemTypesSummary)
+                        ? NotificationConstants.IAR_SUBMITTED
+                        : $"{NotificationConstants.IAR_SUBMITTED} ({itemTypesSummary})";
+
                     await _notificationService.NotifyModuleUsersAsync(
                         context,
-                        NotificationConstants.IAR_APPROVED,
+                        submittedTitle,
+                        $"IAR {supplyIAR.IARNumber} has been submitted for approval",
+                        NotificationConstants.Modules.DELIVERY_RECEIPT,
+                        model.ActionBySystemUserId,
+                        actionType: NotificationConstants.ActionTypes.IAR_SUBMITTED,
+                        entityId: supplyIARId,
+                        entityLabel: itemTypesSummary);
+                }
+
+                if (supplyIAR.IsApproved && !wasAlreadyApproved)
+                {
+                    string itemTypesSummary = await GetIARItemTypesSummaryAsync(context, selectedRecordIds);
+                    string approvedTitle = string.IsNullOrEmpty(itemTypesSummary)
+                        ? NotificationConstants.IAR_APPROVED
+                        : $"{NotificationConstants.IAR_APPROVED} ({itemTypesSummary})";
+
+                    await _notificationService.NotifyModuleUsersAsync(
+                        context,
+                        approvedTitle,
                         $"IAR {supplyIAR.IARNumber} has been approved and delivery marked as received",
                         NotificationConstants.Modules.DELIVERY_RECEIPT,
-                        model.ActionBySystemUserId);
+                        model.ActionBySystemUserId,
+                        actionType: NotificationConstants.ActionTypes.IAR_APPROVED,
+                        entityId: supplyIAR.Id,
+                        entityLabel: itemTypesSummary);
                 }
 
                 return Ok(ApiResponse<object>.Ok(new { SupplyIARId = supplyIARId }, $"Supply IAR has been {(model.Id == 0 ? "added" : "updated")}"));
