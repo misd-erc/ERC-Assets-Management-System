@@ -62,6 +62,9 @@ export interface PtaItem {
   brand?: string;
   model?: string;
   condition?: string;
+  unitOfMeasurement?: string;
+  unitValue?: number;
+  dateAcquired?: string;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -155,6 +158,60 @@ export const editMovement = async (payload: PtaMovementPayload): Promise<boolean
 };
 
 /* -------------------------------------------------------------------------- */
+/*  POST bulk edit movements                                                   */
+/* -------------------------------------------------------------------------- */
+
+export type MovementItemPayload = Omit<PtaMovementPayload, 'actionBySystemUserId' | 'sessionKey'>;
+
+export const editMovementBulk = async (movements: MovementItemPayload[]): Promise<boolean> => {
+  if (movements.length === 0) return true;
+  const { systemUserId, sessionKey } = getAuthParams();
+  try {
+    const response = await axiosInstance.post<ApiResponse<unknown>>(
+      '/Inventory/pta/movement/edit-bulk',
+      {
+        movements,
+        actionBySystemUserId: systemUserId,
+        sessionKey,
+      }
+    );
+    if (!response.data.success) {
+      console.error('[PTA] Failed to bulk edit movements:', response.data.message);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('[PTA] Error bulk editing movements:', error);
+    return false;
+  }
+};
+
+/* -------------------------------------------------------------------------- */
+/*  DELETE movement (soft delete)                                              */
+/* -------------------------------------------------------------------------- */
+
+export const deleteMovement = async (id: number): Promise<boolean> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+  try {
+    const response = await axiosInstance.delete<ApiResponse<unknown>>(
+      `/Inventory/pta/movement/delete/${id}`,
+      { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
+    );
+    // Note: the backend returns HTTP 200 with success=true even when it couldn't
+    // delete the record — it only signals failure via the message text, so check that too.
+    const failedSilently = (response.data.message || '').toLowerCase().includes('unable to delete');
+    if (!response.data.success || failedSilently) {
+      console.error('[PTA] Failed to delete movement:', response.data.message);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('[PTA] Error deleting movement:', error);
+    return false;
+  }
+};
+
+/* -------------------------------------------------------------------------- */
 /*  GET SE / PPE items                                                          */
 /* -------------------------------------------------------------------------- */
 
@@ -206,6 +263,23 @@ export const listSePpeItems = async (groupName?: 'PPE' | 'SE'): Promise<PtaItem[
 export const listSePpeItemsNoMovement = async (groupName?: 'PPE' | 'SE'): Promise<PtaItem[]> => {
   const { systemUserId, sessionKey } = getAuthParams();
   try {
+    // PageSize was hardcoded at 1000, silently truncating results once on-stock counts
+    // grew past that (SE alone can be 2000+) — probe totalCount first, then fetch it all.
+    const probe = await axiosInstance.get<ApiResponse<{ items: any[]; totalCount: number }>>(
+      '/Inventory/pta/se-ppe/no-movement',
+      {
+        params: {
+          ActionBySystemUserId: systemUserId,
+          SessionKey: sessionKey,
+          PageNumber: 1,
+          PageSize: 1,
+          ...(groupName ? { GroupName: groupName } : {}),
+        },
+      }
+    );
+    const totalCount = probe.data.data?.totalCount ?? 0;
+    if (!probe.data.success || totalCount === 0) return [];
+
     const response = await axiosInstance.get<ApiResponse<{ items: any[]; totalCount: number }>>(
       '/Inventory/pta/se-ppe/no-movement',
       {
@@ -213,7 +287,7 @@ export const listSePpeItemsNoMovement = async (groupName?: 'PPE' | 'SE'): Promis
           ActionBySystemUserId: systemUserId,
           SessionKey: sessionKey,
           PageNumber: 1,
-          PageSize: 1000,
+          PageSize: totalCount,
           ...(groupName ? { GroupName: groupName } : {}),
         },
       }
@@ -237,9 +311,35 @@ export const listSePpeItemsNoMovement = async (groupName?: 'PPE' | 'SE'): Promis
       brand: item.brand || '',
       model: item.model || '',
       condition: item.condition || '',
+      unitOfMeasurement: item.unitOfMeasurement || '',
+      unitValue: item.unitValue ?? 0,
+      dateAcquired: item.dateAcquired || '',
     }));
   } catch (error) {
     console.error('[PTA] Error fetching SE/PPE items (no movement):', error);
     return [];
+  }
+};
+
+/** Lightweight count of SE/PPE items with no movement yet (available for NEW issuance) — avoids fetching full item rows just to display a number. */
+export const getSePpeNoMovementCount = async (groupName: 'PPE' | 'SE'): Promise<number> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+  try {
+    const response = await axiosInstance.get<ApiResponse<{ items: any[]; totalCount: number }>>(
+      '/Inventory/pta/se-ppe/no-movement',
+      {
+        params: {
+          ActionBySystemUserId: systemUserId,
+          SessionKey: sessionKey,
+          PageNumber: 1,
+          PageSize: 1,
+          GroupName: groupName,
+        },
+      }
+    );
+    return response.data.success ? (response.data.data?.totalCount ?? 0) : 0;
+  } catch (error) {
+    console.error('[PTA] Error fetching SE/PPE no-movement count:', error);
+    return 0;
   }
 };

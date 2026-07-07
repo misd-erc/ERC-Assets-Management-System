@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell
-} from 'recharts';
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { getAssetOverview, DashboardAssetOverview } from '@/api/dashboard/dashboardApi';
 import { toast } from 'sonner';
 
@@ -13,7 +10,18 @@ const CHART_COLORS = [
   '#06b6d4', '#f97316', '#84cc16', '#ec4899', '#6366f1'
 ];
 
-export function AssetOverviewChart() {
+interface CategoryPieItem {
+  name: string;
+  value: number;
+}
+
+interface AssetOverviewChartProps {
+  ppeCategoryData?: CategoryPieItem[];
+  seCategoryData?: CategoryPieItem[];
+  supplyCategoryData?: CategoryPieItem[];
+}
+
+export function AssetOverviewChart({ ppeCategoryData = [], seCategoryData = [], supplyCategoryData = [] }: AssetOverviewChartProps) {
   const [data, setData] = useState<DashboardAssetOverview | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -24,31 +32,26 @@ export function AssetOverviewChart() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const categoryData = (data?.categoryBreakdown ?? []).map((c, i) => ({
-    name: c.name,
-    value: c.count,
-    color: CHART_COLORS[i % CHART_COLORS.length],
-  }));
+  const ppeData = ppeCategoryData.map((c, i) => ({ ...c, color: CHART_COLORS[i % CHART_COLORS.length] }));
+  const seData = seCategoryData.map((c, i) => ({ ...c, color: CHART_COLORS[i % CHART_COLORS.length] }));
+  const supplyData = supplyCategoryData.map((c, i) => ({ ...c, color: CHART_COLORS[i % CHART_COLORS.length] }));
 
-  const conditionData = (data?.conditionBreakdown ?? []).map((c, i) => ({
-    name: c.condition,
-    value: c.count,
-    color: CHART_COLORS[i % CHART_COLORS.length],
-  }));
-
-  const BarTooltip = ({ active, payload, label }: any) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div className="bg-white p-3 border rounded-lg shadow-lg">
-        <p className="text-sm mb-2 font-medium">{label}</p>
-        {payload.map((entry: any, i: number) => (
-          <p key={i} className="text-sm" style={{ color: entry.color }}>
-            {entry.name}: {entry.value}
-          </p>
-        ))}
-      </div>
-    );
-  };
+  const UNSERVICEABLE_KEYWORDS = ['defective', 'unserviceable', 'not working', 'for disposal', 'damaged', 'broken'];
+  const { serviceableCount, unserviceableCount } = (data?.conditionBreakdown ?? []).reduce(
+    (acc, c) => {
+      const condition = c.condition.toLowerCase();
+      if (UNSERVICEABLE_KEYWORDS.some(keyword => condition.includes(keyword))) {
+        acc.unserviceableCount += c.count;
+      } else {
+        acc.serviceableCount += c.count;
+      }
+      return acc;
+    },
+    { serviceableCount: 0, unserviceableCount: 0 }
+  );
+  const conditionTotal = serviceableCount + unserviceableCount;
+  const serviceablePct = conditionTotal > 0 ? (serviceableCount / conditionTotal) * 100 : 0;
+  const unserviceablePct = conditionTotal > 0 ? (unserviceableCount / conditionTotal) * 100 : 0;
 
   const PieTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
@@ -59,6 +62,40 @@ export function AssetOverviewChart() {
       <div className="bg-white p-3 border rounded-lg shadow-lg">
         <p className="text-sm">{item.name}: {item.value}</p>
         <p className="text-xs text-muted-foreground">{total ? ((item.value / total) * 100).toFixed(1) : 0}%</p>
+      </div>
+    );
+  };
+
+  const renderPieSection = (
+    items: { name: string; value: number; color: string }[],
+    emptyLabel: string
+  ) => {
+    if (items.length === 0) {
+      return <p className="text-center text-muted-foreground py-16">{emptyLabel}</p>;
+    }
+    return (
+      <div className="h-96 flex gap-6">
+        <div className="w-[380px] flex-shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={items} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={150} label={false}>
+                {items.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+              </Pie>
+              <Tooltip content={<PieTooltip />} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex-1 space-y-2 overflow-y-auto">
+          {items.map((item, i) => (
+            <div key={i} className="flex items-center justify-between gap-3">
+              <div className="flex items-center space-x-2 min-w-0">
+                <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="text-sm">{item.name}</span>
+              </div>
+              <span className="text-sm font-medium flex-shrink-0">{item.value}</span>
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
@@ -78,93 +115,66 @@ export function AssetOverviewChart() {
     <Card>
       <CardHeader>
         <CardTitle>Asset Overview</CardTitle>
-        <CardDescription>Asset activity trends and distribution analysis</CardDescription>
+        <CardDescription>Asset distribution analysis</CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="activity" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="activity">Activity Trends</TabsTrigger>
-            <TabsTrigger value="categories">By Category</TabsTrigger>
-            <TabsTrigger value="condition">By Condition</TabsTrigger>
+        <Tabs defaultValue="ppe" className="space-y-4">
+          <TabsList className="h-auto flex-wrap gap-1">
+            <TabsTrigger value="ppe" className="flex-none px-3">PPE</TabsTrigger>
+            <TabsTrigger value="se" className="flex-none px-3">Semi-Expendable</TabsTrigger>
+            <TabsTrigger value="supply" className="flex-none px-3">Supply</TabsTrigger>
+            <TabsTrigger value="condition" className="flex-none px-3">By Condition</TabsTrigger>
           </TabsList>
 
-          {/* Activity Trends */}
-          <TabsContent value="activity" className="space-y-4">
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data?.monthlyMovements ?? []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip content={<BarTooltip />} />
-                  <Bar dataKey="issued" name="Issued" fill="#3b82f6" radius={[2,2,0,0]} />
-                  <Bar dataKey="transferred" name="Transferred" fill="#f59e0b" radius={[2,2,0,0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex justify-center space-x-6 text-sm">
-              <div className="flex items-center space-x-2"><div className="w-3 h-3 bg-blue-500 rounded" /><span>Issued</span></div>
-              <div className="flex items-center space-x-2"><div className="w-3 h-3 bg-amber-500 rounded" /><span>Transferred</span></div>
-            </div>
+          {/* PPE by Category */}
+          <TabsContent value="ppe" className="space-y-4">
+            {renderPieSection(ppeData, 'No PPE category data available')}
           </TabsContent>
 
-          {/* By Category */}
-          <TabsContent value="categories" className="space-y-4">
-            {categoryData.length === 0 ? (
-              <p className="text-center text-muted-foreground py-16">No category data available</p>
-            ) : (
-              <div className="h-80 flex">
-                <div className="flex-1">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={110} label={false}>
-                        {categoryData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                      </Pie>
-                      <Tooltip content={<PieTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="w-52 space-y-2 pl-4 overflow-y-auto">
-                  {categoryData.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: item.color }} />
-                        <span className="text-xs truncate max-w-[120px]">{item.name}</span>
-                      </div>
-                      <span className="text-xs font-medium">{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+          {/* Semi-Expendable by Category */}
+          <TabsContent value="se" className="space-y-4">
+            {renderPieSection(seData, 'No Semi-Expendable category data available')}
+          </TabsContent>
+
+          {/* Supply by Category */}
+          <TabsContent value="supply" className="space-y-4">
+            {renderPieSection(supplyData, 'No supply category data available')}
           </TabsContent>
 
           {/* By Condition */}
           <TabsContent value="condition" className="space-y-4">
-            {conditionData.length === 0 ? (
+            {conditionTotal === 0 ? (
               <p className="text-center text-muted-foreground py-16">No condition data available</p>
             ) : (
-              <div className="h-80 flex">
-                <div className="flex-1">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={conditionData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={110} label={false}>
-                        {conditionData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                      </Pie>
-                      <Tooltip content={<PieTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="w-52 space-y-2 pl-4 overflow-y-auto">
-                  {conditionData.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: item.color }} />
-                        <span className="text-xs truncate max-w-[120px]">{item.name}</span>
-                      </div>
-                      <span className="text-xs font-medium">{item.value}</span>
+              <div className="space-y-5 py-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 rounded-full bg-blue-600" />
+                      <span className="text-sm font-medium">Serviceable</span>
                     </div>
-                  ))}
+                    <div className="text-right">
+                      <p className="font-semibold">{serviceableCount.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2.5">
+                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${serviceablePct}%` }} />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <span className="text-sm font-medium">Unserviceable</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{unserviceableCount.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="w-full bg-slate-100 rounded-full h-2.5">
+                    <div className="bg-red-500 h-2.5 rounded-full" style={{ width: `${unserviceablePct}%` }} />
+                  </div>
                 </div>
               </div>
             )}

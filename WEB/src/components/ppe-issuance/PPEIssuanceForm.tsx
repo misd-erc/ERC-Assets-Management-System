@@ -34,7 +34,7 @@ interface PPEIssuanceFormProps {
 /*  Inline searchable employee picker                                          */
 /* -------------------------------------------------------------------------- */
 
-interface EmployeeOption { value: string; label: string; name: string; }
+export interface EmployeeOption { value: string; label: string; name: string; }
 
 interface EmployeePickerProps {
   options: EmployeeOption[];
@@ -43,7 +43,7 @@ interface EmployeePickerProps {
   placeholder?: string;
 }
 
-function EmployeePicker({ options, selectedValue, onSelect, placeholder = 'Click to search…' }: EmployeePickerProps) {
+export function EmployeePicker({ options, selectedValue, onSelect, placeholder = 'Click to search…' }: EmployeePickerProps) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
