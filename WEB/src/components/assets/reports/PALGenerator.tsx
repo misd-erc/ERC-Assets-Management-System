@@ -284,14 +284,43 @@ function movementInvolvesEmployee(m: any, employeeId: number): boolean {
 }
 
 /**
+ * Returns true if the asset has been disposed. A disposed asset is no longer part of
+ * anyone's accountability, even though its final movement carries over the previous
+ * holder's employee ID.
+ *
+ * Two signals, checked in order of reliability:
+ *   1. asset.isActive === false — MarkDisposed flips this flag directly on the PTA record
+ *      itself, so it's the most direct signal and doesn't depend on movement data at all.
+ *   2. The asset's true latest movement (by createdAt — a system timestamp, unlike the
+ *      business-editable dateAssigned) has status "Disposed".
+ */
+function isDisposed(asset: any): boolean {
+  if (asset?.isActive === false) return true;
+
+  const movements: any[] = asset.movements ?? [];
+  if (!movements.length) return false;
+
+  const latest = [...movements].sort((a, b) => {
+    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return tb - ta;
+  })[0];
+
+  return typeof latest?.status === "string" && latest.status.toLowerCase() === "disposed";
+}
+
+/**
  * Returns true if the asset is currently assigned to this employee.
  * Strategy:
+ *   0. Exclude disposed assets outright — see isDisposed above.
  *   1. Prefer a movement with isCurrent === true that involves this employee.
  *   2. Fall back to the latest movement (by dateAssigned) that involves this employee,
  *      provided there is no newer movement that assigns the asset to someone else.
  *      This handles batch-uploaded data where isCurrent was not set.
  */
 function isAssignedToEmployee(asset: any, employeeId: number): boolean {
+  if (isDisposed(asset)) return false;
+
   const movements: any[] = asset.movements ?? [];
   if (!movements.length) return false;
 

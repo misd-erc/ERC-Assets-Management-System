@@ -61,7 +61,11 @@ export interface BookPTAPayload {
   bookingItemId: number;
   propertyNumber?: string;
   categoryId?: number | null;
+  legendId?: number | null;
+  serialNumber?: string;
   description?: string;
+  brand?: string;
+  model?: string;
   specification?: string;
   measurementUnitId?: number | null;
   unitCost?: number;

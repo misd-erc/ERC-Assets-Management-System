@@ -1,8 +1,7 @@
 import React from 'react';
 import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { getCategories } from '@/api/asset/inventoryApi';
-import { listIssuances } from '@/api/asset/issuanceApi';
-import { listSePpeItemsNoMovement } from '@/api/asset/ptaMovementApi';
+import { listSePpeItemsNoMovement, listSePpeItemsWithMovement } from '@/api/asset/ptaMovementApi';
 import { RPCSPReportType } from './RPCSPFilterModal';
 
 const styles = StyleSheet.create({
@@ -131,30 +130,20 @@ export class RPCSPPdfGenerator {
   static async getRows(reportType: RPCSPReportType, categoryId?: number): Promise<RPCSPRow[]> {
     const categoryName = await this.getCategoryName(categoryId);
 
-    if (reportType === 'ISSUED') {
-      const probe = await listIssuances({ group: 'SE', pageNumber: 1, pageSize: 1 });
-      if (probe.totalCount === 0) return [];
-      const result = await listIssuances({ group: 'SE', pageNumber: 1, pageSize: probe.totalCount });
-      const items = categoryName ? result.items.filter((r) => r.category === categoryName) : result.items;
-      return items.map((r) => ({
-        description: r.itemName,
-        propertyNumber: r.propertyNumber || '',
-        unitOfMeasurement: r.unitOfMeasurement || '',
-        unitValue: r.unitValue ?? 0,
-        // "notes" is where the item's condition is actually stored (the movement's
-        // Condition field persists to the same Remarks column IssuanceRecord.notes reads from).
-        remarks: r.notes || r.condition || '',
-      }));
-    }
-
-    const allItems = await listSePpeItemsNoMovement('SE');
+    // Issued = has at least one movement record (ever issued); On Stock = no movement at all.
+    const allItems = reportType === 'ISSUED'
+      ? await listSePpeItemsWithMovement('SE')
+      : await listSePpeItemsNoMovement('SE');
     const items = categoryName ? allItems.filter((i) => i.category === categoryName) : allItems;
+    // On-stock items have no movement history, so there's no recorded condition —
+    // default to "Serviceable" rather than leaving the column blank.
+    const fallbackRemarks = reportType === 'ONSTOCK' ? 'Serviceable' : '';
     return items.map((i) => ({
       description: i.description,
       propertyNumber: i.propertyNumber || '',
       unitOfMeasurement: i.unitOfMeasurement || '',
       unitValue: i.unitValue ?? 0,
-      remarks: i.condition || '',
+      remarks: i.condition || fallbackRemarks,
     }));
   }
 

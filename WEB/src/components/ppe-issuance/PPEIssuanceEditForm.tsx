@@ -55,6 +55,8 @@ export function PPEIssuanceEditForm({
       name: `${e.lastName}, ${e.firstName}${e.middleName ? ' ' + e.middleName : ''}`.trim(),
     }));
 
+  const filteredDivisions = divisions.filter((d) => !officeId || d.office?.id.toString() === officeId);
+
   const canSubmit = !!parIcsNumber.trim() && !!plantillaEmployeeId && !!officeId && !!divisionId && !!issuedDate;
 
   const handleSubmit = () => {
@@ -71,7 +73,7 @@ export function PPEIssuanceEditForm({
   };
 
   return (
-    <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <DialogContent className="sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle className="text-xl">Edit Issuance — {first.parIcsNumber}</DialogTitle>
         <DialogDescription>
@@ -137,7 +139,10 @@ export function PPEIssuanceEditForm({
               <select
                 id="editOfficeId"
                 value={officeId}
-                onChange={(e) => setOfficeId(e.target.value)}
+                onChange={(e) => {
+                  setOfficeId(e.target.value);
+                  setDivisionId('');
+                }}
                 className={cn('w-full h-10 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring', !officeId ? 'border-destructive' : 'border-input')}
               >
                 <option value="">Select office</option>
@@ -152,10 +157,11 @@ export function PPEIssuanceEditForm({
                 id="editDivisionId"
                 value={divisionId}
                 onChange={(e) => setDivisionId(e.target.value)}
-                className={cn('w-full h-10 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring', !divisionId ? 'border-destructive' : 'border-input')}
+                disabled={!officeId}
+                className={cn('w-full h-10 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50', !divisionId ? 'border-destructive' : 'border-input')}
               >
-                <option value="">Select division</option>
-                {divisions.map((d) => (
+                <option value="">{officeId ? 'Select division' : 'Select office first'}</option>
+                {filteredDivisions.map((d) => (
                   <option key={d.id} value={d.id.toString()}>{d.name}</option>
                 ))}
               </select>

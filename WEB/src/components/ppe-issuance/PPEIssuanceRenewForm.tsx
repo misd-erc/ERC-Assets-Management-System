@@ -58,7 +58,7 @@ export function PPEIssuanceRenewForm({
   };
 
   return (
-    <DialogContent className="max-w-5xl w-full">
+    <DialogContent className="sm:max-w-5xl w-full">
       <DialogHeader>
         <DialogTitle>Renew Issuance</DialogTitle>
         <DialogDescription>

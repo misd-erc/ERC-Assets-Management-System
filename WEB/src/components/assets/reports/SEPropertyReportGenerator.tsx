@@ -222,8 +222,10 @@ export function SEPropertyReportFilterModal({ isOpen, onClose, onGenerate }: SEP
               id="se-property-serial-number"
               type="text"
               value={loadingSerial ? 'Loading...' : serialNo}
-              readOnly
-              className="col-span-4 bg-muted cursor-not-allowed"
+              onChange={(e) => setSerialNo(e.target.value)}
+              disabled={loadingSerial}
+              placeholder="Auto-suggested, editable"
+              className="col-span-4"
             />
 
             <Label htmlFor="se-property-date" className="col-span-4">As of Date</Label>
@@ -321,12 +323,14 @@ export class SEPropertyReportGenerator {
 
     const finalAssets = seAssets
       .map(asset => {
+        // Use the EARLIEST movement with a valid ICS number (the original issuance),
+        // not the latest — this report should reflect when the item was first issued.
         const latestMovement = asset.movements
           ?.filter((m: any) => this.isValidIcs(m.parIcsNumber))
           ?.sort(
             (a: any, b: any) =>
-              new Date(b.dateAssigned).getTime() -
-              new Date(a.dateAssigned).getTime()
+              new Date(a.dateAssigned).getTime() -
+              new Date(b.dateAssigned).getTime()
           )[0];
         const icsNo = latestMovement?.parIcsNumber || '';
         return { ...asset, latestMovement, icsNo };
