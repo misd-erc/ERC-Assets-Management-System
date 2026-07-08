@@ -153,7 +153,7 @@ namespace API.Services.Inventory
                         paricsNumber = movement.PARICSNumber,
                         fromEmployee,
                         toEmployee,
-                        condition = movement.Status,
+                        condition = movement.Remarks,
                         remarks = movement.Remarks,
                         status = movement.Status,
                         isActive = movement.IsActive,
