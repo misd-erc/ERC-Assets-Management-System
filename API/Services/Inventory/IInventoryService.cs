@@ -21,6 +21,8 @@ namespace API.Services.Inventory
 
         Task<IActionResult> GetPTAsWithNoMovement([FromQuery] PTAPaginationQueryParams model);
 
+        Task<IActionResult> GetPTAsWithMovement([FromQuery] PTAPaginationQueryParams model);
+
         Task<IActionResult> GetPTAsForDisposal([FromQuery] PTAPaginationQueryParams model);
 
         Task<IActionResult> PTABatchUpload([FromQuery] SoloQueryParams model, [Required] IFormFile file);

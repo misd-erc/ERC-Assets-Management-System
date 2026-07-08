@@ -71,12 +71,14 @@ export interface PtaItem {
 /*  GET next PAR number                                                         */
 /* -------------------------------------------------------------------------- */
 
-export const getNextParNumber = async (): Promise<string> => {
+/** PPE items get a PAR (Property Acknowledgement Receipt) number; SE items get an ICS (Inventory Custodian Slip) number. */
+export const getNextParNumber = async (group?: 'PPE' | 'SE'): Promise<string> => {
   const { systemUserId, sessionKey } = getAuthParams();
+  const parType = group === 'SE' ? 'ICS' : 'PAR';
   try {
     const response = await axiosInstance.get<ApiResponse<{ parNumber: string; sequence: number } | string>>(
       '/Inventory/pta/movement/next-par-number',
-      { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
+      { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey, parType } }
     );
     if (!response.data.success) {
       console.error('[PTA] Failed to fetch next PAR number:', response.data.message);
@@ -341,5 +343,69 @@ export const getSePpeNoMovementCount = async (groupName: 'PPE' | 'SE'): Promise<
   } catch (error) {
     console.error('[PTA] Error fetching SE/PPE no-movement count:', error);
     return 0;
+  }
+};
+
+/* -------------------------------------------------------------------------- */
+/*  GET SE / PPE items WITH movements (issued at least once)                   */
+/* -------------------------------------------------------------------------- */
+
+/** Items that have at least one movement record — i.e. issued (matches the "on stock" definition used by listSePpeItemsNoMovement, inverted). */
+export const listSePpeItemsWithMovement = async (groupName?: 'PPE' | 'SE'): Promise<PtaItem[]> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+  try {
+    const probe = await axiosInstance.get<ApiResponse<{ items: any[]; totalCount: number }>>(
+      '/Inventory/pta/se-ppe/with-movement',
+      {
+        params: {
+          ActionBySystemUserId: systemUserId,
+          SessionKey: sessionKey,
+          PageNumber: 1,
+          PageSize: 1,
+          ...(groupName ? { GroupName: groupName } : {}),
+        },
+      }
+    );
+    const totalCount = probe.data.data?.totalCount ?? 0;
+    if (!probe.data.success || totalCount === 0) return [];
+
+    const response = await axiosInstance.get<ApiResponse<{ items: any[]; totalCount: number }>>(
+      '/Inventory/pta/se-ppe/with-movement',
+      {
+        params: {
+          ActionBySystemUserId: systemUserId,
+          SessionKey: sessionKey,
+          PageNumber: 1,
+          PageSize: totalCount,
+          ...(groupName ? { GroupName: groupName } : {}),
+        },
+      }
+    );
+
+    if (!response.data.success) {
+      console.error('[PTA] Failed to fetch SE/PPE items (with movement):', response.data.message);
+      return [];
+    }
+
+    return (response.data.data?.items ?? []).map((item: any): PtaItem => ({
+      id: item.id,
+      description:
+        item.description ||
+        item.itemDescription ||
+        item.name ||
+        `Item #${item.id}`,
+      groupName: ((item.group || item.groupName || item.group_name || 'PPE') as 'PPE' | 'SE'),
+      propertyNumber: item.propertyNumber || item.property_number || '',
+      category: typeof item.category === 'object' ? item.category?.name ?? '' : item.category ?? '',
+      brand: item.brand || '',
+      model: item.model || '',
+      condition: item.condition || '',
+      unitOfMeasurement: item.unitOfMeasurement || '',
+      unitValue: item.unitValue ?? 0,
+      dateAcquired: item.dateAcquired || '',
+    }));
+  } catch (error) {
+    console.error('[PTA] Error fetching SE/PPE items (with movement):', error);
+    return [];
   }
 };

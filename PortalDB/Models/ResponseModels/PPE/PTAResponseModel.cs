@@ -21,6 +21,8 @@ namespace PortalDB.Models.ResponseModels.PTA
         public string UnitOfMeasurement { get; set; } = string.Empty;
         public double? UnitValue { get; set; }
         public DateTime? DateAcquired { get; set; }
+        /// <summary>Condition as of the item's latest movement (e.g. "Serviceable"). Null when the item has no movement history.</summary>
+        public string? Condition { get; set; }
         public List<PTAMovementResponseModel>? Movements { get; set; }
         public long? EstimatedUsefulLife { get; set; }
         public DateTime? FiscalDate { get; set; }

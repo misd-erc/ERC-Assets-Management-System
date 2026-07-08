@@ -61,6 +61,12 @@ namespace API.Controllers
         public async Task<IActionResult> GetPTAsWithNoMovement([FromQuery] PTAPaginationQueryParams model) => await _inventoryService.GetPTAsWithNoMovement(model);
 
 
+        [HttpGet("pta/se-ppe/with-movement")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetPTAsWithMovement([FromQuery] PTAPaginationQueryParams model) => await _inventoryService.GetPTAsWithMovement(model);
+
+
         [HttpGet("pta/se-ppe/for-disposal")]
         [ValidateSessionToken]
         [ValidateModelRequiredFields]

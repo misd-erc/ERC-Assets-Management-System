@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Check, ChevronDown, ChevronLeft, FileText, Plus, Search, Trash2, X } from 'lucide-react';
 import { cn } from '@/components/ui/utils';
 import { PtaItem } from '@/api/asset/ptaMovementApi';
+import { getConditions } from '@/api/asset/inventoryApi';
 import { NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { VwOffice, VwDivision } from '@/types/office';
 import { IssuanceFormState, IssuanceItemFormState } from './PPEIssuance';
@@ -325,6 +326,11 @@ export function PPEIssuanceForm({
   onClose,
 }: PPEIssuanceFormProps) {
   const [showConfirm, setShowConfirm] = useState(false);
+  const [conditions, setConditions] = useState<string[]>([]);
+
+  useEffect(() => {
+    getConditions().then(setConditions).catch(() => {});
+  }, []);
 
   const pickedCount = items.filter((i) => i.ptaId > 0).length;
   const validItems = items.filter((i) => i.ptaId > 0);
@@ -347,10 +353,11 @@ export function PPEIssuanceForm({
 
   const selectedPlantillaEmployee = plantillaOptions.find((o) => o.value === form.plantillaEmployeeId);
   const selectedOffice = offices.find((o) => o.id.toString() === form.officeId);
+  const filteredDivisions = divisions.filter((d) => !form.officeId || d.office?.id.toString() === form.officeId);
 
   if (showConfirm) {
     return (
-      <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <FileText className="w-6 h-6 text-blue-600" />
@@ -442,7 +449,7 @@ export function PPEIssuanceForm({
   }
 
   return (
-    <DialogContent className="max-w-6xl w-full max-h-[94vh] overflow-y-auto">
+    <DialogContent className="sm:max-w-6xl w-full max-h-[94vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle className="text-xl">New PPE/SE Issuance</DialogTitle>
         <DialogDescription>
@@ -504,7 +511,10 @@ export function PPEIssuanceForm({
               <select
                 id="officeId"
                 value={form.officeId}
-                onChange={(e) => onChange('officeId', e.target.value)}
+                onChange={(e) => {
+                  onChange('officeId', e.target.value);
+                  onChange('divisionId', '');
+                }}
                 className={cn('w-full h-10 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring', !form.officeId ? 'border-destructive' : 'border-input')}
               >
                 <option value="">Select office</option>
@@ -519,10 +529,11 @@ export function PPEIssuanceForm({
                 id="divisionId"
                 value={form.divisionId}
                 onChange={(e) => onChange('divisionId', e.target.value)}
-                className={cn('w-full h-10 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring', !form.divisionId ? 'border-destructive' : 'border-input')}
+                disabled={!form.officeId}
+                className={cn('w-full h-10 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50', !form.divisionId ? 'border-destructive' : 'border-input')}
               >
-                <option value="">Select division</option>
-                {divisions.map((d) => (
+                <option value="">{form.officeId ? 'Select division' : 'Select office first'}</option>
+                {filteredDivisions.map((d) => (
                   <option key={d.id} value={d.id.toString()}>{d.name}</option>
                 ))}
               </select>
@@ -602,12 +613,22 @@ export function PPEIssuanceForm({
                           <p className="text-sm font-medium">{selectedItem.propertyNumber}</p>
                         </div>
                       )}
-                      {selectedItem.condition && (
-                        <div className="space-y-1">
-                          <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Condition</p>
-                          <p className="text-sm">{selectedItem.condition}</p>
-                        </div>
-                      )}
+                      <div className="space-y-1">
+                        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Condition</p>
+                        <select
+                          className="w-full h-8 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                          value={item.condition}
+                          onChange={(e) => onItemChange(index, 'condition', e.target.value)}
+                        >
+                          <option value="">Select condition</option>
+                          {conditions.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                          {item.condition && !conditions.includes(item.condition) && (
+                            <option value={item.condition}>{item.condition}</option>
+                          )}
+                        </select>
+                      </div>
                       <div className="space-y-1">
                         <p className="text-[11px] text-muted-foreground uppercase tracking-wide">PAR/ICS #</p>
                         <p className="text-sm font-mono font-semibold text-primary">

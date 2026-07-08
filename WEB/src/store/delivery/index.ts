@@ -1,14 +1,25 @@
 import { create } from 'zustand';
 import { toast } from 'sonner';
 import { DeliveryRecord, EditDeliveryRecord, VwDeliveryRecord } from '@/types/delivery/delivery';
-import { editDeliveryRecord, getDeliveryRecords, uploadDeliveryProof, getDeliveryRecordsSummary } from '@/api/delivery/deliveryApi';
+import { editDeliveryRecord, getDeliveryRecords, uploadDeliveryProof, getDeliveryRecordsSummary, getDeliveryRecordsStats, DeliveryRecordStats } from '@/api/delivery/deliveryApi';
 import axiosInstance from '@/lib/axios';
 import { getAuthParams } from '@/utils/auth';
+
+const emptyDeliveryRecordStats: DeliveryRecordStats = {
+  totalDeliveries: 0,
+  pendingDeliveries: 0,
+  receivedDeliveries: 0,
+  totalValue: 0,
+  pendingValue: 0,
+  deliveriesMTD: 0,
+  valueReceivedMTD: 0,
+};
 
 interface DeliveryRecordState {
   deliveryRecords: DeliveryRecord[];
   vwDeliveryRecords: VwDeliveryRecord[];
   vwDeliveryRecordsSummary: VwDeliveryRecord[];
+  deliveryStats: DeliveryRecordStats;
   loading: boolean;
   searchQuery: string;
   totalCount: number;
@@ -25,6 +36,7 @@ interface DeliveryRecordState {
 
   fetchDeliveryRecords: () => Promise<void>;
   fetchDeliveryRecordsSummary: () => Promise<void>;
+  fetchDeliveryStats: () => Promise<void>;
   addDeliveryRecord: (record: EditDeliveryRecord) => Promise<void>;
   updateDeliveryRecord: (id: number, updates: EditDeliveryRecord) => Promise<void>;
   deleteDeliveryRecord: (id: number) => Promise<void>;
@@ -35,6 +47,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
   deliveryRecords: [],
   vwDeliveryRecords: [],
   vwDeliveryRecordsSummary: [],
+  deliveryStats: emptyDeliveryRecordStats,
   loading: false,
   searchQuery: '',
   totalCount: 0,
@@ -71,11 +84,21 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
     }
   },
 
+  fetchDeliveryStats: async () => {
+    try {
+      const stats = await getDeliveryRecordsStats();
+      set({ deliveryStats: stats });
+    } catch {
+      // Fail silently
+    }
+  },
+
   addDeliveryRecord: async (record) => {
     try {
       await editDeliveryRecord(record);
       await get().fetchDeliveryRecords();
       await get().fetchDeliveryRecordsSummary();
+      await get().fetchDeliveryStats();
       toast.success('Delivery Record added');
     } catch (error: any) {
       console.error("Store Error:", error);
@@ -89,6 +112,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
       await editDeliveryRecord(updates);
       await get().fetchDeliveryRecords();
       await get().fetchDeliveryRecordsSummary();
+      await get().fetchDeliveryStats();
       toast.success('Delivery record updated');
     } catch (error: any) {
       toast.error('Failed to update delivery record');
@@ -107,6 +131,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
       }
       await get().fetchDeliveryRecords();
       await get().fetchDeliveryRecordsSummary();
+      await get().fetchDeliveryStats();
       toast.success('Delivery record deleted');
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete delivery record');
@@ -121,6 +146,7 @@ export const useDeliveryRecordStore = create<DeliveryRecordState>((set, get) => 
       toast.success('Delivery proof uploaded successfully');
       await get().fetchDeliveryRecords();
       await get().fetchDeliveryRecordsSummary();
+      await get().fetchDeliveryStats();
     } catch (error: any) {
       toast.error(error.message || 'Failed to upload proof');
       throw error;

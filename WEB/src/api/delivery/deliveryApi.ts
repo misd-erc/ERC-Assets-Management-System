@@ -145,3 +145,42 @@ export const getDeliveryRecordsSummary = async (): Promise<VwDeliveryRecord[]> =
   if (!response.data.success) return [];
   return response.data.data.map(mapVwDeliveryRecord);
 };
+
+export interface DeliveryRecordStats {
+  totalDeliveries: number;
+  pendingDeliveries: number;
+  receivedDeliveries: number;
+  totalValue: number;
+  pendingValue: number;
+  deliveriesMTD: number;
+  valueReceivedMTD: number;
+}
+
+const emptyDeliveryRecordStats: DeliveryRecordStats = {
+  totalDeliveries: 0,
+  pendingDeliveries: 0,
+  receivedDeliveries: 0,
+  totalValue: 0,
+  pendingValue: 0,
+  deliveriesMTD: 0,
+  valueReceivedMTD: 0,
+};
+
+/** Month-to-date delivery/receipt metrics, computed server-side (see /Delivery/record/stats). */
+export const getDeliveryRecordsStats = async (): Promise<DeliveryRecordStats> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+  const response = await axiosInstance.get<DeliveryRecordResponse<any>>('/Delivery/record/stats', {
+    params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+  });
+  if (!response.data.success) return emptyDeliveryRecordStats;
+  const raw = response.data.data;
+  return {
+    totalDeliveries: raw.totalDeliveries ?? 0,
+    pendingDeliveries: raw.pendingDeliveries ?? 0,
+    receivedDeliveries: raw.receivedDeliveries ?? 0,
+    totalValue: raw.totalValue ?? 0,
+    pendingValue: raw.pendingValue ?? 0,
+    deliveriesMTD: raw.deliveriesMTD ?? 0,
+    valueReceivedMTD: raw.valueReceivedMTD ?? 0,
+  };
+};

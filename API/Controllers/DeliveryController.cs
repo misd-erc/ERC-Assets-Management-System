@@ -362,6 +362,83 @@ namespace API.Controllers
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred."));
             }
         }
+
+        [HttpGet("record/stats")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetDeliveryRecordsStats([FromQuery] SoloQueryParams model)
+        {
+            await using var context = new PortalDbContext(_options);
+            try
+            {
+                DateTime now = DateTime.UtcNow;
+                DateTime monthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+                DateTime monthEnd = monthStart.AddMonths(1);
+
+                // Delivery records dated (by DeliveryDate, falling back to CreatedAt) within the current month
+                var records = await _getTools.Supply.GetTblDeliveryRecords(context)
+                    .Where(x => (x.DeliveryDate ?? x.CreatedAt) >= monthStart && (x.DeliveryDate ?? x.CreatedAt) < monthEnd)
+                    .ToListAsync();
+
+                var recordIds = records.Select(r => r.Id).ToList();
+
+                var itemTotalsByRecordId = await _getTools.Delivery.GetTblDeliveryRecordItems(context)
+                    .Where(x => x.RecordId.HasValue && recordIds.Contains(x.RecordId.Value))
+                    .GroupBy(x => x.RecordId!.Value)
+                    .Select(g => new { RecordId = g.Key, Total = g.Sum(x => (decimal)(x.ItemQuantity ?? 0) * (x.UnitCost ?? 0)) })
+                    .ToDictionaryAsync(x => x.RecordId, x => x.Total);
+
+                var stats = new DeliveryRecordStatsResponseModel();
+
+                foreach (var record in records)
+                {
+                    stats.TotalDeliveries++;
+                    decimal recordTotal = itemTotalsByRecordId.TryGetValue(record.Id, out var total) ? total : 0;
+                    stats.TotalValue += recordTotal;
+
+                    if (!record.IsReceived)
+                    {
+                        stats.PendingDeliveries++;
+                        stats.PendingValue += recordTotal;
+                    }
+                    else
+                    {
+                        stats.ReceivedDeliveries++;
+                        stats.DeliveriesMTD++;
+                        stats.ValueReceivedMTD += recordTotal;
+                    }
+                }
+
+                // Unlinked IARs (no parent delivery record) dated within the current month
+                var unlinkedIars = await _getTools.Supply.GetTblSupplyIARs(context)
+                    .Where(x => x.RecordId == null)
+                    .ToListAsync();
+
+                foreach (var iar in unlinkedIars)
+                {
+                    DateTime iarDate = iar.IARNumberDate ?? iar.CreatedAt;
+                    if (iarDate < monthStart || iarDate >= monthEnd) continue;
+
+                    stats.TotalDeliveries++;
+                    if (!iar.IsApproved)
+                    {
+                        stats.PendingDeliveries++;
+                    }
+                    else
+                    {
+                        stats.ReceivedDeliveries++;
+                        stats.DeliveriesMTD++;
+                    }
+                }
+
+                return Ok(ApiResponse<DeliveryRecordStatsResponseModel>.Ok(stats, "Delivery records stats retrieved"));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(DeliveryController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred."));
+            }
+        }
         #endregion
 
         #region POST

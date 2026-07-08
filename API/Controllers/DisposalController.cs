@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PortalAPI.Attributes;
 using PortalCommon.Constants;
+using PortalCommon.Utilities;
 using PortalDB.Entities.ASSET.PTA;
 using PortalDB.Models.QueryParams.Disposal;
 using PortalDB.Models.QueryParams.Universal;
@@ -339,6 +340,25 @@ namespace API.Controllers
                             IsDeleted = false,
                             CreatedAt = DateTime.UtcNow
                         });
+                    }
+                }
+
+                // This disposal already finalized its assets (MarkDisposed stamped each PTA's
+                // current movement with Remarks = the method at that time) — keep those movements
+                // in sync with the corrected method so the Assets list Status column reflects it.
+                if (disposal.Status == TblDisposal.DISPOSED && !string.IsNullOrWhiteSpace(model.Method))
+                {
+                    var disposalMovements = (await _getTools.PTA.GetTblPTAMovements(context)
+                            .Where(m => m.PTAId.HasValue && newPTAIds.Contains(m.PTAId.Value) && m.Status == TblDisposal.DISPOSED)
+                            .ToListAsync())
+                        .GroupBy(m => m.PTAId!.Value)
+                        .Select(g => g.OrderByDescending(m => m.CreatedAt).ThenByDescending(m => m.Id).First());
+
+                    string encryptedMethod = EncryptionHelper.Encrypt(model.Method);
+                    foreach (var movement in disposalMovements)
+                    {
+                        await context.TblPTAMovements.Where(m => m.Id == movement.Id)
+                            .ExecuteUpdateAsync(u => u.SetProperty(x => x.RemarksEncrypted, encryptedMethod));
                     }
                 }
 

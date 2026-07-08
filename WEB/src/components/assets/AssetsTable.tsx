@@ -255,9 +255,12 @@ export function AssetsTable({
             <TableBody>
               {assets.map((asset) => {
                 const allMovements = asset.movements || [];
+                // Sort by createdAt (not the business-editable dateAssigned) so the true most-recent
+                // movement — e.g. a disposal event — always wins, even if dateAssigned ties with or
+                // predates an earlier movement's date.
                 const latestMovement = allMovements.length > 0
                   ? [...allMovements].sort((a: any, b: any) =>
-                      new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
+                      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || (b.id - a.id)
                     )[0]
                   : null;
 

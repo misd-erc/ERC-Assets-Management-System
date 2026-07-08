@@ -1,19 +1,15 @@
-import { useMemo, useEffect, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Package,
   Clock,
   CheckCircle,
   DollarSign,
-  AlertCircle,
-  XCircle,
   CalendarDays,
   TrendingUp
 } from "lucide-react";
 import { useDeliveryRecordStore } from "@/store/delivery"; // Adjust path if needed
-import { useSupplyIARStore } from "@/store/supply";
 import { formatCurrency } from "@/utils/formatters";
 
 /** Responsive font size so currency values fit without truncation */
@@ -64,93 +60,14 @@ function MetricCardLayout({
 }
 
 export const DeliveryGeneralHeader = () => {
-  const vwDeliveryRecordsSummary = useDeliveryRecordStore(state => state.vwDeliveryRecordsSummary);
-  const fetchDeliveryRecordsSummary = useDeliveryRecordStore(state => state.fetchDeliveryRecordsSummary);
-  
-  const iarsSummary = useSupplyIARStore(state => state.iarsSummary);
-  const fetchSupplyIARSummary = useSupplyIARStore(state => state.fetchSupplyIARSummary);
+  // Month-to-date figures are computed server-side (see /Delivery/record/stats) so
+  // this header doesn't need to pull the full delivery/IAR history to the client.
+  const stats = useDeliveryRecordStore(state => state.deliveryStats);
+  const fetchDeliveryStats = useDeliveryRecordStore(state => state.fetchDeliveryStats);
 
   useEffect(() => {
-    fetchDeliveryRecordsSummary();
-    fetchSupplyIARSummary();
-  }, [fetchDeliveryRecordsSummary, fetchSupplyIARSummary]);
-
-  const stats = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    let totalDeliveries = 0;
-    let pendingDeliveries = 0;
-    let receivedDeliveries = 0;
-    let totalValue = 0;
-
-    let pendingValue = 0;
-    let deliveriesMTD = 0;
-    let valueReceivedMTD = 0;
-    let rejectedDeliveries = 0;
-    let delayedInspections = 0;
-
-    // --- Process Delivery Records ---
-    vwDeliveryRecordsSummary.forEach(record => {
-      totalDeliveries++;
-
-      const recordTotal = Number(record.totalAmount) || 0;
-      totalValue += recordTotal;
-
-      const recordDateString = record.deliveryDate || record.createdAt;
-      const recordDate = recordDateString ? new Date(recordDateString) : now;
-      const isThisMonth = recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
-
-      if (!record.isReceived) {
-        pendingDeliveries++;
-        pendingValue += recordTotal;
-
-        const daysPending = Math.floor((now.getTime() - recordDate.getTime()) / (1000 * 3600 * 24));
-        if (daysPending > 3) delayedInspections++;
-        if (daysPending > 3 && !record.supplyIAR) rejectedDeliveries++;
-      } else {
-        receivedDeliveries++;
-        if (isThisMonth) {
-          deliveriesMTD++;
-          valueReceivedMTD += recordTotal;
-        }
-      }
-    });
-
-    // --- Process Unlinked IARs ---
-    iarsSummary.forEach(iar => {
-      if (!iar.recordId) {
-        totalDeliveries++;
-        if (!iar.isApproved) {
-          pendingDeliveries++;
-          const recordDateString = iar.iarNumberDate || iar.createdAt;
-          const recordDate = recordDateString ? new Date(recordDateString) : now;
-          const daysPending = Math.floor((now.getTime() - recordDate.getTime()) / (1000 * 3600 * 24));
-          if (daysPending > 3) delayedInspections++;
-          if (daysPending > 7) rejectedDeliveries++;
-        } else {
-          receivedDeliveries++;
-          const recordDateString = iar.iarNumberDate || iar.createdAt;
-          const recordDate = recordDateString ? new Date(recordDateString) : now;
-          const isThisMonth = recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
-          if (isThisMonth) deliveriesMTD++;
-        }
-      }
-    });
-
-    return {
-      totalDeliveries,
-      pendingDeliveries,
-      receivedDeliveries,
-      totalValue,
-      pendingValue,
-      deliveriesMTD,
-      valueReceivedMTD,
-      rejectedDeliveries,
-      delayedInspections
-    };
-  }, [vwDeliveryRecordsSummary, iarsSummary]);
+    fetchDeliveryStats();
+  }, [fetchDeliveryStats]);
 
   return (
       <div className="space-y-6 mb-4">
@@ -191,7 +108,7 @@ export const DeliveryGeneralHeader = () => {
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Pending Receipt</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Pending Receipt (MTD)</p>
                   <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{stats.pendingDeliveries}</p>
                 </div>
                 <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl group-hover:bg-indigo-100/70 dark:group-hover:bg-indigo-900/40 transition-colors duration-300">
@@ -207,7 +124,7 @@ export const DeliveryGeneralHeader = () => {
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Received / Completed</p>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Received / Completed (MTD)</p>
                   <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{stats.receivedDeliveries}</p>
                 </div>
                 <div className="p-3 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl group-hover:bg-emerald-100/70 dark:group-hover:bg-emerald-900/40 transition-colors duration-300">
@@ -217,47 +134,12 @@ export const DeliveryGeneralHeader = () => {
             </CardContent>
           </Card>
 
-          {/* CARD 4: Rejected / Issues */}
-          <Card className={`group relative overflow-hidden bg-white dark:bg-slate-900 border hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm rounded-2xl ${
-              stats.rejectedDeliveries > 0 
-                ? 'border-red-200 dark:border-red-900/50 hover:border-red-300' 
-                : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-300'
-          }`}>
-            <div className={`absolute top-0 left-0 w-1 h-full ${
-              stats.rejectedDeliveries > 0 ? 'bg-red-500 animate-pulse' : 'bg-slate-400'
-            }`} />
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className={`text-xs font-semibold uppercase tracking-wider ${stats.rejectedDeliveries > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                    Rejected / Issues
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{stats.rejectedDeliveries}</p>
-                    {stats.rejectedDeliveries > 0 && (
-                        <Badge variant="outline" className="bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/30 animate-pulse text-[10px] py-0.5 px-1.5 font-bold">
-                          Issues
-                        </Badge>
-                    )}
-                  </div>
-                </div>
-                <div className={`p-3 rounded-xl transition-colors duration-300 ${
-                    stats.rejectedDeliveries > 0 
-                      ? 'bg-red-50/60 dark:bg-red-950/40 text-red-600 dark:text-red-400 group-hover:bg-red-100/70 dark:group-hover:bg-red-900/40' 
-                      : 'bg-slate-50 dark:bg-slate-800 text-slate-400'
-                }`}>
-                  <XCircle className="w-5 h-5" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* CARD 5: Total Asset Value */}
+          {/* CARD 4: Total Delivered Value */}
           <Card className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 hover:border-emerald-200 dark:hover:border-emerald-900/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm rounded-2xl">
             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
             <CardContent className="p-5">
               <MetricCardLayout
-                label="Total Asset Value"
+                label="Total Delivered Value (MTD)"
                 value={<CurrencyStatValue value={stats.totalValue} />}
                 icon={<DollarSign className="w-5 h-5" />}
                 iconClassName="bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-100/70 dark:group-hover:bg-emerald-900/40"
@@ -265,7 +147,7 @@ export const DeliveryGeneralHeader = () => {
             </CardContent>
           </Card>
 
-          {/* CARD 6: Value Received (MTD) */}
+          {/* CARD 5: Value Received (MTD) */}
           <Card className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 hover:border-purple-200 dark:hover:border-purple-900/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm rounded-2xl">
             <div className="absolute top-0 left-0 w-1 h-full bg-purple-500" />
             <CardContent className="p-5">
@@ -278,51 +160,16 @@ export const DeliveryGeneralHeader = () => {
             </CardContent>
           </Card>
 
-          {/* CARD 7: Pending Value */}
+          {/* CARD 6: Pending Value (MTD) */}
           <Card className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 hover:border-orange-200 dark:hover:border-orange-900/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm rounded-2xl">
             <div className="absolute top-0 left-0 w-1 h-full bg-orange-500" />
             <CardContent className="p-5">
               <MetricCardLayout
-                label="Pending Value"
+                label="Pending Value (MTD)"
                 value={<CurrencyStatValue value={stats.pendingValue} />}
                 icon={<DollarSign className="w-5 h-5" />}
                 iconClassName="bg-orange-50/60 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 group-hover:bg-orange-100/70 dark:group-hover:bg-orange-900/40"
               />
-            </CardContent>
-          </Card>
-
-          {/* CARD 8: Delayed Inspections */}
-          <Card className={`group relative overflow-hidden bg-white dark:bg-slate-900 border hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm rounded-2xl ${
-              stats.delayedInspections > 0 
-                ? 'border-amber-200 dark:border-amber-900/50 hover:border-amber-300' 
-                : 'border-slate-200/60 dark:border-slate-800/60 hover:border-slate-300'
-          }`}>
-            <div className={`absolute top-0 left-0 w-1 h-full ${
-              stats.delayedInspections > 0 ? 'bg-amber-500 animate-pulse' : 'bg-slate-400'
-            }`} />
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                  <p className={`text-xs font-semibold uppercase tracking-wider ${stats.delayedInspections > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                    Delayed Inspections
-                  </p>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{stats.delayedInspections}</p>
-                    {stats.delayedInspections > 0 && (
-                        <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/30 animate-pulse text-[10px] py-0.5 px-1.5 font-bold">
-                          Warning
-                        </Badge>
-                    )}
-                  </div>
-                </div>
-                <div className={`p-3 rounded-xl transition-colors duration-300 ${
-                    stats.delayedInspections > 0 
-                      ? 'bg-amber-50/60 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 group-hover:bg-amber-100/70 dark:group-hover:bg-amber-900/40' 
-                      : 'bg-slate-50 dark:bg-slate-800 text-slate-400'
-                }`}>
-                  <AlertCircle className="w-5 h-5" />
-                </div>
-              </div>
             </CardContent>
           </Card>
 
