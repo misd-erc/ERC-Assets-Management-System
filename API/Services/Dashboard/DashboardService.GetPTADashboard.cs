@@ -33,16 +33,20 @@ namespace API.Services.Dashboard
                 ptaDash.TotalSEValuePercentage = ptaDash.TotalPPEValue + ptaDash.TotalSEValue == 0 ? 0 :
                     Math.Round((ptaDash.TotalSEValue / (ptaDash.TotalPPEValue + ptaDash.TotalSEValue)) * 100, 2);
 
+                // "On stock" means never issued (no movement record at all), matching the
+                // no-movement logic used for the PPE Issuance page's on-stock counts.
+                // Using IsCurrent here would wrongly count previously-issued-then-returned
+                // items as fresh stock.
                 var activeSEIds = ptas.Where(x => x.Group == TblPTA.SE && x.IsActive).Select(x => x.Id).ToHashSet();
-                var seIdsWithCurrentMovement = await _getTools.PTA.GetTblPTAMovements(context)
-                    .Where(x => x.PTAId.HasValue && activeSEIds.Contains(x.PTAId.Value) && x.IsCurrent)
+                var seIdsWithMovement = await _getTools.PTA.GetTblPTAMovements(context)
+                    .Where(x => x.PTAId.HasValue && activeSEIds.Contains(x.PTAId.Value))
                     .Select(x => x.PTAId!.Value)
                     .Distinct()
                     .ToListAsync();
-                ptaDash.TotalSEIssued = seIdsWithCurrentMovement.Count;
+                ptaDash.TotalSEIssued = seIdsWithMovement.Count;
                 ptaDash.TotalSEStock = ptaDash.TotalSE - ptaDash.TotalSEIssued;
 
-                var issuedPtaIds = seIdsWithCurrentMovement.ToHashSet();
+                var issuedPtaIds = seIdsWithMovement.ToHashSet();
                 ptaDash.TotalSEIssuedValue = (decimal)(ptas
                     .Where(x => x.Group == TblPTA.SE && x.IsActive && issuedPtaIds.Contains(x.Id))
                     .Sum(x => (double?)x.UnitValue) ?? 0);
