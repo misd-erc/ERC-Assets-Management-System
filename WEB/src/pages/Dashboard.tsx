@@ -257,7 +257,7 @@ function Dashboard() {
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(supplyStats?.totalValue || 0)}</p>
                 <span className="text-sm font-bold text-amber-600">Total Value</span>
               </div>
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{(supplyStats?.totalQuantity || 0).toLocaleString()} qty</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{(supplyStats?.totalItems || 0).toLocaleString()} items</p>
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-700 my-3" />
