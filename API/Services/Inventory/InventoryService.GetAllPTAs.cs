@@ -243,7 +243,13 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
                             EstimatedUsefulLife = x.EstimatedUsefulLife,
                             FiscalDate = x.FiscalDate,
                             Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                            Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
+                            // Order by CreatedAt (not the business-editable DateAssigned) so the true most-recent
+                            // movement — e.g. a disposal event — always sorts first, even when DateAssigned
+                            // ties with or predates an earlier movement's date.
+                            Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync())
+                                .OrderByDescending(m => m.CreatedAt)
+                                .ThenByDescending(m => m.Id)
+                                .ToList(),
                             IsActive = x.IsActive,
                             CreatedAt = x.CreatedAt,
                             UpdatedAt = x.UpdatedAt
@@ -397,7 +403,13 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
                                 DateAcquired = x.DateAcquired,
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                                Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
+                                // Order by CreatedAt (not the business-editable DateAssigned) so the true most-recent
+                            // movement — e.g. a disposal event — always sorts first, even when DateAssigned
+                            // ties with or predates an earlier movement's date.
+                            Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync())
+                                .OrderByDescending(m => m.CreatedAt)
+                                .ThenByDescending(m => m.Id)
+                                .ToList(),
                                 IsActive = x.IsActive,
                                 CreatedAt = x.CreatedAt,
                                 UpdatedAt = x.UpdatedAt
@@ -525,7 +537,13 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
                                 DateAcquired = x.DateAcquired,
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                                Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
+                                // Order by CreatedAt (not the business-editable DateAssigned) so the true most-recent
+                            // movement — e.g. a disposal event — always sorts first, even when DateAssigned
+                            // ties with or predates an earlier movement's date.
+                            Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync())
+                                .OrderByDescending(m => m.CreatedAt)
+                                .ThenByDescending(m => m.Id)
+                                .ToList(),
                                 IsActive = x.IsActive,
                                 CreatedAt = x.CreatedAt,
                                 UpdatedAt = x.UpdatedAt
@@ -644,7 +662,13 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
                                 DateAcquired = x.DateAcquired,
                                 EstimatedUsefulLife = x.EstimatedUsefulLife,
                                 Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),
-                                Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync()).OrderByDescending(m => m.DateAssigned).ToList(),
+                                // Order by CreatedAt (not the business-editable DateAssigned) so the true most-recent
+                            // movement — e.g. a disposal event — always sorts first, even when DateAssigned
+                            // ties with or predates an earlier movement's date.
+                            Movements = (await _getTools.PTA.GetTblPTAMovementsByPTAId(x.Id, context).ToListAsync())
+                                .OrderByDescending(m => m.CreatedAt)
+                                .ThenByDescending(m => m.Id)
+                                .ToList(),
                                 IsActive = x.IsActive,
                                 CreatedAt = x.CreatedAt,
                                 UpdatedAt = x.UpdatedAt
