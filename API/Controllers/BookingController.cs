@@ -195,39 +195,26 @@ namespace API.Controllers
                 string? description = model.Description ?? stagedItem.Description;
                 int quantity = model.Quantity ?? stagedItem.Quantity ?? 0;
 
-                TblSupplyItem? matchingSupplyItem = await _getTools.Supply.GetTblSupplyItems(context)
-                    .Where(s => string.Equals(s.Code, code, StringComparison.OrdinalIgnoreCase)
-                        && string.Equals(s.Description, description, StringComparison.OrdinalIgnoreCase))
-                    .OrderByDescending(s => s.CreatedAt)
-                    .FirstOrDefaultAsync();
-
-                long finalizedSupplyItemId;
-
-                if (matchingSupplyItem != null)
+                // Always insert a new row rather than bumping an existing item's Quantity in place —
+                // the stock card and the grouped item list both derive their numbers by treating each
+                // TblSupplyItem row as its own dated addition event and summing across rows sharing the
+                // same Code/Description. Updating a row in place would hide this booking from the stock
+                // card and silently rewrite the original addition's recorded quantity.
+                TblSupplyItem newSupplyItem = new()
                 {
-                    await context.TblSupplyItems.Where(x => x.Id == matchingSupplyItem.Id)
-                        .ExecuteUpdateAsync(u => u.SetProperty(x => x.Quantity, (matchingSupplyItem.Quantity ?? 0) + quantity));
+                    Code = code,
+                    IARId = stagedItem.SupplyIARId,
+                    CategoryId = model.CategoryId ?? stagedItem.CategoryId,
+                    Description = description,
+                    MeasurementUnitId = model.MeasurementUnitId ?? stagedItem.MeasurementUnitId,
+                    UnitCost = model.UnitCost ?? stagedItem.UnitCost,
+                    ReorderPoint = model.ReorderPoint ?? stagedItem.ReorderPoint,
+                    StorageLocationId = model.StorageLocationId ?? stagedItem.StorageLocationId,
+                    VendorId = model.VendorId ?? stagedItem.VendorId,
+                    Quantity = quantity
+                };
 
-                    finalizedSupplyItemId = matchingSupplyItem.Id;
-                }
-                else
-                {
-                    TblSupplyItem newSupplyItem = new()
-                    {
-                        Code = code,
-                        IARId = stagedItem.SupplyIARId,
-                        CategoryId = model.CategoryId ?? stagedItem.CategoryId,
-                        Description = description,
-                        MeasurementUnitId = model.MeasurementUnitId ?? stagedItem.MeasurementUnitId,
-                        UnitCost = model.UnitCost ?? stagedItem.UnitCost,
-                        ReorderPoint = model.ReorderPoint ?? stagedItem.ReorderPoint,
-                        StorageLocationId = model.StorageLocationId ?? stagedItem.StorageLocationId,
-                        VendorId = model.VendorId ?? stagedItem.VendorId,
-                        Quantity = quantity
-                    };
-
-                    finalizedSupplyItemId = await _editTools.Supply.EditTblSupplyItemAsync(newSupplyItem, model.ActionBySystemUserId, context);
-                }
+                long finalizedSupplyItemId = await _editTools.Supply.EditTblSupplyItemAsync(newSupplyItem, model.ActionBySystemUserId, context);
 
                 int rowsAffected = await _editTools.Booking.MarkBookedAsync(model.BookingItemId, finalizedSupplyItemId, null, model.ActionBySystemUserId, context);
 
