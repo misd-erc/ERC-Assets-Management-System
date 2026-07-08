@@ -71,12 +71,14 @@ export interface PtaItem {
 /*  GET next PAR number                                                         */
 /* -------------------------------------------------------------------------- */
 
-export const getNextParNumber = async (): Promise<string> => {
+/** PPE items get a PAR (Property Acknowledgement Receipt) number; SE items get an ICS (Inventory Custodian Slip) number. */
+export const getNextParNumber = async (group?: 'PPE' | 'SE'): Promise<string> => {
   const { systemUserId, sessionKey } = getAuthParams();
+  const parType = group === 'SE' ? 'ICS' : 'PAR';
   try {
     const response = await axiosInstance.get<ApiResponse<{ parNumber: string; sequence: number } | string>>(
       '/Inventory/pta/movement/next-par-number',
-      { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey } }
+      { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey, parType } }
     );
     if (!response.data.success) {
       console.error('[PTA] Failed to fetch next PAR number:', response.data.message);

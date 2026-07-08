@@ -53,6 +53,7 @@ export interface IssuanceItemFormState {
   itemName: string;
   itemGroup: 'PPE' | 'SE';
   parIcsNumber: string;
+  condition: string;
 }
 
 const defaultFormState = (): IssuanceFormState => ({
@@ -74,6 +75,7 @@ const defaultItemState = (): IssuanceItemFormState => ({
   itemName: '',
   itemGroup: 'PPE',
   parIcsNumber: '',
+  condition: '',
 });
 
 export function PPEIssuance() {
@@ -358,14 +360,14 @@ export function PPEIssuance() {
     setItems((prev) =>
       prev.map((item, itemIndex) =>
         itemIndex === index
-          ? { ...item, ptaId: selected.id, itemName: selected.description, itemGroup: selected.groupName }
+          ? { ...item, ptaId: selected.id, itemName: selected.description, itemGroup: selected.groupName, condition: selected.condition || item.condition }
           : item
       )
     );
   };
 
   const addItemRow = async () => {
-    const parNumber = await getNextParNumber();
+    const parNumber = await getNextParNumber(form.group);
     setItems((prev) => [...prev, { ...defaultItemState(), parIcsNumber: parNumber }]);
   };
 
@@ -392,7 +394,7 @@ export function PPEIssuance() {
     setDialogOpen(true);
     // Fetch par number and items for the chosen group
     const [parNumber, freshItems] = await Promise.all([
-      getNextParNumber(),
+      getNextParNumber(group),
       listSePpeItemsNoMovement(group),
     ]);
     setSePpeItems(freshItems);
@@ -450,6 +452,7 @@ export function PPEIssuance() {
             itemName: item.itemName,
             itemGroup: item.itemGroup,
             parIcsNumber: item.parIcsNumber,
+            condition: item.condition || undefined,
             issuanceType: form.issuanceType,
             issuedDate: form.issuedDate,
             expiryDate: form.expiryDate || undefined,
@@ -507,7 +510,7 @@ export function PPEIssuance() {
       // Generate a new PAR/ICS number sequentially for each group
       const renewalTasks: Array<() => Promise<boolean>> = [];
       for (const groupRecords of groupMap.values()) {
-        const newParIcsNumber = await getNextParNumber();
+        const newParIcsNumber = await getNextParNumber(groupRecords[0].itemGroup);
         for (const record of groupRecords) {
           renewalTasks.push(() => renewIssuance(record, renewState.issuedDate, newParIcsNumber));
         }
@@ -737,7 +740,7 @@ export function PPEIssuance() {
 
       {/* Detail Dialog */}
       <Dialog open={!!detailRecords} onOpenChange={(open) => { if (!open) setDetailRecords(null); }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>PAR/ICS Details — {detailRecords?.[0]?.parIcsNumber}</DialogTitle>
           </DialogHeader>
