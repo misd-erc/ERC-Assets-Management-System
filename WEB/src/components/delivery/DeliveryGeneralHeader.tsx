@@ -134,12 +134,12 @@ export const DeliveryGeneralHeader = () => {
             </CardContent>
           </Card>
 
-          {/* CARD 4: Total Asset Value */}
+          {/* CARD 4: Total Delivered Value */}
           <Card className="group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/60 hover:border-emerald-200 dark:hover:border-emerald-900/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm rounded-2xl">
             <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500" />
             <CardContent className="p-5">
               <MetricCardLayout
-                label="Total Asset Value (MTD)"
+                label="Total Delivered Value (MTD)"
                 value={<CurrencyStatValue value={stats.totalValue} />}
                 icon={<DollarSign className="w-5 h-5" />}
                 iconClassName="bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-100/70 dark:group-hover:bg-emerald-900/40"
