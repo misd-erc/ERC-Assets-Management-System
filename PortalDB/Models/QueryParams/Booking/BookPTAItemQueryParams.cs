@@ -8,7 +8,11 @@ namespace PortalDB.Models.QueryParams.Booking
         [Required] public long BookingItemId { get; set; }
         public string? PropertyNumber { get; set; }
         public long? CategoryId { get; set; }
+        public long? LegendId { get; set; }
+        public string? SerialNumber { get; set; }
         public string? Description { get; set; } = string.Empty;
+        public string? Brand { get; set; }
+        public string? Model { get; set; }
         public string? Specification { get; set; } = string.Empty;
         public long? MeasurementUnitId { get; set; }
         public decimal? UnitCost { get; set; }

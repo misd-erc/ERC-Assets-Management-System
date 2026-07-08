@@ -7,10 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSupplyUnit } from '@/hooks';
-import { getCategories } from '@/api/asset/inventoryApi';
-import { getEmployees } from '@/api/user-management/userApi';
-import { ApiEmployee } from '@/types/transfer';
-import { EmployeeSelector } from '@/components/transfers-returns/EmployeeSelector';
+import { getCategories, getLegends } from '@/api/asset/inventoryApi';
 import { bookPTAItem } from '@/api/booking/bookingApi';
 import { PendingBookingItem } from '@/types/booking';
 
@@ -23,55 +20,57 @@ interface Props {
 export const BookPTAItemModal = ({ item, onClose, onSuccess }: Props) => {
   const { units, fetchSupplyUnits } = useSupplyUnit();
   const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
-  const [employees, setEmployees] = useState<ApiEmployee[]>([]);
-  const [employeesLoading, setEmployeesLoading] = useState(false);
+  const [legends, setLegends] = useState<{ id: number; name: string; description?: string }[]>([]);
   const [saving, setSaving] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const [form, setForm] = useState({
     propertyNumber: '',
     categoryId: 0,
+    legendId: 0,
+    serialNumber: '',
     description: '',
+    brand: '',
+    model: '',
     specification: '',
     measurementUnitId: 0,
     unitCost: 0,
-    plantillaEmployeeId: null as number | null,
-    nonPlantillaEmployeeId: null as number | null,
   });
 
   useEffect(() => {
     if (item) {
       fetchSupplyUnits();
       getCategories(item.group).then(setCategories);
-
-      setEmployeesLoading(true);
-      getEmployees().then(res => setEmployees(res.data?.items || [])).finally(() => setEmployeesLoading(false));
+      getLegends().then(setLegends);
 
       setForm({
         propertyNumber: item.suggestedPropertyNumber || '',
         categoryId: item.categoryId || item.category?.id || 0,
+        legendId: 0,
+        serialNumber: '',
         description: item.description || '',
+        brand: '',
+        model: '',
         specification: item.specification || '',
         measurementUnitId: item.measurementUnitId || item.measurementUnit?.id || 0,
         unitCost: item.unitCost || 0,
-        plantillaEmployeeId: null,
-        nonPlantillaEmployeeId: null,
       });
+      setSubmitted(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item]);
+
+  const err = (cond: boolean) => cond ? 'border-red-500 focus-visible:ring-red-500' : '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!item) return;
 
-    if (!form.description.trim()) {
-      toast.error('Description is required');
+    setSubmitted(true);
+    if (!form.description.trim() || !form.legendId || !form.serialNumber.trim() || !form.brand.trim() || !form.model.trim()) {
+      toast.error('Please fill in all required fields');
       return;
     }
-
-    const plantillaEmployee = employees.find(e => e.id === form.plantillaEmployeeId);
-    const nonPlantillaEmployee = employees.find(e => e.id === form.nonPlantillaEmployeeId);
-    const custodianEmployee = plantillaEmployee || nonPlantillaEmployee;
 
     try {
       setSaving(true);
@@ -79,15 +78,14 @@ export const BookPTAItemModal = ({ item, onClose, onSuccess }: Props) => {
         bookingItemId: item.id,
         propertyNumber: form.propertyNumber.trim() || undefined,
         categoryId: form.categoryId || null,
+        legendId: form.legendId || null,
+        serialNumber: form.serialNumber.trim(),
         description: form.description.trim(),
+        brand: form.brand.trim(),
+        model: form.model.trim(),
         specification: form.specification.trim() || undefined,
         measurementUnitId: form.measurementUnitId || null,
         unitCost: form.unitCost,
-        plantillaEmployeeId: form.plantillaEmployeeId,
-        nonPlantillaEmployeeId: form.nonPlantillaEmployeeId,
-        actualOfficeId: custodianEmployee?.office?.id ?? null,
-        actualDivisionId: custodianEmployee?.division?.id ?? null,
-        dateAssigned: custodianEmployee ? new Date().toISOString() : undefined,
       });
       toast.success('Asset has been booked');
       onSuccess();
@@ -133,6 +131,30 @@ export const BookPTAItemModal = ({ item, onClose, onSuccess }: Props) => {
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Legend <span className="text-red-500">*</span></Label>
+              <select
+                className={`w-full border rounded px-3 py-2 text-sm bg-background ${err(submitted && !form.legendId)}`}
+                value={form.legendId}
+                onChange={(e) => setForm(f => ({ ...f, legendId: Number(e.target.value) }))}
+              >
+                <option value={0}>Select Legend</option>
+                {legends.map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Serial Number <span className="text-red-500">*</span></Label>
+              <Input
+                value={form.serialNumber}
+                onChange={(e) => setForm(f => ({ ...f, serialNumber: e.target.value }))}
+                className={err(submitted && !form.serialNumber.trim())}
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>Description</Label>
             <Input
@@ -140,6 +162,25 @@ export const BookPTAItemModal = ({ item, onClose, onSuccess }: Props) => {
               onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
               required
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Brand <span className="text-red-500">*</span></Label>
+              <Input
+                value={form.brand}
+                onChange={(e) => setForm(f => ({ ...f, brand: e.target.value }))}
+                className={err(submitted && !form.brand.trim())}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Model <span className="text-red-500">*</span></Label>
+              <Input
+                value={form.model}
+                onChange={(e) => setForm(f => ({ ...f, model: e.target.value }))}
+                className={err(submitted && !form.model.trim())}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -174,40 +215,6 @@ export const BookPTAItemModal = ({ item, onClose, onSuccess }: Props) => {
                 value={form.unitCost}
                 onChange={(e) => setForm(f => ({ ...f, unitCost: Number(e.target.value) }))}
               />
-            </div>
-          </div>
-
-          <div className="p-4 bg-slate-50/50 border rounded-md space-y-4">
-            <p className="text-sm font-medium text-slate-700">Assign Custodian <span className="text-muted-foreground font-normal">(optional)</span></p>
-            <div className="space-y-2">
-              <Label>Plantilla Employee</Label>
-              {employeesLoading ? (
-                <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Loading employees…
-                </div>
-              ) : (
-                <EmployeeSelector
-                  employees={employees.filter(e => e.employmentType ? e.employmentType.id === 1 : true)}
-                  value={form.plantillaEmployeeId}
-                  onSelect={(id) => setForm(f => ({ ...f, plantillaEmployeeId: id }))}
-                  placeholder="Search plantilla employee…"
-                />
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Non-Plantilla Employee</Label>
-              {employeesLoading ? (
-                <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" /> Loading employees…
-                </div>
-              ) : (
-                <EmployeeSelector
-                  employees={employees.filter(e => e.employmentType ? e.employmentType.id !== 1 : true)}
-                  value={form.nonPlantillaEmployeeId}
-                  onSelect={(id) => setForm(f => ({ ...f, nonPlantillaEmployeeId: id }))}
-                  placeholder="Search non-plantilla employee…"
-                />
-              )}
             </div>
           </div>
 
