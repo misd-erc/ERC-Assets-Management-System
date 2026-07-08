@@ -19,6 +19,7 @@ import { getCategories } from '@/api/categories/categoriesApi';
 import { toast } from 'sonner';
 import axiosInstance from '@/lib/axios';
 import { getAuthParams } from '@/utils/auth';
+import { useDeliveryRecordStore } from '@/store/delivery';
 
 /* ========================================
    SUPPLY ITEM STORE
@@ -501,6 +502,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       await get().fetchSupplyIARs();
       await get().fetchSupplyIARSummary();
       await useSupplyItemStore.getState().fetchSupplySummary();
+      await useDeliveryRecordStore.getState().fetchDeliveryStats();
       toast.success('IAR added successfully');
     } catch (error) {
       toast.error('Failed to add IAR');
@@ -534,6 +536,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       await get().fetchSupplyIARs();
       await get().fetchSupplyIARSummary();
       await useSupplyItemStore.getState().fetchSupplySummary();
+      await useDeliveryRecordStore.getState().fetchDeliveryStats();
       toast.success('IAR updated successfully');
     } catch (error) {
       toast.error('Failed to update IAR');
@@ -554,6 +557,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       await get().fetchSupplyIARs();
       await get().fetchSupplyIARSummary();
       await useSupplyItemStore.getState().fetchSupplySummary();
+      await useDeliveryRecordStore.getState().fetchDeliveryStats();
       toast.success('IAR deleted successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete IAR');
