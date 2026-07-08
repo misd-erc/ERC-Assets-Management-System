@@ -141,7 +141,7 @@ export const BookPTAItemModal = ({ item, onClose, onSuccess }: Props) => {
               >
                 <option value={0}>Select Legend</option>
                 {legends.map(l => (
-                  <option key={l.id} value={l.id}>{l.name}</option>
+                  <option key={l.id} value={l.id}>{l.name}{l.description ? ` — ${l.description}` : ''}</option>
                 ))}
               </select>
             </div>
