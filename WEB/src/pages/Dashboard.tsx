@@ -223,7 +223,7 @@ function Dashboard() {
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setSeModalView('stock'); setActiveModal('se'); } }}
               >
-                <span className="text-xs font-bold text-teal-600 block mb-0.5">On Stock</span>
+                <span className="text-xs font-bold text-teal-600 block mb-0.5">InStock</span>
                 <p className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(seStockValue)}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{seStock.toLocaleString()} item/s</p>
               </div>

@@ -88,7 +88,7 @@ export function SEDetailModal({ open, onClose, ptaData, formatCurrency, initialV
                       <td className="p-2.5 text-slate-600 text-xs">{[item.brand, item.model].filter(Boolean).join(' / ') || '—'}</td>
                       <td className="p-2.5 text-xs">
                         <span className={item.isIssued ? 'text-green-700 font-medium' : 'text-teal-700 font-medium'}>
-                          {item.isIssued ? 'Issued' : 'On Stock'}
+                          {item.isIssued ? 'Issued' : 'InStock'}
                         </span>
                       </td>
                       <td className="p-2.5 text-right text-slate-800 font-medium">{formatCurrency(item.value)}</td>
@@ -124,7 +124,7 @@ export function SEDetailModal({ open, onClose, ptaData, formatCurrency, initialV
             {/* Issued vs On Stock - click to filter the table below */}
             <div className="border rounded-lg overflow-hidden">
               <div className="bg-slate-100 px-4 py-2.5 border-b flex items-center justify-between">
-                <p className="text-sm font-semibold text-slate-700">Issued vs On Stock</p>
+                <p className="text-sm font-semibold text-slate-700">Issued vs InStock</p>
                 {viewMode !== 'all' && (
                   <button
                     onClick={() => setViewMode('all')}
@@ -158,7 +158,7 @@ export function SEDetailModal({ open, onClose, ptaData, formatCurrency, initialV
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <PackageCheck className="w-4 h-4 text-teal-600" />
-                    <span className="text-sm font-medium text-slate-700">On Stock</span>
+                    <span className="text-sm font-medium text-slate-700">InStock</span>
                   </div>
                   <p className="text-2xl font-bold text-teal-700">{formatCurrency(seStockValue)}</p>
                   <p className="text-xs text-slate-500 mt-1">{seStock.toLocaleString()} item/s &middot; click to view column</p>
@@ -175,7 +175,7 @@ export function SEDetailModal({ open, onClose, ptaData, formatCurrency, initialV
                       <th className="text-left p-3 font-semibold">Category</th>
                       <th className="text-right p-3 font-semibold w-28">Item/s</th>
                       {showIssued && <th className="text-right p-3 font-semibold w-24">Issued</th>}
-                      {showStock && <th className="text-right p-3 font-semibold w-24">On Stock</th>}
+                      {showStock && <th className="text-right p-3 font-semibold w-24">InStock</th>}
                       <th className="text-right p-3 font-semibold w-40">Amount</th>
                     </tr>
                   </thead>
