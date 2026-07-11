@@ -8,6 +8,7 @@ import { TaggableAsset } from "@/hooks/useAssetTagging";
 import { DataTable } from "@/components/common/DataTable";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Package, Search } from "lucide-react";
+import { AssetTagFilters } from "@/components/asset-tagging/AssetTagFilters";
 
 interface AssetSelectionCardProps {
   ppeItems: TaggableAsset[];
@@ -29,6 +30,12 @@ interface AssetSelectionCardProps {
   onSearchChange: (value: string) => void;
   onSelectAll: (items: TaggableAsset[]) => void;
   onToggleAsset: (asset: TaggableAsset) => void;
+  employeeFilter: string;
+  onEmployeeFilterChange: (value: string) => void;
+  officeFilter: string;
+  onOfficeFilterChange: (value: string) => void;
+  serviceFilter: string;
+  onServiceFilterChange: (value: string) => void;
 }
 
 export function AssetSelectionCard({
@@ -51,6 +58,12 @@ export function AssetSelectionCard({
   onSearchChange,
   onSelectAll,
   onToggleAsset,
+  employeeFilter,
+  onEmployeeFilterChange,
+  officeFilter,
+  onOfficeFilterChange,
+  serviceFilter,
+  onServiceFilterChange,
 }: AssetSelectionCardProps) {
   const [activeGroup, setActiveGroup] = useState<"PPE" | "SE">("PPE");
 
@@ -166,6 +179,15 @@ export function AssetSelectionCard({
             {allCurrentSelected ? "Deselect Page" : "Select Page"}
           </Button>
         </div>
+
+        <AssetTagFilters
+          employeeFilter={employeeFilter}
+          onEmployeeFilterChange={onEmployeeFilterChange}
+          officeFilter={officeFilter}
+          onOfficeFilterChange={onOfficeFilterChange}
+          serviceFilter={serviceFilter}
+          onServiceFilterChange={onServiceFilterChange}
+        />
 
         <Tabs value={activeGroup} onValueChange={(v) => setActiveGroup(v as "PPE" | "SE")}>
           <TabsList className="w-full grid grid-cols-2">
