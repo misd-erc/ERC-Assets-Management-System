@@ -18,6 +18,7 @@ namespace PortalDB.Models.ResponseModels.Dashboard
         public decimal TotalSEStockValue { get; set; }
         public List<PTACategoryBreakdownItem> PPECategoryBreakdown { get; set; } = new();
         public List<PTACategoryBreakdownItem> SECategoryBreakdown { get; set; } = new();
+        public List<PTAItem> Items { get; set; } = new();
     }
 
     public class PTACategoryBreakdownItem
@@ -27,5 +28,17 @@ namespace PortalDB.Models.ResponseModels.Dashboard
         public decimal Value { get; set; }
         public int IssuedCount { get; set; }
         public int StockCount { get; set; }
+    }
+
+    public class PTAItem
+    {
+        public string Group { get; set; } = "";
+        public string Category { get; set; } = "";
+        public string? PropertyNumber { get; set; }
+        public string? Description { get; set; }
+        public string? Brand { get; set; }
+        public string? Model { get; set; }
+        public decimal Value { get; set; }
+        public bool IsIssued { get; set; }
     }
 }

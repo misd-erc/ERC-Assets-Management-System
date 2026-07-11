@@ -166,7 +166,7 @@ function Dashboard() {
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(ppeAmount)}</p>
                 <span className="text-sm font-bold text-blue-600">Total Value</span>
               </div>
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{totalPPE.toLocaleString()} items</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{totalPPE.toLocaleString()} item/s</p>
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-700 mt-3 pt-2 flex items-center justify-between">
@@ -205,7 +205,7 @@ function Dashboard() {
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(seIssuedValue)}</p>
                 <span className="text-sm font-bold text-green-600">Total Value</span>
               </div>
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{seIssued.toLocaleString()} items</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{seIssued.toLocaleString()} item/s</p>
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
@@ -223,14 +223,14 @@ function Dashboard() {
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(seStockValue)}</p>
                 <span className="text-sm font-bold text-teal-600">Total Value</span>
               </div>
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{seStock.toLocaleString()} items</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{seStock.toLocaleString()} item/s</p>
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-700 mt-3 pt-2 flex items-center justify-between">
               <span className="text-xs text-slate-500 dark:text-slate-400">Total</span>
               <div className="text-right">
                 <span className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(seIssuedValue + seStockValue)}</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">/ {(seIssued + seStock).toLocaleString()} items</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">/ {(seIssued + seStock).toLocaleString()} item/s</span>
               </div>
             </div>
           </CardContent>
@@ -257,7 +257,7 @@ function Dashboard() {
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(supplyStats?.totalValue || 0)}</p>
                 <span className="text-sm font-bold text-amber-600">Total Value</span>
               </div>
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{(supplyStats?.totalItems || 0).toLocaleString()} items</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{(supplyStats?.totalItems || 0).toLocaleString()} item/s</p>
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-700 my-3" />
