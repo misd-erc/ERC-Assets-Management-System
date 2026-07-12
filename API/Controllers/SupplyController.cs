@@ -862,9 +862,12 @@ namespace API.Controllers
                     .ToList();
 
                 // ===== 3. Combine and sort chronologically =====
+                // Sort by calendar date, then Delivery (Addition) before Issuance on the same date, then by exact time.
                 var allEvents = additionEvents.Cast<dynamic>()
                     .Concat(issuanceEvents.Cast<dynamic>())
-                    .OrderBy(e => e.CreatedAt)
+                    .OrderBy(e => ((DateTime)e.CreatedAt).Date)
+                    .ThenBy(e => e.Type == "Addition" ? 0 : 1)
+                    .ThenBy(e => e.CreatedAt)
                     .ToList();
 
                 // ===== 4. Efficient unit loading =====
