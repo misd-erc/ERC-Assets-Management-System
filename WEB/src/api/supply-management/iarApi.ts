@@ -69,7 +69,8 @@ export const getSupplyIARs = async (
           actualDeliveryDate: u.actualDeliveryDate,
           isActive: u.isActive ?? true,
           createdAt: u.createdAt,
-          isApproved: u.isApproved
+          isApproved: u.isApproved,
+          signedFileStorageId: u.signedFileStorageId
         }))
         : [],
     totalCount: response.data.data.totalCount || 0
@@ -110,7 +111,8 @@ export const getSupplyIARById = async (iarId: number): Promise<VwSupplyIAR | nul
     actualDeliveryDate: u.actualDeliveryDate,
     isActive: u.isActive ?? true,
     createdAt: u.createdAt,
-    isApproved: u.isApproved
+    isApproved: u.isApproved,
+    signedFileStorageId: u.signedFileStorageId
   };
 };
 
@@ -140,6 +142,7 @@ export const editSupplyIAR = async (payload: SupplyIAR): Promise<{ message: stri
     IsActive: payload.isActive ?? true,
     isApproved: payload.isApproved ?? false,
     ActualDeliveryDate: payload.actualDeliveryDate || null,
+    SignedFileStorageId: payload.signedFileStorageId ?? null,
 
     ActionBySystemUserId: systemUserId,
     SessionKey: sessionKey,
@@ -158,4 +161,20 @@ export const getSupplyIARSummary = async (): Promise<VwSupplyIAR[]> => {
   });
   if (!response.data.success) return [];
   return response.data.data;
+};
+
+export const uploadIARSignedDocument = async (file: File): Promise<{ fileId: number }> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('ActionBySystemUserId', systemUserId.toString());
+  formData.append('SessionKey', sessionKey);
+
+  const response = await axiosInstance.post<ApiResponse<any>>('/Storage/upload/iar/signed', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+
+  if (!response.data.success) throw new Error(response.data.message || 'Failed to upload signed IAR document');
+  return { fileId: response.data.data.fileId };
 };

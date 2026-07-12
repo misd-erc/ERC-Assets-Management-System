@@ -1179,6 +1179,7 @@ namespace API.Controllers
                         ActualDeliveryDate = x.ActualDeliveryDate,
                         IsActive = x.IsActive,
                         IsApproved = x.IsApproved,
+                        SignedFileStorageId = x.SignedFileStorageId,
                         CreatedAt = x.CreatedAt
                     };
                     supplyIResponses.Add(supplyIARModel);
@@ -1244,6 +1245,7 @@ namespace API.Controllers
                     ActualDeliveryDate = supplyIAR.ActualDeliveryDate,
                     IsActive = supplyIAR.IsActive,
                     IsApproved = supplyIAR.IsApproved,
+                    SignedFileStorageId = supplyIAR.SignedFileStorageId,
                     CreatedAt = supplyIAR.CreatedAt
                 };
 
@@ -2161,7 +2163,8 @@ namespace API.Controllers
                     PODate = model.PODate,
                     ActualDeliveryDate = model.ActualDeliveryDate,
                     IsActive = model.IsActive,
-                    IsApproved = model.IsApproved
+                    IsApproved = model.IsApproved,
+                    SignedFileStorageId = model.SignedFileStorageId
                 };
 
                 long supplyIARId = await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
