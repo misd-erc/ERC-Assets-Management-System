@@ -3,6 +3,7 @@ import { useSupplyIARStore } from '@/store/supply';
 import { useOfficeStore, useDivisionStore } from '@/store/office';
 import { getVendors } from '@/api/contract-management/vendorApi';
 import { getDeliveryRecordById } from '@/api/delivery/deliveryApi';
+import { uploadIARSignedDocument } from '@/api/supply-management/iarApi';
 import { SupplyIARTable } from './SupplyIARTable';
 import { SupplyIAREditModal } from './SupplyIAREditModal';
 import { SupplyIARDeleteModal } from './SupplyIARDeleteModal';
@@ -151,8 +152,10 @@ export const SupplyIARTabContent = () => {
     }
   };
 
-  const handleConfirmApprove = async () => {
+  const handleConfirmApprove = async (file: File) => {
     if (selectedRecord) {
+      const { fileId } = await uploadIARSignedDocument(file);
+
       const fullPayload = {
         ...selectedRecord,
         vendorId: selectedRecord.vendor?.id,
@@ -161,7 +164,8 @@ export const SupplyIARTabContent = () => {
         deliveryRecordId: selectedRecord.recordId,
         recordIds: selectedRecord.recordIds?.length ? selectedRecord.recordIds : (selectedRecord.recordId ? [selectedRecord.recordId] : []),
         isApproved: true,
-        isActive: selectedRecord.isActive ?? true
+        isActive: selectedRecord.isActive ?? true,
+        signedFileStorageId: fileId
       };
 
       await updateSupplyIAR(selectedRecord.id, fullPayload);

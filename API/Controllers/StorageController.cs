@@ -148,6 +148,46 @@ namespace API.Controllers
             }
         }
 
+        [HttpPost("upload/iar/signed")]
+        [RequestSizeLimit(10_000_000)]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadIARSignedDocument(IFormFile file, [FromForm] FileUploaderQueryParams model)
+        {
+            if (file == null || file.Length == 0)
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.UPLOAD_FAILED, "Upload failed. Please check your file"));
+
+            try
+            {
+                await using var stream = file.OpenReadStream();
+
+                var fileId = await AzureTools.UploadFileAndSaveToDbAsync(
+                    _options,
+                    stream,
+                    file.FileName,
+                    file.ContentType,
+                    model.ActionBySystemUserId,
+                    TblFileStorage.SUPPLY_IAR_SIGNED
+                );
+
+                if (fileId == null)
+                    throw new Exception("Upload failed");
+
+                UploaderResponseModel uploaderRM = new()
+                {
+                    FileId = fileId
+                };
+
+                return Ok(ApiResponse<object>.Ok(uploaderRM, "Signed IAR document has been successfully uploaded."));
+            }
+            catch (Exception ex)
+            {
+                await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(StorageController));
+                return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
+            }
+        }
+
         #endregion
 
         #region GET

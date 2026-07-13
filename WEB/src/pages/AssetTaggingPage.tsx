@@ -30,6 +30,10 @@ export default function AssetTaggingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
+  const [employeeFilter, setEmployeeFilter] = useState('all');
+  const [officeFilter, setOfficeFilter] = useState('all');
+  const [serviceFilter, setServiceFilter] = useState('all');
+
   const [tagTemplate, setTagTemplate] = useState<string>('standard');
   const [includeLogo, setIncludeLogo] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -59,6 +63,12 @@ export default function AssetTaggingPage() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  // Filter changes → reset both pages to 1
+  useEffect(() => {
+    setPpePage(1);
+    setSeePage(1);
+  }, [employeeFilter, officeFilter, serviceFilter]);
+
   // Fetch PPE
   useEffect(() => {
     const fetch = async () => {
@@ -69,6 +79,9 @@ export default function AssetTaggingPage() {
           search: debouncedSearch || undefined,
           PageNumber: ppePage,
           PageSize: ppePageSize,
+          EmployeeId: employeeFilter !== 'all' ? parseInt(employeeFilter) : undefined,
+          office: officeFilter,
+          division: serviceFilter,
         });
         setPpeItems(normalizeAssets(res.items || []));
         setPpeTotalCount(res.totalCount);
@@ -76,7 +89,7 @@ export default function AssetTaggingPage() {
       finally { setIsPpeLoading(false); }
     };
     fetch();
-  }, [ppePage, ppePageSize, debouncedSearch]);
+  }, [ppePage, ppePageSize, debouncedSearch, employeeFilter, officeFilter, serviceFilter]);
 
   // Fetch SE
   useEffect(() => {
@@ -88,6 +101,9 @@ export default function AssetTaggingPage() {
           search: debouncedSearch || undefined,
           PageNumber: seePage,
           PageSize: sePageSize,
+          EmployeeId: employeeFilter !== 'all' ? parseInt(employeeFilter) : undefined,
+          office: officeFilter,
+          division: serviceFilter,
         });
         setSeItems(normalizeAssets(res.items || []));
         setSeTotalCount(res.totalCount);
@@ -95,7 +111,7 @@ export default function AssetTaggingPage() {
       finally { setIsSeLoading(false); }
     };
     fetch();
-  }, [seePage, sePageSize, debouncedSearch]);
+  }, [seePage, sePageSize, debouncedSearch, employeeFilter, officeFilter, serviceFilter]);
 
   const handleToggleAsset = (asset: TaggableAsset) => {
     setSelectedAssets((prev) => {
@@ -205,6 +221,12 @@ export default function AssetTaggingPage() {
           onSearchChange={setSearchTerm}
           onSelectAll={handleSelectAll}
           onToggleAsset={handleToggleAsset}
+          employeeFilter={employeeFilter}
+          onEmployeeFilterChange={setEmployeeFilter}
+          officeFilter={officeFilter}
+          onOfficeFilterChange={setOfficeFilter}
+          serviceFilter={serviceFilter}
+          onServiceFilterChange={setServiceFilter}
         />
       </div>
 

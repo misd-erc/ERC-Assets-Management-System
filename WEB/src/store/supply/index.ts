@@ -531,6 +531,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
         actualDeliveryDate: updates.actualDeliveryDate,
         isActive: updates.isActive ?? true,
         isApproved: updates.isApproved ?? false,
+        signedFileStorageId: updates.signedFileStorageId,
       } as SupplyIAR);
 
       await get().fetchSupplyIARs();

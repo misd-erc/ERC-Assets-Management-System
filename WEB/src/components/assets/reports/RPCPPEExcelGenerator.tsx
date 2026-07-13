@@ -2,6 +2,7 @@ import React from 'react';
 import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { Asset } from '@/types/asset/UnifiedAsset';
 import { getCategories } from '@/api/asset/inventoryApi';
+import { RPCPPESignatories, DEFAULT_RPCPPE_SIGNATORIES } from './RPCPPEFilterModal';
 
 const styles = StyleSheet.create({
   page: {
@@ -53,7 +54,83 @@ const styles = StyleSheet.create({
   center: {
     textAlign: 'center',
   },
+
+  sigBlockRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+
+  sigBlockCol: {
+    width: '31%',
+  },
+
+  sigBlockLabel: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+
+  sigEntry: {
+    marginBottom: 16,
+  },
+
+  sigLine: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#000',
+    width: '100%',
+    marginTop: 1,
+    marginBottom: 2,
+    minHeight: 3,
+  },
+
+  sigName: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+
+  sigDesignation: {
+    fontSize: 7,
+    textAlign: 'center',
+  },
 });
+
+const renderSignatureBlock = (signatories: RPCPPESignatories) => (
+  <View style={styles.sigBlockRow}>
+    <View style={styles.sigBlockCol}>
+      <Text style={styles.sigBlockLabel}>Certified Correct by:</Text>
+      <View style={styles.sigEntry}>
+        <Text style={styles.sigName}>{signatories.inventoryChairperson.name || ' '}</Text>
+        <View style={styles.sigLine} />
+        <Text style={styles.sigDesignation}>{signatories.inventoryChairperson.designation}</Text>
+      </View>
+      <View style={styles.sigEntry}>
+        <Text style={styles.sigName}>{signatories.inventoryViceChairperson.name || ' '}</Text>
+        <View style={styles.sigLine} />
+        <Text style={styles.sigDesignation}>{signatories.inventoryViceChairperson.designation}</Text>
+      </View>
+    </View>
+
+    <View style={styles.sigBlockCol}>
+      <Text style={styles.sigBlockLabel}>Approved by:</Text>
+      <View style={styles.sigEntry}>
+        <Text style={styles.sigName}>{signatories.chairpersonAndCEO.name || ' '}</Text>
+        <View style={styles.sigLine} />
+        <Text style={styles.sigDesignation}>{signatories.chairpersonAndCEO.designation}</Text>
+      </View>
+    </View>
+
+    <View style={styles.sigBlockCol}>
+      <Text style={styles.sigBlockLabel}>Verified by:</Text>
+      <View style={styles.sigEntry}>
+        <Text style={styles.sigName}>{signatories.coaRepresentative.name || ' '}</Text>
+        <View style={styles.sigLine} />
+        <Text style={styles.sigDesignation}>{signatories.coaRepresentative.designation}</Text>
+      </View>
+    </View>
+  </View>
+);
 
 export class RPCPPEPdfGenerator {
   // Cache para sa categories with generalCode
@@ -95,7 +172,7 @@ export class RPCPPEPdfGenerator {
     return category?.generalCode || '';
   }
 
-  static async generate(assets: Asset[], asOfDate: Date, categoryId?: number) {
+  static async generate(assets: Asset[], asOfDate: Date, categoryId?: number, signatories: RPCPPESignatories = DEFAULT_RPCPPE_SIGNATORIES) {
     if (!assets?.length) return;
 
     const categoryName = await this.getCategoryName(categoryId);
@@ -199,6 +276,8 @@ export class RPCPPEPdfGenerator {
               </Text>
             </View>
           </View>
+
+          {renderSignatureBlock(signatories)}
         </Page>
       </Document>
     );
@@ -213,7 +292,7 @@ export class RPCPPEPdfGenerator {
     a.click();
   }
 
-  static async generatePreview(assets: Asset[], asOfDate: Date, categoryIdOrName?: string | number): Promise<string> {
+  static async generatePreview(assets: Asset[], asOfDate: Date, categoryIdOrName?: string | number, signatories: RPCPPESignatories = DEFAULT_RPCPPE_SIGNATORIES): Promise<string> {
     if (!assets?.length) return '';
 
     // If categoryIdOrName is a number or numeric string, fetch the category name
@@ -334,6 +413,8 @@ export class RPCPPEPdfGenerator {
               </Text>
             </View>
           </View>
+
+          {renderSignatureBlock(signatories)}
         </Page>
       </Document>
     );

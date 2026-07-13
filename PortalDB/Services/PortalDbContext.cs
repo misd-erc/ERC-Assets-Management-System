@@ -81,6 +81,7 @@ namespace PortalDB.Services
         public DbSet<TblAssetRequest> TblAssetRequests { get; set; }
         public DbSet<TblAssetRequestItem> TblAssetRequestItems { get; set; }
         public DbSet<TblAssetRequestHistory> TblAssetRequestHistories { get; set; }
+        public DbSet<TblRPCPPESignatoryTemplate> TblRPCPPESignatoryTemplates { get; set; }
 
         #endregion
         #region Supply

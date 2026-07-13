@@ -10,10 +10,11 @@ interface Props {
   formatCurrency: (amount: number) => string;
 }
 
-type ViewMode = 'summary' | 'sufficient' | 'low-stock' | 'out-of-stock';
+type ViewMode = 'summary' | 'sufficient' | 'low-stock' | 'out-of-stock' | 'category';
 
 export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>('summary');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const totalQuantity = supplyStats?.totalQuantity || 0;
   const totalValue = supplyStats?.totalValue || 0;
@@ -25,6 +26,7 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
 
   const handleClose = () => {
     setViewMode('summary');
+    setSelectedCategory(null);
     onClose();
   };
 
@@ -36,10 +38,14 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
         return stockHealthItems.filter(i => i.isLowStock && i.stockOnHand > 0);
       case 'out-of-stock':
         return stockHealthItems.filter(i => i.stockOnHand === 0);
+      case 'category':
+        return stockHealthItems.filter(i => i.category === selectedCategory);
       default:
         return [];
     }
   };
+
+  const filteredItems = getFilteredItems();
 
   const getViewTitle = () => {
     switch (viewMode) {
@@ -49,12 +55,12 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
         return `Low Stock (${lowStockCount})`;
       case 'out-of-stock':
         return `Out of Stock (${outOfStockCount})`;
+      case 'category':
+        return `${selectedCategory} (${filteredItems.length})`;
       default:
         return '';
     }
   };
-
-  const filteredItems = getFilteredItems();
 
   const getViewAccent = () => {
     switch (viewMode) {
@@ -62,6 +68,8 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
         return { header: 'bg-amber-600', footer: 'border-amber-300 bg-amber-50' };
       case 'out-of-stock':
         return { header: 'bg-red-600', footer: 'border-red-300 bg-red-50' };
+      case 'category':
+        return { header: 'bg-amber-600', footer: 'border-amber-300 bg-amber-50' };
       default:
         return { header: 'bg-green-700', footer: 'border-green-300 bg-green-50' };
     }
@@ -114,7 +122,7 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
                     <span className="text-sm font-medium text-slate-700">Sufficient</span>
                   </div>
                   <p className="text-3xl font-bold text-green-700">{sufficientCount}</p>
-                  <p className="text-xs text-slate-500 mt-1">Click to view items</p>
+                  <p className="text-xs text-slate-500 mt-1">Click to view item/s</p>
                 </div>
                 <div
                   className="p-4 cursor-pointer hover:bg-amber-50 transition-colors"
@@ -128,7 +136,7 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
                     <span className="text-sm font-medium text-slate-700">Low Stock</span>
                   </div>
                   <p className="text-3xl font-bold text-amber-600">{lowStockCount}</p>
-                  <p className="text-xs text-slate-500 mt-1">Click to view items</p>
+                  <p className="text-xs text-slate-500 mt-1">Click to view item/s</p>
                 </div>
                 <div
                   className="p-4 cursor-pointer hover:bg-red-50 transition-colors"
@@ -142,7 +150,7 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
                     <span className="text-sm font-medium text-slate-700">Out of Stock</span>
                   </div>
                   <p className="text-3xl font-bold text-red-600">{outOfStockCount}</p>
-                  <p className="text-xs text-slate-500 mt-1">Click to view items</p>
+                  <p className="text-xs text-slate-500 mt-1">Click to view item/s</p>
                 </div>
               </div>
             </div>
@@ -160,7 +168,14 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
                   </thead>
                   <tbody>
                     {breakdown.map((cat, i) => (
-                      <tr key={cat.name} className={`border-t ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-amber-50/50 transition-colors`}>
+                      <tr
+                        key={cat.name}
+                        className={`border-t cursor-pointer ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-amber-100/70 transition-colors`}
+                        onClick={() => { setSelectedCategory(cat.name); setViewMode('category'); }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedCategory(cat.name); setViewMode('category'); } }}
+                      >
                         <td className="p-3 text-slate-700 font-medium">{cat.name}</td>
                         <td className="p-3 text-right text-slate-800">{cat.quantity.toLocaleString()}</td>
                         <td className="p-3 text-right text-slate-800 font-medium">{formatCurrency(cat.value)}</td>
@@ -183,7 +198,7 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
             {/* Back button + title */}
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setViewMode('summary')}
+                onClick={() => { setViewMode('summary'); setSelectedCategory(null); }}
                 className="flex items-center gap-1 text-sm text-slate-600 hover:text-slate-900 transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -217,7 +232,7 @@ export function SupplyDetailModal({ open, onClose, supplyStats, formatCurrency }
                   {filteredItems.length === 0 && (
                     <tr>
                       <td colSpan={5} className="p-6 text-center text-slate-400">
-                        No items found
+                        No item/s found
                       </td>
                     </tr>
                   )}

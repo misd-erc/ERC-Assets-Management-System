@@ -62,7 +62,7 @@ export function TotalAssetModal({ open, onClose, ptaData, supplyStats, formatCur
             <div className="bg-gradient-to-r from-indigo-50 to-purple-100 rounded-xl p-6 text-center">
               <p className="text-sm text-indigo-600 font-medium">Combined Asset Value</p>
               <p className="text-3xl font-bold text-indigo-900 mt-1">{formatCurrency(grandTotal)}</p>
-              <p className="text-sm text-indigo-500 mt-1">{totalItems.toLocaleString()} total items across all categories</p>
+              <p className="text-sm text-indigo-500 mt-1">{totalItems.toLocaleString()} total item/s across all categories</p>
             </div>
 
             {/* Value Distribution */}
@@ -101,21 +101,21 @@ export function TotalAssetModal({ open, onClose, ptaData, supplyStats, formatCur
                 <Package className="w-5 h-5 text-blue-600 mx-auto mb-1" />
                 <p className="text-xs text-blue-600 font-medium">PPE</p>
                 <p className="text-lg font-bold text-blue-900">{formatCurrency(ppeValue)}</p>
-                <p className="text-[11px] text-blue-600">{(ptaData?.totalPPE || 0).toLocaleString()} items</p>
+                <p className="text-[11px] text-blue-600">{(ptaData?.totalPPE || 0).toLocaleString()} item/s</p>
                 <p className="text-[10px] text-blue-500 mt-0.5">{pctOf(ppeValue)}% of total</p>
               </div>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
                 <Package className="w-5 h-5 text-green-600 mx-auto mb-1" />
                 <p className="text-xs text-green-600 font-medium">SE</p>
                 <p className="text-lg font-bold text-green-900">{formatCurrency(seValue)}</p>
-                <p className="text-[11px] text-green-600">{(ptaData?.totalSE || 0).toLocaleString()} items</p>
+                <p className="text-[11px] text-green-600">{(ptaData?.totalSE || 0).toLocaleString()} item/s</p>
                 <p className="text-[10px] text-green-500 mt-0.5">{pctOf(seValue)}% of total</p>
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
                 <PackageOpen className="w-5 h-5 text-amber-600 mx-auto mb-1" />
                 <p className="text-xs text-amber-600 font-medium">Supply</p>
                 <p className="text-lg font-bold text-amber-900">{formatCurrency(supplyValue)}</p>
-                <p className="text-[11px] text-amber-600">{(supplyStats?.totalItems || 0).toLocaleString()} items</p>
+                <p className="text-[11px] text-amber-600">{(supplyStats?.totalItems || 0).toLocaleString()} item/s</p>
                 <p className="text-[10px] text-amber-500 mt-0.5">{pctOf(supplyValue)}% of total</p>
               </div>
             </div>
