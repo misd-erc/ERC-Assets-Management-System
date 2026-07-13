@@ -1776,9 +1776,9 @@ namespace API.Controllers
 
             try
             {
-                // 1. Get supply RIS within date range
+                // 1. Get issued supply RIS within date range
                 var supplyRISs = await _getTools.Supply.GetTblSupplyRISs(context)
-                    .Where(x => x.CreatedAt >= startDate && x.CreatedAt <= endDate)
+                    .Where(x => x.RISIssuedDate.HasValue && x.RISIssuedDate.Value.Date >= startDate.Date && x.RISIssuedDate.Value.Date <= endDate.Date)
                     .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode, x.OfficeId, x.DivisionId })
                     .ToListAsync();
 
