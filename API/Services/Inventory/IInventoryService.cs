@@ -70,5 +70,11 @@ namespace API.Services.Inventory
         Task<IActionResult> DeletePTACategory([FromQuery] SoloQueryParams model, [FromRoute] long ptaCategoryId);
 
         Task<IActionResult> DeletePTALegend([FromQuery] SoloQueryParams model, [FromRoute] long ptaLegendId);
+
+        Task<IActionResult> GetRPCPPESignatoryTemplates([FromQuery] SoloQueryParams model);
+
+        Task<IActionResult> EditRPCPPESignatoryTemplate([FromBody] EditRPCPPESignatoryTemplateQueryParams model);
+
+        Task<IActionResult> DeleteRPCPPESignatoryTemplate([FromQuery] SoloQueryParams model, [FromRoute] long templateId);
     }
 }
