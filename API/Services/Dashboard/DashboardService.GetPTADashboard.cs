@@ -85,6 +85,22 @@ namespace API.Services.Dashboard
                     .OrderByDescending(x => x.Value)
                     .ToList();
 
+                ptaDash.Items = activePtas
+                    .Where(x => x.Group == TblPTA.PPE || x.Group == TblPTA.SE)
+                    .Select(x => new PTAItem
+                    {
+                        Group = x.Group ?? "",
+                        Category = x.CategoryId.HasValue && catDict.ContainsKey(x.CategoryId.Value)
+                            ? catDict[x.CategoryId.Value] : "Uncategorized",
+                        PropertyNumber = x.PropertyNumber,
+                        Description = x.Description,
+                        Brand = x.Brand,
+                        Model = x.Model,
+                        Value = (decimal)(x.UnitValue ?? 0),
+                        IsIssued = issuedPtaIds.Contains(x.Id)
+                    })
+                    .ToList();
+
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
 

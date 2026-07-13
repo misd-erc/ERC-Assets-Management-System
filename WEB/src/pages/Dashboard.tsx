@@ -166,7 +166,7 @@ function Dashboard() {
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(ppeAmount)}</p>
                 <span className="text-sm font-bold text-blue-600">Total Value</span>
               </div>
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{totalPPE.toLocaleString()} items</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{totalPPE.toLocaleString()} item/s</p>
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-700 mt-3 pt-2 flex items-center justify-between">
@@ -192,45 +192,40 @@ function Dashboard() {
               </div>
             </div>
 
-            {/* Issued */}
-            <div
-              className="px-2 py-1 -mx-2 mb-1 rounded-md hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors"
-              onClick={(e) => { e.stopPropagation(); setSeModalView('issued'); setActiveModal('se'); }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setSeModalView('issued'); setActiveModal('se'); } }}
-            >
-              <span className="text-sm font-bold text-green-600 block mb-0.5">Issued</span>
+            {/* Total - prominent */}
+            <div className="px-2 py-1 -mx-2">
               <div className="flex items-baseline gap-2 mb-0.5">
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(seIssuedValue)}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(seIssuedValue + seStockValue)}</p>
                 <span className="text-sm font-bold text-green-600">Total Value</span>
               </div>
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{seIssued.toLocaleString()} items</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{(seIssued + seStock).toLocaleString()} item/s</p>
             </div>
 
-            <div className="border-t border-slate-200 dark:border-slate-700 my-2" />
-
-            {/* In Stock */}
-            <div
-              className="px-2 py-1 -mx-2 rounded-md hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-colors"
-              onClick={(e) => { e.stopPropagation(); setSeModalView('stock'); setActiveModal('se'); }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setSeModalView('stock'); setActiveModal('se'); } }}
-            >
-              <span className="text-sm font-bold text-teal-600 block mb-0.5">On Stock</span>
-              <div className="flex items-baseline gap-2 mb-0.5">
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(seStockValue)}</p>
-                <span className="text-sm font-bold text-teal-600">Total Value</span>
+            <div className="border-t border-slate-200 dark:border-slate-700 mt-3 pt-2 grid grid-cols-2 gap-2">
+              {/* Issued */}
+              <div
+                className="px-2 py-1 rounded-md hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors"
+                onClick={(e) => { e.stopPropagation(); setSeModalView('issued'); setActiveModal('se'); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setSeModalView('issued'); setActiveModal('se'); } }}
+              >
+                <span className="text-xs font-bold text-green-600 block mb-0.5">Issued</span>
+                <p className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(seIssuedValue)}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{seIssued.toLocaleString()} item/s</p>
               </div>
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{seStock.toLocaleString()} items</p>
-            </div>
 
-            <div className="border-t border-slate-200 dark:border-slate-700 mt-3 pt-2 flex items-center justify-between">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Total</span>
-              <div className="text-right">
-                <span className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(seIssuedValue + seStockValue)}</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">/ {(seIssued + seStock).toLocaleString()} items</span>
+              {/* On Stock */}
+              <div
+                className="px-2 py-1 rounded-md hover:bg-teal-50 dark:hover:bg-teal-950/30 transition-colors"
+                onClick={(e) => { e.stopPropagation(); setSeModalView('stock'); setActiveModal('se'); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setSeModalView('stock'); setActiveModal('se'); } }}
+              >
+                <span className="text-xs font-bold text-teal-600 block mb-0.5">InStock</span>
+                <p className="text-sm font-bold text-slate-800 dark:text-white">{formatCurrency(seStockValue)}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{seStock.toLocaleString()} item/s</p>
               </div>
             </div>
           </CardContent>
@@ -257,7 +252,7 @@ function Dashboard() {
                 <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(supplyStats?.totalValue || 0)}</p>
                 <span className="text-sm font-bold text-amber-600">Total Value</span>
               </div>
-              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{(supplyStats?.totalItems || 0).toLocaleString()} items</p>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{(supplyStats?.totalItems || 0).toLocaleString()} item/s</p>
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-700 my-3" />

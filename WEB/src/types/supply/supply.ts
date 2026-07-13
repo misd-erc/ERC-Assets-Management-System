@@ -101,6 +101,7 @@ export interface SupplyIAR {
   actualDeliveryDate: string;
   isActive: boolean;
   isApproved: boolean;
+  signedFileStorageId?: number;
   createdAt?: string;
 }
 
@@ -124,6 +125,7 @@ export interface VwSupplyIAR {
   poDate: string;
   isActive: boolean;
   isApproved: boolean;
+  signedFileStorageId?: number;
   createdAt?: string;
   approvedOn?: string;
 }

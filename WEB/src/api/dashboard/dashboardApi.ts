@@ -16,6 +16,17 @@ export interface PTACategoryBreakdownItem {
   stockCount: number;
 }
 
+export interface PTAItem {
+  group: string;
+  category: string;
+  propertyNumber?: string | null;
+  description?: string | null;
+  brand?: string | null;
+  model?: string | null;
+  value: number;
+  isIssued: boolean;
+}
+
 export interface PTADashboardData {
   totalPPE: number;
   totalSE: number;
@@ -29,6 +40,7 @@ export interface PTADashboardData {
   totalSEStockValue: number;
   ppeCategoryBreakdown: PTACategoryBreakdownItem[];
   seCategoryBreakdown: PTACategoryBreakdownItem[];
+  items: PTAItem[];
 }
 
 export interface MonthlyMovementItem {

@@ -40,7 +40,7 @@ import { ReportPreviewModal } from './ReportPreviewModal';
 import { EmployeeSelectModal } from './EmployeeSelectModal';
 import { ItemSelectModal } from './ItemSelectModal';
 import { ItemMovementsModal } from './ItemMovementsModal';
-import { RPCPPEFilterModal } from './RPCPPEFilterModal';
+import { RPCPPEFilterModal, RPCPPESignatories, DEFAULT_RPCPPE_SIGNATORIES } from './RPCPPEFilterModal';
 import { RPCSPFilterModal, RPCSPReportType } from './RPCSPFilterModal';
 import { PARGenerator } from './PARGenerator';
 import { ICSGenerator } from './ICSGenerator';
@@ -76,6 +76,7 @@ export function ReportTab() {
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [rpcppeDate, setRpcppeDate] = useState<Date | null>(null);
   const [rpcppeCategoryId, setRpcppeCategoryId] = useState<number | undefined>(undefined);
+  const [rpcppeSignatories, setRpcppeSignatories] = useState<RPCPPESignatories>(DEFAULT_RPCPPE_SIGNATORIES);
   const [rpcspReportType, setRpcspReportType] = useState<RPCSPReportType>('ISSUED');
   const [rpcspDate, setRpcspDate] = useState<Date | null>(null);
   const [rpcspCategoryId, setRpcspCategoryId] = useState<number | undefined>(undefined);
@@ -255,7 +256,7 @@ export function ReportTab() {
           return;
         }
 
-        await RPCPPEPdfGenerator.generate(assets, rpcppeDate!, rpcppeCategoryId);
+        await RPCPPEPdfGenerator.generate(assets, rpcppeDate!, rpcppeCategoryId, rpcppeSignatories);
         toast.success('RPCPPE PDF generated');
       } catch (error) {
         console.error('RPCPPE generation failed:', error);
@@ -310,7 +311,7 @@ export function ReportTab() {
     setRegistrySPIAssets([]);
   };
 
-  const handleRPCPPEGenerate = async (asOfDate: Date, categoryId?: number) => {
+  const handleRPCPPEGenerate = async (asOfDate: Date, categoryId: number | undefined, signatories: RPCPPESignatories) => {
     try {
       const assets = await PTAService.getAllForRPCPPE(asOfDate, categoryId);
 
@@ -321,13 +322,14 @@ export function ReportTab() {
 
       // Generate preview
       setLoadingPreview(true);
-      const url = await RPCPPEPdfGenerator.generatePreview(assets, asOfDate, categoryId?.toString());
+      const url = await RPCPPEPdfGenerator.generatePreview(assets, asOfDate, categoryId?.toString(), signatories);
       setPreviewUrl(url);
       setLoadingPreview(false);
 
       // Store parameters for download
       setRpcppeDate(asOfDate);
       setRpcppeCategoryId(categoryId);
+      setRpcppeSignatories(signatories);
 
       // Show preview modal
       setSelectedReport('RPCPPE');

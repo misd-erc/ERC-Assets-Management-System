@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -5,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { formatCurrency } from '@/utils/formatters';
 import { formatDate } from '@/utils/dateUtils';
 import { VwSupplyIAR } from '@/types';
-import { FileText, ClipboardCheck, Package } from 'lucide-react';
+import { FileText, ClipboardCheck, Package, ExternalLink, Loader2, FileDown } from 'lucide-react';
 import { VwDeliveryRecord } from "@/types/delivery/delivery";
+import { getAuthParams } from '@/utils/auth';
+import axiosInstance from '@/lib/axios';
 
 interface Props {
   open: boolean;
@@ -29,9 +32,56 @@ const getItemTypeLabel = (typeId: number | undefined | null): string => {
 };
 
 export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecords, loadingDeliveryRecord }: Props) => {
+  const [fileBlobUrl, setFileBlobUrl] = useState<string | null>(null);
+  const [fileType, setFileType] = useState<string | null>(null);
+  const [isLoadingFile, setIsLoadingFile] = useState(false);
+
+  const { systemUserId, sessionKey } = getAuthParams();
+  const baseUrl = axiosInstance.defaults.baseURL || '/api';
+
+  const directFileUrl = record?.signedFileStorageId
+      ? `${baseUrl}/Storage/retrieve/${record.signedFileStorageId}?ActionBySystemUserId=${systemUserId}&SessionKey=${sessionKey}`
+      : null;
+
+  useEffect(() => {
+    if (open && record?.signedFileStorageId) {
+      const fetchFilePreview = async () => {
+        setIsLoadingFile(true);
+        try {
+          const res = await axiosInstance.get(`/Storage/retrieve/${record.signedFileStorageId}`, {
+            params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+            responseType: 'blob',
+          });
+
+          const contentType = res.headers['content-type'] || 'application/octet-stream';
+          setFileType(contentType);
+
+          const blob = new Blob([res.data], { type: contentType });
+          const url = URL.createObjectURL(blob);
+          setFileBlobUrl(url);
+        } catch (error) {
+          console.error('Failed to load signed IAR file preview', error);
+        } finally {
+          setIsLoadingFile(false);
+        }
+      };
+
+      fetchFilePreview();
+    }
+
+    return () => {
+      if (fileBlobUrl) {
+        URL.revokeObjectURL(fileBlobUrl);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, record?.signedFileStorageId]);
+
   if (!record) return null;
 
   const deliveryItems = deliveryRecords.flatMap(dr => dr.items || []);
+
+  const isPreviewable = fileType?.includes('pdf') || fileType?.includes('image');
 
   // Calculate the total value of all delivered items
   const totalItemsValue = deliveryItems.reduce(
@@ -222,6 +272,52 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecords
                 </div>
             )}
           </div>
+
+          {directFileUrl && (
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
+              <div className="flex justify-between items-center mb-3">
+                <Label className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-blue-600" />
+                  Signed IAR Document
+                </Label>
+                <Button variant="outline" size="sm" className="h-8 bg-white" asChild>
+                  <a href={directFileUrl} target="_blank" rel="noopener noreferrer" download>
+                    <ExternalLink className="w-4 h-4 mr-2 text-blue-600" /> Download File
+                  </a>
+                </Button>
+              </div>
+
+              <div className="w-full rounded border border-slate-300 bg-white overflow-hidden flex flex-col justify-center items-center relative" style={{ minHeight: isPreviewable ? '400px' : '200px' }}>
+                {isLoadingFile ? (
+                  <div className="flex flex-col items-center justify-center text-slate-500 p-10">
+                    <Loader2 className="w-8 h-8 animate-spin mb-2 text-blue-600" />
+                    <span className="text-sm font-medium">Loading file data...</span>
+                  </div>
+                ) : fileBlobUrl ? (
+                  isPreviewable ? (
+                    <iframe
+                      src={`${fileBlobUrl}#toolbar=0&navpanes=0&view=FitH`}
+                      className="w-full h-[400px] border-none absolute inset-0"
+                      title="Signed IAR Document"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-slate-500 p-10">
+                      <FileDown className="w-12 h-12 mb-3 text-slate-300" />
+                      <span className="text-sm font-medium text-slate-800 mb-1">Preview not available for this file type</span>
+                      <span className="text-xs text-slate-500 mb-4 text-center max-w-[250px]">
+                        Browsers cannot preview Word or Excel documents directly.
+                      </span>
+                      <Button variant="secondary" size="sm" asChild>
+                        <a href={directFileUrl} download>Download to View</a>
+                      </Button>
+                    </div>
+                  )
+                ) : (
+                  <span className="text-sm text-slate-500 p-10">Preview not available</span>
+                )}
+              </div>
+            </div>
+          )}
 
           <DialogFooter className="mt-6">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Close View</Button>

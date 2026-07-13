@@ -103,6 +103,9 @@ namespace PortalDB.Entities.ASSET.Supply
         [Column("SupplyIARIsDeleted")]
         public bool IsDeleted { get; set; } = false;
 
+        [Column("SupplyIARSignedFileStorageId")]
+        public long? SignedFileStorageId { get; set; }
+
         [Column("SupplyIARApprovedOn")]
         public DateTime? ApprovedOn { get; set; }
 

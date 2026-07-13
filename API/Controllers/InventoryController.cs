@@ -219,5 +219,25 @@ namespace API.Controllers
         [ValidateModelRequiredFields]
         public async Task<IActionResult> DeletePTALegend([FromQuery] SoloQueryParams model, [FromRoute] long ptaLegendId) => await _inventoryService.DeletePTALegend(model, ptaLegendId);
 
+
+        [HttpGet("pta/rpcppe/signatory-templates")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> GetRPCPPESignatoryTemplates([FromQuery] SoloQueryParams model) => await _inventoryService.GetRPCPPESignatoryTemplates(model);
+
+
+
+        [HttpPost("pta/rpcppe/signatory-templates/edit")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> EditRPCPPESignatoryTemplate([FromBody] EditRPCPPESignatoryTemplateQueryParams model) => await _inventoryService.EditRPCPPESignatoryTemplate(model);
+
+
+
+        [HttpDelete("pta/rpcppe/signatory-templates/delete/{templateId}")]
+        [ValidateSessionToken]
+        [ValidateModelRequiredFields]
+        public async Task<IActionResult> DeleteRPCPPESignatoryTemplate([FromQuery] SoloQueryParams model, [FromRoute] long templateId) => await _inventoryService.DeleteRPCPPESignatoryTemplate(model, templateId);
+
     }
 }

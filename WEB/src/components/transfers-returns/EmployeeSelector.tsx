@@ -110,13 +110,21 @@ export function EmployeeSelector({
         </div>
       </PopoverTrigger>
       <PopoverContent
-        className="w-full p-0"
+        className="w-[--radix-popover-trigger-width] p-0 max-h-[--radix-popover-content-available-height] overflow-y-auto"
         align="start"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <Command shouldFilter={false}>
           <CommandEmpty>No employees found.</CommandEmpty>
-          <CommandList className="max-h-[300px]">
+          <CommandList
+            className="max-h-[300px]"
+            onWheel={(e) => {
+              // Radix Dialog's scroll lock (react-remove-scroll) blocks native wheel
+              // scrolling on this list because it's portaled outside the dialog's own
+              // DOM subtree. Scroll it manually instead.
+              e.currentTarget.scrollTop += e.deltaY;
+            }}
+          >
             <CommandGroup>
               {filteredEmployees.map((employee) => (
                 <CommandItem

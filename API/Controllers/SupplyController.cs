@@ -862,9 +862,12 @@ namespace API.Controllers
                     .ToList();
 
                 // ===== 3. Combine and sort chronologically =====
+                // Sort by calendar date, then Delivery (Addition) before Issuance on the same date, then by exact time.
                 var allEvents = additionEvents.Cast<dynamic>()
                     .Concat(issuanceEvents.Cast<dynamic>())
-                    .OrderBy(e => e.CreatedAt)
+                    .OrderBy(e => ((DateTime)e.CreatedAt).Date)
+                    .ThenBy(e => e.Type == "Addition" ? 0 : 1)
+                    .ThenBy(e => e.CreatedAt)
                     .ToList();
 
                 // ===== 4. Efficient unit loading =====
@@ -1179,6 +1182,7 @@ namespace API.Controllers
                         ActualDeliveryDate = x.ActualDeliveryDate,
                         IsActive = x.IsActive,
                         IsApproved = x.IsApproved,
+                        SignedFileStorageId = x.SignedFileStorageId,
                         CreatedAt = x.CreatedAt
                     };
                     supplyIResponses.Add(supplyIARModel);
@@ -1244,6 +1248,7 @@ namespace API.Controllers
                     ActualDeliveryDate = supplyIAR.ActualDeliveryDate,
                     IsActive = supplyIAR.IsActive,
                     IsApproved = supplyIAR.IsApproved,
+                    SignedFileStorageId = supplyIAR.SignedFileStorageId,
                     CreatedAt = supplyIAR.CreatedAt
                 };
 
@@ -1771,9 +1776,9 @@ namespace API.Controllers
 
             try
             {
-                // 1. Get supply RIS within date range
+                // 1. Get issued supply RIS within date range
                 var supplyRISs = await _getTools.Supply.GetTblSupplyRISs(context)
-                    .Where(x => x.CreatedAt >= startDate && x.CreatedAt <= endDate)
+                    .Where(x => x.RISIssuedDate.HasValue && x.RISIssuedDate.Value.Date >= startDate.Date && x.RISIssuedDate.Value.Date <= endDate.Date)
                     .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode, x.OfficeId, x.DivisionId })
                     .ToListAsync();
 
@@ -2161,7 +2166,8 @@ namespace API.Controllers
                     PODate = model.PODate,
                     ActualDeliveryDate = model.ActualDeliveryDate,
                     IsActive = model.IsActive,
-                    IsApproved = model.IsApproved
+                    IsApproved = model.IsApproved,
+                    SignedFileStorageId = model.SignedFileStorageId
                 };
 
                 long supplyIARId = await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
