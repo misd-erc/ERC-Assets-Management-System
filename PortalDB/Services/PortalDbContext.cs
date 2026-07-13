@@ -95,6 +95,7 @@ namespace PortalDB.Services
         public DbSet<TblIARSignatoryTemplate> TblIARSignatoryTemplates { get; set; }
         public DbSet<TblRISSignatoryTemplate> TblRISSignatoryTemplates { get; set; }
         public DbSet<TblRSMISignatoryTemplate> TblRSMISignatoryTemplates { get; set; }
+        public DbSet<TblRPCISignatoryTemplate> TblRPCISignatoryTemplates { get; set; }
         #endregion
         #region Delivery
         public DbSet<TblDeliveryRecord> TblDeliveryRecords { get; set; }
