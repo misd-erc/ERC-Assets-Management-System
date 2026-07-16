@@ -17,6 +17,7 @@ namespace PortalDB.Models.ResponseModels.Dashboard
     {
         public string Name { get; set; } = "";
         public long Quantity { get; set; }
+        public long ItemCount { get; set; }
         public decimal Value { get; set; }
     }
 

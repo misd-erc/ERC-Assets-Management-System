@@ -86,7 +86,6 @@ function Dashboard() {
   // Use PTA dashboard data or fallbacks
   const totalPPE = ptaData?.totalPPE || 0;
   const ppeAmount = ptaData?.totalPPEValue || 0;
-  const ppePercentage = ptaData?.totalPPEValuePercentage || 0;
   const seIssued = ptaData?.totalSEIssued || 0;
   const seStock = ptaData?.totalSEStock || 0;
   const seIssuedValue = ptaData?.totalSEIssuedValue || 0;
@@ -95,7 +94,7 @@ function Dashboard() {
   const ppeCategoryPieData = (ptaData?.ppeCategoryBreakdown ?? []).map(c => ({ name: c.name, value: c.count }));
   const seCategoryPieData = (ptaData?.seCategoryBreakdown ?? []).map(c => ({ name: c.name, value: c.count }));
 
-  const supplyCategoryPieData = (supplyStats?.categoryBreakdown ?? []).map(c => ({ name: c.name, value: c.quantity }));
+  const supplyCategoryPieData = (supplyStats?.categoryBreakdown ?? []).map(c => ({ name: c.name, value: c.itemCount }));
 
   const supplyStockHealthItems = supplyStats?.stockHealthItems ?? [];
   const supplyOutOfStockCount = supplyStockHealthItems.filter(i => i.stockOnHand === 0).length;
@@ -167,11 +166,6 @@ function Dashboard() {
                 <span className="text-sm font-bold text-blue-600">Total Value</span>
               </div>
               <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{totalPPE.toLocaleString()} item/s</p>
-            </div>
-
-            <div className="border-t border-slate-200 dark:border-slate-700 mt-3 pt-2 flex items-center justify-between">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Share of total assets</span>
-              <span className="text-sm font-bold text-blue-700 dark:text-blue-400">{ppePercentage.toFixed(1)}%</span>
             </div>
           </CardContent>
         </Card>

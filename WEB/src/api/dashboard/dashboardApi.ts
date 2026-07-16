@@ -118,6 +118,7 @@ export const getDisposalStats = async (): Promise<DashboardDisposalStats> => {
 export interface SupplyCategoryBreakdownItem {
   name: string;
   quantity: number;
+  itemCount: number;
   value: number;
 }
 
