@@ -3,10 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Loader2, Search, Eye, User, Package, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Search, Eye, User, Package, Pencil, Trash2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements, getPTATransferList, getPTAReturnList, getTransferDetailsByNumber, getReturnDetailsByNumber, editMovement, deleteMovement } from '@/api/asset/transferApi';
+import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements, getPTATransferList, getPTAReturnList, getTransferDetailsByNumber, getReturnDetailsByNumber, editMovement, deleteMovement, getAssetsByEmployee } from '@/api/asset/transferApi';
 import { getConditions } from '@/api/asset/inventoryApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { ApiEmployee } from '@/types/transfer';
@@ -280,10 +280,19 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   const [editItemRecords, setEditItemRecords] = useState<{
     movementId: number;
     ptaId?: number;
-    item?: PTAItem;
+    item?: any;
     condition: string;
+    isNew?: boolean;
+    rawItem?: any;
   }[]>([]);
   const [editItemsLoading, setEditItemsLoading] = useState(false);
+  // Movement IDs the user removed from the record during this edit session (deleted on save)
+  const [editRemovedMovementIds, setEditRemovedMovementIds] = useState<number[]>([]);
+  // The employee whose other current items can be added to this record
+  const [editSourceEmployeeId, setEditSourceEmployeeId] = useState<number | null>(null);
+  const [editAvailableItems, setEditAvailableItems] = useState<any[]>([]);
+  const [editAvailableItemsLoading, setEditAvailableItemsLoading] = useState(false);
+  const [editAddItemQuery, setEditAddItemQuery] = useState('');
 
   // Delete state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -386,6 +395,43 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   // Resolve the transfer/return number a movement is keyed by
   const getMovementNumber = (movement: Movement): string =>
     movement.ptritrNumber || movement.rrppeRrspNumber || movement.rrpperrspNumber || '';
+
+  // Which asset group ('PPE' or 'SE') this movement belongs to, used to fetch items available to add
+  const inferGroupName = (movement: Movement): 'PPE' | 'SE' => {
+    if (transferType === 'PTR' || transferType === 'RRPPE') return 'PPE';
+    if (transferType === 'ITR' || transferType === 'RRSP') return 'SE';
+    return movement.items?.[0]?.group === 'SE' ? 'SE' : 'PPE';
+  };
+
+  // Mirrors TransferForm's isCurrentHolder: true if this item's latest movement is assigned to employeeId
+  const isItemCurrentHolder = (item: any, employeeId: number | null): boolean => {
+    if (!employeeId) return false;
+    if (item.movements && Array.isArray(item.movements) && item.movements.length > 0) {
+      const sorted = [...item.movements].sort((a: any, b: any) => {
+        const tA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.dateAssigned ?? 0).getTime();
+        const tB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.dateAssigned ?? 0).getTime();
+        if (tB !== tA) return tB - tA;
+        return (b.id ?? 0) - (a.id ?? 0);
+      });
+      const latest = sorted[0];
+      return latest.plantillaEmployeeId === employeeId || latest.nonPlantillaEmployeeId === employeeId;
+    }
+    return item.plantillaEmployeeId === employeeId || item.nonPlantillaEmployeeId === employeeId;
+  };
+
+  // Load the source employee's other current items (excluding ones already in this record) so they can be added
+  const loadEditAvailableItems = async (employeeId: number, group: 'PPE' | 'SE', excludePtaIds: number[]) => {
+    setEditAvailableItemsLoading(true);
+    try {
+      const items = await getAssetsByEmployee(employeeId, group);
+      const heldItems = items.filter((item: any) => isItemCurrentHolder(item, employeeId));
+      setEditAvailableItems(heldItems.filter((item: any) => !excludePtaIds.includes(item.id)));
+    } catch {
+      setEditAvailableItems([]);
+    } finally {
+      setEditAvailableItemsLoading(false);
+    }
+  };
 
   // Normalize the lazily-fetched detail response's employee shape ({ employee: {...}, employeeType }) into EmployeeInfo
   const normalizeDetailEmployee = (raw: any): EmployeeInfo | null => {
@@ -551,6 +597,11 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     // Load each item involved in this PTR/ITR/return so its condition can be edited individually
     setEditItemRecords([]);
     setEditItemsLoading(true);
+    setEditRemovedMovementIds([]);
+    setEditAddItemQuery('');
+    setEditAvailableItems([]);
+    const sourceEmployeeId = movement.employee?.[0]?.id || null;
+    setEditSourceEmployeeId(sourceEmployeeId);
     const fallbackRecord = movement.id
       ? [{
           movementId: movement.id,
@@ -559,11 +610,12 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
           condition: resolvedCondition,
         }]
       : [];
+    let finalRecords = fallbackRecord;
     try {
       const records = await loadMovementDetailRecords(movement);
       if (records.length > 0) {
         setEditingMovement(prev => prev ? { ...prev, allMovementIds: records.map((r: any) => r.movementId) } : prev);
-        setEditItemRecords(records.map((r: any) => {
+        finalRecords = records.map((r: any) => {
           const itemRawCondition = (r.condition || '').trim();
           const itemResolved =
             (itemRawCondition && (matchCondition(itemRawCondition) || itemRawCondition)) || resolvedCondition || '';
@@ -573,7 +625,8 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
             item: (r.items || [])[0],
             condition: itemResolved,
           };
-        }));
+        });
+        setEditItemRecords(finalRecords);
       } else {
         setEditItemRecords(fallbackRecord);
       }
@@ -584,6 +637,11 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       setEditItemsLoading(false);
     }
 
+    if (sourceEmployeeId) {
+      const excludePtaIds = finalRecords.map(r => r.ptaId).filter((id): id is number => !!id);
+      loadEditAvailableItems(sourceEmployeeId, inferGroupName(movement), excludePtaIds);
+    }
+
     setEditDialogOpen(true);
   };
 
@@ -591,17 +649,39 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     setEditItemRecords(prev => prev.map(r => r.movementId === movementId ? { ...r, condition } : r));
   };
 
+  // Stage a source employee's item to be added to this record on save
+  const handleAddItemToEdit = (item: any) => {
+    setEditItemRecords(prev => [
+      ...prev,
+      {
+        movementId: -item.id,
+        ptaId: item.id,
+        item,
+        condition: editFields.condition || conditions[0] || 'Good',
+        isNew: true,
+        rawItem: item,
+      },
+    ]);
+    setEditAvailableItems(prev => prev.filter(i => i.id !== item.id));
+  };
+
+  // Unstage an item from this record; existing (already saved) items are queued for deletion on save
+  const handleRemoveItemFromEdit = (rec: { movementId: number; ptaId?: number; item?: any; isNew?: boolean }) => {
+    setEditItemRecords(prev => prev.filter(r => r.movementId !== rec.movementId));
+    if (!rec.isNew) {
+      setEditRemovedMovementIds(prev => [...prev, rec.movementId]);
+    }
+    if (rec.item && rec.ptaId) {
+      setEditAvailableItems(prev => prev.some(i => i.id === rec.ptaId) ? prev : [...prev, rec.item]);
+    }
+  };
+
   // Save edited movement details
   const handleSaveEdit = async () => {
     if (!editingMovement) return;
-    const ids = editingMovement.allMovementIds?.length
-      ? editingMovement.allMovementIds
-      : editingMovement.id
-      ? [editingMovement.id]
-      : [];
 
-    if (ids.length === 0) {
-      toast.error('No movement IDs available to update');
+    if (editItemRecords.length === 0) {
+      toast.error('This record must have at least one item');
       return;
     }
 
@@ -617,10 +697,9 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       transferType === 'RRSP' ||
       (!transferType && !hasPtrItrNumber && hasReturnNumber);
 
-    const hasMissingCondition = ids.some(id => {
-      const itemRecord = editItemRecords.find(r => r.movementId === id);
-      return !(itemRecord?.condition || editFields.condition || editingMovement.condition);
-    });
+    const hasMissingCondition = editItemRecords.some(
+      rec => !(rec.condition || editFields.condition || editingMovement.condition)
+    );
     if (hasMissingCondition) {
       toast.error('Please select a condition for each item');
       return;
@@ -628,11 +707,41 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
 
     try {
       setEditSaving(true);
-      for (const id of ids) {
-        const itemRecord = editItemRecords.find(r => r.movementId === id);
+
+      // Remove items the user unstaged from this record
+      for (const id of editRemovedMovementIds) {
+        await deleteMovement(id);
+      }
+
+      for (const rec of editItemRecords) {
+        // Newly added items: close out whatever movement currently holds them so they
+        // aren't shown as held by two people at once, mirroring TransferForm's behavior.
+        if (rec.isNew && rec.rawItem?.movements?.length) {
+          const sortedPrevious = [...rec.rawItem.movements].sort(
+            (a: any, b: any) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
+          );
+          const latestPrevious = sortedPrevious[0];
+          await editMovement({
+            id: latestPrevious.id,
+            ptaId: latestPrevious.ptaId,
+            dateAssigned: latestPrevious.dateAssigned,
+            ptrItrNumber: latestPrevious.ptrItrNumber || '',
+            parIcsNumber: latestPrevious.parIcsNumber || '',
+            rrppeRrspNumber: latestPrevious.rrppeRrspNumber || '',
+            status: latestPrevious.status || 'T',
+            plantillaEmployeeId: latestPrevious.plantillaEmployeeId || null,
+            nonPlantillaEmployeeId: latestPrevious.nonPlantillaEmployeeId || null,
+            condition: latestPrevious.condition || 'Good',
+            actualOfficeId: latestPrevious.actualOfficeId || 0,
+            actualDivisionId: latestPrevious.actualDivisionId || 0,
+            isActive: true,
+            isCurrent: false,
+          });
+        }
+
         await editMovement({
-          id,
-          ptaId: itemRecord?.ptaId ?? editingMovement.ptaId ?? 0,
+          id: rec.isNew ? 0 : rec.movementId,
+          ptaId: rec.ptaId ?? editingMovement.ptaId ?? 0,
           dateAssigned: editFields.dateAssigned
             ? new Date(editFields.dateAssigned).toISOString()
             : editingMovement.dateAssigned || new Date().toISOString(),
@@ -644,7 +753,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
             ? editFields.transferNumber
             : undefined,
           status: editFields.status,
-          condition: itemRecord?.condition || editFields.condition || editingMovement.condition || '',
+          condition: rec.condition || editFields.condition || editingMovement.condition || '',
           actualOfficeId: (editingMovement as any).actualOfficeId ?? 0,
           actualDivisionId: (editingMovement as any).actualDivisionId ?? 0,
           plantillaEmployeeId: editFields.plantillaEmployeeId ?? null,
@@ -1290,8 +1399,8 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       </Dialog>
       {/* Edit Details Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-lg max-w-[95vw] max-h-[95vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] sm:max-w-xl max-w-[95vw] max-h-[95vh] overflow-y-auto overflow-x-hidden border-4">
+          <DialogHeader className="min-w-0">
             <DialogTitle className="text-xl">Update Movement Details</DialogTitle>
             <DialogDescription className="text-sm">
               Edit the details for{' '}
@@ -1309,7 +1418,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 py-2 min-w-0">
             {/* Transfer / Return Number */}
             <div className="space-y-1">
               <label className="text-sm font-medium">
@@ -1431,7 +1540,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
             {/* Items & per-item Condition */}
             <div className="space-y-1">
               <label className="text-sm font-medium">
-                {editItemRecords.length > 1 ? `Items in this Movement (${editItemRecords.length})` : 'Condition'}
+                Items in this Movement ({editItemRecords.length})
               </label>
               {editItemsLoading ? (
                 <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
@@ -1441,13 +1550,32 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
               ) : editItemRecords.length > 0 ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {editItemRecords.map((rec) => (
-                    <div key={rec.movementId} className="border rounded p-2 space-y-1">
-                      {editItemRecords.length > 1 && (
-                        <div className="text-xs">
-                          <p className="font-mono font-semibold">{rec.item?.propertyNumber || 'N/A'}</p>
-                          <p className="text-muted-foreground">{rec.item?.description || ''}</p>
+                    <div key={rec.movementId} className="border rounded p-3 space-y-2 bg-muted/20">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="text-xs min-w-0 flex-1">
+                          <p className="font-mono font-semibold truncate">
+                            {rec.item?.propertyNumber || 'N/A'}
+                            {rec.isNew && <span className="ml-1 text-green-600 font-semibold">(New)</span>}
+                          </p>
+                          <p className="text-muted-foreground truncate">{rec.item?.description || ''}</p>
                         </div>
-                      )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 disabled:text-muted-foreground disabled:hover:bg-transparent flex-shrink-0"
+                          onClick={() => handleRemoveItemFromEdit(rec)}
+                          disabled={editItemRecords.length <= 1}
+                          title={
+                            editItemRecords.length <= 1
+                              ? 'A movement record must have at least one item'
+                              : 'Remove item from this record'
+                          }
+                        >
+                          <Trash2 className="w-3.5 h-3.5 mr-1" />
+                          Remove
+                        </Button>
+                      </div>
                       {conditions.length > 0 ? (
                         <select
                           className="w-full border rounded px-3 py-2 text-sm bg-background"
@@ -1500,6 +1628,64 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
                 />
               )}
             </div>
+
+            {/* Add Item */}
+            {editSourceEmployeeId && (
+              <div className="space-y-2 border-t pt-3">
+                <label className="text-sm font-medium">Add Item</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={editAddItemQuery}
+                    onChange={(e) => setEditAddItemQuery(e.target.value)}
+                    placeholder="Search by property number, description, or serial number..."
+                    className="pl-9"
+                  />
+                </div>
+                {editAvailableItemsLoading ? (
+                  <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading available items…
+                  </div>
+                ) : (() => {
+                  const query = editAddItemQuery.trim().toLowerCase();
+                  const filteredAvailable = query
+                    ? editAvailableItems.filter((item: any) =>
+                        String(item.propertyNumber ?? '').toLowerCase().includes(query) ||
+                        String(item.description ?? '').toLowerCase().includes(query) ||
+                        String(item.serialNumber ?? '').toLowerCase().includes(query)
+                      )
+                    : editAvailableItems;
+
+                  return filteredAvailable.length === 0 ? (
+                    <div className="text-xs text-muted-foreground p-2 text-center border rounded">
+                      {editAvailableItems.length === 0 ? 'No other items available to add.' : 'No items match your search.'}
+                    </div>
+                  ) : (
+                    <div className="max-h-40 overflow-y-auto border rounded">
+                      {filteredAvailable.map((item: any) => (
+                        <div key={item.id} className="flex items-center justify-between gap-2 p-2 border-b last:border-0 hover:bg-muted/50">
+                          <div className="text-xs min-w-0 flex-1">
+                            <p className="font-mono font-semibold truncate">{item.propertyNumber || 'N/A'}</p>
+                            <p className="text-muted-foreground truncate">{item.description || ''}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 flex-shrink-0"
+                            onClick={() => handleAddItemToEdit(item)}
+                          >
+                            <Plus className="w-3.5 h-3.5 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             {/* Remarks */}
             <div className="space-y-1">
