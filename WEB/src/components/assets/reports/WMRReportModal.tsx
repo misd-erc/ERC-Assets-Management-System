@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getDisposals, type DisposalRecord } from '@/api/asset/disposalApi';
 import { toast } from 'sonner';
-import { Download, FileText, Loader2, Printer, Search } from 'lucide-react';
+import { Download, FileText, Loader2, Printer, Search, FileSpreadsheet } from 'lucide-react';
 import {
     Document,
     Page,
@@ -30,6 +30,7 @@ import {
     View,
     pdf,
 } from '@react-pdf/renderer';
+import { downloadReportExcel } from '@/utils/reportExcelExport';
 
 interface WMRReportModalProps {
     isOpen: boolean;
@@ -364,6 +365,7 @@ export const WMRReportModal = ({ isOpen, onClose }: WMRReportModalProps) => {
     const [records, setRecords] = useState<DisposalRecord[]>([]);
     const [loading, setLoading] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isGeneratingExcel, setIsGeneratingExcel] = useState(false);
     const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
     const [selectedItemIds, setSelectedItemIds] = useState<Set<number>>(new Set());
     const [formState, setFormState] = useState<WMRFormState>({
@@ -479,6 +481,59 @@ export const WMRReportModal = ({ isOpen, onClose }: WMRReportModalProps) => {
         }
     };
 
+    const handleSaveExcel = async () => {
+        if (!selectedRecord) return;
+        setIsGeneratingExcel(true);
+        try {
+            const methodLabels = getMethodLabel(selectedRecord, formState);
+            const totalAmount = selectedRecord.proceedAmount ?? 0;
+
+            await downloadReportExcel({
+                filename: `WMR_${selectedRecord.disposalNumber}.xlsx`,
+                sheetName: 'WMR',
+                titleLines: ['WASTE MATERIALS REPORT'],
+                infoLines: [
+                    `Entity Name : ${formState.entityName}`,
+                    `Fund Cluster : ${formState.fundCluster}`,
+                    `Place of Storage : ${formState.placeOfStorage}`,
+                    `Date : ${formatDateLabel(formState.reportDate)}`,
+                    'CERTIFICATE OF INSPECTION — I hereby certify that the property enumerated above was disposed of as follows:',
+                    `[${methodLabels.destroyed ? 'X' : ' '}] Item Destroyed`,
+                    `[${methodLabels.privateSale ? 'X' : ' '}] Item Sold at private sale`,
+                    `[${methodLabels.publicAuction ? 'X' : ' '}] Item Sold at public auction`,
+                    `[${methodLabels.transferredWithoutCost ? 'X' : ' '}] Item Transferred without cost to ${methodLabels.transferredLabel}`,
+                    formState.remarks ? `Remarks: ${formState.remarks}` : '',
+                ].filter(Boolean),
+                columns: ['Item', 'Quantity', 'Unit', 'Description', 'Official Receipt No.', 'Date', 'Amount'],
+                rows: rows.map((row, index) => [
+                    row.itemNo,
+                    row.quantity || '',
+                    row.unit,
+                    row.description,
+                    index === 0 ? formState.officialReceiptNo : '',
+                    index === 0 ? formatDateLabel(formState.officialReceiptDate) : '',
+                    index === 0 && totalAmount ? totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '',
+                ]),
+                totalRow: ['', '', '', 'TOTAL', '', '', totalAmount ? totalAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''],
+                signatoryRows: [
+                    [
+                        { role: 'Certified Correct:', name: formState.custodianName, designation: 'Signature over Printed Name of Supply and/or Property Custodian' },
+                        { role: 'Disposal Approved:', name: formState.headOfAgencyName || selectedRecord.approvedByName, designation: 'Signature over Printed Name of Head of Agency/Entity or his/her Authorized Representative' },
+                    ],
+                    [
+                        { role: 'Certified Correct:', name: formState.inspectionOfficerName, designation: 'Signature over Printed Name of Inspection Officer' },
+                        { role: 'Witness to Disposal:', name: formState.witnessName, designation: 'Signature over Printed Name of Witness' },
+                    ],
+                ],
+            });
+        } catch (error) {
+            console.error('Failed to generate WMR Excel', error);
+            toast.error('Failed to generate Waste Materials Report');
+        } finally {
+            setIsGeneratingExcel(false);
+        }
+    };
+
     const handlePrint = async () => {
         if (!selectedRecord) return;
         setIsGenerating(true);
@@ -530,6 +585,15 @@ export const WMRReportModal = ({ isOpen, onClose }: WMRReportModalProps) => {
                             >
                                 <Printer className="w-4 h-4 mr-2" />
                                 Print Document
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="shadow-sm font-medium transition-all"
+                                disabled={!selectedRecord || isGeneratingExcel}
+                                onClick={handleSaveExcel}
+                            >
+                                {isGeneratingExcel ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}
+                                {isGeneratingExcel ? 'Generating...' : 'Export to Excel'}
                             </Button>
                             <Button
                                 className="shadow-sm bg-orange-600 hover:bg-orange-700 text-white font-medium transition-all"

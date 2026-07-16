@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
+import { downloadReportExcel } from '@/utils/reportExcelExport';
 
 /** TABLE CONSTANT */
 const TABLE_WIDTH = 1000;
@@ -344,7 +345,7 @@ export class SESPIExcelGenerator {
     a.click();
   }
 
-  private static buildDocument(seAssets: any[]) {
+  private static buildFinalAssets(seAssets: any[]) {
     const processedAssets = seAssets.map(asset => {
       const latestMovement = asset.movements
         ?.filter((m: any) => m.parItrNumber)
@@ -356,7 +357,7 @@ export class SESPIExcelGenerator {
       return { ...asset, latestMovement };
     });
     const sequenceMap = new Map<string, number>();
-    const finalAssets = processedAssets.map(asset => {
+    return processedAssets.map(asset => {
       let icsNo = '';
       if (asset.latestMovement) {
         const dateAssigned = new Date(asset.latestMovement.dateAssigned);
@@ -370,6 +371,49 @@ export class SESPIExcelGenerator {
       }
       return { ...asset, icsNo };
     });
+  }
+
+  static async generateExcel(asOfDate: Date, employeeId: number) {
+    const seAssets = await PTAService.getAllForSEByEmployeeAndDate(employeeId, asOfDate);
+    const finalAssets = this.buildFinalAssets(seAssets);
+    if (!finalAssets.length) return;
+
+    const formatDate = (d?: string) => {
+      if (!d) return '';
+      const date = new Date(d);
+      return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+    };
+
+    await downloadReportExcel({
+      filename: '20._Annex-A.7-Report_of_SE_Property_Issued.xlsx',
+      sheetName: 'SESPI',
+      titleLines: ['Registry SPI Semi-Expandable Property'],
+      infoLines: [
+        'Entity Name: Energy Regulatory Commission',
+        'Fund Cluster: Regular Agency Fund',
+        'To be filled out by the Property and Supply Division',
+      ],
+      columns: ['ICS No.', 'Responsibility Center Code', 'Semi-expendable Property No.', 'Item Description', 'Unit', 'Quantity Issued', 'Date Acquired', 'Unit Cost', 'Amount'],
+      rows: finalAssets.map((asset) => [
+        asset.icsNo,
+        '',
+        asset.propertyNumber,
+        asset.description,
+        asset.unitOfMeasurement,
+        1,
+        formatDate(asset.dateAcquired),
+        asset.unitValue?.toFixed(2),
+        asset.unitValue?.toFixed(2),
+      ]),
+      signatoryRows: [[
+        { role: 'I hereby certify the correctness of the information above.', name: 'CHERRY LYNN S. GONZALES', designation: 'SUPPLY OFFICER' },
+        { role: 'Posted By:', designation: 'ACCOUNTING SECTION' },
+      ]],
+    });
+  }
+
+  private static buildDocument(seAssets: any[]) {
+    const finalAssets = this.buildFinalAssets(seAssets);
     return (
       <Document>
         <Page size="LEGAL" orientation="landscape" style={styles.page}>

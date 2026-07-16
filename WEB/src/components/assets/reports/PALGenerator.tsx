@@ -12,6 +12,7 @@ import {
 import { NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById } from "@/api/user-management/userApi";
 import { getEmployeeAssets } from "@/api/asset/inventoryApi";
+import { downloadReportExcel } from "@/utils/reportExcelExport";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -437,5 +438,44 @@ export class PALGenerator {
     link.download = `PAL_${Date.now()}.pdf`;
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  static async generatePALExcel(employee: NormalizedEmployee) {
+    const { ppeRows, seRows, totalAmount, employeeName, position, divisionService, employeeNumber } = await buildPALData(employee);
+
+    if (!ppeRows.length && !seRows.length) {
+      alert("No assets found for this employee. Cannot generate PAL report.");
+      return;
+    }
+
+    const ppeTotal = ppeRows.reduce((s, r) => s + (r.amount ?? 0), 0);
+    const seTotal = seRows.reduce((s, r) => s + (r.amount ?? 0), 0);
+    const toRow = (r: PALRow) => [r.no, r.description, r.propertyNo, r.dateAcquired, currency(r.amount)];
+
+    const rows: (string | number | null)[][] = [];
+    if (ppeRows.length) {
+      rows.push(['', 'PROPERTY, PLANT AND EQUIPMENT (PPE)', '', '', '']);
+      rows.push(...ppeRows.map(toRow));
+      rows.push(['', '', '', 'PPE Sub-total:', currency(ppeTotal)]);
+    }
+    if (seRows.length) {
+      rows.push(['', 'SEMI-EXPENDABLE PROPERTY (SE)', '', '', '']);
+      rows.push(...seRows.map(toRow));
+      rows.push(['', '', '', 'SE Sub-total:', currency(seTotal)]);
+    }
+
+    await downloadReportExcel({
+      filename: `PAL_${Date.now()}.xlsx`,
+      sheetName: 'PAL',
+      titleLines: ['PROPERTY ACCOUNTABILITY LIST'],
+      infoLines: [
+        `Name: ${employeeName}`,
+        `Service/Division: ${divisionService}`,
+      ],
+      metaRight: [`Employee Number: ${employeeNumber}`, `Position: ${position}`],
+      columns: ['No.', 'Description', 'Property Number', 'Date Acquired', 'Amount'],
+      rows,
+      totalRow: ['', '', '', 'TOTAL:', currency(totalAmount)],
+    });
   }
 }

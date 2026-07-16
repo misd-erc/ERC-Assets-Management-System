@@ -18,6 +18,7 @@ import { UnifiedAssetService } from "@/services/UnifiedAssetService";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 import { IssuanceRecord } from "@/types/issuance";
+import { downloadReportExcel } from "@/utils/reportExcelExport";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -319,12 +320,7 @@ export class PARGenerator {
     return `${year}-${month}-${seqStr}`;
   }
 
-  static async generatePARPreview(item: Asset, movement: UnifiedMovement | null, parNumber?: string, signatureDate?: string): Promise<string> {
-    if (!item) {
-      alert('No item selected. Cannot generate PAR preview.');
-      return '';
-    }
-
+  private static async buildRowAndEmployeeInfo(item: Asset, movement: UnifiedMovement | null) {
     const rows: PARRow[] = [];
     // Build employee name from movement data if available
     let employeeName = 'N/A';
@@ -361,6 +357,17 @@ export class PARGenerator {
       dateAcquired: item.dateAcquired?.slice(0, 10) ?? "",
       amount: item.unitValue ?? null,
     });
+
+    return { rows, employeeName, position, office, nonPlantillaEmployeeName };
+  }
+
+  static async generatePARPreview(item: Asset, movement: UnifiedMovement | null, parNumber?: string, signatureDate?: string): Promise<string> {
+    if (!item) {
+      alert('No item selected. Cannot generate PAR preview.');
+      return '';
+    }
+
+    const { rows, employeeName, position, office, nonPlantillaEmployeeName } = await this.buildRowAndEmployeeInfo(item, movement);
 
     // Use provided PAR number or auto-generate
     const number = parNumber || PARGenerator.generatePARNumber();
@@ -557,5 +564,43 @@ export class PARGenerator {
     ).toBlob();
 
     return URL.createObjectURL(blob);
+  }
+
+  /** Download an Excel workbook for a single item + movement (item-centric flow). */
+  static async generateExcelFromItem(item: Asset, movement: UnifiedMovement | null, parNumber?: string) {
+    if (!item) return;
+    const { rows, employeeName, position, office, nonPlantillaEmployeeName } = await this.buildRowAndEmployeeInfo(item, movement);
+    const number = parNumber || PARGenerator.generatePARNumber();
+    await this.generateExcel(rows, employeeName, position, office, number, nonPlantillaEmployeeName);
+  }
+
+  /** Download an Excel workbook matching the same rows/signatories as the PAR PDF. */
+  static async generateExcel(
+    rows: PARRow[],
+    employeeName: string,
+    position: string,
+    office: string,
+    parNumber?: string,
+    nonPlantillaEmployeeName?: string
+  ) {
+    if (!rows.length) return;
+
+    await downloadReportExcel({
+      filename: `PAR_${parNumber || Date.now()}.xlsx`,
+      sheetName: 'PAR',
+      titleLines: ['PROPERTY ACKNOWLEDGEMENT RECEIPT'],
+      infoLines: [
+        'Entity Name: ENERGY REGULATORY COMMISSION',
+        'Fund Cluster: Regular Agency Fund',
+        nonPlantillaEmployeeName ? `Sub-PAR: ${nonPlantillaEmployeeName.toUpperCase()}` : '',
+      ].filter(Boolean),
+      metaRight: [`PAR No.: ${parNumber || '______________'}`],
+      columns: ['Qty', 'Unit', 'Description', 'Property Number', 'Date Acquired', 'Amount'],
+      rows: rows.map((r) => [r.qty, r.unit, r.description, r.propertyNo, r.dateAcquired, currency(r.amount)]),
+      signatoryRows: [[
+        { role: 'Received by:', name: employeeName, designation: `${position} - ${office}` },
+        { role: 'Issued by:', name: 'CHERRY LYNN S. GONZALES', designation: 'Administrative Officer V – FAS, GSD' },
+      ]],
+    });
   }
 }

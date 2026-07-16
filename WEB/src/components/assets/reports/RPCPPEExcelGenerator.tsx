@@ -3,6 +3,7 @@ import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer
 import { Asset } from '@/types/asset/UnifiedAsset';
 import { getCategories } from '@/api/asset/inventoryApi';
 import { RPCPPESignatories, DEFAULT_RPCPPE_SIGNATORIES } from './RPCPPEFilterModal';
+import { downloadReportExcel } from '@/utils/reportExcelExport';
 
 const styles = StyleSheet.create({
   page: {
@@ -421,6 +422,55 @@ export class RPCPPEPdfGenerator {
 
     const blob = await pdf(doc).toBlob();
     return URL.createObjectURL(blob);
+  }
+
+  static async generateExcel(assets: Asset[], asOfDate: Date, categoryId?: number, signatories: RPCPPESignatories = DEFAULT_RPCPPE_SIGNATORIES) {
+    if (!assets?.length) return;
+
+    const categoryName = await this.getCategoryName(categoryId);
+    const accountCode = await this.getAccountCode(categoryId);
+    const totalAmount = assets.reduce((sum, asset) => sum + (asset.unitValue || 0), 0);
+    const displayDateStr = asOfDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const filenameDateStr = asOfDate.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+
+    await downloadReportExcel({
+      filename: categoryName ? `RPCPPE_${filenameDateStr}_Category_${categoryName.replace(/\s+/g, '_')}.xlsx` : `RPCPPE_${filenameDateStr}_All_Categories.xlsx`,
+      sheetName: 'RPCPPE',
+      titleLines: [
+        'REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT',
+        categoryName ? `Account Code ${accountCode} - ${categoryName}` : 'All Categories',
+        `As of ${displayDateStr}`,
+      ],
+      infoLines: [
+        'Fund Cluster: Regular Agency Fund',
+        'For which CHERRY LYNN S. GONZALES, Administrative Officer V, Energy Regulatory Commission is accountable having assumed such accountability on AUGUST 2018.',
+      ],
+      columns: [
+        'ARTICLE', 'DESCRIPTION', 'PROPERTY NUMBER (OLD)/(NEW)', 'UNIT', 'UNIT VALUE', 'DATE ACQUIRED',
+        'QUANTITY (PER PROPERTY CARD)', 'QUANTITY (PER PHYSICAL COUNT)', 'SHORTAGE/OVERAGE (QUANTITY)',
+        'SHORTAGE/OVERAGE (VALUE)', 'REMARKS',
+      ],
+      rows: assets.map((asset, index) => [
+        index + 1,
+        asset.description,
+        asset.propertyNumber || '',
+        asset.unitOfMeasurement,
+        asset.unitValue?.toLocaleString(),
+        this.formatDate(asset.dateAcquired),
+        1,
+        1,
+        '-',
+        '-',
+        asset.condition || '',
+      ]),
+      totalRow: ['', '', '', 'TOTAL', totalAmount.toLocaleString(), '', '', '', '', '', ''],
+      signatoryRows: [[
+        { role: 'Certified Correct by:', name: signatories.inventoryChairperson.name, designation: signatories.inventoryChairperson.designation },
+        { role: '', name: signatories.inventoryViceChairperson.name, designation: signatories.inventoryViceChairperson.designation },
+        { role: 'Approved by:', name: signatories.chairpersonAndCEO.name, designation: signatories.chairpersonAndCEO.designation },
+        { role: 'Verified by:', name: signatories.coaRepresentative.name, designation: signatories.coaRepresentative.designation },
+      ]],
+    });
   }
 
   private static formatDate(date?: string) {
