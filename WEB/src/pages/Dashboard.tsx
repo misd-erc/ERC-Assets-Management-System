@@ -235,7 +235,7 @@ function Dashboard() {
         >
           <CardContent className="p-6">
             <div className="flex items-start justify-between mb-4">
-              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Supply and Materials</p>
+              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Supplies and Materials</p>
               <div className="p-2 rounded-lg bg-amber-50 text-amber-600">
                 <AlertTriangle className="w-5 h-5" />
               </div>

@@ -121,7 +121,7 @@ export function AssetOverviewChart({ ppeCategoryData = [], seCategoryData = [], 
           <TabsList className="h-auto flex-wrap gap-1">
             <TabsTrigger value="ppe" className="flex-none px-3">PPE</TabsTrigger>
             <TabsTrigger value="se" className="flex-none px-3">Semi-Expendable</TabsTrigger>
-            <TabsTrigger value="supply" className="flex-none px-3">Supply</TabsTrigger>
+            <TabsTrigger value="supply" className="flex-none px-3">Supplies</TabsTrigger>
             <TabsTrigger value="condition" className="flex-none px-3">By Condition</TabsTrigger>
           </TabsList>
 
