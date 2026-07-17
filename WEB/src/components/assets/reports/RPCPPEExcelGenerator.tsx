@@ -465,8 +465,13 @@ export class RPCPPEPdfGenerator {
       ]),
       totalRow: ['', '', '', 'TOTAL', totalAmount.toLocaleString(), '', '', '', '', '', ''],
       signatoryRows: [[
-        { role: 'Certified Correct by:', name: signatories.inventoryChairperson.name, designation: signatories.inventoryChairperson.designation },
-        { role: '', name: signatories.inventoryViceChairperson.name, designation: signatories.inventoryViceChairperson.designation },
+        {
+          role: 'Certified Correct by:',
+          people: [
+            { name: signatories.inventoryChairperson.name, designation: signatories.inventoryChairperson.designation },
+            { name: signatories.inventoryViceChairperson.name, designation: signatories.inventoryViceChairperson.designation },
+          ],
+        },
         { role: 'Approved by:', name: signatories.chairpersonAndCEO.name, designation: signatories.chairpersonAndCEO.designation },
         { role: 'Verified by:', name: signatories.coaRepresentative.name, designation: signatories.coaRepresentative.designation },
       ]],

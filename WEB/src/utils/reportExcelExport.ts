@@ -1,9 +1,17 @@
 import ExcelJS from 'exceljs';
 
-export interface ExcelSignatoryBlock {
-  role?: string;
+export interface ExcelSignatoryPerson {
   name?: string;
   designation?: string;
+}
+
+export interface ExcelSignatoryBlock {
+  role?: string;
+  /** Single-person shorthand; ignored when `people` is set. */
+  name?: string;
+  designation?: string;
+  /** Multiple people stacked under the same role/column (e.g. chairperson + vice-chairperson). */
+  people?: ExcelSignatoryPerson[];
   extra?: string;
 }
 
@@ -117,12 +125,18 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
       return { start, end: Math.max(start, end) };
     };
 
-    const addBlockLine = (getText: (b: ExcelSignatoryBlock) => string | undefined, opts: { bold?: boolean; signatureLine?: boolean } = {}) => {
+    // One block can stack multiple people (e.g. chairperson + vice-chairperson) under the
+    // same role/column instead of each person claiming a separate column.
+    const peopleLists = blocks.map((b) => (b.people?.length ? b.people : [{ name: b.name, designation: b.designation }]));
+    const maxPeople = Math.max(1, ...peopleLists.map((p) => p.length));
+
+    const addLine = (getText: (b: ExcelSignatoryBlock, blockIdx: number) => string | undefined, opts: { bold?: boolean; signatureLine?: boolean; requirePersonIdx?: number } = {}) => {
       const row = worksheet.addRow([]);
       blocks.forEach((b, i) => {
+        if (opts.requirePersonIdx !== undefined && opts.requirePersonIdx >= peopleLists[i].length) return;
         const { start, end } = spanOf(i);
         const cell = row.getCell(start);
-        cell.value = getText(b) ?? '';
+        cell.value = getText(b, i) ?? '';
         cell.alignment = { horizontal: 'center' };
         if (opts.bold) cell.font = { bold: true };
         if (end > start) worksheet.mergeCells(row.number, start, row.number, end);
@@ -134,11 +148,13 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
       });
     };
 
-    addBlockLine((b) => b.role);
-    addBlockLine(() => '', { signatureLine: true });
-    addBlockLine((b) => b.name?.toUpperCase(), { bold: true });
-    addBlockLine((b) => b.designation);
-    if (blocks.some((b) => b.extra)) addBlockLine((b) => b.extra);
+    addLine((b) => b.role);
+    for (let p = 0; p < maxPeople; p++) {
+      addLine(() => '', { signatureLine: true, requirePersonIdx: p });
+      addLine((_b, i) => peopleLists[i][p]?.name?.toUpperCase(), { bold: true, requirePersonIdx: p });
+      addLine((_b, i) => peopleLists[i][p]?.designation, { requirePersonIdx: p });
+    }
+    if (blocks.some((b) => b.extra)) addLine((b) => b.extra);
     worksheet.addRow([]);
   });
 
