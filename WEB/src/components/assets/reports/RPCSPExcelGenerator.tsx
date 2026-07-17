@@ -3,6 +3,7 @@ import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer
 import { getCategories } from '@/api/asset/inventoryApi';
 import { listSePpeItemsNoMovement, listSePpeItemsWithMovement } from '@/api/asset/ptaMovementApi';
 import { RPCSPReportType } from './RPCSPFilterModal';
+import { downloadReportExcel } from '@/utils/reportExcelExport';
 
 const styles = StyleSheet.create({
   page: {
@@ -281,5 +282,50 @@ export class RPCSPPdfGenerator {
     const doc = this.buildDocument(rows, reportType, asOfDate, categoryName);
     const blob = await pdf(doc).toBlob();
     return URL.createObjectURL(blob);
+  }
+
+  /** Download an Excel workbook built from already-fetched rows (see getRows). */
+  static async generateExcel(rows: RPCSPRow[], reportType: RPCSPReportType, asOfDate: Date, categoryId?: number) {
+    if (!rows.length) return;
+    const categoryName = await this.getCategoryName(categoryId);
+    const totalAmount = rows.reduce((sum, r) => sum + (r.unitValue || 0), 0);
+    const displayDateStr = asOfDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const filenameDateStr = asOfDate.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
+    const typeLabel = reportType === 'ISSUED' ? 'Issued' : 'OnStock';
+
+    await downloadReportExcel({
+      filename: categoryName
+        ? `RPCSP_${typeLabel}_${filenameDateStr}_${categoryName.replace(/\s+/g, '_')}.xlsx`
+        : `RPCSP_${typeLabel}_${filenameDateStr}_All_Categories.xlsx`,
+      sheetName: 'RPCSP',
+      titleLines: [
+        'REPORT ON THE PHYSICAL COUNT OF SEMI-EXPENDABLE PROPERTY',
+        `${REPORT_TYPE_LABEL[reportType]}${categoryName ? ` — ${categoryName}` : ''}`,
+        `As at ${displayDateStr}`,
+      ],
+      infoLines: [
+        'Fund Cluster: Regular Agency Fund',
+        'For which CHERRY LYNN S. GONZALES, Administrative Officer V, Energy Regulatory Commission is accountable having assumed such accountability on AUGUST 2018.',
+      ],
+      columns: COLUMN_HEADERS,
+      rows: rows.map((row, index) => [
+        index + 1,
+        row.description,
+        row.propertyNumber,
+        row.unitOfMeasurement,
+        row.unitValue?.toLocaleString(),
+        1,
+        1,
+        '-',
+        '-',
+        row.remarks,
+      ]),
+      totalRow: ['', '', '', '', totalAmount.toLocaleString(), '', '', '', '', ''],
+      signatoryRows: [[
+        { role: 'Certified Correct by:', extra: 'Signature over Printed Name of Inventory Committee Chair and Members' },
+        { role: 'Approved by:', extra: 'Signature over Printed Name of Head of Agency/Entity or Authorized Representative' },
+        { role: 'Witnessed by:', extra: 'Signature over Printed Name of COA Representative' },
+      ]],
+    });
   }
 }

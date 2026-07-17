@@ -1,5 +1,6 @@
 import React from "react";
 import { pdf, Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
+import { downloadReportExcel } from "@/utils/reportExcelExport";
 
 const RECEIVED_BY = {
   name: "CHERRY LYNN S. GONZALES",
@@ -293,5 +294,45 @@ export class ReturnReceiptGenerator {
     ).toBlob();
 
     return URL.createObjectURL(blob);
+  }
+
+  /** Download an Excel workbook matching the same rows/signatories as the return receipt PDF. */
+  static async generateExcel(
+    returnType: ReturnType,
+    items: any[],
+    receiptNumber: string,
+    dateAssigned: string,
+    returnedByName: string,
+    returnedByPosition?: string,
+    nonPlantillaEmployeeName?: string
+  ) {
+    const rows = buildRowsFromItems(items, returnedByName, nonPlantillaEmployeeName);
+    if (!rows.length) return;
+
+    const title = returnType === "RRPPE"
+      ? "RECEIPT OF RETURNED PROPERTY, PLANT AND EQUIPMENT"
+      : "RECEIPT OF RETURNED SEMI-EXPENDABLE PROPERTY";
+
+    await downloadReportExcel({
+      filename: `${returnType}_${receiptNumber || Date.now()}.xlsx`,
+      sheetName: returnType,
+      titleLines: [title],
+      infoLines: [
+        'Entity Name: ENERGY REGULATORY COMMISSION',
+        `Returned by: ${returnedByName?.toUpperCase() || ''}`,
+        `Received by: ${RECEIVED_BY.name}`,
+        nonPlantillaEmployeeName ? `Sub-PAR: ${nonPlantillaEmployeeName.toUpperCase()}` : '',
+      ].filter(Boolean),
+      metaRight: [
+        `${returnType === 'RRPPE' ? 'RRPPE No.: ' : 'RRSP No.: '}${receiptNumber || ''}`,
+        `Date: ${formatLongDate(dateAssigned)}`,
+      ],
+      columns: ['Item Description', 'Qty.', 'Property Number', 'End-user', 'Remarks'],
+      rows: rows.map((r) => [r.description, r.quantity, r.propertyNumber, r.endUser, r.remarks]),
+      signatoryRows: [[
+        { role: 'Returned by:', name: returnedByName, designation: returnedByPosition || 'Position, Service-Division' },
+        { role: 'Received by:', name: RECEIVED_BY.name, designation: RECEIVED_BY.designation },
+      ]],
+    });
   }
 }

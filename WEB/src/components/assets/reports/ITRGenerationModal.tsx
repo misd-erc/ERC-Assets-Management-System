@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, ChevronRight, Search, FileText, Users, Package, Printer } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, FileText, Users, Package, Printer, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { cn } from '@/lib/utils';
@@ -341,6 +341,59 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
     }
   };
 
+  const handleDownloadExcel = async () => {
+    if (!itrDetails) return;
+
+    const fromEmp: NormalizedEmployee = {
+      id: itrDetails.fromEmployeeId,
+      firstName: itrDetails.fromEmployee?.firstName || '',
+      middleName: itrDetails.fromEmployee?.middleName || '',
+      lastName: itrDetails.fromEmployee?.lastName || '',
+      suffixName: itrDetails.fromEmployee?.suffixName || '',
+      employeeIdOriginal: '',
+      employmentTypeId: 0,
+      employmentTypeName: '',
+      label: itrDetails.fromEmployeeName
+    };
+
+    const toEmp: NormalizedEmployee = {
+      id: itrDetails.toEmployeeId,
+      firstName: itrDetails.toEmployee?.firstName || '',
+      middleName: itrDetails.toEmployee?.middleName || '',
+      lastName: itrDetails.toEmployee?.lastName || '',
+      suffixName: itrDetails.toEmployee?.suffixName || '',
+      employeeIdOriginal: '',
+      employmentTypeId: 0,
+      employmentTypeName: '',
+      label: itrDetails.toEmployeeName
+    };
+
+    const nonPlantillaEmp: NormalizedEmployee | null = itrDetails.nonPlantillaEmployee
+      ? {
+          id: itrDetails.nonPlantillaEmployeeId || 0,
+          firstName: itrDetails.nonPlantillaEmployee.firstName || '',
+          middleName: itrDetails.nonPlantillaEmployee.middleName || '',
+          lastName: itrDetails.nonPlantillaEmployee.lastName || '',
+          suffixName: '',
+          employeeIdOriginal: '',
+          employmentTypeId: 0,
+          employmentTypeName: '',
+          label: itrDetails.nonPlantillaEmployeeName || '',
+        }
+      : null;
+
+    await ITRGenerator.generateExcelFromDetails(
+      fromEmp,
+      toEmp,
+      itrDetails.items,
+      itrDetails.dateAssigned,
+      itrDetails.transferType || 'REASSIGNMENT',
+      itrDetails.transferNumber,
+      nonPlantillaEmp,
+      itrDetails.toEmployeePositionOffice || ''
+    );
+  };
+
   const handleBack = () => {
     if (currentStep === 'details') {
       setCurrentStep('list');
@@ -591,6 +644,10 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
               >
                 <Printer className="size-4 mr-2" />
                 Print
+              </Button>
+              <Button variant="outline" onClick={handleDownloadExcel} disabled={loadingPreview || !previewUrl}>
+                <FileSpreadsheet className="size-4 mr-2" />
+                Export to Excel
               </Button>
               <Button onClick={handleDownload} disabled={loadingPreview || !previewUrl} className="bg-teal-600 hover:bg-teal-700">
                 <ChevronRight className="size-4 mr-2" />

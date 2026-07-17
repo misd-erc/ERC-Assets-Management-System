@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Search, FileText, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
+import { Loader2, Search, FileText, ChevronLeft, ChevronRight, Printer, FileSpreadsheet } from 'lucide-react';
 import { getPTAReturnList, getReturnDetailsByNumber } from '@/api/asset/transferApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { ReturnReceiptGenerator } from './ReturnReceiptGenerator';
@@ -195,6 +195,19 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
     a.download = `${details.number || returnType}-receipt.pdf`;
     a.click();
     URL.revokeObjectURL(dlUrl);
+  };
+
+  const downloadExcel = async () => {
+    if (!details) return;
+    await ReturnReceiptGenerator.generateExcel(
+      returnType,
+      details.items || [],
+      details.number,
+      details.dateAssigned || new Date().toISOString(),
+      details.returnedBy,
+      details.returnedByPosition,
+      details.isNonPlantilla ? details.nonPlantillaEmployeeName : undefined
+    );
   };
 
   const title = returnType === 'RRPPE' ? 'RRPPE Returns' : 'RRSP Returns';
@@ -421,6 +434,10 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
               >
                 <Printer className="w-4 h-4 mr-2" />
                 Print
+              </Button>
+              <Button variant="outline" onClick={downloadExcel} disabled={loadingPreview || !previewUrl}>
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Export to Excel
               </Button>
               <Button onClick={download} disabled={loadingPreview || !previewUrl}>
                 <FileText className="w-4 h-4 mr-2" />

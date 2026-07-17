@@ -53,11 +53,10 @@ export function AssetOverviewChart({ ppeCategoryData = [], seCategoryData = [], 
   const serviceablePct = conditionTotal > 0 ? (serviceableCount / conditionTotal) * 100 : 0;
   const unserviceablePct = conditionTotal > 0 ? (unserviceableCount / conditionTotal) * 100 : 0;
 
-  const PieTooltip = ({ active, payload }: any) => {
+  const PieTooltip = ({ active, payload, items }: any) => {
     if (!active || !payload?.length) return null;
     const item = payload[0];
-    const list = item.payload?.data ?? [];
-    const total = list.reduce((s: number, d: any) => s + (d.value ?? 0), 0);
+    const total = (items ?? []).reduce((s: number, d: any) => s + (d.value ?? 0), 0);
     return (
       <div className="bg-white p-3 border rounded-lg shadow-lg">
         <p className="text-sm">{item.name}: {item.value}</p>
@@ -81,7 +80,7 @@ export function AssetOverviewChart({ ppeCategoryData = [], seCategoryData = [], 
               <Pie data={items} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={150} label={false}>
                 {items.map((entry, i) => <Cell key={i} fill={entry.color} />)}
               </Pie>
-              <Tooltip content={<PieTooltip />} />
+              <Tooltip content={(props: any) => <PieTooltip {...props} items={items} />} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -122,7 +121,7 @@ export function AssetOverviewChart({ ppeCategoryData = [], seCategoryData = [], 
           <TabsList className="h-auto flex-wrap gap-1">
             <TabsTrigger value="ppe" className="flex-none px-3">PPE</TabsTrigger>
             <TabsTrigger value="se" className="flex-none px-3">Semi-Expendable</TabsTrigger>
-            <TabsTrigger value="supply" className="flex-none px-3">Supply</TabsTrigger>
+            <TabsTrigger value="supply" className="flex-none px-3">Supplies</TabsTrigger>
             <TabsTrigger value="condition" className="flex-none px-3">By Condition</TabsTrigger>
           </TabsList>
 

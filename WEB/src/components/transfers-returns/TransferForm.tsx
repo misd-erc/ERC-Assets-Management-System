@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, AlertCircle, CheckCircle, ChevronRight, ChevronLeft, FileText } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, ChevronRight, ChevronLeft, FileText, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   editMovementBulk,
@@ -46,6 +46,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
   const [toNonPlantillaEmployee, setToNonPlantillaEmployee] = useState<ApiEmployee | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemConditions, setItemConditions] = useState<Record<string, string>>({});
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
 
   // Generated numbers (editable before final save)
   const [generatedTransferNumber, setGeneratedTransferNumber] = useState('');
@@ -77,6 +78,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       setToNonPlantillaEmployee(null);
       setSelectedItems([]);
       setItemConditions({});
+      setItemSearchQuery('');
       setGeneratedTransferNumber('');
       setGeneratedParIcsNumber('');
       setError(null);
@@ -129,6 +131,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
         const items = await getAssetsByEmployee(fromEmployee.id, groupName);
         setEmployeeItems(items);
         setSelectedItems([]);
+        setItemSearchQuery('');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load items for employee';
         setError(message);
@@ -529,53 +532,79 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                     <div className="p-8 text-center text-gray-600 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
                       <p className="text-lg font-semibold">No items currently held by this employee</p>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-4">
-                        <div className="flex items-center gap-3">
-                          <Checkbox
-                            checked={selectedItems.length === employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length && employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length > 0}
-                            onCheckedChange={(checked) => {
-                              const availableItems = employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id));
-                              if (checked) {
-                                setSelectedItems(availableItems.map(i => String(i.id)));
-                              } else {
-                                setSelectedItems([]);
-                              }
-                            }}
-                            className="w-5 h-5"
+                  ) : (() => {
+                    const currentHolderItems = employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id));
+                    const query = itemSearchQuery.trim().toLowerCase();
+                    const filteredItems = query
+                      ? currentHolderItems.filter(item =>
+                          String(item.propertyNumber ?? '').toLowerCase().includes(query) ||
+                          String(item.description ?? '').toLowerCase().includes(query) ||
+                          String(item.serialNumber ?? '').toLowerCase().includes(query)
+                        )
+                      : currentHolderItems;
+
+                    return (
+                      <div className="space-y-4">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <Input
+                            value={itemSearchQuery}
+                            onChange={(e) => setItemSearchQuery(e.target.value)}
+                            placeholder="Search by property number, description, or serial number..."
+                            className="pl-9"
                           />
-                          <span className="font-semibold text-gray-700 text-base">
-                            Select All ({selectedItems.length}/{employeeItems.filter(item => isCurrentHolder(item, fromEmployee?.id)).length})
-                          </span>
                         </div>
-                      </div>
-                      <div className="space-y-2 max-h-[50vh] overflow-y-auto border border-gray-200 rounded-lg">
-                        {employeeItems
-                          .filter(item => isCurrentHolder(item, fromEmployee?.id))
-                          .map(item => (
-                          <div key={item.id} className="flex items-start gap-3 p-4 hover:bg-blue-50 transition-colors border-b last:border-0">
+                        <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-4">
+                          <div className="flex items-center gap-3">
                             <Checkbox
-                              checked={selectedItems.includes(String(item.id))}
+                              checked={filteredItems.length > 0 && filteredItems.every(item => selectedItems.includes(String(item.id)))}
                               onCheckedChange={(checked) => {
                                 if (checked) {
-                                  setSelectedItems([...selectedItems, String(item.id)]);
+                                  const newIds = filteredItems.map(i => String(i.id));
+                                  setSelectedItems(prev => Array.from(new Set([...prev, ...newIds])));
                                 } else {
-                                  setSelectedItems(selectedItems.filter(id => id !== String(item.id)));
+                                  const filteredIds = new Set(filteredItems.map(i => String(i.id)));
+                                  setSelectedItems(prev => prev.filter(id => !filteredIds.has(id)));
                                 }
                               }}
-                              className="w-5 h-5 mt-1"
+                              className="w-5 h-5"
                             />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-900">{item.propertyNumber}</p>
-                              <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                              {item.serialNumber && <p className="text-xs text-gray-500 mt-1"><strong>SN:</strong> {item.serialNumber}</p>}
-                            </div>
+                            <span className="font-semibold text-gray-700 text-base">
+                              Select All ({selectedItems.length}/{currentHolderItems.length})
+                            </span>
                           </div>
-                        ))}
+                        </div>
+                        {filteredItems.length === 0 ? (
+                          <div className="p-6 text-center text-gray-500 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                            No items match your search.
+                          </div>
+                        ) : (
+                          <div className="space-y-2 max-h-[50vh] overflow-y-auto border border-gray-200 rounded-lg">
+                            {filteredItems.map(item => (
+                              <div key={item.id} className="flex items-start gap-3 p-4 hover:bg-blue-50 transition-colors border-b last:border-0">
+                                <Checkbox
+                                  checked={selectedItems.includes(String(item.id))}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedItems([...selectedItems, String(item.id)]);
+                                    } else {
+                                      setSelectedItems(selectedItems.filter(id => id !== String(item.id)));
+                                    }
+                                  }}
+                                  className="w-5 h-5 mt-1"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900">{item.propertyNumber}</p>
+                                  <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                                  {item.serialNumber && <p className="text-xs text-gray-500 mt-1"><strong>SN:</strong> {item.serialNumber}</p>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               </div>
             )}

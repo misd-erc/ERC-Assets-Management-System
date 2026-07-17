@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, AlertCircle, CheckCircle, ChevronRight, ChevronLeft, FileText } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, ChevronRight, ChevronLeft, FileText, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   editMovementBulk,
@@ -48,6 +48,7 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
   // Form State
   const [fromEmployee, setFromEmployee] = useState<ApiEmployee | null>(null);
   const [selectedItems, setSelectedItems] = useState<{ [key: string]: { selected: boolean; condition: string } }>({});
+  const [itemSearchQuery, setItemSearchQuery] = useState('');
 
   // Generated number (editable before final save)
   const [generatedReturnNumber, setGeneratedReturnNumber] = useState('');
@@ -76,6 +77,7 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
       setCurrentStep('from-employee');
       setFromEmployee(null);
       setSelectedItems({});
+      setItemSearchQuery('');
       setGeneratedReturnNumber('');
       setError(null);
       setSuccess(false);
@@ -133,6 +135,7 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
         const validItems = items.filter((item: any) => item && item.id);
         setEmployeeItems(validItems);
         setSelectedItems({});
+        setItemSearchQuery('');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load employee items';
         setError(message);
@@ -309,6 +312,16 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
 
   const selectedItemIds = Object.entries(selectedItems).filter(([, d]) => d.selected).map(([id]) => id);
 
+  const filteredEmployeeItems = (() => {
+    const query = itemSearchQuery.trim().toLowerCase();
+    if (!query) return employeeItems;
+    return employeeItems.filter((item) =>
+      String(item.propertyNumber ?? '').toLowerCase().includes(query) ||
+      String(item.description ?? '').toLowerCase().includes(query) ||
+      String(item.serialNumber ?? '').toLowerCase().includes(query)
+    );
+  })();
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -387,8 +400,23 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
                       No {groupName} items available for this employee
                     </div>
                   ) : (
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      {employeeItems.map((item) => (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Input
+                          value={itemSearchQuery}
+                          onChange={(e) => setItemSearchQuery(e.target.value)}
+                          placeholder="Search by property number, description, or serial number..."
+                          className="pl-9"
+                        />
+                      </div>
+                      {filteredEmployeeItems.length === 0 ? (
+                        <div className="text-center py-8 text-slate-500 border border-dashed border-slate-200 rounded-lg">
+                          No items match your search.
+                        </div>
+                      ) : (
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {filteredEmployeeItems.map((item) => (
                         <Card key={item.id} className="p-4 border-slate-200 hover:border-slate-300">
                           <div className="space-y-3">
                             <div className="flex items-start gap-3">
@@ -442,6 +470,8 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
                           </div>
                         </Card>
                       ))}
+                      </div>
+                      )}
                     </div>
                   )}
                 </div>
