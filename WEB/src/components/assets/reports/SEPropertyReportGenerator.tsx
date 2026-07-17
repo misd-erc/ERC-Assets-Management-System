@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { downloadReportExcel } from '@/utils/reportExcelExport';
 
 interface SEPropertyReportOptions {
   asOfDate: Date;
@@ -318,7 +319,7 @@ export class SEPropertyReportGenerator {
     }
   }
 
-  private static buildDocument(seAssets: any[], options: SEPropertyReportOptions) {
+  private static buildFinalAssets(seAssets: any[], options: SEPropertyReportOptions) {
     const asOfDateStr = options.asOfDate.toISOString().split('T')[0];
 
     const finalAssets = seAssets
@@ -340,8 +341,52 @@ export class SEPropertyReportGenerator {
         return asset.latestMovement.dateAssigned.split('T')[0] === asOfDateStr;
       });
 
-    const oldestDate = this.getOldestIcsDate(finalAssets);
-    const displayDate = oldestDate ?? options.asOfDate;
+    const displayDate = this.getOldestIcsDate(finalAssets) ?? options.asOfDate;
+    return { finalAssets, displayDate };
+  }
+
+  static async generateExcel(options: SEPropertyReportOptions) {
+    const seAssets = await PTAService.getAllForSE(options.asOfDate);
+    const { finalAssets, displayDate } = this.buildFinalAssets(seAssets, options);
+    if (!finalAssets.length) return;
+
+    await downloadReportExcel({
+      filename: '20._Annex-A.7-Report_of_SE_Property_Issued.xlsx',
+      sheetName: 'SE Property Issued',
+      titleLines: ['Report of Semi-Expandable Property Issued'],
+      infoLines: [
+        'Entity Name: Energy Regulatory Commission',
+        'Fund Cluster: Regular Agency Fund',
+      ],
+      metaRight: [`Serial No: ${options.serialNo || ''}`, `Date: ${this.formatHeaderDate(displayDate)}`],
+      columns: ['ICS No.', 'Responsibility Center Code', 'Semi-expendable Property No.', 'Item Description', 'Unit', 'Quantity Issued', 'Unit Cost', 'Amount'],
+      rows: finalAssets.map((asset) => [
+        asset.icsNo,
+        asset.latestMovement?.office?.generalCode ?? '',
+        asset.propertyNumber,
+        asset.description,
+        asset.unitOfMeasurement,
+        1,
+        asset.unitValue?.toFixed(2),
+        asset.unitValue?.toFixed(2),
+      ]),
+      signatoryRows: [[
+        { role: 'I hereby certify the correctness of the information above.', name: 'CHERRY LYNN S. GONZALES', designation: 'SUPPLY OFFICER' },
+        { role: 'Posted By:', designation: 'ACCOUNTING SECTION' },
+      ]],
+    });
+
+    if (options.serialNo) {
+      try {
+        await ReportSerialService.saveSerial(REPORT_NAMES.SE_PROPERTY, options.serialNo);
+      } catch {
+        // non-critical — report still downloads
+      }
+    }
+  }
+
+  private static buildDocument(seAssets: any[], options: SEPropertyReportOptions) {
+    const { finalAssets, displayDate } = this.buildFinalAssets(seAssets, options);
 
     return (
       <Document>

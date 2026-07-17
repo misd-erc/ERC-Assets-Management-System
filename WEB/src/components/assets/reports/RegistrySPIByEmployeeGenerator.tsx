@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { downloadReportExcel } from '@/utils/reportExcelExport';
 
 /** ── Layout ── */
 const TABLE_WIDTH = 1000;
@@ -317,6 +318,52 @@ export class RegistrySPIByEmployeeGenerator {
     a.href = url;
     a.download = `Registry_SPI_${employee.label.replace(/\s+/g, '_')}.pdf`;
     a.click();
+  }
+
+  static async generateExcel(employee: NormalizedEmployee, date: Date, preloadedAssets?: any[]) {
+    const assets = preloadedAssets ?? await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
+    if (!assets.length) return;
+
+    const fullName = [employee.firstName, employee.middleName, employee.lastName, employee.suffixName]
+      .filter(Boolean).join(' ').toUpperCase();
+
+    await downloadReportExcel({
+      filename: `Registry_SPI_${employee.label.replace(/\s+/g, '_')}.xlsx`,
+      sheetName: 'Registry SPI',
+      titleLines: ['REGISTRY OF SEMI-EXPENDABLE PROPERTY ISSUED'],
+      infoLines: [
+        'Entity Name: Energy Regulatory Commission',
+        'Fund Cluster: Regular Agency Fund',
+        `Employee: ${fullName}`,
+      ],
+      columns: [
+        'Date', 'ICS/RRSP No.', 'Property No.', 'Item Description', 'Est. Useful Life',
+        'Issued Qty.', 'Issued Office/Officer', 'Returned Qty.', 'Returned Office/Officer',
+        'Re-issued Qty.', 'Re-issued Office/Officer', 'Disposed Qty.', 'Balance Qty.', 'Amount', 'Remarks',
+      ],
+      rows: assets.map((asset) => {
+        const issuanceMovement = [...(asset.movements || [])]
+          .filter((m: any) => m.isActive && !m.isDeleted)
+          .sort((a: any, b: any) =>
+            new Date(b.dateAssigned || b.createdAt).getTime() -
+            new Date(a.dateAssigned || a.createdAt).getTime()
+          )[0];
+
+        return [
+          fmtDate(issuanceMovement?.dateAssigned || asset.dateAcquired),
+          issuanceMovement?.parIcsNumber || '',
+          asset.propertyNumber || '',
+          asset.description || '',
+          asset.estimatedUsefulLife || '',
+          1,
+          fullName,
+          '', '', '', '', '',
+          1,
+          asset.unitValue?.toFixed(2),
+          issuanceMovement?.condition || '',
+        ];
+      }),
+    });
   }
 
   private static buildDocument(assets: any[], employee: NormalizedEmployee) {

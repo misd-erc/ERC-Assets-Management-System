@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { seApi } from '@/api/asset/se';
 import { getAuthParams } from '@/utils/auth';
 import { toast } from 'sonner';
-import { Loader2, Printer, Download, Search } from 'lucide-react';
+import { Loader2, Printer, Download, Search, FileSpreadsheet } from 'lucide-react';
 import {
     Document,
     Page,
@@ -28,6 +28,7 @@ import {
     View,
     pdf,
 } from '@react-pdf/renderer';
+import { downloadReportExcel } from '@/utils/reportExcelExport';
 
 interface SEPropertyCardModalProps {
     isOpen: boolean;
@@ -412,6 +413,7 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
     const [loading, setLoading] = useState(false);
     const [printing, setPrinting] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [savingExcel, setSavingExcel] = useState(false);
     const [searchInput, setSearchInput] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [selectedAsset, setSelectedAsset] = useState<any | null>(null);
@@ -541,6 +543,35 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
             toast.error('Failed to save PDF');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleSaveExcel = async () => {
+        if (!selectedAsset) return;
+        setSavingExcel(true);
+        try {
+            const rows = buildHistoryRows(selectedAsset);
+            const propNo = asStr(field(selectedAsset, 'propertyNumber', 'property_number')) || String(selectedAsset.id);
+            await downloadReportExcel({
+                filename: `SE-Property-Card_${propNo}.xlsx`,
+                sheetName: 'SE Property Card',
+                titleLines: ['SEMI-EXPENDABLE PROPERTY CARD'],
+                infoLines: [
+                    `Entity Name: ${entityName}`,
+                    `Fund Cluster: ${fundCluster}`,
+                    `Semi-Expendable Property: ${asStr(selectedAsset.category)}`,
+                    `Description: ${asStr(selectedAsset.description)}${asStr(selectedAsset.brand) && asStr(selectedAsset.brand) !== '-' ? ` — ${asStr(selectedAsset.brand)}` : ''}${asStr(selectedAsset.model) && asStr(selectedAsset.model) !== '-' ? ` ${asStr(selectedAsset.model)}` : ''}`,
+                    `Property Number: ${propNo}`,
+                    `Serial Number: ${asStr(field(selectedAsset, 'serialNumber', 'serial_number'))}`,
+                ],
+                columns: ['Date', 'Reference/ICS No.', 'Receipt Qty.', 'Issue/Transfer/Disposal Qty.', 'Office/Officer', 'Balance Qty.', 'Amount', 'Remarks'],
+                rows: rows.map((row) => [row.date, row.reference, row.receiptQty, row.issueQty, row.office, row.balanceQty, row.amount, row.remarks]),
+            });
+            toast.success('Excel file saved successfully');
+        } catch {
+            toast.error('Failed to save Excel file');
+        } finally {
+            setSavingExcel(false);
         }
     };
 
@@ -773,6 +804,19 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                                             <Printer className="size-4" />
                                         )}
                                         {printing ? 'Printing…' : 'Print'}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleSaveExcel}
+                                        disabled={savingExcel || printing || saving || !selectedAsset}
+                                        className="gap-2"
+                                    >
+                                        {savingExcel ? (
+                                            <Loader2 className="size-4 animate-spin" />
+                                        ) : (
+                                            <FileSpreadsheet className="size-4" />
+                                        )}
+                                        {savingExcel ? 'Saving…' : 'Export to Excel'}
                                     </Button>
                                     <Button
                                         onClick={handleSavePDF}

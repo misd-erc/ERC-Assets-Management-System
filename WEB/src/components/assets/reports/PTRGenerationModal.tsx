@@ -7,7 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ChevronLeft, ChevronRight, Search, FileText, Users, Package, Printer } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, FileText, Users, Package, Printer, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { cn } from '@/lib/utils';
@@ -329,6 +329,59 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
     }
   };
 
+  const handleDownloadExcel = async () => {
+    if (!ptrDetails) return;
+
+    const fromEmp: NormalizedEmployee = {
+      id: ptrDetails.fromEmployeeId,
+      firstName: ptrDetails.fromEmployee?.firstName || '',
+      middleName: ptrDetails.fromEmployee?.middleName || '',
+      lastName: ptrDetails.fromEmployee?.lastName || '',
+      suffixName: ptrDetails.fromEmployee?.suffixName || '',
+      employeeIdOriginal: '',
+      employmentTypeId: 0,
+      employmentTypeName: '',
+      label: ptrDetails.fromEmployeeName
+    };
+
+    const toEmp: NormalizedEmployee = {
+      id: ptrDetails.toEmployeeId,
+      firstName: ptrDetails.toEmployee?.firstName || '',
+      middleName: ptrDetails.toEmployee?.middleName || '',
+      lastName: ptrDetails.toEmployee?.lastName || '',
+      suffixName: ptrDetails.toEmployee?.suffixName || '',
+      employeeIdOriginal: '',
+      employmentTypeId: 0,
+      employmentTypeName: '',
+      label: ptrDetails.toEmployeeName
+    };
+
+    const nonPlantillaEmp: NormalizedEmployee | null = ptrDetails.nonPlantillaEmployee
+      ? {
+          id: ptrDetails.nonPlantillaEmployeeId || 0,
+          firstName: ptrDetails.nonPlantillaEmployee.firstName || '',
+          middleName: ptrDetails.nonPlantillaEmployee.middleName || '',
+          lastName: ptrDetails.nonPlantillaEmployee.lastName || '',
+          suffixName: '',
+          employeeIdOriginal: '',
+          employmentTypeId: 0,
+          employmentTypeName: '',
+          label: ptrDetails.nonPlantillaEmployeeName || '',
+        }
+      : null;
+
+    await PTRGenerator.generateExcelFromDetails(
+      fromEmp,
+      toEmp,
+      ptrDetails.items,
+      ptrDetails.dateAssigned,
+      ptrDetails.transferType || 'REASSIGNMENT',
+      ptrDetails.transferNumber,
+      nonPlantillaEmp,
+      ptrDetails.toEmployeePositionOffice || ''
+    );
+  };
+
   const handleBack = () => {
     if (currentStep === 'details') {
       setCurrentStep('list');
@@ -576,6 +629,10 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
               >
                 <Printer className="size-4 mr-2" />
                 Print
+              </Button>
+              <Button variant="outline" onClick={handleDownloadExcel} disabled={loadingPreview || !previewUrl}>
+                <FileSpreadsheet className="size-4 mr-2" />
+                Export to Excel
               </Button>
               <Button onClick={handleDownload} disabled={loadingPreview || !previewUrl} className="bg-orange-600 hover:bg-orange-700">
                 <FileText className="size-4 mr-2" />

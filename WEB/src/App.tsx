@@ -210,7 +210,8 @@ export default function App() {
 
 function AppShell() {
   const { pathname } = useLocation();
-  const showChatWidget = pathname !== '/mfa';
+  const { isAuthenticated } = useAuthStore();
+  const showChatWidget = isAuthenticated && pathname !== '/mfa';
 
   return (
     <>

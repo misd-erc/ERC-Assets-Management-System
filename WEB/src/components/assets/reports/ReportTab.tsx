@@ -311,6 +311,45 @@ export function ReportTab() {
     setRegistrySPIAssets([]);
   };
 
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+
+  const EXCEL_SUPPORTED_REPORTS: ReadonlyArray<typeof selectedReport> = ['PAR', 'RPCPPE', 'RPCSP', 'PAL', 'SESPI', 'SESPI-REPORT'];
+
+  const handleExportExcel = async () => {
+    if (!selectedReport) return;
+    setIsExportingExcel(true);
+    try {
+      if (selectedReport === 'RPCPPE') {
+        const assets = await PTAService.getAllForRPCPPE(rpcppeDate!, rpcppeCategoryId);
+        if (!assets.length) {
+          toast.error('No assets found for selected criteria');
+          return;
+        }
+        await RPCPPEPdfGenerator.generateExcel(assets, rpcppeDate!, rpcppeCategoryId, rpcppeSignatories);
+      } else if (selectedReport === 'RPCSP') {
+        await RPCSPPdfGenerator.generateExcel(rpcspRows, rpcspReportType, rpcspDate!, rpcspCategoryId);
+      } else if (selectedReport === 'PAL') {
+        if (selectedEmployee) await PALGenerator.generatePALExcel(selectedEmployee);
+      } else if (selectedReport === 'SESPI') {
+        if (registrySPIEmployee) {
+          await RegistrySPIByEmployeeGenerator.generateExcel(registrySPIEmployee, sespiDate!, registrySPIAssets.length ? registrySPIAssets : undefined);
+        } else if (sespiEmployee) {
+          await SESPIExcelGenerator.generateExcel(sespiDate!, sespiEmployee.id);
+        }
+      } else if (selectedReport === 'SESPI-REPORT') {
+        await SEPropertyReportGenerator.generateExcel({ asOfDate: sespiDate!, serialNo: sePropertyReportSerialNo });
+      } else if (selectedReport === 'PAR' && selectedItem) {
+        await PARGenerator.generateExcelFromItem(selectedItem, selectedMovement, customNumber);
+      }
+      toast.success('Excel file generated');
+    } catch (error) {
+      console.error('Excel export failed:', error);
+      toast.error('Failed to generate Excel file');
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
+
   const handleRPCPPEGenerate = async (asOfDate: Date, categoryId: number | undefined, signatories: RPCPPESignatories) => {
     try {
       const assets = await PTAService.getAllForRPCPPE(asOfDate, categoryId);
@@ -773,6 +812,16 @@ export function ReportTab() {
                     <Printer className="size-4 mr-2" />
                     Print
                   </Button>
+                  {EXCEL_SUPPORTED_REPORTS.includes(selectedReport) && (
+                      <Button
+                          variant="outline"
+                          onClick={handleExportExcel}
+                          disabled={loadingPreview || !previewUrl || isExportingExcel}
+                      >
+                        {isExportingExcel ? <Loader2 className="size-4 mr-2 animate-spin" /> : <FileSpreadsheet className="size-4 mr-2" />}
+                        Export to Excel
+                      </Button>
+                  )}
                   <Button onClick={handlePreviewConfirm} disabled={loadingPreview || !previewUrl}>
                     <Download className="size-4 mr-2" />
                     Save as PDF

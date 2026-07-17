@@ -12,6 +12,7 @@ import {
 import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { seApi } from "@/api/asset/se";
 import { secureStorage } from "@/utils/secureStorage";
+import { downloadReportExcel } from "@/utils/reportExcelExport";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -483,6 +484,22 @@ export class ITRGenerator {
     return URL.createObjectURL(blob);
   }
 
+  /** Download an Excel workbook from the same inputs as generateITRPreviewMultiple (item-list flow). */
+  static async generateExcelFromDetails(
+    fromEmployee: NormalizedEmployee,
+    toEmployee: NormalizedEmployee,
+    items: any[],
+    transferDate: string,
+    transferType: TransferType,
+    existingNumber?: string,
+    nonPlantillaEmployee?: NormalizedEmployee | null,
+    toEmployeePositionOffice?: string
+  ) {
+    const itrNumber = existingNumber || this.generateITRNumber();
+    const rows = this.buildRowsFromItems(items);
+    await this.generateExcel(rows, itrNumber, transferDate, fromEmployee, toEmployee, transferType, nonPlantillaEmployee, toEmployeePositionOffice);
+  }
+
   static async generateITRPreview(
     item: Asset,
     movement: any,
@@ -586,6 +603,44 @@ export class ITRGenerator {
     a.download = `${itrNumber}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  /** Download an Excel workbook matching the same rows/signatories as the ITR PDF. */
+  static async generateExcel(
+    rows: ITRRow[],
+    itrNumber: string,
+    transferDate: string,
+    fromEmployee: NormalizedEmployee,
+    toEmployee: NormalizedEmployee,
+    transferType: TransferType,
+    nonPlantillaEmployee?: NormalizedEmployee | null,
+    toEmployeePositionOffice?: string
+  ) {
+    if (!rows.length) return;
+
+    const employeeLabel = (e: NormalizedEmployee) =>
+      e.label?.toUpperCase() || [e.firstName, e.middleName, e.lastName].filter(Boolean).join(' ').toUpperCase();
+
+    await downloadReportExcel({
+      filename: `${itrNumber}.xlsx`,
+      sheetName: 'ITR',
+      titleLines: ['INVENTORY TRANSFER REPORT'],
+      infoLines: [
+        'Entity Name: ENERGY REGULATORY COMMISSION',
+        `From Accountable Officer: ${employeeLabel(fromEmployee)}`,
+        `To Accountable Officer: ${employeeLabel(toEmployee)}`,
+        `Transfer Type: ${transferType}`,
+        nonPlantillaEmployee ? `Sub-ICS: ${employeeLabel(nonPlantillaEmployee)}` : '',
+      ].filter(Boolean),
+      metaRight: [`ITR No.: ${itrNumber}`, `Date: ${formatLongDate(transferDate)}`],
+      columns: ['Date Acquired', 'Property Number', 'Description', 'Amount', 'Condition of SE'],
+      rows: rows.map((r) => [r.dateAcquired, r.propertyNo, r.description, currency(r.amount), r.condition]),
+      signatoryRows: [[
+        { role: 'Approved by:', name: APPROVED_BY.name, designation: APPROVED_BY.designation },
+        { role: 'Released / Issued by:', name: RELEASED_BY.name, designation: RELEASED_BY.designation },
+        { role: 'Received by:', name: employeeLabel(toEmployee), designation: toEmployeePositionOffice || '' },
+      ]],
+    });
   }
 
   private static buildRows(assets: Asset[]): ITRRow[] {

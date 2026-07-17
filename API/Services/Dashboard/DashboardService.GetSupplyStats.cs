@@ -92,6 +92,7 @@ namespace API.Services.Dashboard
                         {
                             Name = g.Key,
                             Quantity = qty,
+                            ItemCount = itemCodes.Count,
                             Value = val
                         };
                     })

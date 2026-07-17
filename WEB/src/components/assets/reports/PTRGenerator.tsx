@@ -13,6 +13,7 @@ import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { ppeApi } from "@/api/asset/ppe";
 import { seApi } from "@/api/asset/se";
 import { secureStorage } from "@/utils/secureStorage";
+import { downloadReportExcel } from "@/utils/reportExcelExport";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -485,6 +486,22 @@ export class PTRGenerator {
     return URL.createObjectURL(blob);
   }
 
+  /** Download an Excel workbook from the same inputs as generatePTRPreviewMultiple (item-list flow). */
+  static async generateExcelFromDetails(
+    fromEmployee: NormalizedEmployee,
+    toEmployee: NormalizedEmployee,
+    assets: Asset[],
+    transferDate: string,
+    transferType: TransferType,
+    existingNumber?: string,
+    nonPlantillaEmployee?: NormalizedEmployee | null,
+    toEmployeePositionOffice?: string
+  ) {
+    const ptrNumber = existingNumber || this.generatePTRNumber();
+    const rows = this.buildRows(assets);
+    await this.generateExcel(rows, ptrNumber, transferDate, fromEmployee, toEmployee, transferType, nonPlantillaEmployee, toEmployeePositionOffice);
+  }
+
   static async generatePTRPreview(
     item: Asset,
     movement: any,
@@ -680,6 +697,44 @@ export class PTRGenerator {
     a.download = `${ptrNumber}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  /** Download an Excel workbook matching the same rows/signatories as the PTR PDF. */
+  static async generateExcel(
+    rows: PTRRow[],
+    ptrNumber: string,
+    transferDate: string,
+    fromEmployee: NormalizedEmployee,
+    toEmployee: NormalizedEmployee,
+    transferType: TransferType,
+    nonPlantillaEmployee?: NormalizedEmployee | null,
+    toEmployeePositionOffice?: string
+  ) {
+    if (!rows.length) return;
+
+    const employeeLabel = (e: NormalizedEmployee) =>
+      e.label?.toUpperCase() || [e.firstName, e.middleName, e.lastName].filter(Boolean).join(' ').toUpperCase();
+
+    await downloadReportExcel({
+      filename: `${ptrNumber}.xlsx`,
+      sheetName: 'PTR',
+      titleLines: ['PROPERTY TRANSFER REPORT'],
+      infoLines: [
+        'Entity Name: ENERGY REGULATORY COMMISSION',
+        `From Accountable Officer: ${employeeLabel(fromEmployee)}`,
+        `To Accountable Officer: ${employeeLabel(toEmployee)}`,
+        `Transfer Type: ${transferType}`,
+        nonPlantillaEmployee ? `Sub-PAR: ${employeeLabel(nonPlantillaEmployee)}` : '',
+      ].filter(Boolean),
+      metaRight: [`PTR No.: ${ptrNumber}`, `Date: ${formatLongDate(transferDate)}`],
+      columns: ['Date Acquired', 'Property Number', 'Description', 'Amount', 'Condition of PPE'],
+      rows: rows.map((r) => [r.dateAcquired, r.propertyNo, r.description, currency(r.amount), r.condition]),
+      signatoryRows: [[
+        { role: 'Approved by:', name: APPROVED_BY.name, designation: APPROVED_BY.designation },
+        { role: 'Released / Issued by:', name: RELEASED_BY.name, designation: RELEASED_BY.designation },
+        { role: 'Received by:', name: employeeLabel(toEmployee), designation: toEmployeePositionOffice || '' },
+      ]],
+    });
   }
 
   private static buildRows(assets: Asset[]): PTRRow[] {
