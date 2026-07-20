@@ -662,7 +662,8 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
             );
 
             const printableReportDate = reportDate ? new Date(reportDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' }) : '';
-            const rsmiNumber = `RSMI-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+            const rsmiDate = reportDate ? new Date(reportDate) : new Date();
+            const rsmiNumber = `RSMI-${rsmiDate.getFullYear()}-${String(rsmiDate.getMonth() + 1).padStart(2, '0')}-${String(rsmiDate.getDate()).padStart(2, '0')}`;
 
             const blob = await pdf(
                 <RSMIPDFDocument data={selectedData} reportDate={printableReportDate} rsmiNumber={rsmiNumber} signatories={signatories} />
