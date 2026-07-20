@@ -79,6 +79,31 @@ const StockCardPDFDocument: React.FC<StockCardPDFProps> = ({ items, stockNumber,
     const safeUnit = unit || (items.length > 0 ? (items[0] as any).supplyItem?.measurementUnit?.name : '') || 'piece';
     const safeReorderPoint = reorderPoint !== undefined && reorderPoint !== null ? reorderPoint : '';
 
+    // Compute "No. of Days to Consume" per issuance row based on average daily consumption
+    const issuanceEvents = items.filter(i => i.issuedStockQuantity > 0);
+    const firstIssuanceDate = issuanceEvents.length > 0 ? new Date(issuanceEvents[0].createdAt) : null;
+
+    const getDaysToConsume = (idx: number): string => {
+        const item = items[idx];
+        if (!item.issuedStockQuantity || item.issuedStockQuantity <= 0) return '';
+
+        const currentDate = new Date(item.createdAt);
+        const priorIssuances = items
+            .slice(0, idx + 1)
+            .filter(i => i.issuedStockQuantity > 0);
+        const totalIssued = priorIssuances.reduce((sum, i) => sum + i.issuedStockQuantity, 0);
+
+        const daysSinceFirst = firstIssuanceDate
+            ? Math.max(1, Math.ceil((currentDate.getTime() - firstIssuanceDate.getTime()) / (1000 * 60 * 60 * 24)))
+            : 1;
+
+        const avgDailyConsumption = totalIssued / daysSinceFirst;
+        if (avgDailyConsumption <= 0) return '';
+
+        const days = Math.ceil(item.newStockQuantity / avgDailyConsumption);
+        return days > 0 ? String(days) : '';
+    };
+
     return (
         <Document>
             <Page size="A4" style={pdfStyles.page} orientation="portrait">
@@ -150,7 +175,7 @@ const StockCardPDFDocument: React.FC<StockCardPDFProps> = ({ items, stockNumber,
                                 <View style={[pdfStyles.colIssueQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{issue}</Text></View>
                                 <View style={[pdfStyles.colOffice, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{office}</Text></View>
                                 <View style={[pdfStyles.colBalanceQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{item.newStockQuantity}</Text></View>
-                                <View style={pdfStyles.colDays}><Text style={pdfStyles.cellTextCenter}>{item.issuedStockQuantity ? '30' : ''}</Text></View>
+                                <View style={pdfStyles.colDays}><Text style={pdfStyles.cellTextCenter}>{getDaysToConsume(idx)}</Text></View>
                             </View>
                         );
                     })}
