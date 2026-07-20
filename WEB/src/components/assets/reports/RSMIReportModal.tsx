@@ -575,21 +575,24 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-    const { data, totalCount, loading, error, fetchReport } = useRSMIReport();
+    const { data, totalCount, loading, error, fetchReport, reset } = useRSMIReport();
     useEffect(() => {
         if (isOpen) {
             getCategories('Supply').then(categoriesData => {
                 setCategories(categoriesData.filter((category: any) => category.module === 'Supply'));
             });
             setCurrentPage(1);
-            fetchReport(0, DEFAULT_RSMI_START_DATE, DEFAULT_RSMI_END_DATE, 1, pageSize);
         }
-    }, [isOpen, fetchReport]);
+    }, [isOpen]);
 
     useEffect(() => {
         if (!isOpen) {
             setExpandedRows({});
             setSelectedItems(new Set());
+            setStartDate('');
+            setEndDate('');
+            setCategoryId('');
+            reset();
         }
     }, [isOpen]);
 
@@ -734,7 +737,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                     </div>
                 </DialogHeader>
 
-                <div className="p-6 flex-1 min-h-0 flex flex-col bg-white overflow-y-auto">
+                <div className="p-6 flex-1 min-h-0 bg-white overflow-y-auto">
 
                     {/* FILTER SECTION - Polished Card Look */}
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5 p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -804,7 +807,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                     )}
 
                     {/* TABLE WRAPPER */}
-                    <div className="border border-slate-200 rounded-lg overflow-hidden flex-1 shadow-sm">
+                    <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                         <Table>
                             <TableHeader className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-sm">
                                 <TableRow className="hover:bg-transparent">

@@ -1777,10 +1777,16 @@ namespace API.Controllers
             try
             {
                 // 1. Get issued supply RIS within date range
-                var supplyRISs = await _getTools.Supply.GetTblSupplyRISs(context)
+                // Fetch to memory first because RISNumber and ResponsibilityCenterCode are [NotMapped] encrypted properties
+                // that EF Core cannot translate to SQL
+                var supplyRISsRaw = await _getTools.Supply.GetTblSupplyRISs(context)
                     .Where(x => x.RISIssuedDate.HasValue && x.RISIssuedDate.Value.Date >= startDate.Date && x.RISIssuedDate.Value.Date <= endDate.Date)
-                    .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode, x.OfficeId, x.DivisionId })
                     .ToListAsync();
+
+                // Project in memory after decryption
+                var supplyRISs = supplyRISsRaw
+                    .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode, x.OfficeId, x.DivisionId })
+                    .ToList();
 
                 if (!supplyRISs.Any())
                 {
@@ -1796,8 +1802,13 @@ namespace API.Controllers
                 var supplyRISIds = supplyRISs.Select(x => x.Id).ToList();
 
                 // 2. Get RIS items for those RIS IDs
-                var supplyRISItems = await _getTools.Supply.GetTblSupplyRISItems(context)
+                // Fetch to memory first because StockNumber and ItemDescription are [NotMapped] encrypted properties
+                var supplyRISItemsRaw = await _getTools.Supply.GetTblSupplyRISItems(context)
                     .Where(x => supplyRISIds.Contains(x.SupplyRISId.Value))
+                    .ToListAsync();
+
+                // Project in memory after decryption
+                var supplyRISItems = supplyRISItemsRaw
                     .Select(x => new
                     {
                         x.SupplyRISId,
@@ -1805,7 +1816,7 @@ namespace API.Controllers
                         x.ItemDescription,
                         x.IssueQuantity
                     })
-                    .ToListAsync();
+                    .ToList();
 
                 if (!supplyRISItems.Any())
                 {
@@ -1818,7 +1829,7 @@ namespace API.Controllers
                     ));
                 }
 
-                // 3. Decrypt and get distinct (StockNumber, Description) pairs from RIS items
+                // 3. Get distinct (StockNumber, Description) pairs from RIS items
                 var risItemPairs = supplyRISItems
                     .Select(x => new
                     {
@@ -1829,22 +1840,31 @@ namespace API.Controllers
                     .Distinct()
                     .ToList();
 
-                // 4. Get supply items that match those pairs and have the given category
-                var allSupplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
-                var matchingSupplyItems = allSupplyItems
-                    .Select(x => new
-                    {
-                        x.Code,
-                        x.Description,
-                        x.CategoryId
-                    })
-                    .Where(x => categoryId == 0 || x.CategoryId == categoryId)
-                    .ToList();
+                // 4. When a specific category is selected, filter RIS items by matching supply items
+                // When categoryId == 0 (all categories), skip the matching requirement
+                List<(string StockNumber, string Description)> validPairs;
 
-                // Filter pairs that exist in supply items (i.e., belong to the category)
-                var validPairs = risItemPairs
-                    .Where(pair => matchingSupplyItems.Any(si => si.Code == pair.StockNumber && si.Description == pair.Description))
-                    .ToList();
+                if (categoryId == 0)
+                {
+                    // Show all RIS item pairs regardless of supply item matching
+                    validPairs = risItemPairs
+                        .Select(p => (p.StockNumber, p.Description))
+                        .ToList();
+                }
+                else
+                {
+                    // Get supply items for the given category and filter RIS pairs by matching
+                    var allSupplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+                    var matchingSupplyItems = allSupplyItems
+                        .Select(x => new { x.Code, x.Description, x.CategoryId })
+                        .Where(x => x.CategoryId == categoryId)
+                        .ToList();
+
+                    validPairs = risItemPairs
+                        .Where(pair => matchingSupplyItems.Any(si => si.Code == pair.StockNumber && si.Description == pair.Description))
+                        .Select(p => (p.StockNumber, p.Description))
+                        .ToList();
+                }
 
                 if (!validPairs.Any())
                 {
@@ -1884,8 +1904,9 @@ namespace API.Controllers
                     .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.Description))
                     .ToList();
 
+                var validPairSet = new HashSet<(string, string)>(validPairs.Select(p => (p.StockNumber, p.Description)));
                 var grouped = decryptedRISItems
-                    .Where(x => validPairs.Any(vp => vp.StockNumber == x.StockNumber && vp.Description == x.Description))
+                    .Where(x => validPairSet.Contains((x.StockNumber, x.Description)))
                     .GroupBy(x => new { x.StockNumber, x.Description })
                     .Select(g => new FilteredRMSIItemGroupResponseModel
                     {
