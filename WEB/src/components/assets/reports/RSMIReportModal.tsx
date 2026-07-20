@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { getAcronym } from '@/utils/formatters';
+import { getAcronym, formatCurrency, formatCurrencyPlain } from '@/utils/formatters';
 import { Loader2, Filter, FileText, ChevronDown, ChevronRight, Download, AlertCircle, Printer, Users, BookmarkPlus, BookOpen, X, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -235,13 +235,13 @@ const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsm
                                         <Text style={pdfStyles.cellTextRight}>{qty}</Text>
                                     </View>
                                     <View style={pdfStyles.colUnitCost}>
-                                        <Text style={pdfStyles.cellTextRight}></Text>
+                                        <Text style={pdfStyles.cellTextRight}>{showStock && group.unitCost ? formatCurrencyPlain(group.unitCost) : ''}</Text>
                                     </View>
                                     <View style={pdfStyles.colTotalCost}>
-                                        <Text style={pdfStyles.cellTextRight}></Text>
+                                        <Text style={pdfStyles.cellTextRight}>{showStock && group.totalCost ? formatCurrencyPlain(group.totalCost) : ''}</Text>
                                     </View>
                                     <View style={pdfStyles.colAccountCode}>
-                                        <Text style={pdfStyles.cellText}></Text>
+                                        <Text style={pdfStyles.cellText}>{showStock ? (group.accountCode ?? '') : ''}</Text>
                                     </View>
                                 </View>
                             );
@@ -821,14 +821,16 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                     <TableHead className="w-[40px] px-2"></TableHead>
                                     <TableHead className="w-[220px] font-semibold text-slate-700">Stock Number</TableHead>
                                     <TableHead className="font-semibold text-slate-700">Item Description</TableHead>
-                                    <TableHead className="text-right font-semibold text-slate-700 w-[160px]">Total Issued</TableHead>
+                                    <TableHead className="text-right font-semibold text-slate-700 w-[120px]">Unit Cost</TableHead>
+                                    <TableHead className="text-right font-semibold text-slate-700 w-[120px]">Total Cost</TableHead>
+                                    <TableHead className="text-right font-semibold text-slate-700 w-[120px]">Total Issued</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {loading ? (
                                     Array.from({ length: 4 }).map((_, index) => (
                                         <TableRow key={`skeleton-${index}`}>
-                                            {Array.from({ length: 5 }).map((_, colIndex) => (
+                                            {Array.from({ length: 7 }).map((_, colIndex) => (
                                                 <TableCell key={`skel-col-${colIndex}`}>
                                                     <div className="h-4 bg-slate-100 rounded animate-pulse w-full"></div>
                                                 </TableCell>
@@ -861,6 +863,8 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                                     </TableCell>
                                                     <TableCell className="font-medium text-slate-900">{group.stockNumber || 'N/A'}</TableCell>
                                                     <TableCell className="text-slate-600">{group.itemDescription || 'Unknown Item'}</TableCell>
+                                                    <TableCell className="text-right text-slate-600">{group.unitCost ? formatCurrency(group.unitCost) : '—'}</TableCell>
+                                                    <TableCell className="text-right text-slate-600">{group.totalCost ? formatCurrency(group.totalCost) : '—'}</TableCell>
                                                     <TableCell className="text-right">
                                                         <span className="font-bold text-rose-600">{group.total}</span>
                                                     </TableCell>
@@ -869,7 +873,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                                 {/* EXPANDED ROW (Polished inner table) */}
                                                 {isExpanded && (
                                                     <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-                                                        <TableCell colSpan={5} className="p-0 border-b">
+                                                        <TableCell colSpan={7} className="p-0 border-b">
                                                             <div className="bg-slate-50/80 border-l-[3px] border-indigo-500 shadow-inner px-8 py-5">
                                                                 <div className="rounded-lg border border-slate-200 bg-white overflow-hidden shadow-sm">
                                                                     <Table>
@@ -906,7 +910,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                     })
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-72 text-center">
+                                        <TableCell colSpan={7} className="h-72 text-center">
                                             <div className="flex flex-col items-center justify-center text-slate-500 space-y-4">
                                                 <div className="p-5 bg-indigo-50 rounded-full border border-indigo-100 shadow-sm">
                                                     <Filter className="w-8 h-8 text-indigo-500" />

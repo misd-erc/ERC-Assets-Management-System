@@ -1892,6 +1892,15 @@ namespace API.Controllers
                     .Where(d => divisionIds.Contains(d.Id.Value))
                     .ToDictionaryAsync(d => d.Id.Value, d => d.Name);
 
+                // Fetch supply items for unit cost lookup (latest UnitCost per Code/Description)
+                var supplyItemsForCost = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
+                var unitCostMap = supplyItemsForCost
+                    .Where(x => !string.IsNullOrEmpty(x.Code) && !string.IsNullOrEmpty(x.Description))
+                    .GroupBy(x => new { x.Code, x.Description })
+                    .ToDictionary(
+                        g => (g.Key.Code!, g.Key.Description!),
+                        g => g.OrderByDescending(x => x.CreatedAt).First().UnitCost ?? 0m);
+
                 // Group RIS items by (StockNumber, Description) and compute total and details
                 var decryptedRISItems = supplyRISItems
                     .Select(x => new
@@ -1908,11 +1917,17 @@ namespace API.Controllers
                 var grouped = decryptedRISItems
                     .Where(x => validPairSet.Contains((x.StockNumber, x.Description)))
                     .GroupBy(x => new { x.StockNumber, x.Description })
-                    .Select(g => new FilteredRMSIItemGroupResponseModel
+                    .Select(g =>
                     {
-                        StockNumber = g.Key.StockNumber,
-                        ItemDescription = g.Key.Description,
-                        Total = g.Sum(x => x.IssueQuantity),
+                        var unitCost = unitCostMap.TryGetValue((g.Key.StockNumber!, g.Key.Description!), out var uc) ? uc : 0m;
+                        var totalQty = g.Sum(x => x.IssueQuantity);
+                        return new FilteredRMSIItemGroupResponseModel
+                        {
+                            StockNumber = g.Key.StockNumber,
+                            ItemDescription = g.Key.Description,
+                            Total = totalQty,
+                            UnitCost = unitCost,
+                            TotalCost = unitCost * totalQty,
                         Items = g.Select(x =>
                         {
                             var hasRis = risDetails.TryGetValue(x.RISId.Value, out var ris);
@@ -1928,7 +1943,8 @@ namespace API.Controllers
                                 IssueQuantity = x.IssueQuantity
                             };
                         }).ToList()
-                    })
+                    };
+                })
                     .ToList();
 
                 int totalCount = grouped.Count;
