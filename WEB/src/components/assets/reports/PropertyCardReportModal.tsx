@@ -22,7 +22,7 @@ import { ppeApi } from '@/api/asset/ppe';
 import { PPEAsset } from '@/types/asset/ppe';
 import { getAuthParams } from '@/utils/auth';
 import { toast } from 'sonner';
-import { Loader2, Printer, Search } from 'lucide-react';
+import { Loader2, Printer, Search, FileSpreadsheet } from 'lucide-react';
 import {
     Document,
     Page,
@@ -31,6 +31,7 @@ import {
     View,
     pdf,
 } from '@react-pdf/renderer';
+import { downloadReportExcel } from '@/utils/reportExcelExport';
 
 interface PropertyCardReportModalProps {
     isOpen: boolean;
@@ -398,6 +399,7 @@ export function PropertyCardReportModal({ isOpen, onClose }: PropertyCardReportM
     const [assets, setAssets] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [printing, setPrinting] = useState(false);
+    const [savingExcel, setSavingExcel] = useState(false);
     const [searchInput, setSearchInput] = useState('');
     const [searchString, setSearchString] = useState('');
     const [selectedAsset, setSelectedAsset] = useState<any | null>(null);
@@ -496,6 +498,36 @@ export function PropertyCardReportModal({ isOpen, onClose }: PropertyCardReportM
             toast.error('Failed to generate PDF');
         } finally {
             setPrinting(false);
+        }
+    };
+
+    const handleSaveExcel = async () => {
+        if (!selectedAsset) return;
+        setSavingExcel(true);
+        try {
+            const rows = buildHistoryRows(selectedAsset);
+            const propNo = asStr(field(selectedAsset, 'propertyNumber', 'property_number')) || String(selectedAsset.id);
+            await downloadReportExcel({
+                filename: `Property-Card_${propNo}.xlsx`,
+                sheetName: 'Property Card',
+                titleLines: ['PROPERTY CARD'],
+                infoLines: [
+                    `Entity Name: ${entityName}`,
+                    `Property, Plant and Equipment: ${asStr(selectedAsset.category)}`,
+                    `Description: ${asStr(selectedAsset.description)}${asStr(selectedAsset.brand) && asStr(selectedAsset.brand) !== '-' ? ` — ${asStr(selectedAsset.brand)}` : ''}${asStr(selectedAsset.model) && asStr(selectedAsset.model) !== '-' ? ` ${asStr(selectedAsset.model)}` : ''}`,
+                ],
+                metaRight: [
+                    `Fund Cluster: ${fundCluster}`,
+                    `Property Number: ${propNo}`,
+                ],
+                columns: ['Date', 'Reference/PAR No.', 'Receipt Qty.', 'Issue/Transfer/Disposal Qty.', 'Office/Officer', 'Balance Qty.', 'Amount', 'Remarks'],
+                rows: rows.map((row) => [row.date, row.reference, row.receiptQty, row.issueQty, row.office, row.balanceQty, row.amount, row.remarks]),
+            });
+            toast.success('Excel file saved successfully');
+        } catch {
+            toast.error('Failed to save Excel file');
+        } finally {
+            setSavingExcel(false);
         }
     };
 
@@ -721,13 +753,25 @@ export function PropertyCardReportModal({ isOpen, onClose }: PropertyCardReportM
 
                         {/* Footer actions */}
                         <div className="px-6 py-4 border-t shrink-0 flex justify-end gap-3">
-                            <Button variant="outline" onClick={onClose} disabled={printing}>
+                            <Button variant="outline" onClick={onClose} disabled={printing || savingExcel}>
                                 Cancel
+                            </Button>
+                            <Button
+                                variant="outline"
+                                onClick={handleSaveExcel}
+                                disabled={!selectedAsset || printing || savingExcel}
+                            >
+                                {savingExcel ? (
+                                    <Loader2 className="size-4 animate-spin mr-2" />
+                                ) : (
+                                    <FileSpreadsheet className="size-4 mr-2" />
+                                )}
+                                {savingExcel ? 'Saving…' : 'Export to Excel'}
                             </Button>
                             <Button
                                 className="bg-orange-600 hover:bg-orange-700 text-white"
                                 onClick={handlePrint}
-                                disabled={!selectedAsset || printing}
+                                disabled={!selectedAsset || printing || savingExcel}
                             >
                                 {printing ? (
                                     <Loader2 className="size-4 animate-spin mr-2" />

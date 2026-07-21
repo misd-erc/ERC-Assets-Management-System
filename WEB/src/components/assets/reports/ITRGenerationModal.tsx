@@ -221,7 +221,12 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
             const key = itm.propertyNumber || itm.id;
             if (key && !seen.has(key)) {
               seen.add(key);
-              allItems.push({ ...itm, condition: movement.condition || itm.condition });
+              allItems.push({
+                ...itm,
+                condition: movement.condition || itm.condition,
+                icsNo: movement.paricsNumber || itm.paricsNumber || itm.parIcsNumber || '',
+                icsDate: movement.dateAssigned || itm.dateAssigned || '',
+              });
             }
           }
         }

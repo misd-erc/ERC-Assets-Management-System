@@ -140,11 +140,24 @@ const styles = StyleSheet.create({
 
   cell: { padding: 3, fontSize: 8 },
 
-  colDateAcquired: { width: "15%" },
-  colPropertyNo: { width: "20%" },
-  colDescription: { width: "40%" },
-  colAmount: { width: "15%" },
-  colCondition: { width: "10%" },
+  colDateAcquired: { width: "12%" },
+  colItemNo: { width: "16%" },
+  colIcsNoDate: { width: "16%" },
+  colDescription: { width: "30%" },
+  colAmount: { width: "14%" },
+  colCondition: { width: "12%" },
+
+  /* ---------------- Reason for Transfer ---------------- */
+
+  reasonBlock: { marginTop: 10 },
+
+  reasonTitle: { fontSize: 9, fontWeight: "bold", marginBottom: 6 },
+
+  reasonLine: {
+    borderBottomWidth: 0.8,
+    borderColor: "#000",
+    height: 14,
+  },
 
   /* ---------------- Signatures ---------------- */
 
@@ -244,9 +257,17 @@ function truncate(text = "", max = 200) {
   return text.length > max ? text.slice(0, max) + "…" : text;
 }
 
+function formatIcsNoDate(icsNo?: string, dateStr?: string): string {
+  const formattedDate = dateStr
+    ? new Date(dateStr).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })
+    : "";
+  return [icsNo, formattedDate].filter(Boolean).join("\n");
+}
+
 interface ITRRow {
   dateAcquired: string;
   propertyNo: string;
+  icsNoDate: string;
   description: string;
   amount: number | null;
   condition: string;
@@ -354,14 +375,17 @@ const ITRDocument = ({
             <Text style={[styles.cell, styles.colDateAcquired]}>
               Date Acquired
             </Text>
-            <Text style={[styles.cell, styles.colPropertyNo]}>
-              Property Number
+            <Text style={[styles.cell, styles.colItemNo]}>
+              Item No.
+            </Text>
+            <Text style={[styles.cell, styles.colIcsNoDate]}>
+              ICS No./Date
             </Text>
             <Text style={[styles.cell, styles.colDescription]}>
               Description
             </Text>
             <Text style={[styles.cell, styles.colAmount]}>Amount</Text>
-            <Text style={[styles.cell, styles.colCondition]}>Condition of SE</Text>
+            <Text style={[styles.cell, styles.colCondition]}>Condition of Inventory</Text>
           </View>
 
           {rows.map((r, i) => (
@@ -369,8 +393,11 @@ const ITRDocument = ({
               <Text style={[styles.cell, styles.colDateAcquired]}>
                 {r.dateAcquired}
               </Text>
-              <Text style={[styles.cell, styles.colPropertyNo]}>
+              <Text style={[styles.cell, styles.colItemNo]}>
                 {r.propertyNo}
+              </Text>
+              <Text style={[styles.cell, styles.colIcsNoDate]}>
+                {r.icsNoDate}
               </Text>
               <Text style={[styles.cell, styles.colDescription]}>
                 {truncate(r.description)}
@@ -384,6 +411,14 @@ const ITRDocument = ({
             </View>
           ))}
         </View>
+      </View>
+
+      {/* REASON FOR TRANSFER */}
+      <View style={styles.reasonBlock}>
+        <Text style={styles.reasonTitle}>Reason/s for Transfer:</Text>
+        <View style={styles.reasonLine} />
+        <View style={styles.reasonLine} />
+        <View style={styles.reasonLine} />
       </View>
 
       {/* SIGNATURES */}
@@ -621,6 +656,12 @@ export class ITRGenerator {
     const employeeLabel = (e: NormalizedEmployee) =>
       e.label?.toUpperCase() || [e.firstName, e.middleName, e.lastName].filter(Boolean).join(' ').toUpperCase();
 
+    // Matches the PDF's checkbox grid pairing: Donation/Relocate on row 1, Reassignment/Others on row 2.
+    const transferTypeOptions = ['Donation', 'Relocate', 'Reassignment', 'Others (Specify)'];
+    const selectedOption = transferTypeOptions.find(
+      (opt) => opt.replace(/\s*\(.*\)/, '').toUpperCase() === String(transferType).toUpperCase()
+    );
+
     await downloadReportExcel({
       filename: `${itrNumber}.xlsx`,
       sheetName: 'ITR',
@@ -629,16 +670,25 @@ export class ITRGenerator {
         'Entity Name: ENERGY REGULATORY COMMISSION',
         `From Accountable Officer: ${employeeLabel(fromEmployee)}`,
         `To Accountable Officer: ${employeeLabel(toEmployee)}`,
-        `Transfer Type: ${transferType}`,
-        nonPlantillaEmployee ? `Sub-ICS: ${employeeLabel(nonPlantillaEmployee)}` : '',
-      ].filter(Boolean),
+      ],
       metaRight: [`ITR No.: ${itrNumber}`, `Date: ${formatLongDate(transferDate)}`],
-      columns: ['Date Acquired', 'Property Number', 'Description', 'Amount', 'Condition of SE'],
-      rows: rows.map((r) => [r.dateAcquired, r.propertyNo, r.description, currency(r.amount), r.condition]),
+      checkboxGroup: {
+        title: 'Transfer Type: (check only one)',
+        options: transferTypeOptions,
+        selected: selectedOption,
+      },
+      columns: ['Date Acquired', 'Item No.', 'ICS No./Date', 'Description', 'Amount', 'Condition of Inventory'],
+      rows: rows.map((r) => [r.dateAcquired, r.propertyNo, r.icsNoDate.replace('\n', ' / '), r.description, currency(r.amount), r.condition]),
+      preSignatureLines: ['Reason/s for Transfer:', '', '', ''],
       signatoryRows: [[
         { role: 'Approved by:', name: APPROVED_BY.name, designation: APPROVED_BY.designation },
         { role: 'Released / Issued by:', name: RELEASED_BY.name, designation: RELEASED_BY.designation },
-        { role: 'Received by:', name: employeeLabel(toEmployee), designation: toEmployeePositionOffice || '' },
+        {
+          role: 'Received by:',
+          name: employeeLabel(toEmployee),
+          designation: toEmployeePositionOffice || '',
+          extra: nonPlantillaEmployee ? `Sub-ICS: ${employeeLabel(nonPlantillaEmployee)}` : undefined,
+        },
       ]],
     });
   }
@@ -656,6 +706,7 @@ export class ITRGenerator {
       return {
         dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
         propertyNo: asset.propertyNumber ?? "",
+        icsNoDate: formatIcsNoDate((latestMovement as any)?.parIcsNumber, latestMovement?.dateAssigned),
         description: asset.description ?? "",
         amount: asset.unitValue ?? null,
         condition: latestMovement?.condition || (asset as any).condition || "Good",
@@ -667,6 +718,10 @@ export class ITRGenerator {
     return (items || []).map(it => ({
       dateAcquired: (it.dateAcquired || '').toString().slice(0, 10),
       propertyNo: it.propertyNumber || '',
+      icsNoDate: formatIcsNoDate(
+        it.icsNo || it.paricsNumber || it.parIcsNumber || '',
+        it.icsDate || it.dateAssigned || ''
+      ),
       description: it.description || '',
       amount: it.unitValue ?? null,
       condition: it.condition || 'Good',

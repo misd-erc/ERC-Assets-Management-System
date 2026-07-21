@@ -22,7 +22,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { getAcronym } from '@/utils/formatters';
+import { getAcronym, formatCurrency, formatCurrencyPlain } from '@/utils/formatters';
 import { Loader2, Filter, FileText, ChevronDown, ChevronRight, Download, AlertCircle, Printer, Users, BookmarkPlus, BookOpen, X, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -235,13 +235,13 @@ const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsm
                                         <Text style={pdfStyles.cellTextRight}>{qty}</Text>
                                     </View>
                                     <View style={pdfStyles.colUnitCost}>
-                                        <Text style={pdfStyles.cellTextRight}></Text>
+                                        <Text style={pdfStyles.cellTextRight}>{showStock && group.unitCost ? formatCurrencyPlain(group.unitCost) : ''}</Text>
                                     </View>
                                     <View style={pdfStyles.colTotalCost}>
-                                        <Text style={pdfStyles.cellTextRight}></Text>
+                                        <Text style={pdfStyles.cellTextRight}>{showStock && group.totalCost ? formatCurrencyPlain(group.totalCost) : ''}</Text>
                                     </View>
                                     <View style={pdfStyles.colAccountCode}>
-                                        <Text style={pdfStyles.cellText}></Text>
+                                        <Text style={pdfStyles.cellText}>{showStock ? (group.accountCode ?? '') : ''}</Text>
                                     </View>
                                 </View>
                             );
@@ -575,21 +575,24 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-    const { data, totalCount, loading, error, fetchReport } = useRSMIReport();
+    const { data, totalCount, loading, error, fetchReport, reset } = useRSMIReport();
     useEffect(() => {
         if (isOpen) {
             getCategories('Supply').then(categoriesData => {
                 setCategories(categoriesData.filter((category: any) => category.module === 'Supply'));
             });
             setCurrentPage(1);
-            fetchReport(0, DEFAULT_RSMI_START_DATE, DEFAULT_RSMI_END_DATE, 1, pageSize);
         }
-    }, [isOpen, fetchReport]);
+    }, [isOpen]);
 
     useEffect(() => {
         if (!isOpen) {
             setExpandedRows({});
             setSelectedItems(new Set());
+            setStartDate('');
+            setEndDate('');
+            setCategoryId('');
+            reset();
         }
     }, [isOpen]);
 
@@ -659,7 +662,8 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
             );
 
             const printableReportDate = reportDate ? new Date(reportDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' }) : '';
-            const rsmiNumber = `RSMI-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+            const rsmiDate = reportDate ? new Date(reportDate) : new Date();
+            const rsmiNumber = `RSMI-${rsmiDate.getFullYear()}-${String(rsmiDate.getMonth() + 1).padStart(2, '0')}-${String(rsmiDate.getDate()).padStart(2, '0')}`;
 
             const blob = await pdf(
                 <RSMIPDFDocument data={selectedData} reportDate={printableReportDate} rsmiNumber={rsmiNumber} signatories={signatories} />
@@ -734,7 +738,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                     </div>
                 </DialogHeader>
 
-                <div className="p-6 flex-1 min-h-0 flex flex-col bg-white overflow-y-auto">
+                <div className="p-6 flex-1 min-h-0 bg-white overflow-y-auto">
 
                     {/* FILTER SECTION - Polished Card Look */}
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5 p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
@@ -804,7 +808,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                     )}
 
                     {/* TABLE WRAPPER */}
-                    <div className="border border-slate-200 rounded-lg overflow-hidden flex-1 shadow-sm">
+                    <div className="border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                         <Table>
                             <TableHeader className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-sm">
                                 <TableRow className="hover:bg-transparent">
@@ -818,14 +822,16 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                     <TableHead className="w-[40px] px-2"></TableHead>
                                     <TableHead className="w-[220px] font-semibold text-slate-700">Stock Number</TableHead>
                                     <TableHead className="font-semibold text-slate-700">Item Description</TableHead>
-                                    <TableHead className="text-right font-semibold text-slate-700 w-[160px]">Total Issued</TableHead>
+                                    <TableHead className="text-right font-semibold text-slate-700 w-[120px]">Unit Cost</TableHead>
+                                    <TableHead className="text-right font-semibold text-slate-700 w-[120px]">Total Cost</TableHead>
+                                    <TableHead className="text-right font-semibold text-slate-700 w-[120px]">Total Issued</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {loading ? (
                                     Array.from({ length: 4 }).map((_, index) => (
                                         <TableRow key={`skeleton-${index}`}>
-                                            {Array.from({ length: 5 }).map((_, colIndex) => (
+                                            {Array.from({ length: 7 }).map((_, colIndex) => (
                                                 <TableCell key={`skel-col-${colIndex}`}>
                                                     <div className="h-4 bg-slate-100 rounded animate-pulse w-full"></div>
                                                 </TableCell>
@@ -858,6 +864,8 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                                     </TableCell>
                                                     <TableCell className="font-medium text-slate-900">{group.stockNumber || 'N/A'}</TableCell>
                                                     <TableCell className="text-slate-600">{group.itemDescription || 'Unknown Item'}</TableCell>
+                                                    <TableCell className="text-right text-slate-600">{group.unitCost ? formatCurrency(group.unitCost) : '—'}</TableCell>
+                                                    <TableCell className="text-right text-slate-600">{group.totalCost ? formatCurrency(group.totalCost) : '—'}</TableCell>
                                                     <TableCell className="text-right">
                                                         <span className="font-bold text-rose-600">{group.total}</span>
                                                     </TableCell>
@@ -866,7 +874,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                                 {/* EXPANDED ROW (Polished inner table) */}
                                                 {isExpanded && (
                                                     <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-                                                        <TableCell colSpan={5} className="p-0 border-b">
+                                                        <TableCell colSpan={7} className="p-0 border-b">
                                                             <div className="bg-slate-50/80 border-l-[3px] border-indigo-500 shadow-inner px-8 py-5">
                                                                 <div className="rounded-lg border border-slate-200 bg-white overflow-hidden shadow-sm">
                                                                     <Table>
@@ -903,7 +911,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                     })
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="h-72 text-center">
+                                        <TableCell colSpan={7} className="h-72 text-center">
                                             <div className="flex flex-col items-center justify-center text-slate-500 space-y-4">
                                                 <div className="p-5 bg-indigo-50 rounded-full border border-indigo-100 shadow-sm">
                                                     <Filter className="w-8 h-8 text-indigo-500" />

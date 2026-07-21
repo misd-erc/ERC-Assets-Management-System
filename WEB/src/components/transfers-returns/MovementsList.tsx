@@ -1435,19 +1435,17 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
               />
             </div>
 
-            {/* PAR/ICS Number (only for PTR/ITR) */}
-            {(transferType === 'PTR' || transferType === 'ITR' || !transferType) && (
-              <div className="space-y-1">
-                <label className="text-sm font-medium">PAR/ICS Number</label>
-                <Input
-                  value={editFields.parIcsNumber}
-                  onChange={(e) =>
-                    setEditFields(f => ({ ...f, parIcsNumber: e.target.value }))
-                  }
-                  placeholder="e.g. PAR-2024-001"
-                />
-              </div>
-            )}
+            {/* PAR/ICS Number */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">PAR/ICS Number</label>
+              <Input
+                value={editFields.parIcsNumber}
+                onChange={(e) =>
+                  setEditFields(f => ({ ...f, parIcsNumber: e.target.value }))
+                }
+                placeholder="e.g. PAR-2024-001"
+              />
+            </div>
 
             {/* Date Assigned */}
             <div className="space-y-1">

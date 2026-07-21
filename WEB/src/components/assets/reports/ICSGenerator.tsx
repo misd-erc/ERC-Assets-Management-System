@@ -18,6 +18,7 @@ import { UnifiedAssetService } from "@/services/UnifiedAssetService";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 import { IssuanceRecord } from "@/types/issuance";
+import { downloadReportExcel } from "@/utils/reportExcelExport";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -90,12 +91,19 @@ const styles = StyleSheet.create({
 
   cell: { padding: 4 },
 
-  colQty: { width: "7%" },
-  colUnit: { width: "9%" },
-  colDesc: { width: "34%" },
-  colProp: { width: "22%" },
-  colDateAcq: { width: "13%" },
-  colValue: { width: "15%" },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 2,
+  },
+
+  colQty: { width: "8%" },
+  colUnit: { width: "8%" },
+  colUnitCost: { width: "12%" },
+  colTotalCost: { width: "12%" },
+  colDesc: { width: "30%" },
+  colInvItemNo: { width: "16%" },
+  colUsefulLife: { width: "14%" },
 
   // SIGNATURES
   sigRow: {
@@ -165,7 +173,7 @@ interface ICSRow {
   unit: string;
   description: string;
   propertyNo: string;
-  dateAcquired: string;
+  estimatedUsefulLife: string;
   value: number | null;
 }
 
@@ -194,43 +202,55 @@ const ICSDocument = ({
         <Image src={logoSrc} style={styles.logo} />
         <View style={styles.headerTitleBlock}>
           <Text style={styles.headerTitle}>INVENTORY CUSTODIAN SLIP</Text>
-          {icsNumber && (
-            <Text style={{ fontSize: 10, marginTop: 4 }}>ICS No.: {icsNumber}</Text>
-          )}
         </View>
       </View>
       <View style={styles.blueRule} />
 
-      <Text style={styles.info}>Fund Cluster: Regular Agency Fund</Text>
+      <Text style={styles.info}>Entity Name: ENERGY REGULATORY COMMISSION</Text>
+      <View style={styles.metaRow}>
+        <Text>Fund Cluster: Regular Agency Fund</Text>
+        <Text>ICS No.: {icsNumber || ""}</Text>
+      </View>
 
       {/* TABLE */}
       <View style={styles.table}>
         <View style={styles.tableHeader}>
-          <Text style={[styles.cell, styles.colQty]}>Qty</Text>
+          <Text style={[styles.cell, styles.colQty]}>Quantity</Text>
           <Text style={[styles.cell, styles.colUnit]}>Unit</Text>
+          <Text style={[styles.cell, { width: "24%", textAlign: "center" }]}>Amount</Text>
           <Text style={[styles.cell, styles.colDesc]}>Description</Text>
-          <Text style={[styles.cell, styles.colProp]}>Property Number</Text>
-          <Text style={[styles.cell, styles.colDateAcq]}>Date Acquired</Text>
-          <Text style={[styles.cell, styles.colValue]}>Value</Text>
+          <Text style={[styles.cell, styles.colInvItemNo]}>Inventory Item No.</Text>
+          <Text style={[styles.cell, styles.colUsefulLife]}>Estimated Useful Life</Text>
+        </View>
+        <View style={[styles.tableHeader, { backgroundColor: "#f7f7f7" }]}>
+          <Text style={[styles.cell, styles.colQty]}></Text>
+          <Text style={[styles.cell, styles.colUnit]}></Text>
+          <Text style={[styles.cell, styles.colUnitCost, { textAlign: "center" }]}>Unit Cost</Text>
+          <Text style={[styles.cell, styles.colTotalCost, { textAlign: "center" }]}>Total Cost</Text>
+          <Text style={[styles.cell, styles.colDesc]}></Text>
+          <Text style={[styles.cell, styles.colInvItemNo]}></Text>
+          <Text style={[styles.cell, styles.colUsefulLife]}></Text>
         </View>
 
-        {rows.map((r, i) => (
-          <View key={i} style={styles.tableRow}>
-            <Text style={[styles.cell, styles.colQty]}>{r.qty}</Text>
-            <Text style={[styles.cell, styles.colUnit]}>{r.unit}</Text>
-            <Text style={[styles.cell, styles.colDesc]}>{r.description}</Text>
-            <Text style={[styles.cell, styles.colProp]}>{r.propertyNo}</Text>
-            <Text style={[styles.cell, styles.colDateAcq]}>{r.dateAcquired || ""}</Text>
-            <Text style={[styles.cell, styles.colValue]}>
-              {r.value != null
-                ? r.value.toLocaleString("en-PH", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })
-                : ""}
-            </Text>
-          </View>
-        ))}
+        {rows.map((r, i) => {
+          const unitCost = r.value != null
+            ? r.value.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : "";
+          const totalCost = r.value != null
+            ? (r.value * r.qty).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : "";
+          return (
+            <View key={i} style={styles.tableRow}>
+              <Text style={[styles.cell, styles.colQty]}>{r.qty}</Text>
+              <Text style={[styles.cell, styles.colUnit]}>{r.unit}</Text>
+              <Text style={[styles.cell, styles.colUnitCost]}>{unitCost}</Text>
+              <Text style={[styles.cell, styles.colTotalCost]}>{totalCost}</Text>
+              <Text style={[styles.cell, styles.colDesc]}>{r.description}</Text>
+              <Text style={[styles.cell, styles.colInvItemNo]}>{r.propertyNo}</Text>
+              <Text style={[styles.cell, styles.colUsefulLife]}>{r.estimatedUsefulLife || ""}</Text>
+            </View>
+          );
+        })}
       </View>
 
       {/* SIGNATURE SECTION */}
@@ -332,9 +352,7 @@ export class ICSGenerator {
       unit: item.unitOfMeasurement ?? "Unit",
       description: item.description ?? "",
       propertyNo: item.propertyNumber ?? "",
-      dateAcquired: item.dateAcquired
-        ? new Date(item.dateAcquired).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })
-        : "",
+      estimatedUsefulLife: item.estimatedUsefulLife != null ? String(item.estimatedUsefulLife) : "",
       value: item.unitValue ?? null,
     });
 
@@ -394,9 +412,7 @@ export class ICSGenerator {
       unit: item.unitOfMeasurement ?? "Unit",
       description: item.description ?? "",
       propertyNo: item.propertyNumber ?? "",
-      dateAcquired: item.dateAcquired
-        ? new Date(item.dateAcquired).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })
-        : "",
+      estimatedUsefulLife: item.estimatedUsefulLife != null ? String(item.estimatedUsefulLife) : "",
       value: item.unitValue ?? null,
     });
 
@@ -455,9 +471,7 @@ export class ICSGenerator {
       unit: r.unitOfMeasurement ?? 'Unit',
       description: r.itemName ?? '',
       propertyNo: r.propertyNumber ?? '',
-      dateAcquired: r.dateAcquired
-        ? new Date(r.dateAcquired).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })
-        : '',
+      estimatedUsefulLife: (r as any).estimatedUsefulLife != null ? String((r as any).estimatedUsefulLife) : "",
       value: r.unitValue ?? null,
     }));
 
@@ -520,9 +534,7 @@ export class ICSGenerator {
       unit: r.unitOfMeasurement ?? 'Unit',
       description: r.itemName ?? '',
       propertyNo: r.propertyNumber ?? '',
-      dateAcquired: r.dateAcquired
-        ? new Date(r.dateAcquired).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })
-        : '',
+      estimatedUsefulLife: (r as any).estimatedUsefulLife != null ? String((r as any).estimatedUsefulLife) : "",
       value: r.unitValue ?? null,
     }));
 
@@ -539,5 +551,87 @@ export class ICSGenerator {
     ).toBlob();
 
     return URL.createObjectURL(blob);
+  }
+
+  /** Download an Excel workbook matching the same rows/layout as the ICS PDF. */
+  static async generateExcel(
+    rows: ICSRow[],
+    employeeName: string,
+    position: string,
+    office: string,
+    icsNumber?: string,
+    nonPlantillaEmployeeName?: string
+  ) {
+    if (!rows.length) return;
+
+    await downloadReportExcel({
+      filename: `ICS_${icsNumber || Date.now()}.xlsx`,
+      sheetName: 'ICS',
+      titleLines: ['INVENTORY CUSTODIAN SLIP'],
+      infoLines: [
+        'Entity Name: ENERGY REGULATORY COMMISSION',
+        'Fund Cluster: Regular Agency Fund',
+      ],
+      metaRight: [`ICS No.: ${icsNumber || ''}`],
+      columns: ['Quantity', 'Unit', 'Unit Cost', 'Total Cost', 'Description', 'Inventory Item No.', 'Estimated Useful Life'],
+      rows: rows.map((r) => {
+        const unitCost = r.value != null
+          ? r.value.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : '';
+        const totalCost = r.value != null
+          ? (r.value * r.qty).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+          : '';
+        return [r.qty, r.unit, unitCost, totalCost, r.description, r.propertyNo, r.estimatedUsefulLife];
+      }),
+      signatoryRows: [[
+        { role: 'Received by:', name: employeeName, designation: `${position} - ${office}` },
+        { role: 'Issued by:', name: 'CHERRY LYNN S. GONZALES', designation: 'Administrative Officer V – FAS, GSD' },
+      ]],
+      footerLines: nonPlantillaEmployeeName ? [`Sub-ICS: ${nonPlantillaEmployeeName.toUpperCase()}`] : [],
+    });
+  }
+
+  /** Download an Excel workbook for ICS built from issuance records (SE group). */
+  static async generateExcelFromIssuanceRecords(records: IssuanceRecord[]) {
+    if (!records.length) return;
+    const first = records[0];
+
+    let employeeName = first.employeeName || 'N/A';
+    let position = 'N/A';
+    let office = first.officeName || 'N/A';
+    let nonPlantillaEmployeeName = first.subEmployeeName || '';
+
+    if (first.employeeId) {
+      try {
+        const empResp = await getEmployeeById(first.employeeId);
+        if (empResp.success && empResp.data.length > 0) {
+          const empData = empResp.data[0];
+          employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          position = empData.position?.name || 'N/A';
+          office = empData.office?.name || first.officeName || 'N/A';
+        }
+      } catch { /* use fallback values */ }
+    }
+
+    if (first.subEmployeeId && !nonPlantillaEmployeeName) {
+      try {
+        const npResp = await getEmployeeById(first.subEmployeeId);
+        if (npResp.success && npResp.data.length > 0) {
+          const npData = npResp.data[0];
+          nonPlantillaEmployeeName = `${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''} ${npData.lastName}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
+        }
+      } catch { /* use fallback */ }
+    }
+
+    const rows: ICSRow[] = records.map((r) => ({
+      qty: 1,
+      unit: r.unitOfMeasurement ?? 'Unit',
+      description: r.itemName ?? '',
+      propertyNo: r.propertyNumber ?? '',
+      estimatedUsefulLife: (r as any).estimatedUsefulLife != null ? String((r as any).estimatedUsefulLife) : "",
+      value: r.unitValue ?? null,
+    }));
+
+    await ICSGenerator.generateExcel(rows, employeeName, position, office, first.parIcsNumber, nonPlantillaEmployeeName);
   }
 }
