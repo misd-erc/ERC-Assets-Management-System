@@ -90,7 +90,12 @@ const movementOffice = (m: any): string => {
 interface HistoryRow {
     date: string;
     reference: string;
+    dateOfExpiration: string;
+    receiptItemNo: string;
     receiptQty: string;
+    unitCost: string;
+    totalCost: string;
+    issueItemNo: string;
     issueQty: string;
     office: string;
     balanceQty: string;
@@ -123,7 +128,12 @@ const buildHistoryRows = (asset: any): HistoryRow[] => {
         rows.push({
             date: formatDateDisplay(String(m.dateAssigned || m.date || '')),
             reference: movementRef(m),
+            dateOfExpiration: '',
+            receiptItemNo: '',
             receiptQty: isDisposal ? '' : '1',
+            unitCost: isDisposal ? '' : formattedUnitValue,
+            totalCost: isDisposal ? '' : formattedUnitValue,
+            issueItemNo: '',
             issueQty: isDisposal ? '1' : '',
             office: movementOffice(m),
             // SE property card is per-asset (qty 1), so balance should not depend on movement count.
@@ -150,7 +160,12 @@ const buildHistoryRows = (asset: any): HistoryRow[] => {
         rows.push({
             date: formatDateDisplay(String(dateAcquired)),
             reference: lastMove ? movementRef(lastMove) : asStr(asset.par_itr_number),
+            dateOfExpiration: '',
+            receiptItemNo: '',
             receiptQty: '1',
+            unitCost: formattedUnitValue,
+            totalCost: formattedUnitValue,
+            issueItemNo: '',
             issueQty: '',
             office: lastMove ? movementOffice(lastMove) : asStr(asset.actual_division),
             balanceQty: '1',
@@ -186,6 +201,13 @@ const pdfStyles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 4,
+    },
+    metaColLeft: {
+        width: '68%',
+        paddingRight: 8,
+    },
+    metaColRight: {
+        width: '32%',
     },
     metaText: {
         fontSize: 8.5,
@@ -237,14 +259,19 @@ const pdfStyles = StyleSheet.create({
         fontSize: 7.5,
         textAlign: 'left',
     },
-    colDate: { width: '10%' },
-    colRef: { width: '16%' },
-    colReceipt: { width: '9%' },
-    colIssue: { width: '9%' },
-    colOffice: { width: '26%' },
-    colBalance: { width: '9%' },
-    colAmount: { width: '12%' },
-    colRemarks: { width: '9%' },
+    colDate: { width: '7%' },
+    colRef: { width: '9%' },
+    colExpiration: { width: '7%' },
+    colReceiptItemNo: { width: '6%' },
+    colReceiptQty: { width: '5%' },
+    colUnitCost: { width: '7%' },
+    colTotalCost: { width: '7%' },
+    colIssueItemNo: { width: '6%' },
+    colIssueQty: { width: '5%' },
+    colOffice: { width: '16%' },
+    colBalance: { width: '5%' },
+    colAmount: { width: '8%' },
+    colRemarks: { width: '12%' },
 });
 
 interface SEPCDocumentProps {
@@ -258,50 +285,47 @@ const SEPCDocument: React.FC<SEPCDocumentProps> = ({ asset, entityName, fundClus
     <Document>
         <Page size="LEGAL" orientation="landscape" style={pdfStyles.page}>
             {/* Annex label */}
-            <Text style={pdfStyles.appendix}>Annex A.1</Text>
+            <Text style={pdfStyles.appendix}>Annex A.2</Text>
 
             {/* Title */}
             <Text style={pdfStyles.title}>SEMI-EXPENDABLE PROPERTY CARD</Text>
 
-            {/* Entity Name / Fund Cluster */}
+            {/* LGU / Fund */}
             <View style={pdfStyles.metaRow}>
-                <Text style={pdfStyles.metaText}>
-                    <Text style={pdfStyles.metaLabel}>Entity Name: </Text>
+                <Text style={[pdfStyles.metaText, pdfStyles.metaColLeft]}>
+                    <Text style={pdfStyles.metaLabel}>LGU: </Text>
                     {entityName}
                 </Text>
-                <Text style={pdfStyles.metaText}>
-                    <Text style={pdfStyles.metaLabel}>Fund Cluster: </Text>
+                <Text style={[pdfStyles.metaText, pdfStyles.metaColRight]}>
+                    <Text style={pdfStyles.metaLabel}>Fund: </Text>
                     {fundCluster}
                 </Text>
             </View>
 
-            {/* Semi-Expendable Property */}
-            <View style={pdfStyles.fullRow}>
-                <Text style={pdfStyles.metaText}>
-                    <Text style={pdfStyles.metaLabel}>Semi-Expendable Property: </Text>
+            {/* Semi-expendable Property / Semi-expendable Property Number */}
+            <View style={pdfStyles.metaRow}>
+                <Text style={[pdfStyles.metaText, pdfStyles.metaColLeft]}>
+                    <Text style={pdfStyles.metaLabel}>Semi-expendable Property: </Text>
                     {asStr(asset.category)}
                 </Text>
-            </View>
-
-            {/* Description / Property Number */}
-            <View style={pdfStyles.metaRow}>
-                <Text style={pdfStyles.metaText}>
-                    <Text style={pdfStyles.metaLabel}>Description: </Text>
-                    {asStr(asset.description)}
-                    {asStr(asset.brand) && asStr(asset.brand) !== '-' ? ` — ${asStr(asset.brand)}` : ''}
-                    {asStr(asset.model) && asStr(asset.model) !== '-' ? ` ${asStr(asset.model)}` : ''}
-                </Text>
-                <Text style={pdfStyles.metaText}>
-                    <Text style={pdfStyles.metaLabel}>Property Number: </Text>
+                <Text style={[pdfStyles.metaText, pdfStyles.metaColRight]}>
+                    <Text style={pdfStyles.metaLabel}>Semi-expendable Property Number: </Text>
                     {asStr(field(asset, 'propertyNumber', 'property_number'))}
                 </Text>
             </View>
 
-            {/* Serial Number */}
-            <View style={pdfStyles.fullRow}>
-                <Text style={pdfStyles.metaText}>
-                    <Text style={pdfStyles.metaLabel}>Serial Number: </Text>
-                    {asStr(field(asset, 'serialNumber', 'serial_number'))}
+            {/* Description / Estimated Useful Life */}
+            <View style={pdfStyles.metaRow}>
+                <Text style={[pdfStyles.metaText, pdfStyles.metaColLeft]}>
+                    <Text style={pdfStyles.metaLabel}>Description: </Text>
+                    {asStr(asset.description)}
+                    {asStr(asset.brand) && asStr(asset.brand) !== '-' ? ` — ${asStr(asset.brand)}` : ''}
+                    {asStr(asset.model) && asStr(asset.model) !== '-' ? ` ${asStr(asset.model)}` : ''}
+                    {asStr(field(asset, 'serialNumber', 'serial_number')) ? ` (S/N: ${asStr(field(asset, 'serialNumber', 'serial_number'))})` : ''}
+                </Text>
+                <Text style={[pdfStyles.metaText, pdfStyles.metaColRight]}>
+                    <Text style={pdfStyles.metaLabel}>Estimated Useful Life: </Text>
+                    {field(asset, 'estimatedUsefulLife', 'estimated_useful_life') || ''}
                 </Text>
             </View>
 
@@ -313,16 +337,28 @@ const SEPCDocument: React.FC<SEPCDocumentProps> = ({ asset, entityName, fundClus
                         <Text style={pdfStyles.headerText}>Date</Text>
                     </View>
                     <View style={[pdfStyles.cell, pdfStyles.colRef, pdfStyles.borderRight]}>
-                        <Text style={pdfStyles.headerText}>Reference/{'\n'}ICS No.</Text>
+                        <Text style={pdfStyles.headerText}>Reference</Text>
                     </View>
-                    <View style={[pdfStyles.cell, pdfStyles.colReceipt, pdfStyles.borderRight]}>
+                    <View style={[pdfStyles.cell, pdfStyles.colExpiration, pdfStyles.borderRight]}>
+                        <Text style={pdfStyles.headerText}>Date of{'\n'}Expiration</Text>
+                    </View>
+                    <View
+                        style={[
+                            pdfStyles.cell,
+                            pdfStyles.borderRight,
+                            { width: '25%', flexDirection: 'row' },
+                        ]}
+                    >
                         <Text style={pdfStyles.headerText}>Receipt</Text>
                     </View>
-                    <View style={[pdfStyles.cell, pdfStyles.colIssue, pdfStyles.borderRight]}>
+                    <View
+                        style={[
+                            pdfStyles.cell,
+                            pdfStyles.borderRight,
+                            { width: '27%', flexDirection: 'row' },
+                        ]}
+                    >
                         <Text style={pdfStyles.headerText}>Issue/Transfer/{'\n'}Disposal</Text>
-                    </View>
-                    <View style={[pdfStyles.cell, pdfStyles.colOffice, pdfStyles.borderRight]}>
-                        <Text style={pdfStyles.headerText}>Office/Officer</Text>
                     </View>
                     <View style={[pdfStyles.cell, pdfStyles.colBalance, pdfStyles.borderRight]}>
                         <Text style={pdfStyles.headerText}>Balance</Text>
@@ -335,7 +371,7 @@ const SEPCDocument: React.FC<SEPCDocumentProps> = ({ asset, entityName, fundClus
                     </View>
                 </View>
 
-                {/* Sub-header row (Qty.) */}
+                {/* Sub-header row */}
                 <View style={[pdfStyles.tableRow, pdfStyles.subHeaderRow, pdfStyles.borderBottom]}>
                     <View style={[pdfStyles.cell, pdfStyles.colDate, pdfStyles.borderRight]}>
                         <Text style={pdfStyles.headerText}></Text>
@@ -343,14 +379,29 @@ const SEPCDocument: React.FC<SEPCDocumentProps> = ({ asset, entityName, fundClus
                     <View style={[pdfStyles.cell, pdfStyles.colRef, pdfStyles.borderRight]}>
                         <Text style={pdfStyles.headerText}></Text>
                     </View>
-                    <View style={[pdfStyles.cell, pdfStyles.colReceipt, pdfStyles.borderRight]}>
+                    <View style={[pdfStyles.cell, pdfStyles.colExpiration, pdfStyles.borderRight]}>
+                        <Text style={pdfStyles.headerText}></Text>
+                    </View>
+                    <View style={[pdfStyles.cell, pdfStyles.colReceiptItemNo, pdfStyles.borderRight]}>
+                        <Text style={pdfStyles.headerText}>Item No.</Text>
+                    </View>
+                    <View style={[pdfStyles.cell, pdfStyles.colReceiptQty, pdfStyles.borderRight]}>
                         <Text style={pdfStyles.headerText}>Qty.</Text>
                     </View>
-                    <View style={[pdfStyles.cell, pdfStyles.colIssue, pdfStyles.borderRight]}>
+                    <View style={[pdfStyles.cell, pdfStyles.colUnitCost, pdfStyles.borderRight]}>
+                        <Text style={pdfStyles.headerText}>Unit Cost</Text>
+                    </View>
+                    <View style={[pdfStyles.cell, pdfStyles.colTotalCost, pdfStyles.borderRight]}>
+                        <Text style={pdfStyles.headerText}>Total Cost</Text>
+                    </View>
+                    <View style={[pdfStyles.cell, pdfStyles.colIssueItemNo, pdfStyles.borderRight]}>
+                        <Text style={pdfStyles.headerText}>Item No.</Text>
+                    </View>
+                    <View style={[pdfStyles.cell, pdfStyles.colIssueQty, pdfStyles.borderRight]}>
                         <Text style={pdfStyles.headerText}>Qty.</Text>
                     </View>
                     <View style={[pdfStyles.cell, pdfStyles.colOffice, pdfStyles.borderRight]}>
-                        <Text style={pdfStyles.headerText}></Text>
+                        <Text style={pdfStyles.headerText}>Office/Officer</Text>
                     </View>
                     <View style={[pdfStyles.cell, pdfStyles.colBalance, pdfStyles.borderRight]}>
                         <Text style={pdfStyles.headerText}>Qty.</Text>
@@ -378,10 +429,25 @@ const SEPCDocument: React.FC<SEPCDocumentProps> = ({ asset, entityName, fundClus
                         <View style={[pdfStyles.cell, pdfStyles.colRef, pdfStyles.borderRight]}>
                             <Text style={pdfStyles.cellTextLeft}>{row.reference}</Text>
                         </View>
-                        <View style={[pdfStyles.cell, pdfStyles.colReceipt, pdfStyles.borderRight]}>
+                        <View style={[pdfStyles.cell, pdfStyles.colExpiration, pdfStyles.borderRight]}>
+                            <Text style={pdfStyles.cellText}>{row.dateOfExpiration}</Text>
+                        </View>
+                        <View style={[pdfStyles.cell, pdfStyles.colReceiptItemNo, pdfStyles.borderRight]}>
+                            <Text style={pdfStyles.cellText}>{row.receiptItemNo}</Text>
+                        </View>
+                        <View style={[pdfStyles.cell, pdfStyles.colReceiptQty, pdfStyles.borderRight]}>
                             <Text style={pdfStyles.cellText}>{row.receiptQty}</Text>
                         </View>
-                        <View style={[pdfStyles.cell, pdfStyles.colIssue, pdfStyles.borderRight]}>
+                        <View style={[pdfStyles.cell, pdfStyles.colUnitCost, pdfStyles.borderRight]}>
+                            <Text style={pdfStyles.cellText}>{row.unitCost}</Text>
+                        </View>
+                        <View style={[pdfStyles.cell, pdfStyles.colTotalCost, pdfStyles.borderRight]}>
+                            <Text style={pdfStyles.cellText}>{row.totalCost}</Text>
+                        </View>
+                        <View style={[pdfStyles.cell, pdfStyles.colIssueItemNo, pdfStyles.borderRight]}>
+                            <Text style={pdfStyles.cellText}>{row.issueItemNo}</Text>
+                        </View>
+                        <View style={[pdfStyles.cell, pdfStyles.colIssueQty, pdfStyles.borderRight]}>
                             <Text style={pdfStyles.cellText}>{row.issueQty}</Text>
                         </View>
                         <View style={[pdfStyles.cell, pdfStyles.colOffice, pdfStyles.borderRight]}>
@@ -557,15 +623,27 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                 sheetName: 'SE Property Card',
                 titleLines: ['SEMI-EXPENDABLE PROPERTY CARD'],
                 infoLines: [
-                    `Entity Name: ${entityName}`,
-                    `Fund Cluster: ${fundCluster}`,
-                    `Semi-Expendable Property: ${asStr(selectedAsset.category)}`,
-                    `Description: ${asStr(selectedAsset.description)}${asStr(selectedAsset.brand) && asStr(selectedAsset.brand) !== '-' ? ` — ${asStr(selectedAsset.brand)}` : ''}${asStr(selectedAsset.model) && asStr(selectedAsset.model) !== '-' ? ` ${asStr(selectedAsset.model)}` : ''}`,
-                    `Property Number: ${propNo}`,
-                    `Serial Number: ${asStr(field(selectedAsset, 'serialNumber', 'serial_number'))}`,
+                    `LGU: ${entityName}`,
+                    `Semi-expendable Property: ${asStr(selectedAsset.category)}`,
+                    `Description: ${asStr(selectedAsset.description)}${asStr(selectedAsset.brand) && asStr(selectedAsset.brand) !== '-' ? ` — ${asStr(selectedAsset.brand)}` : ''}${asStr(selectedAsset.model) && asStr(selectedAsset.model) !== '-' ? ` ${asStr(selectedAsset.model)}` : ''}${asStr(field(selectedAsset, 'serialNumber', 'serial_number')) ? ` (S/N: ${asStr(field(selectedAsset, 'serialNumber', 'serial_number'))})` : ''}`,
                 ],
-                columns: ['Date', 'Reference/ICS No.', 'Receipt Qty.', 'Issue/Transfer/Disposal Qty.', 'Office/Officer', 'Balance Qty.', 'Amount', 'Remarks'],
-                rows: rows.map((row) => [row.date, row.reference, row.receiptQty, row.issueQty, row.office, row.balanceQty, row.amount, row.remarks]),
+                metaRight: [
+                    `Fund: ${fundCluster}`,
+                    `Semi-expendable Property Number: ${propNo}`,
+                    `Estimated Useful Life: ${field(selectedAsset, 'estimatedUsefulLife', 'estimated_useful_life') || ''}`,
+                ],
+                columns: [
+                    'Date', 'Reference', 'Date of Expiration',
+                    'Receipt - Item No.', 'Receipt - Qty.', 'Receipt - Unit Cost', 'Receipt - Total Cost',
+                    'Issue/Transfer/Disposal - Item No.', 'Issue/Transfer/Disposal - Qty.', 'Office/Officer',
+                    'Balance - Qty.', 'Amount', 'Remarks',
+                ],
+                rows: rows.map((row) => [
+                    row.date, row.reference, row.dateOfExpiration,
+                    row.receiptItemNo, row.receiptQty, row.unitCost, row.totalCost,
+                    row.issueItemNo, row.issueQty, row.office,
+                    row.balanceQty, row.amount, row.remarks,
+                ]),
             });
             toast.success('Excel file saved successfully');
         } catch {
@@ -584,7 +662,7 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                 <DialogHeader className="px-6 py-4 border-b shrink-0">
                     <DialogTitle className="text-xl font-semibold text-slate-800">
                         Semi-Expendable Property Card
-                        <span className="ml-2 text-xs font-normal text-lime-600 bg-lime-50 border border-lime-200 rounded px-2 py-0.5">Annex A.1</span>
+                        <span className="ml-2 text-xs font-normal text-lime-600 bg-lime-50 border border-lime-200 rounded px-2 py-0.5">Annex A.2</span>
                     </DialogTitle>
                     <DialogDescription className="text-sm text-muted-foreground">
                         Select an SE asset to generate its Semi-Expendable Property Card
@@ -711,7 +789,7 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                                 <div className="px-6 py-4 border-b shrink-0 space-y-3">
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="text-xs font-medium text-muted-foreground block mb-1">Entity Name</label>
+                                            <label className="text-xs font-medium text-muted-foreground block mb-1">LGU</label>
                                             <Input
                                                 value={entityName}
                                                 onChange={(e) => setEntityName(e.target.value)}
@@ -719,7 +797,7 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-xs font-medium text-muted-foreground block mb-1">Fund Cluster</label>
+                                            <label className="text-xs font-medium text-muted-foreground block mb-1">Fund</label>
                                             <Input
                                                 value={fundCluster}
                                                 onChange={(e) => setFundCluster(e.target.value)}
@@ -751,6 +829,10 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                                                 <span className="font-medium">Serial No.: </span>
                                                 {asStr(field(selectedAsset, 'serialNumber', 'serial_number'))}
                                             </span>
+                                            <span className="break-all">
+                                                <span className="font-medium">Estimated Useful Life: </span>
+                                                {field(selectedAsset, 'estimatedUsefulLife', 'estimated_useful_life') || ''}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -764,7 +846,7 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead className="text-xs">Date</TableHead>
-                                                <TableHead className="text-xs">Reference / ICS No.</TableHead>
+                                                <TableHead className="text-xs">Reference</TableHead>
                                                 <TableHead className="text-xs text-center">Receipt Qty.</TableHead>
                                                 <TableHead className="text-xs text-center">Issue Qty.</TableHead>
                                                 <TableHead className="text-xs">Office / Officer</TableHead>
