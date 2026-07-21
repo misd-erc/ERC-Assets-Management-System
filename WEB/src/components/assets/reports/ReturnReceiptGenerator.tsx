@@ -17,7 +17,7 @@ type ReturnType = "RRPPE" | "RRSP";
 interface ReturnRow {
   description: string;
   quantity: string;
-  propertyNumber: string;
+  icsNo: string;
   endUser: string;
   remarks: string;
 }
@@ -155,7 +155,7 @@ function buildRowsFromItems(items: any[], endUser: string, nonPlantillaEndUser?:
   return (items || []).map((item: any) => ({
     description: item?.description || "",
     quantity: "1",
-    propertyNumber: item?.propertyNumber || "",
+    icsNo: item?.icsNo || item?.paricsNumber || item?.parIcsNumber || "",
     endUser: nonPlantillaEndUser || endUser || "",
     remarks: item?.condition || item?.remarks || "",
   }));
@@ -216,7 +216,7 @@ const ReturnReceiptDocument = ({
             <View style={styles.tableHeaderRow}>
               <Text style={[styles.headerCell, { width: "36%" }]}>Item Description</Text>
               <Text style={[styles.headerCell, { width: "8%" }]}>Qty.</Text>
-              <Text style={[styles.headerCell, { width: "28%" }]}>Property Number</Text>
+              <Text style={[styles.headerCell, { width: "28%" }]}>{returnType === "RRSP" ? "ICS No." : "PAR No."}</Text>
               <Text style={[styles.headerCell, { width: "14%" }]}>End-user</Text>
               <Text style={[styles.headerCellLast, { width: "14%" }]}>Remarks</Text>
             </View>
@@ -230,7 +230,7 @@ const ReturnReceiptDocument = ({
                 <View key={idx} style={styles.tableRow}>
                   <Text style={[styles.bodyCell, { width: "36%" }]}>{r.description}</Text>
                   <Text style={[styles.bodyCell, { width: "8%", textAlign: "center" }]}>{r.quantity}</Text>
-                  <Text style={[styles.bodyCell, { width: "28%", fontSize: 7.5 }]}>{r.propertyNumber}</Text>
+                  <Text style={[styles.bodyCell, { width: "28%", fontSize: 7.5 }]}>{r.icsNo}</Text>
                   <Text style={[styles.bodyCell, { width: "14%" }]}>{r.endUser}</Text>
                   <Text style={[styles.bodyCellLast, { width: "14%" }]}>{r.remarks}</Text>
                 </View>
@@ -327,8 +327,8 @@ export class ReturnReceiptGenerator {
         `${returnType === 'RRPPE' ? 'RRPPE No.: ' : 'RRSP No.: '}${receiptNumber || ''}`,
         `Date: ${formatLongDate(dateAssigned)}`,
       ],
-      columns: ['Item Description', 'Qty.', 'Property Number', 'End-user', 'Remarks'],
-      rows: rows.map((r) => [r.description, r.quantity, r.propertyNumber, r.endUser, r.remarks]),
+      columns: ['Item Description', 'Qty.', returnType === 'RRSP' ? 'ICS No.' : 'PAR No.', 'End-user', 'Remarks'],
+      rows: rows.map((r) => [r.description, r.quantity, r.icsNo, r.endUser, r.remarks]),
       signatoryRows: [[
         { role: 'Returned by:', name: returnedByName, designation: returnedByPosition || 'Position, Service-Division' },
         { role: 'Received by:', name: RECEIVED_BY.name, designation: RECEIVED_BY.designation },
