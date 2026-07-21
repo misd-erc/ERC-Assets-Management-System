@@ -32,6 +32,8 @@ export interface ExcelReportConfig {
   totalRow?: (string | number | null | undefined)[];
   /** Rows of side-by-side signatory blocks (e.g. [[receivedBy, issuedBy]] or [[chair, viceChair, ceo]]). */
   signatoryRows?: ExcelSignatoryBlock[][];
+  /** Bold, left-aligned lines shown at the very bottom, after the signatory blocks (e.g. "Sub-PAR: ..."). */
+  footerLines?: string[];
 }
 
 const THIN_BORDER: Partial<ExcelJS.Borders> = {
@@ -58,6 +60,7 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
     rows,
     totalRow,
     signatoryRows = [],
+    footerLines = [],
   } = config;
 
   const colCount = Math.max(columns.length, 1);
@@ -156,6 +159,11 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
     }
     if (blocks.some((b) => b.extra)) addLine((b) => b.extra);
     worksheet.addRow([]);
+  });
+
+  footerLines.forEach((line) => {
+    const row = worksheet.addRow([line]);
+    row.getCell(1).font = { bold: true };
   });
 
   const buffer = await workbook.xlsx.writeBuffer();

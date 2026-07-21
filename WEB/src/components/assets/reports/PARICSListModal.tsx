@@ -16,6 +16,7 @@ import {
   Package,
   Printer,
   Download,
+  FileSpreadsheet,
   X,
 } from 'lucide-react';
 import { listIssuances } from '@/api/asset/issuanceApi';
@@ -51,6 +52,7 @@ export function PARICSListModal({ isOpen, onClose, reportType }: PARICSListModal
   const [previewUrl, setPreviewUrl] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [savingExcel, setSavingExcel] = useState(false);
   const [signatureDate, setSignatureDate] = useState(
     new Date().toISOString().slice(0, 10)
   );
@@ -168,6 +170,24 @@ export function PARICSListModal({ isOpen, onClose, reportType }: PARICSListModal
     const w = window.open(previewUrl);
     if (w) {
       w.addEventListener('load', () => w.print());
+    }
+  };
+
+  const handleSaveExcel = async () => {
+    if (!selectedGroup) return;
+    setSavingExcel(true);
+    try {
+      if (reportType === 'PAR') {
+        await PARGenerator.generateExcelFromIssuanceRecords(selectedGroup.records);
+      } else {
+        await ICSGenerator.generateExcelFromIssuanceRecords(selectedGroup.records);
+      }
+      toast.success(`${reportType} Excel file saved`);
+    } catch (err) {
+      console.error('Failed to save Excel file:', err);
+      toast.error('Failed to save Excel file');
+    } finally {
+      setSavingExcel(false);
     }
   };
 
@@ -457,8 +477,20 @@ export function PARICSListModal({ isOpen, onClose, reportType }: PARICSListModal
                 Print
               </Button>
               <Button
+                variant="outline"
+                onClick={handleSaveExcel}
+                disabled={loadingPreview || savingExcel || !previewUrl}
+              >
+                {savingExcel ? (
+                  <Loader2 className="size-4 animate-spin mr-2" />
+                ) : (
+                  <FileSpreadsheet className="size-4 mr-2" />
+                )}
+                {savingExcel ? 'Saving…' : 'Export to Excel'}
+              </Button>
+              <Button
                 onClick={handleDownload}
-                disabled={loadingPreview || !previewUrl}
+                disabled={loadingPreview || savingExcel || !previewUrl}
               >
                 <Download className="size-4 mr-2" />
                 Save as PDF
