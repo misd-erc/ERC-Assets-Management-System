@@ -38,7 +38,7 @@ namespace API.Services.Dashboard
                         g => (g.Key.StockNumber, g.Key.ItemDescription),
                         g => g.Sum(x => x.IssueQuantity));
 
-                var categories = await context.TblPTACategories.AsNoTracking().Where(x => !x.IsDeleted).ToListAsync();
+                var categories = await context.TblPTACategories.AsNoTracking().Where(x => !x.IsDeleted && x.Module == "Supply").ToListAsync();
                 var catDict = categories.ToDictionary(c => c.Id, c => c.Name ?? "Uncategorized");
 
                 var groups = supplyItems
@@ -96,6 +96,7 @@ namespace API.Services.Dashboard
                             Value = val
                         };
                     })
+                    .Where(x => x.Quantity != 0 || x.Value != 0)
                     .OrderByDescending(x => x.Value)
                     .ToList();
 
