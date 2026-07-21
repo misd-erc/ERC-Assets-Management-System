@@ -15,6 +15,15 @@ export interface ExcelSignatoryBlock {
   extra?: string;
 }
 
+export interface ExcelCheckboxGroup {
+  /** Bold heading shown above the checkbox grid (e.g. "Transfer Type: (check only one)"). */
+  title: string;
+  /** Option labels, laid out two per row (matching the PDF's two-column checkbox grid). */
+  options: string[];
+  /** The option that should render with a bordered, checked box. Must match an entry in `options` exactly. */
+  selected?: string;
+}
+
 export interface ExcelReportConfig {
   filename: string;
   sheetName?: string;
@@ -24,12 +33,16 @@ export interface ExcelReportConfig {
   infoLines?: string[];
   /** Right-aligned lines shown alongside the first info lines (e.g. "PAR No.: 2026-01-001"). */
   metaRight?: string[];
+  /** Bordered checkbox grid shown between the info lines and the table (e.g. Transfer Type). */
+  checkboxGroup?: ExcelCheckboxGroup;
   /** Table header row. */
   columns: string[];
   /** Table data rows, same column order as `columns`. */
   rows: (string | number | null | undefined)[][];
   /** Optional totals row, same column order as `columns`. */
   totalRow?: (string | number | null | undefined)[];
+  /** Bold, left-aligned lines shown between the table and the signatory blocks (e.g. "Reason/s for Transfer:"). */
+  preSignatureLines?: string[];
   /** Rows of side-by-side signatory blocks (e.g. [[receivedBy, issuedBy]] or [[chair, viceChair, ceo]]). */
   signatoryRows?: ExcelSignatoryBlock[][];
   /** Bold, left-aligned lines shown at the very bottom, after the signatory blocks (e.g. "Sub-PAR: ..."). */
@@ -59,6 +72,8 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
     columns,
     rows,
     totalRow,
+    checkboxGroup,
+    preSignatureLines = [],
     signatoryRows = [],
     footerLines = [],
   } = config;
@@ -89,6 +104,31 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
   });
   if (infoLines.length) worksheet.addRow([]);
 
+  if (checkboxGroup) {
+    const titleRow = worksheet.addRow([checkboxGroup.title]);
+    titleRow.getCell(1).font = { bold: true };
+
+    // Start at column 2, not column 1 — a checkbox cell sitting flush against the sheet's
+    // outer-left edge has some viewers drop that edge's border, making the box look unclosed.
+    const startCol = 2;
+    const half = Math.max(1, Math.floor(colCount / 2));
+    for (let i = 0; i < checkboxGroup.options.length; i += 2) {
+      const row = worksheet.addRow([]);
+      const addOption = (option: string, boxCol: number, labelCol: number) => {
+        const boxCell = row.getCell(boxCol);
+        boxCell.value = option === checkboxGroup.selected ? 'X' : '';
+        boxCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        boxCell.border = THIN_BORDER;
+        row.getCell(labelCol).value = option;
+      };
+      addOption(checkboxGroup.options[i], startCol, startCol + 1);
+      if (checkboxGroup.options[i + 1] !== undefined) {
+        addOption(checkboxGroup.options[i + 1], startCol + half, Math.min(startCol + half + 1, colCount));
+      }
+    }
+    worksheet.addRow([]);
+  }
+
   const headerRow = worksheet.addRow(columns);
   headerRow.eachCell({ includeEmpty: true }, (cell) => {
     cell.font = { bold: true };
@@ -111,6 +151,14 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
       cell.border = THIN_BORDER;
       cell.font = { bold: true };
     }
+  }
+
+  if (preSignatureLines.length) {
+    worksheet.addRow([]);
+    preSignatureLines.forEach((line, i) => {
+      const row = worksheet.addRow([line]);
+      if (i === 0) row.getCell(1).font = { bold: true };
+    });
   }
 
   if (signatoryRows.length) {
