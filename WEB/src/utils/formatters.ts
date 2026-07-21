@@ -1,6 +1,9 @@
 export const formatCurrency = (n = 0) =>
   n.toLocaleString('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2 });
 
+export const formatCurrencyPlain = (n = 0) =>
+  `PHP ${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 export const getStockStatus = (s: any) => {
   if (!s) return 'Unknown';
   if (s.currentStock === 0) return 'Out of Stock';

@@ -603,4 +603,48 @@ export class PARGenerator {
       ]],
     });
   }
+
+  /** Download an Excel workbook for PAR built from issuance records (PPE group). */
+  static async generateExcelFromIssuanceRecords(records: IssuanceRecord[]) {
+    if (!records.length) return;
+    const first = records[0];
+
+    let employeeName = first.employeeName || 'N/A';
+    let position = 'N/A';
+    let office = first.officeName || 'N/A';
+    let nonPlantillaEmployeeName = first.subEmployeeName || '';
+
+    if (first.employeeId) {
+      try {
+        const empResp = await getEmployeeById(first.employeeId);
+        if (empResp.success && empResp.data.length > 0) {
+          const empData = empResp.data[0];
+          employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
+          position = empData.position?.name || 'N/A';
+          office = empData.office?.name || first.officeName || 'N/A';
+        }
+      } catch { /* use fallback values */ }
+    }
+
+    if (first.subEmployeeId && !nonPlantillaEmployeeName) {
+      try {
+        const npResp = await getEmployeeById(first.subEmployeeId);
+        if (npResp.success && npResp.data.length > 0) {
+          const npData = npResp.data[0];
+          nonPlantillaEmployeeName = `${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''} ${npData.lastName}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
+        }
+      } catch { /* use fallback */ }
+    }
+
+    const rows: PARRow[] = records.map((r) => ({
+      qty: 1,
+      unit: r.unitOfMeasurement ?? 'Unit',
+      description: r.itemName ?? '',
+      propertyNo: r.propertyNumber ?? '',
+      dateAcquired: r.dateAcquired?.slice(0, 10) ?? '',
+      amount: r.unitValue ?? null,
+    }));
+
+    await PARGenerator.generateExcel(rows, employeeName, position, office, first.parIcsNumber, nonPlantillaEmployeeName);
+  }
 }
