@@ -8,9 +8,10 @@ interface Props {
   onAdd: () => void;
   onEdit: (employee: EmployeeDetail) => void;
   onDelete: (id: number, name: string) => void;
+  onBatchUpload: () => void;
 }
 
-export const EmployeeTabContent = ({ data, loading, onAdd, onEdit, onDelete }: Props) => {
+export const EmployeeTabContent = ({ data, loading, onAdd, onEdit, onDelete, onBatchUpload }: Props) => {
   if (loading) {
     return <p className="text-center text-gray-500 py-12">Loading employees...</p>;
   }
@@ -21,6 +22,7 @@ export const EmployeeTabContent = ({ data, loading, onAdd, onEdit, onDelete }: P
       onAdd={onAdd}
       onEdit={onEdit}
       onDelete={onDelete}
+      onBatchUpload={onBatchUpload}
     />
   );
 };

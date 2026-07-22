@@ -108,6 +108,58 @@ export const editEmployeeRecord = async (payload: EditEmployeePayload): Promise<
   return { message: response.data.message ?? 'Success' };
 };
 
+export interface EditEmployeeBatchItem {
+  employeeIdOriginal: string;
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  suffixName?: string;
+  officeName?: string;
+  divisionName?: string;
+  employmentTypeName?: string;
+  positionName?: string;
+  isActive: boolean;
+}
+
+export interface EditEmployeeBatchResultRow {
+  error: boolean;
+  employeeIdOriginal?: string;
+  employeeId?: number;
+  action?: 'created' | 'updated';
+  message?: string;
+}
+
+export const batchEditEmployeesRecord = async (
+  items: EditEmployeeBatchItem[]
+): Promise<EditEmployeeBatchResultRow[]> => {
+  const { systemUserId, sessionKey } = getAuthParams();
+
+  const requestPayload = {
+    Model: items.map((item) => ({
+      FirstName: item.firstName,
+      MiddleName: item.middleName,
+      LastName: item.lastName,
+      SuffixName: item.suffixName,
+      EmployeeIdOriginal: item.employeeIdOriginal,
+      OfficeName: item.officeName,
+      DivisionName: item.divisionName,
+      EmploymentTypeName: item.employmentTypeName,
+      PositionName: item.positionName,
+      IsActive: item.isActive,
+    })),
+    ActionBySystemUserId: systemUserId,
+    SessionKey: sessionKey,
+  };
+
+  const response = await axiosInstance.post<ApiResponse<EditEmployeeBatchResultRow[]>>(
+    '/Employee/batch/edit',
+    requestPayload
+  );
+
+  if (!response.data.success) throw new Error(response.data.message || 'Batch upload failed');
+  return response.data.data ?? [];
+};
+
 /* ------------------------------- DELETE ------------------------------- */
 
 export const deleteEmployeeRecord = async (employeeId: number): Promise<{ message: string }> => {
