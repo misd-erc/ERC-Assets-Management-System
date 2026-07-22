@@ -23,6 +23,7 @@ import {
   PositionDeleteModal,
   EmployeeEditModal,
   EmployeeDeleteModal,
+  EmployeeBatchUploadModal,
 } from '@/components/office-management';
 
 import {
@@ -108,6 +109,8 @@ const OfficeManagement = () => {
     employee?: EmployeeDetail;
   }>({ open: false, mode: 'add' });
 
+  const [employeeBatchUploadOpen, setEmployeeBatchUploadOpen] = useState(false);
+
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     type: 'office' | 'division' | 'employment-type' | 'position' | 'employee';
@@ -166,6 +169,7 @@ const OfficeManagement = () => {
 
   const openEmployeeAdd = () => setEmployeeDialog({ open: true, mode: 'add' });
   const openEmployeeEdit = (e: EmployeeDetail) => setEmployeeDialog({ open: true, mode: 'edit', employee: e });
+  const openEmployeeBatchUpload = () => setEmployeeBatchUploadOpen(true);
 
   const openDelete = (
     type: 'office' | 'division' | 'employment-type' | 'position' | 'employee',
@@ -179,6 +183,7 @@ const OfficeManagement = () => {
     setTypeDialog(prev => ({ ...prev, open: false }));
     setPositionDialog(prev => ({ ...prev, open: false }));
     setEmployeeDialog(prev => ({ ...prev, open: false }));
+    setEmployeeBatchUploadOpen(false);
     setDeleteDialog({ open: false, type: 'office' });
   };
 
@@ -250,6 +255,7 @@ const OfficeManagement = () => {
             onAdd={openEmployeeAdd}
             onEdit={openEmployeeEdit}
             onDelete={(id, name) => openDelete('employee', id, name)}
+            onBatchUpload={openEmployeeBatchUpload}
           />
         </TabsContent>
       </Tabs>
@@ -329,6 +335,12 @@ const OfficeManagement = () => {
         open={employeeDialog.open}
         mode={employeeDialog.mode}
         employee={employeeDialog.employee}
+        onOpenChange={open => !open && closeAll()}
+        onSuccess={onSuccess}
+      />
+
+      <EmployeeBatchUploadModal
+        open={employeeBatchUploadOpen}
         onOpenChange={open => !open && closeAll()}
         onSuccess={onSuccess}
       />

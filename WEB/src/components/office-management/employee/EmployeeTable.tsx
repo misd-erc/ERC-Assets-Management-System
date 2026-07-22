@@ -12,6 +12,7 @@ import {
   Trash2,
   MoreHorizontal,
   Plus,
+  Upload,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -40,11 +41,12 @@ interface Props {
   onAdd: () => void;
   onEdit: (employee: EmployeeDetail) => void;
   onDelete: (id: number, name: string) => void;
+  onBatchUpload: () => void;
 }
 
 const PAGE_SIZE = 100;
 
-export const EmployeeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
+export const EmployeeTable = ({ data, onAdd, onEdit, onDelete, onBatchUpload }: Props) => {
   const { searchQuery } = useEmployee();
   const [page, setPage] = useState(1);
 
@@ -71,10 +73,16 @@ export const EmployeeTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
             <CardTitle>Employees ({data.length})</CardTitle>
             <CardDescription>Manage employee records and their status</CardDescription>
           </div>
-          <Button onClick={onAdd}>
-            <Plus className="w-4 h-4 mr-2" />
-            Add Employee
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={onBatchUpload}>
+              <Upload className="w-4 h-4 mr-2" />
+              Batch Upload
+            </Button>
+            <Button onClick={onAdd}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Employee
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
