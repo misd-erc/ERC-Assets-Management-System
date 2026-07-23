@@ -7,7 +7,7 @@ namespace PortalDB.Migrations
     /// <inheritdoc />
     public partial class UpdatedIARSignedUpload : Migration
     {
-        /// <inheritdoc />
+        /// <inheritdoc /> 
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<long>(
