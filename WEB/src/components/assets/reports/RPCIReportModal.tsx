@@ -114,10 +114,11 @@ interface RPCIPDFDocumentProps {
     data: any[];
     categoryInfo: any;
     reportDate: string;
+    assumptionDate: string;
     signatories: RPCISignatories;
 }
 
-const RPCIPDFDocument: React.FC<RPCIPDFDocumentProps> = ({ data, categoryInfo, reportDate, signatories }) => {
+const RPCIPDFDocument: React.FC<RPCIPDFDocumentProps> = ({ data, categoryInfo, reportDate, assumptionDate, signatories }) => {
     const accountCode = categoryInfo ? `${categoryInfo.generalCode || ''} - ${categoryInfo.name || ''}` : '';
 
     return (
@@ -132,7 +133,7 @@ const RPCIPDFDocument: React.FC<RPCIPDFDocumentProps> = ({ data, categoryInfo, r
                         For which <Text style={{ fontFamily: 'Helvetica-Bold', textDecoration: 'underline' }}> ROSELLE M. GUINTU </Text>
                         , <Text style={{ fontFamily: 'Helvetica-Bold', textDecoration: 'underline' }}>Administrative Officer III</Text>
                         , <Text style={{ fontFamily: 'Helvetica-Bold', textDecoration: 'underline' }}>Energy Regulatory Commission</Text>
-                        , is accountable having assumed such accountability on <Text style={{ fontFamily: 'Helvetica-Bold', textDecoration: 'underline' }}>SEPTEMBER 2016</Text>.
+                        , is accountable having assumed such accountability on <Text style={{ fontFamily: 'Helvetica-Bold', textDecoration: 'underline' }}>{assumptionDate}</Text>.
                     </Text>
                     <Text style={pdfStyles.accountableSubText}>
                         (Name of Accountable Officer)          (Official Designation)          (Agency/Office)          (Date of Assumption)
@@ -475,6 +476,8 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
+    const [assumptionMonth, setAssumptionMonth] = useState('September');
+    const [assumptionYear, setAssumptionYear] = useState('2016');
     const [categoryId, setCategoryId] = useState<string>('');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 100;
@@ -583,10 +586,11 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
             );
             
             const printableReportDate = reportDate ? new Date(reportDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' }) : '';
+            const assumptionDate = `${assumptionMonth} ${assumptionYear}`;
             const categoryInfo = categories.find(c => c.id.toString() === categoryId);
 
             const blob = await pdf(
-                <RPCIPDFDocument data={selectedData} categoryInfo={categoryInfo} reportDate={printableReportDate} signatories={signatories} />
+                <RPCIPDFDocument data={selectedData} categoryInfo={categoryInfo} reportDate={printableReportDate} assumptionDate={assumptionDate} signatories={signatories} />
             ).toBlob();
 
             const url = URL.createObjectURL(blob);
@@ -659,7 +663,7 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
 
                 <div className="p-6 flex-1 min-h-0 flex flex-col bg-white overflow-y-auto">
 
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-5 p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-5 p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
                         <div className="space-y-1.5">
                             <Label className="text-slate-700 font-medium">Category</Label>
                             <Select value={categoryId} onValueChange={setCategoryId}>
@@ -704,6 +708,32 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                                 value={reportDate}
                                 onChange={(e) => setReportDate(e.target.value)}
                             />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-slate-700 font-medium">Date of Assumption</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Select value={assumptionMonth} onValueChange={setAssumptionMonth}>
+                                    <SelectTrigger className="w-full bg-white border-slate-300 focus:ring-indigo-500 shadow-sm">
+                                        <SelectValue placeholder="Month" />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-60 overflow-y-auto">
+                                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m) => (
+                                            <SelectItem key={m} value={m}>{m}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Select value={assumptionYear} onValueChange={setAssumptionYear}>
+                                    <SelectTrigger className="w-full bg-white border-slate-300 focus:ring-indigo-500 shadow-sm">
+                                        <SelectValue placeholder="Year" />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-60 overflow-y-auto">
+                                        {Array.from({ length: 21 }, (_, i) => String(new Date().getFullYear() - 5 + i)).map((y) => (
+                                            <SelectItem key={y} value={y}>{y}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
 
                         <div className="flex items-end">
