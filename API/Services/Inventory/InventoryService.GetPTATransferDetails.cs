@@ -127,6 +127,7 @@ public async Task<IActionResult> GetPTATransferDetails([FromQuery] string transf
                         division = ptaMovementDetail.Division,
                         condition = ptaMovementDetail.Condition,
                         remarks = movement.Remarks,
+                        reasonForTransfer = movement.ReasonForTransfer,
                         status = movement.Status,
                         isActive = ptaMovementDetail.IsActive,
                         items = new List<object> { new { ptaResponseModel.Id, ptaResponseModel.PropertyNumber, ptaResponseModel.Description, ptaResponseModel.Brand, ptaResponseModel.Model, ptaResponseModel.SerialNumber, category = ptaResponseModel.Category?.Name, ptaResponseModel.UnitOfMeasurement, ptaResponseModel.UnitValue, ptaResponseModel.DateAcquired, ptaResponseModel.Group } },

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260713043058_UpdatedTblRPCI")]
+    partial class UpdatedTblRPCI
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -764,10 +767,6 @@ namespace PortalDB.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("PTAMovementRRPPERRSPNumber");
 
-                    b.Property<string>("ReasonForTransferEncrypted")
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("PTAMovementReasonForTransfer");
-
                     b.Property<string>("RemarksEncrypted")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("PTAMovementRemarks");
@@ -817,42 +816,6 @@ namespace PortalDB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblPTAParts", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.TblRPCPPESignatoryTemplate", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("RPCPPESignatoryTemplateId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("RPCPPESignatoryTemplateCreatedAt");
-
-                    b.Property<long>("CreatedBy")
-                        .HasColumnType("bigint")
-                        .HasColumnName("RPCPPESignatoryTemplateCreatedBy");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("RPCPPESignatoryTemplateIsActive");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("RPCPPESignatoryTemplateName");
-
-                    b.Property<string>("SignatoryDataJson")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("RPCPPESignatoryTemplateData");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblRPCPPESignatoryTemplates", "asset");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.ASSET.PTA.VwPTA", b =>

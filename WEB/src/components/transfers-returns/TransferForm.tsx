@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -47,6 +48,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemConditions, setItemConditions] = useState<Record<string, string>>({});
   const [itemSearchQuery, setItemSearchQuery] = useState('');
+  const [reasonForTransfer, setReasonForTransfer] = useState('');
 
   // Generated numbers (editable before final save)
   const [generatedTransferNumber, setGeneratedTransferNumber] = useState('');
@@ -79,6 +81,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       setSelectedItems([]);
       setItemConditions({});
       setItemSearchQuery('');
+      setReasonForTransfer('');
       setGeneratedTransferNumber('');
       setGeneratedParIcsNumber('');
       setError(null);
@@ -275,6 +278,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           actualDivisionId: recipient?.division?.id || 0,
           isActive: true,
           isCurrent: true,
+          reasonForTransfer: reasonForTransfer.trim() || undefined,
         };
       });
 
@@ -710,6 +714,17 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                             );
                           })}
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs text-gray-500 uppercase font-semibold">Reason for Transfer</Label>
+                        <Textarea
+                          value={reasonForTransfer}
+                          onChange={(e) => setReasonForTransfer(e.target.value)}
+                          placeholder="Optional — briefly explain why these items are being transferred..."
+                          className="bg-white"
+                          rows={3}
+                        />
                       </div>
                     </div>
                   )}

@@ -66,6 +66,7 @@ import { InventoryCountFormModal } from "./InventoryCountFormModal";
 import { ListPPEsAtStationModal } from "./ListPPEsAtStationModal";
 import { RLSDDPModal } from "./RLSDDPModal";
 import { IARReportModal } from "./IARReportModal";
+import { RPCIReportModal } from "./RPCIReportModal";
 
 
 export function ReportTab() {
@@ -119,6 +120,7 @@ export function ReportTab() {
   const [showListPPEsAtStation, setShowListPPEsAtStation] = useState(false);
   const [showRLSDDP, setShowRLSDDP] = useState(false);
   const [showIARModal, setShowIARModal] = useState(false);
+  const [showRPCI, setShowRPCI] = useState(false);
 
   const [registrySPIEmployee, setRegistrySPIEmployee] = useState<import('@/types/asset/UnifiedAsset').NormalizedEmployee | null>(null);
   const [registrySPIAssets, setRegistrySPIAssets] = useState<any[]>([]);
@@ -156,6 +158,7 @@ export function ReportTab() {
     setShowSEPropertyCardModal(false);
     setShowListPPEsAtStation(false);
     setShowIARModal(false);
+    setShowRPCI(false);
     setSelectedReport(null);
     setSelectedItem(null);
     setSelectedMovement(null);
@@ -166,6 +169,7 @@ export function ReportTab() {
       setShowItemMovementsModal(false);
       setShowPreview(false);
       setShowIARModal(false);
+      setShowRPCI(false);
       setSelectedReport(null);
       setSelectedItem(null);
       setSelectedMovement(null);
@@ -512,6 +516,13 @@ export function ReportTab() {
       icon: ClipboardList,
       bgColor: 'bg-blue-700',
       action: () => setShowIARModal(true)
+    },
+    {
+      title: 'RPCI',
+      subtitle: 'Report on the Physical Count of Inventories',
+      icon: FileText,
+      bgColor: 'bg-sky-600',
+      action: () => setShowRPCI(true)
     },
     {
       title: 'PAR',
@@ -876,6 +887,11 @@ export function ReportTab() {
         <IARReportModal
             isOpen={showIARModal}
             onClose={() => setShowIARModal(false)}
+        />
+
+        <RPCIReportModal
+            isOpen={showRPCI}
+            onClose={() => setShowRPCI(false)}
         />
 
         <RPCPPEFilterModal

@@ -96,6 +96,15 @@ namespace PortalDB.Entities.ASSET.PTA
             set => RemarksEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
         }
 
+        [Column("PTAMovementReasonForTransfer")]
+        public string? ReasonForTransferEncrypted { get; set; }
+        [NotMapped]
+        public string? ReasonForTransfer
+        {
+            get => string.IsNullOrEmpty(ReasonForTransferEncrypted) ? null : EncryptionHelper.Decrypt(ReasonForTransferEncrypted);
+            set => ReasonForTransferEncrypted = string.IsNullOrEmpty(value) ? null : EncryptionHelper.Encrypt(value);
+        }
+
         [Column("PTAMovementIsActive")]
         public bool IsActive { get; set; } = true;
 

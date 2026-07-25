@@ -567,6 +567,8 @@ export class ICSGenerator {
     await downloadReportExcel({
       filename: `ICS_${icsNumber || Date.now()}.xlsx`,
       sheetName: 'ICS',
+      logoUrl: logoSrc,
+      logoColOffset: 1.5,
       titleLines: ['INVENTORY CUSTODIAN SLIP'],
       infoLines: [
         'Entity Name: ENERGY REGULATORY COMMISSION',

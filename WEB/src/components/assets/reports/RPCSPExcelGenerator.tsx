@@ -5,6 +5,11 @@ import { listSePpeItemsNoMovement, listSePpeItemsWithMovement } from '@/api/asse
 import { RPCSPReportType } from './RPCSPFilterModal';
 import { downloadReportExcel } from '@/utils/reportExcelExport';
 
+const logoSrc =
+  typeof window !== 'undefined'
+    ? `${window.location.origin}/images/erc-logo.png`
+    : '/mnt/data/erc-logo.png';
+
 const styles = StyleSheet.create({
   page: {
     padding: 20,
@@ -298,6 +303,8 @@ export class RPCSPPdfGenerator {
         ? `RPCSP_${typeLabel}_${filenameDateStr}_${categoryName.replace(/\s+/g, '_')}.xlsx`
         : `RPCSP_${typeLabel}_${filenameDateStr}_All_Categories.xlsx`,
       sheetName: 'RPCSP',
+      logoUrl: logoSrc,
+      logoColOffset: 2.3,
       titleLines: [
         'REPORT ON THE PHYSICAL COUNT OF SEMI-EXPENDABLE PROPERTY',
         `${REPORT_TYPE_LABEL[reportType]}${categoryName ? ` — ${categoryName}` : ''}`,

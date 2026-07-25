@@ -216,7 +216,13 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         const transferDetails = await getTransferDetailsByNumber(itrNumber);
         const allItems: any[] = [];
         const seen = new Set<string | number>();
+        // All items in one ITR submission share the same reason (entered once in TransferForm),
+        // so the first movement that has one speaks for the whole record.
+        let reasonForTransfer = '';
         for (const movement of transferDetails.movements || []) {
+          if (!reasonForTransfer && movement.reasonForTransfer) {
+            reasonForTransfer = movement.reasonForTransfer;
+          }
           for (const itm of movement.items || []) {
             const key = itm.propertyNumber || itm.id;
             if (key && !seen.has(key)) {
@@ -230,7 +236,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
             }
           }
         }
-        setItrDetails({ ...details, items: allItems });
+        setItrDetails({ ...details, items: allItems, reasonForTransfer });
       } catch {
         setItrDetails(details);
       }
@@ -290,7 +296,8 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         itrDetails.transferNumber,
         signatureDate,
         nonPlantillaEmp,
-        itrDetails.toEmployeePositionOffice || ''
+        itrDetails.toEmployeePositionOffice || '',
+        itrDetails.reasonForTransfer || ''
       );
       setPreviewUrl(url);
       setShowPreview(true);
@@ -395,7 +402,8 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
       itrDetails.transferType || 'REASSIGNMENT',
       itrDetails.transferNumber,
       nonPlantillaEmp,
-      itrDetails.toEmployeePositionOffice || ''
+      itrDetails.toEmployeePositionOffice || '',
+      itrDetails.reasonForTransfer || ''
     );
   };
 
@@ -519,6 +527,12 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
                   <p className="text-sm">{itrDetails.transferType || 'N/A'}</p>
                 </div>
               </div>
+              {itrDetails.reasonForTransfer && (
+                <div className="pt-2 border-t">
+                  <label className="text-xs font-medium text-gray-500">Reason for Transfer</label>
+                  <p className="text-sm whitespace-pre-wrap">{itrDetails.reasonForTransfer}</p>
+                </div>
+              )}
             </div>
 
             <div>
