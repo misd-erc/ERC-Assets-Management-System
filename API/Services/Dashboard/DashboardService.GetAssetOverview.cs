@@ -93,7 +93,16 @@ namespace API.Services.Dashboard
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
+                try
+                {
+                    await transaction.RollbackAsync();
+                }
+                catch (InvalidOperationException)
+                {
+                    // The original failure (e.g. a dropped connection or command timeout)
+                    // already completed the underlying SqlTransaction - nothing left to roll back.
+                    // Swallow so the real exception (ex) below is still logged/returned.
+                }
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(DashboardService));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }
