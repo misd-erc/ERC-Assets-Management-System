@@ -70,15 +70,24 @@ public async Task<IActionResult> GetAllPTAs([FromQuery] PTAPaginationQueryParams
                         // Keep the latest ACTIVE movement per PTA (IsActive=true = not soft-deleted).
                         // If a current holder was deleted, the previous active movement becomes
                         // the effective holder and must be matched by the employee filter.
+                        // Ranked by IsCurrent first, then business DateAssigned (not CreatedAt --
+                        // out-of-order data entry/corrections can insert an older assignment's
+                        // row later, which would otherwise be mistaken for the current holder).
                         var latestMovementByPta = rawMovements
                             .GroupBy(m => m.PTAId!.Value)
                             .Select(g =>
                             {
-                                var active = g.Where(m => m.IsActive)
-                                              .OrderByDescending(m => m.CreatedAt)
+                                var current = g.Where(m => m.IsActive && m.IsCurrent)
+                                              .OrderByDescending(m => m.DateAssigned)
                                               .ThenByDescending(m => m.Id)
                                               .FirstOrDefault();
-                                return active ?? g.OrderByDescending(m => m.CreatedAt)
+                                if (current != null) return current;
+
+                                var active = g.Where(m => m.IsActive)
+                                              .OrderByDescending(m => m.DateAssigned)
+                                              .ThenByDescending(m => m.Id)
+                                              .FirstOrDefault();
+                                return active ?? g.OrderByDescending(m => m.DateAssigned)
                                                   .ThenByDescending(m => m.Id)
                                                   .First();
                             })

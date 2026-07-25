@@ -588,6 +588,8 @@ export class PARGenerator {
     await downloadReportExcel({
       filename: `PAR_${parNumber || Date.now()}.xlsx`,
       sheetName: 'PAR',
+      logoUrl: logoSrc,
+      logoColOffset: 1.3,
       titleLines: ['PROPERTY ACKNOWLEDGEMENT RECEIPT'],
       infoLines: [
         'Entity Name: ENERGY REGULATORY COMMISSION',

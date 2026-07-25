@@ -89,7 +89,9 @@ export const getSupplyItems = async (
   categoryId?: number,
   status?: string,
   storageLocationId?: number,
-  vendorId?: number
+  vendorId?: number,
+  startDate?: string,
+  endDate?: string
 ): Promise<PaginatedResult<VwSupplyItem>> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
@@ -103,7 +105,9 @@ export const getSupplyItems = async (
       CategoryId: categoryId,
       Status: status,
       StorageLocationId: storageLocationId,
-      VendorId: vendorId
+      VendorId: vendorId,
+      StartDate: startDate,
+      EndDate: endDate
     },
   });
 

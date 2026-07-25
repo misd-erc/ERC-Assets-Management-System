@@ -33,6 +33,11 @@ import {
 } from '@react-pdf/renderer';
 import { downloadReportExcel } from '@/utils/reportExcelExport';
 
+const logoSrc =
+    typeof window !== 'undefined'
+        ? `${window.location.origin}/images/erc-logo.png`
+        : '/mnt/data/erc-logo.png';
+
 interface PropertyCardReportModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -510,6 +515,8 @@ export function PropertyCardReportModal({ isOpen, onClose }: PropertyCardReportM
             await downloadReportExcel({
                 filename: `Property-Card_${propNo}.xlsx`,
                 sheetName: 'Property Card',
+                logoUrl: logoSrc,
+                logoColOffset: 1.7,
                 titleLines: ['PROPERTY CARD'],
                 infoLines: [
                     `Entity Name: ${entityName}`,

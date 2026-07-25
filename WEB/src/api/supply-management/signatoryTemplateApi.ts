@@ -3,6 +3,7 @@ import { getAuthParams } from '@/utils/auth';
 import { IARSignatories } from '@/components/assets/reports/IARReportModal';
 import { RISSignatories } from '@/components/assets/reports/RISReportModal';
 import { RSMISignatories } from '@/components/assets/reports/RSMIReportModal';
+import { RPCISignatories } from '@/components/assets/reports/RPCIReportModal';
 
 export interface IARSignatoryTemplateDto {
   id: number;
@@ -26,6 +27,14 @@ export interface RSMISignatoryTemplateDto {
   signatoryDataJson: string;
   createdAt: string;
   signatories?: RSMISignatories;
+}
+
+export interface RPCISignatoryTemplateDto {
+  id: number;
+  name: string;
+  signatoryDataJson: string;
+  createdAt: string;
+  signatories?: RPCISignatories;
 }
 
 const parseTemplate = (raw: any): IARSignatoryTemplateDto => {
@@ -164,6 +173,54 @@ export const deleteRSMISignatoryTemplate = async (templateId: number): Promise<b
   try {
     const { systemUserId, sessionKey } = getAuthParams();
     const response = await axiosInstance.delete(`/Supply/rsmi/signatory-templates/delete/${templateId}`, {
+      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+    });
+    return response.data.success === true;
+  } catch {
+    return false;
+  }
+};
+
+const parseRPCITemplate = (raw: any): RPCISignatoryTemplateDto => {
+  let signatories: RPCISignatories | undefined;
+  try { signatories = JSON.parse(raw.signatoryDataJson); } catch { /* leave undefined */ }
+  return { id: raw.id, name: raw.name, signatoryDataJson: raw.signatoryDataJson, createdAt: raw.createdAt, signatories };
+};
+
+export const getRPCISignatoryTemplates = async (): Promise<RPCISignatoryTemplateDto[]> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const response = await axiosInstance.get('/Supply/rpci/signatory-templates', {
+      params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
+    });
+    if (!response.data.success) return [];
+    return (response.data.data as any[]).map(parseRPCITemplate);
+  } catch {
+    return [];
+  }
+};
+
+export const saveRPCISignatoryTemplate = async (name: string, signatories: RPCISignatories, id: number = 0): Promise<RPCISignatoryTemplateDto | null> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const response = await axiosInstance.post('/Supply/rpci/signatory-templates/edit', {
+      Id: id,
+      Name: name,
+      SignatoryDataJson: JSON.stringify(signatories),
+      ActionBySystemUserId: systemUserId,
+      SessionKey: sessionKey,
+    });
+    if (!response.data.success) return null;
+    return parseRPCITemplate(response.data.data);
+  } catch {
+    return null;
+  }
+};
+
+export const deleteRPCISignatoryTemplate = async (templateId: number): Promise<boolean> => {
+  try {
+    const { systemUserId, sessionKey } = getAuthParams();
+    const response = await axiosInstance.delete(`/Supply/rpci/signatory-templates/delete/${templateId}`, {
       params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey },
     });
     return response.data.success === true;

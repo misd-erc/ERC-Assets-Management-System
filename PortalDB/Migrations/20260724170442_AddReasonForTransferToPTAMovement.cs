@@ -5,16 +5,16 @@
 namespace PortalDB.Migrations
 {
     /// <inheritdoc />
-    public partial class UpdatedIARSignedUpload : Migration
+    public partial class AddReasonForTransferToPTAMovement : Migration
     {
-        /// <inheritdoc /> 
+        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<long>(
-                name: "SupplyIARSignedFileStorageId",
+            migrationBuilder.AddColumn<string>(
+                name: "PTAMovementReasonForTransfer",
                 schema: "asset",
-                table: "tblSupplyIARs",
-                type: "bigint",
+                table: "tblPTAMovements",
+                type: "nvarchar(max)",
                 nullable: true);
         }
 
@@ -22,9 +22,9 @@ namespace PortalDB.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "SupplyIARSignedFileStorageId",
+                name: "PTAMovementReasonForTransfer",
                 schema: "asset",
-                table: "tblSupplyIARs");
+                table: "tblPTAMovements");
         }
     }
 }

@@ -27,6 +27,10 @@ export interface ExcelCheckboxGroup {
 export interface ExcelReportConfig {
   filename: string;
   sheetName?: string;
+  /** URL of a logo image (e.g. "/images/erc-logo.png") to embed at the top-left, matching the PDF header. */
+  logoUrl?: string;
+  /** How many columns to shift the logo right from the sheet edge, so it sits closer to the centered title (default 0). Fractional values are fine (e.g. 1.5). */
+  logoColOffset?: number;
   /** Centered title/subtitle lines shown at the very top of the sheet. */
   titleLines?: string[];
   /** Left-aligned plain lines shown below the title (e.g. "Entity Name: ...", "Fund Cluster: ..."). */
@@ -56,6 +60,27 @@ const THIN_BORDER: Partial<ExcelJS.Borders> = {
   right: { style: 'thin' },
 };
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+async function fetchImageAsBase64(url: string): Promise<{ base64: string; extension: 'png' | 'jpeg' | 'gif' } | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const buffer = await response.arrayBuffer();
+    const ext = url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg')
+      ? 'jpeg'
+      : url.toLowerCase().endsWith('.gif') ? 'gif' : 'png';
+    return { base64: arrayBufferToBase64(buffer), extension: ext };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Builds and downloads an .xlsx file that mirrors a printed report's layout:
  * title block, optional info/meta lines, a bordered data table, an optional
@@ -66,6 +91,8 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
   const {
     filename,
     sheetName = 'Report',
+    logoUrl,
+    logoColOffset = 0,
     titleLines = [],
     infoLines = [],
     metaRight = [],
@@ -83,6 +110,17 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(sheetName);
   worksheet.columns = columns.map(() => ({ width: 20 }));
+
+  if (logoUrl) {
+    const logo = await fetchImageAsBase64(logoUrl);
+    if (logo) {
+      const imageId = workbook.addImage({ base64: logo.base64, extension: logo.extension });
+      worksheet.addImage(imageId, {
+        tl: { col: logoColOffset, row: 0 },
+        ext: { width: 60, height: 60 },
+      });
+    }
+  }
 
   titleLines.forEach((line, i) => {
     const row = worksheet.addRow([line]);

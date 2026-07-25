@@ -15,6 +15,11 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { downloadReportExcel } from '@/utils/reportExcelExport';
 
+const logoSrc =
+  typeof window !== 'undefined'
+    ? `${window.location.origin}/images/erc-logo.png`
+    : '/mnt/data/erc-logo.png';
+
 /** ── Layout ── */
 const TABLE_WIDTH = 1000;
 
@@ -330,6 +335,8 @@ export class RegistrySPIByEmployeeGenerator {
     await downloadReportExcel({
       filename: `Registry_SPI_${employee.label.replace(/\s+/g, '_')}.xlsx`,
       sheetName: 'Registry SPI',
+      logoUrl: logoSrc,
+      logoColOffset: 3,
       titleLines: ['REGISTRY OF SEMI-EXPENDABLE PROPERTY ISSUED'],
       infoLines: [
         'Entity Name: Energy Regulatory Commission',

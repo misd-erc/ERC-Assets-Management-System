@@ -285,6 +285,7 @@ const ITRDocument = ({
   nonPlantillaEmployee,
   signatureDate,
   toEmployeePositionOffice,
+  reasonForTransfer,
 }: {
   rows: ITRRow[];
   itrNumber: string;
@@ -295,6 +296,7 @@ const ITRDocument = ({
   nonPlantillaEmployee?: NormalizedEmployee | null;
   signatureDate?: string;
   toEmployeePositionOffice?: string;
+  reasonForTransfer?: string;
 }) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -416,9 +418,15 @@ const ITRDocument = ({
       {/* REASON FOR TRANSFER */}
       <View style={styles.reasonBlock}>
         <Text style={styles.reasonTitle}>Reason/s for Transfer:</Text>
-        <View style={styles.reasonLine} />
-        <View style={styles.reasonLine} />
-        <View style={styles.reasonLine} />
+        {reasonForTransfer ? (
+          <Text style={{ fontSize: 9, marginBottom: 6 }}>{reasonForTransfer}</Text>
+        ) : (
+          <>
+            <View style={styles.reasonLine} />
+            <View style={styles.reasonLine} />
+            <View style={styles.reasonLine} />
+          </>
+        )}
       </View>
 
       {/* SIGNATURES */}
@@ -497,7 +505,8 @@ export class ITRGenerator {
     existingNumber?: string,
     signatureDate?: string,
     nonPlantillaEmployee?: NormalizedEmployee | null,
-    toEmployeePositionOffice?: string
+    toEmployeePositionOffice?: string,
+    reasonForTransfer?: string
   ): Promise<string> {
     const itrNumber = existingNumber || this.generateITRNumber();
     const rows = this.buildRowsFromItems(items);
@@ -513,6 +522,7 @@ export class ITRGenerator {
         signatureDate={signatureDate}
         nonPlantillaEmployee={nonPlantillaEmployee}
         toEmployeePositionOffice={toEmployeePositionOffice}
+        reasonForTransfer={reasonForTransfer}
       />
     ).toBlob();
 
@@ -528,11 +538,12 @@ export class ITRGenerator {
     transferType: TransferType,
     existingNumber?: string,
     nonPlantillaEmployee?: NormalizedEmployee | null,
-    toEmployeePositionOffice?: string
+    toEmployeePositionOffice?: string,
+    reasonForTransfer?: string
   ) {
     const itrNumber = existingNumber || this.generateITRNumber();
     const rows = this.buildRowsFromItems(items);
-    await this.generateExcel(rows, itrNumber, transferDate, fromEmployee, toEmployee, transferType, nonPlantillaEmployee, toEmployeePositionOffice);
+    await this.generateExcel(rows, itrNumber, transferDate, fromEmployee, toEmployee, transferType, nonPlantillaEmployee, toEmployeePositionOffice, reasonForTransfer);
   }
 
   static async generateITRPreview(
@@ -649,7 +660,8 @@ export class ITRGenerator {
     toEmployee: NormalizedEmployee,
     transferType: TransferType,
     nonPlantillaEmployee?: NormalizedEmployee | null,
-    toEmployeePositionOffice?: string
+    toEmployeePositionOffice?: string,
+    reasonForTransfer?: string
   ) {
     if (!rows.length) return;
 
@@ -665,6 +677,8 @@ export class ITRGenerator {
     await downloadReportExcel({
       filename: `${itrNumber}.xlsx`,
       sheetName: 'ITR',
+      logoUrl: logoSrc,
+      logoColOffset: 1.3,
       titleLines: ['INVENTORY TRANSFER REPORT'],
       infoLines: [
         'Entity Name: ENERGY REGULATORY COMMISSION',
@@ -679,7 +693,9 @@ export class ITRGenerator {
       },
       columns: ['Date Acquired', 'Item No.', 'ICS No./Date', 'Description', 'Amount', 'Condition of Inventory'],
       rows: rows.map((r) => [r.dateAcquired, r.propertyNo, r.icsNoDate.replace('\n', ' / '), r.description, currency(r.amount), r.condition]),
-      preSignatureLines: ['Reason/s for Transfer:', '', '', ''],
+      preSignatureLines: reasonForTransfer
+        ? ['Reason/s for Transfer:', reasonForTransfer]
+        : ['Reason/s for Transfer:', '', '', ''],
       signatoryRows: [[
         { role: 'Approved by:', name: APPROVED_BY.name, designation: APPROVED_BY.designation },
         { role: 'Released / Issued by:', name: RELEASED_BY.name, designation: RELEASED_BY.designation },
