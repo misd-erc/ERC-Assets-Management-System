@@ -20,6 +20,7 @@ namespace PortalDB.Models.QueryParams.PTA
         public long? ActualDivisionId { get; set; }
         public bool IsActive { get; set; } = true;
         public bool IsCurrent { get; set; } = false;
+        public string? ReasonForTransfer { get; set; }
     }
 
     public class EditPTAMovementBulkQueryParams

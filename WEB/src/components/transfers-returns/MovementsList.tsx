@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Loader2, Search, Eye, User, Package, Pencil, Trash2, Plus } from 'lucide-react';
@@ -77,6 +78,7 @@ interface Movement {
   division?: any;
   items?: PTAItem[];
   remarks?: string;
+  reasonForTransfer?: string;
   status?: string;
   condition?: string;
   isActive: boolean;
@@ -95,6 +97,7 @@ const normalizeTransferListItem = (raw: any): Movement => ({
   dateAssigned: raw.dateAssigned,
   status: raw.status,
   remarks: raw.remarks,
+  reasonForTransfer: raw.reasonForTransfer,
   isActive: raw.isActive,
   createdAt: raw.createdAt,
   office: raw.office,
@@ -263,6 +266,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     status: string;
     condition: string;
     remarks: string;
+    reasonForTransfer: string;
     plantillaEmployeeId: number | null;
     nonPlantillaEmployeeId: number | null;
   }>({
@@ -272,6 +276,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     status: '',
     condition: '',
     remarks: '',
+    reasonForTransfer: '',
     plantillaEmployeeId: null,
     nonPlantillaEmployeeId: null,
   });
@@ -547,6 +552,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       status: movement.status || '',
       condition: movement.condition || '',
       remarks: movement.remarks || '',
+      reasonForTransfer: movement.reasonForTransfer || '',
       plantillaEmployeeId:
         movement.plantillaEmployeeId ??
         movement.employee?.find(e => e.employeeType === 'Plantilla')?.id ??
@@ -760,6 +766,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
           nonPlantillaEmployeeId: editFields.nonPlantillaEmployeeId ?? null,
           isActive: editingMovement.isActive,
           isCurrent: true,
+          reasonForTransfer: editFields.reasonForTransfer.trim() || undefined,
         });
       }
       const number = getMovementNumber(editingMovement);
@@ -1447,6 +1454,20 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
               />
             </div>
 
+            {/* Reason for Transfer — distinct from the per-item "Remarks" field below,
+                which records item condition, not why the transfer happened. */}
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Reason for Transfer</label>
+              <Textarea
+                value={editFields.reasonForTransfer}
+                onChange={(e) =>
+                  setEditFields(f => ({ ...f, reasonForTransfer: e.target.value }))
+                }
+                placeholder="Optional — briefly explain why these items are being transferred..."
+                rows={2}
+              />
+            </div>
+
             {/* Date Assigned */}
             <div className="space-y-1">
               <label className="text-sm font-medium">Date Assigned</label>
@@ -1685,9 +1706,9 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
               </div>
             )}
 
-            {/* Remarks */}
+            {/* Remarks — item condition/notes, not the reason for the transfer itself (see above) */}
             <div className="space-y-1">
-              <label className="text-sm font-medium">Remarks</label>
+              <label className="text-sm font-medium">Remarks (Condition Notes)</label>
               <textarea
                 className="w-full border rounded px-3 py-2 text-sm bg-background resize-none"
                 rows={3}

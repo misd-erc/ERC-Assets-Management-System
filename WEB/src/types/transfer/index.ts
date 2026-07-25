@@ -17,6 +17,7 @@ export interface MovementEditPayload {
   actionBySystemUserId: number;
   sessionKey: string;
   model?: string;
+  reasonForTransfer?: string;
 }
 
 export interface TransferRecord {

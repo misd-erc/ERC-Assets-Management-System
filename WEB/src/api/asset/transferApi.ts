@@ -175,6 +175,7 @@ export interface MovementItemPayload {
   actualDivisionId?: number;
   isActive?: boolean;
   isCurrent?: boolean;
+  reasonForTransfer?: string;
 }
 
 /**
@@ -489,6 +490,7 @@ export const getTransferDetailsByNumber = async (transferNumber: string): Promis
       status: movement.status,
       condition: movement.condition,
       remarks: movement.remarks,
+      reasonForTransfer: movement.reasonForTransfer,
       isActive: movement.isActive,
       items: movement.items || (movement.item ? [movement.item] : []),
       createdAt: movement.createdAt,

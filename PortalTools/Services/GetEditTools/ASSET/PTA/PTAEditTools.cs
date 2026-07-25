@@ -215,6 +215,7 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                             .SetProperty(x => x.ActualOfficeId, model.ActualOfficeId)
                             .SetProperty(x => x.ActualDivisionId, model.ActualDivisionId)
                             .SetProperty(x => x.RemarksEncrypted, model.RemarksEncrypted)
+                            .SetProperty(x => x.ReasonForTransferEncrypted, model.ReasonForTransferEncrypted)
                             .SetProperty(x => x.Status, model.Status)
                             .SetProperty(x => x.IsCurrent, model.IsCurrent)
                             .SetProperty(x => x.IsActive, model.IsActive));

@@ -57,6 +57,7 @@ public async Task<IActionResult> EditPTAMovement([FromBody] EditPTAMovementQuery
                     ActualOfficeId = model.ActualOfficeId,
                     ActualDivisionId = model.ActualDivisionId,
                     Remarks = model.Condition,
+                    ReasonForTransfer = model.ReasonForTransfer,
                     IsActive = model.IsActive,
                     Status = model.Status,
                     IsCurrent = model.IsCurrent
@@ -130,6 +131,7 @@ public async Task<IActionResult> EditPTAMovementBulk([FromBody] EditPTAMovementB
                         ActualOfficeId = item.ActualOfficeId,
                         ActualDivisionId = item.ActualDivisionId,
                         Remarks = item.Condition,
+                        ReasonForTransfer = item.ReasonForTransfer,
                         IsActive = item.IsActive,
                         Status = item.Status,
                         IsCurrent = item.IsCurrent,

@@ -21,6 +21,7 @@ namespace PortalDB.Models.QueryParams.PTA
         public long? PlantillaEmployeeId { get; set; }
         public long? NonPlantillaEmployeeId { get; set; }
         [Required] public string Condition { get; set; } = string.Empty;
+        public string? ReasonForTransfer { get; set; }
         public long ActualOfficeId { get; set; } = 0;
         public long ActualDivisionId { get; set; } = 0;
         [Required] public bool IsActive { get; set; } = true;
