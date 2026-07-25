@@ -677,6 +677,8 @@ export class ITRGenerator {
     await downloadReportExcel({
       filename: `${itrNumber}.xlsx`,
       sheetName: 'ITR',
+      logoUrl: logoSrc,
+      logoColOffset: 1.3,
       titleLines: ['INVENTORY TRANSFER REPORT'],
       infoLines: [
         'Entity Name: ENERGY REGULATORY COMMISSION',

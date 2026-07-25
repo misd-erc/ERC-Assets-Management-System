@@ -718,6 +718,8 @@ export class PTRGenerator {
     await downloadReportExcel({
       filename: `${ptrNumber}.xlsx`,
       sheetName: 'PTR',
+      logoUrl: logoSrc,
+      logoColOffset: 1,
       titleLines: ['PROPERTY TRANSFER REPORT'],
       infoLines: [
         'Entity Name: ENERGY REGULATORY COMMISSION',

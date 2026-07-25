@@ -5,6 +5,11 @@ import { getCategories } from '@/api/asset/inventoryApi';
 import { RPCPPESignatories, DEFAULT_RPCPPE_SIGNATORIES } from './RPCPPEFilterModal';
 import { downloadReportExcel } from '@/utils/reportExcelExport';
 
+const logoSrc =
+  typeof window !== 'undefined'
+    ? `${window.location.origin}/images/erc-logo.png`
+    : '/mnt/data/erc-logo.png';
+
 const styles = StyleSheet.create({
   page: {
     padding: 20,
@@ -436,6 +441,8 @@ export class RPCPPEPdfGenerator {
     await downloadReportExcel({
       filename: categoryName ? `RPCPPE_${filenameDateStr}_Category_${categoryName.replace(/\s+/g, '_')}.xlsx` : `RPCPPE_${filenameDateStr}_All_Categories.xlsx`,
       sheetName: 'RPCPPE',
+      logoUrl: logoSrc,
+      logoColOffset: 2.5,
       titleLines: [
         'REPORT ON THE PHYSICAL COUNT OF PROPERTY, PLANT AND EQUIPMENT',
         categoryName ? `Account Code ${accountCode} - ${categoryName}` : 'All Categories',

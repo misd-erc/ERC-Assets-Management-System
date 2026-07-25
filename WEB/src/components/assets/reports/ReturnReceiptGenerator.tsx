@@ -316,6 +316,8 @@ export class ReturnReceiptGenerator {
     await downloadReportExcel({
       filename: `${returnType}_${receiptNumber || Date.now()}.xlsx`,
       sheetName: returnType,
+      logoUrl: logoSrc,
+      logoColOffset: 1,
       titleLines: [title],
       infoLines: [
         'Entity Name: ENERGY REGULATORY COMMISSION',
