@@ -146,6 +146,8 @@ interface Props {
   storageLocations?: any[];
   allVendors?: any[];
   loading?: boolean;
+  title: string;
+  description: string;
   onView: (item: VwSupplyGroupedItem) => void;
   viewActionLabel?: string;
   onParamsChange: (params: { page: number; search: string; status: string; category?: string; storageId?: string; vendorId?: string }) => void;
@@ -165,6 +167,8 @@ export const SupplyGroupedItemTable = ({
   allCategories = [],
   storageLocations = [],
   allVendors = [],
+  title,
+  description,
   onView,
   viewActionLabel = 'View',
   onParamsChange,
@@ -246,9 +250,9 @@ export const SupplyGroupedItemTable = ({
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-xl text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-blue-600" /> Grouped Inventory
+                  <Layers className="w-5 h-5 text-blue-600" /> {title}
                 </CardTitle>
-                <CardDescription>Overview of supply items grouped by item code</CardDescription>
+                <CardDescription>{description}</CardDescription>
               </div>
 
               <div className="flex gap-2">
