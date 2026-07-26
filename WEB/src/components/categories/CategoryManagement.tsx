@@ -51,17 +51,17 @@ export function CategoryManagement() {
 
   const filtered = categories.filter(cat => {
     const matchesSearch =
-      cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cat.generalCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cat.module.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesModule = !moduleFilter || cat.module === moduleFilter;
+      (cat.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (cat.generalCode || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (cat.module || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesModule = !moduleFilter || (cat.module || '') === moduleFilter;
 
     return matchesSearch && matchesModule;
   });
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.generalCode.trim()) {
-      toast.error('Please fill in all fields');
+    if (!formData.name.trim() || !formData.generalCode.trim() || !formData.module.trim()) {
+      toast.error('Please fill in all required fields');
       return;
     }
 
@@ -96,9 +96,9 @@ export function CategoryManagement() {
   const handleEdit = (category: Category) => {
     setEditingId(category.id);
     setFormData({
-      name: category.name,
-      generalCode: category.generalCode,
-      module: category.module,
+      name: category.name || '',
+      generalCode: category.generalCode || '',
+      module: category.module || '',
       isActive: category.isActive
     });
     setIsOpen(true);
@@ -234,11 +234,12 @@ export function CategoryManagement() {
                   placeholder="e.g., 10605130"
                   className="h-9 uppercase"
                   disabled={loading}
+                  required
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">
-                  Module
+                  Module <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   value={formData.module}
@@ -278,7 +279,7 @@ export function CategoryManagement() {
                 </Button>
                 <Button 
                   onClick={handleSave}
-                  disabled={loading}
+                  disabled={loading || !formData.name.trim() || !formData.generalCode.trim() || !formData.module.trim()}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   {loading ? 'Processing...' : editingId ? 'Update Category' : 'Add Category'}
