@@ -66,6 +66,8 @@ export const SupplyGroupedTabContent = () => {
         allCategories={categories}
         storageLocations={storagelocations}
         allVendors={vendors}
+        title="Grouped Inventory"
+        description="Overview of supply items grouped by item code"
         onParamsChange={(newParams) => setParams(prev => ({ ...prev, ...newParams }))}
         onView={handleView}
         viewActionLabel="View"
