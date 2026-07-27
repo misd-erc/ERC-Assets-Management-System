@@ -574,6 +574,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
 
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+    const [hasGenerated, setHasGenerated] = useState(false);
 
     const { data, totalCount, loading, error, fetchReport, reset } = useRSMIReport();
     useEffect(() => {
@@ -592,6 +593,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
             setStartDate('');
             setEndDate('');
             setCategoryId('');
+            setHasGenerated(false);
             reset();
         }
     }, [isOpen]);
@@ -624,6 +626,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const handleGenerateReport = async () => {
         if (!startDate || !endDate || !categoryId) return;
         setCurrentPage(1);
+        setHasGenerated(true);
         await fetchReport(categoryId, startDate, endDate, 1, pageSize);
         setExpandedRows({});
         setSelectedItems(new Set());
@@ -917,8 +920,14 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                                     <Filter className="w-8 h-8 text-indigo-500" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold text-slate-900 text-lg">Ready to Generate</p>
-                                                    <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Select a category and date range above to generate the RSMI report.</p>
+                                                    <p className="font-semibold text-slate-900 text-lg">
+                                                        {hasGenerated ? 'No RSMI Records Found' : 'Ready to Generate'}
+                                                    </p>
+                                                    <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                                                        {hasGenerated
+                                                            ? 'No issued supplies found for the selected category and date range.'
+                                                            : 'Select a category and date range above to generate the RSMI report.'}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </TableCell>
