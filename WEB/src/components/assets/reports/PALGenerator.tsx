@@ -446,6 +446,7 @@ async function buildPALData(employee: NormalizedEmployee) {
 
   let itemNumber = 1;
 
+<<<<<<< HEAD
   const ppeRows: PALRow[] = ppeFiltered.map((asset: any, i: number) => {
     const subId = getSubHolderEmployeeId(ppeMovements[i], employee.id);
     const subName = subId != null ? nameById.get(subId) : undefined;
