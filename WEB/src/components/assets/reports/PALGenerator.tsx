@@ -12,7 +12,7 @@ import {
 import { NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById } from "@/api/user-management/userApi";
 import { getEmployeeAssets } from "@/api/asset/inventoryApi";
-import { downloadReportExcel } from "@/utils/reportExcelExport";
+import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -380,25 +380,29 @@ async function buildPALData(employee: NormalizedEmployee) {
 
   let itemNumber = 1;
 
-  const ppeRows: PALRow[] = ppeAssets
-    .filter((a) => isAssignedToEmployee(a, employee.id))
-    .map((asset: any) => ({
-      no: itemNumber++,
-      description: asset.description ?? "",
-      propertyNo: asset.propertyNumber ?? "",
-      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-      amount: asset.unitValue ?? null,
-    }));
+  const ppeRows: PALRow[] = sortReportRowsByPropertyAndAmount(
+    ppeAssets.filter((a) => isAssignedToEmployee(a, employee.id)),
+    (a: any) => a.propertyNumber,
+    (a: any) => a.unitValue
+  ).map((asset: any) => ({
+    no: itemNumber++,
+    description: asset.description ?? "",
+    propertyNo: asset.propertyNumber ?? "",
+    dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+    amount: asset.unitValue ?? null,
+  }));
 
-  const seRows: PALRow[] = seAssets
-    .filter((a) => isAssignedToEmployee(a, employee.id))
-    .map((asset: any) => ({
-      no: itemNumber++,
-      description: asset.description ?? "",
-      propertyNo: asset.propertyNumber ?? "",
-      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-      amount: asset.unitValue ?? null,
-    }));
+  const seRows: PALRow[] = sortReportRowsByPropertyAndAmount(
+    seAssets.filter((a) => isAssignedToEmployee(a, employee.id)),
+    (a: any) => a.propertyNumber,
+    (a: any) => a.unitValue
+  ).map((asset: any) => ({
+    no: itemNumber++,
+    description: asset.description ?? "",
+    propertyNo: asset.propertyNumber ?? "",
+    dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+    amount: asset.unitValue ?? null,
+  }));
 
   const totalAmount = [...ppeRows, ...seRows].reduce(
     (sum, row) => sum + (row.amount ?? 0),

@@ -35,6 +35,7 @@ import {
     deleteRPCISignatoryTemplate,
     RPCISignatoryTemplateDto
 } from '@/api/supply-management/signatoryTemplateApi';
+import { sortReportRowsByPropertyAndAmount } from '@/utils/reportExcelExport';
 
 import {
     pdf,
@@ -548,7 +549,11 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                 }
                 groupedMap.get(key).quantity += (item.quantity || 0);
             }
-            const grouped = Array.from(groupedMap.values());
+            const grouped = sortReportRowsByPropertyAndAmount(
+                Array.from(groupedMap.values()),
+                (item: any) => item.code,
+                (item: any) => item.unitCost
+            );
 
             setData(grouped);
             setTotalCount(grouped.length);

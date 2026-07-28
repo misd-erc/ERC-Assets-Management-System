@@ -12,7 +12,7 @@ import {
 import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { seApi } from "@/api/asset/se";
 import { secureStorage } from "@/utils/secureStorage";
-import { downloadReportExcel } from "@/utils/reportExcelExport";
+import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -710,7 +710,7 @@ export class ITRGenerator {
   }
 
   private static buildRows(assets: Asset[]): ITRRow[] {
-    return assets.map(asset => {
+    const rows = assets.map(asset => {
       const latestMovement = asset.movements
         ?.filter(m => m.isActive)
         .sort(
@@ -728,10 +728,11 @@ export class ITRGenerator {
         condition: latestMovement?.condition || (asset as any).condition || "Good",
       };
     });
+    return sortReportRowsByPropertyAndAmount(rows, (r) => r.propertyNo, (r) => r.amount);
   }
 
   private static buildRowsFromItems(items: any[]): ITRRow[] {
-    return (items || []).map(it => ({
+    const rows = (items || []).map(it => ({
       dateAcquired: (it.dateAcquired || '').toString().slice(0, 10),
       propertyNo: it.propertyNumber || '',
       icsNoDate: formatIcsNoDate(
@@ -742,6 +743,7 @@ export class ITRGenerator {
       amount: it.unitValue ?? null,
       condition: it.condition || 'Good',
     }));
+    return sortReportRowsByPropertyAndAmount(rows, (r) => r.propertyNo, (r) => r.amount);
   }
 
   private static generateITRNumber(): string {

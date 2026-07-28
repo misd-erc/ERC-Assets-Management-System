@@ -13,7 +13,7 @@ import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { ppeApi } from "@/api/asset/ppe";
 import { seApi } from "@/api/asset/se";
 import { secureStorage } from "@/utils/secureStorage";
-import { downloadReportExcel } from "@/utils/reportExcelExport";
+import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -740,7 +740,7 @@ export class PTRGenerator {
   }
 
   private static buildRows(assets: Asset[]): PTRRow[] {
-    return assets.map(asset => {
+    const rows = assets.map(asset => {
       const latestMovement = asset.movements
         ?.filter(m => m.isActive)
         .sort(
@@ -757,6 +757,7 @@ export class PTRGenerator {
         condition: latestMovement?.condition || (asset as any).condition || "Good",
       };
     });
+    return sortReportRowsByPropertyAndAmount(rows, (r) => r.propertyNo, (r) => r.amount);
   }
 
   private static generatePTRNumber(): string {

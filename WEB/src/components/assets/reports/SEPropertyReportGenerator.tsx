@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { downloadReportExcel } from '@/utils/reportExcelExport';
+import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from '@/utils/reportExcelExport';
 
 const logoSrc =
   typeof window !== 'undefined'
@@ -346,8 +346,9 @@ export class SEPropertyReportGenerator {
         return asset.latestMovement.dateAssigned.split('T')[0] === asOfDateStr;
       });
 
-    const displayDate = this.getOldestIcsDate(finalAssets) ?? options.asOfDate;
-    return { finalAssets, displayDate };
+    const sortedAssets = sortReportRowsByPropertyAndAmount(finalAssets, (a) => a.propertyNumber, (a) => a.unitValue);
+    const displayDate = this.getOldestIcsDate(sortedAssets) ?? options.asOfDate;
+    return { finalAssets: sortedAssets, displayDate };
   }
 
   static async generateExcel(options: SEPropertyReportOptions) {

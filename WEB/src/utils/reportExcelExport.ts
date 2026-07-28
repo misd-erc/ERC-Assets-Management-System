@@ -1,5 +1,25 @@
 import ExcelJS from 'exceljs';
 
+/**
+ * Sorts report rows by property number (natural/alphanumeric order, so "SE-2" sorts
+ * before "SE-10"), falling back to amount as a tiebreaker when property numbers match/are blank.
+ */
+export function sortReportRowsByPropertyAndAmount<T>(
+  rows: T[],
+  getPropertyNo: (row: T) => string | null | undefined,
+  getAmount: (row: T) => number | null | undefined
+): T[] {
+  return [...rows].sort((a, b) => {
+    const cmp = String(getPropertyNo(a) ?? '').localeCompare(
+      String(getPropertyNo(b) ?? ''),
+      undefined,
+      { numeric: true, sensitivity: 'base' }
+    );
+    if (cmp !== 0) return cmp;
+    return (getAmount(a) ?? 0) - (getAmount(b) ?? 0);
+  });
+}
+
 export interface ExcelSignatoryPerson {
   name?: string;
   designation?: string;

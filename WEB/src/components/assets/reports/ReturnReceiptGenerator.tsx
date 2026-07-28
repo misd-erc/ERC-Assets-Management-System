@@ -1,6 +1,6 @@
 import React from "react";
 import { pdf, Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
-import { downloadReportExcel } from "@/utils/reportExcelExport";
+import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 
 const RECEIVED_BY = {
   name: "CHERRY LYNN S. GONZALES",
@@ -158,7 +158,12 @@ function formatDate(date?: string | Date) {
 }
 
 function buildRowsFromItems(items: any[], endUser: string, nonPlantillaEndUser?: string): ReturnRow[] {
-  return (items || []).map((item: any) => ({
+  const sortedItems = sortReportRowsByPropertyAndAmount(
+    items || [],
+    (item: any) => item?.propertyNumber,
+    (item: any) => item?.unitValue
+  );
+  return sortedItems.map((item: any) => ({
     description: item?.description || "",
     quantity: "1",
     icsNo: item?.icsNo || item?.paricsNumber || item?.parIcsNumber || "",

@@ -1,5 +1,5 @@
 // src/components/assets/reports/RSMIReportModal.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -27,6 +27,7 @@ import { Loader2, Filter, FileText, ChevronDown, ChevronRight, Download, AlertCi
 import { toast } from 'sonner';
 
 import { useRSMIReport } from '@/hooks/supply/useRSMIReport';
+import { sortReportRowsByPropertyAndAmount } from '@/utils/reportExcelExport';
 import { getCategories } from '@/api/asset/inventoryApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { EmployeeSelector } from '@/components/transfers-returns/EmployeeSelector';
@@ -576,7 +577,11 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
     const [hasGenerated, setHasGenerated] = useState(false);
 
-    const { data, totalCount, loading, error, fetchReport, reset } = useRSMIReport();
+    const { data: rawData, totalCount, loading, error, fetchReport, reset } = useRSMIReport();
+    const data = useMemo(
+        () => sortReportRowsByPropertyAndAmount(rawData, (g: any) => g.stockNumber, (g: any) => g.unitCost),
+        [rawData]
+    );
     useEffect(() => {
         if (isOpen) {
             getCategories('Supply').then(categoriesData => {

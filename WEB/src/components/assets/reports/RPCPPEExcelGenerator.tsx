@@ -3,7 +3,7 @@ import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer
 import { Asset } from '@/types/asset/UnifiedAsset';
 import { getCategories } from '@/api/asset/inventoryApi';
 import { RPCPPESignatories, DEFAULT_RPCPPE_SIGNATORIES } from './RPCPPEFilterModal';
-import { downloadReportExcel } from '@/utils/reportExcelExport';
+import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from '@/utils/reportExcelExport';
 
 const logoSrc =
   typeof window !== 'undefined'
@@ -180,6 +180,7 @@ export class RPCPPEPdfGenerator {
 
   static async generate(assets: Asset[], asOfDate: Date, categoryId?: number, signatories: RPCPPESignatories = DEFAULT_RPCPPE_SIGNATORIES) {
     if (!assets?.length) return;
+    assets = sortReportRowsByPropertyAndAmount(assets, (a) => a.propertyNumber, (a) => a.unitValue);
 
     const categoryName = await this.getCategoryName(categoryId);
     const accountCode = await this.getAccountCode(categoryId);
@@ -300,6 +301,7 @@ export class RPCPPEPdfGenerator {
 
   static async generatePreview(assets: Asset[], asOfDate: Date, categoryIdOrName?: string | number, signatories: RPCPPESignatories = DEFAULT_RPCPPE_SIGNATORIES): Promise<string> {
     if (!assets?.length) return '';
+    assets = sortReportRowsByPropertyAndAmount(assets, (a) => a.propertyNumber, (a) => a.unitValue);
 
     // If categoryIdOrName is a number or numeric string, fetch the category name
     let categoryId: number | undefined = undefined;
@@ -431,6 +433,7 @@ export class RPCPPEPdfGenerator {
 
   static async generateExcel(assets: Asset[], asOfDate: Date, categoryId?: number, signatories: RPCPPESignatories = DEFAULT_RPCPPE_SIGNATORIES) {
     if (!assets?.length) return;
+    assets = sortReportRowsByPropertyAndAmount(assets, (a) => a.propertyNumber, (a) => a.unitValue);
 
     const categoryName = await this.getCategoryName(categoryId);
     const accountCode = await this.getAccountCode(categoryId);
