@@ -123,8 +123,8 @@ const styles = StyleSheet.create({
   cell: { padding: 2, fontSize: 8, overflow: "hidden" },
 
   colNo: { width: "6%" },
-  colDescription: { width: "32%" },
-  colPropertyNo: { width: "12%" },
+  colDescription: { width: "28%" },
+  colPropertyNo: { width: "16%" },
   colDateAcquired: { width: "11%" },
   colAmount: { width: "11%" },
   colRemarks: { width: "28%" },
@@ -446,10 +446,8 @@ async function buildPALData(employee: NormalizedEmployee) {
 
   let itemNumber = 1;
 
-<<<<<<< HEAD
   const ppeRows: PALRow[] = ppeFiltered.map((asset: any, i: number) => {
-    const subId = getSubHolderEmployeeId(ppeMovements[i], employee.id);
-    const subName = subId != null ? nameById.get(subId) : undefined;
+    const subId = getSubHolderEmployeeId(ppeMovements[i], employee.id);    const subName = subId != null ? nameById.get(subId) : undefined;
     return {
       no: itemNumber++,
       description: asset.description ?? "",
