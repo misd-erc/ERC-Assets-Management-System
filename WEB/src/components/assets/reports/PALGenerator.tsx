@@ -119,13 +119,14 @@ const styles = StyleSheet.create({
 
   cell: { padding: 2, fontSize: 8 },
 
-  colNo: { width: "8%" },
-  colDescription: { width: "45%" },
-  colPropertyNo: { width: "20%" },
-  colDateAcquired: { width: "14%" },
-  colAmount: { width: "13%" },
-  colSubtotalLabel: { width: "79%", textAlign: "right", fontSize: 8, fontStyle: "italic" },
-  colTotalLabel: { width: "79%", textAlign: "right", fontWeight: "bold" },
+  colNo: { width: "6%" },
+  colDescription: { width: "28%" },
+  colPropertyNo: { width: "16%" },
+  colDateAcquired: { width: "11%" },
+  colAmount: { width: "11%" },
+  colRemarks: { width: "28%" },
+  colSubtotalLabel: { width: "83%", textAlign: "right", fontSize: 8, fontStyle: "italic" },
+  colTotalLabel: { width: "83%", textAlign: "right", fontWeight: "bold" },
 });
 
 function currency(val?: number | null) {
@@ -146,15 +147,17 @@ interface PALRow {
   propertyNo: string;
   dateAcquired: string;
   amount: number | null;
+  remarks: string;
 }
 
 const TableHeader = () => (
   <View style={styles.tableHeaderRow}>
     <Text style={[styles.cell, styles.colNo]}>No.</Text>
-    <Text style={[styles.cell, styles.colDescription]}>Description</Text>
     <Text style={[styles.cell, styles.colPropertyNo]}>Property Number</Text>
+    <Text style={[styles.cell, styles.colDescription]}>Description</Text>
     <Text style={[styles.cell, styles.colDateAcquired]}>Date Acquired</Text>
     <Text style={[styles.cell, styles.colAmount]}>Amount</Text>
+    <Text style={[styles.cell, styles.colRemarks]}>Remarks</Text>
   </View>
 );
 
@@ -221,10 +224,11 @@ const PALDocument = ({
                   {ppeRows.map((r, i) => (
                     <View key={`ppe-${i}`} style={styles.tableRow}>
                       <Text style={[styles.cell, styles.colNo]}>{r.no}</Text>
-                      <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
                       <Text style={[styles.cell, styles.colPropertyNo]}>{r.propertyNo}</Text>
+                      <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
                       <Text style={[styles.cell, styles.colDateAcquired]}>{r.dateAcquired}</Text>
                       <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
+                      <Text style={[styles.cell, styles.colRemarks]}>{r.remarks}</Text>
                     </View>
                   ))}
                   <View style={styles.subtotalRow}>
@@ -246,10 +250,11 @@ const PALDocument = ({
                   {seRows.map((r, i) => (
                     <View key={`se-${i}`} style={styles.tableRow}>
                       <Text style={[styles.cell, styles.colNo]}>{r.no}</Text>
-                      <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
                       <Text style={[styles.cell, styles.colPropertyNo]}>{r.propertyNo}</Text>
+                      <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
                       <Text style={[styles.cell, styles.colDateAcquired]}>{r.dateAcquired}</Text>
                       <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
+                      <Text style={[styles.cell, styles.colRemarks]}>{r.remarks}</Text>
                     </View>
                   ))}
                   <View style={styles.subtotalRow}>
@@ -311,29 +316,28 @@ function isDisposed(asset: any): boolean {
 }
 
 /**
- * Returns true if the asset is currently assigned to this employee.
- * Strategy:
+ * Returns the movement that makes this asset "currently assigned" to this employee, or
+ * null if it isn't. Strategy:
  *   0. Exclude disposed assets outright — see isDisposed above.
  *   1. Prefer a movement with isCurrent === true that involves this employee.
  *   2. Fall back to the latest movement (by dateAssigned) that involves this employee,
  *      provided there is no newer movement that assigns the asset to someone else.
  *      This handles batch-uploaded data where isCurrent was not set.
  */
-function isAssignedToEmployee(asset: any, employeeId: number): boolean {
-  if (isDisposed(asset)) return false;
+function getGoverningMovement(asset: any, employeeId: number): any | null {
+  if (isDisposed(asset)) return null;
 
   const movements: any[] = asset.movements ?? [];
-  if (!movements.length) return false;
+  if (!movements.length) return null;
 
   // 1. Check for an explicit isCurrent movement for this employee
-  const hasCurrent = movements.some((m) => {
-    const current =
-      m.isCurrent === true ||
-      m.isCurrent === 1 ||
-      (typeof m.isCurrent === "string" && m.isCurrent.toLowerCase() === "true");
-    return current && movementInvolvesEmployee(m, employeeId);
-  });
-  if (hasCurrent) return true;
+  const isCurrentFlag = (m: any) =>
+    m.isCurrent === true ||
+    m.isCurrent === 1 ||
+    (typeof m.isCurrent === "string" && m.isCurrent.toLowerCase() === "true");
+
+  const current = movements.find((m) => isCurrentFlag(m) && movementInvolvesEmployee(m, employeeId));
+  if (current) return current;
 
   // 2. No isCurrent flag set — use the latest ACTIVE movement as the effective holder.
   // A deleted current holder (isActive=false) must not shadow the previous active assignment.
@@ -348,7 +352,47 @@ function isAssignedToEmployee(asset: any, employeeId: number): boolean {
     ? [...activeMovements].sort(sortByDate)
     : [...movements].sort(sortByDate);
 
-  return movementInvolvesEmployee(sorted[0], employeeId);
+  return movementInvolvesEmployee(sorted[0], employeeId) ? sorted[0] : null;
+}
+
+function isAssignedToEmployee(asset: any, employeeId: number): boolean {
+  return getGoverningMovement(asset, employeeId) != null;
+}
+
+/**
+ * The "other side" of a shared PAR/ICS: e.g. a COS employee riding on a plantilla
+ * employee's PAR/ICS as sub-holder, or (from the COS's own PAL) the plantilla employee
+ * whose PAR/ICS they're riding on. Returns null when the movement isn't actually shared.
+ */
+function getSubHolderEmployeeId(movement: any, employeeId: number): number | null {
+  if (!movement) return null;
+  if (movement.plantillaEmployeeId === employeeId && movement.nonPlantillaEmployeeId) {
+    return movement.nonPlantillaEmployeeId;
+  }
+  if (movement.nonPlantillaEmployeeId === employeeId && movement.plantillaEmployeeId) {
+    return movement.plantillaEmployeeId;
+  }
+  return null;
+}
+
+async function resolveEmployeeNames(ids: number[]): Promise<Map<number, string>> {
+  const uniqueIds = Array.from(new Set(ids));
+  const nameById = new Map<number, string>();
+  await Promise.all(
+    uniqueIds.map(async (id) => {
+      try {
+        const resp = await getEmployeeById(id);
+        if (resp.success && resp.data.length > 0) {
+          const e = resp.data[0];
+          const name = [e.firstName, e.middleName, e.lastName, e.suffixName].filter(Boolean).join(" ");
+          nameById.set(id, name);
+        }
+      } catch {
+        // leave unresolved — remarks will just omit the name
+      }
+    })
+  );
+  return nameById;
 }
 
 async function buildPALData(employee: NormalizedEmployee) {
@@ -378,31 +422,52 @@ async function buildPALData(employee: NormalizedEmployee) {
     employeeNumber = empData.employeeIdOriginal || "N/A";
   }
 
-  let itemNumber = 1;
-
-  const ppeRows: PALRow[] = sortReportRowsByPropertyAndAmount(
+  const ppeFiltered = sortReportRowsByPropertyAndAmount(
     ppeAssets.filter((a) => isAssignedToEmployee(a, employee.id)),
     (a: any) => a.propertyNumber,
     (a: any) => a.unitValue
-  ).map((asset: any) => ({
-    no: itemNumber++,
-    description: asset.description ?? "",
-    propertyNo: asset.propertyNumber ?? "",
-    dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-    amount: asset.unitValue ?? null,
-  }));
-
-  const seRows: PALRow[] = sortReportRowsByPropertyAndAmount(
+  );
+  const seFiltered = sortReportRowsByPropertyAndAmount(
     seAssets.filter((a) => isAssignedToEmployee(a, employee.id)),
     (a: any) => a.propertyNumber,
     (a: any) => a.unitValue
-  ).map((asset: any) => ({
-    no: itemNumber++,
-    description: asset.description ?? "",
-    propertyNo: asset.propertyNumber ?? "",
-    dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
-    amount: asset.unitValue ?? null,
-  }));
+  );
+
+  const ppeMovements = ppeFiltered.map((a: any) => getGoverningMovement(a, employee.id));
+  const seMovements = seFiltered.map((a: any) => getGoverningMovement(a, employee.id));
+
+  const subHolderIds = [...ppeMovements, ...seMovements]
+    .map((m) => getSubHolderEmployeeId(m, employee.id))
+    .filter((id): id is number => id != null);
+  const nameById = await resolveEmployeeNames(subHolderIds);
+
+  let itemNumber = 1;
+
+  const ppeRows: PALRow[] = ppeFiltered.map((asset: any, i: number) => {
+    const subId = getSubHolderEmployeeId(ppeMovements[i], employee.id);
+    const subName = subId != null ? nameById.get(subId) : undefined;
+    return {
+      no: itemNumber++,
+      description: asset.description ?? "",
+      propertyNo: asset.propertyNumber ?? "",
+      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+      amount: asset.unitValue ?? null,
+      remarks: subName ? `Sub-PAR: ${subName}` : "",
+    };
+  });
+
+  const seRows: PALRow[] = seFiltered.map((asset: any, i: number) => {
+    const subId = getSubHolderEmployeeId(seMovements[i], employee.id);
+    const subName = subId != null ? nameById.get(subId) : undefined;
+    return {
+      no: itemNumber++,
+      description: asset.description ?? "",
+      propertyNo: asset.propertyNumber ?? "",
+      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+      amount: asset.unitValue ?? null,
+      remarks: subName ? `Sub-ICS: ${subName}` : "",
+    };
+  });
 
   const totalAmount = [...ppeRows, ...seRows].reduce(
     (sum, row) => sum + (row.amount ?? 0),
@@ -454,18 +519,18 @@ export class PALGenerator {
 
     const ppeTotal = ppeRows.reduce((s, r) => s + (r.amount ?? 0), 0);
     const seTotal = seRows.reduce((s, r) => s + (r.amount ?? 0), 0);
-    const toRow = (r: PALRow) => [r.no, r.description, r.propertyNo, r.dateAcquired, currency(r.amount)];
+    const toRow = (r: PALRow) => [r.no, r.propertyNo, r.description, r.dateAcquired, currency(r.amount), r.remarks];
 
     const rows: (string | number | null)[][] = [];
     if (ppeRows.length) {
-      rows.push(['', 'PROPERTY, PLANT AND EQUIPMENT (PPE)', '', '', '']);
+      rows.push(['', 'PROPERTY, PLANT AND EQUIPMENT (PPE)', '', '', '', '']);
       rows.push(...ppeRows.map(toRow));
-      rows.push(['', '', '', 'PPE Sub-total:', currency(ppeTotal)]);
+      rows.push(['', '', '', 'PPE Sub-total:', currency(ppeTotal), '']);
     }
     if (seRows.length) {
-      rows.push(['', 'SEMI-EXPENDABLE PROPERTY (SE)', '', '', '']);
+      rows.push(['', 'SEMI-EXPENDABLE PROPERTY (SE)', '', '', '', '']);
       rows.push(...seRows.map(toRow));
-      rows.push(['', '', '', 'SE Sub-total:', currency(seTotal)]);
+      rows.push(['', '', '', 'SE Sub-total:', currency(seTotal), '']);
     }
 
     await downloadReportExcel({
@@ -477,9 +542,9 @@ export class PALGenerator {
         `Service/Division: ${divisionService}`,
       ],
       metaRight: [`Employee Number: ${employeeNumber}`, `Position: ${position}`],
-      columns: ['No.', 'Description', 'Property Number', 'Date Acquired', 'Amount'],
+      columns: ['No.', 'Property Number', 'Description', 'Date Acquired', 'Amount', 'Remarks'],
       rows,
-      totalRow: ['', '', '', 'TOTAL:', currency(totalAmount)],
+      totalRow: ['', '', '', 'TOTAL:', currency(totalAmount), ''],
     });
   }
 }
