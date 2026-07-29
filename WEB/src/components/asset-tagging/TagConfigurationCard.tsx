@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { TagTemplate } from "@/hooks/useAssetTagging";
-import { Printer, Tag } from "lucide-react";
+import { Download, Printer, Tag } from "lucide-react";
 
 export type CodeType = 'none' | 'qr';
 
@@ -17,10 +17,12 @@ interface TagConfigurationCardProps {
   includeLogo: boolean;
   selectedCount: number;
   isGenerating: boolean;
+  isDownloading?: boolean;
   isLoading: boolean;
   onTemplateChange: (value: string) => void;
   onToggleLogo: (checked: boolean) => void;
   onGenerate: () => void;
+  onDownloadPdf?: () => void;
 }
 
 export function TagConfigurationCard(props: TagConfigurationCardProps) {
@@ -31,10 +33,12 @@ export function TagConfigurationCard(props: TagConfigurationCardProps) {
     includeLogo,
     selectedCount,
     isGenerating,
+    isDownloading,
     isLoading,
     onTemplateChange,
     onToggleLogo,
     onGenerate,
+    onDownloadPdf,
   } = props;
 
   return (
@@ -101,6 +105,27 @@ export function TagConfigurationCard(props: TagConfigurationCardProps) {
             </>
           )}
         </Button>
+
+        {onDownloadPdf && (
+          <Button
+            className="w-full"
+            variant="outline"
+            onClick={onDownloadPdf}
+            disabled={selectedCount === 0 || isDownloading || isLoading}
+          >
+            {isDownloading ? (
+              <>
+                <div className="w-4 h-4 mr-2 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                Preparing PDF...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4 mr-2" />
+                Download as PDF
+              </>
+            )}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
