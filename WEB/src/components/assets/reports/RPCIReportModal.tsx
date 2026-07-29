@@ -35,6 +35,7 @@ import {
     deleteRPCISignatoryTemplate,
     RPCISignatoryTemplateDto
 } from '@/api/supply-management/signatoryTemplateApi';
+import { sortReportRowsByPropertyAndAmount } from '@/utils/reportExcelExport';
 
 import {
     pdf,
@@ -47,42 +48,51 @@ import {
 
 const pdfStyles = StyleSheet.create({
     page: { padding: 20, fontSize: 8, fontFamily: 'Helvetica' },
-    
+
     // Header Styles
     headerContainer: { marginBottom: 10 },
     headerTitle: { fontSize: 10, fontFamily: 'Helvetica-Bold', textAlign: 'center', marginBottom: 2 },
     headerSub: { fontSize: 8, fontFamily: 'Helvetica-Bold', textAlign: 'center', marginBottom: 2 },
     headerAsOf: { fontSize: 8, fontFamily: 'Helvetica-Bold', textAlign: 'center', marginBottom: 10 },
-    
-    accountableText: { fontSize: 7, textAlign: 'center', marginBottom: 2 },
-    accountableSubText: { fontSize: 6, textAlign: 'center', marginBottom: 5 },
+
+    accountableContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        marginBottom: 8
+    },
+    accountableInlineText: { fontSize: 7 },
+    accountableItemBlock: { alignItems: 'center', marginHorizontal: 1 },
+    accountableValue: { fontFamily: 'Helvetica-Bold', textDecoration: 'underline', fontSize: 7, textAlign: 'center' },
+    accountableSubLabel: { fontSize: 6, textAlign: 'center', marginTop: 1 },
 
     // Table Styles
     table: { width: '100%', borderStyle: 'solid', borderWidth: 1, borderColor: '#000', marginBottom: 15 },
     tableRow: { flexDirection: 'row' },
     tableHeaderRow: { flexDirection: 'row', backgroundColor: '#f8fafc', borderBottomWidth: 1, borderBottomColor: '#000' },
-    
-    colArticle: { width: '5%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    colDesc: { width: '30%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    colStock: { width: '12%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    colUom: { width: '8%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    colUnitValue: { width: '8%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    colBalance: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    colOnHand: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    colShortage: { width: '9%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
-    colRemarks: { width: '8%', padding: 4 },
 
-    cellHeader: { fontFamily: 'Helvetica-Bold', textAlign: 'center', fontSize: 7 },
-    cellText: { fontSize: 7 },
-    cellTextCenter: { fontSize: 7, textAlign: 'center' },
-    cellTextRight: { fontSize: 7, textAlign: 'right' },
+    colArticle: { width: '5%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, overflow: 'hidden' },
+    colDesc: { width: '30%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, overflow: 'hidden' },
+    colStock: { width: '12%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, overflow: 'hidden' },
+    colUom: { width: '8%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, overflow: 'hidden' },
+    colUnitValue: { width: '8%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, overflow: 'hidden' },
+    colBalance: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, overflow: 'hidden' },
+    colOnHand: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, overflow: 'hidden' },
+    colShortage: { width: '9%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, overflow: 'hidden' },
+    colRemarks: { width: '8%', padding: 4, overflow: 'hidden' },
+
+    cellHeader: { fontFamily: 'Helvetica-Bold', textAlign: 'center', fontSize: 7, overflow: 'hidden' },
+    cellText: { fontSize: 7, overflow: 'hidden' },
+    cellTextCenter: { fontSize: 7, textAlign: 'center', overflow: 'hidden' },
+    cellTextRight: { fontSize: 7, textAlign: 'right', overflow: 'hidden' },
     rowBorderBottom: { borderBottomWidth: 1, borderBottomColor: '#000' },
 
     // Bottom Section
     bottomSection: { flexDirection: 'row', marginTop: 10 },
     bottomCol: { width: '50%' },
     sigHeader: { fontSize: 8, marginBottom: 10 },
-    
+
     sigBlock: { marginBottom: 15, alignItems: 'center', width: '80%' },
     sigName: { fontFamily: 'Helvetica-Bold', fontSize: 8, textDecoration: 'underline', marginBottom: 2, textAlign: 'center' },
     sigTitle: { fontSize: 8, textAlign: 'center' },
@@ -128,16 +138,30 @@ const RPCIPDFDocument: React.FC<RPCIPDFDocumentProps> = ({ data, categoryInfo, r
                     <Text style={pdfStyles.headerTitle}>REPORT ON THE PHYSICAL COUNT OF INVENTORIES</Text>
                     <Text style={pdfStyles.headerSub}>Account Code {accountCode}</Text>
                     <Text style={pdfStyles.headerAsOf}>As of {reportDate}</Text>
-                    
-                    <Text style={pdfStyles.accountableText}>
-                        For which <Text style={{ fontFamily: 'Helvetica-Bold', textDecoration: 'underline' }}> ROSELLE M. GUINTU </Text>
-                        , <Text style={{ fontFamily: 'Helvetica-Bold', textDecoration: 'underline' }}>Administrative Officer III</Text>
-                        , <Text style={{ fontFamily: 'Helvetica-Bold', textDecoration: 'underline' }}>Energy Regulatory Commission</Text>
-                        , is accountable having assumed such accountability on <Text style={{ fontFamily: 'Helvetica-Bold', textDecoration: 'underline' }}>{assumptionDate}</Text>.
-                    </Text>
-                    <Text style={pdfStyles.accountableSubText}>
-                        (Name of Accountable Officer)          (Official Designation)          (Agency/Office)          (Date of Assumption)
-                    </Text>
+
+                    <View style={pdfStyles.accountableContainer}>
+                        <Text style={pdfStyles.accountableInlineText}>For which </Text>
+                        <View style={pdfStyles.accountableItemBlock}>
+                            <Text style={pdfStyles.accountableValue}>ROSELLE M. GUINTU</Text>
+                            <Text style={pdfStyles.accountableSubLabel}>(Name of Accountable Officer)</Text>
+                        </View>
+                        <Text style={pdfStyles.accountableInlineText}>, </Text>
+                        <View style={pdfStyles.accountableItemBlock}>
+                            <Text style={pdfStyles.accountableValue}>Administrative Officer III</Text>
+                            <Text style={pdfStyles.accountableSubLabel}>(Official Designation)</Text>
+                        </View>
+                        <Text style={pdfStyles.accountableInlineText}>, </Text>
+                        <View style={pdfStyles.accountableItemBlock}>
+                            <Text style={pdfStyles.accountableValue}>Energy Regulatory Commission</Text>
+                            <Text style={pdfStyles.accountableSubLabel}>(Agency/Office)</Text>
+                        </View>
+                        <Text style={pdfStyles.accountableInlineText}>, is accountable having assumed such accountability on </Text>
+                        <View style={pdfStyles.accountableItemBlock}>
+                            <Text style={pdfStyles.accountableValue}>{assumptionDate}</Text>
+                            <Text style={pdfStyles.accountableSubLabel}>(Date of Assumption)</Text>
+                        </View>
+                        <Text style={pdfStyles.accountableInlineText}>.</Text>
+                    </View>
                 </View>
 
                 <View style={pdfStyles.table}>
@@ -171,7 +195,7 @@ const RPCIPDFDocument: React.FC<RPCIPDFDocumentProps> = ({ data, categoryInfo, r
                 <View style={pdfStyles.bottomSection}>
                     <View style={pdfStyles.bottomCol}>
                         <Text style={pdfStyles.sigHeader}>Prepared by:</Text>
-                        
+
                         {signatories.member1.name && (
                             <View style={pdfStyles.sigBlock}>
                                 <Text style={pdfStyles.sigName}>{signatories.member1.name}</Text>
@@ -190,20 +214,20 @@ const RPCIPDFDocument: React.FC<RPCIPDFDocumentProps> = ({ data, categoryInfo, r
                                 <Text style={pdfStyles.sigTitle}>{signatories.member3.designation}</Text>
                             </View>
                         )}
-                        
+
                         <Text style={pdfStyles.stationText}>FINANCIAL AND ADMINISTRATIVE SERVICE (FAS){'\n'}Station</Text>
                     </View>
-                    
+
                     <View style={pdfStyles.bottomCol}>
                         <Text style={pdfStyles.sigHeader}>Verified By:</Text>
-                        
+
                         {signatories.chairperson.name && (
                             <View style={pdfStyles.sigBlock}>
                                 <Text style={pdfStyles.sigName}>{signatories.chairperson.name}</Text>
                                 <Text style={pdfStyles.sigTitle}>{signatories.chairperson.designation}</Text>
                             </View>
                         )}
-                        
+
                         <View style={{ marginTop: 20 }}>
                             {signatories.viceChairperson.name && (
                                 <View style={pdfStyles.sigBlock}>
@@ -513,7 +537,7 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
         setError(null);
         try {
             const response = await getSupplyItems(page, pageSize, '', catId, undefined, undefined, undefined, start, end);
-            
+
             const groupedMap = new Map<string, any>();
             for (const item of response.items) {
                 const key = `${item.code}_${item.description}`;
@@ -525,8 +549,12 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                 }
                 groupedMap.get(key).quantity += (item.quantity || 0);
             }
-            const grouped = Array.from(groupedMap.values());
-            
+            const grouped = sortReportRowsByPropertyAndAmount(
+                Array.from(groupedMap.values()),
+                (item: any) => item.code,
+                (item: any) => item.unitCost
+            );
+
             setData(grouped);
             setTotalCount(grouped.length);
         } catch (err: any) {
@@ -584,7 +612,7 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
             const selectedData = data.filter((item: any, index: number) =>
                 selectedItems.has(item.code ?? `unknown-${index}`)
             );
-            
+
             const printableReportDate = reportDate ? new Date(reportDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' }) : '';
             const assumptionDate = `${assumptionMonth} ${assumptionYear}`;
             const categoryInfo = categories.find(c => c.id.toString() === categoryId);
@@ -619,216 +647,216 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
 
     return (
         <>
-        <RPCISignatoryModal
-            isOpen={signatoryModalOpen}
-            onClose={() => { setSignatoryModalOpen(false); setPendingAction(null); }}
-            onConfirm={handleSignatoryConfirm}
-            actionLabel={pendingAction || 'print'}
-        />
-        <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogContent className="!max-w-7xl !w-[95vw] max-h-[90vh] flex flex-col p-0 bg-white border-slate-200 shadow-2xl overflow-hidden">
+            <RPCISignatoryModal
+                isOpen={signatoryModalOpen}
+                onClose={() => { setSignatoryModalOpen(false); setPendingAction(null); }}
+                onConfirm={handleSignatoryConfirm}
+                actionLabel={pendingAction || 'print'}
+            />
+            <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+                <DialogContent className="!max-w-7xl !w-[95vw] max-h-[90vh] flex flex-col p-0 bg-white border-slate-200 shadow-2xl overflow-hidden">
 
-                <DialogHeader className="border-b border-slate-200 p-6 pb-5 bg-slate-50/50">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="text-left">
-                            <DialogTitle className="text-2xl text-slate-900 flex items-center gap-2 font-bold tracking-tight">
-                                <FileText className="w-6 h-6 text-indigo-600" />
-                                Report on the Physical Count of Inventories (RPCI)
-                            </DialogTitle>
-                            <DialogDescription className="mt-1.5 text-slate-500">
-                                Generate and print official RPCI reports filtered by category and date range.
-                            </DialogDescription>
+                    <DialogHeader className="border-b border-slate-200 p-6 pb-5 bg-slate-50/50">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="text-left">
+                                <DialogTitle className="text-2xl text-slate-900 flex items-center gap-2 font-bold tracking-tight">
+                                    <FileText className="w-6 h-6 text-indigo-600" />
+                                    Report on the Physical Count of Inventories (RPCI)
+                                </DialogTitle>
+                                <DialogDescription className="mt-1.5 text-slate-500">
+                                    Generate and print official RPCI reports filtered by category and date range.
+                                </DialogDescription>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="shadow-sm font-medium transition-all"
+                                    disabled={selectedItems.size === 0 || isGeneratingPDF}
+                                    onClick={handlePrintPDF}
+                                >
+                                    <Printer className="w-4 h-4 mr-2" />
+                                    Print Document
+                                </Button>
+                                <Button
+                                    className="shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all"
+                                    disabled={selectedItems.size === 0 || isGeneratingPDF}
+                                    onClick={handleExportPDF}
+                                >
+                                    {isGeneratingPDF ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                                    {isGeneratingPDF ? 'Generating...' : 'Save as PDF'}
+                                </Button>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <Button
-                                variant="outline"
-                                className="shadow-sm font-medium transition-all"
-                                disabled={selectedItems.size === 0 || isGeneratingPDF}
-                                onClick={handlePrintPDF}
-                            >
-                                <Printer className="w-4 h-4 mr-2" />
-                                Print Document
-                            </Button>
-                            <Button
-                                className="shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all"
-                                disabled={selectedItems.size === 0 || isGeneratingPDF}
-                                onClick={handleExportPDF}
-                            >
-                                {isGeneratingPDF ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-                                {isGeneratingPDF ? 'Generating...' : 'Save as PDF'}
-                            </Button>
-                        </div>
-                    </div>
-                </DialogHeader>
+                    </DialogHeader>
 
-                <div className="p-6 flex-1 min-h-0 flex flex-col bg-white overflow-y-auto">
+                    <div className="p-6 flex-1 min-h-0 flex flex-col bg-white overflow-y-auto">
 
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-5 p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
-                        <div className="space-y-1.5">
-                            <Label className="text-slate-700 font-medium">Category</Label>
-                            <Select value={categoryId} onValueChange={setCategoryId}>
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select Category" />
-                                </SelectTrigger>
-                                <SelectContent className="max-h-60 overflow-y-auto">
-                                    {categories.map((cat) => (
-                                        <SelectItem key={cat.id} value={cat.id.toString()}>
-                                            {cat.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-slate-700 font-medium">Start Date</Label>
-                            <Input
-                                type="date"
-                                className="bg-white border-slate-300 focus-visible:ring-indigo-500 shadow-sm"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-slate-700 font-medium">End Date</Label>
-                            <Input
-                                type="date"
-                                className="bg-white border-slate-300 focus-visible:ring-indigo-500 shadow-sm"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-slate-700 font-medium">As of Date (Report)</Label>
-                            <Input
-                                type="date"
-                                className="bg-white border-slate-300 focus-visible:ring-indigo-500 shadow-sm"
-                                value={reportDate}
-                                onChange={(e) => setReportDate(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label className="text-slate-700 font-medium">Date of Assumption</Label>
-                            <div className="grid grid-cols-2 gap-2">
-                                <Select value={assumptionMonth} onValueChange={setAssumptionMonth}>
-                                    <SelectTrigger className="w-full bg-white border-slate-300 focus:ring-indigo-500 shadow-sm">
-                                        <SelectValue placeholder="Month" />
+                        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-5 p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
+                            <div className="space-y-1.5">
+                                <Label className="text-slate-700 font-medium">Category</Label>
+                                <Select value={categoryId} onValueChange={setCategoryId}>
+                                    <SelectTrigger className="w-full overflow-hidden">
+                                        <SelectValue placeholder="Select Category" className="truncate text-left min-w-0" />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-60 overflow-y-auto">
-                                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m) => (
-                                            <SelectItem key={m} value={m}>{m}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <Select value={assumptionYear} onValueChange={setAssumptionYear}>
-                                    <SelectTrigger className="w-full bg-white border-slate-300 focus:ring-indigo-500 shadow-sm">
-                                        <SelectValue placeholder="Year" />
-                                    </SelectTrigger>
-                                    <SelectContent className="max-h-60 overflow-y-auto">
-                                        {Array.from({ length: 21 }, (_, i) => String(new Date().getFullYear() - 5 + i)).map((y) => (
-                                            <SelectItem key={y} value={y}>{y}</SelectItem>
+                                        {categories.map((cat) => (
+                                            <SelectItem key={cat.id} value={cat.id.toString()}>
+                                                {cat.name}
+                                            </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
-                        </div>
 
-                        <div className="flex items-end">
-                            <Button
-                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
-                                onClick={handleGenerateReport}
-                                disabled={loading || !startDate || !endDate || !categoryId}
-                            >
-                                {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Filter className="w-4 h-4 mr-2" />}
-                                Generate Report
-                            </Button>
-                        </div>
-                    </div>
+                            <div className="space-y-1.5">
+                                <Label className="text-slate-700 font-medium">Start Date</Label>
+                                <Input
+                                    type="date"
+                                    className="bg-white border-slate-300 focus-visible:ring-indigo-500 shadow-sm"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                />
+                            </div>
 
-                    {error && (
-                        <div className="mb-5 p-4 bg-rose-50 border border-rose-200 rounded-lg flex items-center text-rose-700 text-sm font-medium shadow-sm">
-                            <AlertCircle className="w-5 h-5 mr-2 shrink-0" />
-                            {error}
-                        </div>
-                    )}
+                            <div className="space-y-1.5">
+                                <Label className="text-slate-700 font-medium">End Date</Label>
+                                <Input
+                                    type="date"
+                                    className="bg-white border-slate-300 focus-visible:ring-indigo-500 shadow-sm"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                />
+                            </div>
 
-                    <div className="border border-slate-200 rounded-lg overflow-hidden flex-1 shadow-sm">
-                        <Table>
-                            <TableHeader className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-sm">
-                                <TableRow className="hover:bg-transparent">
-                                    <TableHead className="w-[50px] px-4 text-center">
-                                        <Checkbox
-                                            checked={isAllSelected}
-                                            onCheckedChange={(checked) => handleSelectAll(!!checked)}
-                                            className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
-                                        />
-                                    </TableHead>
-                                    <TableHead className="w-[220px] font-semibold text-slate-700">Stock Number</TableHead>
-                                    <TableHead className="font-semibold text-slate-700">Item Description</TableHead>
-                                    <TableHead className="text-right font-semibold text-slate-700 w-[160px]">Total Current Stock</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {loading ? (
-                                    Array.from({ length: 4 }).map((_, index) => (
-                                        <TableRow key={`skeleton-${index}`}>
-                                            {Array.from({ length: 4 }).map((_, colIndex) => (
-                                                <TableCell key={`skel-col-${colIndex}`}>
-                                                    <div className="h-4 bg-slate-100 rounded animate-pulse w-full"></div>
-                                                </TableCell>
+                            <div className="space-y-1.5">
+                                <Label className="text-slate-700 font-medium">As of Date (Report)</Label>
+                                <Input
+                                    type="date"
+                                    className="bg-white border-slate-300 focus-visible:ring-indigo-500 shadow-sm"
+                                    value={reportDate}
+                                    onChange={(e) => setReportDate(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <Label className="text-slate-700 font-medium">Date of Assumption</Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Select value={assumptionMonth} onValueChange={setAssumptionMonth}>
+                                        <SelectTrigger className="w-full bg-white border-slate-300 focus:ring-indigo-500 shadow-sm overflow-hidden">
+                                            <SelectValue placeholder="Month" className="truncate text-left min-w-0" />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-60 overflow-y-auto">
+                                            {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m) => (
+                                                <SelectItem key={m} value={m}>{m}</SelectItem>
                                             ))}
-                                        </TableRow>
-                                    ))
-                                ) : data.length > 0 ? (
-                                    data.map((item: any, index: number) => {
-                                        const safeId = item.code ?? `unknown-${index}`;
-                                        const isSelected = selectedItems.has(safeId);
+                                        </SelectContent>
+                                    </Select>
+                                    <Select value={assumptionYear} onValueChange={setAssumptionYear}>
+                                        <SelectTrigger className="w-full bg-white border-slate-300 focus:ring-indigo-500 shadow-sm overflow-hidden">
+                                            <SelectValue placeholder="Year" className="truncate text-left min-w-0" />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-60 overflow-y-auto">
+                                            {Array.from({ length: 21 }, (_, i) => String(new Date().getFullYear() - 5 + i)).map((y) => (
+                                                <SelectItem key={y} value={y}>{y}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
 
-                                        return (
-                                            <TableRow
-                                                key={safeId}
-                                                className={`cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50/60 hover:bg-indigo-50/80' : 'hover:bg-slate-50'}`}
-                                            >
-                                                <TableCell className="px-4 text-center">
-                                                    <Checkbox
-                                                        checked={isSelected}
-                                                        onCheckedChange={(checked) => handleSelectItem(safeId, !!checked)}
-                                                        className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
-                                                    />
-                                                </TableCell>
-                                                <TableCell className="font-medium text-slate-900">{item.code || 'N/A'}</TableCell>
-                                                <TableCell className="text-slate-600">{item.description || 'Unknown Item'}</TableCell>
-                                                <TableCell className="text-right">
-                                                    <span className="font-bold text-indigo-600">{item.quantity}</span>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={4} className="h-72 text-center">
-                                            <div className="flex flex-col items-center justify-center text-slate-500 space-y-4">
-                                                <div className="p-5 bg-indigo-50 rounded-full border border-indigo-100 shadow-sm">
-                                                    <Filter className="w-8 h-8 text-indigo-500" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-slate-900 text-lg">Ready to Generate</p>
-                                                    <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Select a category and date range above to generate the RPCI report.</p>
-                                                </div>
-                                            </div>
-                                        </TableCell>
+                            <div className="flex items-end">
+                                <Button
+                                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
+                                    onClick={handleGenerateReport}
+                                    disabled={loading || !startDate || !endDate || !categoryId}
+                                >
+                                    {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Filter className="w-4 h-4 mr-2" />}
+                                    Generate Report
+                                </Button>
+                            </div>
+                        </div>
+
+                        {error && (
+                            <div className="mb-5 p-4 bg-rose-50 border border-rose-200 rounded-lg flex items-center text-rose-700 text-sm font-medium shadow-sm">
+                                <AlertCircle className="w-5 h-5 mr-2 shrink-0" />
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="border border-slate-200 rounded-lg overflow-hidden flex-1 shadow-sm">
+                            <Table>
+                                <TableHeader className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-sm">
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableHead className="w-[50px] px-4 text-center">
+                                            <Checkbox
+                                                checked={isAllSelected}
+                                                onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                                                className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                                            />
+                                        </TableHead>
+                                        <TableHead className="w-[220px] font-semibold text-slate-700">Stock Number</TableHead>
+                                        <TableHead className="font-semibold text-slate-700">Item Description</TableHead>
+                                        <TableHead className="text-right font-semibold text-slate-700 w-[160px]">Total Current Stock</TableHead>
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                </TableHeader>
+                                <TableBody>
+                                    {loading ? (
+                                        Array.from({ length: 4 }).map((_, index) => (
+                                            <TableRow key={`skeleton-${index}`}>
+                                                {Array.from({ length: 4 }).map((_, colIndex) => (
+                                                    <TableCell key={`skel-col-${colIndex}`}>
+                                                        <div className="h-4 bg-slate-100 rounded animate-pulse w-full"></div>
+                                                    </TableCell>
+                                                ))}
+                                            </TableRow>
+                                        ))
+                                    ) : data.length > 0 ? (
+                                        data.map((item: any, index: number) => {
+                                            const safeId = item.code ?? `unknown-${index}`;
+                                            const isSelected = selectedItems.has(safeId);
 
-                </div>
-            </DialogContent>
-        </Dialog>
+                                            return (
+                                                <TableRow
+                                                    key={safeId}
+                                                    className={`cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50/60 hover:bg-indigo-50/80' : 'hover:bg-slate-50'}`}
+                                                >
+                                                    <TableCell className="px-4 text-center">
+                                                        <Checkbox
+                                                            checked={isSelected}
+                                                            onCheckedChange={(checked) => handleSelectItem(safeId, !!checked)}
+                                                            className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="font-medium text-slate-900">{item.code || 'N/A'}</TableCell>
+                                                    <TableCell className="text-slate-600">{item.description || 'Unknown Item'}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <span className="font-bold text-indigo-600">{item.quantity}</span>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="h-72 text-center">
+                                                <div className="flex flex-col items-center justify-center text-slate-500 space-y-4">
+                                                    <div className="p-5 bg-indigo-50 rounded-full border border-indigo-100 shadow-sm">
+                                                        <Filter className="w-8 h-8 text-indigo-500" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-slate-900 text-lg">Ready to Generate</p>
+                                                        <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Select a category and date range above to generate the RPCI report.</p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 };

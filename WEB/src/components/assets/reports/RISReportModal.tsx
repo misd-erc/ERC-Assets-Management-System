@@ -66,14 +66,14 @@ const pdfStyles = StyleSheet.create({
 
     // Sub Header
     subHeaderRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', backgroundColor: '#fdfdfd' },
-    colStockNo: { width: '12%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center' },
-    colUnit: { width: '8%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center' },
-    colDesc: { width: '30%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center' },
-    colReqQty: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center' },
-    colYes: { width: '8%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center' },
-    colNo: { width: '8%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center' },
-    colIssQty: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center' },
-    colRemarks: { width: '14%', padding: 4, justifyContent: 'center' },
+    colStockNo: { width: '12%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colUnit: { width: '8%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colDesc: { width: '30%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colReqQty: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colYes: { width: '8%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colNo: { width: '8%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colIssQty: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colRemarks: { width: '14%', padding: 4, justifyContent: 'center', overflow: 'hidden' },
 
     // Row Data
     dataRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000' },

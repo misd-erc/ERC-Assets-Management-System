@@ -1780,11 +1780,15 @@ namespace API.Controllers
                 // Fetch to memory first because RISNumber and ResponsibilityCenterCode are [NotMapped] encrypted properties
                 // that EF Core cannot translate to SQL
                 var supplyRISsRaw = await _getTools.Supply.GetTblSupplyRISs(context)
-                    .Where(x => x.RISIssuedDate.HasValue && x.RISIssuedDate.Value.Date >= startDate.Date && x.RISIssuedDate.Value.Date <= endDate.Date)
+                    .Where(x => x.IsApproved)
                     .ToListAsync();
 
-                // Project in memory after decryption
                 var supplyRISs = supplyRISsRaw
+                    .Where(x =>
+                    {
+                        var effectiveDate = x.CreatedAt.Date;
+                        return effectiveDate >= startDate.Date && effectiveDate <= endDate.Date;
+                    })
                     .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode, x.OfficeId, x.DivisionId })
                     .ToList();
 
@@ -1833,10 +1837,10 @@ namespace API.Controllers
                 var risItemPairs = supplyRISItems
                     .Select(x => new
                     {
-                        x.StockNumber,
-                        Description = x.ItemDescription
+                        StockNumber = x.StockNumber ?? string.Empty,
+                        Description = x.ItemDescription ?? string.Empty
                     })
-                    .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.Description))
+                    .Where(x => !string.IsNullOrWhiteSpace(x.StockNumber) && !string.IsNullOrWhiteSpace(x.Description))
                     .Distinct()
                     .ToList();
 
@@ -1853,15 +1857,21 @@ namespace API.Controllers
                 }
                 else
                 {
-                    // Get supply items for the given category and filter RIS pairs by matching
+                    // Get supply items for the given category and filter RIS pairs by matching case-insensitively and trimmed
                     var allSupplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
                     var matchingSupplyItems = allSupplyItems
-                        .Select(x => new { x.Code, x.Description, x.CategoryId })
                         .Where(x => x.CategoryId == categoryId)
+                        .Select(x => new
+                        {
+                            Code = (x.Code ?? string.Empty).Trim(),
+                            Description = (x.Description ?? string.Empty).Trim()
+                        })
                         .ToList();
 
                     validPairs = risItemPairs
-                        .Where(pair => matchingSupplyItems.Any(si => si.Code == pair.StockNumber && si.Description == pair.Description))
+                        .Where(pair => matchingSupplyItems.Any(si =>
+                            string.Equals(si.Code, pair.StockNumber.Trim(), StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(si.Description, pair.Description.Trim(), StringComparison.OrdinalIgnoreCase)))
                         .Select(p => (p.StockNumber, p.Description))
                         .ToList();
                 }
@@ -1892,13 +1902,20 @@ namespace API.Controllers
                     .Where(d => divisionIds.Contains(d.Id.Value))
                     .ToDictionaryAsync(d => d.Id.Value, d => d.Name);
 
-                // Fetch supply items for unit cost lookup (latest UnitCost per Code/Description)
+                // Fetch supply items for unit cost lookup (latest UnitCost per Code/Description, using normalized keys)
                 var supplyItemsForCost = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
-                var unitCostMap = supplyItemsForCost
-                    .Where(x => !string.IsNullOrEmpty(x.Code) && !string.IsNullOrEmpty(x.Description))
-                    .GroupBy(x => new { x.Code, x.Description })
+                var unitCostList = supplyItemsForCost
+                    .Where(x => !string.IsNullOrWhiteSpace(x.Code) && !string.IsNullOrWhiteSpace(x.Description))
+                    .Select(x => new
+                    {
+                        NormalizedCode = x.Code!.Trim().ToLowerInvariant(),
+                        NormalizedDesc = x.Description!.Trim().ToLowerInvariant(),
+                        x.UnitCost,
+                        x.CreatedAt
+                    })
+                    .GroupBy(x => new { x.NormalizedCode, x.NormalizedDesc })
                     .ToDictionary(
-                        g => (g.Key.Code!, g.Key.Description!),
+                        g => (g.Key.NormalizedCode, g.Key.NormalizedDesc),
                         g => g.OrderByDescending(x => x.CreatedAt).First().UnitCost ?? 0m);
 
                 // Group RIS items by (StockNumber, Description) and compute total and details
@@ -1906,11 +1923,11 @@ namespace API.Controllers
                     .Select(x => new
                     {
                         RISId = x.SupplyRISId,
-                        x.StockNumber,
-                        Description = x.ItemDescription,
+                        StockNumber = x.StockNumber ?? string.Empty,
+                        Description = x.ItemDescription ?? string.Empty,
                         x.IssueQuantity
                     })
-                    .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.Description))
+                    .Where(x => !string.IsNullOrWhiteSpace(x.StockNumber) && !string.IsNullOrWhiteSpace(x.Description))
                     .ToList();
 
                 var validPairSet = new HashSet<(string, string)>(validPairs.Select(p => (p.StockNumber, p.Description)));
@@ -1919,7 +1936,8 @@ namespace API.Controllers
                     .GroupBy(x => new { x.StockNumber, x.Description })
                     .Select(g =>
                     {
-                        var unitCost = unitCostMap.TryGetValue((g.Key.StockNumber!, g.Key.Description!), out var uc) ? uc : 0m;
+                        var normKey = (g.Key.StockNumber.Trim().ToLowerInvariant(), g.Key.Description.Trim().ToLowerInvariant());
+                        var unitCost = unitCostList.TryGetValue(normKey, out var uc) ? uc : 0m;
                         var totalQty = g.Sum(x => x.IssueQuantity);
                         return new FilteredRMSIItemGroupResponseModel
                         {
@@ -1928,23 +1946,23 @@ namespace API.Controllers
                             Total = totalQty,
                             UnitCost = unitCost,
                             TotalCost = unitCost * totalQty,
-                        Items = g.Select(x =>
-                        {
-                            var hasRis = risDetails.TryGetValue(x.RISId.Value, out var ris);
-                            var officeId = hasRis && ris.OfficeId.HasValue ? ris.OfficeId.Value : (long?)null;
-                            var divisionId = hasRis && ris.DivisionId.HasValue ? ris.DivisionId.Value : (long?)null;
-
-                            return new FilteredRMSIItemDetailResponseModel
+                            Items = g.Select(x =>
                             {
-                                RISNumber = hasRis ? ris.RISNumber : string.Empty,
-                                ResponsibilityCenterCode = hasRis ? ris.ResponsibilityCenterCode : string.Empty,
-                                OfficeName = officeId.HasValue && offices.TryGetValue(officeId.Value, out var officeName) ? officeName : string.Empty,
-                                DivisionName = divisionId.HasValue && divisions.TryGetValue(divisionId.Value, out var divisionName) ? divisionName : string.Empty,
-                                IssueQuantity = x.IssueQuantity
-                            };
-                        }).ToList()
-                    };
-                })
+                                var hasRis = risDetails.TryGetValue(x.RISId.Value, out var ris);
+                                var officeId = hasRis && ris.OfficeId.HasValue ? ris.OfficeId.Value : (long?)null;
+                                var divisionId = hasRis && ris.DivisionId.HasValue ? ris.DivisionId.Value : (long?)null;
+
+                                return new FilteredRMSIItemDetailResponseModel
+                                {
+                                    RISNumber = hasRis ? ris.RISNumber : string.Empty,
+                                    ResponsibilityCenterCode = hasRis ? ris.ResponsibilityCenterCode : string.Empty,
+                                    OfficeName = officeId.HasValue && offices.TryGetValue(officeId.Value, out var officeName) ? officeName : string.Empty,
+                                    DivisionName = divisionId.HasValue && divisions.TryGetValue(divisionId.Value, out var divisionName) ? divisionName : string.Empty,
+                                    IssueQuantity = x.IssueQuantity
+                                };
+                            }).ToList()
+                        };
+                    })
                     .ToList();
 
                 int totalCount = grouped.Count;

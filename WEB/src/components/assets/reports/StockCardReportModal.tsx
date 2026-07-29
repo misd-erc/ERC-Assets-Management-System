@@ -54,13 +54,13 @@ const pdfStyles = StyleSheet.create({
 
     colBorderRight: { borderRightWidth: 1, borderRightColor: '#000' },
 
-    colDate: { width: '14%', padding: 4, justifyContent: 'center' },
-    colRef: { width: '16%', padding: 4, justifyContent: 'center' },
-    colReceiptQty: { width: '12%', padding: 4, justifyContent: 'center' },
-    colIssueQty: { width: '12%', padding: 4, justifyContent: 'center' },
-    colOffice: { width: '22%', padding: 4, justifyContent: 'center' },
-    colBalanceQty: { width: '12%', padding: 4, justifyContent: 'center' },
-    colDays: { width: '12%', padding: 4, justifyContent: 'center' },
+    colDate: { width: '14%', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colRef: { width: '16%', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colReceiptQty: { width: '12%', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colIssueQty: { width: '12%', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colOffice: { width: '22%', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colBalanceQty: { width: '12%', padding: 4, justifyContent: 'center', overflow: 'hidden' },
+    colDays: { width: '12%', padding: 4, justifyContent: 'center', overflow: 'hidden' },
 
     cellHeaderBold: { fontFamily: 'Times-Bold', fontSize: 9, textAlign: 'center' },
     cellTextCenter: { fontSize: 9, textAlign: 'center', fontFamily: 'Times-Roman' }

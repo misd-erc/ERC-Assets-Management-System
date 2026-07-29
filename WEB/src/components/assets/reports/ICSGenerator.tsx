@@ -18,7 +18,7 @@ import { UnifiedAssetService } from "@/services/UnifiedAssetService";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 import { IssuanceRecord } from "@/types/issuance";
-import { downloadReportExcel } from "@/utils/reportExcelExport";
+import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  cell: { padding: 4 },
+  cell: { padding: 4, overflow: "hidden" },
 
   metaRow: {
     flexDirection: "row",
@@ -466,14 +466,18 @@ export class ICSGenerator {
       } catch { /* use fallback */ }
     }
 
-    const rows: ICSRow[] = records.map((r) => ({
-      qty: 1,
-      unit: r.unitOfMeasurement ?? 'Unit',
-      description: r.itemName ?? '',
-      propertyNo: r.propertyNumber ?? '',
-      estimatedUsefulLife: (r as any).estimatedUsefulLife != null ? String((r as any).estimatedUsefulLife) : "",
-      value: r.unitValue ?? null,
-    }));
+    const rows: ICSRow[] = sortReportRowsByPropertyAndAmount(
+      records.map((r) => ({
+        qty: 1,
+        unit: r.unitOfMeasurement ?? 'Unit',
+        description: r.itemName ?? '',
+        propertyNo: r.propertyNumber ?? '',
+        estimatedUsefulLife: (r as any).estimatedUsefulLife != null ? String((r as any).estimatedUsefulLife) : "",
+        value: r.unitValue ?? null,
+      })),
+      (r) => r.propertyNo,
+      (r) => r.value
+    );
 
     const blob = await pdf(
       <ICSDocument
@@ -529,14 +533,18 @@ export class ICSGenerator {
       } catch { /* use fallback */ }
     }
 
-    const rows: ICSRow[] = records.map((r) => ({
-      qty: 1,
-      unit: r.unitOfMeasurement ?? 'Unit',
-      description: r.itemName ?? '',
-      propertyNo: r.propertyNumber ?? '',
-      estimatedUsefulLife: (r as any).estimatedUsefulLife != null ? String((r as any).estimatedUsefulLife) : "",
-      value: r.unitValue ?? null,
-    }));
+    const rows: ICSRow[] = sortReportRowsByPropertyAndAmount(
+      records.map((r) => ({
+        qty: 1,
+        unit: r.unitOfMeasurement ?? 'Unit',
+        description: r.itemName ?? '',
+        propertyNo: r.propertyNumber ?? '',
+        estimatedUsefulLife: (r as any).estimatedUsefulLife != null ? String((r as any).estimatedUsefulLife) : "",
+        value: r.unitValue ?? null,
+      })),
+      (r) => r.propertyNo,
+      (r) => r.value
+    );
 
     const blob = await pdf(
       <ICSDocument
@@ -625,14 +633,18 @@ export class ICSGenerator {
       } catch { /* use fallback */ }
     }
 
-    const rows: ICSRow[] = records.map((r) => ({
-      qty: 1,
-      unit: r.unitOfMeasurement ?? 'Unit',
-      description: r.itemName ?? '',
-      propertyNo: r.propertyNumber ?? '',
-      estimatedUsefulLife: (r as any).estimatedUsefulLife != null ? String((r as any).estimatedUsefulLife) : "",
-      value: r.unitValue ?? null,
-    }));
+    const rows: ICSRow[] = sortReportRowsByPropertyAndAmount(
+      records.map((r) => ({
+        qty: 1,
+        unit: r.unitOfMeasurement ?? 'Unit',
+        description: r.itemName ?? '',
+        propertyNo: r.propertyNumber ?? '',
+        estimatedUsefulLife: (r as any).estimatedUsefulLife != null ? String((r as any).estimatedUsefulLife) : "",
+        value: r.unitValue ?? null,
+      })),
+      (r) => r.propertyNo,
+      (r) => r.value
+    );
 
     await ICSGenerator.generateExcel(rows, employeeName, position, office, first.parIcsNumber, nonPlantillaEmployeeName);
   }
