@@ -116,7 +116,10 @@ export function AssetsFilters({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Enter applies the filters from anywhere in this panel — the search box, a date
+            field, or after picking a dropdown option — so users don't have to reach for the
+            Apply Filters button. */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" onKeyDown={handleKeyDown}>
           {/* Search */}
           <div className="space-y-2">
             <Label htmlFor="search">Search</Label>
@@ -127,7 +130,6 @@ export function AssetsFilters({
                 placeholder="Search by property number, description..."
                 value={searchTerm}
                 onChange={(e) => onSearchChange(e.target.value)}
-                onKeyDown={handleKeyDown}
                 className="pl-10"
               />
             </div>
@@ -446,7 +448,6 @@ export function AssetsFilters({
               type="date"
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
-              onKeyDown={handleKeyDown}
             />
           </div>
 
@@ -457,7 +458,6 @@ export function AssetsFilters({
               type="date"
               value={endDate}
               onChange={(e) => onEndDateChange(e.target.value)}
-              onKeyDown={handleKeyDown}
             />
           </div>
 
