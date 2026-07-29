@@ -1,5 +1,5 @@
 // src/components/assets/reports/RSMIReportModal.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -27,6 +27,7 @@ import { Loader2, Filter, FileText, ChevronDown, ChevronRight, Download, AlertCi
 import { toast } from 'sonner';
 
 import { useRSMIReport } from '@/hooks/supply/useRSMIReport';
+import { sortReportRowsByPropertyAndAmount } from '@/utils/reportExcelExport';
 import { getCategories } from '@/api/asset/inventoryApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { EmployeeSelector } from '@/components/transfers-returns/EmployeeSelector';
@@ -70,19 +71,19 @@ const pdfStyles = StyleSheet.create({
     tableRow: { flexDirection: 'row' },
     tableHeaderRow: { flexDirection: 'row', backgroundColor: '#f8fafc', borderBottomWidth: 1, borderBottomColor: '#000' },
 
-    colStock: { width: '12%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
-    colItem: { width: '30%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
-    colRis: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
-    colRc: { width: '13%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
-    colQty: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
-    colUnitCost: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
-    colTotalCost: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
-    colAccountCode: { width: '10%', padding: 2 },
+    colStock: { width: '12%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
+    colItem: { width: '30%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
+    colRis: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
+    colRc: { width: '13%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
+    colQty: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
+    colUnitCost: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
+    colTotalCost: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
+    colAccountCode: { width: '10%', padding: 2, overflow: 'hidden' },
 
-    cellHeader: { fontFamily: 'Helvetica-Bold', textAlign: 'center', fontSize: 7 },
-    cellText: { fontSize: 7 },
-    cellTextCenter: { fontSize: 7, textAlign: 'center' },
-    cellTextRight: { fontSize: 7, textAlign: 'right' },
+    cellHeader: { fontFamily: 'Helvetica-Bold', textAlign: 'center', fontSize: 7, overflow: 'hidden' },
+    cellText: { fontSize: 7, overflow: 'hidden' },
+    cellTextCenter: { fontSize: 7, textAlign: 'center', overflow: 'hidden' },
+    cellTextRight: { fontSize: 7, textAlign: 'right', overflow: 'hidden' },
     rowBorderBottom: { borderBottomWidth: 0.5, borderBottomColor: '#cbd5e1' },
 
     markerRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000' },
@@ -574,8 +575,13 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
 
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+    const [hasGenerated, setHasGenerated] = useState(false);
 
-    const { data, totalCount, loading, error, fetchReport, reset } = useRSMIReport();
+    const { data: rawData, totalCount, loading, error, fetchReport, reset } = useRSMIReport();
+    const data = useMemo(
+        () => sortReportRowsByPropertyAndAmount(rawData, (g: any) => g.stockNumber, (g: any) => g.unitCost),
+        [rawData]
+    );
     useEffect(() => {
         if (isOpen) {
             getCategories('Supply').then(categoriesData => {
@@ -592,6 +598,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
             setStartDate('');
             setEndDate('');
             setCategoryId('');
+            setHasGenerated(false);
             reset();
         }
     }, [isOpen]);
@@ -624,6 +631,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const handleGenerateReport = async () => {
         if (!startDate || !endDate || !categoryId) return;
         setCurrentPage(1);
+        setHasGenerated(true);
         await fetchReport(categoryId, startDate, endDate, 1, pageSize);
         setExpandedRows({});
         setSelectedItems(new Set());
@@ -917,8 +925,14 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                                     <Filter className="w-8 h-8 text-indigo-500" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold text-slate-900 text-lg">Ready to Generate</p>
-                                                    <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Select a category and date range above to generate the RSMI report.</p>
+                                                    <p className="font-semibold text-slate-900 text-lg">
+                                                        {hasGenerated ? 'No RSMI Records Found' : 'Ready to Generate'}
+                                                    </p>
+                                                    <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                                                        {hasGenerated
+                                                            ? 'No issued supplies found for the selected category and date range.'
+                                                            : 'Select a category and date range above to generate the RSMI report.'}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </TableCell>

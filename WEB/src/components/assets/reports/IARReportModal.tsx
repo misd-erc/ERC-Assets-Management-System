@@ -98,11 +98,11 @@ const pdfStyles = StyleSheet.create({
     tableHeaderRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', minHeight: 18 },
     tableDataRow: { flexDirection: 'row', minHeight: 16 },
 
-    wQty: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 3, justifyContent: 'center' },
-    wUnit: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 3, justifyContent: 'center' },
-    wDesc: { width: '50%', borderRightWidth: 1, borderRightColor: '#000', padding: 3, justifyContent: 'center' },
-    wPrice: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 3, justifyContent: 'center' },
-    wAmount: { width: '15%', padding: 3, justifyContent: 'center' },
+    wQty: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 3, justifyContent: 'center', overflow: 'hidden' },
+    wUnit: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 3, justifyContent: 'center', overflow: 'hidden' },
+    wDesc: { width: '50%', borderRightWidth: 1, borderRightColor: '#000', padding: 3, justifyContent: 'center', overflow: 'hidden' },
+    wPrice: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 3, justifyContent: 'center', overflow: 'hidden' },
+    wAmount: { width: '15%', padding: 3, justifyContent: 'center', overflow: 'hidden' },
 
     textBoldCenter: { fontSize: 8.5, fontFamily: 'Times-Bold', textAlign: 'center' },
     textCenter: { fontSize: 8.5, textAlign: 'center' },

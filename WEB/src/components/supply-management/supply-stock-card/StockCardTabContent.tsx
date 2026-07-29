@@ -80,6 +80,8 @@ export const StockCardTabContent = () => {
         allCategories={categories}
         storageLocations={storagelocations}
         allVendors={vendors}
+        title="Stock Cards"
+        description="Overview of stock cards grouped by item code"
         onParamsChange={(newParams) => setParams(prev => ({ ...prev, ...newParams }))}
         onView={handleViewStockCard}
         viewActionLabel="View"

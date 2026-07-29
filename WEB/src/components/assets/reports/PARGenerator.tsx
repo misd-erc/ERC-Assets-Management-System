@@ -18,7 +18,7 @@ import { UnifiedAssetService } from "@/services/UnifiedAssetService";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 import { IssuanceRecord } from "@/types/issuance";
-import { downloadReportExcel } from "@/utils/reportExcelExport";
+import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  cell: { padding: 3, fontSize: 8 },
+  cell: { padding: 3, fontSize: 8, overflow: "hidden" },
 
   colQty: { width: "6%" },
   colUnit: { width: "8%" },
@@ -479,14 +479,18 @@ export class PARGenerator {
       } catch { /* use fallback */ }
     }
 
-    const rows: PARRow[] = records.map((r) => ({
-      qty: 1,
-      unit: r.unitOfMeasurement ?? 'Unit',
-      description: r.itemName ?? '',
-      propertyNo: r.propertyNumber ?? '',
-      dateAcquired: r.dateAcquired?.slice(0, 10) ?? '',
-      amount: r.unitValue ?? null,
-    }));
+    const rows: PARRow[] = sortReportRowsByPropertyAndAmount(
+      records.map((r) => ({
+        qty: 1,
+        unit: r.unitOfMeasurement ?? 'Unit',
+        description: r.itemName ?? '',
+        propertyNo: r.propertyNumber ?? '',
+        dateAcquired: r.dateAcquired?.slice(0, 10) ?? '',
+        amount: r.unitValue ?? null,
+      })),
+      (r) => r.propertyNo,
+      (r) => r.amount
+    );
 
     const blob = await pdf(
       <PARDocument
@@ -542,14 +546,18 @@ export class PARGenerator {
       } catch { /* use fallback */ }
     }
 
-    const rows: PARRow[] = records.map((r) => ({
-      qty: 1,
-      unit: r.unitOfMeasurement ?? 'Unit',
-      description: r.itemName ?? '',
-      propertyNo: r.propertyNumber ?? '',
-      dateAcquired: r.dateAcquired?.slice(0, 10) ?? '',
-      amount: r.unitValue ?? null,
-    }));
+    const rows: PARRow[] = sortReportRowsByPropertyAndAmount(
+      records.map((r) => ({
+        qty: 1,
+        unit: r.unitOfMeasurement ?? 'Unit',
+        description: r.itemName ?? '',
+        propertyNo: r.propertyNumber ?? '',
+        dateAcquired: r.dateAcquired?.slice(0, 10) ?? '',
+        amount: r.unitValue ?? null,
+      })),
+      (r) => r.propertyNo,
+      (r) => r.amount
+    );
 
     const blob = await pdf(
       <PARDocument
@@ -638,14 +646,18 @@ export class PARGenerator {
       } catch { /* use fallback */ }
     }
 
-    const rows: PARRow[] = records.map((r) => ({
-      qty: 1,
-      unit: r.unitOfMeasurement ?? 'Unit',
-      description: r.itemName ?? '',
-      propertyNo: r.propertyNumber ?? '',
-      dateAcquired: r.dateAcquired?.slice(0, 10) ?? '',
-      amount: r.unitValue ?? null,
-    }));
+    const rows: PARRow[] = sortReportRowsByPropertyAndAmount(
+      records.map((r) => ({
+        qty: 1,
+        unit: r.unitOfMeasurement ?? 'Unit',
+        description: r.itemName ?? '',
+        propertyNo: r.propertyNumber ?? '',
+        dateAcquired: r.dateAcquired?.slice(0, 10) ?? '',
+        amount: r.unitValue ?? null,
+      })),
+      (r) => r.propertyNo,
+      (r) => r.amount
+    );
 
     await PARGenerator.generateExcel(rows, employeeName, position, office, first.parIcsNumber, nonPlantillaEmployeeName);
   }

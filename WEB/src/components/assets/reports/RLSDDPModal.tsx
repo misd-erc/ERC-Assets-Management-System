@@ -144,7 +144,7 @@ const S = StyleSheet.create({
     headerRow: { backgroundColor: '#e5e7eb' },
     borderRight: { borderRightWidth: 1, borderRightColor: '#000' },
     borderBottom: { borderBottomWidth: 1, borderBottomColor: '#000' },
-    cell: { paddingVertical: 3, paddingHorizontal: 3, justifyContent: 'center' },
+    cell: { paddingVertical: 3, paddingHorizontal: 3, justifyContent: 'center', overflow: 'hidden' },
     headerText: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', textAlign: 'center' },
     cellText: { fontSize: 7.5, textAlign: 'center' },
     cellTextLeft: { fontSize: 7.5, textAlign: 'left' },

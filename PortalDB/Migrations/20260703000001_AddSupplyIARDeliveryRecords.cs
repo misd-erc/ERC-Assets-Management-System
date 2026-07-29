@@ -34,7 +34,7 @@ namespace PortalDB.Migrations
                 INSERT INTO asset.tblSupplyIARDeliveryRecords (SupplyIARId, DeliveryRecordId, SupplyIARDeliveryRecordCreatedAt)
                 SELECT SupplyIARId, DeliveryRecordId, SYSUTCDATETIME()
                 FROM asset.tblSupplyIARs
-                WHERE DeliveryRecordId IS NOT NULL
+                WHERE DeliveryRecordId IS NOT NULL AND DeliveryRecordId > 0
             ");
 
             migrationBuilder.CreateIndex(

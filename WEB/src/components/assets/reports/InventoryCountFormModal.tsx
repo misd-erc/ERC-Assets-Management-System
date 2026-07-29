@@ -149,7 +149,7 @@ const pdfStyles = StyleSheet.create({
     headerRow: { backgroundColor: '#e5e7eb' },
     borderRight: { borderRightWidth: 1, borderRightColor: '#000' },
     borderBottom: { borderBottomWidth: 1, borderBottomColor: '#000' },
-    cell: { paddingVertical: 3, paddingHorizontal: 2, justifyContent: 'center' },
+    cell: { paddingVertical: 3, paddingHorizontal: 2, justifyContent: 'center', overflow: 'hidden' },
     headerText: { fontSize: 7, fontFamily: 'Helvetica-Bold', textAlign: 'center' },
     cellText: { fontSize: 7, textAlign: 'center' },
     cellTextLeft: { fontSize: 7, textAlign: 'left' },
