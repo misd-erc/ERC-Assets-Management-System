@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  cell: { padding: 3, fontSize: 8 },
+  cell: { padding: 3, fontSize: 8, overflow: "hidden" },
 
   colDateAcquired: { width: "12%" },
   colItemNo: { width: "16%" },

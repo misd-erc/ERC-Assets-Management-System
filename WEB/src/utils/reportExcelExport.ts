@@ -129,7 +129,9 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
 
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(sheetName);
-  worksheet.columns = columns.map(() => ({ width: 20 }));
+  // Widen columns with longer headers a bit so short-header columns (e.g. "No.", "Amount")
+  // don't force everything onto the same narrow width as a long one.
+  worksheet.columns = columns.map((label) => ({ width: Math.max(12, Math.min(40, label.length + 6)) }));
 
   if (logoUrl) {
     const logo = await fetchImageAsBase64(logoUrl);
@@ -198,7 +200,12 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
   rows.forEach((r) => {
     const row = worksheet.addRow(r.map((v) => v ?? ''));
     for (let c = 1; c <= colCount; c++) {
-      row.getCell(c).border = THIN_BORDER;
+      const cell = row.getCell(c);
+      cell.border = THIN_BORDER;
+      // Without wrapText, long content (property numbers, descriptions with embedded
+      // serial numbers, etc.) overflows past the column's boundary instead of wrapping
+      // down, which visually collides with whatever the next column renders.
+      cell.alignment = { wrapText: true, vertical: 'top' };
     }
   });
 
@@ -208,6 +215,7 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
       const cell = row.getCell(c);
       cell.border = THIN_BORDER;
       cell.font = { bold: true };
+      cell.alignment = { wrapText: true, vertical: 'top' };
     }
   }
 

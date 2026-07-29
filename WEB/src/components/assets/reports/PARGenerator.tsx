@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  cell: { padding: 3, fontSize: 8 },
+  cell: { padding: 3, fontSize: 8, overflow: "hidden" },
 
   colQty: { width: "6%" },
   colUnit: { width: "8%" },

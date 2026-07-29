@@ -117,11 +117,14 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  cell: { padding: 2, fontSize: 8 },
+  // overflow: 'hidden' clips text that's still too long even after wrapping (e.g. a long
+  // property number/serial number with no spaces to wrap at) instead of letting it bleed
+  // past the column's border into the next cell, which renders as mixed/overlapping letters.
+  cell: { padding: 2, fontSize: 8, overflow: "hidden" },
 
   colNo: { width: "6%" },
-  colDescription: { width: "28%" },
-  colPropertyNo: { width: "16%" },
+  colDescription: { width: "32%" },
+  colPropertyNo: { width: "12%" },
   colDateAcquired: { width: "11%" },
   colAmount: { width: "11%" },
   colRemarks: { width: "28%" },

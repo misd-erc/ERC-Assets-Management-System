@@ -96,6 +96,7 @@ const styles = StyleSheet.create({
     borderColor: '#000',
     padding: 3,
     fontSize: 6,
+    overflow: 'hidden',
   },
   center: {
     textAlign: 'center',

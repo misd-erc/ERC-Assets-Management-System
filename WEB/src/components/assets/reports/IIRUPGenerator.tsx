@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#000',
   },
   th: { padding: 2, fontSize: 6, fontFamily: 'Helvetica-Bold', textAlign: 'center' },
-  td: { padding: 2, fontSize: 6.5, textAlign: 'center' },
+  td: { padding: 2, fontSize: 6.5, textAlign: 'center', overflow: 'hidden' },
   tdLeft: { padding: 2, fontSize: 6.5, textAlign: 'left' },
   tdRight: { padding: 2, fontSize: 6.5, textAlign: 'right', fontFamily: 'Helvetica-Bold' },
 

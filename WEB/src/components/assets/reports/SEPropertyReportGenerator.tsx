@@ -127,6 +127,7 @@ const styles = StyleSheet.create({
     borderColor: '#000',
     padding: 4,
     fontSize: 7,
+    overflow: 'hidden',
   },
 
   center: {

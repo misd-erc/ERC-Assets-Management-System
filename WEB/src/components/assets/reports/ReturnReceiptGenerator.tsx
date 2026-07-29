@@ -93,11 +93,13 @@ const styles = StyleSheet.create({
     borderRightWidth: 0.5,
     borderColor: "#ccc",
     minHeight: 18,
+    overflow: "hidden",
   },
   bodyCellLast: {
     padding: 4,
     fontSize: 9,
     minHeight: 18,
+    overflow: "hidden",
   },
   sigRow: {
     flexDirection: "row",

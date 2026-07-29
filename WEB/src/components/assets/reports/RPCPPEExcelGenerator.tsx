@@ -55,6 +55,7 @@ const styles = StyleSheet.create({
   td: {
     borderWidth: 1,
     padding: 2,
+    overflow: 'hidden',
   },
 
   center: {

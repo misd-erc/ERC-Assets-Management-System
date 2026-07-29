@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  cell: { padding: 4 },
+  cell: { padding: 4, overflow: "hidden" },
 
   metaRow: {
     flexDirection: "row",
