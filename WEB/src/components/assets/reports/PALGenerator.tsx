@@ -123,8 +123,8 @@ const styles = StyleSheet.create({
   cell: { padding: 2, fontSize: 8, overflow: "hidden" },
 
   colNo: { width: "6%" },
-  colDescription: { width: "28%" },
-  colPropertyNo: { width: "16%" },
+  colDescription: { width: "32%" },
+  colPropertyNo: { width: "12%" },
   colDateAcquired: { width: "11%" },
   colAmount: { width: "11%" },
   colRemarks: { width: "28%" },
