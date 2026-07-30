@@ -6,13 +6,6 @@ import { cn } from "@/components/ui/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -36,7 +29,7 @@ interface EmployeeSelectorProps {
   displayValue?: string;
 }
 
-export function EmployeeSelector({
+export const EmployeeSelector = React.memo(function EmployeeSelector({
   employees,
   value,
   onSelect,
@@ -53,7 +46,10 @@ export function EmployeeSelector({
     return String(value).toLowerCase();
   }, []);
 
-  const selected = employees.find(emp => emp.id === value);
+  const selected = React.useMemo(
+    () => employees.find(emp => emp.id === value),
+    [employees, value]
+  );
 
   React.useEffect(() => {
     if (value === null && displayValue !== undefined) {
@@ -62,7 +58,7 @@ export function EmployeeSelector({
   }, [displayValue, value]);
 
   const filteredEmployees = React.useMemo(() => {
-    if (!search) return employees;
+    if (!search) return employees.slice(0, 50);
     
     const searchLower = toSearchable(search);
     return employees.filter(emp =>
@@ -71,8 +67,14 @@ export function EmployeeSelector({
       toSearchable(emp.employeeIdOriginal).includes(searchLower) ||
       toSearchable(emp.officeName).includes(searchLower) ||
       toSearchable(emp.divisionName).includes(searchLower)
-    );
+    ).slice(0, 50);
   }, [search, employees, toSearchable]);
+
+  const handleSelect = React.useCallback((employeeId: number) => {
+    onSelect(employeeId);
+    setOpen(false);
+    setSearch("");
+  }, [onSelect]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -114,51 +116,52 @@ export function EmployeeSelector({
         align="start"
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <Command shouldFilter={false}>
-          <CommandEmpty>No employees found.</CommandEmpty>
-          <CommandList
-            className="max-h-[300px]"
-            onWheel={(e) => {
-              // Radix Dialog's scroll lock (react-remove-scroll) blocks native wheel
-              // scrolling on this list because it's portaled outside the dialog's own
-              // DOM subtree. Scroll it manually instead.
-              e.currentTarget.scrollTop += e.deltaY;
-            }}
-          >
-            <CommandGroup>
+        <div
+          className="max-h-[300px] overflow-y-auto"
+          onWheel={(e) => {
+            e.currentTarget.scrollTop += e.deltaY;
+          }}
+        >
+          {filteredEmployees.length === 0 ? (
+            <div className="py-6 text-center text-sm text-slate-500">No employees found.</div>
+          ) : (
+            <>
               {filteredEmployees.map((employee) => (
-                <CommandItem
+                <div
                   key={employee.id}
-                  value={String(employee.id)}
-                  onSelect={() => {
-                    onSelect(employee.id);
-                    setOpen(false);
-                    setSearch("");
-                  }}
-                  className="p-3 border rounded hover:bg-gray-50 cursor-pointer m-2"
+                  onClick={() => handleSelect(employee.id)}
+                  className={cn(
+                    "flex items-center p-3 border-b border-slate-50 cursor-pointer transition-colors",
+                    value === employee.id ? "bg-blue-50" : "hover:bg-gray-50"
+                  )}
                 >
                   <Check
                     className={cn(
-                      "mr-2 h-4 w-4",
-                      value === employee.id ? "opacity-100" : "opacity-0"
+                      "mr-2 h-4 w-4 shrink-0",
+                      value === employee.id ? "opacity-100 text-blue-600" : "opacity-0"
                     )}
                   />
-                  <div className="flex flex-col flex-1">
-                    <span className="font-medium">
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="font-medium text-sm">
                       {employee.firstName} {employee.lastName}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-500 truncate">
                       {employee.employeeIdOriginal || employee.id}
                       {employee.officeName && ` • ${employee.officeName}`}
                       {employee.divisionName && ` • ${employee.divisionName}`}
                     </span>
                   </div>
-                </CommandItem>
+                </div>
               ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+              {filteredEmployees.length === 50 && (
+                <div className="text-center text-xs text-slate-400 py-2 border-t border-slate-100">
+                  Showing first 50 results. Refine your search to narrow down.
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   );
-}
+});

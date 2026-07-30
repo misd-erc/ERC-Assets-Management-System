@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { User, VwOffice, VwDivision, ApiEmployee } from '@/types';
+import { User, VwOffice, VwDivision } from '@/types';
+import { ApiEmployee } from '@/types/transfer';
 import { EmployeeSelector } from '@/components/transfers-returns/EmployeeSelector';
 import { EditSupplyRIS } from '@/types/supply/ris';
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -131,13 +132,17 @@ export const RISHeader = ({
   isViewMode,
   onChange,
 }: Props) => {
-  const getEmployeeIdFromSystemUserId = (systemUserId: number | undefined | null) => {
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Record<string, number | null>>({});
+
+  const getEmployeeIdFromSystemUserId = (systemUserId: number | undefined | null, field: string) => {
+    if (selectedEmployeeIds[field] !== undefined) return selectedEmployeeIds[field];
     if (!systemUserId) return null;
     const emp = employees.find(e => e.systemUser?.id === systemUserId);
     return emp ? emp.id : null;
   };
 
   const handleEmployeeSelect = (field: keyof EditSupplyRIS, employeeId: number | null) => {
+    setSelectedEmployeeIds(prev => ({ ...prev, [field]: employeeId }));
     if (!employeeId) {
       handleChange(field, null);
       return;
@@ -280,7 +285,7 @@ export const RISHeader = ({
           <Label className="text-slate-700 font-medium">Requested By</Label>
           <EmployeeSelector
             employees={employees}
-            value={getEmployeeIdFromSystemUserId(header.risRequestedBySystemUserId)}
+            value={getEmployeeIdFromSystemUserId(header.risRequestedBySystemUserId, 'risRequestedBySystemUserId')}
             onSelect={(empId) => handleEmployeeSelect('risRequestedBySystemUserId', empId)}
             placeholder="Select requesting employee"
             disabled={isViewMode}
@@ -298,7 +303,7 @@ export const RISHeader = ({
           <Label className="text-slate-700 font-medium">Approved By</Label>
           <EmployeeSelector
             employees={employees}
-            value={getEmployeeIdFromSystemUserId(header.risApprovedBySystemUserId)}
+            value={getEmployeeIdFromSystemUserId(header.risApprovedBySystemUserId, 'risApprovedBySystemUserId')}
             onSelect={(empId) => handleEmployeeSelect('risApprovedBySystemUserId', empId)}
             placeholder="Select approving employee"
             disabled={isViewMode}
@@ -316,7 +321,7 @@ export const RISHeader = ({
           <Label className="text-slate-700 font-medium">Issued By</Label>
           <EmployeeSelector
             employees={employees}
-            value={getEmployeeIdFromSystemUserId(header.risIssuedBySystemUserId)}
+            value={getEmployeeIdFromSystemUserId(header.risIssuedBySystemUserId, 'risIssuedBySystemUserId')}
             onSelect={(empId) => handleEmployeeSelect('risIssuedBySystemUserId', empId)}
             placeholder="Select issuing employee"
             disabled={isViewMode}
@@ -334,7 +339,7 @@ export const RISHeader = ({
           <Label className="text-slate-700 font-medium">Received By</Label>
           <EmployeeSelector
             employees={employees}
-            value={getEmployeeIdFromSystemUserId(header.risReceivedBySystemUserId)}
+            value={getEmployeeIdFromSystemUserId(header.risReceivedBySystemUserId, 'risReceivedBySystemUserId')}
             onSelect={(empId) => handleEmployeeSelect('risReceivedBySystemUserId', empId)}
             placeholder="Select receiving employee"
             disabled={isViewMode}
