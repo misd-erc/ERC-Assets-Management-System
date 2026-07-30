@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { VwSupplyGroupedItem } from '@/types';
 import { FormItem } from './RISItemsSection';
 import {
@@ -47,6 +48,7 @@ export const RISItemRow = ({
 }: Props) => {
   const availableUnits = item.availableUnits || [];
   const isLoadingUnits = item.isLoadingUnits || false;
+  const [stockOpen, setStockOpen] = useState(false);
 
   return (
     <div className="border rounded-md p-4 space-y-3 relative bg-white">
@@ -64,7 +66,7 @@ export const RISItemRow = ({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2 min-w-0 flex flex-col">
         <Label className="text-slate-700 font-medium">Stock Number</Label>
-        <Popover>
+        <Popover open={stockOpen} onOpenChange={setStockOpen}>
           <PopoverTrigger asChild disabled={isViewMode}>
             <Button
               variant="outline"
@@ -102,11 +104,16 @@ export const RISItemRow = ({
                 No item found.
               </CommandEmpty>
 
-              <CommandList className="max-h-60 overflow-y-auto p-1">
+              <CommandList
+                className="max-h-60 overflow-y-auto p-1"
+                onWheel={(e) => {
+                  e.currentTarget.scrollTop += e.deltaY;
+                }}
+              >
                 <CommandGroup>
                   {/* Clear Selection Option */}
                   <CommandItem
-                    onSelect={() => onUpdate(index, 'stockNumber', "")}
+                    onSelect={() => { onUpdate(index, 'stockNumber', ""); setStockOpen(false); }}
                     className="flex items-center justify-between rounded-lg px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-400 italic hover:bg-slate-50"
                   >
                     <span className="truncate flex-1">Clear Selection</span>
@@ -115,9 +122,9 @@ export const RISItemRow = ({
                   {/* Map over vwSupplyGroups */}
                   {vwSupplyGroups.map((g) => (
                     <CommandItem
-                      key={g.code}
-                      value={`${g.code} ${g.description}`} // Enables searching by either code or description
-                      onSelect={() => onUpdate(index, 'stockNumber', g.code)}
+                      key={g.id}
+                      value={`${g.code} ${g.description}`}
+                      onSelect={() => { onUpdate(index, 'stockNumber', g.code); setStockOpen(false); }}
                       className={cn(
                         "flex items-center justify-between rounded-lg px-3 py-2 my-0.5 text-sm cursor-pointer transition-all duration-150 data-[selected=true]:bg-blue-50 data-[selected=true]:text-blue-700 text-slate-700 hover:bg-slate-50",
                         item.stockNumber === g.code && "bg-blue-50/60 font-medium text-blue-700"

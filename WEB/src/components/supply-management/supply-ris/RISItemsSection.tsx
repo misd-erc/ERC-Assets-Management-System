@@ -1,5 +1,5 @@
 // src/components/supply-management/supply-ris/RISItemsSection.tsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Loader2 } from 'lucide-react';
 import { useRISStore } from '@/store/supply/risStore';
@@ -41,6 +41,7 @@ export const RISItemsSection = ({
 
   const [items, setItems] = useState<FormItem[]>([]);
   const [loadingItems, setLoadingItems] = useState(false);
+  const unitCache = useRef<Record<number, { id: number; name: string }[]>>({});
 
   // Load items when editing/viewing an existing RIS
   useEffect(() => {
@@ -67,26 +68,40 @@ export const RISItemsSection = ({
             );
 
             if (selectedGroup) {
-              await fetchSupplyGroupedItemLists(selectedGroup.id);
-              const groupItems = useSupplyItemStore.getState().vwSupplyGroupItems;
-              
-              const unitIds = new Set<number>();
-              
-              // FIX: Force the current unit ID into the set so the dropdown always has it as an option
-              if (currentUnitId) {
-                unitIds.add(currentUnitId);
-              }
+              let availableUnits: { id: number; name: string }[];
 
-              groupItems.forEach((gi: any) => {
-                if (gi.measurementUnit?.id) unitIds.add(gi.measurementUnit.id);
-                // Also check if group items use supplyUnit internally
-                if (gi.supplyUnit?.id) unitIds.add(gi.supplyUnit.id);
-              });
-              
-              const availableUnits = Array.from(unitIds).map((id) => ({
-                id,
-                name: units.find((u) => u.id === id)?.name || `Unit ${id}`,
-              }));
+              if (unitCache.current[selectedGroup.id]) {
+                availableUnits = unitCache.current[selectedGroup.id];
+                // Ensure current unit is included
+                if (currentUnitId && !availableUnits.some(u => u.id === currentUnitId)) {
+                  const unitName = units.find((u) => u.id === currentUnitId)?.name || `Unit ${currentUnitId}`;
+                  availableUnits = [...availableUnits, { id: currentUnitId, name: unitName }];
+                  unitCache.current[selectedGroup.id] = availableUnits;
+                }
+              } else {
+                await fetchSupplyGroupedItemLists(selectedGroup.id);
+                const groupItems = useSupplyItemStore.getState().vwSupplyGroupItems;
+                
+                const unitIds = new Set<number>();
+                
+                // FIX: Force the current unit ID into the set so the dropdown always has it as an option
+                if (currentUnitId) {
+                  unitIds.add(currentUnitId);
+                }
+
+                groupItems.forEach((gi: any) => {
+                  if (gi.measurementUnit?.id) unitIds.add(gi.measurementUnit.id);
+                  // Also check if group items use supplyUnit internally
+                  if (gi.supplyUnit?.id) unitIds.add(gi.supplyUnit.id);
+                });
+                
+                availableUnits = Array.from(unitIds).map((id) => ({
+                  id,
+                  name: units.find((u) => u.id === id)?.name || `Unit ${id}`,
+                }));
+
+                unitCache.current[selectedGroup.id] = availableUnits;
+              }
 
               formItems.push({
                 id: item.id,
@@ -195,35 +210,48 @@ export const RISItemsSection = ({
           newItems[index].isAvailable = selectedGroup.totalCurrentStock > 0;
           newItems[index].issueQuantity = 0;
           newItems[index].unitId = 0;
-          newItems[index].isLoadingUnits = true;
 
-          fetchSupplyGroupedItemLists(selectedGroup.id).then(() => {
-            const groupItems = useSupplyItemStore.getState().vwSupplyGroupItems;
-            const unitIds = new Set<number>();
-            groupItems.forEach((gi: any) => {
-              if (gi.measurementUnit?.id) unitIds.add(gi.measurementUnit.id);
-              if (gi.supplyUnit?.id) unitIds.add(gi.supplyUnit.id);
+          // Use cached units if available, otherwise fetch
+          if (unitCache.current[selectedGroup.id]) {
+            const availableUnits = unitCache.current[selectedGroup.id];
+            newItems[index].availableUnits = availableUnits;
+            newItems[index].isLoadingUnits = false;
+            if (availableUnits.length > 0) {
+              newItems[index].unitId = availableUnits[0].id;
+            }
+          } else {
+            newItems[index].isLoadingUnits = true;
+
+            fetchSupplyGroupedItemLists(selectedGroup.id).then(() => {
+              const groupItems = useSupplyItemStore.getState().vwSupplyGroupItems;
+              const unitIds = new Set<number>();
+              groupItems.forEach((gi: any) => {
+                if (gi.measurementUnit?.id) unitIds.add(gi.measurementUnit.id);
+                if (gi.supplyUnit?.id) unitIds.add(gi.supplyUnit.id);
+              });
+              const availableUnits = Array.from(unitIds).map((id) => ({
+                id,
+                name: units.find((u) => u.id === id)?.name || `Unit ${id}`,
+              }));
+
+              unitCache.current[selectedGroup.id] = availableUnits;
+
+              setItems((current) => {
+                const updated = [...current];
+                updated[index] = {
+                  ...updated[index],
+                  availableUnits,
+                  isLoadingUnits: false,
+                };
+
+                // Auto-select the first available unit if one exists to prevent blank dropdowns
+                if (availableUnits.length > 0 && (!updated[index].unitId || updated[index].unitId === 0)) {
+                  updated[index].unitId = availableUnits[0].id;
+                }
+                return updated;
+              });
             });
-            const availableUnits = Array.from(unitIds).map((id) => ({
-              id,
-              name: units.find((u) => u.id === id)?.name || `Unit ${id}`,
-            }));
-            
-            setItems((current) => {
-              const updated = [...current];
-              updated[index] = {
-                ...updated[index],
-                availableUnits,
-                isLoadingUnits: false,
-              };
-              
-              // Auto-select the first available unit if one exists to prevent blank dropdowns
-              if (availableUnits.length > 0 && (!updated[index].unitId || updated[index].unitId === 0)) {
-                updated[index].unitId = availableUnits[0].id;
-              }
-              return updated;
-            });
-          });
+          }
         } else {
           newItems[index].itemDescription = '';
           newItems[index].requisitionQuantity = 0;
