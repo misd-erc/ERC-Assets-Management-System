@@ -580,7 +580,8 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
     const handleGenerateReport = async () => {
         if (!startDate || !endDate || !categoryId) return;
         setCurrentPage(1);
-        await fetchReport(parseInt(categoryId), startDate, endDate, 1);
+        const catId = categoryId === 'all' ? 0 : parseInt(categoryId);
+        await fetchReport(catId, startDate, endDate, 1);
         setSelectedItems(new Set());
     };
 
@@ -694,6 +695,7 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                                         <SelectValue placeholder="Select Category" className="truncate text-left min-w-0" />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-60 overflow-y-auto">
+                                        <SelectItem value="all">All Categories</SelectItem>
                                         {categories.map((cat) => (
                                             <SelectItem key={cat.id} value={cat.id.toString()}>
                                                 {cat.name}

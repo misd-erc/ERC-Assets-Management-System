@@ -627,7 +627,8 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
         if (!startDate || !endDate || !categoryId) return;
         setCurrentPage(1);
         setHasGenerated(true);
-        await fetchReport(categoryId, startDate, endDate, 1, pageSize);
+        const catId = categoryId === 'all' ? 0 : categoryId;
+        await fetchReport(catId, startDate, endDate, 1, pageSize);
         setExpandedRows({});
         setSelectedItems(new Set());
     };
@@ -637,7 +638,8 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
         setCurrentPage(page);
         setExpandedRows({});
         setSelectedItems(new Set());
-        await fetchReport(categoryId || 0, startDate || DEFAULT_RSMI_START_DATE, endDate || DEFAULT_RSMI_END_DATE, page, pageSize);
+        const catId = categoryId === 'all' ? 0 : (categoryId || 0);
+        await fetchReport(catId, startDate || DEFAULT_RSMI_START_DATE, endDate || DEFAULT_RSMI_END_DATE, page, pageSize);
     };
 
     const [signatoryModalOpen, setSignatoryModalOpen] = useState(false);
@@ -752,6 +754,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                                     <SelectValue placeholder="Select Category" />
                                 </SelectTrigger>
                                 <SelectContent className="max-h-60 overflow-y-auto">
+                                    <SelectItem value="all">All Categories</SelectItem>
                                     {categories.map((cat) => (
                                         <SelectItem key={cat.id} value={cat.id.toString()}>
                                             {cat.name}
