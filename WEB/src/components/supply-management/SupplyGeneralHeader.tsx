@@ -168,7 +168,7 @@ export const SupplyGeneralHeader = () => {
   }, [vwSuppliesSummary, totalSupplies, iarsSummary, risSummary]); // Re-calculate when any of these 3 lists change
 
   return (
-      <div className="space-y-6 mb-4">
+      <div className="space-y-6 mb-4 pt-10">
         {/* Header Title Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>

@@ -25,7 +25,7 @@ import { Loader2, Filter, FileText, Download, AlertCircle, Printer, Users, Bookm
 import { toast } from 'sonner';
 
 import { getCategories } from '@/api/asset/inventoryApi';
-import { getSupplyItems } from '@/api/supply-management/itemApi';
+import { getSupplyItems, getVwSupplyGroupedItems } from '@/api/supply-management/itemApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { EmployeeSelector } from '@/components/transfers-returns/EmployeeSelector';
 import { ApiEmployee } from '@/types/transfer';
@@ -535,7 +535,15 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await getSupplyItems(page, pageSize, '', catId, undefined, undefined, undefined, start, end);
+            const [response, groupedResponse] = await Promise.all([
+                getSupplyItems(page, pageSize, '', catId, undefined, undefined, undefined, start, end),
+                getVwSupplyGroupedItems(1, 10000, '', undefined, catId || undefined, undefined, undefined)
+            ]);
+
+            const balanceMap = new Map<string, number>();
+            for (const g of groupedResponse.items) {
+                balanceMap.set(`${g.code}_${g.description}`, g.totalCurrentStock ?? 0);
+            }
 
             const groupedMap = new Map<string, any>();
             for (const item of response.items) {
@@ -548,6 +556,15 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                 }
                 groupedMap.get(key).quantity += (item.quantity || 0);
             }
+
+            for (const [, group] of groupedMap) {
+                const key = `${group.code}_${group.description}`;
+                const correctBalance = balanceMap.get(key);
+                if (correctBalance !== undefined) {
+                    group.quantity = correctBalance;
+                }
+            }
+
             const grouped = Array.from(groupedMap.values());
 
             setData(grouped);
