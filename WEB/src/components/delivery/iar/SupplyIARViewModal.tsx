@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +44,8 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecords
       : null;
 
   useEffect(() => {
+    let url: string | null = null;
+
     if (open && record?.signedFileStorageId) {
       const fetchFilePreview = async () => {
         setIsLoadingFile(true);
@@ -57,7 +59,7 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecords
           setFileType(contentType);
 
           const blob = new Blob([res.data], { type: contentType });
-          const url = URL.createObjectURL(blob);
+          url = URL.createObjectURL(blob);
           setFileBlobUrl(url);
         } catch (error) {
           console.error('Failed to load signed IAR file preview', error);
@@ -70,8 +72,8 @@ export const SupplyIARViewModal = ({ open, onOpenChange, record, deliveryRecords
     }
 
     return () => {
-      if (fileBlobUrl) {
-        URL.revokeObjectURL(fileBlobUrl);
+      if (url) {
+        URL.revokeObjectURL(url);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
