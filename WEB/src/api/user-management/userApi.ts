@@ -257,15 +257,45 @@ export const getUsersDetails = async (userId: string): Promise<UserDetails> => {
   return response.data.data;
 };
 
+let employeeCache: { data: ApiResponse<{ items: ApiEmployee[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>, timestamp: number } | null = null;
+let employeeFetchPromise: Promise<ApiResponse<{ items: ApiEmployee[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>> | null = null;
+const EMPLOYEE_CACHE_TTL = 5 * 60 * 1000;
+
 export const getEmployees = async (page: number = 1, pageSize: number = 10000): Promise<ApiResponse<{ items: ApiEmployee[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>> => {
+  if (page === 1 && pageSize === 10000 && employeeCache && Date.now() - employeeCache.timestamp < EMPLOYEE_CACHE_TTL) {
+    return employeeCache.data;
+  }
+
+  if (page === 1 && pageSize === 10000 && employeeFetchPromise) {
+    return employeeFetchPromise;
+  }
+
   const { systemUserId, sessionKey } = getAuthParams();
 
-  const response = await axiosInstance.get<ApiResponse<{ items: ApiEmployee[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>>(
-    '/Employee/all',
-    { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey, PageNumber: page, PageSize: pageSize } }
-  );
+  const fetchPromise = (async () => {
+    const response = await axiosInstance.get<ApiResponse<{ items: ApiEmployee[]; pageNumber: number; pageSize: number; totalCount: number; totalPages: number }>>(
+      '/Employee/all',
+      { params: { ActionBySystemUserId: systemUserId, SessionKey: sessionKey, PageNumber: page, PageSize: pageSize }, timeout: 60000 }
+    );
 
-  return response.data;
+    const result = response.data;
+    if (page === 1 && pageSize === 10000 && result.success) {
+      employeeCache = { data: result, timestamp: Date.now() };
+    }
+    return result;
+  })();
+
+  if (page === 1 && pageSize === 10000) {
+    employeeFetchPromise = fetchPromise;
+    fetchPromise.catch(() => {}).finally(() => { employeeFetchPromise = null; });
+  }
+
+  return fetchPromise;
+};
+
+export const clearEmployeeCache = () => {
+  employeeCache = null;
+  employeeFetchPromise = null;
 };
 
 export const getEmployeeById = async (employeeId: number): Promise<ApiResponse<ApiEmployee[]>> => {
