@@ -78,9 +78,10 @@ export const RISItemRow = ({
             >
               <span className="truncate">
                 {item.stockNumber
-                  ? vwSupplyGroups
-                      .filter((g) => g.code === item.stockNumber)
-                      .map((g) => `${g.code} - ${g.description}`)[0] || "Select Item"
+                  ? (() => {
+                      const g = vwSupplyGroups.find((g) => g.code === item.stockNumber);
+                      return g ? `${g.code} - ${g.description}` : "Select Item";
+                    })()
                   : "Select Item"}
               </span>
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 text-slate-400 transition-colors" />

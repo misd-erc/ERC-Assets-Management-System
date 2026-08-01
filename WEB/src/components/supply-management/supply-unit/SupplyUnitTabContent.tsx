@@ -30,7 +30,7 @@ export const SupplyUnitTabContent = () => {
     if (!vwSupplies) return counts;
 
     vwSupplies.forEach(item => {
-        const unitId = item.measurementUnit?.id || item.measurementUnit?.id;
+        const unitId = item.measurementUnit?.id || item.measurementUnitId;
         if (unitId) {
             counts[unitId] = (counts[unitId] || 0) + 1;
         }

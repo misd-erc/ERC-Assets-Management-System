@@ -86,17 +86,14 @@ export const IssuanceRISForm = ({
 
   useEffect(() => {
     const { systemUserId, sessionKey } = getAuthParams();
-    console.log('[DEBUG] IssuanceRISForm - useEffect triggered. editItemId:', editItemId, 'parentRISId:', parentRISId);
 
     if (editItemId && editItemId > 0) {
       setLoading(true);
 
       // If parentRISId is provided directly, perform direct endpoint fetches
       if (parentRISId && parentRISId > 0) {
-        console.log('[DEBUG] IssuanceRISForm - Fetching parent RIS directly, ID:', parentRISId);
         getSupplyRISById(parentRISId)
           .then((ris) => {
-            console.log('[DEBUG] IssuanceRISForm - Fetched parent RIS directly:', ris);
             if (ris) {
               const newRisForm = {
                 id: ris.id,
@@ -117,13 +114,10 @@ export const IssuanceRISForm = ({
                 risReceivedDate: safeFormatDate(ris.risReceivedDate) || new Date().toISOString().slice(0, 10),
                 createdAt: safeFormatDate(ris.createdAt) || new Date().toISOString().slice(0, 10),
               };
-              console.log('[DEBUG] IssuanceRISForm - Setting risForm to:', newRisForm);
               setRisForm(newRisForm);
 
-              console.log('[DEBUG] IssuanceRISForm - Fetching RIS items for parent RIS ID:', parentRISId);
               getSupplyRISItems(parentRISId)
                 .then((items) => {
-                  console.log('[DEBUG] IssuanceRISForm - Fetched RIS items:', items);
                   // eslint-disable-next-line eqeqeq
                   const item = items.find((i: any) => i.id == editItemId);
                   if (item) {
@@ -134,26 +128,21 @@ export const IssuanceRISForm = ({
                       issueQuantity: item.issueQuantity ?? 0,
                       itemRemarks: item.itemRemarks ?? '',
                     };
-                    console.log('[DEBUG] IssuanceRISForm - Setting risItemForm to:', newRisItemForm);
                     setRisItemForm(newRisItemForm);
-                  } else {
-                    console.warn('[DEBUG] IssuanceRISForm - Could not find RIS item with editItemId:', editItemId, 'in items list:', items);
                   }
                 })
-                .catch((err) => console.error("[DEBUG] IssuanceRISForm - Failed to load RIS items", err))
+                .catch((err) => console.error("Failed to load RIS items", err))
                 .finally(() => setLoading(false));
             } else {
-              console.warn('[DEBUG] IssuanceRISForm - Fetched parent RIS is null/undefined');
               setLoading(false);
             }
           })
           .catch((err) => {
-            console.error("[DEBUG] IssuanceRISForm - Failed to load parent RIS directly", err);
+            console.error("Failed to load parent RIS directly", err);
             setLoading(false);
           });
       } else {
         // Fallback: Search in all RIS items to resolve RIS ID
-        console.log('[DEBUG] IssuanceRISForm - Fallback: searching in all RIS items for editItemId:', editItemId);
         axiosInstance.get('/Supply/ris-item/all', {
           params: {
             ActionBySystemUserId: systemUserId,
@@ -163,14 +152,11 @@ export const IssuanceRISForm = ({
         })
         .then((res) => {
           const items = res.data?.data?.items || [];
-          console.log('[DEBUG] IssuanceRISForm - Fallback fetched all RIS items:', items);
           // eslint-disable-next-line eqeqeq
           const item = items.find((i: any) => i.id == editItemId);
           if (item) {
-            console.log('[DEBUG] IssuanceRISForm - Fallback found item:', item, 'Fetching RIS ID:', item.risId);
             getSupplyRISById(item.risId)
               .then((ris) => {
-                console.log('[DEBUG] IssuanceRISForm - Fallback fetched RIS:', ris);
                 if (ris) {
                   const newRisForm = {
                     id: ris.id,
@@ -191,7 +177,6 @@ export const IssuanceRISForm = ({
                     risReceivedDate: safeFormatDate(ris.risReceivedDate) || new Date().toISOString().slice(0, 10),
                     createdAt: safeFormatDate(ris.createdAt) || new Date().toISOString().slice(0, 10),
                   };
-                  console.log('[DEBUG] IssuanceRISForm - Fallback setting risForm to:', newRisForm);
                   setRisForm(newRisForm);
 
                   const newRisItemForm = {
@@ -201,26 +186,21 @@ export const IssuanceRISForm = ({
                     issueQuantity: item.issueQuantity ?? 0,
                     itemRemarks: item.itemRemarks ?? '',
                   };
-                  console.log('[DEBUG] IssuanceRISForm - Fallback setting risItemForm to:', newRisItemForm);
                   setRisItemForm(newRisItemForm);
-                } else {
-                  console.warn('[DEBUG] IssuanceRISForm - Fallback fetched RIS is null/undefined');
                 }
               })
-              .catch((err) => console.error("[DEBUG] IssuanceRISForm - Failed to load parent RIS via fallback", err))
+              .catch((err) => console.error("Failed to load parent RIS via fallback", err))
               .finally(() => setLoading(false));
           } else {
-            console.warn('[DEBUG] IssuanceRISForm - Fallback could not find item with editItemId:', editItemId);
             setLoading(false);
           }
         })
         .catch((err) => {
-          console.error("[DEBUG] IssuanceRISForm - Failed to load RIS items in fallback", err);
+          console.error("Failed to load RIS items in fallback", err);
           setLoading(false);
         });
       }
     } else if (!editItemId) {
-      console.log('[DEBUG] IssuanceRISForm - Resetting form to defaults (no editItemId)');
       setRisForm({
         id: 0,
         entityName: 'Energy Regulatory Commission',

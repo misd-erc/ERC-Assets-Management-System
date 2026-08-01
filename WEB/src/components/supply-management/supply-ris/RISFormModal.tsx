@@ -89,7 +89,7 @@ export const RISFormModal = ({ open, onOpenChange, mode, ris }: Props) => {
   }, [open, fetchSupplyGroupedItems, fetchSupplyUnits, fetchOffices, fetchDivisions]);
 
   // Only render the form once ALL fetches have finished — including offices & divisions
-  const isReady = masterLoaded && !masterLoading;
+  const isReady = masterLoaded;
 
   const handleSave = async (headerData: any, itemsData: any[]) => {
     setSaving(true);

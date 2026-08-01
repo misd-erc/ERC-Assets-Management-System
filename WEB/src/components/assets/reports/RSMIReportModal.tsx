@@ -750,8 +750,8 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                         <div className="space-y-1.5">
                             <Label className="text-slate-700 font-medium">Category</Label>
                             <Select value={categoryId} onValueChange={setCategoryId}>
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select Category" />
+                                <SelectTrigger className="w-full overflow-hidden">
+                                    <SelectValue placeholder="Select Category" className="truncate text-left min-w-0" />
                                 </SelectTrigger>
                                 <SelectContent className="max-h-60 overflow-y-auto">
                                     <SelectItem value="all">All Categories</SelectItem>
