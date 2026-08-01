@@ -43,15 +43,19 @@ const mapVwSupplyItem = (raw: any): VwSupplyItem => ({
 });
 
 const mapVwSupplyGroupedItem = (raw: any): VwSupplyGroupedItem => ({
-  id: raw.id,
-  iarId: raw.iarId,
-  code: raw.code,
-  description: raw.description,
-  totalCurrentStock: raw.totalCurrentStock,
-  totalStockCost: raw.totalStockCost,
-  reorderPoint: raw.reorderPoint,
-  isActive: raw.isActive ?? true,
-  createdAt: raw.createdAt,
+  id: raw.id ?? raw.Id,
+  iarId: raw.iarId ?? raw.IarId ?? raw.IARId,
+  code: raw.code ?? raw.Code,
+  description: raw.description ?? raw.Description,
+  totalCurrentStock: raw.totalCurrentStock ?? raw.TotalCurrentStock ?? 0,
+  totalStockCost: raw.totalStockCost ?? raw.TotalStockCost ?? 0,
+  unitCost: raw.unitCost ?? raw.UnitCost ?? 0,
+  measurementUnit: raw.measurementUnit ?? raw.MeasurementUnit,
+  measurementUnitId: raw.measurementUnitId ?? raw.MeasurementUnitId,
+  categoryId: raw.categoryId ?? raw.CategoryId,
+  reorderPoint: raw.reorderPoint ?? raw.ReorderPoint ?? 0,
+  isActive: raw.isActive ?? raw.IsActive ?? true,
+  createdAt: raw.createdAt ?? raw.CreatedAt,
 });
 
 const mapVwSupplyUniqueRawItem = (raw: any): VwSupplyUniqueRawItem => {
@@ -133,7 +137,9 @@ export const getVwSupplyGroupedItems = async (
   status?: string,
   categoryId?: number,
   storageLocationId?: number,
-  vendorId?: number
+  vendorId?: number,
+  startDate?: string,
+  endDate?: string
 ): Promise<PaginatedResult<VwSupplyGroupedItem>> => {
   const { systemUserId, sessionKey } = getAuthParams();
 
@@ -147,7 +153,9 @@ export const getVwSupplyGroupedItems = async (
       Status: status,
       CategoryId: categoryId,
       StorageLocationId: storageLocationId,
-      VendorId: vendorId
+      VendorId: vendorId,
+      StartDate: startDate,
+      EndDate: endDate
     },
   });
 

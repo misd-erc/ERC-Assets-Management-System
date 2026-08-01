@@ -502,7 +502,6 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
     const [assumptionMonth, setAssumptionMonth] = useState('September');
     const [assumptionYear, setAssumptionYear] = useState('2016');
     const [categoryId, setCategoryId] = useState<string>('');
-    const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 100;
 
     const [categories, setCategories] = useState<any[]>([]);
@@ -510,7 +509,6 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
     const [data, setData] = useState<any[]>([]);
-    const [totalCount, setTotalCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -519,7 +517,6 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
             getCategories('Supply').then(categoriesData => {
                 setCategories(categoriesData.filter((category: any) => category.module === 'Supply'));
             });
-            setCurrentPage(1);
         }
     }, [isOpen]);
 
@@ -527,9 +524,18 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
         if (!isOpen) {
             setSelectedItems(new Set());
             setData([]);
-            setTotalCount(0);
         }
     }, [isOpen]);
+
+    const handleStartDateChange = (val: string) => {
+        setStartDate(val);
+        if (!endDate || endDate === startDate) {
+            setEndDate(val);
+        }
+        if (!reportDate || reportDate === startDate || reportDate === new Date().toISOString().split('T')[0]) {
+            setReportDate(val);
+        }
+    };
 
     const fetchReport = async (catId: number, start: string, end: string, page: number) => {
         setLoading(true);
@@ -537,38 +543,37 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
         try {
             const [response, groupedResponse] = await Promise.all([
                 getSupplyItems(page, pageSize, '', catId, undefined, undefined, undefined, start, end),
-                getVwSupplyGroupedItems(1, 10000, '', undefined, catId || undefined, undefined, undefined)
+                getVwSupplyGroupedItems(1, 10000, '', undefined, catId || undefined, undefined, undefined, start, end)
             ]);
 
-            const balanceMap = new Map<string, number>();
+            const groupedMap = new Map<string, any>();
+
             for (const g of groupedResponse.items) {
-                balanceMap.set(`${g.code}_${g.description}`, g.totalCurrentStock ?? 0);
+                const key = `${g.code}_${g.description}`;
+                groupedMap.set(key, {
+                    ...g,
+                    quantity: g.totalCurrentStock ?? 0,
+                    measurementUnit: g.measurementUnit,
+                    unitCost: g.unitCost
+                });
             }
 
-            const groupedMap = new Map<string, any>();
             for (const item of response.items) {
                 const key = `${item.code}_${item.description}`;
-                if (!groupedMap.has(key)) {
-                    groupedMap.set(key, {
-                        ...item,
-                        quantity: 0
-                    });
-                }
-                groupedMap.get(key).quantity += (item.quantity || 0);
-            }
-
-            for (const [, group] of groupedMap) {
-                const key = `${group.code}_${group.description}`;
-                const correctBalance = balanceMap.get(key);
-                if (correctBalance !== undefined) {
-                    group.quantity = correctBalance;
+                if (groupedMap.has(key)) {
+                    const existing = groupedMap.get(key);
+                    if (!existing.measurementUnit && item.measurementUnit) {
+                        existing.measurementUnit = item.measurementUnit;
+                    }
+                    if ((!existing.unitCost || existing.unitCost === 0) && item.unitCost) {
+                        existing.unitCost = item.unitCost;
+                    }
                 }
             }
 
             const grouped = Array.from(groupedMap.values());
 
             setData(grouped);
-            setTotalCount(grouped.length);
         } catch (err: any) {
             setError(err.message || 'Failed to fetch items');
         } finally {
@@ -596,7 +601,6 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
 
     const handleGenerateReport = async () => {
         if (!startDate || !endDate || !categoryId) return;
-        setCurrentPage(1);
         const catId = categoryId === 'all' ? 0 : parseInt(categoryId);
         await fetchReport(catId, startDate, endDate, 1);
         setSelectedItems(new Set());
@@ -728,7 +732,7 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                                     type="date"
                                     className="bg-white border-slate-300 focus-visible:ring-indigo-500 shadow-sm"
                                     value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
+                                    onChange={(e) => handleStartDateChange(e.target.value)}
                                 />
                             </div>
 
@@ -797,7 +801,7 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                             </div>
                         )}
 
-                        <div className="border border-slate-200 rounded-lg overflow-hidden flex-1 shadow-sm">
+                        <div className="border border-slate-200 rounded-lg overflow-auto flex-1 shadow-sm max-h-[calc(100vh-420px)]">
                             <Table>
                                 <TableHeader className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-sm">
                                     <TableRow className="hover:bg-transparent">
