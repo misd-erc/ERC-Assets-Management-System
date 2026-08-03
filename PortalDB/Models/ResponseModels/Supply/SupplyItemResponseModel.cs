@@ -40,6 +40,10 @@ namespace PortalDB.Models.ResponseModels.Supply
         public string Description { get; set; } = string.Empty;
         public long? TotalCurrentStock { get; set; }
         public decimal? TotalStockCost { get; set; }
+        public decimal? UnitCost { get; set; }
+        public TblSupplyUnit? MeasurementUnit { get; set; }
+        public long? MeasurementUnitId { get; set; }
+        public long? CategoryId { get; set; }
         public int? ReorderPoint { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime? CreatedAt { get; set; }

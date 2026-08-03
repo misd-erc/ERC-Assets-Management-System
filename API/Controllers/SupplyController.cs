@@ -485,10 +485,11 @@ namespace API.Controllers
                 if (model.VendorId.HasValue && model.VendorId > 0)
                     query = query.Where(x => x.VendorId == model.VendorId.Value);
 
-                if (model.StartDate.HasValue)
-                    query = query.Where(x => x.CreatedAt >= model.StartDate.Value);
-                if (model.EndDate.HasValue)
-                    query = query.Where(x => x.CreatedAt <= model.EndDate.Value);
+                DateTime? cutoffStartDate = model.StartDate.HasValue ? model.StartDate.Value.Date : null;
+                DateTime? cutoffEndDate = model.EndDate.HasValue ? model.EndDate.Value.Date.AddDays(1).AddTicks(-1) : null;
+
+                if (cutoffEndDate.HasValue)
+                    query = query.Where(x => x.CreatedAt <= cutoffEndDate.Value);
 
                 // 2. Fetch to memory for decryption-based filtering and grouping
                 var supplyItems = await query.ToListAsync();
@@ -516,12 +517,17 @@ namespace API.Controllers
                     .Select(g =>
                     {
                         var firstItem = g.First();
+                        var additionsInRange = g.Sum(x => (!cutoffStartDate.HasValue || x.CreatedAt >= cutoffStartDate.Value) && (!cutoffEndDate.HasValue || x.CreatedAt <= cutoffEndDate.Value) ? (long)(x.Quantity ?? 0) : 0L);
+
                         return new
                         {
                             Code = g.Key.Code,
                             Description = g.Key.Description,
                             TotalCurrentStock = g.Sum(x => (long)(x.Quantity ?? 0)),
+                            AdditionsInRange = additionsInRange,
                             UnitCost = firstItem.UnitCost ?? 0,
+                            MeasurementUnitId = firstItem.MeasurementUnitId,
+                            CategoryId = firstItem.CategoryId,
                             Id = firstItem.Id,
                             IARId = firstItem.IARId,
                             ReorderPoint = firstItem.ReorderPoint,
@@ -545,16 +551,37 @@ namespace API.Controllers
                         .ToListAsync()
                     : new List<TblSupplyRISItem>();
 
-                var issuedStockGroup = filteredRisItems
+                if (cutoffEndDate.HasValue)
+                {
+                    filteredRisItems = filteredRisItems
+                        .Where(x => x.CreatedAt <= cutoffEndDate.Value)
+                        .ToList();
+                }
+
+                var issuanceDict = filteredRisItems
                     .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.ItemDescription))
                     .GroupBy(x => new { StockNumber = x.StockNumber ?? string.Empty, ItemDescription = x.ItemDescription ?? string.Empty })
                     .Select(g => new
                     {
                         g.Key.StockNumber,
                         g.Key.ItemDescription,
-                        TotalIssuedQuantity = g.Sum(x => (long)x.IssueQuantity)
+                        TotalIssuedQuantity = g.Sum(x => (long)x.IssueQuantity),
+                        IssuancesInRange = g.Sum(x => (!cutoffStartDate.HasValue || x.CreatedAt >= cutoffStartDate.Value) && (!cutoffEndDate.HasValue || x.CreatedAt <= cutoffEndDate.Value) ? (long)x.IssueQuantity : 0L)
                     })
-                    .ToDictionary(k => (k.StockNumber, k.ItemDescription), v => v.TotalIssuedQuantity);
+                    .ToDictionary(k => (k.StockNumber, k.ItemDescription), v => v);
+
+                if (model.StartDate.HasValue || model.EndDate.HasValue)
+                {
+                    groupedItems = groupedItems
+                        .Where(g =>
+                        {
+                            var key = (g.Code, g.Description);
+                            var issuanceInfo = issuanceDict.GetValueOrDefault(key);
+                            long issuancesInRange = issuanceInfo?.IssuancesInRange ?? 0L;
+                            return g.AdditionsInRange > 0 || issuancesInRange > 0;
+                        })
+                        .ToList();
+                }
 
                 // 6. Count total and paginate
                 int totalCount = groupedItems.Count();
@@ -565,14 +592,32 @@ namespace API.Controllers
                     .Take(model.PageSize)
                     .ToList();
 
+                var unitIds = pagedGroups
+                    .Where(x => x.MeasurementUnitId.HasValue)
+                    .Select(x => x.MeasurementUnitId!.Value)
+                    .Distinct()
+                    .ToList();
+
+                var unitMap = new Dictionary<long, TblSupplyUnit>();
+                if (unitIds.Any())
+                {
+                    var units = await _getTools.Supply.GetTblSupplyUnitsByIds(context, unitIds);
+                    unitMap = units.ToDictionary(u => u.Id);
+                }
+
                 // 7. Map to response model (subtract issued quantity from current stock)
                 var supplyItemsResponses = pagedGroups.Select(x =>
                 {
                     var key = (x.Code, x.Description);
-                    var issuedQty = issuedStockGroup.GetValueOrDefault(key, 0L);
+                    var issuanceInfo = issuanceDict.GetValueOrDefault(key);
+                    var issuedQty = issuanceInfo?.TotalIssuedQuantity ?? 0L;
 
                     // Calculate final stock once so we can use it for both Stock and Cost
                     var finalCurrentStock = Math.Max(0, x.TotalCurrentStock - issuedQty);
+
+                    TblSupplyUnit? unit = x.MeasurementUnitId.HasValue && unitMap.ContainsKey(x.MeasurementUnitId.Value)
+                        ? unitMap[x.MeasurementUnitId.Value]
+                        : null;
 
                     return new SupplyItemGroupedResponseModel
                     {
@@ -582,6 +627,10 @@ namespace API.Controllers
                         Description = x.Description ?? string.Empty,
                         TotalCurrentStock = finalCurrentStock,
                         TotalStockCost = finalCurrentStock * x.UnitCost,
+                        UnitCost = x.UnitCost,
+                        MeasurementUnit = unit,
+                        MeasurementUnitId = x.MeasurementUnitId,
+                        CategoryId = x.CategoryId,
                         ReorderPoint = (int?)x.ReorderPoint,
                         IsActive = x.IsActive,
                         CreatedAt = x.CreatedAt

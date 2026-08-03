@@ -3,14 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useVendor, useOffice, useDivision } from '@/hooks';
 import { VwDeliveryRecord } from '@/types/delivery/delivery';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from 'sonner';
+
+const DEFAULT_ENTITY_NAME = 'Energy Regulatory Commission';
 
 interface Props {
   open: boolean;
@@ -26,7 +26,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
   const { vwOffices, fetchOffices } = useOffice();
   const { vwDivisions, fetchDivisions } = useDivision();
   
-  const [formData, setFormData] = useState<any>({ entityName: 'Energy Regulatory Commission', isActive: true });
+  const [formData, setFormData] = useState<any>({ entityName: DEFAULT_ENTITY_NAME, isActive: true });
   const [loading, setLoading] = useState(false);
 
   const [openRecord, setOpenRecord] = useState(false);
@@ -59,7 +59,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
       setFormData({ 
         id: 0, 
         centerCode: '', 
-        entityName: 'Energy Regulatory Commission', 
+        entityName: DEFAULT_ENTITY_NAME, 
         fundCluster: '',
         vendorId: 0, 
         poNumber: '',

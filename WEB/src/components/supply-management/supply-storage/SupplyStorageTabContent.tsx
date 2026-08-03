@@ -22,8 +22,7 @@ export const SupplyStorageTabContent = () => {
 
   useEffect(() => { 
     fetchSupplyStorageLocations();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchSupplyStorageLocations]);
 
   // Calculate usage counts
   const usageCounts = useMemo(() => {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,15 +30,15 @@ export const SupplyIARApproveModal = ({ open, onOpenChange, record, deliveryReco
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isApproving, setIsApproving] = useState(false);
+  const previewUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) {
       handleRemoveFile();
     }
     return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,10 +51,13 @@ export const SupplyIARApproveModal = ({ open, onOpenChange, record, deliveryReco
         return;
       }
       setFile(selectedFile);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
       if (selectedFile.type.startsWith('image/') || selectedFile.type === 'application/pdf') {
-        setPreviewUrl(URL.createObjectURL(selectedFile));
+        const url = URL.createObjectURL(selectedFile);
+        previewUrlRef.current = url;
+        setPreviewUrl(url);
       } else {
+        previewUrlRef.current = null;
         setPreviewUrl(null);
       }
     }
@@ -62,8 +65,9 @@ export const SupplyIARApproveModal = ({ open, onOpenChange, record, deliveryReco
 
   const handleRemoveFile = () => {
     setFile(null);
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
       setPreviewUrl(null);
     }
     const fileInput = document.getElementById('iarSignedFile') as HTMLInputElement;

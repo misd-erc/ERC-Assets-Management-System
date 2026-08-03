@@ -71,13 +71,10 @@ export const AddSupplyStockForm = ({
   }, [fetchSupplyUnits, fetchSupplyStorageLocations, fetchVendors]);
 
   useEffect(() => {
-    console.log('[DEBUG] AddSupplyStockForm - useEffect triggered. editId:', editId);
     if (editId && editId > 0) {
       setLoading(true);
-      console.log('[DEBUG] AddSupplyStockForm - Fetching item by ID:', editId);
       getSupplyItemById(editId)
         .then((item) => {
-          console.log('[DEBUG] AddSupplyStockForm - Fetched item from API:', item);
           if (item) {
             const newForm = {
               code: item.code,
@@ -92,16 +89,12 @@ export const AddSupplyStockForm = ({
               isActive: item.isActive,
               createdAt: safeFormatDate(item.createdAt) || new Date().toISOString().slice(0, 10),
             };
-            console.log('[DEBUG] AddSupplyStockForm - Setting itemForm to:', newForm);
             setItemForm(newForm);
-          } else {
-            console.warn('[DEBUG] AddSupplyStockForm - Fetched item is null/undefined');
           }
         })
-        .catch((err) => console.error("[DEBUG] AddSupplyStockForm - Failed to load supply item details", err))
+        .catch((err) => console.error("Failed to load supply item details", err))
         .finally(() => setLoading(false));
     } else if (!editId) {
-      console.log('[DEBUG] AddSupplyStockForm - Resetting form to defaults (no editId)');
       setItemForm({
         code: stockNumber,
         description: description,

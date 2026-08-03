@@ -12,9 +12,14 @@ import { useSupplyItemStore } from '@/store/supply';
 import { useSupplyUnitStore } from '@/store/supply';
 import { useOffice, useDivision } from '@/hooks';
 import { getUsers, getEmployees } from '@/api';
-import { VwSupplyRIS, User, ApiEmployee } from '@/types';
+import { VwSupplyRIS, User } from '@/types';
+import { ApiEmployee } from '@/types/transfer';
 import { toast } from 'sonner';
 import { RISFormContent } from './RISFormContent';
+
+// Module-level cache so the modal opens instantly after first load
+let cachedUsers: User[] | null = null;
+let cachedEmployees: ApiEmployee[] | null = null;
 
 interface Props {
   open: boolean;
@@ -40,25 +45,38 @@ export const RISFormModal = ({ open, onOpenChange, mode, ris }: Props) => {
 
   useEffect(() => {
     if (!open) {
-      // Reset when modal closes so it re-fetches on next open
       setMasterLoaded(false);
       return;
     }
+
+    // If we have cached data, show it immediately and re-validate in background
+    if (cachedUsers && cachedEmployees) {
+      setUsers(cachedUsers);
+      setEmployees(cachedEmployees);
+      setMasterLoaded(true);
+    }
+
     const fetchMaster = async () => {
       setMasterLoading(true);
-      setMasterLoaded(false);
+      if (!cachedUsers || !cachedEmployees) {
+        setMasterLoaded(false);
+      }
       try {
         const [,,,,, usersRes, employeesRes] = await Promise.all([
           fetchSupplyGroupedItems(),
           fetchSupplyUnits(),
           fetchOffices(),
           fetchDivisions(),
-          null, // placeholder to preserve destructuring if needed
+          null,
           getUsers({ page: 1, pageSize: 10000 }),
           getEmployees(1, 10000)
         ]);
-        setUsers(usersRes.data.items || []);
-        setEmployees(employeesRes.data?.items || []);
+        const newUsers = usersRes.data.items || [];
+        const newEmployees = employeesRes.data?.items || [];
+        cachedUsers = newUsers;
+        cachedEmployees = newEmployees;
+        setUsers(newUsers);
+        setEmployees(newEmployees);
         setMasterLoaded(true);
       } catch (error) {
         console.error('Failed to fetch master data', error);
@@ -71,7 +89,7 @@ export const RISFormModal = ({ open, onOpenChange, mode, ris }: Props) => {
   }, [open, fetchSupplyGroupedItems, fetchSupplyUnits, fetchOffices, fetchDivisions]);
 
   // Only render the form once ALL fetches have finished — including offices & divisions
-  const isReady = masterLoaded && !masterLoading;
+  const isReady = masterLoaded;
 
   const handleSave = async (headerData: any, itemsData: any[]) => {
     setSaving(true);

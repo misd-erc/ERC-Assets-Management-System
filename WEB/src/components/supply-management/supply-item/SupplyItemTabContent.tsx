@@ -5,9 +5,7 @@ import { useSupplyStorageLocationStore } from '@/store/supply';
 import { SupplyItemTable } from './SupplyItemTable';
 import { SupplyItemEditModal } from './SupplyItemEditModal';
 import { SupplyItemDeleteModal } from './SupplyItemDeleteModal';
-import { VwSupplyItem } from '@/types';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { getCategories } from '@/api/categories/categoriesApi';
+import { VwSupplyItem, Vendor } from '@/types';
 import { getVendors } from '@/api';
 
 const PAGE_SIZE = 100;
@@ -15,7 +13,7 @@ const PAGE_SIZE = 100;
 export const SupplyItemTabContent = () => {
   const { vwSupplies, totalSupplies, loading, fetchSupplyItems, categories, fetchCategories, deleteSupplyItems } = useSupplyItem();
   const { storagelocations, fetchSupplyStorageLocations } = useSupplyStorageLocationStore();
-  const [vendors, setVendors] = useState<any[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);

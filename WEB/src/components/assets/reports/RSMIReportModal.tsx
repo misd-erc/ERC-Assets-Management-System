@@ -1,5 +1,5 @@
 // src/components/assets/reports/RSMIReportModal.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -27,7 +27,6 @@ import { Loader2, Filter, FileText, ChevronDown, ChevronRight, Download, AlertCi
 import { toast } from 'sonner';
 
 import { useRSMIReport } from '@/hooks/supply/useRSMIReport';
-import { sortReportRowsByPropertyAndAmount } from '@/utils/reportExcelExport';
 import { getCategories } from '@/api/asset/inventoryApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { EmployeeSelector } from '@/components/transfers-returns/EmployeeSelector';
@@ -71,19 +70,19 @@ const pdfStyles = StyleSheet.create({
     tableRow: { flexDirection: 'row' },
     tableHeaderRow: { flexDirection: 'row', backgroundColor: '#f8fafc', borderBottomWidth: 1, borderBottomColor: '#000' },
 
-    colStock: { width: '12%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
-    colItem: { width: '30%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
-    colRis: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
-    colRc: { width: '13%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
-    colQty: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
-    colUnitCost: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
-    colTotalCost: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 2, overflow: 'hidden' },
-    colAccountCode: { width: '10%', padding: 2, overflow: 'hidden' },
+    colStock: { width: '12%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
+    colItem: { width: '30%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
+    colRis: { width: '15%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
+    colRc: { width: '13%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
+    colQty: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
+    colUnitCost: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
+    colTotalCost: { width: '10%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
+    colAccountCode: { width: '10%', padding: 2 },
 
-    cellHeader: { fontFamily: 'Helvetica-Bold', textAlign: 'center', fontSize: 7, overflow: 'hidden' },
-    cellText: { fontSize: 7, overflow: 'hidden' },
-    cellTextCenter: { fontSize: 7, textAlign: 'center', overflow: 'hidden' },
-    cellTextRight: { fontSize: 7, textAlign: 'right', overflow: 'hidden' },
+    cellHeader: { fontFamily: 'Helvetica-Bold', textAlign: 'center', fontSize: 7 },
+    cellText: { fontSize: 7 },
+    cellTextCenter: { fontSize: 7, textAlign: 'center' },
+    cellTextRight: { fontSize: 7, textAlign: 'right' },
     rowBorderBottom: { borderBottomWidth: 0.5, borderBottomColor: '#cbd5e1' },
 
     markerRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000' },
@@ -577,11 +576,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
     const [hasGenerated, setHasGenerated] = useState(false);
 
-    const { data: rawData, totalCount, loading, error, fetchReport, reset } = useRSMIReport();
-    const data = useMemo(
-        () => sortReportRowsByPropertyAndAmount(rawData, (g: any) => g.stockNumber, (g: any) => g.unitCost),
-        [rawData]
-    );
+    const { data, totalCount, loading, error, fetchReport, reset } = useRSMIReport();
     useEffect(() => {
         if (isOpen) {
             getCategories('Supply').then(categoriesData => {
@@ -632,7 +627,8 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
         if (!startDate || !endDate || !categoryId) return;
         setCurrentPage(1);
         setHasGenerated(true);
-        await fetchReport(categoryId, startDate, endDate, 1, pageSize);
+        const catId = categoryId === 'all' ? 0 : categoryId;
+        await fetchReport(catId, startDate, endDate, 1, pageSize);
         setExpandedRows({});
         setSelectedItems(new Set());
     };
@@ -642,7 +638,8 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
         setCurrentPage(page);
         setExpandedRows({});
         setSelectedItems(new Set());
-        await fetchReport(categoryId || 0, startDate || DEFAULT_RSMI_START_DATE, endDate || DEFAULT_RSMI_END_DATE, page, pageSize);
+        const catId = categoryId === 'all' ? 0 : (categoryId || 0);
+        await fetchReport(catId, startDate || DEFAULT_RSMI_START_DATE, endDate || DEFAULT_RSMI_END_DATE, page, pageSize);
     };
 
     const [signatoryModalOpen, setSignatoryModalOpen] = useState(false);
@@ -753,10 +750,11 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                         <div className="space-y-1.5">
                             <Label className="text-slate-700 font-medium">Category</Label>
                             <Select value={categoryId} onValueChange={setCategoryId}>
-                                <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Select Category" />
+                                <SelectTrigger className="w-full overflow-hidden">
+                                    <SelectValue placeholder="Select Category" className="truncate text-left min-w-0" />
                                 </SelectTrigger>
                                 <SelectContent className="max-h-60 overflow-y-auto">
+                                    <SelectItem value="all">All Categories</SelectItem>
                                     {categories.map((cat) => (
                                         <SelectItem key={cat.id} value={cat.id.toString()}>
                                             {cat.name}

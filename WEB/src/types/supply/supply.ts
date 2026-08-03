@@ -26,6 +26,10 @@ export interface VwSupplyGroupedItem {
   description: string;
   totalCurrentStock: number;
   totalStockCost: number;
+  unitCost?: number;
+  measurementUnit?: any;
+  measurementUnitId?: number;
+  categoryId?: number;
   reorderPoint: number;
   isActive: boolean;
   createdAt?: string;
