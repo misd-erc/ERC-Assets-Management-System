@@ -182,6 +182,7 @@ const pdfStyles = StyleSheet.create({
         paddingVertical: 4,
         paddingHorizontal: 3,
         justifyContent: 'center',
+        overflow: 'hidden',
     },
     headerText: {
         fontSize: 8,

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PortalDB.Services;
 
@@ -11,9 +12,11 @@ using PortalDB.Services;
 namespace PortalDB.Migrations
 {
     [DbContext(typeof(PortalDbContext))]
-    partial class PortalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260724170442_AddReasonForTransferToPTAMovement")]
+    partial class AddReasonForTransferToPTAMovement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1176,42 +1179,6 @@ namespace PortalDB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("tblRISSignatoryTemplates", "asset");
-                });
-
-            modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblRPCISignatoryTemplate", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("RPCISignatoryTemplateId");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("RPCISignatoryTemplateCreatedAt");
-
-                    b.Property<long>("CreatedBy")
-                        .HasColumnType("bigint")
-                        .HasColumnName("RPCISignatoryTemplateCreatedBy");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("RPCISignatoryTemplateIsActive");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("RPCISignatoryTemplateName");
-
-                    b.Property<string>("SignatoryDataJson")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("RPCISignatoryTemplateData");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("tblRPCISignatoryTemplates", "asset");
                 });
 
             modelBuilder.Entity("PortalDB.Entities.ASSET.Supply.TblRSMISignatoryTemplate", b =>

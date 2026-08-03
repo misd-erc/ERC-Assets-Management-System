@@ -271,6 +271,8 @@ namespace API.Services.Inventory
                         parIcsNumber = movement.PARICSNumber,
                         dateAssigned = movement.DateAssigned,
                         status = movement.Status,
+                        remarks = movement.Remarks,
+                        reasonForTransfer = movement.ReasonForTransfer,
                         isActive = movement.IsActive,
                         createdAt = movement.CreatedAt,
                         itemCount = grp.Movements.Select(m => m.PTAId).Where(id => id.HasValue).Distinct().Count(),

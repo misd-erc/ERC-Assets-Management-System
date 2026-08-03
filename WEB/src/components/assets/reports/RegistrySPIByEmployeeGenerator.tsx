@@ -13,7 +13,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { downloadReportExcel } from '@/utils/reportExcelExport';
+import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from '@/utils/reportExcelExport';
+
+const logoSrc =
+  typeof window !== 'undefined'
+    ? `${window.location.origin}/images/erc-logo.png`
+    : '/mnt/data/erc-logo.png';
 
 /** ── Layout ── */
 const TABLE_WIDTH = 1000;
@@ -91,6 +96,7 @@ const styles = StyleSheet.create({
     borderColor: '#000',
     padding: 3,
     fontSize: 6,
+    overflow: 'hidden',
   },
   center: {
     textAlign: 'center',
@@ -300,7 +306,8 @@ export function RegistrySPIEmployeeFilterModal({
 export class RegistrySPIByEmployeeGenerator {
 
   static async generatePreview(employee: NormalizedEmployee, date: Date, preloadedAssets?: any[]): Promise<string> {
-    const assets = preloadedAssets ?? await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
+    const rawAssets = preloadedAssets ?? await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
+    const assets = sortReportRowsByPropertyAndAmount(rawAssets, (a: any) => a.propertyNumber, (a: any) => a.unitValue);
     if (!assets.length) {
       throw new Error(`No SE assets found issued to ${employee.label} for the selected date.`);
     }
@@ -310,7 +317,8 @@ export class RegistrySPIByEmployeeGenerator {
   }
 
   static async generate(employee: NormalizedEmployee, date: Date, preloadedAssets?: any[]) {
-    const assets = preloadedAssets ?? await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
+    const rawAssets = preloadedAssets ?? await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
+    const assets = sortReportRowsByPropertyAndAmount(rawAssets, (a: any) => a.propertyNumber, (a: any) => a.unitValue);
     const doc = this.buildDocument(assets, employee);
     const blob = await pdf(doc).toBlob();
     const url = URL.createObjectURL(blob);
@@ -321,7 +329,8 @@ export class RegistrySPIByEmployeeGenerator {
   }
 
   static async generateExcel(employee: NormalizedEmployee, date: Date, preloadedAssets?: any[]) {
-    const assets = preloadedAssets ?? await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
+    const rawAssets = preloadedAssets ?? await PTAService.getAllForSEByEmployeeAndDate(employee.id, date);
+    const assets = sortReportRowsByPropertyAndAmount(rawAssets, (a: any) => a.propertyNumber, (a: any) => a.unitValue);
     if (!assets.length) return;
 
     const fullName = [employee.firstName, employee.middleName, employee.lastName, employee.suffixName]
@@ -330,6 +339,8 @@ export class RegistrySPIByEmployeeGenerator {
     await downloadReportExcel({
       filename: `Registry_SPI_${employee.label.replace(/\s+/g, '_')}.xlsx`,
       sheetName: 'Registry SPI',
+      logoUrl: logoSrc,
+      logoColOffset: 3,
       titleLines: ['REGISTRY OF SEMI-EXPENDABLE PROPERTY ISSUED'],
       infoLines: [
         'Entity Name: Energy Regulatory Commission',

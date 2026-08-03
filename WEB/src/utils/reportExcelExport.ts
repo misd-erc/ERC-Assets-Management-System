@@ -1,5 +1,25 @@
 import ExcelJS from 'exceljs';
 
+/**
+ * Sorts report rows by property number (natural/alphanumeric order, so "SE-2" sorts
+ * before "SE-10"), falling back to amount as a tiebreaker when property numbers match/are blank.
+ */
+export function sortReportRowsByPropertyAndAmount<T>(
+  rows: T[],
+  getPropertyNo: (row: T) => string | null | undefined,
+  getAmount: (row: T) => number | null | undefined
+): T[] {
+  return [...rows].sort((a, b) => {
+    const cmp = String(getPropertyNo(a) ?? '').localeCompare(
+      String(getPropertyNo(b) ?? ''),
+      undefined,
+      { numeric: true, sensitivity: 'base' }
+    );
+    if (cmp !== 0) return cmp;
+    return (getAmount(a) ?? 0) - (getAmount(b) ?? 0);
+  });
+}
+
 export interface ExcelSignatoryPerson {
   name?: string;
   designation?: string;
@@ -27,6 +47,10 @@ export interface ExcelCheckboxGroup {
 export interface ExcelReportConfig {
   filename: string;
   sheetName?: string;
+  /** URL of a logo image (e.g. "/images/erc-logo.png") to embed at the top-left, matching the PDF header. */
+  logoUrl?: string;
+  /** How many columns to shift the logo right from the sheet edge, so it sits closer to the centered title (default 0). Fractional values are fine (e.g. 1.5). */
+  logoColOffset?: number;
   /** Centered title/subtitle lines shown at the very top of the sheet. */
   titleLines?: string[];
   /** Left-aligned plain lines shown below the title (e.g. "Entity Name: ...", "Fund Cluster: ..."). */
@@ -56,6 +80,27 @@ const THIN_BORDER: Partial<ExcelJS.Borders> = {
   right: { style: 'thin' },
 };
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+async function fetchImageAsBase64(url: string): Promise<{ base64: string; extension: 'png' | 'jpeg' | 'gif' } | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const buffer = await response.arrayBuffer();
+    const ext = url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg')
+      ? 'jpeg'
+      : url.toLowerCase().endsWith('.gif') ? 'gif' : 'png';
+    return { base64: arrayBufferToBase64(buffer), extension: ext };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Builds and downloads an .xlsx file that mirrors a printed report's layout:
  * title block, optional info/meta lines, a bordered data table, an optional
@@ -66,6 +111,8 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
   const {
     filename,
     sheetName = 'Report',
+    logoUrl,
+    logoColOffset = 0,
     titleLines = [],
     infoLines = [],
     metaRight = [],
@@ -82,7 +129,20 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
 
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(sheetName);
-  worksheet.columns = columns.map(() => ({ width: 20 }));
+  // Widen columns with longer headers a bit so short-header columns (e.g. "No.", "Amount")
+  // don't force everything onto the same narrow width as a long one.
+  worksheet.columns = columns.map((label) => ({ width: Math.max(12, Math.min(40, label.length + 6)) }));
+
+  if (logoUrl) {
+    const logo = await fetchImageAsBase64(logoUrl);
+    if (logo) {
+      const imageId = workbook.addImage({ base64: logo.base64, extension: logo.extension });
+      worksheet.addImage(imageId, {
+        tl: { col: logoColOffset, row: 0 },
+        ext: { width: 60, height: 60 },
+      });
+    }
+  }
 
   titleLines.forEach((line, i) => {
     const row = worksheet.addRow([line]);
@@ -140,7 +200,12 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
   rows.forEach((r) => {
     const row = worksheet.addRow(r.map((v) => v ?? ''));
     for (let c = 1; c <= colCount; c++) {
-      row.getCell(c).border = THIN_BORDER;
+      const cell = row.getCell(c);
+      cell.border = THIN_BORDER;
+      // Without wrapText, long content (property numbers, descriptions with embedded
+      // serial numbers, etc.) overflows past the column's boundary instead of wrapping
+      // down, which visually collides with whatever the next column renders.
+      cell.alignment = { wrapText: true, vertical: 'top' };
     }
   });
 
@@ -150,6 +215,7 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
       const cell = row.getCell(c);
       cell.border = THIN_BORDER;
       cell.font = { bold: true };
+      cell.alignment = { wrapText: true, vertical: 'top' };
     }
   }
 

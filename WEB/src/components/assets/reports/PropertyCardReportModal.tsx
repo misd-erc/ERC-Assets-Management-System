@@ -33,6 +33,11 @@ import {
 } from '@react-pdf/renderer';
 import { downloadReportExcel } from '@/utils/reportExcelExport';
 
+const logoSrc =
+    typeof window !== 'undefined'
+        ? `${window.location.origin}/images/erc-logo.png`
+        : '/mnt/data/erc-logo.png';
+
 interface PropertyCardReportModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -221,6 +226,7 @@ const pdfStyles = StyleSheet.create({
         paddingVertical: 3,
         paddingHorizontal: 3,
         justifyContent: 'center',
+        overflow: 'hidden',
     },
     headerText: {
         fontSize: 7.5,
@@ -510,6 +516,8 @@ export function PropertyCardReportModal({ isOpen, onClose }: PropertyCardReportM
             await downloadReportExcel({
                 filename: `Property-Card_${propNo}.xlsx`,
                 sheetName: 'Property Card',
+                logoUrl: logoSrc,
+                logoColOffset: 1.7,
                 titleLines: ['PROPERTY CARD'],
                 infoLines: [
                     `Entity Name: ${entityName}`,

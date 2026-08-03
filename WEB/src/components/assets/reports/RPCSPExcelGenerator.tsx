@@ -3,7 +3,12 @@ import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer
 import { getCategories } from '@/api/asset/inventoryApi';
 import { listSePpeItemsNoMovement, listSePpeItemsWithMovement } from '@/api/asset/ptaMovementApi';
 import { RPCSPReportType } from './RPCSPFilterModal';
-import { downloadReportExcel } from '@/utils/reportExcelExport';
+import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from '@/utils/reportExcelExport';
+
+const logoSrc =
+  typeof window !== 'undefined'
+    ? `${window.location.origin}/images/erc-logo.png`
+    : '/mnt/data/erc-logo.png';
 
 const styles = StyleSheet.create({
   page: {
@@ -51,6 +56,7 @@ const styles = StyleSheet.create({
   td: {
     borderWidth: 1,
     padding: 2,
+    overflow: 'hidden',
   },
 
   center: {
@@ -139,13 +145,14 @@ export class RPCSPPdfGenerator {
     // On-stock items have no movement history, so there's no recorded condition —
     // default to "Serviceable" rather than leaving the column blank.
     const fallbackRemarks = reportType === 'ONSTOCK' ? 'Serviceable' : '';
-    return items.map((i) => ({
+    const rows = items.map((i) => ({
       description: i.description,
       propertyNumber: i.propertyNumber || '',
       unitOfMeasurement: i.unitOfMeasurement || '',
       unitValue: i.unitValue ?? 0,
       remarks: i.condition || fallbackRemarks,
     }));
+    return sortReportRowsByPropertyAndAmount(rows, (r) => r.propertyNumber, (r) => r.unitValue);
   }
 
   private static colWidth(i: number) {
@@ -298,6 +305,8 @@ export class RPCSPPdfGenerator {
         ? `RPCSP_${typeLabel}_${filenameDateStr}_${categoryName.replace(/\s+/g, '_')}.xlsx`
         : `RPCSP_${typeLabel}_${filenameDateStr}_All_Categories.xlsx`,
       sheetName: 'RPCSP',
+      logoUrl: logoSrc,
+      logoColOffset: 2.3,
       titleLines: [
         'REPORT ON THE PHYSICAL COUNT OF SEMI-EXPENDABLE PROPERTY',
         `${REPORT_TYPE_LABEL[reportType]}${categoryName ? ` — ${categoryName}` : ''}`,

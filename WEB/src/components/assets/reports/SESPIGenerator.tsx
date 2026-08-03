@@ -13,6 +13,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { downloadReportExcel } from '@/utils/reportExcelExport';
 
+const logoSrc =
+  typeof window !== 'undefined'
+    ? `${window.location.origin}/images/erc-logo.png`
+    : '/mnt/data/erc-logo.png';
+
 /** TABLE CONSTANT */
 const TABLE_WIDTH = 1000;
 
@@ -87,6 +92,7 @@ const styles = StyleSheet.create({
     borderColor: '#000',
     padding: 4,
     fontSize: 7,
+    overflow: 'hidden',
   },
 
   center: {
@@ -387,6 +393,8 @@ export class SESPIExcelGenerator {
     await downloadReportExcel({
       filename: '20._Annex-A.7-Report_of_SE_Property_Issued.xlsx',
       sheetName: 'SESPI',
+      logoUrl: logoSrc,
+      logoColOffset: 1.8,
       titleLines: ['Registry SPI Semi-Expandable Property'],
       infoLines: [
         'Entity Name: Energy Regulatory Commission',

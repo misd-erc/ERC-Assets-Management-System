@@ -9,7 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { downloadReportExcel } from '@/utils/reportExcelExport';
+import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from '@/utils/reportExcelExport';
+
+const logoSrc =
+  typeof window !== 'undefined'
+    ? `${window.location.origin}/images/erc-logo.png`
+    : '/mnt/data/erc-logo.png';
 
 interface SEPropertyReportOptions {
   asOfDate: Date;
@@ -122,6 +127,7 @@ const styles = StyleSheet.create({
     borderColor: '#000',
     padding: 4,
     fontSize: 7,
+    overflow: 'hidden',
   },
 
   center: {
@@ -341,8 +347,9 @@ export class SEPropertyReportGenerator {
         return asset.latestMovement.dateAssigned.split('T')[0] === asOfDateStr;
       });
 
-    const displayDate = this.getOldestIcsDate(finalAssets) ?? options.asOfDate;
-    return { finalAssets, displayDate };
+    const sortedAssets = sortReportRowsByPropertyAndAmount(finalAssets, (a) => a.propertyNumber, (a) => a.unitValue);
+    const displayDate = this.getOldestIcsDate(sortedAssets) ?? options.asOfDate;
+    return { finalAssets: sortedAssets, displayDate };
   }
 
   static async generateExcel(options: SEPropertyReportOptions) {
@@ -353,6 +360,8 @@ export class SEPropertyReportGenerator {
     await downloadReportExcel({
       filename: '20._Annex-A.7-Report_of_SE_Property_Issued.xlsx',
       sheetName: 'SE Property Issued',
+      logoUrl: logoSrc,
+      logoColOffset: 1.7,
       titleLines: ['Report of Semi-Expandable Property Issued'],
       infoLines: [
         'Entity Name: Energy Regulatory Commission',

@@ -30,6 +30,11 @@ import {
 } from '@react-pdf/renderer';
 import { downloadReportExcel } from '@/utils/reportExcelExport';
 
+const logoSrc =
+    typeof window !== 'undefined'
+        ? `${window.location.origin}/images/erc-logo.png`
+        : '/mnt/data/erc-logo.png';
+
 interface SEPropertyCardModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -245,6 +250,7 @@ const pdfStyles = StyleSheet.create({
         paddingVertical: 3,
         paddingHorizontal: 3,
         justifyContent: 'center',
+        overflow: 'hidden',
     },
     headerText: {
         fontSize: 7.5,
@@ -621,6 +627,8 @@ export function SEPropertyCardModal({ isOpen, onClose }: SEPropertyCardModalProp
             await downloadReportExcel({
                 filename: `SE-Property-Card_${propNo}.xlsx`,
                 sheetName: 'SE Property Card',
+                logoUrl: logoSrc,
+                logoColOffset: 3,
                 titleLines: ['SEMI-EXPENDABLE PROPERTY CARD'],
                 infoLines: [
                     `LGU: ${entityName}`,

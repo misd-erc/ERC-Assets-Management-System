@@ -17,6 +17,7 @@ import { AssetSelectionCard } from '@/components/asset-tagging/AssetSelectionCar
 import { StatsRow } from '@/components/asset-tagging/StatsRow';
 import { QuickStartGuide } from '@/components/asset-tagging/QuickStartGuide';
 import { TagPreviewGrid } from '@/components/asset-tagging/TagPreviewGrid';
+import { AssetTagPdfGenerator } from '@/components/asset-tagging/AssetTagPdfGenerator';
 
 const logoSrc = '/images/erc-logo.png';
 
@@ -37,6 +38,7 @@ export default function AssetTaggingPage() {
   const [tagTemplate, setTagTemplate] = useState<string>('standard');
   const [includeLogo, setIncludeLogo] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [tagPreviews, setTagPreviews] = useState<TagPreview[]>([]);
 
   // PPE pagination
@@ -136,6 +138,21 @@ export default function AssetTaggingPage() {
     }
   };
 
+  const buildTagPreviews = async (): Promise<TagPreview[]> => {
+    const selected = Array.from(selectedDetailsRef.current.values()).filter((a) =>
+      selectedAssets.includes(a.id)
+    );
+    const previews: TagPreview[] = [];
+
+    for (const asset of selected) {
+      const assetUrl = `${window.location.origin}/asset-info/${asset.id}`;
+      const qrCode = await generateQRCode(assetUrl);
+      previews.push({ ...asset, qrCode });
+    }
+
+    return previews;
+  };
+
   const handleGenerateTags = async () => {
     if (selectedAssets.length === 0) {
       toast.error('Please select at least one asset');
@@ -145,17 +162,7 @@ export default function AssetTaggingPage() {
     setIsGenerating(true);
 
     try {
-      const selected = Array.from(selectedDetailsRef.current.values()).filter((a) =>
-        selectedAssets.includes(a.id)
-      );
-      const previews: TagPreview[] = [];
-
-      for (const asset of selected) {
-        const assetUrl = `${window.location.origin}/asset-info/${asset.id}`;
-        const qrCode = await generateQRCode(assetUrl);
-        previews.push({ ...asset, qrCode });
-      }
-
+      const previews = await buildTagPreviews();
       setTagPreviews(previews);
 
       toast.success(`Generated ${previews.length} asset tag(s)`);
@@ -168,6 +175,27 @@ export default function AssetTaggingPage() {
       toast.error('Failed to generate asset tags');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (selectedAssets.length === 0) {
+      toast.error('Please select at least one asset');
+      return;
+    }
+
+    setIsDownloadingPdf(true);
+
+    try {
+      const previews = await buildTagPreviews();
+      setTagPreviews(previews);
+      await AssetTagPdfGenerator.generate(previews, activeTemplate, true, includeLogo, logoSrc);
+      toast.success(`Downloaded ${previews.length} asset tag(s) as PDF`);
+    } catch (error) {
+      console.error('Error downloading tag PDF:', error);
+      toast.error('Failed to download asset tags PDF');
+    } finally {
+      setIsDownloadingPdf(false);
     }
   };
 
@@ -195,10 +223,12 @@ export default function AssetTaggingPage() {
           includeLogo={includeLogo}
           selectedCount={selectedAssets.length}
           isGenerating={isGenerating}
+          isDownloading={isDownloadingPdf}
           isLoading={isPpeLoading || isSeLoading}
           onTemplateChange={setTagTemplate}
           onToggleLogo={setIncludeLogo}
           onGenerate={handleGenerateTags}
+          onDownloadPdf={handleDownloadPdf}
         />
 
         <AssetSelectionCard

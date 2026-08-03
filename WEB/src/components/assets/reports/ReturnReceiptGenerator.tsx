@@ -1,6 +1,6 @@
 import React from "react";
 import { pdf, Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
-import { downloadReportExcel } from "@/utils/reportExcelExport";
+import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 
 const RECEIVED_BY = {
   name: "CHERRY LYNN S. GONZALES",
@@ -93,11 +93,13 @@ const styles = StyleSheet.create({
     borderRightWidth: 0.5,
     borderColor: "#ccc",
     minHeight: 18,
+    overflow: "hidden",
   },
   bodyCellLast: {
     padding: 4,
     fontSize: 9,
     minHeight: 18,
+    overflow: "hidden",
   },
   sigRow: {
     flexDirection: "row",
@@ -138,12 +140,6 @@ const styles = StyleSheet.create({
   },
 });
 
-function formatLongDate(date?: string | Date) {
-  if (!date) return "";
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-}
-
 function formatShortDate(dateStr?: string) {
   if (!dateStr) return "";
   const parts = dateStr.split("-");
@@ -151,8 +147,25 @@ function formatShortDate(dateStr?: string) {
   return `${parts[1]}-${parts[2]}-${parts[0]}`;
 }
 
+// Same MM-DD-YYYY format as formatShortDate, but parses via Date() so it also handles
+// full ISO datetime strings (e.g. "2026-07-22T00:00:00.000Z") — formatShortDate's plain
+// string-split assumes a clean "YYYY-MM-DD" and would otherwise cut into the time portion.
+function formatDate(date?: string | Date) {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return "";
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${mm}-${dd}-${d.getFullYear()}`;
+}
+
 function buildRowsFromItems(items: any[], endUser: string, nonPlantillaEndUser?: string): ReturnRow[] {
-  return (items || []).map((item: any) => ({
+  const sortedItems = sortReportRowsByPropertyAndAmount(
+    items || [],
+    (item: any) => item?.propertyNumber,
+    (item: any) => item?.unitValue
+  );
+  return sortedItems.map((item: any) => ({
     description: item?.description || "",
     quantity: "1",
     icsNo: item?.icsNo || item?.paricsNumber || item?.parIcsNumber || "",
@@ -207,7 +220,7 @@ const ReturnReceiptDocument = ({
           </View>
           <View style={styles.metaRight}>
             <Text style={styles.metaLabel}>{returnType === "RRPPE" ? "RRPPE No.: " : "RRSP No.: "}{receiptNumber || ""}</Text>
-            <Text style={styles.metaText}>Date: {formatLongDate(dateAssigned)}</Text>
+            <Text style={styles.metaText}>Date: {formatDate(dateAssigned)}</Text>
           </View>
         </View>
 
@@ -316,6 +329,8 @@ export class ReturnReceiptGenerator {
     await downloadReportExcel({
       filename: `${returnType}_${receiptNumber || Date.now()}.xlsx`,
       sheetName: returnType,
+      logoUrl: logoSrc,
+      logoColOffset: 1,
       titleLines: [title],
       infoLines: [
         'Entity Name: ENERGY REGULATORY COMMISSION',
@@ -325,7 +340,7 @@ export class ReturnReceiptGenerator {
       ].filter(Boolean),
       metaRight: [
         `${returnType === 'RRPPE' ? 'RRPPE No.: ' : 'RRSP No.: '}${receiptNumber || ''}`,
-        `Date: ${formatLongDate(dateAssigned)}`,
+        `Date: ${formatDate(dateAssigned)}`,
       ],
       columns: ['Item Description', 'Qty.', returnType === 'RRSP' ? 'ICS No.' : 'PAR No.', 'End-user', 'Remarks'],
       rows: rows.map((r) => [r.description, r.quantity, r.icsNo, r.endUser, r.remarks]),
