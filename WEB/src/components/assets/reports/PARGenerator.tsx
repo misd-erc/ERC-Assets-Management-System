@@ -19,6 +19,7 @@ import { UnifiedAssetService } from "@/services/UnifiedAssetService";
 import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 import { IssuanceRecord } from "@/types/issuance";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
+import { formatPositionOffice } from "@/utils/formatters";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -269,7 +270,7 @@ const PARDocument = ({
           <Text style={[styles.sigName, { marginTop: 25 }]}>{employeeName?.toUpperCase()}</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature over Printed Name of End User</Text>
-          <Text style={[styles.sigTopText, { marginBottom: 4, marginTop: 6 }]}>{position} - {office}</Text>
+          <Text style={[styles.sigTopText, { marginBottom: 4, marginTop: 6 }]}>{formatPositionOffice(position, office)}</Text>
           <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 2 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 2 }]}>Position/Office</Text>
           <View>
@@ -287,7 +288,7 @@ const PARDocument = ({
           <Text style={[styles.sigName, { marginTop: 25 }]}>CHERRY LYNN S. GONZALES</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature over Printed Name of Property Custodian</Text>
-          <Text style={styles.sigTopText}>Administrative Officer V – FAS, GSD</Text>
+          <Text style={styles.sigTopText}>{formatPositionOffice('Administrative Officer V', 'FAS', 'GSD')}</Text>
            <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 2 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 2 }]}>Position/Office</Text>
           <View>
@@ -337,7 +338,9 @@ export class PARGenerator {
           const empData = empResp.data[0];
           employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
-          office = empData.office?.name || 'N/A';
+          const officeAcronym = empData.office?.acronym || empData.office?.name || '';
+          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
+          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || 'N/A';
         }
       }
       if (movement.nonPlantillaEmployeeId) {
@@ -408,7 +411,9 @@ export class PARGenerator {
           const empData = empResp.data[0];
           employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
-          office = empData.office?.name || 'N/A';
+          const officeAcronym = empData.office?.acronym || empData.office?.name || '';
+          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
+          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || 'N/A';
         }
       }
       if (movement.nonPlantillaEmployeeId) {
@@ -464,7 +469,9 @@ export class PARGenerator {
           const empData = empResp.data[0];
           employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
-          office = empData.office?.name || first.officeName || 'N/A';
+          const officeAcronym = empData.office?.acronym || empData.office?.name || first.officeName || '';
+          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
+          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || first.officeName || 'N/A';
         }
       } catch { /* use fallback values */ }
     }
@@ -531,7 +538,9 @@ export class PARGenerator {
           const empData = empResp.data[0];
           employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
-          office = empData.office?.name || first.officeName || 'N/A';
+          const officeAcronym = empData.office?.acronym || empData.office?.name || first.officeName || '';
+          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
+          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || first.officeName || 'N/A';
         }
       } catch { /* use fallback values */ }
     }
@@ -608,8 +617,8 @@ export class PARGenerator {
       columns: ['Qty', 'Unit', 'Description', 'Property Number', 'Date Acquired', 'Amount'],
       rows: rows.map((r) => [r.qty, r.unit, r.description, r.propertyNo, r.dateAcquired, currency(r.amount)]),
       signatoryRows: [[
-        { role: 'Received by:', name: employeeName, designation: `${position} - ${office}` },
-        { role: 'Issued by:', name: 'CHERRY LYNN S. GONZALES', designation: 'Administrative Officer V – FAS, GSD' },
+        { role: 'Received by:', name: employeeName, designation: formatPositionOffice(position, office) },
+        { role: 'Issued by:', name: 'CHERRY LYNN S. GONZALES', designation: formatPositionOffice('Administrative Officer V', 'FAS', 'GSD') },
       ]],
     });
   }
@@ -631,7 +640,9 @@ export class PARGenerator {
           const empData = empResp.data[0];
           employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
-          office = empData.office?.name || first.officeName || 'N/A';
+          const officeAcronym = empData.office?.acronym || empData.office?.name || first.officeName || '';
+          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
+          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || first.officeName || 'N/A';
         }
       } catch { /* use fallback values */ }
     }

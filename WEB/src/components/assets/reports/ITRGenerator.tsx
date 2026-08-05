@@ -13,6 +13,7 @@ import { Asset, NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { seApi } from "@/api/asset/se";
 import { secureStorage } from "@/utils/secureStorage";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
+import { formatPositionOffice } from "@/utils/formatters";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -25,12 +26,12 @@ type TransferType = "DONATION" | "REASSIGNMENT" | "RELOCATE" | "OTHERS";
 
 const APPROVED_BY = {
   name: "CHERRY LYNN S. GONZALES",
-  designation: "Administrative Officer V-FAS, GSD",
+  designation: formatPositionOffice("Administrative Officer V", "FAS", "GSD"),
 };
 
 const RELEASED_BY = {
   name: "ROSELLE M. GUINTU",
-  designation: "Administrative Officer III - FAS, GSD",
+  designation: formatPositionOffice("Administrative Officer III", "FAS", "GSD"),
 };
 
 /* -------------------------------- STYLES -------------------------------- */
