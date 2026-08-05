@@ -89,12 +89,12 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 0.5,
-    borderColor: "#ccc",
+    borderColor: "#000",
     minHeight: 20,
     alignItems: "center",
   },
 
-  cell: { padding: 3, fontSize: 8, overflow: "hidden" },
+  cell: { padding: 3, fontSize: 8, overflow: "hidden", borderRightWidth: 0.5, borderRightColor: "#000" },
 
   colQty: { width: "6%" },
   colUnit: { width: "8%" },
