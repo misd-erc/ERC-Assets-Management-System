@@ -123,13 +123,13 @@ const styles = StyleSheet.create({
   cell: { padding: 2, fontSize: 8, overflow: "hidden", borderRightWidth: 0.5, borderRightColor: "#000" },
 
   colNo: { width: "6%" },
-  colDescription: { width: "32%" },
+  colDescription: { width: "30%" },
   colPropertyNo: { width: "12%" },
-  colDateAcquired: { width: "11%" },
-  colAmount: { width: "11%" },
-  colRemarks: { width: "28%" },
-  colSubtotalLabel: { width: "83%", textAlign: "right", fontSize: 8, fontStyle: "italic" },
-  colTotalLabel: { width: "83%", textAlign: "right", fontWeight: "bold" },
+  colDateAcquired: { width: "9%" },
+  colAmount: { width: "17%" },
+  colRemarks: { width: "26%" },
+  colSubtotalLabel: { width: "77%", textAlign: "right", fontSize: 8, fontStyle: "italic" },
+  colTotalLabel: { width: "77%", textAlign: "right", fontWeight: "bold" },
 });
 
 function currency(val?: number | null) {
