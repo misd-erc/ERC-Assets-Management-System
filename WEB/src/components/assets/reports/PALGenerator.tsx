@@ -467,7 +467,7 @@ async function buildPALData(employee: NormalizedEmployee) {
       propertyNo: asset.propertyNumber ?? "",
       dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
       amount: asset.unitValue ?? null,
-      remarks: subName ? `Sub-ICS: ${subName}` : "",
+      remarks: subName ? `ICS: ${subName}` : "",
     };
   });
 
