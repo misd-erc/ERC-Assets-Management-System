@@ -166,9 +166,14 @@ const StockCardPDFDocument: React.FC<StockCardPDFProps> = ({ items, stockNumber,
                         const receipt = item.addedStockQuantity > 0 ? item.addedStockQuantity : '';
                         const issue = item.issuedStockQuantity > 0 ? item.issuedStockQuantity : '';
                         const reference = item.addedStockQuantity > 0 ? item.iarNumber : item.risNumber;
+                        const itemKey = item.id
+                            ? `stock-${item.id}`
+                            : reference
+                            ? `stock-${reference}-${idx}`
+                            : `stock-${idx}`;
 
                         return (
-                            <View key={idx} style={pdfStyles.tableRow} wrap={false}>
+                            <View key={itemKey} style={pdfStyles.tableRow} wrap={false}>
                                 <View style={[pdfStyles.colDate, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{formatDate(item.createdAt)}</Text></View>
                                 <View style={[pdfStyles.colRef, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{reference || ''}</Text></View>
                                 <View style={[pdfStyles.colReceiptQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{receipt}</Text></View>
@@ -460,9 +465,10 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
 
                                         // Visual flag if stock is running low
                                         const isLowStock = currentStockNum <= reorderPointNum;
+                                        const groupKey = group.code ? `group-${group.code}-${index}` : `group-${index}`;
 
                                         return (
-                                            <React.Fragment key={index}>
+                                            <React.Fragment key={groupKey}>
                                                 <TableRow
                                                     className={`cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50/60 hover:bg-indigo-50/80' : 'hover:bg-slate-50'}`}
                                                     onClick={() => handleSelectRow(group.code || '', group.description || '', unitName, rawReorderPoint)}
