@@ -177,7 +177,7 @@ const RPCIPDFDocument: React.FC<RPCIPDFDocumentProps> = ({ data, categoryInfo, r
                     </View>
 
                     {data.map((item: any, idx: number) => (
-                        <View key={idx} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
+                        <View key={item.id ? `rpci-${item.id}` : item.code ? `rpci-${item.code}-${idx}` : `rpci-${idx}`} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
                             <View style={pdfStyles.colArticle}><Text style={pdfStyles.cellTextCenter}>{idx + 1}</Text></View>
                             <View style={pdfStyles.colDesc}><Text style={pdfStyles.cellText}>{item.description}</Text></View>
                             <View style={pdfStyles.colStock}><Text style={pdfStyles.cellTextCenter}>{item.code}</Text></View>
