@@ -1,10 +1,11 @@
 import React from "react";
 import { pdf, Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
+import { formatPositionOffice } from "@/utils/formatters";
 
 const RECEIVED_BY = {
   name: "CHERRY LYNN S. GONZALES",
-  designation: "Administrative Officer V-FAS, GSD",
+  designation: formatPositionOffice("Administrative Officer V", "FAS", "GSD"),
 };
 
 const logoSrc =

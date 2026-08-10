@@ -112,11 +112,11 @@ export interface RPCISignatories {
 }
 
 const DEFAULT_RPCI_SIGNATORIES: RPCISignatories = {
-    member1: { name: 'ARLYN G. PRINCIPE', designation: 'Committee Member- FAS-BD' },
-    member2: { name: 'PATRICIA ANDREA B. PILAPIL', designation: 'Committee Member- FAS-AD' },
-    member3: { name: 'FREDA JHANE B. GAVILO', designation: 'Committee Member- FAS HRMD' },
-    chairperson: { name: 'JUDITH L. MANGOSING', designation: 'Chairperson - Inventory Committee' },
-    viceChairperson: { name: 'ZIERLA MARIE S. RANAY', designation: 'Vice - Chairperson - Inventory Committee' },
+    member1: { name: '', designation: '' },
+    member2: { name: '', designation: '' },
+    member3: { name: '', designation: '' },
+    chairperson: { name: '', designation: '' },
+    viceChairperson: { name: '', designation: '' },
 };
 
 interface RPCIPDFDocumentProps {
@@ -177,7 +177,7 @@ const RPCIPDFDocument: React.FC<RPCIPDFDocumentProps> = ({ data, categoryInfo, r
                     </View>
 
                     {data.map((item: any, idx: number) => (
-                        <View key={idx} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
+                        <View key={item.id ? `rpci-${item.id}` : item.code ? `rpci-${item.code}-${idx}` : `rpci-${idx}`} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
                             <View style={pdfStyles.colArticle}><Text style={pdfStyles.cellTextCenter}>{idx + 1}</Text></View>
                             <View style={pdfStyles.colDesc}><Text style={pdfStyles.cellText}>{item.description}</Text></View>
                             <View style={pdfStyles.colStock}><Text style={pdfStyles.cellTextCenter}>{item.code}</Text></View>
@@ -502,6 +502,9 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
     const [assumptionMonth, setAssumptionMonth] = useState('September');
     const [assumptionYear, setAssumptionYear] = useState('2016');
     const [categoryId, setCategoryId] = useState<string>('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [hasGenerated, setHasGenerated] = useState(false);
     const pageSize = 100;
 
     const [categories, setCategories] = useState<any[]>([]);
@@ -517,6 +520,7 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
             getCategories('Supply').then(categoriesData => {
                 setCategories(categoriesData.filter((category: any) => category.module === 'Supply'));
             });
+            setCurrentPage(1);
         }
     }, [isOpen]);
 
@@ -524,6 +528,9 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
         if (!isOpen) {
             setSelectedItems(new Set());
             setData([]);
+            setCurrentPage(1);
+            setTotalCount(0);
+            setHasGenerated(false);
         }
     }, [isOpen]);
 
@@ -543,8 +550,10 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
         try {
             const [response, groupedResponse] = await Promise.all([
                 getSupplyItems(page, pageSize, '', catId, undefined, undefined, undefined, start, end),
-                getVwSupplyGroupedItems(1, 10000, '', undefined, catId || undefined, undefined, undefined, start, end)
+                getVwSupplyGroupedItems(page, pageSize, '', undefined, catId || undefined, undefined, undefined, start, end)
             ]);
+
+            setTotalCount(groupedResponse.totalCount || groupedResponse.items.length);
 
             const groupedMap = new Map<string, any>();
 
@@ -601,9 +610,19 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
 
     const handleGenerateReport = async () => {
         if (!startDate || !endDate || !categoryId) return;
+        setCurrentPage(1);
+        setHasGenerated(true);
         const catId = categoryId === 'all' ? 0 : parseInt(categoryId);
         await fetchReport(catId, startDate, endDate, 1);
         setSelectedItems(new Set());
+    };
+
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const handlePageChange = async (page: number) => {
+        setCurrentPage(page);
+        setSelectedItems(new Set());
+        const catId = categoryId === 'all' ? 0 : (parseInt(categoryId) || 0);
+        await fetchReport(catId, startDate, endDate, page);
     };
 
     const [signatoryModalOpen, setSignatoryModalOpen] = useState(false);
@@ -861,8 +880,14 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                                                         <Filter className="w-8 h-8 text-indigo-500" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-semibold text-slate-900 text-lg">Ready to Generate</p>
-                                                        <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Select a category and date range above to generate the RPCI report.</p>
+                                                        <p className="font-semibold text-slate-900 text-lg">
+                                                            {hasGenerated ? 'No RPCI Records Found' : 'Ready to Generate'}
+                                                        </p>
+                                                        <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+                                                            {hasGenerated
+                                                                ? 'No inventory items found for the selected category and date range.'
+                                                                : 'Select a category and date range above to generate the RPCI report.'}
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </TableCell>
@@ -871,6 +896,18 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                                 </TableBody>
                             </Table>
                         </div>
+
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-end gap-2 pt-4">
+                                <Button variant="outline" size="sm" disabled={currentPage === 1 || loading} onClick={() => handlePageChange(currentPage - 1)}>
+                                    Previous
+                                </Button>
+                                <span className="text-sm text-slate-600">Page {currentPage} of {totalPages}</span>
+                                <Button variant="outline" size="sm" disabled={currentPage === totalPages || loading} onClick={() => handlePageChange(currentPage + 1)}>
+                                    Next
+                                </Button>
+                            </div>
+                        )}
 
                     </div>
                 </DialogContent>

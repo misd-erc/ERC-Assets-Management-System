@@ -163,7 +163,7 @@ export interface RSMISignatories {
 }
 
 const DEFAULT_RSMI_SIGNATORIES: RSMISignatories = {
-    certifiedBy: { name: 'MS. ROSELLE MALAKI GUINTU', designation: 'Administrative Officer III', section: 'Accounting Section' },
+    certifiedBy: { name: '', designation: '', section: '' },
     approvedBy: { name: '', designation: '' },
 };
 
@@ -211,43 +211,52 @@ const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsm
                     <View style={pdfStyles.colAccountCode}><Text style={pdfStyles.cellHeader}>Account Code</Text></View>
                 </View>
 
-                {data.map((group: any, gIdx: number) => (
-                    <React.Fragment key={gIdx}>
-                        {(group.items || []).map((item: any, iIdx: number) => {
-                            const showStock = iIdx === 0;
-                            const qty = item.issueQuantity ?? 0;
+                {data.map((group: any, gIdx: number) => {
+                    const groupKey = group.stockNumber ? `group-${group.stockNumber}-${gIdx}` : `group-${gIdx}`;
 
-                            return (
-                                <View key={iIdx} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
-                                    <View style={pdfStyles.colStock}>
-                                        <Text style={pdfStyles.cellText}>{showStock ? (group.stockNumber ?? '') : ''}</Text>
+                    return (
+                        <React.Fragment key={groupKey}>
+                            {(group.items || []).map((item: any, iIdx: number) => {
+                                const showStock = iIdx === 0;
+                                const qty = item.issueQuantity ?? 0;
+                                const itemKey = item.id
+                                    ? `item-${item.id}`
+                                    : item.risNumber
+                                    ? `item-${item.risNumber}-${iIdx}`
+                                    : `item-${iIdx}`;
+
+                                return (
+                                    <View key={itemKey} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
+                                        <View style={pdfStyles.colStock}>
+                                            <Text style={pdfStyles.cellText}>{showStock ? (group.stockNumber ?? '') : ''}</Text>
+                                        </View>
+                                        <View style={pdfStyles.colItem}>
+                                            <Text style={pdfStyles.cellText}>{showStock ? (group.itemDescription ?? '') : ''}</Text>
+                                        </View>
+                                        <View style={pdfStyles.colRis}>
+                                            <Text style={pdfStyles.cellTextCenter}>{item.risNumber ?? ''}</Text>
+                                        </View>
+                                        <View style={pdfStyles.colRc}>
+                                            <Text style={pdfStyles.cellTextCenter}>{item.officeName ? `${getAcronym(item.officeName)} ${getAcronym(item.divisionName)}` : ''}</Text>
+                                        </View>
+                                        <View style={pdfStyles.colQty}>
+                                            <Text style={pdfStyles.cellTextRight}>{qty}</Text>
+                                        </View>
+                                        <View style={pdfStyles.colUnitCost}>
+                                            <Text style={pdfStyles.cellTextRight}>{showStock && group.unitCost ? formatCurrencyPlain(group.unitCost) : ''}</Text>
+                                        </View>
+                                        <View style={pdfStyles.colTotalCost}>
+                                            <Text style={pdfStyles.cellTextRight}>{showStock && group.totalCost ? formatCurrencyPlain(group.totalCost) : ''}</Text>
+                                        </View>
+                                        <View style={pdfStyles.colAccountCode}>
+                                            <Text style={pdfStyles.cellText}>{showStock ? (group.accountCode ?? '') : ''}</Text>
+                                        </View>
                                     </View>
-                                    <View style={pdfStyles.colItem}>
-                                        <Text style={pdfStyles.cellText}>{showStock ? (group.itemDescription ?? '') : ''}</Text>
-                                    </View>
-                                    <View style={pdfStyles.colRis}>
-                                        <Text style={pdfStyles.cellTextCenter}>{item.risNumber ?? ''}</Text>
-                                    </View>
-                                    <View style={pdfStyles.colRc}>
-                                        <Text style={pdfStyles.cellTextCenter}>{item.officeName ? `${getAcronym(item.officeName)} ${getAcronym(item.divisionName)}` : ''}</Text>
-                                    </View>
-                                    <View style={pdfStyles.colQty}>
-                                        <Text style={pdfStyles.cellTextRight}>{qty}</Text>
-                                    </View>
-                                    <View style={pdfStyles.colUnitCost}>
-                                        <Text style={pdfStyles.cellTextRight}>{showStock && group.unitCost ? formatCurrencyPlain(group.unitCost) : ''}</Text>
-                                    </View>
-                                    <View style={pdfStyles.colTotalCost}>
-                                        <Text style={pdfStyles.cellTextRight}>{showStock && group.totalCost ? formatCurrencyPlain(group.totalCost) : ''}</Text>
-                                    </View>
-                                    <View style={pdfStyles.colAccountCode}>
-                                        <Text style={pdfStyles.cellText}>{showStock ? (group.accountCode ?? '') : ''}</Text>
-                                    </View>
-                                </View>
-                            );
-                        })}
-                    </React.Fragment>
-                ))}
+                                );
+                            })}
+                        </React.Fragment>
+                    );
+                })}
 
                 <View style={pdfStyles.markerRow}>
                     <Text style={pdfStyles.markerText}>****nothing follows****</Text>

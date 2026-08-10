@@ -19,6 +19,7 @@ import { UnifiedAssetService } from "@/services/UnifiedAssetService";
 import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 import { IssuanceRecord } from "@/types/issuance";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
+import { formatPositionOffice } from "@/utils/formatters";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -85,11 +86,12 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 0.5,
+    borderColor: "#000",
     minHeight: 20,
     alignItems: "center",
   },
 
-  cell: { padding: 4, overflow: "hidden" },
+  cell: { padding: 4, overflow: "hidden", borderRightWidth: 0.5, borderRightColor: "#000" },
 
   metaRow: {
     flexDirection: "row",
@@ -262,7 +264,7 @@ const ICSDocument = ({
           <Text style={[styles.sigName, { marginTop: 25, marginBottom: -8 }]}>{employeeName?.toUpperCase()}</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature over Printed Name of End User</Text>
-          <Text style={[styles.sigTopText, { marginBottom: 0, marginTop: 6 }]}>{position} - {office}</Text>
+          <Text style={[styles.sigTopText, { marginBottom: 0, marginTop: 6 }]}>{formatPositionOffice(position, office)}</Text>
           <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 6 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 4 }]}>Position/Office</Text>
           <View>
@@ -280,7 +282,7 @@ const ICSDocument = ({
           <Text style={[styles.sigName, { marginTop: 25, marginBottom: -8 }]}>CHERRY LYNN S. GONZALES</Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature over Printed Name of Supply and Property Custodian</Text>
-          <Text style={[styles.sigTopText, { marginBottom: 0, marginTop: 6 }]}>Administrative Officer V – FAS, GSD</Text>
+          <Text style={[styles.sigTopText, { marginBottom: 0, marginTop: 6 }]}>{formatPositionOffice('Administrative Officer V', 'FAS', 'GSD')}</Text>
           <View style={[styles.sigDateLine, { marginTop: -8, marginBottom: 6 }]} />
           <Text style={[styles.sigLabel, { marginBottom: 8, marginTop: 0 }]}>Position/Office</Text>
           <View>
@@ -335,7 +337,9 @@ export class ICSGenerator {
           const empData = empResp.data[0];
           employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
-          office = empData.office?.name || 'N/A';
+          const officeAcronym = empData.office?.acronym || empData.office?.name || '';
+          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
+          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || 'N/A';
         }
       }
       if (movement.nonPlantillaEmployeeId) {
@@ -395,7 +399,9 @@ export class ICSGenerator {
           const empData = empResp.data[0];
           employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
-          office = empData.office?.name || 'N/A';
+          const officeAcronym = empData.office?.acronym || empData.office?.name || '';
+          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
+          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || 'N/A';
         }
       }
       if (movement.nonPlantillaEmployeeId) {
@@ -451,7 +457,9 @@ export class ICSGenerator {
           const empData = empResp.data[0];
           employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
-          office = empData.office?.name || first.officeName || 'N/A';
+          const officeAcronym = empData.office?.acronym || empData.office?.name || first.officeName || '';
+          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
+          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || first.officeName || 'N/A';
         }
       } catch { /* use fallback values */ }
     }
@@ -518,7 +526,9 @@ export class ICSGenerator {
           const empData = empResp.data[0];
           employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
-          office = empData.office?.name || first.officeName || 'N/A';
+          const officeAcronym = empData.office?.acronym || empData.office?.name || first.officeName || '';
+          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
+          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || first.officeName || 'N/A';
         }
       } catch { /* use fallback values */ }
     }
@@ -594,8 +604,8 @@ export class ICSGenerator {
         return [r.qty, r.unit, unitCost, totalCost, r.description, r.propertyNo, r.estimatedUsefulLife];
       }),
       signatoryRows: [[
-        { role: 'Received by:', name: employeeName, designation: `${position} - ${office}` },
-        { role: 'Issued by:', name: 'CHERRY LYNN S. GONZALES', designation: 'Administrative Officer V – FAS, GSD' },
+        { role: 'Received by:', name: employeeName, designation: formatPositionOffice(position, office) },
+        { role: 'Issued by:', name: 'CHERRY LYNN S. GONZALES', designation: formatPositionOffice('Administrative Officer V', 'FAS', 'GSD') },
       ]],
       footerLines: nonPlantillaEmployeeName ? [`Sub-ICS: ${nonPlantillaEmployeeName.toUpperCase()}`] : [],
     });
@@ -618,7 +628,9 @@ export class ICSGenerator {
           const empData = empResp.data[0];
           employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
           position = empData.position?.name || 'N/A';
-          office = empData.office?.name || first.officeName || 'N/A';
+          const officeAcronym = empData.office?.acronym || empData.office?.name || first.officeName || '';
+          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
+          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || first.officeName || 'N/A';
         }
       } catch { /* use fallback values */ }
     }

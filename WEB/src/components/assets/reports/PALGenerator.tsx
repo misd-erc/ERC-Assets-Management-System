@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 0.5,
-    borderColor: "#ccc",
+    borderColor: "#000",
     minHeight: 18,
     alignItems: "center",
   },
@@ -120,16 +120,16 @@ const styles = StyleSheet.create({
   // overflow: 'hidden' clips text that's still too long even after wrapping (e.g. a long
   // property number/serial number with no spaces to wrap at) instead of letting it bleed
   // past the column's border into the next cell, which renders as mixed/overlapping letters.
-  cell: { padding: 2, fontSize: 8, overflow: "hidden" },
+  cell: { padding: 2, fontSize: 8, overflow: "hidden", borderRightWidth: 0.5, borderRightColor: "#000" },
 
   colNo: { width: "6%" },
-  colDescription: { width: "32%" },
+  colDescription: { width: "30%" },
   colPropertyNo: { width: "12%" },
-  colDateAcquired: { width: "11%" },
-  colAmount: { width: "11%" },
-  colRemarks: { width: "28%" },
-  colSubtotalLabel: { width: "83%", textAlign: "right", fontSize: 8, fontStyle: "italic" },
-  colTotalLabel: { width: "83%", textAlign: "right", fontWeight: "bold" },
+  colDateAcquired: { width: "9%" },
+  colAmount: { width: "17%" },
+  colRemarks: { width: "26%" },
+  colSubtotalLabel: { width: "77%", textAlign: "right", fontSize: 8, fontStyle: "italic" },
+  colTotalLabel: { width: "77%", textAlign: "right", fontWeight: "bold" },
 });
 
 function currency(val?: number | null) {
@@ -467,7 +467,7 @@ async function buildPALData(employee: NormalizedEmployee) {
       propertyNo: asset.propertyNumber ?? "",
       dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
       amount: asset.unitValue ?? null,
-      remarks: subName ? `Sub-ICS: ${subName}` : "",
+      remarks: subName ? `ICS: ${subName}` : "",
     };
   });
 
