@@ -17,6 +17,7 @@ import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getPTRTransferList, getTransferDetailsByNumber } from '@/api/asset/transferApi';
 import { getEmployees } from '@/api/user-management/userApi';
+import { formatPositionOffice } from '@/utils/formatters';
 import { PTRGenerator } from './PTRGenerator';
 
 interface PTRGenerationModalProps {
@@ -136,10 +137,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         const toEmpDivision = item.plantillaEmployeeName
           ? (item.plantillaEmployeeDivision || toEmpDetails?.division?.acronym || toEmpDetails?.division?.name || item.division?.acronym || item.division?.name || '')
           : (item.nonPlantillaEmployeeDivision || toEmpDetails?.division?.acronym || toEmpDetails?.division?.name || item.division?.acronym || item.division?.name || '');
-        const toEmpPositionOffice = [
-          toEmpPosition,
-          [toEmpOffice, toEmpDivision].filter(Boolean).join(', '),
-        ].filter(Boolean).join(' - ');
+        const toEmpPositionOffice = formatPositionOffice(toEmpPosition, toEmpOffice, toEmpDivision);
 
         const baseRecord = existing || {
           ptrNumber: ptrNum,

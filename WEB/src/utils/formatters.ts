@@ -20,6 +20,16 @@ export const getStockStatusColor = (status: string) => {
   }
 };
 
+/** Builds the standard "POSITION , OFFICE - DIVISION" signatory designation, all uppercase. */
+export const formatPositionOffice = (
+  position?: string | null,
+  office?: string | null,
+  division?: string | null
+): string => {
+  const officeDivision = [office, division].filter(Boolean).join(' - ');
+  return [position, officeDivision].filter(Boolean).join(' , ').toUpperCase();
+};
+
 export const getAcronym = (text: string | undefined | null): string => {
   if (!text) return '';
   const ignoredWords = ['and', 'of', 'the', 'in', 'for', 'on', 'with', 'at', 'to', 'a', 'an'];
