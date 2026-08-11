@@ -164,7 +164,7 @@ const RPCIPDFDocument: React.FC<RPCIPDFDocumentProps> = ({ data, categoryInfo, r
                 </View>
 
                 <View style={pdfStyles.table}>
-                    <View style={pdfStyles.tableHeaderRow}>
+                    <View fixed style={pdfStyles.tableHeaderRow}>
                         <View style={pdfStyles.colArticle}><Text style={pdfStyles.cellHeader}>ARTICLE</Text></View>
                         <View style={pdfStyles.colDesc}><Text style={pdfStyles.cellHeader}>DESCRIPTION</Text></View>
                         <View style={pdfStyles.colStock}><Text style={pdfStyles.cellHeader}>STOCK NUMBER</Text></View>
@@ -177,7 +177,7 @@ const RPCIPDFDocument: React.FC<RPCIPDFDocumentProps> = ({ data, categoryInfo, r
                     </View>
 
                     {data.map((item: any, idx: number) => (
-                        <View key={item.id ? `rpci-${item.id}` : item.code ? `rpci-${item.code}-${idx}` : `rpci-${idx}`} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
+                        <View key={item.id ? `rpci-${item.id}` : item.code ? `rpci-${item.code}-${idx}` : `rpci-${idx}`} wrap={false} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
                             <View style={pdfStyles.colArticle}><Text style={pdfStyles.cellTextCenter}>{idx + 1}</Text></View>
                             <View style={pdfStyles.colDesc}><Text style={pdfStyles.cellText}>{item.description}</Text></View>
                             <View style={pdfStyles.colStock}><Text style={pdfStyles.cellTextCenter}>{item.code}</Text></View>
@@ -191,7 +191,7 @@ const RPCIPDFDocument: React.FC<RPCIPDFDocumentProps> = ({ data, categoryInfo, r
                     ))}
                 </View>
 
-                <View style={pdfStyles.bottomSection}>
+                <View wrap={false} style={pdfStyles.bottomSection}>
                     <View style={pdfStyles.bottomCol}>
                         <Text style={pdfStyles.sigHeader}>Prepared by:</Text>
 
@@ -515,6 +515,12 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const [signatoryModalOpen, setSignatoryModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState<'print' | 'download' | null>(null);
+
+    const isAllSelected = data.length > 0 && data.every((item: any, index: number) => selectedItems.has(item.code ?? `unknown-${index}`));
+    const totalPages = Math.ceil(totalCount / pageSize);
+
     useEffect(() => {
         if (isOpen) {
             getCategories('Supply').then(categoriesData => {
@@ -536,12 +542,8 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
 
     const handleStartDateChange = (val: string) => {
         setStartDate(val);
-        if (!endDate || endDate === startDate) {
-            setEndDate(val);
-        }
-        if (!reportDate || reportDate === startDate || reportDate === new Date().toISOString().split('T')[0]) {
-            setReportDate(val);
-        }
+        if (!endDate || endDate === startDate) setEndDate(val);
+        if (!reportDate || reportDate === startDate) setReportDate(val);
     };
 
     const fetchReport = async (catId: number, start: string, end: string, page: number) => {
@@ -552,8 +554,6 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                 getSupplyItems(page, pageSize, '', catId, undefined, undefined, undefined, start, end),
                 getVwSupplyGroupedItems(page, pageSize, '', undefined, catId || undefined, undefined, undefined, start, end)
             ]);
-
-            setTotalCount(groupedResponse.totalCount || groupedResponse.items.length);
 
             const groupedMap = new Map<string, any>();
 
@@ -571,17 +571,17 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                 const key = `${item.code}_${item.description}`;
                 if (groupedMap.has(key)) {
                     const existing = groupedMap.get(key);
-                    if (!existing.measurementUnit && item.measurementUnit) {
-                        existing.measurementUnit = item.measurementUnit;
-                    }
-                    if ((!existing.unitCost || existing.unitCost === 0) && item.unitCost) {
-                        existing.unitCost = item.unitCost;
-                    }
+                    if (!existing.measurementUnit && item.measurementUnit) existing.measurementUnit = item.measurementUnit;
+                    if ((!existing.unitCost || existing.unitCost === 0) && item.unitCost) existing.unitCost = item.unitCost;
                 }
             }
 
-            const grouped = Array.from(groupedMap.values());
+            // Always exclude zero-stock items by default
+            const grouped = Array.from(groupedMap.values())
+                .filter((item: any) => (item.quantity ?? 0) > 0)
+                .sort((a, b) => (a.code || '').localeCompare(b.code || '', undefined, { numeric: true, sensitivity: 'base' }));
 
+            setTotalCount(grouped.length);
             setData(grouped);
         } catch (err: any) {
             setError(err.message || 'Failed to fetch items');
@@ -601,8 +601,7 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
-            const allItemIds = data.map((item: any, index: number) => item.code ?? `unknown-${index}`);
-            setSelectedItems(new Set(allItemIds));
+            setSelectedItems(new Set(data.map((item: any, index: number) => item.code ?? `unknown-${index}`)));
         } else {
             setSelectedItems(new Set());
         }
@@ -617,16 +616,12 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
         setSelectedItems(new Set());
     };
 
-    const totalPages = Math.ceil(totalCount / pageSize);
     const handlePageChange = async (page: number) => {
         setCurrentPage(page);
         setSelectedItems(new Set());
         const catId = categoryId === 'all' ? 0 : (parseInt(categoryId) || 0);
         await fetchReport(catId, startDate, endDate, page);
     };
-
-    const [signatoryModalOpen, setSignatoryModalOpen] = useState(false);
-    const [pendingAction, setPendingAction] = useState<'print' | 'download' | null>(null);
 
     const handleExportPDF = () => {
         if (selectedItems.size === 0) return;
@@ -643,18 +638,25 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
     const handleSignatoryConfirm = async (signatories: RPCISignatories) => {
         setSignatoryModalOpen(false);
         setIsGeneratingPDF(true);
-
         try {
-            const selectedData = data.filter((item: any, index: number) =>
-                selectedItems.has(item.code ?? `unknown-${index}`)
-            );
+            const selectedData = data
+                .filter((item: any, index: number) => selectedItems.has(item.code ?? `unknown-${index}`))
+                .sort((a, b) => (a.code || '').localeCompare(b.code || '', undefined, { numeric: true, sensitivity: 'base' }));
 
-            const printableReportDate = reportDate ? new Date(reportDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' }) : '';
+            const printableReportDate = reportDate
+                ? new Date(reportDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' })
+                : '';
             const assumptionDate = `${assumptionMonth} ${assumptionYear}`;
             const categoryInfo = categories.find(c => c.id.toString() === categoryId);
 
             const blob = await pdf(
-                <RPCIPDFDocument data={selectedData} categoryInfo={categoryInfo} reportDate={printableReportDate} assumptionDate={assumptionDate} signatories={signatories} />
+                <RPCIPDFDocument
+                    data={selectedData}
+                    categoryInfo={categoryInfo}
+                    reportDate={printableReportDate}
+                    assumptionDate={assumptionDate}
+                    signatories={signatories}
+                />
             ).toBlob();
 
             const url = URL.createObjectURL(blob);
@@ -667,19 +669,17 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                 setTimeout(() => URL.revokeObjectURL(url), 5000);
             } else {
                 const w = window.open(url);
-                if (w) { w.addEventListener('load', () => w.print()); }
+                if (w) w.addEventListener('load', () => w.print());
                 setTimeout(() => URL.revokeObjectURL(url), 60000);
             }
         } catch (err) {
-            console.error("Failed to generate PDF", err);
-            toast.error("Failed to generate PDF");
+            console.error('Failed to generate PDF', err);
+            toast.error('Failed to generate PDF');
         } finally {
             setIsGeneratingPDF(false);
             setPendingAction(null);
         }
     };
-
-    const isAllSelected = data.length > 0 && selectedItems.size === data.length;
 
     return (
         <>
@@ -687,8 +687,9 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                 isOpen={signatoryModalOpen}
                 onClose={() => { setSignatoryModalOpen(false); setPendingAction(null); }}
                 onConfirm={handleSignatoryConfirm}
-                actionLabel={pendingAction || 'print'}
+                actionLabel={pendingAction ?? 'download'}
             />
+
             <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
                 <DialogContent className="!max-w-7xl !w-[95vw] max-h-[90vh] flex flex-col p-0 bg-white border-slate-200 shadow-2xl overflow-hidden">
 
@@ -851,7 +852,6 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                                         data.map((item: any, index: number) => {
                                             const safeId = item.code ?? `unknown-${index}`;
                                             const isSelected = selectedItems.has(safeId);
-
                                             return (
                                                 <TableRow
                                                     key={safeId}
