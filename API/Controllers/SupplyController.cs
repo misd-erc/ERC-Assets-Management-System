@@ -868,12 +868,14 @@ namespace API.Controllers
                         x.Id,
                         Quantity = x.Quantity,
                         x.CreatedAt,
+                        EffectiveDate = x.CreatedAt,
                         x.IsActive,
                         ItemRemarks = (string?)null,
                         UnitId = x.MeasurementUnitId,
                         Type = "Addition",
                         SupplyRISId = (long?)null,
-                        IARId = x.IARId
+                        IARId = x.IARId,
+                        RISRequestedDate = (DateTime?)null
                     })
                     .ToList();
 
@@ -884,6 +886,11 @@ namespace API.Controllers
                     .Where(r => r.IsApproved)
                     .Select(r => r.Id)
                     .ToListAsync();
+
+                var parentRisEntities = await context.Set<TblSupplyRIS>()
+                    .Where(r => fullyCompletedRisIds.Contains(r.Id))
+                    .ToListAsync();
+                var parentRisDict = parentRisEntities.ToDictionary(r => r.Id);
 
                 var risItemsQuery = _getTools.Supply.GetTblSupplyRISItems(context);
 
@@ -897,26 +904,36 @@ namespace API.Controllers
                 // Now filter by the [NotMapped] decrypted properties in memory
                 var issuanceEvents = filteredRisItems
                     .Where(x => x.StockNumber == targetCode && x.ItemDescription == targetDesc && x.IssueQuantity > 0)
-                    .Select(x => new
+                    .Select(x =>
                     {
-                        x.Id,
-                        Quantity = x.IssueQuantity,
-                        x.CreatedAt,
-                        x.IsActive,
-                        x.ItemRemarks,
-                        UnitId = x.UnitId,
-                        Type = "Issuance",
-                        SupplyRISId = x.SupplyRISId
+                        var parentRIS = x.SupplyRISId.HasValue && parentRisDict.ContainsKey(x.SupplyRISId.Value)
+                            ? parentRisDict[x.SupplyRISId.Value]
+                            : null;
+                        DateTime effectiveDate = parentRIS?.RISRequestedDate ?? x.CreatedAt;
+                        return new
+                        {
+                            x.Id,
+                            Quantity = x.IssueQuantity,
+                            x.CreatedAt,
+                            EffectiveDate = effectiveDate,
+                            x.IsActive,
+                            x.ItemRemarks,
+                            UnitId = x.UnitId,
+                            Type = "Issuance",
+                            SupplyRISId = x.SupplyRISId,
+                            IARId = (long?)null,
+                            RISRequestedDate = parentRIS?.RISRequestedDate
+                        };
                     })
                     .ToList();
 
                 // ===== 3. Combine and sort chronologically =====
-                // Sort by calendar date, then Delivery (Addition) before Issuance on the same date, then by exact time.
+                // Sort by effective calendar date (CreatedAt for Delivery, RISRequestedDate for Issuance), then Delivery before Issuance on the same date, then exact timestamp.
                 var allEvents = additionEvents.Cast<dynamic>()
                     .Concat(issuanceEvents.Cast<dynamic>())
-                    .OrderBy(e => ((DateTime)e.CreatedAt).Date)
+                    .OrderBy(e => ((DateTime)e.EffectiveDate).Date)
                     .ThenBy(e => e.Type == "Addition" ? 0 : 1)
-                    .ThenBy(e => e.CreatedAt)
+                    .ThenBy(e => e.EffectiveDate)
                     .ToList();
 
                 // ===== 4. Efficient unit loading =====
@@ -978,9 +995,9 @@ namespace API.Controllers
 
                     // --- ADDED: Fetch Parent RIS, Office, and Division logic ---
                     long? risId = evt.SupplyRISId;
-                    var parentRIS = risId.HasValue
-                        ? await _getTools.Supply.GetTblSupplyRISAsync(risId.Value, context)
-                        : null;
+                    var parentRIS = risId.HasValue && parentRisDict.ContainsKey(risId.Value)
+                        ? parentRisDict[risId.Value]
+                        : (risId.HasValue ? await _getTools.Supply.GetTblSupplyRISAsync(risId.Value, context) : null);
 
                     // --- Fetch Parent IAR for addition events ---
                     long? iarId = evt.Type == "Addition" ? evt.IARId : null;
@@ -1001,6 +1018,7 @@ namespace API.Controllers
                         ItemRemarks = evt.ItemRemarks,
                         IsActive = evt.IsActive,
                         CreatedAt = evt.CreatedAt,
+                        RISRequestedDate = evt.RISRequestedDate,
                         SupplyRISId = risId,
                         RISNumber = parentRIS?.RISNumber,
                         IARNumber = parentIAR?.IARNumber,
@@ -1835,7 +1853,7 @@ namespace API.Controllers
                 var supplyRISs = supplyRISsRaw
                     .Where(x =>
                     {
-                        var effectiveDate = x.CreatedAt.Date;
+                        var effectiveDate = (x.RISRequestedDate ?? x.CreatedAt).Date;
                         return effectiveDate >= startDate.Date && effectiveDate <= endDate.Date;
                     })
                     .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode, x.OfficeId, x.DivisionId })

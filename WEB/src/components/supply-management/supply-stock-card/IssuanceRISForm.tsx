@@ -283,7 +283,7 @@ export const IssuanceRISForm = ({
         risNumber: risForm.risNumber,
         risPurpose: undefined,
         risRequestedBySystemUserId: undefined,
-        risRequestedDate: undefined,
+        risRequestedDate: risForm.createdAt ? new Date(risForm.createdAt).toISOString() : undefined,
 
         isApproved: true,
         risApprovedBySystemUserId: undefined,
@@ -380,7 +380,7 @@ export const IssuanceRISForm = ({
 
         <div className="space-y-2 col-span-2">
           <Label className="text-slate-700 font-medium">Created At</Label>
-          <Input type="date" value={risForm.createdAt} onChange={(e) => setRisForm({ ...risForm, createdAt: e.target.value })} className="bg-white border-slate-200 text-slate-900" />
+          <Input type="date" value={risForm.createdAt} onChange={(e) => setRisForm({ ...risForm, createdAt: e.target.value, risRequestedDate: e.target.value })} className="bg-white border-slate-200 text-slate-900" />
         </div>
       </div>
 

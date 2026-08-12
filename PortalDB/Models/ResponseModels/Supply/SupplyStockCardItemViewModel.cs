@@ -25,5 +25,6 @@ namespace PortalDB.Models.ResponseModels.Supply
         public long? SupplyRISId { get; set; }
         public string? RISNumber { get; set; }
         public string? IARNumber { get; set; }
+        public DateTime? RISRequestedDate { get; set; }
     }
 }

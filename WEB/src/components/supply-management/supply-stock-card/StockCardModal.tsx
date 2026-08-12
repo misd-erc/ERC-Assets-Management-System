@@ -131,7 +131,7 @@ export const StockCardModal = ({ open, onOpenChange, stockNumber, description, t
                     return (
                       <TableRow key={item.id} className="hover:bg-slate-50 transition-colors">
                         <TableCell className="text-slate-600 whitespace-nowrap">
-                          {formatDate(item.createdAt)}
+                          {formatDate(item.issuedStockQuantity > 0 ? (item.risRequestedDate || item.createdAt) : item.createdAt)}
                         </TableCell>
                         <TableCell className="font-medium text-slate-700">
                           {item.addedStockQuantity > 0 ? item.iarNumber : item.risNumber}
