@@ -14,6 +14,7 @@ import { ppeApi } from "@/api/asset/ppe";
 import { seApi } from "@/api/asset/se";
 import { secureStorage } from "@/utils/secureStorage";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
+import { formatPositionOffice } from "@/utils/formatters";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -26,12 +27,12 @@ type TransferType = "DONATION" | "REASSIGNMENT" | "RELOCATE" | "OTHERS";
 
 const APPROVED_BY = {
   name: "CHERRY LYNN S. GONZALES",
-  designation: "Administrative Officer V-FAS, GSD",
+  designation: formatPositionOffice("Administrative Officer V", "FAS", "GSD"),
 };
 
 const RELEASED_BY = {
   name: "ROSELLE M. GUINTU",
-  designation: "Administrative Officer III - FAS, GSD",
+  designation: formatPositionOffice("Administrative Officer III", "FAS", "GSD"),
 };
 
 /* -------------------------------- STYLES -------------------------------- */
@@ -134,12 +135,12 @@ const styles = StyleSheet.create({
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 0.5,
-    borderColor: "#ccc",
+    borderColor: "#000",
     minHeight: 20,
     alignItems: "center",
   },
 
-  cell: { padding: 3, fontSize: 8, overflow: "hidden" },
+  cell: { padding: 3, fontSize: 8, overflow: "hidden", borderRightWidth: 0.5, borderRightColor: "#000" },
 
   colDateAcquired: { width: "15%" },
   colPropertyNo: { width: "20%" },

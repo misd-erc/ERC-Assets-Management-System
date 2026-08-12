@@ -267,8 +267,8 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     condition: string;
     remarks: string;
     reasonForTransfer: string;
-    plantillaEmployeeId: number | null;
-    nonPlantillaEmployeeId: number | null;
+    accountableEmployeeId: number | null;
+    subEmployeeId: number | null;
   }>({
     dateAssigned: '',
     transferNumber: '',
@@ -277,8 +277,8 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     condition: '',
     remarks: '',
     reasonForTransfer: '',
-    plantillaEmployeeId: null,
-    nonPlantillaEmployeeId: null,
+    accountableEmployeeId: null,
+    subEmployeeId: null,
   });
   // One row per item/movement in the PTR/ITR/return being edited, so each item's condition
   // can be edited individually.
@@ -539,6 +539,20 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     const rawRemarks = (movement.remarks || '').trim();
 
     setEditingMovement(movement);
+
+    // The DB still stores a Plantilla slot and a Non-Plantilla slot, but the two search
+    // boxes now accept either type — Plantilla (when present) is shown as the Accountable
+    // Employee, with Non-Plantilla as the Sub-PAR/ICS employee, matching the convention
+    // used everywhere else (PAR/ICS "Sub-" labeling).
+    const resolvedPlantillaId =
+      movement.plantillaEmployeeId ??
+      movement.employee?.find(e => e.employeeType === 'Plantilla')?.id ??
+      null;
+    const resolvedNonPlantillaId =
+      movement.nonPlantillaEmployeeId ??
+      movement.employee?.find(e => e.employeeType === 'Non-Plantilla')?.id ??
+      null;
+
     setEditFields({
       dateAssigned: movement.dateAssigned
         ? new Date(movement.dateAssigned).toISOString().split('T')[0]
@@ -553,14 +567,8 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       condition: movement.condition || '',
       remarks: movement.remarks || '',
       reasonForTransfer: movement.reasonForTransfer || '',
-      plantillaEmployeeId:
-        movement.plantillaEmployeeId ??
-        movement.employee?.find(e => e.employeeType === 'Plantilla')?.id ??
-        null,
-      nonPlantillaEmployeeId:
-        movement.nonPlantillaEmployeeId ??
-        movement.employee?.find(e => e.employeeType === 'Non-Plantilla')?.id ??
-        null,
+      accountableEmployeeId: resolvedPlantillaId ?? resolvedNonPlantillaId,
+      subEmployeeId: resolvedPlantillaId != null ? resolvedNonPlantillaId : null,
     });
 
     let availableConditions = conditions;
@@ -682,12 +690,30 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     }
   };
 
+  const isPlantillaEmployeeId = (id: number | null): boolean => {
+    if (id == null) return false;
+    const emp = editEmployees.find(e => e.id === id);
+    if (!emp) return false;
+    if (emp.employmentType?.id) return emp.employmentType.id === 1;
+    const typeName = (emp.employmentTypeName || emp.employmentType?.name || '').toLowerCase();
+    return typeName.includes('plantilla') && !typeName.includes('non');
+  };
+
   // Save edited movement details
   const handleSaveEdit = async () => {
     if (!editingMovement) return;
 
     if (editItemRecords.length === 0) {
       toast.error('This record must have at least one item');
+      return;
+    }
+
+    if (
+      editFields.accountableEmployeeId != null &&
+      editFields.subEmployeeId != null &&
+      isPlantillaEmployeeId(editFields.accountableEmployeeId) === isPlantillaEmployeeId(editFields.subEmployeeId)
+    ) {
+      toast.error('Accountable Employee and Sub-PAR/ICS Employee must be different employee types (one Plantilla, one Non-Plantilla)');
       return;
     }
 
@@ -702,6 +728,17 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       transferType === 'RRPPE' ||
       transferType === 'RRSP' ||
       (!transferType && !hasPtrItrNumber && hasReturnNumber);
+
+    // Resolve which of the two selected employees is the Plantilla holder and which is the
+    // Non-Plantilla holder from their actual type — the two search boxes are no longer tied
+    // to a fixed slot.
+    let resolvedPlantillaEmployeeId: number | null = null;
+    let resolvedNonPlantillaEmployeeId: number | null = null;
+    [editFields.accountableEmployeeId, editFields.subEmployeeId].forEach((id) => {
+      if (id == null) return;
+      if (isPlantillaEmployeeId(id)) resolvedPlantillaEmployeeId = resolvedPlantillaEmployeeId ?? id;
+      else resolvedNonPlantillaEmployeeId = resolvedNonPlantillaEmployeeId ?? id;
+    });
 
     const hasMissingCondition = editItemRecords.some(
       rec => !(rec.condition || editFields.condition || editingMovement.condition)
@@ -762,8 +799,8 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
           condition: rec.condition || editFields.condition || editingMovement.condition || '',
           actualOfficeId: (editingMovement as any).actualOfficeId ?? 0,
           actualDivisionId: (editingMovement as any).actualDivisionId ?? 0,
-          plantillaEmployeeId: editFields.plantillaEmployeeId ?? null,
-          nonPlantillaEmployeeId: editFields.nonPlantillaEmployeeId ?? null,
+          plantillaEmployeeId: resolvedPlantillaEmployeeId,
+          nonPlantillaEmployeeId: resolvedNonPlantillaEmployeeId,
           isActive: editingMovement.isActive,
           isCurrent: true,
           reasonForTransfer: editFields.reasonForTransfer.trim() || undefined,
@@ -1406,8 +1443,8 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       </Dialog>
       {/* Edit Details Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-xl max-w-[95vw] max-h-[95vh] overflow-y-auto overflow-x-hidden border-4">
-          <DialogHeader className="min-w-0">
+        <DialogContent className="w-[95vw] sm:max-w-xl max-w-[95vw] max-h-[95vh] flex flex-col overflow-hidden border-4">
+          <DialogHeader className="min-w-0 flex-shrink-0">
             <DialogTitle className="text-xl">Update Movement Details</DialogTitle>
             <DialogDescription className="text-sm">
               Edit the details for{' '}
@@ -1425,7 +1462,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2 min-w-0">
+          <div className="space-y-4 py-2 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
             {/* Transfer / Return Number */}
             <div className="space-y-1">
               <label className="text-sm font-medium">
@@ -1480,10 +1517,10 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
               />
             </div>
 
-            {/* Accountable Person — Plantilla */}
+            {/* Accountable Employee — searches all employees regardless of type */}
             <div className="space-y-1">
               <label className="text-sm font-medium">
-                Plantilla Employee (Accountable Person)
+                Accountable Employee
               </label>
               {editEmployeesLoading ? (
                 <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
@@ -1492,29 +1529,25 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
                 </div>
               ) : (
                 <EmployeeSelector
-                  employees={editEmployees.filter(e => {
-                    const typeName = (e.employmentTypeName || e.employmentType?.name || '').toLowerCase();
-                    if (e.employmentType?.id) return e.employmentType.id === 1;
-                    return typeName.includes('plantilla') && !typeName.includes('non');
-                  })}
-                  value={editFields.plantillaEmployeeId}
-                  onSelect={(id) => setEditFields(f => ({ ...f, plantillaEmployeeId: id }))}
-                  placeholder="Search plantilla employee…"
+                  employees={editEmployees}
+                  value={editFields.accountableEmployeeId}
+                  onSelect={(id) => setEditFields(f => ({ ...f, accountableEmployeeId: id }))}
+                  placeholder="Search employee…"
                 />
               )}
             </div>
 
-            {/* Accountable Person — Non-Plantilla (optional) */}
+            {/* Sub-PAR/ICS Employee (optional) — also searches all employees */}
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">
-                  Non-Plantilla Employee <span className="text-muted-foreground font-normal">(Optional)</span>
+                  Sub-PAR/ICS Employee <span className="text-muted-foreground font-normal">(Optional)</span>
                 </label>
-                {editFields.nonPlantillaEmployeeId !== null && (
+                {editFields.subEmployeeId !== null && (
                   <button
                     type="button"
                     className="text-xs text-destructive hover:underline"
-                    onClick={() => setEditFields(f => ({ ...f, nonPlantillaEmployeeId: null }))}
+                    onClick={() => setEditFields(f => ({ ...f, subEmployeeId: null }))}
                   >
                     Clear
                   </button>
@@ -1527,14 +1560,10 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
                 </div>
               ) : (
                 <EmployeeSelector
-                  employees={editEmployees.filter(e => {
-                    const typeName = (e.employmentTypeName || e.employmentType?.name || '').toLowerCase();
-                    if (e.employmentType?.id) return e.employmentType.id !== 1;
-                    return !typeName.includes('plantilla') || typeName.includes('non');
-                  })}
-                  value={editFields.nonPlantillaEmployeeId}
-                  onSelect={(id) => setEditFields(f => ({ ...f, nonPlantillaEmployeeId: id }))}
-                  placeholder="Search non-plantilla employee…"
+                  employees={editEmployees}
+                  value={editFields.subEmployeeId}
+                  onSelect={(id) => setEditFields(f => ({ ...f, subEmployeeId: id }))}
+                  placeholder="Search employee…"
                 />
               )}
             </div>
@@ -1721,7 +1750,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-2 border-t flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => setEditDialogOpen(false)}

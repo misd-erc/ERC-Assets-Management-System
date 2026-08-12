@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Search, FileText, ChevronLeft, ChevronRight, Printer, FileSpreadsheet } from 'lucide-react';
 import { getPTAReturnList, getReturnDetailsByNumber } from '@/api/asset/transferApi';
 import { getEmployees } from '@/api/user-management/userApi';
+import { formatPositionOffice } from '@/utils/formatters';
 import { ReturnReceiptGenerator } from './ReturnReceiptGenerator';
 
 type ReturnType = 'RRPPE' | 'RRSP';
@@ -94,10 +95,7 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
         const retPosition = returnedByEmp?.position?.name || '';
         const retOffice = returnedByEmp?.office?.acronym || returnedByEmp?.office?.name || '';
         const retDivision = returnedByEmp?.division?.acronym || returnedByEmp?.division?.name || '';
-        const returnedByPositionOffice = [
-          retPosition,
-          [retOffice, retDivision].filter(Boolean).join(', '),
-        ].filter(Boolean).join(' - ');
+        const returnedByPositionOffice = formatPositionOffice(retPosition, retOffice, retDivision);
 
         const isNonPlantilla = !!raw.nonPlantillaEmployeeId;
         const nonPlantillaName = raw.nonPlantillaEmployeeName || '';

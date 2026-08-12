@@ -75,19 +75,35 @@ export const DivisionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
     setPage(1);
   }, [searchQuery]);
 
-  /* Pagination logic */
-  const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
-  const paginated = data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  /* Filter divisions by name, acronym, or office name */
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredData = normalizedQuery
+    ? data.filter((division) => {
+        const name = division.name?.toLowerCase() ?? '';
+        const acronym = division.acronym?.toLowerCase() ?? '';
+        const officeName = division.office?.name?.toLowerCase() ?? '';
 
-  const goPrev = () => setPage(p => Math.max(1, p - 1));
-  const goNext = () => setPage(p => Math.min(totalPages, p + 1));
+        return (
+          name.includes(normalizedQuery) ||
+          acronym.includes(normalizedQuery) ||
+          officeName.includes(normalizedQuery)
+        );
+      })
+    : data;
+
+  /* Pagination logic */
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+  const paginated = filteredData.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const goPrev = () => setPage((p) => Math.max(1, p - 1));
+  const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
 
   return (
     <Card className="shadow-sm">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Divisions ({data.length})</CardTitle>
+            <CardTitle>Divisions ({filteredData.length})</CardTitle>
             <CardDescription>
               Manage division records and their status
             </CardDescription>
@@ -169,7 +185,7 @@ export const DivisionTable = ({ data, onAdd, onEdit, onDelete }: Props) => {
             </TableBody>
           </Table>
 
-          {data.length === 0 && (
+          {filteredData.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               No divisions found
             </div>

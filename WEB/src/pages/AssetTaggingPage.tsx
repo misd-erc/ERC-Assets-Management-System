@@ -285,6 +285,12 @@ export default function AssetTaggingPage() {
           .print-area, .print-area * { visibility: visible; }
           .print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 4mm; }
           .print-area .grid { gap: 6px !important; }
+          /* Without this, the browser happily splits a sticker card mid-content across a
+             page break instead of pushing the whole card onto the next page. */
+          .print-area .grid > div {
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
           @page { size: A4; margin: 8mm; }
         }
       `}</style>
