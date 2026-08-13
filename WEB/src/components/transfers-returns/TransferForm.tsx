@@ -43,8 +43,8 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
 
   // Form State
   const [fromEmployee, setFromEmployee] = useState<ApiEmployee | null>(null);
-  const [toPlantillaEmployee, setToPlantillaEmployee] = useState<ApiEmployee | null>(null);
-  const [toNonPlantillaEmployee, setToNonPlantillaEmployee] = useState<ApiEmployee | null>(null);
+  const [toEmployeeAccountable, setToEmployeeAccountable] = useState<ApiEmployee | null>(null);
+  const [toSubEmployee, setToSubEmployee] = useState<ApiEmployee | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [itemConditions, setItemConditions] = useState<Record<string, string>>({});
   const [itemSearchQuery, setItemSearchQuery] = useState('');
@@ -76,8 +76,8 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     if (isOpen) {
       setCurrentStep('from-employee');
       setFromEmployee(null);
-      setToPlantillaEmployee(null);
-      setToNonPlantillaEmployee(null);
+      setToEmployeeAccountable(null);
+      setToSubEmployee(null);
       setSelectedItems([]);
       setItemConditions({});
       setItemSearchQuery('');
@@ -215,9 +215,14 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
 
   // Generate numbers then advance to confirm step
   const handleGenerateAndConfirm = async () => {
-    const recipient = toPlantillaEmployee ?? toNonPlantillaEmployee;
+    const recipient = toEmployeeAccountable ?? toSubEmployee;
     if (!fromEmployee || selectedItems.length === 0 || !recipient) {
       toast.error('Please complete all steps');
+      return;
+    }
+
+    if (toEmployeeAccountable && toSubEmployee && isPlantilla(toEmployeeAccountable) === isPlantilla(toSubEmployee)) {
+      toast.error('Accountable Employee and Sub-PAR/ICS Employee must be different employee types (one Plantilla, one Non-Plantilla)');
       return;
     }
 
@@ -246,10 +251,15 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
 
   // Final save using the (possibly edited) generated numbers
   const handleFinalSave = async () => {
-    const recipient = toPlantillaEmployee ?? toNonPlantillaEmployee;
+    const recipient = toEmployeeAccountable ?? toSubEmployee;
 
     if (!fromEmployee || selectedItems.length === 0 || !recipient) {
       toast.error('Please complete all steps');
+      return;
+    }
+
+    if (toEmployeeAccountable && toSubEmployee && isPlantilla(toEmployeeAccountable) === isPlantilla(toSubEmployee)) {
+      toast.error('Accountable Employee and Sub-PAR/ICS Employee must be different employee types (one Plantilla, one Non-Plantilla)');
       return;
     }
 
@@ -262,6 +272,17 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
       setLoading(true);
       setError(null);
 
+      // Accountable Employee and the Sub-PAR/ICS Employee can each be either employment
+      // type now (the two search boxes are no longer restricted), so figure out which one
+      // is the Plantilla holder and which is the Non-Plantilla holder from their actual type.
+      let plantillaEmployeeId: number | null = null;
+      let nonPlantillaEmployeeId: number | null = null;
+      [toEmployeeAccountable, toSubEmployee].forEach((emp) => {
+        if (!emp) return;
+        if (isPlantilla(emp)) plantillaEmployeeId = plantillaEmployeeId ?? emp.id;
+        else nonPlantillaEmployeeId = nonPlantillaEmployeeId ?? emp.id;
+      });
+
       const movements = selectedItems.map(itemId => {
         const item = employeeItems.find(i => String(i.id) === itemId);
         return {
@@ -271,8 +292,8 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           ptrItrNumber: generatedTransferNumber,
           parIcsNumber: generatedParIcsNumber,
           status: 'T',
-          plantillaEmployeeId: toPlantillaEmployee?.id || null,
-          nonPlantillaEmployeeId: toNonPlantillaEmployee?.id || null,
+          plantillaEmployeeId,
+          nonPlantillaEmployeeId,
           condition: itemConditions[itemId] || item?.condition || 'Good',
           actualOfficeId: recipient?.office?.id || 0,
           actualDivisionId: recipient?.division?.id || 0,
@@ -344,36 +365,11 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     return type === 'plantilla';
   };
 
-  const isNonPlantilla = (emp: ApiEmployee) => {
-    if (emp.employmentType?.id) return emp.employmentType.id !== 1;
-    const type = normalizeType(getEmploymentTypeName(emp));
-    return type.includes('nonplantilla');
-  };
-
-  const plantillaEmployees = employees.filter(e => {
-    if (isNonPlantilla(e)) return false;
-    if (isPlantilla(e)) return true;
-    return true;
-  });
-
-  const nonPlantillaEmployees = employees.filter(e => {
-    if (isNonPlantilla(e)) return true;
-    if (isPlantilla(e)) return false;
-    return true;
-  });
-
-  const getCurrentHolderEmployees = (type: 'plantilla' | 'nonplantilla') => {
-    const currentEmployeeId = fromEmployee?.id;
-    if (!currentEmployeeId) {
-      return type === 'plantilla' ? plantillaEmployees : nonPlantillaEmployees;
-    }
-    const filteredList = (type === 'plantilla' ? plantillaEmployees : nonPlantillaEmployees)
-      .filter(e => e.id !== currentEmployeeId);
-    return filteredList;
-  };
-
-  const plantillaEmployeesForStep3 = getCurrentHolderEmployees('plantilla');
-  const nonPlantillaEmployeesForStep3 = getCurrentHolderEmployees('nonplantilla');
+  // Single unified employee list for Step 3 — searches across all employees regardless of
+  // employment type, excluding whoever currently holds the items.
+  const employeesForStep3 = fromEmployee
+    ? employees.filter(e => e.id !== fromEmployee.id)
+    : employees;
 
   const getStepNumber = () => {
     if (currentStep === 'from-employee') return 1;
@@ -387,7 +383,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     switch (currentStep) {
       case 'from-employee': return !!fromEmployee;
       case 'select-items': return selectedItems.length > 0;
-      case 'to-employee': return !!toPlantillaEmployee || !!toNonPlantillaEmployee;
+      case 'to-employee': return !!toEmployeeAccountable || !!toSubEmployee;
       case 'confirm': return !!generatedTransferNumber.trim() && !!generatedParIcsNumber.trim();
       default: return false;
     }
@@ -421,12 +417,12 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
     }
   };
 
-  const recipient = toPlantillaEmployee ?? toNonPlantillaEmployee;
+  const recipient = toEmployeeAccountable ?? toSubEmployee;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-6 border-b">
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="pb-6 border-b flex-shrink-0">
           <DialogTitle className="text-2xl font-bold">{transferLabel}</DialogTitle>
           <div className="mt-2 flex items-center justify-between">
             <p className="text-sm text-gray-600">Step {getStepNumber()} of 4</p>
@@ -443,6 +439,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           </div>
         </DialogHeader>
 
+        <div className="flex-1 overflow-y-auto">
         {success ? (
           <div className="py-12 px-6">
             <div className="flex flex-col items-center justify-center gap-4">
@@ -455,27 +452,15 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
             </div>
           </div>
         ) : error ? (
-          <>
-            <div className="py-8 px-6 max-h-[70vh] overflow-y-auto">
-              <div className="flex items-start gap-4 p-6 bg-red-50 border-2 border-red-200 rounded-lg">
-                <AlertCircle className="w-8 h-8 text-red-600 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="font-bold text-red-900 text-lg">Error Occurred</p>
-                  <p className="text-red-700 mt-2 whitespace-pre-wrap">{error}</p>
-                </div>
+          <div className="py-8 px-6">
+            <div className="flex items-start gap-4 p-6 bg-red-50 border-2 border-red-200 rounded-lg">
+              <AlertCircle className="w-8 h-8 text-red-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="font-bold text-red-900 text-lg">Error Occurred</p>
+                <p className="text-red-700 mt-2 whitespace-pre-wrap">{error}</p>
               </div>
             </div>
-            <div className="flex justify-between pt-6 border-t">
-              <Button
-                variant="outline"
-                onClick={() => setError(null)}
-                className="px-6 py-2"
-              >
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                Go Back
-              </Button>
-            </div>
-          </>
+          </div>
         ) : dataLoading ? (
           <div className="py-16 flex items-center justify-center">
             <div className="flex flex-col items-center gap-4">
@@ -487,7 +472,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
           <>
             {/* Step 1: From Employee */}
             {currentStep === 'from-employee' && (
-              <div className="py-8 px-6 max-h-[70vh] overflow-y-auto">
+              <div className="py-8 px-6">
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <h3 className="text-2xl font-bold text-gray-900">Select FROM Employee</h3>
@@ -518,7 +503,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
 
             {/* Step 2: Select Items */}
             {currentStep === 'select-items' && (
-              <div className="py-8 px-6 max-h-[70vh] overflow-y-auto">
+              <div className="py-8 px-6">
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <h3 className="text-2xl font-bold text-gray-900">Select Items to Transfer</h3>
@@ -615,56 +600,56 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
 
             {/* Step 3: To Employee */}
             {currentStep === 'to-employee' && (
-              <div className="py-8 px-6 max-h-[70vh] overflow-y-auto">
+              <div className="py-8 px-6">
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-gray-900">Select TO Employees</h3>
-                    <p className="text-base text-gray-600">Choose the plantilla and/or non-plantilla employee who will receive the items</p>
+                    <h3 className="text-2xl font-bold text-gray-900">Select TO Employee</h3>
+                    <p className="text-base text-gray-600">Choose the employee accountable for the items, and optionally a Sub-PAR/ICS employee</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-6">
-                        <Label className="text-base font-bold text-amber-900 mb-3 block">Plantilla Employee</Label>
+                        <Label className="text-base font-bold text-amber-900 mb-3 block">Accountable Employee</Label>
                         <EmployeeSelector
-                          employees={plantillaEmployeesForStep3}
-                          value={toPlantillaEmployee?.id || null}
+                          employees={employeesForStep3}
+                          value={toEmployeeAccountable?.id || null}
                           onSelect={(empId) => {
-                            if (!empId) { setToPlantillaEmployee(null); return; }
+                            if (!empId) { setToEmployeeAccountable(null); return; }
                             const emp = employees.find(e => e.id === empId);
-                            setToPlantillaEmployee(emp || null);
+                            setToEmployeeAccountable(emp || null);
                           }}
-                          placeholder="Search plantilla employee..."
+                          placeholder="Search employee..."
                         />
                       </div>
-                      {toPlantillaEmployee && (
+                      {toEmployeeAccountable && (
                         <div className="bg-gradient-to-br from-amber-50 to-amber-100 border-2 border-amber-300 rounded-lg p-4 space-y-2">
-                          <p className="font-semibold text-amber-900">{toPlantillaEmployee.firstName} {toPlantillaEmployee.lastName}</p>
-                          {toPlantillaEmployee.officeName && <p className="text-sm text-amber-800"><strong>Office:</strong> {toPlantillaEmployee.officeName}</p>}
-                          {toPlantillaEmployee.divisionName && <p className="text-sm text-amber-800"><strong>Division:</strong> {toPlantillaEmployee.divisionName}</p>}
+                          <p className="font-semibold text-amber-900">{toEmployeeAccountable.firstName} {toEmployeeAccountable.lastName}</p>
+                          {toEmployeeAccountable.officeName && <p className="text-sm text-amber-800"><strong>Office:</strong> {toEmployeeAccountable.officeName}</p>}
+                          {toEmployeeAccountable.divisionName && <p className="text-sm text-amber-800"><strong>Division:</strong> {toEmployeeAccountable.divisionName}</p>}
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-4">
                       <div className="bg-purple-50 border-2 border-purple-300 rounded-lg p-6">
-                        <Label className="text-base font-bold text-purple-900 mb-3 block">Non-Plantilla Employee</Label>
+                        <Label className="text-base font-bold text-purple-900 mb-3 block">Sub-PAR/ICS Employee</Label>
                         <EmployeeSelector
-                          employees={nonPlantillaEmployeesForStep3}
-                          value={toNonPlantillaEmployee?.id || null}
+                          employees={employeesForStep3}
+                          value={toSubEmployee?.id || null}
                           onSelect={(empId) => {
-                            if (!empId) { setToNonPlantillaEmployee(null); return; }
+                            if (!empId) { setToSubEmployee(null); return; }
                             const emp = employees.find(e => e.id === empId);
-                            setToNonPlantillaEmployee(emp || null);
+                            setToSubEmployee(emp || null);
                           }}
-                          placeholder="Search non-plantilla employee..."
+                          placeholder="Search employee..."
                         />
                       </div>
-                      {toNonPlantillaEmployee && (
+                      {toSubEmployee && (
                         <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-300 rounded-lg p-4 space-y-2">
-                          <p className="font-semibold text-purple-900">{toNonPlantillaEmployee.firstName} {toNonPlantillaEmployee.lastName}</p>
-                          {toNonPlantillaEmployee.officeName && <p className="text-sm text-purple-800"><strong>Office:</strong> {toNonPlantillaEmployee.officeName}</p>}
-                          {toNonPlantillaEmployee.divisionName && <p className="text-sm text-purple-800"><strong>Division:</strong> {toNonPlantillaEmployee.divisionName}</p>}
+                          <p className="font-semibold text-purple-900">{toSubEmployee.firstName} {toSubEmployee.lastName}</p>
+                          {toSubEmployee.officeName && <p className="text-sm text-purple-800"><strong>Office:</strong> {toSubEmployee.officeName}</p>}
+                          {toSubEmployee.divisionName && <p className="text-sm text-purple-800"><strong>Division:</strong> {toSubEmployee.divisionName}</p>}
                         </div>
                       )}
                     </div>
@@ -734,7 +719,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
 
             {/* Step 4: Confirm — review and edit generated numbers before saving */}
             {currentStep === 'confirm' && (
-              <div className="py-8 px-6 max-h-[70vh] overflow-y-auto">
+              <div className="py-8 px-6">
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
@@ -796,41 +781,57 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
                 </div>
               </div>
             )}
+          </>
+        )}
+        </div>
 
-            {/* Navigation Buttons */}
-            <div className="flex justify-between pt-6 px-6 border-t gap-4">
+        {/* Navigation Buttons — kept outside the scrollable area so they're always visible */}
+        {!success && !dataLoading && (
+          <div className="flex justify-between pt-6 px-6 pb-6 border-t gap-4 flex-shrink-0">
+            {error ? (
               <Button
                 variant="outline"
-                onClick={handleBack}
-                disabled={currentStep === 'from-employee' || loading}
-                className="px-8 py-6 text-base font-semibold"
+                onClick={() => setError(null)}
+                className="px-6 py-2"
               >
-                <ChevronLeft className="w-5 h-5 mr-2" />
-                Back
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                Go Back
               </Button>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={currentStep === 'from-employee' || loading}
+                  className="px-8 py-6 text-base font-semibold"
+                >
+                  <ChevronLeft className="w-5 h-5 mr-2" />
+                  Back
+                </Button>
 
-              <Button
-                onClick={handleNext}
-                disabled={!canGoNext() || loading || itemsLoading}
-                className="px-8 py-6 text-base font-semibold bg-blue-600 hover:bg-blue-700"
-              >
-                {loading && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
-                {currentStep === 'confirm' ? (
-                  'Save Transfer'
-                ) : currentStep === 'to-employee' ? (
-                  <>
-                    Review & Confirm
-                    <ChevronRight className="w-5 h-5 ml-2" />
-                  </>
-                ) : (
-                  <>
-                    Next
-                    <ChevronRight className="w-5 h-5 ml-2" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </>
+                <Button
+                  onClick={handleNext}
+                  disabled={!canGoNext() || loading || itemsLoading}
+                  className="px-8 py-6 text-base font-semibold bg-blue-600 hover:bg-blue-700"
+                >
+                  {loading && <Loader2 className="w-5 h-5 mr-2 animate-spin" />}
+                  {currentStep === 'confirm' ? (
+                    'Save Transfer'
+                  ) : currentStep === 'to-employee' ? (
+                    <>
+                      Review & Confirm
+                      <ChevronRight className="w-5 h-5 ml-2" />
+                    </>
+                  ) : (
+                    <>
+                      Next
+                      <ChevronRight className="w-5 h-5 ml-2" />
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
+          </div>
         )}
       </DialogContent>
     </Dialog>

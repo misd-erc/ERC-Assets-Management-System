@@ -17,6 +17,7 @@ import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getITRTransferList, getTransferDetailsByNumber } from '@/api/asset/transferApi';
 import { getEmployees } from '@/api/user-management/userApi';
+import { formatPositionOffice } from '@/utils/formatters';
 import { ITRGenerator } from './ITRGenerator';
 
 interface ITRGenerationModalProps {
@@ -118,10 +119,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
         const toEmpDivision = item.plantillaEmployeeName
           ? (item.plantillaEmployeeDivision || toEmpDetails?.division?.acronym || toEmpDetails?.division?.name || item.division?.acronym || item.division?.name || '')
           : (item.nonPlantillaEmployeeDivision || toEmpDetails?.division?.acronym || toEmpDetails?.division?.name || item.division?.acronym || item.division?.name || '');
-        const toEmpPositionOffice = [
-          toEmpPosition,
-          [toEmpOffice, toEmpDivision].filter(Boolean).join(', '),
-        ].filter(Boolean).join(' - ');
+        const toEmpPositionOffice = formatPositionOffice(toEmpPosition, toEmpOffice, toEmpDivision);
 
         // Split full name into parts for the PDF generator
         const toEmpParts = toEmpFullName.trim().split(/\s+/);

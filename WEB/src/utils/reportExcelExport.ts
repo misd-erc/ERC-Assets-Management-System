@@ -129,9 +129,17 @@ export async function downloadReportExcel(config: ExcelReportConfig): Promise<vo
 
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(sheetName);
-  // Widen columns with longer headers a bit so short-header columns (e.g. "No.", "Amount")
-  // don't force everything onto the same narrow width as a long one.
-  worksheet.columns = columns.map((label) => ({ width: Math.max(12, Math.min(40, label.length + 6)) }));
+  // Base width on the longest thing that will actually appear in each column — the header
+  // alone isn't enough (e.g. "Amount" is short, but a total like "PHP65,897,247.90" is not,
+  // and would otherwise get clipped in a column sized only for its header).
+  worksheet.columns = columns.map((label, i) => {
+    const longestValueLen = Math.max(
+      label.length,
+      ...rows.map((r) => String(r[i] ?? '').length),
+      totalRow ? String(totalRow[i] ?? '').length : 0
+    );
+    return { width: Math.max(12, Math.min(40, longestValueLen + 4)) };
+  });
 
   if (logoUrl) {
     const logo = await fetchImageAsBase64(logoUrl);
