@@ -69,7 +69,7 @@ const pdfStyles = StyleSheet.create({
     // Table Styles
     table: { width: '100%', borderStyle: 'solid', borderWidth: 1, borderColor: '#000', marginBottom: 15 },
     tableRow: { flexDirection: 'row' },
-    tableHeaderRow: { flexDirection: 'row', backgroundColor: '#f8fafc', borderBottomWidth: 1, borderBottomColor: '#000' },
+    tableHeaderRow: { flexDirection: 'row', backgroundColor: '#fef08a', borderBottomWidth: 1, borderBottomColor: '#000' },
 
     colArticle: { width: '5%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
     colDesc: { width: '30%', borderRightWidth: 1, borderRightColor: '#000', padding: 4 },
