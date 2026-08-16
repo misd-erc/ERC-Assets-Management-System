@@ -4,6 +4,7 @@ import { useSupplyItem } from '@/hooks';
 import { useSupplyStorageLocationStore } from '@/store/supply';
 import { SupplyGroupedItemTable } from './SupplyGroupedItemTable';
 import { SupplyGroupItemsModal } from './SupplyGroupItemsModal';
+import { SupplyItemEditModal } from '../SupplyItemEditModal';
 import { VwSupplyGroupedItem } from '@/types';
 import { getVendors } from '@/api';
 
@@ -15,6 +16,7 @@ export const SupplyGroupedTabContent = () => {
   const [vendors, setVendors] = useState<any[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<VwSupplyGroupedItem | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const [params, setParams] = useState({
     page: 1,
@@ -32,6 +34,20 @@ export const SupplyGroupedTabContent = () => {
       .then(res => setVendors(res || []))
       .catch(() => setVendors([]));
   }, [fetchSupplyStorageLocations, fetchCategories]);
+
+  const refreshItems = async () => {
+    const selectedCategory = categories.find(c => c.name === params.category);
+
+    await fetchSupplyGroupedItems(
+      params.page,
+      PAGE_SIZE,
+      params.search,
+      params.status === 'all' ? undefined : params.status,
+      selectedCategory?.id,
+      params.storageId === 'all' ? undefined : Number(params.storageId),
+      params.vendorId === 'all' ? undefined : Number(params.vendorId)
+    );
+  };
 
   useEffect(() => {
     const selectedCategory = categories.find(c => c.name === params.category);
@@ -52,6 +68,10 @@ export const SupplyGroupedTabContent = () => {
     setModalOpen(true);
   };
 
+  const handleAdd = () => {
+    setIsAddModalOpen(true);
+  };
+
   return (
     <>
       <SupplyGroupedItemTable
@@ -70,6 +90,7 @@ export const SupplyGroupedTabContent = () => {
         description="Overview of supply items grouped by item code"
         onParamsChange={(newParams) => setParams(prev => ({ ...prev, ...newParams }))}
         onView={handleView}
+        onAdd={handleAdd}
         viewActionLabel="View"
         loading={loading}
       />
@@ -77,6 +98,13 @@ export const SupplyGroupedTabContent = () => {
         open={modalOpen}
         onOpenChange={setModalOpen}
         groupedItem={selectedGroup}
+      />
+      <SupplyItemEditModal
+        open={isAddModalOpen}
+        onOpenChange={setIsAddModalOpen}
+        mode="add"
+        supplyItem={null}
+        onSuccess={refreshItems}
       />
     </>
   );

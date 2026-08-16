@@ -68,7 +68,7 @@ const pdfStyles = StyleSheet.create({
     // Table Styles
     table: { width: '100%', borderStyle: 'solid', borderWidth: 1, borderColor: '#000', marginBottom: 15, marginTop: 3 },
     tableRow: { flexDirection: 'row' },
-    tableHeaderRow: { flexDirection: 'row', backgroundColor: '#f8fafc', borderBottomWidth: 1, borderBottomColor: '#000' },
+    tableHeaderRow: { flexDirection: 'row', backgroundColor: '#fef08a', borderBottomWidth: 1, borderBottomColor: '#000' },
 
     colStock: { width: '12%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
     colItem: { width: '30%', borderRightWidth: 1, borderRightColor: '#000', padding: 2 },
@@ -83,6 +83,9 @@ const pdfStyles = StyleSheet.create({
     cellText: { fontSize: 7 },
     cellTextCenter: { fontSize: 7, textAlign: 'center' },
     cellTextRight: { fontSize: 7, textAlign: 'right' },
+    cellTextBold: { fontSize: 7, fontFamily: 'Helvetica-Bold' },
+    cellTextBoldCenter: { fontSize: 7, fontFamily: 'Helvetica-Bold', textAlign: 'center' },
+    cellTextBoldRight: { fontSize: 7, fontFamily: 'Helvetica-Bold', textAlign: 'right' },
     rowBorderBottom: { borderBottomWidth: 0.5, borderBottomColor: '#cbd5e1' },
 
     markerRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000' },
@@ -213,10 +216,44 @@ const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsm
 
                 {data.map((group: any, gIdx: number) => {
                     const groupKey = group.stockNumber ? `group-${group.stockNumber}-${gIdx}` : `group-${gIdx}`;
+                    const items = group.items || [];
+                    const isRepeated = items.length > 1;
+                    const groupTotalQty = items.reduce((sum: number, item: any) => sum + (item.issueQuantity ?? 0), 0);
+
+                    if (items.length === 0) {
+                        return (
+                            <View key={groupKey} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
+                                <View style={pdfStyles.colStock}>
+                                    <Text style={pdfStyles.cellText}>{group.stockNumber ?? ''}</Text>
+                                </View>
+                                <View style={pdfStyles.colItem}>
+                                    <Text style={pdfStyles.cellText}>{group.itemDescription ?? ''}</Text>
+                                </View>
+                                <View style={pdfStyles.colRis}>
+                                    <Text style={pdfStyles.cellTextCenter}></Text>
+                                </View>
+                                <View style={pdfStyles.colRc}>
+                                    <Text style={pdfStyles.cellTextCenter}></Text>
+                                </View>
+                                <View style={pdfStyles.colQty}>
+                                    <Text style={pdfStyles.cellTextRight}>{group.total ?? 0}</Text>
+                                </View>
+                                <View style={pdfStyles.colUnitCost}>
+                                    <Text style={pdfStyles.cellTextRight}>{group.unitCost ? formatCurrencyPlain(group.unitCost) : ''}</Text>
+                                </View>
+                                <View style={pdfStyles.colTotalCost}>
+                                    <Text style={pdfStyles.cellTextRight}>{group.totalCost ? formatCurrencyPlain(group.totalCost) : ''}</Text>
+                                </View>
+                                <View style={pdfStyles.colAccountCode}>
+                                    <Text style={pdfStyles.cellText}>{group.accountCode ?? ''}</Text>
+                                </View>
+                            </View>
+                        );
+                    }
 
                     return (
                         <React.Fragment key={groupKey}>
-                            {(group.items || []).map((item: any, iIdx: number) => {
+                            {items.map((item: any, iIdx: number) => {
                                 const showStock = iIdx === 0;
                                 const qty = item.issueQuantity ?? 0;
                                 const itemKey = item.id
@@ -228,10 +265,10 @@ const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsm
                                 return (
                                     <View key={itemKey} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom]}>
                                         <View style={pdfStyles.colStock}>
-                                            <Text style={pdfStyles.cellText}>{showStock ? (group.stockNumber ?? '') : ''}</Text>
+                                            <Text style={pdfStyles.cellText}>{group.stockNumber ?? ''}</Text>
                                         </View>
                                         <View style={pdfStyles.colItem}>
-                                            <Text style={pdfStyles.cellText}>{showStock ? (group.itemDescription ?? '') : ''}</Text>
+                                            <Text style={pdfStyles.cellText}>{group.itemDescription ?? ''}</Text>
                                         </View>
                                         <View style={pdfStyles.colRis}>
                                             <Text style={pdfStyles.cellTextCenter}>{item.risNumber ?? ''}</Text>
@@ -254,6 +291,35 @@ const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsm
                                     </View>
                                 );
                             })}
+
+                            {isRepeated && (
+                                <View key={`total-${groupKey}`} style={[pdfStyles.tableRow, pdfStyles.rowBorderBottom, { backgroundColor: '#f8fafc' }]}>
+                                    <View style={pdfStyles.colStock}>
+                                        <Text style={pdfStyles.cellTextBold}>{group.stockNumber ?? ''}</Text>
+                                    </View>
+                                    <View style={pdfStyles.colItem}>
+                                        <Text style={pdfStyles.cellTextBold}>{group.itemDescription ?? ''}</Text>
+                                    </View>
+                                    <View style={pdfStyles.colRis}>
+                                        <Text style={pdfStyles.cellTextCenter}></Text>
+                                    </View>
+                                    <View style={pdfStyles.colRc}>
+                                        <Text style={pdfStyles.cellTextCenter}></Text>
+                                    </View>
+                                    <View style={pdfStyles.colQty}>
+                                        <Text style={pdfStyles.cellTextBoldRight}>Total: {groupTotalQty || group.total || 0}</Text>
+                                    </View>
+                                    <View style={pdfStyles.colUnitCost}>
+                                        <Text style={pdfStyles.cellTextBoldRight}></Text>
+                                    </View>
+                                    <View style={pdfStyles.colTotalCost}>
+                                        <Text style={pdfStyles.cellTextBoldRight}></Text>
+                                    </View>
+                                    <View style={pdfStyles.colAccountCode}>
+                                        <Text style={pdfStyles.cellTextBold}></Text>
+                                    </View>
+                                </View>
+                            )}
                         </React.Fragment>
                     );
                 })}
@@ -294,11 +360,13 @@ const RSMIPDFDocument: React.FC<RSMIPDFDocumentProps> = ({ data, reportDate, rsm
 interface RSMISignatoryModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (signatories: RSMISignatories) => void;
+    onConfirm: (signatories: RSMISignatories, rsmiNumber: string) => void;
     actionLabel: string;
+    defaultRsmiNumber: string;
 }
 
-const RSMISignatoryModal: React.FC<RSMISignatoryModalProps> = ({ isOpen, onClose, onConfirm, actionLabel }) => {
+const RSMISignatoryModal: React.FC<RSMISignatoryModalProps> = ({ isOpen, onClose, onConfirm, actionLabel, defaultRsmiNumber }) => {
+    const [rsmiNumber, setRsmiNumber] = useState<string>(defaultRsmiNumber);
     const [signatories, setSignatories] = useState<RSMISignatories>(() =>
         JSON.parse(JSON.stringify(DEFAULT_RSMI_SIGNATORIES))
     );
@@ -313,6 +381,7 @@ const RSMISignatoryModal: React.FC<RSMISignatoryModalProps> = ({ isOpen, onClose
 
     useEffect(() => {
         if (isOpen) {
+            setRsmiNumber(defaultRsmiNumber);
             setSignatories(JSON.parse(JSON.stringify(DEFAULT_RSMI_SIGNATORIES)));
             setTemplateName('');
             setSavingTemplate(false);
@@ -329,7 +398,7 @@ const RSMISignatoryModal: React.FC<RSMISignatoryModalProps> = ({ isOpen, onClose
                 }
             });
         }
-    }, [isOpen]);
+    }, [isOpen, defaultRsmiNumber]);
 
     const handleSaveTemplate = async () => {
         if (!templateName.trim()) return;
@@ -506,6 +575,25 @@ const RSMISignatoryModal: React.FC<RSMISignatoryModalProps> = ({ isOpen, onClose
 
                     <div className="border-t border-slate-100" />
 
+                    {/* RSMI NUMBER */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-slate-800 mb-2 flex items-center gap-1.5">
+                            <FileText className="w-4 h-4 text-indigo-500" />
+                            RSMI Number
+                        </h3>
+                        <div className="border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+                            <Label className="text-xs text-slate-600 mb-1 block font-medium">RSMI No.</Label>
+                            <Input
+                                className="h-8 text-sm bg-white border-slate-300 focus-visible:ring-indigo-500"
+                                value={rsmiNumber}
+                                onChange={(e) => setRsmiNumber(e.target.value)}
+                                placeholder="e.g. RSMI-2026-08-13"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="border-t border-slate-100" />
+
                     {/* SIGNATORIES */}
                     <div className="space-y-4">
                         {(Object.keys(signatoryLabels) as (keyof RSMISignatories)[]).map((key) => (
@@ -553,7 +641,7 @@ const RSMISignatoryModal: React.FC<RSMISignatoryModalProps> = ({ isOpen, onClose
                     <Button variant="outline" onClick={onClose}>Cancel</Button>
                     <Button
                         className="bg-indigo-600 hover:bg-indigo-700 text-white"
-                        onClick={() => onConfirm(signatories)}
+                        onClick={() => onConfirm(signatories, rsmiNumber)}
                     >
                         {actionLabel === 'print' ? <Printer className="w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
                         {actionLabel === 'print' ? 'Print Document' : 'Save as PDF'}
@@ -654,6 +742,19 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
     const [signatoryModalOpen, setSignatoryModalOpen] = useState(false);
     const [pendingAction, setPendingAction] = useState<'print' | 'download' | null>(null);
 
+    const defaultRsmiNumber = React.useMemo(() => {
+        if (!reportDate) {
+            const now = new Date();
+            return `RSMI-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        }
+        const parts = reportDate.split('-');
+        if (parts.length === 3) {
+            return `RSMI-${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+        }
+        const rsmiDate = new Date(reportDate);
+        return `RSMI-${rsmiDate.getFullYear()}-${String(rsmiDate.getMonth() + 1).padStart(2, '0')}-${String(rsmiDate.getDate()).padStart(2, '0')}`;
+    }, [reportDate]);
+
     const handleExportPDF = () => {
         if (selectedItems.size === 0) return;
         setPendingAction('download');
@@ -666,7 +767,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
         setSignatoryModalOpen(true);
     };
 
-    const handleSignatoryConfirm = async (signatories: RSMISignatories) => {
+    const handleSignatoryConfirm = async (signatories: RSMISignatories, customRsmiNumber: string) => {
         setSignatoryModalOpen(false);
         setIsGeneratingPDF(true);
 
@@ -676,11 +777,10 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
             );
 
             const printableReportDate = reportDate ? new Date(reportDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' }) : '';
-            const rsmiDate = reportDate ? new Date(reportDate) : new Date();
-            const rsmiNumber = `RSMI-${rsmiDate.getFullYear()}-${String(rsmiDate.getMonth() + 1).padStart(2, '0')}-${String(rsmiDate.getDate()).padStart(2, '0')}`;
+            const rsmiNumberToUse = customRsmiNumber || defaultRsmiNumber;
 
             const blob = await pdf(
-                <RSMIPDFDocument data={selectedData} reportDate={printableReportDate} rsmiNumber={rsmiNumber} signatories={signatories} />
+                <RSMIPDFDocument data={selectedData} reportDate={printableReportDate} rsmiNumber={rsmiNumberToUse} signatories={signatories} />
             ).toBlob();
 
             const url = URL.createObjectURL(blob);
@@ -714,6 +814,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
             onClose={() => { setSignatoryModalOpen(false); setPendingAction(null); }}
             onConfirm={handleSignatoryConfirm}
             actionLabel={pendingAction || 'print'}
+            defaultRsmiNumber={defaultRsmiNumber}
         />
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
             <DialogContent className="!max-w-7xl !w-[95vw] max-h-[90vh] flex flex-col p-0 bg-white border-slate-200 shadow-2xl overflow-hidden">
