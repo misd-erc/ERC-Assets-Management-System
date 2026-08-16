@@ -151,6 +151,7 @@ interface Props {
   onView: (item: VwSupplyGroupedItem) => void;
   viewActionLabel?: string;
   onParamsChange: (params: { page: number; search: string; status: string; category?: string; storageId?: string; vendorId?: string }) => void;
+  onAdd?: () => void;
 }
 
 const PAGE_SIZE = 100;
@@ -172,7 +173,8 @@ export const SupplyGroupedItemTable = ({
   onView,
   viewActionLabel = 'View',
   onParamsChange,
-  loading = false
+  loading = false,
+  onAdd
 }: Props) => {
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [isSorting, setIsSorting] = useState(false);
@@ -256,6 +258,15 @@ export const SupplyGroupedItemTable = ({
               </div>
 
               <div className="flex gap-2">
+                {onAdd && (
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+                    onClick={onAdd}
+                    disabled={loading}
+                  >
+                    <Plus className="w-4 h-4 mr-1.5" /> Add Item
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   className="border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm"
@@ -265,7 +276,8 @@ export const SupplyGroupedItemTable = ({
                   <Plus className="w-4 h-4 mr-1.5" /> Unit
                 </Button>
                 <Button
-                  className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+                  variant="outline"
+                  className="border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm"
                   onClick={() => setIsStorageModalOpen(true)}
                   disabled={loading}
                 >

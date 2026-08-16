@@ -20,7 +20,10 @@ function formatDate(dateStr?: string): string {
 
 function formatCurrency(value?: number | null): string {
   if (value == null) return "—";
-  return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", minimumFractionDigits: 2 }).format(value);
+  // The PDF uses the built-in Helvetica font, which has no ₱ glyph (renders as "±"),
+  // so the amount is prefixed with "PHP" instead of the currency symbol.
+  const amount = new Intl.NumberFormat("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+  return `PHP ${amount}`;
 }
 
 interface TagFieldData {

@@ -174,7 +174,7 @@ const StockCardPDFDocument: React.FC<StockCardPDFProps> = ({ items, stockNumber,
 
                         return (
                             <View key={itemKey} style={pdfStyles.tableRow} wrap={false}>
-                                <View style={[pdfStyles.colDate, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{formatDate(item.createdAt)}</Text></View>
+                                <View style={[pdfStyles.colDate, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{formatDate(item.issuedStockQuantity > 0 ? (item.risRequestedDate || item.createdAt) : item.createdAt)}</Text></View>
                                 <View style={[pdfStyles.colRef, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{reference || ''}</Text></View>
                                 <View style={[pdfStyles.colReceiptQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{receipt}</Text></View>
                                 <View style={[pdfStyles.colIssueQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{issue}</Text></View>
