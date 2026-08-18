@@ -370,7 +370,7 @@ const RISSignatoryModal: React.FC<RISSignatoryModalProps> = ({ isOpen, onClose, 
     const handleSelectEmployee = (key: keyof RISSignatories, employeeId: number | null) => {
         const setter = key === 'requestedBy' ? setRequestedByEmployeeId :
             key === 'approvedBy' ? setApprovedByEmployeeId :
-            key === 'issuedBy' ? setIssuedByEmployeeId : setReceivedByEmployeeId;
+                key === 'issuedBy' ? setIssuedByEmployeeId : setReceivedByEmployeeId;
 
         if (employeeId === null) {
             setter(null);
@@ -673,213 +673,213 @@ export const RISReportModal = ({ isOpen, onClose }: RISReportModalProps) => {
 
     return (
         <>
-        <RISSignatoryModal
-            isOpen={signatoryModalOpen}
-            onClose={() => { setSignatoryModalOpen(false); setPendingAction(null); }}
-            onConfirm={handleSignatoryConfirm}
-            actionLabel={pendingAction || 'print'}
-        />
-        <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogContent className="!max-w-6xl !w-[95vw] max-h-[90vh] flex flex-col p-0 bg-white border-slate-200 shadow-2xl overflow-hidden">
+            <RISSignatoryModal
+                isOpen={signatoryModalOpen}
+                onClose={() => { setSignatoryModalOpen(false); setPendingAction(null); }}
+                onConfirm={handleSignatoryConfirm}
+                actionLabel={pendingAction || 'print'}
+            />
+            <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+                <DialogContent className="!max-w-6xl !w-[95vw] max-h-[90vh] flex flex-col p-0 bg-white border-slate-200 shadow-2xl overflow-hidden">
 
-                <DialogHeader className="border-b border-slate-200 p-6 pb-5 bg-slate-50/50">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="text-left">
-                            <DialogTitle className="text-2xl text-slate-900 flex items-center gap-2 font-bold tracking-tight">
-                                <FileText className="w-6 h-6 text-indigo-600" />
-                                Requisition and Issue Slip (RIS)
-                            </DialogTitle>
-                            <DialogDescription className="mt-1.5 text-slate-500">
-                                Search and select a RIS record below to view its details and generate the official document.
-                            </DialogDescription>
+                    <DialogHeader className="border-b border-slate-200 p-6 pb-5 bg-slate-50/50">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="text-left">
+                                <DialogTitle className="text-2xl text-slate-900 flex items-center gap-2 font-bold tracking-tight">
+                                    <FileText className="w-6 h-6 text-indigo-600" />
+                                    Requisition and Issue Slip (RIS)
+                                </DialogTitle>
+                                <DialogDescription className="mt-1.5 text-slate-500">
+                                    Search and select a RIS record below to view its details and generate the official document.
+                                </DialogDescription>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="shadow-sm font-medium transition-all"
+                                    disabled={!selectedRis || isGeneratingPDF || isPreviewLoading}
+                                    onClick={handlePrintPDF}
+                                >
+                                    <Printer className="w-4 h-4 mr-2" />
+                                    Print Document
+                                </Button>
+                                <Button
+                                    className="shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all"
+                                    disabled={!selectedRis || isGeneratingPDF || isPreviewLoading}
+                                    onClick={handleExportPDF}
+                                >
+                                    {isGeneratingPDF ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                                    {isGeneratingPDF ? 'Generating...' : 'Save as PDF'}
+                                </Button>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                    </DialogHeader>
+
+                    <div className="p-6 flex-1 min-h-0 flex flex-col bg-white">
+
+                        <form onSubmit={handleSearchSubmit} className="flex gap-3 w-full md:w-[500px] mb-5">
+                            <div className="relative flex-1 group">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                                <Input
+                                    placeholder="Search by RIS Number, Purpose, or Office..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-9 bg-white border-slate-300 focus-visible:ring-indigo-500 shadow-sm"
+                                    autoFocus
+                                />
+                            </div>
                             <Button
-                                variant="outline"
-                                className="shadow-sm font-medium transition-all"
-                                disabled={!selectedRis || isGeneratingPDF || isPreviewLoading}
-                                onClick={handlePrintPDF}
+                                type="submit"
+                                className="bg-slate-900 hover:bg-slate-800 text-white shadow-sm shrink-0 px-6"
                             >
-                                <Printer className="w-4 h-4 mr-2" />
-                                Print Document
+                                Search
                             </Button>
-                            <Button
-                                className="shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all"
-                                disabled={!selectedRis || isGeneratingPDF || isPreviewLoading}
-                                onClick={handleExportPDF}
-                            >
-                                {isGeneratingPDF ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
-                                {isGeneratingPDF ? 'Generating...' : 'Save as PDF'}
-                            </Button>
-                        </div>
-                    </div>
-                </DialogHeader>
+                        </form>
 
-                <div className="p-6 flex-1 min-h-0 flex flex-col bg-white">
-
-                    <form onSubmit={handleSearchSubmit} className="flex gap-3 w-full md:w-[500px] mb-5">
-                        <div className="relative flex-1 group">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                            <Input
-                                placeholder="Search by RIS Number, Purpose, or Office..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-9 bg-white border-slate-300 focus-visible:ring-indigo-500 shadow-sm"
-                                autoFocus
-                            />
-                        </div>
-                        <Button
-                            type="submit"
-                            className="bg-slate-900 hover:bg-slate-800 text-white shadow-sm shrink-0 px-6"
-                        >
-                            Search
-                        </Button>
-                    </form>
-
-                    <div className="border border-slate-200 rounded-lg overflow-y-auto flex-1 shadow-sm">
-                        <Table>
-                            <TableHeader className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-sm">
-                                <TableRow className="hover:bg-transparent">
-                                    <TableHead className="w-[50px] px-4 text-center">Select</TableHead>
-                                    <TableHead className="w-[40px] px-2"></TableHead>
-                                    <TableHead className="w-[200px] font-semibold text-slate-700">RIS Number</TableHead>
-                                    <TableHead className="font-semibold text-slate-700">Purpose</TableHead>
-                                    <TableHead className="w-[180px] font-semibold text-slate-700">Office</TableHead>
-                                    <TableHead className="w-[140px] font-semibold text-slate-700 text-right">Requested Date</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {!hasSearched ? (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="h-72 text-center">
-                                            <div className="flex flex-col items-center justify-center text-slate-500 space-y-4">
-                                                <div className="p-5 bg-indigo-50 rounded-full border border-indigo-100 shadow-sm">
-                                                    <Search className="w-8 h-8 text-indigo-500" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-slate-900 text-lg">Ready to Search</p>
-                                                    <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Type a RIS number, purpose, or office above to locate the Requisition and Issue Slip.</p>
-                                                </div>
-                                            </div>
-                                        </TableCell>
+                        <div className="border border-slate-200 rounded-lg overflow-y-auto flex-1 shadow-sm">
+                            <Table>
+                                <TableHeader className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-sm">
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableHead className="w-[50px] px-4 text-center">Select</TableHead>
+                                        <TableHead className="w-[40px] px-2"></TableHead>
+                                        <TableHead className="w-[200px] font-semibold text-slate-700">RIS Number</TableHead>
+                                        <TableHead className="font-semibold text-slate-700">Purpose</TableHead>
+                                        <TableHead className="w-[180px] font-semibold text-slate-700">Office</TableHead>
+                                        <TableHead className="w-[140px] font-semibold text-slate-700 text-right">Requested Date</TableHead>
                                     </TableRow>
-                                ) : loading ? (
-                                    Array.from({ length: 5 }).map((_, index) => (
-                                        <TableRow key={`skeleton-${index}`}>
-                                            {Array.from({ length: 6 }).map((_, colIndex) => (
-                                                <TableCell key={`skel-col-${colIndex}`}>
-                                                    <div className="h-4 bg-slate-100 rounded animate-pulse w-full"></div>
-                                                </TableCell>
-                                            ))}
+                                </TableHeader>
+                                <TableBody>
+                                    {!hasSearched ? (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="h-72 text-center">
+                                                <div className="flex flex-col items-center justify-center text-slate-500 space-y-4">
+                                                    <div className="p-5 bg-indigo-50 rounded-full border border-indigo-100 shadow-sm">
+                                                        <Search className="w-8 h-8 text-indigo-500" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-slate-900 text-lg">Ready to Search</p>
+                                                        <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">Type a RIS number, purpose, or office above to locate the Requisition and Issue Slip.</p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
                                         </TableRow>
-                                    ))
-                                ) : filteredRISList.length > 0 ? (
-                                    filteredRISList.map((ris, index) => {
-                                        const isSelected = selectedRis?.id === ris.id;
-
-                                        return (
-                                            <React.Fragment key={index}>
-                                                <TableRow
-                                                    className={`cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50/60 hover:bg-indigo-50/80' : 'hover:bg-slate-50'}`}
-                                                    onClick={() => handleSelectRow(ris)}
-                                                >
-                                                    <TableCell onClick={(e) => e.stopPropagation()} className="px-4 text-center">
-                                                        <Checkbox
-                                                            checked={isSelected}
-                                                            onCheckedChange={() => handleSelectRow(ris)}
-                                                            className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
-                                                        />
+                                    ) : loading ? (
+                                        Array.from({ length: 5 }).map((_, index) => (
+                                            <TableRow key={`skeleton-${index}`}>
+                                                {Array.from({ length: 6 }).map((_, colIndex) => (
+                                                    <TableCell key={`skel-col-${colIndex}`}>
+                                                        <div className="h-4 bg-slate-100 rounded animate-pulse w-full"></div>
                                                     </TableCell>
-                                                    <TableCell className="px-2">
-                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-indigo-600 pointer-events-none">
-                                                            {isSelected ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                                                        </Button>
-                                                    </TableCell>
-                                                    <TableCell className="font-semibold text-slate-900">{ris.risNumber}</TableCell>
-                                                    <TableCell className="text-slate-600 truncate max-w-[200px]">{ris.risPurpose}</TableCell>
-                                                    <TableCell className="text-slate-700">{ris.office?.name || '—'}</TableCell>
-                                                    <TableCell className="text-right text-slate-700">{formatDate(ris.risRequestedDate)}</TableCell>
-                                                </TableRow>
+                                                ))}
+                                            </TableRow>
+                                        ))
+                                    ) : filteredRISList.length > 0 ? (
+                                        filteredRISList.map((ris, index) => {
+                                            const isSelected = selectedRis?.id === ris.id;
 
-                                                {isSelected && (
-                                                    <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
-                                                        <TableCell colSpan={6} className="p-0 border-b">
-                                                            <div className="bg-slate-50/80 border-l-[3px] border-indigo-500 shadow-inner px-8 py-5 max-h-[320px] overflow-y-auto">
-                                                                {isPreviewLoading ? (
-                                                                    <div className="flex flex-col items-center justify-center py-6 text-indigo-600">
-                                                                        <Loader2 className="w-6 h-6 animate-spin mb-2" />
-                                                                        <p className="text-sm font-medium">Fetching Requisition Items...</p>
-                                                                    </div>
-                                                                ) : currentRISItems.length > 0 ? (
-                                                                    <div className="rounded-lg border border-slate-200 bg-white overflow-hidden shadow-sm">
-                                                                        <Table>
-                                                                            <TableHeader className="bg-slate-100/50">
-                                                                                <TableRow className="hover:bg-transparent">
-                                                                                    <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600">Stock No.</TableHead>
-                                                                                    <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600">Unit</TableHead>
-                                                                                    <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600">Description</TableHead>
-                                                                                    <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600 text-center">Req. Qty</TableHead>
-                                                                                    <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600 text-center">Issue Qty</TableHead>
-                                                                                </TableRow>
-                                                                            </TableHeader>
-                                                                            <TableBody>
-                                                                                {currentRISItems.map((item, idx) => (
-                                                                                    <TableRow key={idx} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
-                                                                                        <TableCell className="py-2.5 text-xs text-slate-600">{item.stockNumber}</TableCell>
-                                                                                        <TableCell className="py-2.5 text-xs text-slate-600">{item.unit?.name}</TableCell>
-                                                                                        <TableCell className="py-2.5 text-xs font-medium text-slate-800">{item.itemDescription}</TableCell>
-                                                                                        <TableCell className="py-2.5 text-xs text-center font-medium text-indigo-600">{item.requisitionQuantity}</TableCell>
-                                                                                        <TableCell className="py-2.5 text-xs text-center font-bold text-slate-900">{item.issueQuantity || '—'}</TableCell>
-                                                                                    </TableRow>
-                                                                                ))}
-                                                                            </TableBody>
-                                                                        </Table>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div className="flex flex-col items-center justify-center py-6 text-slate-500 bg-white rounded-lg border border-dashed border-slate-200">
-                                                                        <FileText className="w-8 h-8 text-slate-300 mb-2" />
-                                                                        <p className="text-sm font-medium">No items listed for this RIS.</p>
-                                                                    </div>
-                                                                )}
-                                                            </div>
+                                            return (
+                                                <React.Fragment key={index}>
+                                                    <TableRow
+                                                        className={`cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50/60 hover:bg-indigo-50/80' : 'hover:bg-slate-50'}`}
+                                                        onClick={() => handleSelectRow(ris)}
+                                                    >
+                                                        <TableCell onClick={(e) => e.stopPropagation()} className="px-4 text-center">
+                                                            <Checkbox
+                                                                checked={isSelected}
+                                                                onCheckedChange={() => handleSelectRow(ris)}
+                                                                className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                                                            />
                                                         </TableCell>
+                                                        <TableCell className="px-2">
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-indigo-600 pointer-events-none">
+                                                                {isSelected ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                                            </Button>
+                                                        </TableCell>
+                                                        <TableCell className="font-semibold text-slate-900">{ris.risNumber}</TableCell>
+                                                        <TableCell className="text-slate-600 truncate max-w-[200px]">{ris.risPurpose}</TableCell>
+                                                        <TableCell className="text-slate-700">{ris.office?.name || '—'}</TableCell>
+                                                        <TableCell className="text-right text-slate-700">{formatDate(ris.risRequestedDate)}</TableCell>
                                                     </TableRow>
-                                                )}
-                                            </React.Fragment>
-                                        );
-                                    })
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={6} className="h-64 text-center">
-                                            <div className="flex flex-col items-center justify-center text-slate-500 space-y-3">
-                                                <div className="p-4 bg-slate-50 rounded-full border border-slate-100">
-                                                    <FileText className="w-8 h-8 text-slate-300" />
+
+                                                    {isSelected && (
+                                                        <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
+                                                            <TableCell colSpan={6} className="p-0 border-b">
+                                                                <div className="bg-slate-50/80 border-l-[3px] border-indigo-500 shadow-inner px-8 py-5 max-h-[320px] overflow-y-auto">
+                                                                    {isPreviewLoading ? (
+                                                                        <div className="flex flex-col items-center justify-center py-6 text-indigo-600">
+                                                                            <Loader2 className="w-6 h-6 animate-spin mb-2" />
+                                                                            <p className="text-sm font-medium">Fetching Requisition Items...</p>
+                                                                        </div>
+                                                                    ) : currentRISItems.length > 0 ? (
+                                                                        <div className="rounded-lg border border-slate-200 bg-white overflow-hidden shadow-sm">
+                                                                            <Table>
+                                                                                <TableHeader className="bg-slate-100/50">
+                                                                                    <TableRow className="hover:bg-transparent">
+                                                                                        <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600">Stock No.</TableHead>
+                                                                                        <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600">Unit</TableHead>
+                                                                                        <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600">Description</TableHead>
+                                                                                        <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600 text-center">Req. Qty</TableHead>
+                                                                                        <TableHead className="h-9 py-2 text-xs font-semibold text-slate-600 text-center">Issue Qty</TableHead>
+                                                                                    </TableRow>
+                                                                                </TableHeader>
+                                                                                <TableBody>
+                                                                                    {currentRISItems.map((item, idx) => (
+                                                                                        <TableRow key={idx} className="border-b border-slate-100 hover:bg-slate-50/80 transition-colors">
+                                                                                            <TableCell className="py-2.5 text-xs text-slate-600">{item.stockNumber}</TableCell>
+                                                                                            <TableCell className="py-2.5 text-xs text-slate-600">{item.unit?.name}</TableCell>
+                                                                                            <TableCell className="py-2.5 text-xs font-medium text-slate-800">{item.itemDescription}</TableCell>
+                                                                                            <TableCell className="py-2.5 text-xs text-center font-medium text-indigo-600">{item.requisitionQuantity}</TableCell>
+                                                                                            <TableCell className="py-2.5 text-xs text-center font-bold text-slate-900">{item.issueQuantity || '—'}</TableCell>
+                                                                                        </TableRow>
+                                                                                    ))}
+                                                                                </TableBody>
+                                                                            </Table>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex flex-col items-center justify-center py-6 text-slate-500 bg-white rounded-lg border border-dashed border-slate-200">
+                                                                            <FileText className="w-8 h-8 text-slate-300 mb-2" />
+                                                                            <p className="text-sm font-medium">No items listed for this RIS.</p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </React.Fragment>
+                                            );
+                                        })
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="h-64 text-center">
+                                                <div className="flex flex-col items-center justify-center text-slate-500 space-y-3">
+                                                    <div className="p-4 bg-slate-50 rounded-full border border-slate-100">
+                                                        <FileText className="w-8 h-8 text-slate-300" />
+                                                    </div>
+                                                    <p className="font-medium text-slate-900 text-lg">No records found</p>
+                                                    <p className="text-sm">{activeSearchQuery ? `We couldn't find anything matching "${activeSearchQuery}".` : 'No RIS records available.'}</p>
                                                 </div>
-                                                <p className="font-medium text-slate-900 text-lg">No records found</p>
-                                                <p className="text-sm">{activeSearchQuery ? `We couldn't find anything matching "${activeSearchQuery}".` : 'No RIS records available.'}</p>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-end gap-2 pt-4">
-                            <Button variant="outline" size="sm" disabled={currentPage === 1 || loading} onClick={() => handlePageChange(currentPage - 1)}>
-                                Previous
-                            </Button>
-                            <span className="text-sm text-slate-600">Page {currentPage} of {totalPages}</span>
-                            <Button variant="outline" size="sm" disabled={currentPage === totalPages || loading} onClick={() => handlePageChange(currentPage + 1)}>
-                                Next
-                            </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
                         </div>
-                    )}
 
-                </div>
-            </DialogContent>
-        </Dialog>
+                        {totalPages > 1 && (
+                            <div className="flex items-center justify-end gap-2 pt-4">
+                                <Button variant="outline" size="sm" disabled={currentPage === 1 || loading} onClick={() => handlePageChange(currentPage - 1)}>
+                                    Previous
+                                </Button>
+                                <span className="text-sm text-slate-600">Page {currentPage} of {totalPages}</span>
+                                <Button variant="outline" size="sm" disabled={currentPage === totalPages || loading} onClick={() => handlePageChange(currentPage + 1)}>
+                                    Next
+                                </Button>
+                            </div>
+                        )}
+
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 };
