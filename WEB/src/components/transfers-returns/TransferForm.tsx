@@ -366,10 +366,8 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
   };
 
   // Single unified employee list for Step 3 — searches across all employees regardless of
-  // employment type, excluding whoever currently holds the items.
-  const employeesForStep3 = fromEmployee
-    ? employees.filter(e => e.id !== fromEmployee.id)
-    : employees;
+  // employment type, including the FROM employee (e.g. to keep partial custody via Sub-PAR/ICS).
+  const employeesForStep3 = employees;
 
   const getStepNumber = () => {
     if (currentStep === 'from-employee') return 1;

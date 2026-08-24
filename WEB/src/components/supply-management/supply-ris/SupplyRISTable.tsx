@@ -259,6 +259,9 @@ export const SupplyRISTable = ({
       } else if (sortConfig.key === 'requestedBySystemUser') {
         aVal = a.requestedBySystemUser ? `${a.requestedBySystemUser.firstName} ${a.requestedBySystemUser.lastName}` : '';
         bVal = b.requestedBySystemUser ? `${b.requestedBySystemUser.firstName} ${b.requestedBySystemUser.lastName}` : '';
+      } else if (sortConfig.key === 'risRequestedDate') {
+        aVal = a.risRequestedDate || a.createdAt || '';
+        bVal = b.risRequestedDate || b.createdAt || '';
       } else {
         aVal = a[sortConfig.key as keyof VwSupplyRIS];
         bVal = b[sortConfig.key as keyof VwSupplyRIS];
@@ -327,8 +330,8 @@ export const SupplyRISTable = ({
                   statusFilter === 'all'
                     ? "bg-slate-50/40 hover:bg-slate-100/40 text-slate-700 border-slate-200 hover:border-slate-300"
                     : statusFilter === 'Pending'
-                    ? "bg-amber-50/50 hover:bg-amber-100/40 text-amber-700 border-amber-200 hover:border-amber-300"
-                    : "bg-emerald-50/50 hover:bg-emerald-100/40 text-emerald-700 border-emerald-200 hover:border-emerald-300"
+                      ? "bg-amber-50/50 hover:bg-amber-100/40 text-amber-700 border-amber-200 hover:border-amber-300"
+                      : "bg-emerald-50/50 hover:bg-emerald-100/40 text-emerald-700 border-emerald-200 hover:border-emerald-300"
                 )}>
                   <div className="flex items-center gap-2">
                     {statusFilter === 'all' && <Layers className="w-4 h-4 text-slate-400" />}
@@ -529,7 +532,7 @@ export const SupplyRISTable = ({
                   return (
                     <TableRow key={ris.id} className="hover:bg-slate-50/50 transition-colors">
                       <TableCell className="text-slate-600">
-                        {formatDate(ris.risRequestedDate)}
+                        {formatDate(ris.risRequestedDate || ris.createdAt)}
                       </TableCell>
 
                       <TableCell>

@@ -487,27 +487,6 @@ export class RegistrySPIByEmployeeGenerator {
                 </View>
               );
             })}
-
-            {/* EMPTY FILLER ROWS */}
-            {Array.from({ length: Math.max(0, 15 - assets.length) }).map((_, i) => (
-              <View key={`empty-${i}`} style={styles.row}>
-                <Text style={[styles.td, { width: COLS.date }]} />
-                <Text style={[styles.td, { width: COLS.icsNo }]} />
-                <Text style={[styles.td, { width: COLS.propNo }]} />
-                <Text style={[styles.td, { width: COLS.description }]} />
-                <Text style={[styles.td, { width: COLS.eul }]} />
-                <Text style={[styles.td, { width: COLS.issuedQty }]} />
-                <Text style={[styles.td, { width: COLS.issuedOfficer }]} />
-                <Text style={[styles.td, { width: COLS.returnedQty }]} />
-                <Text style={[styles.td, { width: COLS.returnedOfficer }]} />
-                <Text style={[styles.td, { width: COLS.reissuedQty }]} />
-                <Text style={[styles.td, { width: COLS.reissuedOfficer }]} />
-                <Text style={[styles.td, { width: COLS.disposedQty }]} />
-                <Text style={[styles.td, { width: COLS.balanceQty }]} />
-                <Text style={[styles.td, { width: COLS.amount }]} />
-                <Text style={[styles.td, { width: COLS.remarks, borderRightWidth: 0 }]} />
-              </View>
-            ))}
           </View>
 
         </Page>

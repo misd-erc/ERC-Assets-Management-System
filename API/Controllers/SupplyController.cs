@@ -1847,14 +1847,14 @@ namespace API.Controllers
                 // Fetch to memory first because RISNumber and ResponsibilityCenterCode are [NotMapped] encrypted properties
                 // that EF Core cannot translate to SQL
                 var supplyRISsRaw = await _getTools.Supply.GetTblSupplyRISs(context)
-                    .Where(x => x.IsApproved)
+                    .Where(x => x.IsApproved && x.RISIssuedDate.HasValue)
                     .ToListAsync();
 
                 var supplyRISs = supplyRISsRaw
                     .Where(x =>
                     {
-                        var effectiveDate = (x.RISRequestedDate ?? x.CreatedAt).Date;
-                        return effectiveDate >= startDate.Date && effectiveDate <= endDate.Date;
+                        var issuedDate = x.RISIssuedDate!.Value.Date;
+                        return issuedDate >= startDate.Date && issuedDate <= endDate.Date;
                     })
                     .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode, x.OfficeId, x.DivisionId })
                     .ToList();
