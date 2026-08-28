@@ -499,8 +499,8 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
-    const [assumptionMonth, setAssumptionMonth] = useState('September');
-    const [assumptionYear, setAssumptionYear] = useState('2016');
+    const [assumptionMonth, setAssumptionMonth] = useState(() => new Date().toLocaleString('en-US', { month: 'long' }));
+    const [assumptionYear, setAssumptionYear] = useState(() => String(new Date().getFullYear()));
     const [categoryId, setCategoryId] = useState<string>('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
@@ -789,16 +789,13 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <Select value={assumptionYear} onValueChange={setAssumptionYear}>
-                                        <SelectTrigger className="w-full bg-white border-slate-300 focus:ring-indigo-500 shadow-sm overflow-hidden">
-                                            <SelectValue placeholder="Year" className="truncate text-left min-w-0" />
-                                        </SelectTrigger>
-                                        <SelectContent className="max-h-60 overflow-y-auto">
-                                            {Array.from({ length: 21 }, (_, i) => String(new Date().getFullYear() - 5 + i)).map((y) => (
-                                                <SelectItem key={y} value={y}>{y}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <Input
+                                        type="text"
+                                        placeholder="Year"
+                                        className="bg-white border-slate-300 focus-visible:ring-indigo-500 shadow-sm"
+                                        value={assumptionYear}
+                                        onChange={(e) => setAssumptionYear(e.target.value)}
+                                    />
                                 </div>
                             </div>
 
