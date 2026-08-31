@@ -488,15 +488,6 @@ export class SESPIExcelGenerator {
                 </Text>
               </View>
             ))}
-
-            {/* EMPTY ROWS */}
-            {Array.from({ length: Math.max(0, 20 - finalAssets.length) }).map((_, i) => (
-              <View key={i} style={styles.row}>
-                {Array.from({ length: 9 }).map((_, c) => (
-                  <Text key={c} style={[styles.td, { width: this.colWidth(c) }]} />
-                ))}
-              </View>
-            ))}
           </View>
 
           {/* SIGNATURES */}
