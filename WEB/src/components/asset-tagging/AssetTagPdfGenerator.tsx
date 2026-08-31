@@ -119,7 +119,11 @@ function TagBox({
   const f = (base: number) => base * fontScale;
   const qrSize = Math.max(24, 40 * scale);
   const logoSize = Math.max(12, 16 * scale);
-  const isSlim = template.height < 20;
+  // Only the "slim" template gets the dense horizontal layout below — it's the one
+  // template too short for the standard vertical field stack. "small" (38×19mm) is
+  // close enough to standard's footprint to reuse the full layout at a smaller scale,
+  // so every template prints the same complete set of details.
+  const isSlim = template.id === "slim";
   const isLarge = template.height >= 35;
 
   // Only the width is fixed (matching the on-screen grid column); height is left to
@@ -138,20 +142,48 @@ function TagBox({
           </View>
           <Text style={[styles.groupBadge, { fontSize: f(5.5), paddingHorizontal: 3, paddingVertical: 1 }]}>{data.groupLabel}</Text>
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", padding: 3, gap: 4 }}>
-          <View style={[styles.propNoBox, { paddingHorizontal: 4, paddingVertical: 1 }]}>
-            <Text style={[styles.propNoLabel, { fontSize: f(4.5) }]}>Property No.</Text>
-            <Text style={[styles.propNoValue, { fontSize: f(7.5) }]}>{data.code}</Text>
+
+        <View style={{ flexDirection: "row" }}>
+          <View style={{ flex: 1, padding: 3 }}>
+            <View style={[styles.propNoBox, { padding: 2, marginBottom: 2 }]}>
+              <Text style={[styles.propNoLabel, { fontSize: f(4.5) }]}>Property No.</Text>
+              <Text style={[styles.propNoValue, { fontSize: f(7.5) }]}>{data.code}</Text>
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 6 }}>
+              <View style={{ flex: 1 }}>
+                <TagField label="Description" value={data.description} f={f} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <TagField label="Model / Serial No." value={data.modelSerial} f={f} />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: "row", gap: 6 }}>
+              <TagField label="Acquisition Date" value={data.acqDate} f={f} />
+              <TagField label="Acquisition Cost" value={data.acqCost} f={f} />
+              <View style={{ flex: 1 }}>
+                <TagField label="Person Accountable" value={data.personAccountable} f={f} />
+              </View>
+            </View>
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 1 }}>
+              <Text style={[styles.validatedLabel, { fontSize: f(5) }]}>Validated by:</Text>
+              <View style={[styles.sigLine, { flex: 1 }]} />
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.fieldLabel, { fontSize: f(4.5) }]}>Description</Text>
-            <Text style={[styles.fieldValue, { fontSize: f(6.5) }]}>{data.description}</Text>
-          </View>
-          <View style={{ alignItems: "flex-end" }}>
-            <Text style={[styles.fieldLabel, { fontSize: f(4.5) }]}>Person Accountable</Text>
-            <Text style={[styles.fieldValue, { fontSize: f(6.5), fontFamily: "Helvetica-Bold" }]}>{data.personAccountable}</Text>
-          </View>
-          {includeQR && tag.qrCode && <Image src={tag.qrCode} style={{ width: qrSize, height: qrSize }} />}
+
+          {includeQR && tag.qrCode && (
+            <View style={{ alignItems: "center", justifyContent: "center", padding: 3 }}>
+              <Image src={tag.qrCode} style={{ width: qrSize, height: qrSize }} />
+            </View>
+          )}
+        </View>
+
+        <View style={[styles.footer, { padding: 1.5 }]}>
+          <Text style={[styles.footerText, { fontSize: f(4.5) }]}>
+            Tampering / Removing of this sticker is Punishable under ERC Regulations.
+          </Text>
         </View>
       </View>
     );
@@ -232,7 +264,7 @@ export class AssetTagPdfGenerator {
   ): Promise<void> {
     if (!tagPreviews.length) return;
 
-    const isSlim = template.height < 20;
+    const isSlim = template.id === "slim";
     const isLarge = template.height >= 35;
     const cols = isLarge || isSlim ? 2 : 3;
 

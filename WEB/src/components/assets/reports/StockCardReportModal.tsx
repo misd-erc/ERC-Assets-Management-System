@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { useSupplyItem } from '@/hooks';
 import { useStockCard } from '@/hooks/supply/useStockCard';
 import { useStockCardStore } from '@/store/office/stockCardStore';
+import { getStockCardItems } from '@/api/supply-management/stockCardApi';
 import { formatDate } from '@/utils/dateUtils';
 import { getAcronym } from '@/utils/formatters';
 import { SupplyStockCardItem } from '@/types/supply/stockcard';
@@ -67,7 +68,7 @@ const pdfStyles = StyleSheet.create({
 });
 
 // --- PDF DOCUMENT COMPONENT ---
-interface StockCardPDFProps {
+export interface SingleStockCardData {
     items: SupplyStockCardItem[];
     stockNumber: string;
     description: string;
@@ -75,127 +76,136 @@ interface StockCardPDFProps {
     reorderPoint: string | number;
 }
 
-const StockCardPDFDocument: React.FC<StockCardPDFProps> = ({ items, stockNumber, description, unit, reorderPoint }) => {
-    const safeUnit = unit || (items.length > 0 ? (items[0] as any).supplyItem?.measurementUnit?.name : '') || 'piece';
-    const safeReorderPoint = reorderPoint !== undefined && reorderPoint !== null ? reorderPoint : '';
+interface StockCardPDFProps {
+    reports: SingleStockCardData[];
+}
 
-    // Compute "No. of Days to Consume" per issuance row based on average daily consumption
-    const issuanceEvents = items.filter(i => i.issuedStockQuantity > 0);
-    const firstIssuanceDate = issuanceEvents.length > 0 ? new Date(issuanceEvents[0].createdAt) : null;
-
-    const getDaysToConsume = (idx: number): string => {
-        const item = items[idx];
-        if (!item.issuedStockQuantity || item.issuedStockQuantity <= 0) return '';
-
-        const currentDate = new Date(item.createdAt);
-        const priorIssuances = items
-            .slice(0, idx + 1)
-            .filter(i => i.issuedStockQuantity > 0);
-        const totalIssued = priorIssuances.reduce((sum, i) => sum + i.issuedStockQuantity, 0);
-
-        const daysSinceFirst = firstIssuanceDate
-            ? Math.max(1, Math.ceil((currentDate.getTime() - firstIssuanceDate.getTime()) / (1000 * 60 * 60 * 24)))
-            : 1;
-
-        const avgDailyConsumption = totalIssued / daysSinceFirst;
-        if (avgDailyConsumption <= 0) return '';
-
-        const days = Math.ceil(item.newStockQuantity / avgDailyConsumption);
-        return days > 0 ? String(days) : '';
-    };
-
+const StockCardPDFDocument: React.FC<StockCardPDFProps> = ({ reports }) => {
     return (
         <Document>
-            <Page size="A4" style={pdfStyles.page} orientation="portrait">
-                <View style={pdfStyles.outerBorder}>
+            {reports.map((report, rIdx) => {
+                const { items, stockNumber, description, unit, reorderPoint } = report;
+                const safeUnit = unit || (items.length > 0 ? (items[0] as any).supplyItem?.measurementUnit?.name : '') || 'piece';
+                const safeReorderPoint = reorderPoint !== undefined && reorderPoint !== null ? reorderPoint : '';
 
-                    <View fixed>
-                        <View style={pdfStyles.titleSection}>
-                            <Text style={pdfStyles.mainTitle}>STOCK CARD</Text>
-                            <Text style={pdfStyles.agencyText}>ENERGY REGULATORY COMMISSION</Text>
-                            <Text style={pdfStyles.agencyItalic}>Agency</Text>
+                // Compute "No. of Days to Consume" per issuance row based on average daily consumption
+                const issuanceEvents = items.filter(i => i.issuedStockQuantity > 0);
+                const firstIssuanceDate = issuanceEvents.length > 0 ? new Date(issuanceEvents[0].createdAt) : null;
+
+                const getDaysToConsume = (idx: number): string => {
+                    const item = items[idx];
+                    if (!item.issuedStockQuantity || item.issuedStockQuantity <= 0) return '';
+
+                    const currentDate = new Date(item.createdAt);
+                    const priorIssuances = items
+                        .slice(0, idx + 1)
+                        .filter(i => i.issuedStockQuantity > 0);
+                    const totalIssued = priorIssuances.reduce((sum, i) => sum + i.issuedStockQuantity, 0);
+
+                    const daysSinceFirst = firstIssuanceDate
+                        ? Math.max(1, Math.ceil((currentDate.getTime() - firstIssuanceDate.getTime()) / (1000 * 60 * 60 * 24)))
+                        : 1;
+
+                    const avgDailyConsumption = totalIssued / daysSinceFirst;
+                    if (avgDailyConsumption <= 0) return '';
+
+                    const days = Math.ceil(item.newStockQuantity / avgDailyConsumption);
+                    return days > 0 ? String(days) : '';
+                };
+
+                return (
+                    <Page key={`card-${stockNumber}-${rIdx}`} size="A4" style={pdfStyles.page} orientation="portrait">
+                        <View style={pdfStyles.outerBorder}>
+
+                            <View fixed>
+                                <View style={pdfStyles.titleSection}>
+                                    <Text style={pdfStyles.mainTitle}>STOCK CARD</Text>
+                                    <Text style={pdfStyles.agencyText}>ENERGY REGULATORY COMMISSION</Text>
+                                    <Text style={pdfStyles.agencyItalic}>Agency</Text>
+                                </View>
+
+                                <View style={pdfStyles.infoRow}>
+                                    <View style={pdfStyles.infoColLeft}>
+                                        <Text>{`Item Description : ${description}`}</Text>
+                                    </View>
+                                    <View style={pdfStyles.infoColRight}>
+                                        <Text>{`Stock No. : ${stockNumber}`}</Text>
+                                    </View>
+                                </View>
+
+                                <View style={pdfStyles.infoRow}>
+                                    <View style={pdfStyles.infoColLeft}>
+                                        <Text>{`Unit of Measurement : ${safeUnit}`}</Text>
+                                    </View>
+                                    <View style={pdfStyles.infoColRight}>
+                                        <Text>{`Re-order Point : ${safeReorderPoint}`}</Text>
+                                    </View>
+                                </View>
+
+                                {/* FLAT TABLE HEADER */}
+                                <View style={pdfStyles.tableHeaderRow}>
+                                    <View style={[pdfStyles.colDate, pdfStyles.colBorderRight]}>
+                                        <Text style={pdfStyles.cellHeaderBold}>Date</Text>
+                                    </View>
+                                    <View style={[pdfStyles.colRef, pdfStyles.colBorderRight]}>
+                                        <Text style={pdfStyles.cellHeaderBold}>Reference</Text>
+                                    </View>
+                                    <View style={[pdfStyles.colReceiptQty, pdfStyles.colBorderRight]}>
+                                        <Text style={pdfStyles.cellHeaderBold}>Receipt{"\n"}Qty.</Text>
+                                    </View>
+                                    <View style={[pdfStyles.colIssueQty, pdfStyles.colBorderRight]}>
+                                        <Text style={pdfStyles.cellHeaderBold}>Issue{"\n"}Qty.</Text>
+                                    </View>
+                                    <View style={[pdfStyles.colOffice, pdfStyles.colBorderRight]}>
+                                        <Text style={pdfStyles.cellHeaderBold}>Office</Text>
+                                    </View>
+                                    <View style={[pdfStyles.colBalanceQty, pdfStyles.colBorderRight]}>
+                                        <Text style={pdfStyles.cellHeaderBold}>Balance{"\n"}Qty.</Text>
+                                    </View>
+                                    <View style={pdfStyles.colDays}>
+                                        <Text style={pdfStyles.cellHeaderBold}>No. of Days to{"\n"}Consume</Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            {/* Table Data - No extra padding rows */}
+                            {items.map((item, idx) => {
+                                const office = item.office?.name ? `${getAcronym(item.office.name)} ${getAcronym(item.division?.name)}` : '';
+                                const receipt = item.addedStockQuantity > 0 ? item.addedStockQuantity : '';
+                                const issue = item.issuedStockQuantity > 0 ? item.issuedStockQuantity : '';
+                                const reference = item.addedStockQuantity > 0 ? item.iarNumber : item.risNumber;
+                                const itemKey = item.id
+                                    ? `stock-${item.id}`
+                                    : reference
+                                    ? `stock-${reference}-${idx}`
+                                    : `stock-${idx}`;
+
+                                return (
+                                    <View key={itemKey} style={pdfStyles.tableRow} wrap={false}>
+                                        <View style={[pdfStyles.colDate, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{formatDate(item.issuedStockQuantity > 0 ? (item.risRequestedDate || item.createdAt) : item.createdAt)}</Text></View>
+                                        <View style={[pdfStyles.colRef, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{reference || ''}</Text></View>
+                                        <View style={[pdfStyles.colReceiptQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{receipt}</Text></View>
+                                        <View style={[pdfStyles.colIssueQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{issue}</Text></View>
+                                        <View style={[pdfStyles.colOffice, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{office}</Text></View>
+                                        <View style={[pdfStyles.colBalanceQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{item.newStockQuantity}</Text></View>
+                                        <View style={pdfStyles.colDays}><Text style={pdfStyles.cellTextCenter}>{getDaysToConsume(idx)}</Text></View>
+                                    </View>
+                                );
+                            })}
+
+                            {/* Safe fallback if empty */}
+                            {items.length === 0 && (
+                                <View style={pdfStyles.tableRow}>
+                                    <View style={{ width: '100%', padding: 10 }}>
+                                        <Text style={pdfStyles.cellTextCenter}>No movement records found.</Text>
+                                    </View>
+                                </View>
+                            )}
+
                         </View>
-
-                        <View style={pdfStyles.infoRow}>
-                            <View style={pdfStyles.infoColLeft}>
-                                <Text>{`Item Description : ${description}`}</Text>
-                            </View>
-                            <View style={pdfStyles.infoColRight}>
-                                <Text>{`Stock No. : ${stockNumber}`}</Text>
-                            </View>
-                        </View>
-
-                        <View style={pdfStyles.infoRow}>
-                            <View style={pdfStyles.infoColLeft}>
-                                <Text>{`Unit of Measurement : ${safeUnit}`}</Text>
-                            </View>
-                            <View style={pdfStyles.infoColRight}>
-                                <Text>{`Re-order Point : ${safeReorderPoint}`}</Text>
-                            </View>
-                        </View>
-
-                        {/* FLAT TABLE HEADER */}
-                        <View style={pdfStyles.tableHeaderRow}>
-                            <View style={[pdfStyles.colDate, pdfStyles.colBorderRight]}>
-                                <Text style={pdfStyles.cellHeaderBold}>Date</Text>
-                            </View>
-                            <View style={[pdfStyles.colRef, pdfStyles.colBorderRight]}>
-                                <Text style={pdfStyles.cellHeaderBold}>Reference</Text>
-                            </View>
-                            <View style={[pdfStyles.colReceiptQty, pdfStyles.colBorderRight]}>
-                                <Text style={pdfStyles.cellHeaderBold}>Receipt{"\n"}Qty.</Text>
-                            </View>
-                            <View style={[pdfStyles.colIssueQty, pdfStyles.colBorderRight]}>
-                                <Text style={pdfStyles.cellHeaderBold}>Issue{"\n"}Qty.</Text>
-                            </View>
-                            <View style={[pdfStyles.colOffice, pdfStyles.colBorderRight]}>
-                                <Text style={pdfStyles.cellHeaderBold}>Office</Text>
-                            </View>
-                            <View style={[pdfStyles.colBalanceQty, pdfStyles.colBorderRight]}>
-                                <Text style={pdfStyles.cellHeaderBold}>Balance{"\n"}Qty.</Text>
-                            </View>
-                            <View style={pdfStyles.colDays}>
-                                <Text style={pdfStyles.cellHeaderBold}>No. of Days to{"\n"}Consume</Text>
-                            </View>
-                        </View>
-                    </View>
-
-                    {/* Table Data - No extra padding rows */}
-                    {items.map((item, idx) => {
-                        const office = item.office?.name ? `${getAcronym(item.office.name)} ${getAcronym(item.division?.name)}` : '';
-                        const receipt = item.addedStockQuantity > 0 ? item.addedStockQuantity : '';
-                        const issue = item.issuedStockQuantity > 0 ? item.issuedStockQuantity : '';
-                        const reference = item.addedStockQuantity > 0 ? item.iarNumber : item.risNumber;
-                        const itemKey = item.id
-                            ? `stock-${item.id}`
-                            : reference
-                            ? `stock-${reference}-${idx}`
-                            : `stock-${idx}`;
-
-                        return (
-                            <View key={itemKey} style={pdfStyles.tableRow} wrap={false}>
-                                <View style={[pdfStyles.colDate, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{formatDate(item.issuedStockQuantity > 0 ? (item.risRequestedDate || item.createdAt) : item.createdAt)}</Text></View>
-                                <View style={[pdfStyles.colRef, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{reference || ''}</Text></View>
-                                <View style={[pdfStyles.colReceiptQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{receipt}</Text></View>
-                                <View style={[pdfStyles.colIssueQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{issue}</Text></View>
-                                <View style={[pdfStyles.colOffice, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{office}</Text></View>
-                                <View style={[pdfStyles.colBalanceQty, pdfStyles.colBorderRight]}><Text style={pdfStyles.cellTextCenter}>{item.newStockQuantity}</Text></View>
-                                <View style={pdfStyles.colDays}><Text style={pdfStyles.cellTextCenter}>{getDaysToConsume(idx)}</Text></View>
-                            </View>
-                        );
-                    })}
-
-                    {/* Safe fallback if empty */}
-                    {items.length === 0 && (
-                        <View style={pdfStyles.tableRow}>
-                            <View style={{ width: '100%', padding: 10 }}>
-                                <Text style={pdfStyles.cellTextCenter}>No movement records found.</Text>
-                            </View>
-                        </View>
-                    )}
-
-                </View>
-            </Page>
+                    </Page>
+                );
+            })}
         </Document>
     );
 };
@@ -216,6 +226,7 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 100;
 
+    const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [selectedGroup, setSelectedGroup] = useState<{ stockNumber: string, description: string, unit: string, reorderPoint: string | number } | null>(null);
     const [previewData, setPreviewData] = useState<SupplyStockCardItem[]>([]);
 
@@ -229,6 +240,7 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
             setHasSearched(true);
             setCurrentPage(1);
             setSelectedGroup(null);
+            setSelectedItems(new Set());
             setPreviewData([]);
             fetchSupplyGroupedItems(1, pageSize, '');
         }
@@ -241,6 +253,7 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
         setActiveSearchQuery(searchTerm.trim());
         setCurrentPage(1);
         setSelectedGroup(null);
+        setSelectedItems(new Set());
         setPreviewData([]);
 
         await fetchSupplyGroupedItems(1, pageSize, searchTerm.trim());
@@ -256,6 +269,28 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
                 g.description?.toLowerCase().includes(query)
         );
     }, [vwSupplyGroups, activeSearchQuery]);
+
+    const isAllSelected = filteredGroups.length > 0 && filteredGroups.every((group: any, index: number) => {
+        const safeId = group.code ?? `unknown-${index}`;
+        return selectedItems.has(safeId);
+    });
+
+    const handleSelectItem = (safeId: string, checked: boolean) => {
+        setSelectedItems(prev => {
+            const next = new Set(prev);
+            if (checked) next.add(safeId);
+            else next.delete(safeId);
+            return next;
+        });
+    };
+
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedItems(new Set(filteredGroups.map((group: any, index: number) => group.code ?? `unknown-${index}`)));
+        } else {
+            setSelectedItems(new Set());
+        }
+    };
 
     const handleSelectRow = async (code: string, description: string, unit: string, reorderPoint: string | number) => {
         if (selectedGroup?.stockNumber === code) {
@@ -288,6 +323,7 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
     const handlePageChange = async (page: number) => {
         setCurrentPage(page);
         setSelectedGroup(null);
+        setSelectedItems(new Set());
         setPreviewData([]);
         await fetchSupplyGroupedItems(page, pageSize, activeSearchQuery.trim());
     };
@@ -298,25 +334,62 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
         ));
     };
 
+    const generateReportData = async (): Promise<SingleStockCardData[]> => {
+        const selectedGroups = filteredGroups.filter((g, index) => {
+            const safeId = g.code ?? `unknown-${index}`;
+            return selectedItems.has(safeId);
+        });
+
+        const reports = await Promise.all(
+            selectedGroups.map(async (group) => {
+                const supplyItemInfo = (group as any).supplyItem || group;
+                const unitName = supplyItemInfo.measurementUnit?.name || supplyItemInfo.unit?.name || 'piece';
+                const rawReorderPoint = (group as any).reorderPoint ?? '';
+                const code = group.code || '';
+                const description = group.description || '';
+
+                let items: SupplyStockCardItem[] = [];
+                if (selectedGroup?.stockNumber === code && previewData.length > 0) {
+                    items = previewData;
+                } else {
+                    try {
+                        const res = await getStockCardItems(code, description, 1, 10000);
+                        items = res.items;
+                    } catch {
+                        items = [];
+                    }
+                }
+
+                return {
+                    items,
+                    stockNumber: code,
+                    description,
+                    unit: unitName,
+                    reorderPoint: rawReorderPoint
+                };
+            })
+        );
+
+        return reports;
+    };
+
     const handleExportPDF = async () => {
-        if (!selectedGroup || isPreviewLoading) return;
+        if (selectedItems.size === 0 || isPreviewLoading) return;
         setIsGeneratingPDF(true);
 
         try {
+            const reports = await generateReportData();
             const blob = await pdf(
-                <StockCardPDFDocument
-                    items={previewData}
-                    stockNumber={selectedGroup.stockNumber}
-                    description={selectedGroup.description}
-                    unit={selectedGroup.unit}
-                    reorderPoint={selectedGroup.reorderPoint}
-                />
+                <StockCardPDFDocument reports={reports} />
             ).toBlob();
 
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `StockCard_${selectedGroup.stockNumber}.pdf`;
+            const filename = reports.length === 1
+                ? `StockCard_${reports[0].stockNumber}.pdf`
+                : `StockCard_Report_${reports.length}_items.pdf`;
+            a.download = filename;
             a.click();
 
             setTimeout(() => URL.revokeObjectURL(url), 5000);
@@ -329,18 +402,13 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
     };
 
     const handlePrintPDF = async () => {
-        if (!selectedGroup || isPreviewLoading) return;
+        if (selectedItems.size === 0 || isPreviewLoading) return;
         setIsGeneratingPDF(true);
 
         try {
+            const reports = await generateReportData();
             const blob = await pdf(
-                <StockCardPDFDocument
-                    items={previewData}
-                    stockNumber={selectedGroup.stockNumber}
-                    description={selectedGroup.description}
-                    unit={selectedGroup.unit}
-                    reorderPoint={selectedGroup.reorderPoint}
-                />
+                <StockCardPDFDocument reports={reports} />
             ).toBlob();
 
             const url = URL.createObjectURL(blob);
@@ -374,7 +442,7 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
                             <Button
                                 variant="outline"
                                 className="shadow-sm font-medium transition-all"
-                                disabled={!selectedGroup || isGeneratingPDF || isPreviewLoading}
+                                disabled={selectedItems.size === 0 || isGeneratingPDF || isPreviewLoading}
                                 onClick={handlePrintPDF}
                             >
                                 <Printer className="w-4 h-4 mr-2" />
@@ -382,7 +450,7 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
                             </Button>
                             <Button
                                 className="shadow-sm bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-all"
-                                disabled={!selectedGroup || isGeneratingPDF || isPreviewLoading}
+                                disabled={selectedItems.size === 0 || isGeneratingPDF || isPreviewLoading}
                                 onClick={handleExportPDF}
                             >
                                 {isGeneratingPDF ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
@@ -417,7 +485,13 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
                         <Table>
                             <TableHeader className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-sm">
                                 <TableRow className="hover:bg-transparent">
-                                    <TableHead className="w-[50px] px-4 text-center">Select</TableHead>
+                                    <TableHead className="w-[50px] px-4 text-center">
+                                        <Checkbox
+                                            checked={isAllSelected}
+                                            onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                                            className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                                        />
+                                    </TableHead>
                                     <TableHead className="w-[40px] px-2"></TableHead>
                                     <TableHead className="w-[220px] font-semibold text-slate-700">Stock Number</TableHead>
                                     <TableHead className="font-semibold text-slate-700">Item Description</TableHead>
@@ -452,7 +526,9 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
                                     ))
                                 ) : filteredGroups.length > 0 ? (
                                     filteredGroups.map((group, index) => {
-                                        const isSelected = selectedGroup?.stockNumber === group.code;
+                                        const safeId = group.code ?? `unknown-${index}`;
+                                        const isChecked = selectedItems.has(safeId);
+                                        const isExpanded = selectedGroup?.stockNumber === group.code;
 
                                         const supplyItemInfo = (group as any).supplyItem || group;
                                         const unitName = supplyItemInfo.measurementUnit?.name || supplyItemInfo.unit?.name || 'piece';
@@ -470,19 +546,19 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
                                         return (
                                             <React.Fragment key={groupKey}>
                                                 <TableRow
-                                                    className={`cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50/60 hover:bg-indigo-50/80' : 'hover:bg-slate-50'}`}
+                                                    className={`cursor-pointer transition-colors ${isChecked ? 'bg-indigo-50/60 hover:bg-indigo-50/80' : 'hover:bg-slate-50'}`}
                                                     onClick={() => handleSelectRow(group.code || '', group.description || '', unitName, rawReorderPoint)}
                                                 >
                                                     <TableCell onClick={(e) => e.stopPropagation()} className="px-4 text-center">
                                                         <Checkbox
-                                                            checked={isSelected}
-                                                            onCheckedChange={() => handleSelectRow(group.code || '', group.description || '', unitName, rawReorderPoint)}
+                                                            checked={isChecked}
+                                                            onCheckedChange={(checked) => handleSelectItem(safeId, !!checked)}
                                                             className="data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
                                                         />
                                                     </TableCell>
                                                     <TableCell className="px-2">
                                                         <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-indigo-600 pointer-events-none">
-                                                            {isSelected ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                                                         </Button>
                                                     </TableCell>
                                                     <TableCell className="font-medium text-slate-900">{group.code}</TableCell>
@@ -496,7 +572,7 @@ export const StockCardReportModal = ({ isOpen, onClose }: StockCardReportModalPr
                                                     </TableCell>
                                                 </TableRow>
 
-                                                {isSelected && (
+                                                {isExpanded && (
                                                     <TableRow className="bg-slate-50/50 hover:bg-slate-50/50">
                                                         <TableCell colSpan={6} className="p-0 border-b">
                                                             <div className="bg-slate-50/80 border-l-[3px] border-indigo-500 shadow-inner px-8 py-5 max-h-[320px] overflow-y-auto">
