@@ -71,7 +71,11 @@ export function TagPreviewGrid({
   const f = (base: number) => `${(base * fontScale).toFixed(1)}px`;
   const qrSize = Math.round(Math.max(32, 58 * scale));
   const logoSize = Math.round(Math.max(16, 22 * scale));
-  const isSlim = activeTemplate.height < 20;   // slim tag (e.g. 60×15mm)
+  // Only the "slim" template gets the dense horizontal layout below — it's the one
+  // template too short for the standard vertical field stack. "small" (38×19mm) is
+  // close enough to standard's footprint to reuse the full layout at a smaller scale,
+  // so every template shows the same complete set of details.
+  const isSlim = activeTemplate.id === "slim";
   const isLarge = activeTemplate.height >= 35;  // large tag (e.g. 70×40mm)
 
   // Grid columns per template
@@ -108,7 +112,8 @@ export function TagPreviewGrid({
           const groupLabel = asset.group === "PPE" ? "PPE" : "SE";
           const condition = latestMovement?.condition || null;
 
-          // ── SLIM layout (60×15mm) ─────────────────────────────
+          // ── SLIM layout (60×15mm) — dense but still carries every field the
+          // standard tag has, including the validated-by signature line ─────
           if (isSlim) {
             return (
               <div
@@ -140,29 +145,55 @@ export function TagPreviewGrid({
                   </div>
                 </div>
 
-                {/* Single-row body */}
-                <div style={{ display: "flex", alignItems: "center", padding: "3px 5px", gap: "6px" }}>
-                  {/* Property No + Description */}
-                  <div style={{
-                    background: "#eff6ff", border: "1px solid #93c5fd", borderRadius: "2px",
-                    padding: "1px 4px", flexShrink: 0,
-                  }}>
-                    <div style={{ fontSize: f(4.5), fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase" }}>Property No.</div>
-                    <div style={{ fontSize: f(7.5), fontWeight: 800, color: "#1e3a5f", fontFamily: "Courier New, monospace" }}>{tag.code}</div>
-                  </div>
-
-                  {/* Description */}
+                {/* Dense body: field grid + QR */}
+                <div style={{ display: "flex", padding: "2px 5px", gap: "6px" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: f(4.5), fontWeight: 700, color: "#6b7280", textTransform: "uppercase" }}>Description</div>
-                    <div style={{ fontSize: f(6.5), color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {tag.description}
+                    {/* Property No + Description + Model/Serial */}
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "6px", marginBottom: "2px" }}>
+                      <div style={{
+                        background: "#eff6ff", border: "1px solid #93c5fd", borderRadius: "2px",
+                        padding: "1px 4px", flexShrink: 0,
+                      }}>
+                        <div style={{ fontSize: f(4.5), fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase" }}>Property No.</div>
+                        <div style={{ fontSize: f(7.5), fontWeight: 800, color: "#1e3a5f", fontFamily: "Courier New, monospace" }}>{tag.code}</div>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: f(4.5), fontWeight: 700, color: "#6b7280", textTransform: "uppercase" }}>Description</div>
+                        <div style={{ fontSize: f(6.5), color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {tag.description}
+                        </div>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: f(4.5), fontWeight: 700, color: "#6b7280", textTransform: "uppercase" }}>Model / Serial No.</div>
+                        <div style={{ fontSize: f(6.5), color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {modelSerial}
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Person Accountable */}
-                  <div style={{ flexShrink: 0, textAlign: "right" }}>
-                    <div style={{ fontSize: f(4.5), fontWeight: 700, color: "#6b7280", textTransform: "uppercase" }}>Person Accountable</div>
-                    <div style={{ fontSize: f(6.5), color: "#111827", fontWeight: 600 }}>{personAccountable}</div>
+                    {/* Acquisition Date + Cost + Person Accountable */}
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "6px", marginBottom: "2px" }}>
+                      <div style={{ flexShrink: 0 }}>
+                        <div style={{ fontSize: f(4.5), fontWeight: 700, color: "#6b7280", textTransform: "uppercase" }}>Acquisition Date</div>
+                        <div style={{ fontSize: f(6.5), color: "#111827", whiteSpace: "nowrap" }}>{acqDate}</div>
+                      </div>
+                      <div style={{ flexShrink: 0 }}>
+                        <div style={{ fontSize: f(4.5), fontWeight: 700, color: "#6b7280", textTransform: "uppercase" }}>Acquisition Cost</div>
+                        <div style={{ fontSize: f(6.5), color: "#111827", whiteSpace: "nowrap" }}>{acqCost}</div>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0, textAlign: "right" }}>
+                        <div style={{ fontSize: f(4.5), fontWeight: 700, color: "#6b7280", textTransform: "uppercase" }}>Person Accountable</div>
+                        <div style={{ fontSize: f(6.5), color: "#111827", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {personAccountable}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Validated by */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <div style={{ fontSize: f(5), fontWeight: 700, color: "#374151", whiteSpace: "nowrap" }}>Validated by:</div>
+                      <div style={{ borderBottom: "0.75px solid #374151", flex: 1, maxWidth: "140px" }} />
+                    </div>
                   </div>
 
                   {/* QR */}
@@ -170,9 +201,16 @@ export function TagPreviewGrid({
                     <img
                       src={tag.qrCode}
                       alt={`QR ${tag.code}`}
-                      style={{ width: `${qrSize}px`, height: `${qrSize}px`, flexShrink: 0, display: "block" }}
+                      style={{ width: `${qrSize}px`, height: `${qrSize}px`, flexShrink: 0, alignSelf: "center", display: "block" }}
                     />
                   )}
+                </div>
+
+                {/* Footer */}
+                <div style={{ borderTop: "0.5px solid #d1d5db", background: "#f9fafb", padding: "1px 5px", textAlign: "center" }}>
+                  <p style={{ fontSize: f(4.5), color: "#9ca3af", fontStyle: "italic", margin: 0 }}>
+                    Tampering / Removing of this sticker is Punishable under ERC Regulations.
+                  </p>
                 </div>
               </div>
             );
