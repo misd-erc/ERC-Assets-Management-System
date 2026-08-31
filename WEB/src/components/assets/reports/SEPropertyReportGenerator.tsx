@@ -279,12 +279,6 @@ export class SEPropertyReportGenerator {
     }).format(date);
   }
 
-  private static isValidIcs(parIcsNumber: string | undefined | null): boolean {
-    if (!parIcsNumber) return false;
-    const trimmed = parIcsNumber.trim();
-    return trimmed !== '' && trimmed !== 'N/A';
-  }
-
   private static getOldestIcsDate(assets: any[]): Date | null {
     let oldest: Date | null = null;
     for (const asset of assets) {
@@ -330,10 +324,10 @@ export class SEPropertyReportGenerator {
 
     const finalAssets = seAssets
       .map(asset => {
-        // Use the EARLIEST movement with a valid ICS number (the original issuance),
+        // Use the EARLIEST movement by DateAssigned (the original issuance),
         // not the latest — this report should reflect when the item was first issued.
         const latestMovement = asset.movements
-          ?.filter((m: any) => this.isValidIcs(m.parIcsNumber))
+          ?.slice()
           ?.sort(
             (a: any, b: any) =>
               new Date(a.dateAssigned).getTime() -
