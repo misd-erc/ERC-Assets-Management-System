@@ -11,6 +11,13 @@ namespace PortalDB.Models.QueryParams.PTA
         public string? Group { get; set; }
 
         /// <summary>
+        /// When true, return every historical movement that has a PTR/ITR number.
+        /// This is used for report reprinting; the live Transfers/Returns list keeps
+        /// the default behavior of showing only the current movement per asset.
+        /// </summary>
+        public bool IncludeHistory { get; set; } = false;
+
+        /// <summary>
         /// Search by employee name (plantilla or non-plantilla) or employee ID original.
         /// </summary>
         public string? SearchEmployee { get; set; }

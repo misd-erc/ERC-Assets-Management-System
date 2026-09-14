@@ -1,4 +1,4 @@
-import { Asset } from '@/types/asset/UnifiedAsset';
+import { Asset, UnifiedMovement } from '@/types/asset/UnifiedAsset';
 import { secureStorage } from '@/utils/secureStorage';
 
 export interface PTAData {
@@ -25,6 +25,7 @@ export interface PTAData {
     actualDivisionId: number | null;
     condition: string;
     isActive: boolean;
+    employee?: UnifiedMovement['employee'];
     office?: { id: number; name: string; acronym: string; generalCode?: string; isActive: boolean; isDeleted: boolean; createdAt: string } | null;
     division?: { id: number; officeId: number; name: string; acronym: string; isActive: boolean; isDeleted: boolean; createdAt: string } | null;
   }>;
@@ -206,6 +207,7 @@ export class PTAService {
         condition: m.condition,
         isActive: m.isActive,
         isDeleted: false,
+        employee: m.employee,
         office: m.office,
         division: m.division,
         createdAt: m.dateAssigned,

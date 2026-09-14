@@ -140,6 +140,8 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                         Division = actualDivision,
 
                         Condition = temp.movement.Remarks ?? string.Empty,
+                        Status = temp.movement.Status,
+                        ReasonForTransfer = temp.movement.ReasonForTransfer,
                         IsCurrent = temp.movement.IsCurrent,
                         IsActive = temp.movement.IsActive,
                         IsDeleted = temp.movement.IsDeleted,

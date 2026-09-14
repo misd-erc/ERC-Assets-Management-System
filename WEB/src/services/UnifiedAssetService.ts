@@ -63,14 +63,18 @@ export class UnifiedAssetService {
 
     // Map movements to unified format - handle new API structure
     const unifiedMovements: UnifiedMovement[] = (apiItem.movements || []).map((mv: any) => ({
-      id: mv.id,
-      ptaId: mv.ptaId || apiItem.id || 0,
-      dateAssigned: mv.dateAssigned || mv.createdAt || '',
-      ptrItrNumber: mv.ptrItrNumber || '',
-      parIcsNumber: mv.parIcsNumber || '',
-      rrppeRrspNumber: mv.rrppeRrspNumber || '',
-      plantillaEmployeeId: mv.plantillaEmployeeId || null,
-      nonPlantillaEmployeeId: mv.nonPlantillaEmployeeId || null,
+      // Keep the movement identity and state intact.  Losing either one makes
+      // an asset edit create a duplicate movement and remove it from the live
+      // transfer list (which filters on isCurrent).
+      id: mv.id ?? mv.movementId ?? 0,
+      ptaId: mv.ptaId ?? mv.PTAId ?? apiItem.id ?? 0,
+      dateAssigned: mv.dateAssigned ?? mv.createdAt ?? '',
+      ptrItrNumber: mv.ptrItrNumber ?? mv.ptritrNumber ?? '',
+      parIcsNumber: mv.parIcsNumber ?? mv.paricsNumber ?? '',
+      rrppeRrspNumber: mv.rrppeRrspNumber ?? mv.rrpperrspNumber ?? '',
+      status: mv.status,
+      plantillaEmployeeId: mv.plantillaEmployeeId ?? null,
+      nonPlantillaEmployeeId: mv.nonPlantillaEmployeeId ?? null,
       plantillaEmployeeIdOriginal: mv.plantillaEmployeeIdOriginal || undefined,
       nonPlantillaEmployeeIdOriginal: mv.nonPlantillaEmployeeIdOriginal || undefined,
       employee: mv.employee,
@@ -78,6 +82,7 @@ export class UnifiedAssetService {
       division: mv.division,
       condition: mv.condition || 'Working',
       isActive: mv.isActive !== undefined ? mv.isActive : true,
+      isCurrent: mv.isCurrent !== undefined ? mv.isCurrent : false,
       isDeleted: mv.isDeleted !== undefined ? mv.isDeleted : false,
       createdAt: mv.createdAt || new Date().toISOString(),
     }));

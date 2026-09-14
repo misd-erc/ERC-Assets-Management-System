@@ -289,6 +289,20 @@ export class SEPropertyReportGenerator {
     return oldest;
   }
 
+  /**
+   * The movement-level office can be a default or transaction office. The
+   * responsibility center must instead come from the plantilla employee's
+   * assigned office returned in the movement's employee array.
+   */
+  private static getResponsibilityCenterCode(asset: any): string {
+    const movement = asset.latestMovement;
+    const plantillaEmployee = movement?.employee?.find(
+      (employee: any) => employee.id === movement.plantillaEmployeeId
+    );
+
+    return plantillaEmployee?.office?.generalCode ?? '';
+  }
+
   static async generatePreview(options: SEPropertyReportOptions): Promise<string> {
     const seAssets = await PTAService.getAllForSE(options.asOfDate);
     if (!seAssets.length) throw new Error('No SE assets found for the selected date.');
@@ -365,7 +379,7 @@ export class SEPropertyReportGenerator {
       columns: ['ICS No.', 'Responsibility Center Code', 'Semi-expendable Property No.', 'Item Description', 'Unit', 'Quantity Issued', 'Unit Cost', 'Amount'],
       rows: finalAssets.map((asset) => [
         asset.icsNo,
-        asset.latestMovement?.office?.generalCode ?? '',
+        this.getResponsibilityCenterCode(asset),
         asset.propertyNumber,
         asset.description,
         asset.unitOfMeasurement,
@@ -451,7 +465,7 @@ export class SEPropertyReportGenerator {
                   {asset.icsNo}
                 </Text>
                 <Text style={[styles.td, styles.center, { width: this.colWidth(1) }]}>
-                  {asset.latestMovement?.office?.generalCode ?? ''}
+                  {this.getResponsibilityCenterCode(asset)}
                 </Text>
                 <Text style={[styles.td, { width: this.colWidth(2) }]}>
                   {asset.propertyNumber}

@@ -72,7 +72,10 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
   const loadITRRecords = async () => {
     setLoading(true);
     try {
-      const response = await getITRTransferList(1, 1000);
+      // ITR reports must remain searchable/reprintable even after an asset is
+      // transferred again, so include every numbered SE movement, not just its
+      // currently assigned movement.
+      const response = await getITRTransferList(1, 1000, true);
       const employeeResponse = await getEmployees().catch(() => ({ data: { items: [] } } as any));
       const employeeById = new Map<number, any>(
         ((employeeResponse as any)?.data?.items || []).map((emp: any) => [emp.id, emp])
