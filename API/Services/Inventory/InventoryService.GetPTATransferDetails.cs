@@ -53,7 +53,10 @@ public async Task<IActionResult> GetPTATransferDetails([FromQuery] string transf
                 var allMovements = (await _getTools.PTA.GetTblPTAMovements(context)
                         .Where(x => !x.IsDeleted)
                         .ToListAsync())
-                    .Where(x => !string.IsNullOrWhiteSpace(x.PTRITRNumber) && x.PTRITRNumber!.ToUpper().Contains(transferNumber.ToUpper()))
+                    // The selected transfer number must be an exact match.  A contains
+                    // search makes 2026-07-234 also include 2026-07-2344124.
+                    .Where(x => !string.IsNullOrWhiteSpace(x.PTRITRNumber)
+                        && string.Equals(x.PTRITRNumber!.Trim(), transferNumber.Trim(), StringComparison.OrdinalIgnoreCase))
                     .ToList();
 
                 if (!allMovements.Any())

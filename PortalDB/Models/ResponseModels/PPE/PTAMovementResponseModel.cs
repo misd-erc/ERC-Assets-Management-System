@@ -27,6 +27,8 @@ namespace PortalDB.Models.ResponseModels.PTA
         public TblOffice? Office { get; set; }
         public TblDivision? Division { get; set; }
         public string Condition { get; set; } = string.Empty;
+        public string? Status { get; set; }
+        public string? ReasonForTransfer { get; set; }
         public bool IsCurrent { get; set; }
         public bool IsActive { get; set; }
         public bool IsDeleted { get; set; }

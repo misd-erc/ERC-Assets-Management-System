@@ -109,11 +109,29 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
 
       // Initialize accountability entries from movements
       if (asset.movements && asset.movements.length > 0) {
-        setAccountabilityEntries(asset.movements.map(m => ({
+        const entries = asset.movements.map(m => ({
           ...m,
           actualOfficeId: m.actualOfficeId || (m.office as any)?.id || 0,
           actualDivisionId: m.actualDivisionId || (m.division as any)?.id || 0,
-        })));
+        }));
+
+        // Older saves made before `isCurrent` was preserved can leave every
+        // movement false. Restore one current holder from the newest active
+        // assignment so a subsequent correction is visible in Transfers/Returns.
+        if (!entries.some(m => m.isActive !== false && m.isCurrent)) {
+          const newestActiveEntry = entries
+            .filter(m => m.isActive !== false)
+            .sort((a, b) => {
+              const dateDifference = new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime();
+              return dateDifference || (b.id ?? 0) - (a.id ?? 0);
+            })[0];
+
+          if (newestActiveEntry) {
+            newestActiveEntry.isCurrent = true;
+          }
+        }
+
+        setAccountabilityEntries(entries);
         setShowAccountabilitySection(true);
       } else {
         setAccountabilityEntries([]);
@@ -174,18 +192,20 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
       ? accountabilityEntries
           .filter(movement => movement != null)
           .map(movement => ({
-        id: movement.id || 0, // Use 0 for new movements, existing id for edits
+        id: movement.id ?? 0, // Use 0 for new movements, existing id for edits
         ptaId: asset.id,
         dateAssigned: movement.dateAssigned || new Date().toISOString(),
         ptrItrNumber: movement.ptrItrNumber || '',
         parIcsNumber: movement.parIcsNumber || '',
         rrppeRrspNumber: movement.rrppeRrspNumber || '',
+        status: movement.status,
         plantillaEmployeeId: movement.plantillaEmployeeId || 0,
         nonPlantillaEmployeeId: movement.nonPlantillaEmployeeId || 0,
         actualOfficeId: movement.actualOfficeId || 0,
         actualDivisionId: movement.actualDivisionId || 0,
         condition: movement.condition || 'Working',
         isActive: movement.isActive !== undefined ? movement.isActive : true,
+        isCurrent: movement.isCurrent !== undefined ? movement.isCurrent : false,
       }))
       : [];
 
@@ -412,6 +432,7 @@ export function AssetEditForm({ asset, onSubmit, onCancel, onSuccess }: AssetEdi
                 actualDivisionId: 0,
                 condition: 'Working',
                 isActive: true,
+                isCurrent: true,
                 isDeleted: false,
                 createdAt: new Date().toISOString(),
               }]);
