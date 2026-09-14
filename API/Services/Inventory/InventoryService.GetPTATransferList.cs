@@ -18,11 +18,15 @@ namespace API.Services.Inventory
 
             try
             {
-                // 1. Load all current non-deleted movements.
+                // 1. The live Transfers/Returns list shows current movements only.
+                // Report screens can opt into history to reprint every numbered PTR/ITR.
                 // PTRITRNumber is NOT EF-mapped (encrypted, [NotMapped]), so filter in-memory after materialization.
-                var allMovements = await _getTools.PTA.GetTblPTAMovements(context)
-                    .Where(x => x.IsCurrent == true && !x.IsDeleted)
-                    .ToListAsync();
+                var movementsQuery = _getTools.PTA.GetTblPTAMovements(context)
+                    .Where(x => !x.IsDeleted);
+                if (!model.IncludeHistory)
+                    movementsQuery = movementsQuery.Where(x => x.IsCurrent == true);
+
+                var allMovements = await movementsQuery.ToListAsync();
 
                 // Keep only those with a valid PTR/ITR number.
                 // Exclude null/empty/whitespace and known placeholder strings stored in the DB.
