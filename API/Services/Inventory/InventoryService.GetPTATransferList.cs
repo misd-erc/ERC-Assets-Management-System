@@ -119,18 +119,31 @@ namespace API.Services.Inventory
 
                 var employeeNameMap = new Dictionary<long, string>();
                 var employeeTypeMap = new Dictionary<long, string>();
-                foreach (var empId in employeeIds)
+                // PTR/ITR rows are historical records.  Include soft-deleted employees so a
+                // later employee deletion does not turn an existing movement into "Unknown".
+                var employees = await context.TblEmployees
+                    .AsNoTracking()
+                    .Where(e => employeeIds.Contains(e.Id))
+                    .ToListAsync();
+                var employmentTypeIds = employees
+                    .Where(e => e.EmploymentTypeId.HasValue)
+                    .Select(e => e.EmploymentTypeId!.Value)
+                    .Distinct()
+                    .ToList();
+                var employmentTypeMap = await context.TblEmploymentTypes
+                    .AsNoTracking()
+                    .Where(t => employmentTypeIds.Contains(t.Id))
+                    .ToDictionaryAsync(t => t.Id, t => t.Name);
+
+                foreach (var employee in employees)
                 {
-                    var emp = await _getTools.Account.GetTblEmployeeAsync(empId, context);
-                    if (emp != null)
-                    {
-                        employeeNameMap[empId] = $"{emp.FirstName} {emp.MiddleName} {emp.LastName}".Trim();
-                        if (emp.EmploymentTypeId.HasValue)
-                        {
-                            var employmentType = await _getTools.Office.GetTblEmploymentTypeAsync(emp.EmploymentTypeId.Value, context);
-                            employeeTypeMap[empId] = employmentType?.Name ?? string.Empty;
-                        }
-                    }
+                    var fullName = $"{employee.FirstName} {employee.MiddleName} {employee.LastName}".Trim();
+                    if (!string.IsNullOrWhiteSpace(fullName))
+                        employeeNameMap[employee.Id] = fullName;
+
+                    if (employee.EmploymentTypeId.HasValue &&
+                        employmentTypeMap.TryGetValue(employee.EmploymentTypeId.Value, out var employmentType))
+                        employeeTypeMap[employee.Id] = employmentType ?? string.Empty;
                 }
 
                 // Apply employee search filter at the group level (matches if any movement in the group matches)
@@ -215,18 +228,29 @@ namespace API.Services.Inventory
                     .Where(id => !employeeNameMap.ContainsKey(id))
                     .ToList();
 
-                foreach (var prevEmpId in previousHolderIds)
+                var previousEmployees = await context.TblEmployees
+                    .AsNoTracking()
+                    .Where(e => previousHolderIds.Contains(e.Id))
+                    .ToListAsync();
+                var previousEmploymentTypeIds = previousEmployees
+                    .Where(e => e.EmploymentTypeId.HasValue)
+                    .Select(e => e.EmploymentTypeId!.Value)
+                    .Distinct()
+                    .ToList();
+                var previousEmploymentTypeMap = await context.TblEmploymentTypes
+                    .AsNoTracking()
+                    .Where(t => previousEmploymentTypeIds.Contains(t.Id))
+                    .ToDictionaryAsync(t => t.Id, t => t.Name);
+
+                foreach (var employee in previousEmployees)
                 {
-                    var emp = await _getTools.Account.GetTblEmployeeAsync(prevEmpId, context);
-                    if (emp != null)
-                    {
-                        employeeNameMap[prevEmpId] = $"{emp.FirstName} {emp.MiddleName} {emp.LastName}".Trim();
-                        if (emp.EmploymentTypeId.HasValue)
-                        {
-                            var employmentType = await _getTools.Office.GetTblEmploymentTypeAsync(emp.EmploymentTypeId.Value, context);
-                            employeeTypeMap[prevEmpId] = employmentType?.Name ?? string.Empty;
-                        }
-                    }
+                    var fullName = $"{employee.FirstName} {employee.MiddleName} {employee.LastName}".Trim();
+                    if (!string.IsNullOrWhiteSpace(fullName))
+                        employeeNameMap[employee.Id] = fullName;
+
+                    if (employee.EmploymentTypeId.HasValue &&
+                        previousEmploymentTypeMap.TryGetValue(employee.EmploymentTypeId.Value, out var employmentType))
+                        employeeTypeMap[employee.Id] = employmentType ?? string.Empty;
                 }
 
                 // 11. Build lightweight result — only the fields the list view displays
