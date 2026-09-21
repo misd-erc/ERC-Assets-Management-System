@@ -104,6 +104,7 @@ export interface RPCISignatory {
 }
 
 export interface RPCISignatories {
+    accountableOfficer: RPCISignatory;
     member1: RPCISignatory;
     member2: RPCISignatory;
     member3: RPCISignatory;
@@ -112,11 +113,29 @@ export interface RPCISignatories {
 }
 
 const DEFAULT_RPCI_SIGNATORIES: RPCISignatories = {
+    accountableOfficer: { name: 'ROSELLE M. GUINTU', designation: 'Administrative Officer III' },
     member1: { name: '', designation: '' },
     member2: { name: '', designation: '' },
     member3: { name: '', designation: '' },
     chairperson: { name: '', designation: '' },
     viceChairperson: { name: '', designation: '' },
+};
+
+// Older saved templates do not contain the accountableOfficer key; merge with defaults so
+// loading them never leaves the printed report without an accountable officer.
+const mergeWithDefaultSignatories = (saved: Partial<RPCISignatories> | null | undefined): RPCISignatories => {
+    const base = JSON.parse(JSON.stringify(DEFAULT_RPCI_SIGNATORIES)) as RPCISignatories;
+    if (!saved) return base;
+    (Object.keys(base) as (keyof RPCISignatories)[]).forEach((key) => {
+        const value = saved[key];
+        if (value && typeof value === 'object') {
+            base[key] = {
+                name: value.name ?? base[key].name,
+                designation: value.designation ?? base[key].designation,
+            };
+        }
+    });
+    return base;
 };
 
 interface RPCIPDFDocumentProps {
@@ -141,12 +160,12 @@ const RPCIPDFDocument: React.FC<RPCIPDFDocumentProps> = ({ data, categoryInfo, r
                     <View style={pdfStyles.accountableContainer}>
                         <Text style={pdfStyles.accountableInlineText}>For which </Text>
                         <View style={pdfStyles.accountableItemBlock}>
-                            <Text style={pdfStyles.accountableValue}>ROSELLE M. GUINTU</Text>
+                            <Text style={pdfStyles.accountableValue}>{signatories.accountableOfficer?.name || ' '}</Text>
                             <Text style={pdfStyles.accountableSubLabel}>(Name of Accountable Officer)</Text>
                         </View>
                         <Text style={pdfStyles.accountableInlineText}>, </Text>
                         <View style={pdfStyles.accountableItemBlock}>
-                            <Text style={pdfStyles.accountableValue}>Administrative Officer III</Text>
+                            <Text style={pdfStyles.accountableValue}>{signatories.accountableOfficer?.designation || ' '}</Text>
                             <Text style={pdfStyles.accountableSubLabel}>(Official Designation)</Text>
                         </View>
                         <Text style={pdfStyles.accountableInlineText}>, </Text>
@@ -304,7 +323,7 @@ const RPCISignatoryModal: React.FC<RPCISignatoryModalProps> = ({ isOpen, onClose
 
     const handleLoadTemplate = (tpl: RPCISignatoryTemplateDto) => {
         if (tpl.signatories) {
-            setSignatories(JSON.parse(JSON.stringify(tpl.signatories)));
+            setSignatories(mergeWithDefaultSignatories(tpl.signatories));
         }
         setEditingTemplateId(null);
         setTemplateName('');
@@ -313,7 +332,7 @@ const RPCISignatoryModal: React.FC<RPCISignatoryModalProps> = ({ isOpen, onClose
 
     const handleEditTemplate = (tpl: RPCISignatoryTemplateDto) => {
         if (tpl.signatories) {
-            setSignatories(JSON.parse(JSON.stringify(tpl.signatories)));
+            setSignatories(mergeWithDefaultSignatories(tpl.signatories));
         }
         setEditingTemplateId(tpl.id);
         setTemplateName(tpl.name);
@@ -353,6 +372,7 @@ const RPCISignatoryModal: React.FC<RPCISignatoryModalProps> = ({ isOpen, onClose
     };
 
     const signatoryLabels: Record<keyof RPCISignatories, string> = {
+        accountableOfficer: 'Accountable Officer',
         member1: 'Committee Member 1',
         member2: 'Committee Member 2',
         member3: 'Committee Member 3',
@@ -552,7 +572,9 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
         try {
             const [response, groupedResponse] = await Promise.all([
                 getSupplyItems(page, pageSize, '', catId, undefined, undefined, undefined, start, end),
-                getVwSupplyGroupedItems(page, pageSize, '', undefined, catId || undefined, undefined, undefined, start, end)
+                // Ask the server for available (stock > 0) groups so the returned totalCount matches
+                // the rows actually shown (the modal hides zero-stock items).
+                getVwSupplyGroupedItems(page, pageSize, '', 'Available', catId || undefined, undefined, undefined, start, end)
             ]);
 
             const groupedMap = new Map<string, any>();
@@ -581,7 +603,9 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                 .filter((item: any) => (item.quantity ?? 0) > 0)
                 .sort((a, b) => (a.code || '').localeCompare(b.code || '', undefined, { numeric: true, sensitivity: 'base' }));
 
-            setTotalCount(grouped.length);
+            // Use the server total so pagination covers every matching group (the grouped
+            // response is paginated; using the page length here capped the report at one page).
+            setTotalCount(groupedResponse.totalCount || grouped.length);
             setData(grouped);
         } catch (err: any) {
             setError(err.message || 'Failed to fetch items');

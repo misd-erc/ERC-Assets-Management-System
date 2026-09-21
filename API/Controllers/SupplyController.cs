@@ -486,10 +486,23 @@ namespace API.Controllers
                     query = query.Where(x => x.VendorId == model.VendorId.Value);
 
                 DateTime? cutoffStartDate = model.StartDate.HasValue ? model.StartDate.Value.Date : null;
-                DateTime? cutoffEndDate = model.EndDate.HasValue ? model.EndDate.Value.Date.AddDays(1).AddTicks(-1) : null;
 
-                if (cutoffEndDate.HasValue)
-                    query = query.Where(x => x.CreatedAt <= cutoffEndDate.Value);
+                // Guard against DateTime overflow when the UI sends 9999-12-31 as its
+                // "no end date" sentinel (EndDate.Date.AddDays(1) is un-representable).
+                DateTime? cutoffEndDate = null;
+                if (model.EndDate.HasValue)
+                {
+                    var endDate = model.EndDate.Value.Date;
+                    cutoffEndDate = endDate >= DateTime.MaxValue.Date
+                        ? DateTime.MaxValue
+                        : endDate.AddDays(1).AddTicks(-1);
+                }
+
+                // NOTE: The date range only selects which item groups appear (groups with
+                // additions OR issuances in range); the quantity reported is the item's current
+                // stock. Supply items are therefore NOT pre-filtered by date at the SQL level,
+                // otherwise a group whose addition falls outside the range would be dropped
+                // before its in-range issuance could be considered. Filtering happens below.
 
                 // 2. Fetch to memory for decryption-based filtering and grouping
                 var supplyItems = await query.ToListAsync();
@@ -503,13 +516,9 @@ namespace API.Controllers
                         (x.Description ?? "").ToLowerInvariant().Contains(searchLower)).ToList();
                 }
 
-                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
-                {
-                    if (model.Status == "Available")
-                        supplyItems = supplyItems.Where(x => (x.Quantity ?? 0) > 0).ToList();
-                    else if (model.Status == "Out of Stock")
-                        supplyItems = supplyItems.Where(x => (x.Quantity ?? 0) <= 0).ToList();
-                }
+                // NOTE: the Status filter is applied AFTER the final (post-issuance) stock is
+                // computed below, so "Available"/"Out of Stock" reflect real stock on hand and
+                // the reported totalCount matches the rows the UI displays.
 
                 // 4. Group by Code and Description, compute aggregates
                 var groupedItems = supplyItems
@@ -519,14 +528,28 @@ namespace API.Controllers
                         var firstItem = g.First();
                         var additionsInRange = g.Sum(x => (!cutoffStartDate.HasValue || x.CreatedAt >= cutoffStartDate.Value) && (!cutoffEndDate.HasValue || x.CreatedAt <= cutoffEndDate.Value) ? (long)(x.Quantity ?? 0) : 0L);
 
+                        // Pick the most recent real batch (quantity > 0) for the unit cost, falling
+                        // back to the most recent non-zero cost. This stops zero-quantity/zero-cost
+                        // placeholder rows from overriding a valid unit cost (same rule as RMSI).
+                        var realBatch = g.Where(x => (x.Quantity ?? 0) > 0).OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                        var costBatch = realBatch ?? g.OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                        var unitCost = costBatch?.UnitCost ?? 0m;
+                        if (unitCost <= 0)
+                        {
+                            var nonZeroCostBatch = g.Where(x => (x.UnitCost ?? 0) > 0).OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                            if (nonZeroCostBatch != null)
+                                unitCost = nonZeroCostBatch.UnitCost ?? 0m;
+                        }
+
                         return new
                         {
                             Code = g.Key.Code,
                             Description = g.Key.Description,
                             TotalCurrentStock = g.Sum(x => (long)(x.Quantity ?? 0)),
                             AdditionsInRange = additionsInRange,
-                            UnitCost = firstItem.UnitCost ?? 0,
-                            MeasurementUnitId = firstItem.MeasurementUnitId,
+                            UnitCost = unitCost,
+                            // Use the first batch that actually has a unit (id > 0) so the report never shows a blank UoM.
+                            MeasurementUnitId = g.Where(x => (x.MeasurementUnitId ?? 0) > 0).Select(x => x.MeasurementUnitId).FirstOrDefault(),
                             CategoryId = firstItem.CategoryId,
                             Id = firstItem.Id,
                             IARId = firstItem.IARId,
@@ -538,10 +561,13 @@ namespace API.Controllers
                     .ToList();
 
                 // ===== 5. Fetch fully completed RIS IDs & sum IssueQuantity =====
-                var fullyCompletedRisIds = await context.Set<TblSupplyRIS>()
+                var approvedRis = await context.Set<TblSupplyRIS>()
                     .Where(r => r.IsApproved && !r.IsDeleted)
-                    .Select(r => r.Id)
+                    .Select(r => new { r.Id, r.RISIssuedDate })
                     .ToListAsync();
+
+                var fullyCompletedRisIds = approvedRis.Select(r => r.Id).ToList();
+                var risIssuedDateById = approvedRis.ToDictionary(r => r.Id, r => r.RISIssuedDate);
 
                 var risItemsQuery = _getTools.Supply.GetTblSupplyRISItems(context);
 
@@ -551,11 +577,16 @@ namespace API.Controllers
                         .ToListAsync()
                     : new List<TblSupplyRISItem>();
 
-                if (cutoffEndDate.HasValue)
+                // Classify an issuance by the RIS issued date (same basis as RMSI) so both
+                // reports agree on the period an issuance belongs to; fall back to the RIS
+                // item's created date when the RIS has no issued date.
+                DateTime EffectiveIssuedAt(TblSupplyRISItem item)
                 {
-                    filteredRisItems = filteredRisItems
-                        .Where(x => x.CreatedAt <= cutoffEndDate.Value)
-                        .ToList();
+                    if (item.SupplyRISId.HasValue
+                        && risIssuedDateById.TryGetValue(item.SupplyRISId.Value, out var issuedDate)
+                        && issuedDate.HasValue)
+                        return issuedDate.Value;
+                    return item.CreatedAt;
                 }
 
                 var issuanceDict = filteredRisItems
@@ -566,7 +597,13 @@ namespace API.Controllers
                         g.Key.StockNumber,
                         g.Key.ItemDescription,
                         TotalIssuedQuantity = g.Sum(x => (long)x.IssueQuantity),
-                        IssuancesInRange = g.Sum(x => (!cutoffStartDate.HasValue || x.CreatedAt >= cutoffStartDate.Value) && (!cutoffEndDate.HasValue || x.CreatedAt <= cutoffEndDate.Value) ? (long)x.IssueQuantity : 0L)
+                        IssuancesInRange = g.Sum(x =>
+                        {
+                            var issuedAt = EffectiveIssuedAt(x);
+                            return (!cutoffStartDate.HasValue || issuedAt >= cutoffStartDate.Value)
+                                && (!cutoffEndDate.HasValue || issuedAt <= cutoffEndDate.Value)
+                                ? (long)x.IssueQuantity : 0L;
+                        })
                     })
                     .ToDictionary(k => (k.StockNumber, k.ItemDescription), v => v);
 
@@ -583,18 +620,40 @@ namespace API.Controllers
                         .ToList();
                 }
 
+                // Compute the final stock once per group so the status filter and pagination use it.
+                var groupsWithStock = groupedItems
+                    .Select(g =>
+                    {
+                        var key = (g.Code, g.Description);
+                        var issuedQty = issuanceDict.GetValueOrDefault(key)?.TotalIssuedQuantity ?? 0L;
+                        return new
+                        {
+                            Group = g,
+                            FinalCurrentStock = Math.Max(0, g.TotalCurrentStock - issuedQty)
+                        };
+                    })
+                    .ToList();
+
+                if (!string.IsNullOrWhiteSpace(model.Status) && model.Status != "all")
+                {
+                    if (model.Status == "Available")
+                        groupsWithStock = groupsWithStock.Where(x => x.FinalCurrentStock > 0).ToList();
+                    else if (model.Status == "Out of Stock")
+                        groupsWithStock = groupsWithStock.Where(x => x.FinalCurrentStock <= 0).ToList();
+                }
+
                 // 6. Count total and paginate
-                int totalCount = groupedItems.Count();
+                int totalCount = groupsWithStock.Count();
                 int skip = (model.PageNumber - 1) * model.PageSize;
-                var pagedGroups = groupedItems
-                    .OrderByDescending(x => x.CreatedAt)
+                var pagedGroups = groupsWithStock
+                    .OrderByDescending(x => x.Group.CreatedAt)
                     .Skip(skip)
                     .Take(model.PageSize)
                     .ToList();
 
                 var unitIds = pagedGroups
-                    .Where(x => x.MeasurementUnitId.HasValue)
-                    .Select(x => x.MeasurementUnitId!.Value)
+                    .Where(x => x.Group.MeasurementUnitId.HasValue)
+                    .Select(x => x.Group.MeasurementUnitId!.Value)
                     .Distinct()
                     .ToList();
 
@@ -605,35 +664,30 @@ namespace API.Controllers
                     unitMap = units.ToDictionary(u => u.Id);
                 }
 
-                // 7. Map to response model (subtract issued quantity from current stock)
+                // 7. Map to response model (stock already computed above)
                 var supplyItemsResponses = pagedGroups.Select(x =>
                 {
-                    var key = (x.Code, x.Description);
-                    var issuanceInfo = issuanceDict.GetValueOrDefault(key);
-                    var issuedQty = issuanceInfo?.TotalIssuedQuantity ?? 0L;
+                    var g = x.Group;
 
-                    // Calculate final stock once so we can use it for both Stock and Cost
-                    var finalCurrentStock = Math.Max(0, x.TotalCurrentStock - issuedQty);
-
-                    TblSupplyUnit? unit = x.MeasurementUnitId.HasValue && unitMap.ContainsKey(x.MeasurementUnitId.Value)
-                        ? unitMap[x.MeasurementUnitId.Value]
+                    TblSupplyUnit? unit = g.MeasurementUnitId.HasValue && unitMap.ContainsKey(g.MeasurementUnitId.Value)
+                        ? unitMap[g.MeasurementUnitId.Value]
                         : null;
 
                     return new SupplyItemGroupedResponseModel
                     {
-                        Id = x.Id,
-                        Code = x.Code ?? string.Empty,
-                        IARId = x.IARId,
-                        Description = x.Description ?? string.Empty,
-                        TotalCurrentStock = finalCurrentStock,
-                        TotalStockCost = finalCurrentStock * x.UnitCost,
-                        UnitCost = x.UnitCost,
+                        Id = g.Id,
+                        Code = g.Code ?? string.Empty,
+                        IARId = g.IARId,
+                        Description = g.Description ?? string.Empty,
+                        TotalCurrentStock = x.FinalCurrentStock,
+                        TotalStockCost = x.FinalCurrentStock * g.UnitCost,
+                        UnitCost = g.UnitCost,
                         MeasurementUnit = unit,
-                        MeasurementUnitId = x.MeasurementUnitId,
-                        CategoryId = x.CategoryId,
-                        ReorderPoint = (int?)x.ReorderPoint,
-                        IsActive = x.IsActive,
-                        CreatedAt = x.CreatedAt
+                        MeasurementUnitId = g.MeasurementUnitId,
+                        CategoryId = g.CategoryId,
+                        ReorderPoint = (int?)g.ReorderPoint,
+                        IsActive = g.IsActive,
+                        CreatedAt = g.CreatedAt
                     };
                 }).ToList();
 
@@ -1843,23 +1897,18 @@ namespace API.Controllers
 
             try
             {
-                // 1. Get issued supply RIS within date range
-                // Fetch to memory first because RISNumber and ResponsibilityCenterCode are [NotMapped] encrypted properties
-                // that EF Core cannot translate to SQL
+                // 1. Get approved supply RIS. Records without an issued date (imported/legacy data) are
+                // included and dated by the RIS item's created date - the same rule RPCI uses - so the
+                // two reports agree on what counts as an issuance.
+                // Fetch to memory first because RISNumber and ResponsibilityCenterCode are [NotMapped]
+                // encrypted properties that EF Core cannot translate to SQL.
                 var supplyRISsRaw = await _getTools.Supply.GetTblSupplyRISs(context)
-                    .Where(x => x.IsApproved && x.RISIssuedDate.HasValue)
+                    .Where(x => x.IsApproved)
                     .ToListAsync();
 
-                var supplyRISs = supplyRISsRaw
-                    .Where(x =>
-                    {
-                        var issuedDate = x.RISIssuedDate!.Value.Date;
-                        return issuedDate >= startDate.Date && issuedDate <= endDate.Date;
-                    })
-                    .Select(x => new { x.Id, x.RISNumber, x.ResponsibilityCenterCode, x.OfficeId, x.DivisionId })
-                    .ToList();
+                var risById = supplyRISsRaw.ToDictionary(x => x.Id, x => x);
 
-                if (!supplyRISs.Any())
+                if (!supplyRISsRaw.Any())
                 {
                     return Ok(ApiResponse<FilteredRMSIItemGroupResponseModel>.OkPaginated(
                         new List<FilteredRMSIItemGroupResponseModel>(),
@@ -1870,23 +1919,38 @@ namespace API.Controllers
                     ));
                 }
 
-                var supplyRISIds = supplyRISs.Select(x => x.Id).ToList();
+                var supplyRISIds = supplyRISsRaw.Select(x => x.Id).ToList();
 
                 // 2. Get RIS items for those RIS IDs
                 // Fetch to memory first because StockNumber and ItemDescription are [NotMapped] encrypted properties
                 var supplyRISItemsRaw = await _getTools.Supply.GetTblSupplyRISItems(context)
-                    .Where(x => supplyRISIds.Contains(x.SupplyRISId.Value))
+                    .Where(x => x.SupplyRISId.HasValue && supplyRISIds.Contains(x.SupplyRISId.Value))
                     .ToListAsync();
 
-                // Project in memory after decryption
+                // Effective issue date: the RIS issued date when present, otherwise the RIS item's
+                // created date (keeps imported records without an issued date in the report).
+                DateTime EffectiveIssuedDate(TblSupplyRISItem item)
+                {
+                    if (item.SupplyRISId.HasValue
+                        && risById.TryGetValue(item.SupplyRISId.Value, out var ris)
+                        && ris.RISIssuedDate.HasValue)
+                        return ris.RISIssuedDate.Value.Date;
+                    return item.CreatedAt.Date;
+                }
+
+                // Project in memory after decryption, filter by the effective date range and drop
+                // zero-issued lines (they are not issuances).
                 var supplyRISItems = supplyRISItemsRaw
                     .Select(x => new
                     {
                         x.SupplyRISId,
                         x.StockNumber,
                         x.ItemDescription,
-                        x.IssueQuantity
+                        x.IssueQuantity,
+                        EffectiveDate = EffectiveIssuedDate(x)
                     })
+                    .Where(x => x.EffectiveDate >= startDate.Date && x.EffectiveDate <= endDate.Date)
+                    .Where(x => x.IssueQuantity > 0)
                     .ToList();
 
                 if (!supplyRISItems.Any())
@@ -1900,6 +1964,17 @@ namespace API.Controllers
                     ));
                 }
 
+                var supplyRISs = supplyRISItems
+                    .Select(x => x.SupplyRISId!.Value)
+                    .Distinct()
+                    .Where(risById.ContainsKey)
+                    .Select(id =>
+                    {
+                        var r = risById[id];
+                        return new { r.Id, r.RISNumber, r.ResponsibilityCenterCode, r.OfficeId, r.DivisionId };
+                    })
+                    .ToList();
+
                 // 3. Get distinct (StockNumber, Description) pairs from RIS items
                 var risItemPairs = supplyRISItems
                     .Select(x => new
@@ -1910,6 +1985,9 @@ namespace API.Controllers
                     .Where(x => !string.IsNullOrWhiteSpace(x.StockNumber) && !string.IsNullOrWhiteSpace(x.Description))
                     .Distinct()
                     .ToList();
+
+                // Supply master used for category matching, unit cost and account code lookups.
+                var allSupplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
 
                 // 4. When a specific category is selected, filter RIS items by matching supply items
                 // When categoryId == 0 (all categories), skip the matching requirement
@@ -1925,7 +2003,6 @@ namespace API.Controllers
                 else
                 {
                     // Get supply items for the given category and filter RIS pairs by matching case-insensitively and trimmed
-                    var allSupplyItems = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
                     var matchingSupplyItems = allSupplyItems
                         .Where(x => x.CategoryId == categoryId)
                         .Select(x => new
@@ -1957,11 +2034,13 @@ namespace API.Controllers
                 // Build a map of RIS details by RIS ID for quick lookup
                 var risDetails = supplyRISs.ToDictionary(r => r.Id, r => new { r.RISNumber, r.ResponsibilityCenterCode, r.OfficeId, r.DivisionId });
 
-                // Fetch office and division names
+                // Fetch office and division names. Soft-deleted offices are intentionally included
+                // (without the IsDeleted filter) so historical RIS still resolve an office name and
+                // the printed RC Code is not left blank.
                 var officeIds = supplyRISs.Where(r => r.OfficeId.HasValue).Select(r => r.OfficeId.Value).Distinct().ToList();
                 var divisionIds = supplyRISs.Where(r => r.DivisionId.HasValue).Select(r => r.DivisionId.Value).Distinct().ToList();
 
-                var offices = await _getTools.Office.GetTblOffices(context)
+                var offices = await context.TblOffices.AsNoTracking()
                     .Where(o => officeIds.Contains(o.Id))
                     .ToDictionaryAsync(o => o.Id, o => o.Name);
 
@@ -1969,21 +2048,40 @@ namespace API.Controllers
                     .Where(d => divisionIds.Contains(d.Id.Value))
                     .ToDictionaryAsync(d => d.Id.Value, d => d.Name);
 
-                // Fetch supply items for unit cost lookup (latest UnitCost per Code/Description, using normalized keys)
-                var supplyItemsForCost = await _getTools.Supply.GetTblSupplyItems(context).ToListAsync();
-                var unitCostList = supplyItemsForCost
+                // Unit cost + account code lookup. Use the most recent REAL batch (quantity > 0),
+                // falling back to the most recent non-zero cost, so zero-quantity/zero-cost
+                // placeholder rows cannot override a valid cost.
+                var categoryGeneralCodeById = await context.TblPTACategories.AsNoTracking()
+                    .Where(c => c.GeneralCode != null)
+                    .ToDictionaryAsync(c => c.Id, c => c.GeneralCode);
+
+                var supplyItemMeta = allSupplyItems
                     .Where(x => !string.IsNullOrWhiteSpace(x.Code) && !string.IsNullOrWhiteSpace(x.Description))
                     .Select(x => new
                     {
                         NormalizedCode = x.Code!.Trim().ToLowerInvariant(),
                         NormalizedDesc = x.Description!.Trim().ToLowerInvariant(),
                         x.UnitCost,
-                        x.CreatedAt
+                        x.CreatedAt,
+                        x.Quantity,
+                        x.CategoryId
                     })
                     .GroupBy(x => new { x.NormalizedCode, x.NormalizedDesc })
                     .ToDictionary(
                         g => (g.Key.NormalizedCode, g.Key.NormalizedDesc),
-                        g => g.OrderByDescending(x => x.CreatedAt).First().UnitCost ?? 0m);
+                        g =>
+                        {
+                            var realBatch = g.Where(x => (x.Quantity ?? 0) > 0).OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                            var costBatch = realBatch ?? g.OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                            var unitCost = costBatch?.UnitCost ?? 0m;
+                            if (unitCost <= 0)
+                            {
+                                var nonZero = g.Where(x => (x.UnitCost ?? 0) > 0).OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                                if (nonZero != null)
+                                    unitCost = nonZero.UnitCost ?? 0m;
+                            }
+                            return new { UnitCost = unitCost, CategoryId = costBatch?.CategoryId };
+                        });
 
                 // Group RIS items by (StockNumber, Description) and compute total and details
                 var decryptedRISItems = supplyRISItems
@@ -2004,8 +2102,15 @@ namespace API.Controllers
                     .Select(g =>
                     {
                         var normKey = (g.Key.StockNumber.Trim().ToLowerInvariant(), g.Key.Description.Trim().ToLowerInvariant());
-                        var unitCost = unitCostList.TryGetValue(normKey, out var uc) ? uc : 0m;
+                        supplyItemMeta.TryGetValue(normKey, out var meta);
+                        var unitCost = meta?.UnitCost ?? 0m;
                         var totalQty = g.Sum(x => x.IssueQuantity);
+
+                        string? accountCode = null;
+                        if (meta?.CategoryId.HasValue == true
+                            && categoryGeneralCodeById.TryGetValue(meta.CategoryId.Value, out var generalCode))
+                            accountCode = generalCode;
+
                         return new FilteredRMSIItemGroupResponseModel
                         {
                             StockNumber = g.Key.StockNumber,
@@ -2013,6 +2118,7 @@ namespace API.Controllers
                             Total = totalQty,
                             UnitCost = unitCost,
                             TotalCost = unitCost * totalQty,
+                            AccountCode = accountCode,
                             Items = g.Select(x =>
                             {
                                 var hasRis = risDetails.TryGetValue(x.RISId.Value, out var ris);

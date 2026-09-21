@@ -43,8 +43,9 @@ export const RISFormContent = ({
     id: 0,
     entityName: '',
     fundCluster: '',
-    officeId: 0,
-    divisionId: 0,
+    // undefined = not selected (0 is a valid office/division id)
+    officeId: undefined,
+    divisionId: undefined,
     responsibilityCenterCode: '',
     risNumber: '',
     risPurpose: '',
@@ -70,8 +71,8 @@ export const RISFormContent = ({
         id: ris.id,
         entityName: ris.entityName,
         fundCluster: ris.fundCluster,
-        officeId: ris.office?.id ?? 0,
-        divisionId: ris.division?.id ?? 0,
+        officeId: ris.office?.id ?? undefined,
+        divisionId: ris.division?.id ?? undefined,
         responsibilityCenterCode: ris.responsibilityCenterCode,
         risNumber: ris.risNumber,
         risPurpose: ris.risPurpose,
@@ -92,8 +93,8 @@ export const RISFormContent = ({
         id: 0,
         entityName: '',
         fundCluster: '',
-        officeId: 0,
-        divisionId: 0,
+        officeId: undefined,
+        divisionId: undefined,
         responsibilityCenterCode: '',
         risNumber: '',
         risPurpose: '',
@@ -135,11 +136,11 @@ export const RISFormContent = ({
       toast.error('Fund Cluster is required');
       return;
     }
-    if (!header.officeId || header.officeId === 0) {
+    if (header.officeId === undefined || header.officeId === null) {
       toast.error('Office is required');
       return;
     }
-    if (!header.divisionId || header.divisionId === 0) {
+    if (header.divisionId === undefined || header.divisionId === null) {
       toast.error('Division is required');
       return;
     }

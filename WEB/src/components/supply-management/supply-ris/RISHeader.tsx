@@ -224,7 +224,7 @@ export const RISHeader = ({
             value={header.officeId}
             onChange={(val) => {
               handleChange('officeId', val);
-              if (val !== header.officeId) handleChange('divisionId', 0);
+              if (val !== header.officeId) handleChange('divisionId', undefined);
             }}
             options={offices.map((o) => ({ id: o.id, name: o.name }))}
             placeholder="Select Office"
@@ -246,7 +246,7 @@ export const RISHeader = ({
             options={filteredDivisions.map((d) => ({ id: d.id, name: d.name }))}
             placeholder="Select Division"
             searchPlaceholder="Search division..."
-            disabled={isViewMode || !header.officeId}
+            disabled={isViewMode || header.officeId === undefined || header.officeId === null}
             open={openDivision}
             onOpenChange={setOpenDivision}
             activeSearch={activeDivision}

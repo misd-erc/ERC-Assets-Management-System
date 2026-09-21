@@ -196,82 +196,115 @@ export const RISItemsSection = ({
   };
 
   const updateItem = useCallback((index: number, field: keyof FormItem, value: any) => {
+    // Selecting a stock number derives a lot of state and may fetch units. Keep all store
+    // calls and side effects OUT of the setItems updater so React never sees another
+    // component (e.g. SupplyGeneralHeader) updated while RISItemsSection is rendering.
+    if (field === 'stockNumber') {
+      const selectedGroup = value
+        ? vwSupplyGroups.find((g) => g.code === value)
+        : undefined;
+
+      if (!selectedGroup) {
+        setItems((prev) => {
+          const newItems = [...prev];
+          newItems[index] = {
+            ...newItems[index],
+            stockNumber: value || '',
+            itemDescription: '',
+            requisitionQuantity: 0,
+            isAvailable: false,
+            issueQuantity: 0,
+            availableUnits: [],
+            isLoadingUnits: false,
+          };
+          return newItems;
+        });
+        return;
+      }
+
+      const cachedUnits = unitCache.current[selectedGroup.id];
+
+      setItems((prev) => {
+        const newItems = [...prev];
+        newItems[index] = {
+          ...newItems[index],
+          stockNumber: value,
+          selectedGroup,
+          itemDescription: selectedGroup.description,
+          requisitionQuantity: selectedGroup.totalCurrentStock,
+          isAvailable: selectedGroup.totalCurrentStock > 0,
+          issueQuantity: 0,
+          unitId: cachedUnits?.[0]?.id ?? 0,
+          availableUnits: cachedUnits ?? [],
+          isLoadingUnits: !cachedUnits,
+        };
+        return newItems;
+      });
+
+      if (cachedUnits) return;
+
+      fetchSupplyGroupedItemLists(selectedGroup.id)
+        .then(() => {
+          const groupItems = useSupplyItemStore.getState().vwSupplyGroupItems;
+          const unitIds = new Set<number>();
+          groupItems.forEach((gi: any) => {
+            if (gi.measurementUnit?.id) unitIds.add(gi.measurementUnit.id);
+            if (gi.supplyUnit?.id) unitIds.add(gi.supplyUnit.id);
+          });
+          const availableUnits = Array.from(unitIds).map((id) => ({
+            id,
+            name: units.find((u) => u.id === id)?.name || `Unit ${id}`,
+          }));
+
+          unitCache.current[selectedGroup.id] = availableUnits;
+
+          setItems((current) => {
+            const updated = [...current];
+            updated[index] = {
+              ...updated[index],
+              availableUnits,
+              isLoadingUnits: false,
+            };
+
+            // Auto-select the first available unit if one exists to prevent blank dropdowns
+            if (availableUnits.length > 0 && (!updated[index].unitId || updated[index].unitId === 0)) {
+              updated[index].unitId = availableUnits[0].id;
+            }
+            return updated;
+          });
+        })
+        .catch(() => {
+          setItems((current) => {
+            const updated = [...current];
+            updated[index] = { ...updated[index], isLoadingUnits: false };
+            return updated;
+          });
+        });
+      return;
+    }
+
+    if (field === 'issueQuantity') {
+      const maxAllowed = items[index]?.requisitionQuantity ?? 0;
+      if (value > maxAllowed) {
+        toast.error(`Issue quantity cannot exceed ${maxAllowed}`);
+      }
+      setItems((prev) => {
+        const newItems = [...prev];
+        newItems[index] = {
+          ...newItems[index],
+          issueQuantity: value > maxAllowed ? maxAllowed : value,
+        };
+        return newItems;
+      });
+      return;
+    }
+
     setItems((prev) => {
       const newItems = [...prev];
       newItems[index] = { ...newItems[index], [field]: value };
-
-      // Handle auto-population when a stock number is selected
-      if (field === 'stockNumber' && value) {
-        const selectedGroup = vwSupplyGroups.find((g) => g.code === value);
-        if (selectedGroup) {
-          newItems[index].selectedGroup = selectedGroup;
-          newItems[index].itemDescription = selectedGroup.description;
-          newItems[index].requisitionQuantity = selectedGroup.totalCurrentStock;
-          newItems[index].isAvailable = selectedGroup.totalCurrentStock > 0;
-          newItems[index].issueQuantity = 0;
-          newItems[index].unitId = 0;
-
-          // Use cached units if available, otherwise fetch
-          if (unitCache.current[selectedGroup.id]) {
-            const availableUnits = unitCache.current[selectedGroup.id];
-            newItems[index].availableUnits = availableUnits;
-            newItems[index].isLoadingUnits = false;
-            if (availableUnits.length > 0) {
-              newItems[index].unitId = availableUnits[0].id;
-            }
-          } else {
-            newItems[index].isLoadingUnits = true;
-
-            fetchSupplyGroupedItemLists(selectedGroup.id).then(() => {
-              const groupItems = useSupplyItemStore.getState().vwSupplyGroupItems;
-              const unitIds = new Set<number>();
-              groupItems.forEach((gi: any) => {
-                if (gi.measurementUnit?.id) unitIds.add(gi.measurementUnit.id);
-                if (gi.supplyUnit?.id) unitIds.add(gi.supplyUnit.id);
-              });
-              const availableUnits = Array.from(unitIds).map((id) => ({
-                id,
-                name: units.find((u) => u.id === id)?.name || `Unit ${id}`,
-              }));
-
-              unitCache.current[selectedGroup.id] = availableUnits;
-
-              setItems((current) => {
-                const updated = [...current];
-                updated[index] = {
-                  ...updated[index],
-                  availableUnits,
-                  isLoadingUnits: false,
-                };
-
-                // Auto-select the first available unit if one exists to prevent blank dropdowns
-                if (availableUnits.length > 0 && (!updated[index].unitId || updated[index].unitId === 0)) {
-                  updated[index].unitId = availableUnits[0].id;
-                }
-                return updated;
-              });
-            });
-          }
-        } else {
-          newItems[index].itemDescription = '';
-          newItems[index].requisitionQuantity = 0;
-          newItems[index].isAvailable = false;
-          newItems[index].availableUnits = [];
-          newItems[index].isLoadingUnits = false;
-        }
-      }
-
-      if (field === 'issueQuantity') {
-        const maxAllowed = newItems[index].requisitionQuantity;
-        if (value > maxAllowed) {
-          toast.error(`Issue quantity cannot exceed ${maxAllowed}`);
-          newItems[index].issueQuantity = maxAllowed;
-        }
-      }
-
       return newItems;
     });
-  }, [vwSupplyGroups, fetchSupplyGroupedItemLists, units]);
+  }, [vwSupplyGroups, fetchSupplyGroupedItemLists, units, items]);
 
   return (
     <div className="space-y-4 border rounded-lg p-4">
