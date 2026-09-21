@@ -46,8 +46,8 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
       setFormData({
         ...record,
         vendorId: record.vendor?.id || 0,
-        officeId: record.office?.id || 0,
-        divisionId: record.division?.id || 0,
+        officeId: record.office?.id ?? undefined,
+        divisionId: record.division?.id ?? undefined,
         recordId: record.recordId || 0,
         recordIds: record.recordIds?.length ? record.recordIds : (record.recordId ? [record.recordId] : []),
         iarNumberDate: record.iarNumberDate?.split('T')[0] || '',
@@ -63,8 +63,8 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
         fundCluster: '',
         vendorId: 0, 
         poNumber: '',
-        officeId: 0, 
-        divisionId: 0,
+        officeId: undefined, 
+        divisionId: undefined,
         recordId: 0,
         recordIds: [],
         iarNumber: '',
@@ -116,7 +116,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
             toast.error('Entity Name is required');
             return;
           }
-          if (!formData.officeId || formData.officeId === 0) {
+          if (formData.officeId === undefined || formData.officeId === null) {
             toast.error('Office is required');
             return;
           }
@@ -277,7 +277,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                       <CommandGroup className="p-1.5">
                         {/* Replaces the old value="0" select item */}
                         <CommandItem
-                            onSelect={() => { setFormData({...formData, officeId: 0, divisionId: 0}); setOpenOffice(false); }}
+                            onSelect={() => { setFormData({...formData, officeId: undefined, divisionId: undefined}); setOpenOffice(false); }}
                             className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50"
                         >
                           <span className="truncate flex-1">Clear Selection</span>
@@ -291,7 +291,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                                   setFormData({
                                     ...formData,
                                     officeId: o.id,
-                                    divisionId: 0
+                                    divisionId: undefined
                                   });
                                   setOpenOffice(false);
                                 }}
@@ -322,7 +322,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                 }
               }}>
                 {/* ✅ Preserved your disabled logic here */}
-                <PopoverTrigger asChild disabled={!formData.officeId}>
+                <PopoverTrigger asChild disabled={formData.officeId === undefined || formData.officeId === null}>
                   <Button
                       variant="outline"
                       role="combobox"
@@ -363,7 +363,7 @@ export const SupplyIAREditModal = ({ open, onOpenChange, mode, record, onSubmit,
                       <CommandGroup className="p-1.5">
                         {/* Replaces the old value="0" select item */}
                         <CommandItem
-                            onSelect={() => { setFormData({...formData, divisionId: 0}); setOpenDivision(false); }}
+                            onSelect={() => { setFormData({...formData, divisionId: undefined}); setOpenDivision(false); }}
                             className="flex items-center justify-between rounded-md px-3 py-2 my-0.5 text-sm cursor-pointer transition-colors text-slate-500 italic hover:bg-slate-50"
                         >
                           <span className="truncate flex-1">Clear Selection</span>

@@ -27,6 +27,69 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   initialize: async () => {
     console.log('[AuthStore] Initializing auth state...');
 
+    // TEMPORARY DEV LOGIN BYPASS - remove this block when no longer needed.
+    // Enable by setting REACT_APP_DEV_BYPASS_LOGIN=true in WEB/.env.
+    if (process.env.REACT_APP_DEV_BYPASS_LOGIN === 'true') {
+      set({ loading: true, error: '' });
+
+      const devSystemUserId = '1';
+      const devSessionKey = 'dev-bypass-session';
+      const devExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      try {
+        secureStorage.setItem('systemUserId', devSystemUserId);
+        secureStorage.setItem('ActionBySystemUserId', devSystemUserId);
+        secureStorage.setItem('sessionToken', devSessionKey);
+        secureStorage.setItem('expiresAt', devExpiresAt);
+
+        const userDetails = await getUserDetails();
+        secureStorage.setItem('userDetails', encrypt(JSON.stringify(userDetails)));
+
+        const devUser: User = {
+          id: userDetails.id,
+          firstName: userDetails.firstName,
+          lastName: userDetails.lastName,
+          email: userDetails.email,
+          employeeId: userDetails.employeeId || '',
+          isActive: userDetails.isActive,
+          systemRole: [{ id: 1, roleName: 'End User', description: '', scope: [], isActive: true, isDeleted: false, createdAt: '', userCount: 0 }],
+          systemUserStatus: { id: 1, name: 'Active', isActive: true, isDeleted: false, createdAt: '' },
+          office: null,
+          division: null,
+          profilePictureStorageFile: null,
+          createdAt: userDetails.createdAt,
+          lastLoginAt: userDetails.lastLoginAt,
+          entraId: ''
+        };
+
+        saveSession({
+          sessionToken: devSessionKey,
+          systemUserId: devSystemUserId,
+          expiresAt: devExpiresAt,
+          user: devUser
+        });
+        setSessionKey(devSessionKey);
+
+        set({
+          isAuthenticated: true,
+          user: devUser,
+          token: devSessionKey,
+          requireMFA: false,
+          loading: false,
+          systemUserId: devSystemUserId,
+          plainSystemUserId: devSystemUserId
+        });
+
+        console.warn('[AuthStore] DEV LOGIN BYPASS active. Logged in as system user', devSystemUserId);
+        return;
+      } catch (error) {
+        console.error('[AuthStore] DEV LOGIN BYPASS failed, falling back to normal login:', error);
+        clearSession();
+        clearAuthSession();
+        set({ isAuthenticated: false, user: null, token: null, requireMFA: false, loading: false, error: '' });
+      }
+    }
+
     // Sync session IDs on app initialization
     syncSessionIds();
 
