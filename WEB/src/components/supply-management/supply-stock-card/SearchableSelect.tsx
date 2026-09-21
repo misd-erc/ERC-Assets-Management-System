@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/popover";
 
 interface SearchableSelectProps {
-  value: number;
+  // undefined = not selected (0 is a valid id)
+  value?: number;
   onChange: (value: number) => void;
   options: { id: number; name: string }[];
   placeholder?: string;
@@ -27,6 +28,7 @@ interface SearchableSelectProps {
 export const SearchableSelect = ({ value, onChange, options, placeholder = "Select...", disabled = false }: SearchableSelectProps) => {
   const [open, setOpen] = useState(false);
   const [activeSearch, setActiveSearch] = useState("");
+  const isUnselected = value === undefined || value === null;
   const selectedOption = options.find((o) => o.id === value);
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -37,7 +39,7 @@ export const SearchableSelect = ({ value, onChange, options, placeholder = "Sele
           aria-expanded={open}
           className={cn(
             "w-full justify-between font-normal h-10 px-3 bg-white hover:bg-slate-50/80 border-slate-200 hover:border-slate-300 active:scale-[0.99] transition-all rounded-lg shadow-sm focus:ring-2 focus:ring-blue-100 focus:border-blue-500",
-            !value ? "text-slate-400" : "text-slate-900 font-medium"
+            isUnselected ? "text-slate-400" : "text-slate-900 font-medium"
           )}
         >
           <span className="truncate">

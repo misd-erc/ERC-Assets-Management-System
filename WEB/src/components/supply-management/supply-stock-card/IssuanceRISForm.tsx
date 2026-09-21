@@ -55,8 +55,9 @@ export const IssuanceRISForm = ({
     id: 0,
     entityName: 'Energy Regulatory Commission',
     fundCluster: '01',
-    officeId: 0,
-    divisionId: 0,
+    // undefined = not selected (0 is a valid office/division id)
+    officeId: undefined as number | undefined,
+    divisionId: undefined as number | undefined,
     responsibilityCenterCode: '',
     risNumber: '',
     risPurpose: '',
@@ -99,8 +100,8 @@ export const IssuanceRISForm = ({
                 id: ris.id,
                 entityName: ris.entityName || 'Energy Regulatory Commission',
                 fundCluster: ris.fundCluster || '01',
-                officeId: ris.office?.id ?? 0,
-                divisionId: ris.division?.id ?? 0,
+                officeId: ris.office?.id ?? undefined,
+                divisionId: ris.division?.id ?? undefined,
                 responsibilityCenterCode: ris.responsibilityCenterCode || '',
                 risNumber: ris.risNumber || '',
                 risPurpose: ris.risPurpose || '',
@@ -162,8 +163,8 @@ export const IssuanceRISForm = ({
                     id: ris.id,
                     entityName: ris.entityName || 'Energy Regulatory Commission',
                     fundCluster: ris.fundCluster || '01',
-                    officeId: ris.office?.id ?? 0,
-                    divisionId: ris.division?.id ?? 0,
+                    officeId: ris.office?.id ?? undefined,
+                    divisionId: ris.division?.id ?? undefined,
                     responsibilityCenterCode: ris.responsibilityCenterCode || '',
                     risNumber: ris.risNumber || '',
                     risPurpose: ris.risPurpose || '',
@@ -205,8 +206,8 @@ export const IssuanceRISForm = ({
         id: 0,
         entityName: 'Energy Regulatory Commission',
         fundCluster: '01',
-        officeId: 0,
-        divisionId: 0,
+        officeId: undefined,
+        divisionId: undefined,
         responsibilityCenterCode: '',
         risNumber: '',
         risPurpose: '',
@@ -250,11 +251,11 @@ export const IssuanceRISForm = ({
       toast.error('Entity Name is required');
       return;
     }
-    if (!risForm.officeId || risForm.officeId === 0) {
+    if (risForm.officeId === undefined || risForm.officeId === null) {
       toast.error('Office is required');
       return;
     }
-    if (!risForm.divisionId || risForm.divisionId === 0) {
+    if (risForm.divisionId === undefined || risForm.divisionId === null) {
       toast.error('Division is required');
       return;
     }
@@ -278,7 +279,7 @@ export const IssuanceRISForm = ({
         entityName: risForm.entityName,
         fundCluster: undefined,
         officeId: risForm.officeId,
-        divisionId: risForm.divisionId || 0,
+        divisionId: risForm.divisionId,
         responsibilityCenterCode: undefined,
         risNumber: risForm.risNumber,
         risPurpose: undefined,
@@ -362,7 +363,7 @@ export const IssuanceRISForm = ({
           <Label className="text-slate-700 font-medium">Office <span className="text-red-500">*</span></Label>
           <SearchableSelect
             value={risForm.officeId}
-            onChange={(val) => setRisForm({ ...risForm, officeId: val, divisionId: 0 })}
+            onChange={(val) => setRisForm({ ...risForm, officeId: val, divisionId: undefined })}
             options={vwOffices}
             placeholder="Select Office"
           />
@@ -374,7 +375,7 @@ export const IssuanceRISForm = ({
             onChange={(val) => setRisForm({ ...risForm, divisionId: val })}
             options={filteredDivisions}
             placeholder="Select Division"
-            disabled={!risForm.officeId}
+            disabled={risForm.officeId === undefined || risForm.officeId === null}
           />
         </div>
 

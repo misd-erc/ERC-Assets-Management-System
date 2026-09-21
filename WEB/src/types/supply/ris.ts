@@ -82,8 +82,9 @@ export interface EditSupplyRIS {
   id: number;
   entityName: string;
   fundCluster?: string;
-  officeId: number;
-  divisionId: number;
+  // Optional: undefined means "not selected". Note that 0 is a valid office/division id.
+  officeId?: number;
+  divisionId?: number;
   responsibilityCenterCode?: string;
   risNumber: string;
   risPurpose?: string;
