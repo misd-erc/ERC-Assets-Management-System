@@ -119,7 +119,7 @@ export interface IssuanceListResult {
   pageSize: number;
 }
 
-const fetchIssuanceList = async (params: IssuanceListParams = {}): Promise<IssuanceListResult> => {
+const fetchIssuanceList = async (params: IssuanceListParams = {}, throwOnError = false): Promise<IssuanceListResult> => {
   const { systemUserId, sessionKey } = getAuthParams();
   try {
     const response = await axiosInstance.get<
@@ -143,6 +143,7 @@ const fetchIssuanceList = async (params: IssuanceListParams = {}): Promise<Issua
       }
     );
     if (!response.data.success) {
+      if (throwOnError) throw new Error(response.data.message || 'Unable to load issuances');
       console.error('[Issuance] Failed to fetch issuance list:', response.data.message);
       return { items: [], totalCount: 0, totalPages: 0, pageNumber: 1, pageSize: 50 };
     }
@@ -155,6 +156,7 @@ const fetchIssuanceList = async (params: IssuanceListParams = {}): Promise<Issua
       pageSize: d?.pageSize ?? 50,
     };
   } catch (error) {
+    if (throwOnError) throw error;
     console.error('[Issuance] Error fetching issuance list:', error);
     return { items: [], totalCount: 0, totalPages: 0, pageNumber: 1, pageSize: 50 };
   }
@@ -202,6 +204,20 @@ export const listIssuances = async (params: IssuanceListParams = {}): Promise<Is
   return fetchIssuanceList(params);
 };
 
+/** Load renewal candidates independently of the table's filters and pagination. */
+export const listRenewableIssuances = async (): Promise<IssuanceRecord[]> => {
+  const records: IssuanceRecord[] = [];
+  let pageNumber = 1;
+  let totalPages = 1;
+  do {
+    const page = await fetchIssuanceList({ pageNumber, pageSize: 500 }, true);
+    records.push(...page.items.filter((record) => record.status === 'ACTIVE'));
+    totalPages = page.totalPages;
+    pageNumber += 1;
+  } while (pageNumber <= totalPages);
+  return records;
+};
+
 /**
  * Create a new PAR/ICS movement record (id = 0 → API creates it).
  */
@@ -239,7 +255,8 @@ export const createIssuance = async (
 export const renewIssuance = async (
   existing: IssuanceRecord,
   issuedDate: string,
-  newParIcsNumber: string
+  newParIcsNumber: string,
+  subEmployeeId?: number
 ): Promise<boolean> => {
   const { systemUserId, sessionKey } = getAuthParams();
   return editMovement({
@@ -251,7 +268,7 @@ export const renewIssuance = async (
     rrppeRrspNumber: existing.rrppeRrspNumber || '',
     status: 'RENEW',
     plantillaEmployeeId: existing.employeeId,
-    nonPlantillaEmployeeId: existing.subEmployeeId || 0,
+    nonPlantillaEmployeeId: subEmployeeId ?? existing.subEmployeeId ?? 0,
     condition: existing.condition || 'Working',
     actualOfficeId: existing.actualOfficeId || 0,
     actualDivisionId: existing.actualDivisionId || 0,
