@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 import React, { useState, useEffect } from 'react';
 import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { PTAService } from '@/services/PTAService';
@@ -197,9 +198,7 @@ export function SESPIFilterModal({ isOpen, onClose, employees, onGenerate }: SES
         .sort((a, b) => b[0].localeCompare(a[0])) // newest first
         .map(([dateValue, assetCount]) => ({
           dateValue,
-          dateLabel: new Date(dateValue + 'T00:00:00').toLocaleDateString('en-US', {
-            year: 'numeric', month: 'long', day: 'numeric',
-          }),
+          dateLabel: formatReportDate(dateValue + 'T00:00:00'),
           assetCount,
         }));
       if (groups.length === 0) {
@@ -387,7 +386,7 @@ export class SESPIExcelGenerator {
     const formatDate = (d?: string) => {
       if (!d) return '';
       const date = new Date(d);
-      return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+      return formatReportDate(date);
     };
 
     await downloadReportExcel({
@@ -478,7 +477,7 @@ export class SESPIExcelGenerator {
                   1
                 </Text>
                 <Text style={[styles.td, styles.center, { width: this.colWidth(6) }]}>
-                  {asset.dateAcquired ? (() => { const d = new Date(asset.dateAcquired); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; })() : ''}
+                  {formatReportDate(asset.dateAcquired)}
                 </Text>
                 <Text style={[styles.td, styles.center, { width: this.colWidth(7) }]}>
                   {asset.unitValue?.toFixed(2)}

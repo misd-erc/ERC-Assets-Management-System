@@ -448,7 +448,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
                             <Package className="w-3 h-3" />
                             <span>{ptr.itemCount} item(s)</span>
                           </div>
-                          <span>{format(new Date(ptr.dateAssigned), 'MMM dd, yyyy')}</span>
+                          <span>{format(new Date(ptr.dateAssigned), 'MMMM d, yyyy')}</span>
                         </div>
                       </div>
                       
@@ -493,7 +493,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
               <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                 <div>
                   <label className="text-xs font-medium text-gray-500">Date</label>
-                  <p className="text-sm">{format(new Date(ptrDetails.dateAssigned), 'MMM dd, yyyy')}</p>
+                  <p className="text-sm">{format(new Date(ptrDetails.dateAssigned), 'MMMM d, yyyy')}</p>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-500">Type</label>

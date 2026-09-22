@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
@@ -222,11 +223,7 @@ export function PARICSListModal({ isOpen, onClose, reportType }: PARICSListModal
               <p className="text-xs font-medium text-muted-foreground">Date Issued</p>
               <p className="text-sm">
                 {selectedGroup.issuedDate
-                  ? new Date(selectedGroup.issuedDate).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })
+                  ? formatReportDate(selectedGroup.issuedDate)
                   : '—'}
               </p>
             </div>
@@ -269,7 +266,7 @@ export function PARICSListModal({ isOpen, onClose, reportType }: PARICSListModal
                   {r.dateAcquired && (
                     <>
                       <span>•</span>
-                      <span>{new Date(r.dateAcquired).toLocaleDateString()}</span>
+                      <span>{formatReportDate(r.dateAcquired)}</span>
                     </>
                   )}
                 </div>
@@ -346,11 +343,7 @@ export function PARICSListModal({ isOpen, onClose, reportType }: PARICSListModal
                   <div className="text-xs text-muted-foreground">
                     Issued:{' '}
                     {g.issuedDate
-                      ? new Date(g.issuedDate).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })
+                      ? formatReportDate(g.issuedDate)
                       : '—'}
                   </div>
                 </div>

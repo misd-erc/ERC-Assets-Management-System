@@ -19,7 +19,7 @@ import { Loader2, Search, Download, Printer, FileText, ChevronRight, ChevronDown
 import { toast } from 'sonner';
 
 import { useRISStore } from '@/store/supply/risStore';
-import { formatDate } from '@/utils/dateUtils';
+import { formatReportDate as formatDate } from './reportDate';
 import { VwSupplyRIS, VwSupplyRISItem } from '@/types/supply/ris';
 import { getEmployees } from '@/api/user-management/userApi';
 import { EmployeeSelector } from '@/components/transfers-returns/EmployeeSelector';

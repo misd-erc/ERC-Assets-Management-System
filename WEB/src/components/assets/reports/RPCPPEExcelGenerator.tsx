@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 import React from 'react';
 import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { Asset } from '@/types/asset/UnifiedAsset';
@@ -190,11 +191,7 @@ export class RPCPPEPdfGenerator {
     const totalAmount = assets.reduce((sum, asset) => sum + (asset.unitValue || 0), 0);
 
     // Format the date for display
-    const displayDateStr = asOfDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    const displayDateStr = formatReportDate(asOfDate);
 
     const doc = (
       <Document>
@@ -328,11 +325,7 @@ export class RPCPPEPdfGenerator {
     const totalAmount = assets.reduce((sum, asset) => sum + (asset.unitValue || 0), 0);
 
     // Format the date for display
-    const displayDateStr = asOfDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    const displayDateStr = formatReportDate(asOfDate);
 
     const doc = (
       <Document>
@@ -439,7 +432,7 @@ export class RPCPPEPdfGenerator {
     const categoryName = await this.getCategoryName(categoryId);
     const accountCode = await this.getAccountCode(categoryId);
     const totalAmount = assets.reduce((sum, asset) => sum + (asset.unitValue || 0), 0);
-    const displayDateStr = asOfDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const displayDateStr = formatReportDate(asOfDate);
     const filenameDateStr = asOfDate.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
 
     await downloadReportExcel({
@@ -491,11 +484,7 @@ export class RPCPPEPdfGenerator {
 
   private static formatDate(date?: string) {
     if (!date) return '';
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: '2-digit',
-      year: 'numeric',
-    });
+    return formatReportDate(date);
   }
 
   private static colWidth(i: number) {

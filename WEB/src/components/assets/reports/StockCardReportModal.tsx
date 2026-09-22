@@ -20,7 +20,7 @@ import { useSupplyItem } from '@/hooks';
 import { useStockCard } from '@/hooks/supply/useStockCard';
 import { useStockCardStore } from '@/store/office/stockCardStore';
 import { getStockCardItems } from '@/api/supply-management/stockCardApi';
-import { formatDate } from '@/utils/dateUtils';
+import { formatReportDate as formatDate } from './reportDate';
 import { getAcronym } from '@/utils/formatters';
 import { SupplyStockCardItem } from '@/types/supply/stockcard';
 

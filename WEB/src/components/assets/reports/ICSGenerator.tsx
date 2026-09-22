@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 // src/components/reports/ICSGenerator.tsx
 import React from "react";
 import {
@@ -27,10 +28,7 @@ const logoSrc =
     : "/mnt/data/erc-logo.png";
 
 function formatShortDate(dateStr?: string) {
-  if (!dateStr) return "";
-  const parts = dateStr.split("-");
-  if (parts.length !== 3) return dateStr;
-  return `${parts[1]}-${parts[2]}-${parts[0]}`;
+  return formatReportDate(dateStr);
 }
 
 const styles = StyleSheet.create({

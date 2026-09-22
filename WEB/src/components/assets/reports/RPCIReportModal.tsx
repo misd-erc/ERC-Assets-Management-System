@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 import React, { useState, useEffect } from 'react';
 import {
     Dialog,
@@ -668,7 +669,7 @@ export const RPCIReportModal = ({ isOpen, onClose }: RPCIReportModalProps) => {
                 .sort((a, b) => (a.code || '').localeCompare(b.code || '', undefined, { numeric: true, sensitivity: 'base' }));
 
             const printableReportDate = reportDate
-                ? new Date(reportDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' })
+                ? formatReportDate(reportDate)
                 : '';
             const assumptionDate = `${assumptionMonth} ${assumptionYear}`;
             const categoryInfo = categories.find(c => c.id.toString() === categoryId);

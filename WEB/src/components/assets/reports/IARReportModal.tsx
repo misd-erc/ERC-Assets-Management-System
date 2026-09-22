@@ -25,7 +25,7 @@ import { getIARSignatoryTemplates, saveIARSignatoryTemplate, deleteIARSignatoryT
 import { getEmployees } from '@/api/user-management/userApi';
 import { EmployeeSelector } from '@/components/transfers-returns/EmployeeSelector';
 import { ApiEmployee } from '@/types/transfer';
-import { formatDate } from '@/utils/dateUtils';
+import { formatReportDate as formatDate } from './reportDate';
 import { formatCurrency } from '@/utils/formatters';
 import { VwSupplyIAR } from '@/types';
 import { VwDeliveryRecord } from '@/types/delivery/delivery';
