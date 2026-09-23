@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 import React from 'react';
 import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { getCategories } from '@/api/asset/inventoryApi';
@@ -161,11 +162,7 @@ export class RPCSPPdfGenerator {
 
   private static buildDocument(rows: RPCSPRow[], reportType: RPCSPReportType, asOfDate: Date, categoryName?: string) {
     const totalAmount = rows.reduce((sum, r) => sum + (r.unitValue || 0), 0);
-    const displayDateStr = asOfDate.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    const displayDateStr = formatReportDate(asOfDate);
 
     return (
       <Document>
@@ -296,7 +293,7 @@ export class RPCSPPdfGenerator {
     if (!rows.length) return;
     const categoryName = await this.getCategoryName(categoryId);
     const totalAmount = rows.reduce((sum, r) => sum + (r.unitValue || 0), 0);
-    const displayDateStr = asOfDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const displayDateStr = formatReportDate(asOfDate);
     const filenameDateStr = asOfDate.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
     const typeLabel = reportType === 'ISSUED' ? 'Issued' : 'OnStock';
 

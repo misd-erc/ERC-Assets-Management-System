@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 // src/components/assets/reports/PTRGenerator.tsx
 import React from "react";
 import {
@@ -222,14 +223,11 @@ const styles = StyleSheet.create({
 function formatLongDate(date?: string | Date) {
   if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  return formatReportDate(d);
 }
 
 function formatShortDate(dateStr?: string) {
-  if (!dateStr) return "";
-  const parts = dateStr.split("-");
-  if (parts.length !== 3) return dateStr;
-  return `${parts[1]}-${parts[2]}-${parts[0]}`;
+  return formatReportDate(dateStr);
 }
 
 /* -------------------------------- HELPERS -------------------------------- */
@@ -751,7 +749,7 @@ export class PTRGenerator {
         )[0];
 
       return {
-        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+        dateAcquired: formatReportDate(asset.dateAcquired),
         propertyNo: asset.propertyNumber ?? "",
         description: asset.description ?? "",
         amount: asset.unitValue ?? null,

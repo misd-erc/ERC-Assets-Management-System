@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     Dialog,
@@ -99,7 +100,7 @@ const formatDateDisplay = (value?: string): string => {
     if (!value) return '';
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return value;
-    return parsed.toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: '2-digit' });
+    return formatReportDate(parsed);
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

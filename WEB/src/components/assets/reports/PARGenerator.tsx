@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 // src/components/reports/PARGenerator.tsx
 import React from "react";
 import {
@@ -28,7 +29,7 @@ const logoSrc =
 
 // Auto-date (long format)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+const today = formatReportDate(new Date());
 
 const styles = StyleSheet.create({
   page: {
@@ -178,10 +179,7 @@ function truncate(text = "", max = 250) {
   return text.length > max ? text.slice(0, max) + "…" : text;
 }
 function formatShortDate(dateStr?: string) {
-  if (!dateStr) return "";
-  const parts = dateStr.split("-");
-  if (parts.length !== 3) return dateStr;
-  return `${parts[1]}-${parts[2]}-${parts[0]}`;
+  return formatReportDate(dateStr);
 }
 interface PARRow {
   qty: number;
@@ -357,7 +355,7 @@ export class PARGenerator {
       unit: item.unitOfMeasurement ?? "Unit",
       description: item.description ?? "",
       propertyNo: item.propertyNumber ?? "",
-      dateAcquired: item.dateAcquired?.slice(0, 10) ?? "",
+      dateAcquired: formatReportDate(item.dateAcquired),
       amount: item.unitValue ?? null,
     });
 
@@ -430,7 +428,7 @@ export class PARGenerator {
       unit: item.unitOfMeasurement ?? "Unit",
       description: item.description ?? "",
       propertyNo: item.propertyNumber ?? "",
-      dateAcquired: item.dateAcquired?.slice(0, 10) ?? "",
+      dateAcquired: formatReportDate(item.dateAcquired),
       amount: item.unitValue ?? null,
     });
 
@@ -492,7 +490,7 @@ export class PARGenerator {
         unit: r.unitOfMeasurement ?? 'Unit',
         description: r.itemName ?? '',
         propertyNo: r.propertyNumber ?? '',
-        dateAcquired: r.dateAcquired?.slice(0, 10) ?? '',
+        dateAcquired: formatReportDate(r.dateAcquired),
         amount: r.unitValue ?? null,
       })),
       (r) => r.propertyNo,
@@ -561,7 +559,7 @@ export class PARGenerator {
         unit: r.unitOfMeasurement ?? 'Unit',
         description: r.itemName ?? '',
         propertyNo: r.propertyNumber ?? '',
-        dateAcquired: r.dateAcquired?.slice(0, 10) ?? '',
+        dateAcquired: formatReportDate(r.dateAcquired),
         amount: r.unitValue ?? null,
       })),
       (r) => r.propertyNo,
@@ -663,7 +661,7 @@ export class PARGenerator {
         unit: r.unitOfMeasurement ?? 'Unit',
         description: r.itemName ?? '',
         propertyNo: r.propertyNumber ?? '',
-        dateAcquired: r.dateAcquired?.slice(0, 10) ?? '',
+        dateAcquired: formatReportDate(r.dateAcquired),
         amount: r.unitValue ?? null,
       })),
       (r) => r.propertyNo,

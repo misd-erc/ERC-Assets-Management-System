@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 import React, { useMemo, useState } from 'react';
 import {
   Dialog,
@@ -13,11 +14,7 @@ import { Asset, UnifiedMovement } from '@/types/asset/UnifiedAsset';
 import { ArrowRight } from 'lucide-react';
 
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  return formatReportDate(dateString);
 };
 
 interface ItemMovementsModalProps {

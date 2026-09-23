@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 // src/components/assets/reports/ITRGenerator.tsx
 import React from "react";
 import {
@@ -234,14 +235,11 @@ const styles = StyleSheet.create({
 function formatLongDate(date?: string | Date) {
   if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  return formatReportDate(d);
 }
 
 function formatShortDate(dateStr?: string) {
-  if (!dateStr) return "";
-  const parts = dateStr.split("-");
-  if (parts.length !== 3) return dateStr;
-  return `${parts[1]}-${parts[2]}-${parts[0]}`;
+  return formatReportDate(dateStr);
 }
 
 /* -------------------------------- HELPERS -------------------------------- */
@@ -260,7 +258,7 @@ function truncate(text = "", max = 200) {
 
 function formatIcsNoDate(icsNo?: string, dateStr?: string): string {
   const formattedDate = dateStr
-    ? new Date(dateStr).toLocaleDateString("en-PH", { year: "numeric", month: "short", day: "numeric" })
+    ? formatReportDate(dateStr)
     : "";
   return [icsNo, formattedDate].filter(Boolean).join("\n");
 }
@@ -721,7 +719,7 @@ export class ITRGenerator {
         )[0];
 
       return {
-        dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+        dateAcquired: formatReportDate(asset.dateAcquired),
         propertyNo: asset.propertyNumber ?? "",
         icsNoDate: formatIcsNoDate((latestMovement as any)?.parIcsNumber, latestMovement?.dateAssigned),
         description: asset.description ?? "",
@@ -734,7 +732,7 @@ export class ITRGenerator {
 
   private static buildRowsFromItems(items: any[]): ITRRow[] {
     const rows = (items || []).map(it => ({
-      dateAcquired: (it.dateAcquired || '').toString().slice(0, 10),
+      dateAcquired: formatReportDate(it.dateAcquired),
       propertyNo: it.propertyNumber || '',
       icsNoDate: formatIcsNoDate(
         it.icsNo || it.paricsNumber || it.parIcsNumber || '',

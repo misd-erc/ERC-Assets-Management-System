@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 // src/components/reports/PALGenerator.tsx
 import React from "react";
 import {
@@ -452,7 +453,7 @@ async function buildPALData(employee: NormalizedEmployee) {
       no: itemNumber++,
       description: asset.description ?? "",
       propertyNo: asset.propertyNumber ?? "",
-      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+      dateAcquired: formatReportDate(asset.dateAcquired),
       amount: asset.unitValue ?? null,
       remarks: subName ? `Sub-PAR: ${subName}` : "",
     };
@@ -465,7 +466,7 @@ async function buildPALData(employee: NormalizedEmployee) {
       no: itemNumber++,
       description: asset.description ?? "",
       propertyNo: asset.propertyNumber ?? "",
-      dateAcquired: asset.dateAcquired?.slice(0, 10) ?? "",
+      dateAcquired: formatReportDate(asset.dateAcquired),
       amount: asset.unitValue ?? null,
       remarks: subName ? `ICS: ${subName}` : "",
     };

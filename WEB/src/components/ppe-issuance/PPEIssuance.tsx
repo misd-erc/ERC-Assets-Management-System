@@ -16,6 +16,7 @@ import {
   getNextParNumber,
   IssuanceListParams,
   listIssuances,
+  listRenewableIssuances,
   renewIssuance,
   updateIssuanceGroup,
   UpdateIssuanceGroupPayload,
@@ -95,9 +96,14 @@ export function PPEIssuance() {
   const [items, setItems] = useState<IssuanceItemFormState[]>([defaultItemState()]);
   const [renewState, setRenewState] = useState({
     employeeId: '',
+    subEmployeeId: '',
     issuanceIds: [] as number[],
     issuedDate: new Date().toISOString().split('T')[0],
   });
+  const [renewRecords, setRenewRecords] = useState<IssuanceRecord[]>([]);
+  const [renewLoading, setRenewLoading] = useState(false);
+  const [renewError, setRenewError] = useState(false);
+  const renewRequest = useRef(0);
   const [saving, setSaving] = useState(false);
   const [detailRecords, setDetailRecords] = useState<IssuanceRecord[] | null>(null);
   const [detailSignatureDate, setDetailSignatureDate] = useState(new Date().toISOString().split('T')[0]);
@@ -276,15 +282,10 @@ export function PPEIssuance() {
   const pickedPtaIds = useMemo(() => new Set(items.map((i) => i.ptaId).filter(Boolean)), [items]);
 
   const employeeOptions = useMemo(() => {
-    const seen = new Set<number>();
-    return records
-      .filter((r) => {
-        if (seen.has(r.employeeId)) return false;
-        seen.add(r.employeeId);
-        return true;
-      })
-      .map((r) => ({ id: String(r.employeeId), name: r.employeeName }));
-  }, [records]);
+    return employees
+      .map((employee) => ({ id: String(employee.id), name: employee.label }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [employees]);
 
   const handleChange = (field: keyof IssuanceFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -315,9 +316,17 @@ export function PPEIssuance() {
   async function fetchEmployees() {
     try {
       const response = await getEmployees();
-      setEmployees(response.data.items.map(normalizeEmployee));
+      if (!response.success) throw new Error('Unable to load employees');
+      const allEmployees = [...response.data.items];
+      for (let page = 2; page <= response.data.totalPages; page += 1) {
+        const next = await getEmployees(page, response.data.pageSize);
+        if (!next.success) throw new Error('Unable to load employees');
+        allEmployees.push(...next.data.items);
+      }
+      setEmployees(allEmployees.map(normalizeEmployee));
     } catch (error) {
       console.error('Failed to load employees', error);
+      toast.error('Unable to load employees. Please refresh and try again.');
     }
   }
 
@@ -378,6 +387,7 @@ export function PPEIssuance() {
   const resetRenewState = () => {
     setRenewState({
       employeeId: '',
+      subEmployeeId: '',
       issuanceIds: [],
       issuedDate: new Date().toISOString().split('T')[0],
     });
@@ -401,19 +411,38 @@ export function PPEIssuance() {
     setItems([{ ...defaultItemState(), parIcsNumber: parNumber }]);
   };
 
-  const openRenewDialog = () => {
+  const openRenewDialog = async () => {
+    const request = ++renewRequest.current;
+    setRenewRecords([]);
+    setRenewLoading(true);
+    setRenewError(false);
     setDialogMode('RENEW');
     setDialogOpen(true);
     resetRenewState();
+    try {
+      const candidates = await listRenewableIssuances();
+      if (request === renewRequest.current) setRenewRecords(candidates);
+    } catch (error) {
+      if (request === renewRequest.current) setRenewError(true);
+    } finally {
+      if (request === renewRequest.current) setRenewLoading(false);
+    }
   };
 
   const toggleRenewIssuance = (id: number) => {
-    setRenewState((prev) => ({
-      ...prev,
-      issuanceIds: prev.issuanceIds.includes(id)
+    setRenewState((prev) => {
+      const issuanceIds = prev.issuanceIds.includes(id)
         ? prev.issuanceIds.filter((existing) => existing !== id)
-        : [...prev.issuanceIds, id],
-    }));
+        : [...prev.issuanceIds, id];
+      const selectedRecords = renewRecords.filter((record) => issuanceIds.includes(record.id));
+      const existingSubEmployeeIds = new Set(selectedRecords.map((record) => record.subEmployeeId || 0));
+      // Preselect a shared existing assignment. Mixed assignments stay blank so
+      // renewal preserves each item's own sub-accountable unless explicitly changed.
+      const sharedSubEmployeeId = existingSubEmployeeIds.size === 1
+        ? selectedRecords[0]?.subEmployeeId
+        : undefined;
+      return { ...prev, issuanceIds, subEmployeeId: sharedSubEmployeeId ? String(sharedSubEmployeeId) : '' };
+    });
   };
 
   const submitForm = async () => {
@@ -479,6 +508,11 @@ export function PPEIssuance() {
   };
 
   const submitRenewForm = async () => {
+    if (saving || renewLoading || renewError) return;
+    if (!renewState.issuedDate) {
+      toast.error('Please select a renewal date');
+      return;
+    }
     if (!renewState.employeeId) {
       toast.error('Please select an employee to renew');
       return;
@@ -489,7 +523,8 @@ export function PPEIssuance() {
       return;
     }
 
-    const selectedRecords = records.filter((r) => renewState.issuanceIds.includes(r.id));
+    const selectedRecords = renewRecords.filter((r) => renewState.issuanceIds.includes(r.id)
+      && r.employeeId === Number(renewState.employeeId));
     if (!selectedRecords.length) {
       toast.error('No matching issuance records found for renewal');
       return;
@@ -512,11 +547,13 @@ export function PPEIssuance() {
       for (const groupRecords of groupMap.values()) {
         const newParIcsNumber = await getNextParNumber(groupRecords[0].itemGroup);
         for (const record of groupRecords) {
-          renewalTasks.push(() => renewIssuance(record, renewState.issuedDate, newParIcsNumber));
+          renewalTasks.push(() => renewIssuance(record, renewState.issuedDate, newParIcsNumber,
+            renewState.subEmployeeId ? Number(renewState.subEmployeeId) : undefined));
         }
       }
 
-      await Promise.all(renewalTasks.map((fn) => fn()));
+      const results = await Promise.all(renewalTasks.map((fn) => fn()));
+      if (results.some((ok) => !ok)) throw new Error('Some renewals failed');
       toast.success('Renewal recorded');
       setDialogOpen(false);
       setDialogMode(null);
@@ -821,12 +858,16 @@ export function PPEIssuance() {
         {dialogMode === 'RENEW' ? (
           <PPEIssuanceRenewForm
             employees={employeeOptions}
-            records={records}
+            records={renewRecords}
+            loading={renewLoading}
+            loadError={renewError}
+            selectedSubEmployeeId={renewState.subEmployeeId}
+            onSelectSubEmployee={(id: string) => setRenewState((prev) => ({ ...prev, subEmployeeId: id }))}
             selectedEmployeeId={renewState.employeeId}
             selectedIssuanceIds={renewState.issuanceIds}
             issuedDate={renewState.issuedDate}
             saving={saving}
-            onSelectEmployee={(id: string) => setRenewState((prev) => ({ ...prev, employeeId: id, issuanceIds: [] }))}
+            onSelectEmployee={(id: string) => setRenewState((prev) => ({ ...prev, employeeId: id, subEmployeeId: '', issuanceIds: [] }))}
             onToggleIssuance={toggleRenewIssuance}
             onChangeIssuedDate={(value: string) => setRenewState((prev) => ({ ...prev, issuedDate: value }))}
             onSubmit={submitRenewForm}

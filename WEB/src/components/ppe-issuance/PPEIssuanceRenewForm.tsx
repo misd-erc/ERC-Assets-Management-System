@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { IssuanceRecord } from '@/types/issuance';
+import { EmployeePicker } from './PPEIssuanceForm';
 
 interface EmployeeOption {
   id: string;
@@ -16,10 +17,14 @@ interface PPEIssuanceRenewFormProps {
   employees: EmployeeOption[];
   records: IssuanceRecord[];
   selectedEmployeeId: string;
+  selectedSubEmployeeId: string;
+  loading: boolean;
+  loadError: boolean;
   selectedIssuanceIds: number[];
   issuedDate: string;
   saving: boolean;
   onSelectEmployee: (id: string) => void;
+  onSelectSubEmployee: (id: string) => void;
   onToggleIssuance: (id: number) => void;
   onChangeIssuedDate: (value: string) => void;
   onSubmit: () => void;
@@ -30,10 +35,14 @@ export function PPEIssuanceRenewForm({
   employees,
   records,
   selectedEmployeeId,
+  selectedSubEmployeeId,
+  loading,
+  loadError,
   selectedIssuanceIds,
   issuedDate,
   saving,
   onSelectEmployee,
+  onSelectSubEmployee,
   onToggleIssuance,
   onChangeIssuedDate,
   onSubmit,
@@ -41,9 +50,16 @@ export function PPEIssuanceRenewForm({
 }: PPEIssuanceRenewFormProps) {
   const [expandedParIcs, setExpandedParIcs] = useState<string | null>(null);
 
+  const hasEmployeeFilter = Boolean(selectedEmployeeId);
   const employeeRecords = selectedEmployeeId
     ? records.filter((r) => r.employeeId === Number(selectedEmployeeId))
     : [];
+  const employeeOptions = employees.map((employee) => ({
+    value: employee.id,
+    label: employee.name + ' (ID: ' + employee.id + ')',
+    name: employee.name,
+  }));
+  const hasSelectedItems = employeeRecords.some((record) => selectedIssuanceIds.includes(record.id));
 
   // Group by PAR/ICS number, preserving first-appearance order
   const parIcsGroups = employeeRecords.reduce<Map<string, IssuanceRecord[]>>((map, r) => {
@@ -58,142 +74,98 @@ export function PPEIssuanceRenewForm({
   };
 
   return (
-    <DialogContent className="sm:max-w-5xl w-full">
-      <DialogHeader>
+    <DialogContent className="sm:max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogHeader className="shrink-0 pr-6">
         <DialogTitle>Renew Issuance</DialogTitle>
         <DialogDescription>
-          Select an employee, then choose the PAR/ICS records to renew. You can renew one or more items in a single submission.
+          Select an accountable employee, choose items to renew, then optionally select a sub-accountable employee for those items.
         </DialogDescription>
       </DialogHeader>
 
-      <div className="space-y-5 py-2">
+      <div className="min-h-0 min-w-0 space-y-5 overflow-y-auto overflow-x-hidden py-2 pr-1">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="renewEmployee">Employee</Label>
-            <select
-              id="renewEmployee"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={selectedEmployeeId}
-              onChange={(e) => onSelectEmployee(e.target.value)}
-            >
-              <option value="">Select employee</option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.name} (ID: {emp.id})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="issuedDateRenew">Renewal Date</Label>
-            <Input
-              id="issuedDateRenew"
-              type="date"
-              value={issuedDate}
-              onChange={(e) => onChangeIssuedDate(e.target.value)}
+          <fieldset disabled={saving} className="space-y-2 md:col-span-2 min-w-0">
+            <legend className="text-sm font-medium mb-2">Accountable Employee</legend>
+            <EmployeePicker
+              options={employeeOptions}
+              selectedValue={selectedEmployeeId}
+              onSelect={(id) => { setExpandedParIcs(null); onSelectEmployee(id); }}
+              placeholder="Search accountable employee..."
             />
+          </fieldset>
+          <div className="space-y-2 min-w-0">
+            <Label htmlFor="issuedDateRenew">Renewal Date</Label>
+            <Input id="issuedDateRenew" type="date" value={issuedDate} disabled={saving}
+              onChange={(e) => onChangeIssuedDate(e.target.value)} />
           </div>
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">PAR/ICS to renew</p>
-              <p className="text-xs text-muted-foreground">
-                {parIcsGroups.size > 0
-                  ? `${parIcsGroups.size} PAR/ICS group${parIcsGroups.size !== 1 ? 's' : ''} — click a group to view and select items.`
-                  : 'All active issuance records for the selected employee will appear here.'}
-              </p>
-            </div>
-          </div>
-
-          {selectedEmployeeId && employeeRecords.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No active issuance records found for this employee.</p>
-          ) : null}
-
-          {!selectedEmployeeId ? (
-            <p className="text-sm text-muted-foreground">Select an employee to view their PAR/ICS records.</p>
-          ) : null}
-
+          <p className="text-sm font-medium">PAR/ICS to renew</p>
+          {loading && <p role="status">Loading renewal records...</p>}
+          {loadError && <p role="alert" className="text-destructive">Unable to load renewal records. Close and reopen this dialog to retry.</p>}
+          {!hasEmployeeFilter && <p className="text-sm text-muted-foreground">Select an accountable employee to view their PAR/ICS records.</p>}
+          {!loading && !loadError && hasEmployeeFilter && !employeeRecords.length && (
+            <p className="text-sm text-muted-foreground">No active issuance records found for this accountable employee.</p>
+          )}
           {Array.from(parIcsGroups.entries()).map(([parIcs, groupRecords]) => {
-            const isExpanded = expandedParIcs === parIcs;
+            const expanded = expandedParIcs === parIcs;
             const selectedCount = groupRecords.filter((r) => selectedIssuanceIds.includes(r.id)).length;
-
             return (
               <div key={parIcs} className="rounded-md border overflow-hidden">
-                {/* PAR/ICS header row */}
-                <button
-                  type="button"
-                  onClick={() => toggleExpand(parIcs)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-accent transition-colors"
-                >
+                <button type="button" onClick={() => toggleExpand(parIcs)} aria-expanded={expanded}
+                  className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-accent">
                   <div className="flex items-center gap-3 flex-wrap">
-                    {isExpanded
-                      ? <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground" />
-                      : <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />}
+                    {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     <Badge>{parIcs}</Badge>
                     <Badge variant="secondary">{groupRecords[0].itemGroup}</Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {groupRecords.length} item{groupRecords.length !== 1 ? 's' : ''}
-                    </span>
-                    {selectedCount > 0 && (
-                      <Badge className="bg-blue-100 text-blue-700 border-blue-300">
-                        {selectedCount} selected
-                      </Badge>
-                    )}
+                    <span className="text-sm">{groupRecords.length} item(s)</span>
+                    {selectedCount > 0 && <Badge>{selectedCount} selected</Badge>}
                   </div>
-                  <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                    {groupRecords[0].issuedDate}
-                  </span>
+                  <span className="text-xs text-muted-foreground">{groupRecords[0].issuedDate}</span>
                 </button>
-
-                {/* Expandable items */}
-                {isExpanded && (
-                  <div className="border-t divide-y">
-                    {groupRecords.map((record) => {
-                      const selected = selectedIssuanceIds.includes(record.id);
-                      return (
-                        <div
-                          key={record.id}
-                          className={`flex items-center justify-between gap-3 px-4 py-3 ${selected ? 'bg-blue-50 dark:bg-blue-950/30' : 'bg-background'}`}
-                        >
-                          <div className="space-y-0.5 min-w-0">
-                            <p className="font-medium text-sm truncate">{record.itemName}</p>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Badge variant="outline" className="text-xs">{record.issuanceType}</Badge>
-                              {record.condition && (
-                                <Badge variant="outline" className="text-xs">{record.condition}</Badge>
-                              )}
-                              {record.propertyNumber && (
-                                <span className="text-xs text-muted-foreground">{record.propertyNumber}</span>
-                              )}
-                            </div>
+                {expanded && <div className="border-t divide-y">
+                  {groupRecords.map((record) => {
+                    const selected = selectedIssuanceIds.includes(record.id);
+                    return (
+                      <div key={record.id} className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 ${selected ? 'bg-blue-50 dark:bg-blue-950/30' : 'bg-background'}`}>
+                        <div className="space-y-1 min-w-0 [overflow-wrap:anywhere]">
+                          <p className="font-medium text-sm break-words">{record.itemName}</p>
+                          <p className="text-xs text-muted-foreground">Accountable: {record.employeeName}</p>
+                          <p className="text-xs text-muted-foreground">Sub-Accountable: {record.subEmployeeName || 'None'}</p>
+                          <div className="flex gap-2 flex-wrap">
+                            <Badge variant="outline">{record.issuanceType}</Badge>
+                            {record.condition && <Badge variant="outline">{record.condition}</Badge>}
+                            {record.propertyNumber && <span className="text-xs text-muted-foreground">{record.propertyNumber}</span>}
                           </div>
-                          <Button
-                            type="button"
-                            variant={selected ? 'default' : 'outline'}
-                            size="sm"
-                            className="shrink-0"
-                            onClick={() => onToggleIssuance(record.id)}
-                          >
-                            {selected ? 'Selected' : 'Select'}
-                          </Button>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        <Button type="button" size="sm" className="shrink-0" disabled={saving} variant={selected ? 'default' : 'outline'}
+                          onClick={() => onToggleIssuance(record.id)}>{selected ? 'Selected' : 'Select'}</Button>
+                      </div>
+                    );
+                  })}
+                </div>}
               </div>
             );
           })}
         </div>
-      </div>
 
-      <DialogFooter className="gap-2">
-        <Button variant="outline" onClick={onClose} disabled={saving}>
-          Cancel
-        </Button>
-        <Button onClick={onSubmit} disabled={saving}>
+        {hasSelectedItems && (
+          <fieldset disabled={saving} className="min-w-0 space-y-2 rounded-md border p-4 pb-6">
+            <legend className="px-1 text-sm font-medium">Sub-Accountable Employee</legend>
+            <p className="text-sm text-muted-foreground">
+              The existing sub-accountable employee is selected automatically when the selected items share one.
+              If they have different assignments, this stays blank to keep each item's existing sub-accountable employee.
+              Choosing an employee applies to all selected items.
+            </p>
+            <EmployeePicker options={employeeOptions} selectedValue={selectedSubEmployeeId}
+              onSelect={(id) => onSelectSubEmployee(id)} placeholder="Search sub-accountable employee (optional)..." />
+          </fieldset>
+        )}
+      </div>
+      <DialogFooter className="shrink-0 gap-2 border-t pt-4">
+        <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+        <Button onClick={onSubmit} disabled={saving || loading || loadError || !hasSelectedItems || !issuedDate}>
           {saving ? 'Saving...' : 'Renew Issuance'}
         </Button>
       </DialogFooter>
