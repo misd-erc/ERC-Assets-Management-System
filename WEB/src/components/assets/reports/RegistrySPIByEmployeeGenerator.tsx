@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 import React, { useState, useEffect } from 'react';
 import { pdf, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { PTAService } from '@/services/PTAService';
@@ -114,7 +115,7 @@ function fmtDate(dateStr?: string): string {
   if (!dateStr) return '';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return formatReportDate(d);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -179,9 +180,7 @@ export function RegistrySPIEmployeeFilterModal({
         .sort((a, b) => b[0].localeCompare(a[0]))
         .map(([dateValue, assetCount]) => ({
           dateValue,
-          dateLabel: new Date(dateValue + 'T00:00:00').toLocaleDateString('en-US', {
-            year: 'numeric', month: 'long', day: 'numeric',
-          }),
+          dateLabel: formatReportDate(dateValue + 'T00:00:00'),
           assetCount,
         }));
       if (groups.length === 0) {

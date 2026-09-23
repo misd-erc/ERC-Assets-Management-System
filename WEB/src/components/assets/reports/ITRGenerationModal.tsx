@@ -476,7 +476,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
                             <Package className="w-3 h-3" />
                             <span>{itr.itemCount} item(s)</span>
                           </div>
-                          <span>{format(new Date(itr.dateAssigned), 'MMM dd, yyyy')}</span>
+                          <span>{format(new Date(itr.dateAssigned), 'MMMM d, yyyy')}</span>
                         </div>
                       </div>
                       
@@ -521,7 +521,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
               <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                 <div>
                   <label className="text-xs font-medium text-gray-500">Date</label>
-                  <p className="text-sm">{format(new Date(itrDetails.dateAssigned), 'MMM dd, yyyy')}</p>
+                  <p className="text-sm">{format(new Date(itrDetails.dateAssigned), 'MMMM d, yyyy')}</p>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-gray-500">Type</label>

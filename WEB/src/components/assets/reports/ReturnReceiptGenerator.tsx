@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 import React from "react";
 import { pdf, Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
@@ -142,22 +143,11 @@ const styles = StyleSheet.create({
 });
 
 function formatShortDate(dateStr?: string) {
-  if (!dateStr) return "";
-  const parts = dateStr.split("-");
-  if (parts.length !== 3) return dateStr;
-  return `${parts[1]}-${parts[2]}-${parts[0]}`;
+  return formatReportDate(dateStr);
 }
 
-// Same MM-DD-YYYY format as formatShortDate, but parses via Date() so it also handles
-// full ISO datetime strings (e.g. "2026-07-22T00:00:00.000Z") — formatShortDate's plain
-// string-split assumes a clean "YYYY-MM-DD" and would otherwise cut into the time portion.
 function formatDate(date?: string | Date) {
-  if (!date) return "";
-  const d = typeof date === "string" ? new Date(date) : date;
-  if (Number.isNaN(d.getTime())) return "";
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${mm}-${dd}-${d.getFullYear()}`;
+  return formatReportDate(date);
 }
 
 function buildRowsFromItems(items: any[], endUser: string, nonPlantillaEndUser?: string): ReturnRow[] {

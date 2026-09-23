@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 // src/components/assets/reports/RSMIReportModal.tsx
 import React, { useState, useEffect } from 'react';
 import {
@@ -776,7 +777,7 @@ export const RSMIReportModal = ({ isOpen, onClose }: RSMIReportModalProps) => {
                 selectedItems.has(group.stockNumber ?? `unknown-stock-${index}`)
             );
 
-            const printableReportDate = reportDate ? new Date(reportDate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: '2-digit' }) : '';
+            const printableReportDate = reportDate ? formatReportDate(reportDate) : '';
             const rsmiNumberToUse = customRsmiNumber || defaultRsmiNumber;
 
             const blob = await pdf(

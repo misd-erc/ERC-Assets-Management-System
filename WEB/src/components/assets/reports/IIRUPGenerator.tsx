@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 // IIRUPGenerator.tsx — IIRUP & IIRUSP report generator + selection modal
 
 import React, { useEffect, useState } from 'react';
@@ -193,9 +194,7 @@ function yearOf(dateStr?: string | null) {
 
 function fmtDate(dateStr?: string | null) {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('en-PH', {
-    month: 'long', day: 'numeric', year: 'numeric',
-  });
+  return formatReportDate(dateStr);
 }
 
 /* ─────────────────────────────── PDF docs ──────────────────── */
@@ -633,7 +632,7 @@ export function IIRUPGenerationModal({ isOpen, onClose, reportType }: IIRUPGener
                           <p className="text-xs text-slate-500">
                             Requested by: {d.requestedByName ?? `User #${d.requestedBySystemUserId}`}
                             {' · '}
-                            {new Date(d.dateRequested).toLocaleDateString('en-PH')}
+                            {formatReportDate(d.dateRequested)}
                             {' · '}
                             {d.items.length} item{d.items.length !== 1 ? 's' : ''}
                           </p>

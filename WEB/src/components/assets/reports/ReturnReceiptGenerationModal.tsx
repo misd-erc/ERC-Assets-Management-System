@@ -1,3 +1,4 @@
+import { formatReportDate } from './reportDate';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -263,7 +264,7 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span>{r.itemCount} item(s)</span>
                         <span>•</span>
-                        <span>{r.dateAssigned ? new Date(r.dateAssigned).toLocaleDateString() : '—'}</span>
+                        <span>{r.dateAssigned ? formatReportDate(r.dateAssigned) : '—'}</span>
                       </div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-muted-foreground mt-1" />
@@ -300,7 +301,7 @@ export function ReturnReceiptGenerationModal({ isOpen, onClose, returnType }: Re
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground">Date</p>
-              <p className="text-sm">{details.dateAssigned ? new Date(details.dateAssigned).toLocaleDateString() : '—'}</p>
+              <p className="text-sm">{details.dateAssigned ? formatReportDate(details.dateAssigned) : '—'}</p>
             </div>
           </div>
           {details.isNonPlantilla && (
