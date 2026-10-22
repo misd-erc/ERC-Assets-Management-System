@@ -56,15 +56,40 @@ public async Task<IActionResult> GetPTAsForDisposal([FromQuery] PTAPaginationQue
                     .ToListAsync();
 
                 // After ToListAsync(), Remarks and DateAssigned auto-decrypt via [NotMapped] getters.
-                // Get the latest movement per PTA, keep only those whose latest condition is "For Disposal"
-                var ptaIdsForDisposal = allMovements
+                // Use the same effective-current movement rule as the asset list.
+                var effectiveMovementByPtaId = allMovements
                     .GroupBy(m => m.PTAId!.Value)
-                    .Where(g =>
+                    .ToDictionary(g => g.Key, g =>
                     {
-                        var latest = g.OrderByDescending(m => m.DateAssigned ?? m.CreatedAt).First();
-                        return (latest.Remarks ?? "").Equals("Defective For Disposal", StringComparison.OrdinalIgnoreCase);
+                        var current = g
+                            .Where(m => m.IsActive && m.IsCurrent)
+                            .OrderByDescending(m => m.DateAssigned)
+                            .ThenByDescending(m => m.CreatedAt)
+                            .ThenByDescending(m => m.Id)
+                            .FirstOrDefault();
+
+                        return current
+                            ?? g.Where(m => m.IsActive)
+                                .OrderByDescending(m => m.DateAssigned)
+                                .ThenByDescending(m => m.CreatedAt)
+                                .ThenByDescending(m => m.Id)
+                                .FirstOrDefault()
+                            ?? g.OrderByDescending(m => m.DateAssigned)
+                                .ThenByDescending(m => m.CreatedAt)
+                                .ThenByDescending(m => m.Id)
+                                .First();
+                    });
+
+                // Both the current UI value and the legacy value mean the item is ready
+                // for IIRUP/IIRSP processing. Serviceable items remain excluded.
+                var ptaIdsForDisposal = effectiveMovementByPtaId
+                    .Where(entry =>
+                    {
+                        var condition = entry.Value.Remarks ?? string.Empty;
+                        return condition.Equals("Unserviceable", StringComparison.OrdinalIgnoreCase)
+                            || condition.Equals("Defective For Disposal", StringComparison.OrdinalIgnoreCase);
                     })
-                    .Select(g => g.Key)
+                    .Select(entry => entry.Key)
                     .ToHashSet();
 
                 ptas = ptas.Where(x => ptaIdsForDisposal.Contains(x.Id));
@@ -121,6 +146,9 @@ public async Task<IActionResult> GetPTAsForDisposal([FromQuery] PTAPaginationQue
                         UnitOfMeasurement = x.UnitOfMeasurement,
                         UnitValue = x.UnitValue,
                         DateAcquired = x.DateAcquired,
+                        Condition = effectiveMovementByPtaId.TryGetValue(x.Id, out var effectiveMovement)
+                            ? effectiveMovement.Remarks
+                            : null,
                         EstimatedUsefulLife = x.EstimatedUsefulLife,
                         FiscalDate = x.FiscalDate,
                         Parts = await _getTools.PTA.GetTblPTAPartsByPTAId(x.Id, context).ToListAsync(),

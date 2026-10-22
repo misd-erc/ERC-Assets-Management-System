@@ -21,6 +21,12 @@ export const DISPOSAL_METHODS = ['Sale', 'Donation', 'Destruction', 'Return to S
 export const isAlreadyDisposed = (condition?: string): boolean =>
   !!condition && DISPOSAL_METHODS.some(m => m.toLowerCase() === condition.toLowerCase());
 
+const READY_FOR_DISPOSAL_CONDITIONS = ['unserviceable', 'defective for disposal'];
+
+/** Only assets explicitly evaluated as unserviceable may enter a disposal request. */
+export const isReadyForDisposal = (condition?: string): boolean =>
+  !!condition && READY_FOR_DISPOSAL_CONDITIONS.includes(condition.trim().toLowerCase());
+
 /** Tailwind classes for an asset's current condition badge (e.g. "Defective For Disposal", or a disposal method once disposed). */
 export const getConditionBadgeClass = (condition?: string): string => {
   if (!condition) return 'bg-slate-100 text-slate-800';
