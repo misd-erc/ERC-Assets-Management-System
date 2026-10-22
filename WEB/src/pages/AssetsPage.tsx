@@ -624,7 +624,7 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
         startDate: exportStartDate || undefined,
         endDate: exportEndDate || undefined,
       });
-      toast.success('Excel report downloaded successfully');
+      toast.success('Batch-upload-compatible Excel file downloaded successfully');
       setExportModalOpen(false);
       setExportStartDate('');
       setExportEndDate('');
@@ -1011,9 +1011,9 @@ const validateBatchUploadFile = async (file: File): Promise<ValidationResult> =>
       <Dialog open={exportModalOpen} onOpenChange={setExportModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Export to  Excel</DialogTitle>
+            <DialogTitle>Export to Excel</DialogTitle>
             <DialogDescription>
-              Select date range for the assets report. Leave empty to export all records.
+              Export assets using the batch upload template format. Leave the date range empty to export all records.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
