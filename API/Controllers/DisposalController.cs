@@ -42,6 +42,62 @@ namespace API.Controllers
             return $"{user.FirstName} {user.LastName}".Trim();
         }
 
+        private static async Task<HashSet<long>> GetReadyForDisposalPtaIdsAsync(
+            PortalDbContext context,
+            IEnumerable<long> ptaIds,
+            string? group)
+        {
+            var requestedIds = ptaIds.Distinct().ToHashSet();
+            if (requestedIds.Count == 0 || string.IsNullOrWhiteSpace(group))
+                return new HashSet<long>();
+
+            var matchingAssetIds = (await context.TblPTAs
+                    .AsNoTracking()
+                    .Where(pta => !pta.IsDeleted && pta.Group == group && requestedIds.Contains(pta.Id))
+                    .Select(pta => pta.Id)
+                    .ToListAsync())
+                .ToHashSet();
+
+            var movements = await context.TblPTAMovements
+                .AsNoTracking()
+                .Where(movement =>
+                    !movement.IsDeleted &&
+                    movement.PTAId.HasValue &&
+                    matchingAssetIds.Contains(movement.PTAId.Value))
+                .ToListAsync();
+
+            return movements
+                .GroupBy(movement => movement.PTAId!.Value)
+                .Where(groupedMovements =>
+                {
+                    var currentMovement = groupedMovements
+                        .Where(movement => movement.IsActive && movement.IsCurrent)
+                        .OrderByDescending(movement => movement.DateAssigned)
+                        .ThenByDescending(movement => movement.CreatedAt)
+                        .ThenByDescending(movement => movement.Id)
+                        .FirstOrDefault();
+
+                    var effectiveMovement = currentMovement
+                        ?? groupedMovements
+                            .Where(movement => movement.IsActive)
+                            .OrderByDescending(movement => movement.DateAssigned)
+                            .ThenByDescending(movement => movement.CreatedAt)
+                            .ThenByDescending(movement => movement.Id)
+                            .FirstOrDefault()
+                        ?? groupedMovements
+                            .OrderByDescending(movement => movement.DateAssigned)
+                            .ThenByDescending(movement => movement.CreatedAt)
+                            .ThenByDescending(movement => movement.Id)
+                            .First();
+
+                    var condition = effectiveMovement.Remarks ?? string.Empty;
+                    return condition.Equals("Unserviceable", StringComparison.OrdinalIgnoreCase)
+                        || condition.Equals("Defective For Disposal", StringComparison.OrdinalIgnoreCase);
+                })
+                .Select(groupedMovements => groupedMovements.Key)
+                .ToHashSet();
+        }
+
         private async Task<object> BuildDisposalResponse(TblDisposal disposal, PortalDbContext context)
         {
             var items = await context.TblDisposalItems
@@ -224,6 +280,13 @@ namespace API.Controllers
                 if (model.PTAIds == null || !model.PTAIds.Any())
                     return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "At least one asset must be selected for disposal."));
 
+                var requestedPtaIds = model.PTAIds.Distinct().ToHashSet();
+                var readyPtaIds = await GetReadyForDisposalPtaIdsAsync(context, requestedPtaIds, model.Group);
+                if (!requestedPtaIds.SetEquals(readyPtaIds))
+                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(
+                        ErrorCodes.INVALID_INPUT,
+                        "Only assets marked 'Unserviceable' or 'Defective For Disposal' can be added to a disposal request."));
+
                 // Auto-generate disposal number: IIRUP-YYYY-NNN (PPE) or IIRSP-YYYY-NNN (SE)
                 string prefix = model.Group == TblPTA.PPE ? "IIRUP" : "IIRSP";
                 int year = DateTime.UtcNow.Year;
@@ -318,6 +381,16 @@ namespace API.Controllers
 
                 var existingPTAIds = existingItems.Where(i => i.PTAId.HasValue).Select(i => i.PTAId!.Value).ToHashSet();
                 var newPTAIds = model.PTAIds.ToHashSet();
+                var addedPTAIds = newPTAIds.Except(existingPTAIds).ToHashSet();
+
+                if (addedPTAIds.Count > 0)
+                {
+                    var readyPtaIds = await GetReadyForDisposalPtaIdsAsync(context, addedPTAIds, model.Group);
+                    if (!addedPTAIds.SetEquals(readyPtaIds))
+                        return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(
+                            ErrorCodes.INVALID_INPUT,
+                            "Only assets marked 'Unserviceable' or 'Defective For Disposal' can be added to a disposal request."));
+                }
 
                 foreach (var item in existingItems)
                 {

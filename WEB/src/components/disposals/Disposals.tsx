@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { DataTable } from '@/components/common/DataTable';
 import { formatCurrency } from '@/utils/formatters';
-import { getStatusBadge, getConditionBadgeClass, isAlreadyDisposed } from '@/components/disposals/helpers';
+import { getStatusBadge, getConditionBadgeClass, isReadyForDisposal } from '@/components/disposals/helpers';
 import { toast } from 'sonner';
 import {
   getDisposals,
@@ -32,7 +32,7 @@ import {
   deleteDisposal as deleteDisposalApi,
   approveDisposal as approveDisposalApi,
   markDisposed as markDisposedApi,
-  getAllPTAsForDisposal,
+  getAvailablePTAs,
   type DisposalRecord,
   type AvailablePtaAsset,
 } from '@/api/asset/disposalApi';
@@ -163,7 +163,7 @@ export function Disposals() {
     const load = async () => {
       setAssetsLoading(true);
       try {
-        const assets = await getAllPTAsForDisposal(formData.group, assetSearchQuery || undefined);
+        const assets = await getAvailablePTAs(formData.group, assetSearchQuery || undefined);
         if (!cancelled) {
           setAvailableAssets(assets.map((a: AvailablePtaAsset) => ({
             id: String(a.id),
@@ -373,9 +373,9 @@ export function Disposals() {
     );
   };
 
-  // Assets eligible for a new disposal request: matching group and not already disposed
+  // Only assets explicitly evaluated as unserviceable are eligible for disposal.
   const selectableAssets = useMemo(() =>
-    availableAssets.filter(a => a.group === formData.group && !isAlreadyDisposed(a.condition)),
+    availableAssets.filter(a => a.group === formData.group && isReadyForDisposal(a.condition)),
   [availableAssets, formData.group]);
 
   // Details for assets currently selected (in edit mode, falls back to the disposal's original items)
