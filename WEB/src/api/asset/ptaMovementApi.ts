@@ -21,7 +21,7 @@ export interface PtaMovementRecord {
   rrppeRrspNumber: string;
   status: 'NEW' | 'RENEW';
   plantillaEmployeeId: number;
-  nonPlantillaEmployeeId: number;
+  nonPlantillaEmployeeId: number | null;
   condition: string;
   actualOfficeId: number;
   actualDivisionId: number;
@@ -43,7 +43,7 @@ export interface PtaMovementPayload {
   rrppeRrspNumber: string;
   status: string;
   plantillaEmployeeId: number;
-  nonPlantillaEmployeeId: number;
+  nonPlantillaEmployeeId: number | null;
   condition: string;
   actualOfficeId: number;
   actualDivisionId: number;

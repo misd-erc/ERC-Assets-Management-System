@@ -31,9 +31,22 @@ export function PPEIssuanceEditForm({
 }: PPEIssuanceEditFormProps) {
   const first = group[0];
 
+  // A legacy record can contain the accountable Plantilla employee's ID in the
+  // optional Non-Plantilla field. That value is not present in the picker, so
+  // normalize it to an actual empty selection instead of submitting it again.
+  const initialSubEmployee = employees.find((employee) => employee.id === first.subEmployeeId);
+  const initialSubEmployeeId =
+    first.subEmployeeId &&
+    first.subEmployeeId !== first.employeeId &&
+    initialSubEmployee &&
+    initialSubEmployee.employmentTypeName !== 'Plantilla' &&
+    initialSubEmployee.employmentTypeName !== 'Contractual'
+      ? String(first.subEmployeeId)
+      : '';
+
   const [parIcsNumber, setParIcsNumber] = useState(first.parIcsNumber || '');
   const [plantillaEmployeeId, setPlantillaEmployeeId] = useState(String(first.employeeId));
-  const [nonPlantillaEmployeeId, setNonPlantillaEmployeeId] = useState(first.subEmployeeId ? String(first.subEmployeeId) : '');
+  const [nonPlantillaEmployeeId, setNonPlantillaEmployeeId] = useState(initialSubEmployeeId);
   const [officeId, setOfficeId] = useState(first.actualOfficeId ? String(first.actualOfficeId) : '');
   const [divisionId, setDivisionId] = useState(first.actualDivisionId ? String(first.actualDivisionId) : '');
   const [issuedDate, setIssuedDate] = useState(first.issuedDate || new Date().toISOString().split('T')[0]);
