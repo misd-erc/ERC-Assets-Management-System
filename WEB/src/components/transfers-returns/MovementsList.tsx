@@ -86,6 +86,75 @@ interface Movement {
   allMovementIds?: number[];
 }
 
+const hasEmployee = (name: unknown, id: unknown): boolean =>
+  Boolean(name || (typeof id === 'number' && id > 0));
+
+const toEmployeeInfo = (
+  name: string | null | undefined,
+  id: number | null | undefined,
+  employeeIdOriginal: string | null | undefined,
+  employeeType: string,
+): EmployeeInfo => ({
+  id: id ?? 0,
+  fullName: name || undefined,
+  employeeIdOriginal,
+  employeeType,
+});
+
+/**
+ * The API keeps Plantilla and Non-Plantilla holders in separate slots. A
+ * transfer can have both slots populated, but this list has one From/To pair,
+ * so display the same accountability slot on both sides. This prevents a
+ * previous Sub-PAR holder from being shown as the transfer source when the
+ * actual accountable holder is Plantilla.
+ */
+const getTransferEmployees = (raw: any): EmployeeInfo[] => {
+  const currentIsPlantilla = hasEmployee(raw.plantillaEmployeeName, raw.plantillaEmployeeId);
+
+  const currentPlantilla = currentIsPlantilla
+    ? toEmployeeInfo(
+        raw.plantillaEmployeeName,
+        raw.plantillaEmployeeId,
+        raw.plantillaEmployeeIdOriginal,
+        raw.plantillaEmployeeType || 'Plantilla',
+      )
+    : null;
+  const currentNonPlantilla = hasEmployee(raw.nonPlantillaEmployeeName, raw.nonPlantillaEmployeeId)
+    ? toEmployeeInfo(
+        raw.nonPlantillaEmployeeName,
+        raw.nonPlantillaEmployeeId,
+        raw.nonPlantillaEmployeeIdOriginal,
+        raw.nonPlantillaEmployeeType || 'Non-Plantilla',
+      )
+    : null;
+
+  const previousPlantilla = hasEmployee(raw.previousPlantillaEmployeeName, raw.previousPlantillaEmployeeId)
+    ? toEmployeeInfo(
+        raw.previousPlantillaEmployeeName,
+        raw.previousPlantillaEmployeeId,
+        raw.previousPlantillaEmployeeIdOriginal,
+        'Plantilla',
+      )
+    : null;
+  const previousNonPlantilla = hasEmployee(raw.previousNonPlantillaEmployeeName, raw.previousNonPlantillaEmployeeId)
+    ? toEmployeeInfo(
+        raw.previousNonPlantillaEmployeeName,
+        raw.previousNonPlantillaEmployeeId,
+        raw.previousNonPlantillaEmployeeIdOriginal,
+        'Non-Plantilla',
+      )
+    : null;
+
+  const fromEmployee = currentIsPlantilla
+    ? (previousPlantilla || previousNonPlantilla)
+    : (previousNonPlantilla || previousPlantilla);
+  const toEmployee = currentIsPlantilla
+    ? (currentPlantilla || currentNonPlantilla)
+    : (currentNonPlantilla || currentPlantilla);
+
+  return [fromEmployee, toEmployee].filter(Boolean) as EmployeeInfo[];
+};
+
 // Normalize a single item from the new getPTATransferList response shape into Movement
 const normalizeTransferListItem = (raw: any): Movement => ({
   id: raw.id,
@@ -104,80 +173,7 @@ const normalizeTransferListItem = (raw: any): Movement => ({
   division: raw.division,
   plantillaEmployeeId: raw.plantillaEmployeeId ?? null,
   nonPlantillaEmployeeId: raw.nonPlantillaEmployeeId ?? null,
-  employee: (() => {
-    const isReturn = !!(raw.rrppeRrspNumber || raw.rrpperrspNumber) && !raw.ptrItrNumber;
-
-    if (isReturn) {
-      const fromEmployee = raw.previousNonPlantillaEmployeeName || raw.previousNonPlantillaEmployeeId
-        ? {
-            id: raw.previousNonPlantillaEmployeeId ?? 0,
-            fullName: raw.previousNonPlantillaEmployeeName,
-            employeeIdOriginal: raw.previousNonPlantillaEmployeeIdOriginal,
-            employeeType: 'Non-Plantilla',
-          }
-        : raw.previousPlantillaEmployeeName || raw.previousPlantillaEmployeeId
-          ? {
-              id: raw.previousPlantillaEmployeeId ?? 0,
-              fullName: raw.previousPlantillaEmployeeName,
-              employeeIdOriginal: raw.previousPlantillaEmployeeIdOriginal,
-              employeeType: 'Plantilla',
-            }
-          : null;
-
-      const toEmployee = raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
-        ? {
-            id: raw.nonPlantillaEmployeeId ?? 0,
-            fullName: raw.nonPlantillaEmployeeName,
-            employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal,
-            employeeType: 'Non-Plantilla',
-          }
-        : raw.plantillaEmployeeName || raw.plantillaEmployeeId
-          ? {
-              id: raw.plantillaEmployeeId ?? 0,
-              fullName: raw.plantillaEmployeeName,
-              employeeIdOriginal: raw.plantillaEmployeeIdOriginal,
-              employeeType: 'Plantilla',
-            }
-          : null;
-
-      return [fromEmployee, toEmployee].filter(Boolean) as EmployeeInfo[];
-    }
-
-    // Transfers: index 0 = From (previous holder), index 1 = To (current holder)
-    const fromEmployee = raw.previousNonPlantillaEmployeeName || raw.previousNonPlantillaEmployeeId
-      ? {
-          id: raw.previousNonPlantillaEmployeeId ?? 0,
-          fullName: raw.previousNonPlantillaEmployeeName,
-          employeeIdOriginal: raw.previousNonPlantillaEmployeeIdOriginal,
-          employeeType: 'Non-Plantilla',
-        }
-      : raw.previousPlantillaEmployeeName || raw.previousPlantillaEmployeeId
-        ? {
-            id: raw.previousPlantillaEmployeeId ?? 0,
-            fullName: raw.previousPlantillaEmployeeName,
-            employeeIdOriginal: raw.previousPlantillaEmployeeIdOriginal,
-            employeeType: 'Plantilla',
-          }
-        : null;
-
-    const toEmployee = raw.nonPlantillaEmployeeName || raw.nonPlantillaEmployeeId
-      ? {
-          id: raw.nonPlantillaEmployeeId ?? 0,
-          fullName: raw.nonPlantillaEmployeeName,
-          employeeIdOriginal: raw.nonPlantillaEmployeeIdOriginal,
-          employeeType: 'Non-Plantilla',
-        }
-      : raw.plantillaEmployeeName || raw.plantillaEmployeeId
-        ? {
-            id: raw.plantillaEmployeeId ?? 0,
-            fullName: raw.plantillaEmployeeName,
-            employeeIdOriginal: raw.plantillaEmployeeIdOriginal,
-            employeeType: 'Plantilla',
-          }
-        : null;
-
-    return [fromEmployee, toEmployee].filter(Boolean) as EmployeeInfo[];
-  })(),
+  employee: getTransferEmployees(raw),
   items: raw.item ? [raw.item] : [],
 });
 
