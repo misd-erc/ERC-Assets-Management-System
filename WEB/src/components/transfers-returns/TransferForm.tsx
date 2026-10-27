@@ -27,6 +27,7 @@ import { getOffices } from '@/api/office-management/officeApi';
 import { getDivisions } from '@/api/office-management/divisionApi';
 import { ApiEmployee } from '@/types/transfer';
 import { VwOffice, VwDivision } from '@/types';
+import { toApiDateTime } from '@/utils/dateUtils';
 
 interface TransferFormProps {
   isOpen: boolean;
@@ -314,7 +315,7 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
             return {
               id: latest.id,
               ptaId: latest.ptaId,
-              dateAssigned: latest.dateAssigned,
+              dateAssigned: toApiDateTime(latest.dateAssigned, latest.createdAt || item?.dateAcquired),
               ptrItrNumber: latest.ptrItrNumber || '',
               parIcsNumber: latest.parIcsNumber || '',
               rrppeRrspNumber: latest.rrppeRrspNumber || '',

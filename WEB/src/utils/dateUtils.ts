@@ -23,6 +23,44 @@ export const formatDate = (date: string | Date | undefined | null): string => {
 };
 
 /**
+ * Converts a value returned by the API into an ISO date-time accepted by
+ * ASP.NET DateTime model binding. Some older movement records can have a
+ * null/empty date or a timestamp with more fractional-second precision than
+ * the browser can parse, so use the fallback when necessary.
+ */
+export const toApiDateTime = (
+  value: unknown,
+  fallback: unknown = new Date()
+): string => {
+  const parse = (candidate: unknown): Date | null => {
+    if (candidate instanceof Date) {
+      return Number.isNaN(candidate.getTime()) ? null : candidate;
+    }
+
+    if (typeof candidate !== 'string' && typeof candidate !== 'number') {
+      return null;
+    }
+
+    const text = String(candidate).trim();
+    if (!text) return null;
+
+    let parsed = new Date(text);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+
+    // .NET may serialize seven fractional-second digits; JavaScript Date only
+    // supports millisecond precision.
+    const normalizedText = text.replace(
+      /(\.\d{3})\d+(?=(Z|[+-]\d{2}:?\d{2})?$)/,
+      '$1'
+    );
+    parsed = new Date(normalizedText);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  return (parse(value) ?? parse(fallback) ?? new Date()).toISOString();
+};
+
+/**
  * Converts a date string to a relative time format (e.g., "2 hours ago")
  * @param dateStr - The date string in ISO format (UTC)
  * @returns Relative time string

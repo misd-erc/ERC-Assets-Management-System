@@ -22,6 +22,7 @@ import { getDivisions } from '@/api/office-management/divisionApi';
 import { getConditions } from '@/api/asset/inventoryApi';
 import { ApiEmployee } from '@/types/transfer';
 import { VwOffice, VwDivision } from '@/types';
+import { toApiDateTime } from '@/utils/dateUtils';
 
 interface ReturnFormProps {
   isOpen: boolean;
@@ -251,7 +252,7 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
           bulkMovements.push({
             id: last.id,
             ptaId: last.ptaId,
-            dateAssigned: last.dateAssigned,
+            dateAssigned: toApiDateTime(last.dateAssigned, last.createdAt || item?.dateAcquired),
             ptrItrNumber: last.ptrItrNumber || '',
             rrppeRrspNumber: last.rrppeRrspNumber || '',
             parIcsNumber: last.parIcsNumber || '',
