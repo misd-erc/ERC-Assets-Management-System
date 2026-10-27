@@ -53,7 +53,9 @@ public async Task<IActionResult> EditPTAMovement([FromBody] EditPTAMovementQuery
                     RRPPERRSPNumber = model.RrppeRrspNumber,
                     PARICSNumber = model.ParIcsNumber,
                     PlantillaEmployeeId = model.PlantillaEmployeeId,
-                    NonPlantillaEmployeeId = model.NonPlantillaEmployeeId,
+                    NonPlantillaEmployeeId = model.NonPlantillaEmployeeId > 0
+                        ? model.NonPlantillaEmployeeId
+                        : null,
                     ActualOfficeId = model.ActualOfficeId,
                     ActualDivisionId = model.ActualDivisionId,
                     Remarks = model.Condition,
@@ -127,7 +129,9 @@ public async Task<IActionResult> EditPTAMovementBulk([FromBody] EditPTAMovementB
                         RRPPERRSPNumber = item.RrppeRrspNumber,
                         PARICSNumber = item.ParIcsNumber,
                         PlantillaEmployeeId = item.PlantillaEmployeeId,
-                        NonPlantillaEmployeeId = item.NonPlantillaEmployeeId,
+                        NonPlantillaEmployeeId = item.NonPlantillaEmployeeId > 0
+                            ? item.NonPlantillaEmployeeId
+                            : null,
                         ActualOfficeId = item.ActualOfficeId,
                         ActualDivisionId = item.ActualDivisionId,
                         Remarks = item.Condition,

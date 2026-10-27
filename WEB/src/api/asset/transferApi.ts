@@ -3,6 +3,7 @@ import { MovementEditPayload, TransferRecord } from '@/types/transfer';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ApiResponse } from '@/types';
 import { getAuthParams } from '@/utils/auth';
+import { toApiDateTime } from '@/utils/dateUtils';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getEmployeeById } from '@/api/user-management/userApi';
 
@@ -187,7 +188,13 @@ export const editMovementBulk = async (movements: MovementItemPayload[]): Promis
   const { systemUserId, sessionKey } = getAuthParams();
 
   const payload = {
-    movements,
+    // DateAssigned is a required DateTime on the API model. Normalize here as
+    // a final boundary check so nullable/legacy movement dates cannot make the
+    // complete request fail model binding.
+    movements: movements.map((movement) => ({
+      ...movement,
+      dateAssigned: toApiDateTime(movement.dateAssigned),
+    })),
     actionBySystemUserId: systemUserId,
     sessionKey,
   };
