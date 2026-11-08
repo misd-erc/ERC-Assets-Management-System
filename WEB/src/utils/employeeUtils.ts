@@ -2,10 +2,67 @@ import { NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 
 // Employment types that belong to the "Plantilla" accountability group.
 // Contractual employees are treated the same as Plantilla for asset accountability purposes.
-const PLANTILLA_TYPE_NAMES = ['Plantilla', 'Contractual'];
+const PLANTILLA_TYPE_NAMES = ['plantilla', 'contractual'];
 
-export function isPlantillaEmploymentType(name: string): boolean {
-  return PLANTILLA_TYPE_NAMES.includes(name);
+export function isPlantillaEmploymentType(name?: string | null): boolean {
+  return !!name && PLANTILLA_TYPE_NAMES.includes(name.trim().toLowerCase());
+}
+
+type MovementEmployee = {
+  id?: number;
+  firstName?: string;
+  middleName?: string | null;
+  lastName?: string;
+  suffixName?: string | null;
+  employeeIdOriginal?: string | null;
+  employmentType?: { name?: string | null } | null;
+  employmentTypeName?: string;
+};
+
+export interface MovementEmployeeSlots {
+  plantilla: MovementEmployee | null;
+  nonPlantilla: MovementEmployee | null;
+}
+
+/**
+ * Resolve the displayed accountability slots using the employee's current
+ * employment type. This also repairs legacy records where a COS was stored in
+ * nonPlantillaEmployeeId and later became Contractual.
+ */
+export function resolveMovementEmployeeSlots(
+  movement: {
+    plantillaEmployeeId?: number | null;
+    nonPlantillaEmployeeId?: number | null;
+    employee?: MovementEmployee[];
+  },
+  employees: MovementEmployee[] = []
+): MovementEmployeeSlots {
+  const movementEmployees = Array.isArray(movement.employee) ? movement.employee : [];
+  const findById = (id?: number | null) => {
+    if (!id) return null;
+    return movementEmployees.find(employee => employee.id === id)
+      ?? employees.find(employee => employee.id === id)
+      ?? null;
+  };
+  const employmentTypeName = (employee: MovementEmployee | null) =>
+    employee?.employmentType?.name ?? employee?.employmentTypeName;
+
+  const plantillaById = findById(movement.plantillaEmployeeId);
+  const nonPlantillaById = findById(movement.nonPlantillaEmployeeId);
+  const plantillaByType = movementEmployees.find(employee =>
+    isPlantillaEmploymentType(employmentTypeName(employee))
+  ) ?? null;
+
+  // A legacy sub-accountable COS who is now Contractual is the current
+  // plantilla/accountable holder. Do not show the same person in both slots.
+  if (nonPlantillaById && isPlantillaEmploymentType(employmentTypeName(nonPlantillaById))) {
+    return { plantilla: nonPlantillaById, nonPlantilla: null };
+  }
+
+  return {
+    plantilla: plantillaById ?? plantillaByType,
+    nonPlantilla: nonPlantillaById,
+  };
 }
 
 export function normalizeEmployee(e: any): NormalizedEmployee {
