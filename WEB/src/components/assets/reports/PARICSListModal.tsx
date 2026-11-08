@@ -20,7 +20,7 @@ import {
   FileSpreadsheet,
   X,
 } from 'lucide-react';
-import { listIssuances } from '@/api/asset/issuanceApi';
+import { listAllIssuances } from '@/api/asset/issuanceApi';
 import { IssuanceRecord } from '@/types/issuance';
 import { PARGenerator } from './PARGenerator';
 import { ICSGenerator } from './ICSGenerator';
@@ -79,8 +79,8 @@ export function PARICSListModal({ isOpen, onClose, reportType }: PARICSListModal
     setLoading(true);
     try {
       const group = reportType === 'PAR' ? 'PPE' : 'SE';
-      const result = await listIssuances({ group, pageNumber: 1, pageSize: 5000 });
-      setRecords(result.items);
+      const result = await listAllIssuances({ group, includeHistory: true });
+      setRecords(result);
     } catch (err) {
       console.error('Failed to load issuance records:', err);
       toast.error('Failed to load issuance records');

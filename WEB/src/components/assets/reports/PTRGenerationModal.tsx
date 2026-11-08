@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { getPTRTransferList, getTransferDetailsByNumber } from '@/api/asset/transferApi';
+import { getAllPTATransferList, getTransferDetailsByNumber } from '@/api/asset/transferApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { formatPositionOffice } from '@/utils/formatters';
 import { PTRGenerator } from './PTRGenerator';
@@ -72,7 +72,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
   const loadPTRRecords = async () => {
     setLoading(true);
     try {
-      const response = await getPTRTransferList(1, 1000);
+      const response = { items: await getAllPTATransferList('PPE') };
       const employeeResponse = await getEmployees().catch(() => ({ data: { items: [] } } as any));
       const employeeById = new Map<number, any>(
         ((employeeResponse as any)?.data?.items || []).map((emp: any) => [emp.id, emp])
@@ -100,7 +100,9 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
           return merged;
         };
 
-        // transfer/list returns a single `item` object per movement row
+        // transfer/list returns itemCount, not the full item object. Keep the
+        // optional item fallback for older API responses; the details endpoint
+        // loads the actual items when a PTR is selected.
         const incomingItems = item.item ? [item.item] : [];
         const mergedItems = mergeItems(existingDetails?.items || [], incomingItems);
 
@@ -126,6 +128,21 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
           lastName: nonPlantillaParts.length > 1 ? nonPlantillaParts[nonPlantillaParts.length - 1] : ''
         } : null;
 
+        // The API resolves the previous holder for the representative
+        // movement. Use these fields instead of defaulting the From officer to
+        // N/A for every historical PTR row.
+        const fromEmpFullName = item.previousPlantillaEmployeeName || item.previousNonPlantillaEmployeeName
+          || existingDetails?.fromEmployeeName
+          || 'N/A';
+        const fromEmpId = item.previousPlantillaEmployeeId ?? item.previousNonPlantillaEmployeeId ?? existingDetails?.fromEmployeeId;
+        const fromEmpParts = (fromEmpFullName && fromEmpFullName !== 'N/A') ? fromEmpFullName.trim().split(/\s+/) : null;
+        const fromEmpObj = fromEmpParts ? {
+          firstName: fromEmpParts[0] || '',
+          middleName: fromEmpParts.length > 2 ? fromEmpParts.slice(1, -1).join(' ') : '',
+          lastName: fromEmpParts.length > 1 ? fromEmpParts[fromEmpParts.length - 1] : ''
+        } : { firstName: 'N/A', middleName: '', lastName: '' };
+        const itemCount = Math.max(mergedItems.length, Number(item.itemCount) || 0);
+
         // Resolve receiving employee's position/office/division for the "Received by" section
         const toEmpDetails = toEmpId ? employeeById.get(toEmpId) : null;
         const toEmpPosition = item.plantillaEmployeeName
@@ -141,7 +158,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
 
         const baseRecord = existing || {
           ptrNumber: ptrNum,
-          fromEmployee: existingDetails?.fromEmployeeName || 'N/A',
+          fromEmployee: fromEmpFullName,
           toEmployee: toEmpFullName,
           itemCount: 0,
           dateAssigned: item.dateAssigned,
@@ -150,8 +167,9 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
 
         const updatedRecord = {
           ...baseRecord,
+          fromEmployee: fromEmpFullName,
           toEmployee: toEmpFullName,
-          itemCount: mergedItems.length,
+          itemCount,
           dateAssigned: baseRecord.dateAssigned || item.dateAssigned,
           transferType: baseRecord.transferType || item.status || 'N/A'
         };
@@ -161,9 +179,9 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
         detailsMap.set(ptrNum, {
           transferNumber: ptrNum,
           transferType: updatedRecord.transferType || 'TRANSFER',
-          fromEmployeeId: existingDetails?.fromEmployeeId,
-          fromEmployeeName: existingDetails?.fromEmployeeName || 'N/A',
-          fromEmployee: existingDetails?.fromEmployee || { firstName: 'N/A', middleName: '', lastName: '' },
+          fromEmployeeId: fromEmpId,
+          fromEmployeeName: fromEmpFullName,
+          fromEmployee: fromEmpObj,
           toEmployeeId: toEmpId ?? existingDetails?.toEmployeeId,
           toEmployeeName: toEmpFullName,
           toEmployee: toEmpObj,

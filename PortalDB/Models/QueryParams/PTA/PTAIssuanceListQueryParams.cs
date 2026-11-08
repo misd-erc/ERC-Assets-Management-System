@@ -11,6 +11,13 @@ namespace PortalDB.Models.QueryParams.PTA
         public string? Group { get; set; }
 
         /// <summary>
+        /// When true, return every historical movement with a PAR/ICS number so
+        /// reports can be reprinted after an item is renewed or transferred.
+        /// The live PPE/SE issuance screen keeps the default current-only view.
+        /// </summary>
+        public bool IncludeHistory { get; set; } = false;
+
+        /// <summary>
         /// Search by employee name (plantilla or non-plantilla) or employee ID original.
         /// </summary>
         public string? SearchEmployee { get; set; }

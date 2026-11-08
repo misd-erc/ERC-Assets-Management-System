@@ -390,18 +390,21 @@ export const getITRMovements = async (
  */
 export const getPTRTransferList = async (
   pageNumber: number = 1,
-  pageSize: number = 1000
+  pageSize: number = 1000,
+  includeHistory: boolean = false
 ): Promise<any> => {
   try {
     const { systemUserId, sessionKey } = getAuthParams();
     const API_BASE_URL = process.env.REACT_APP_API_URL || '';
-    const url = `${API_BASE_URL}/Inventory/pta/transfer/list?Group=PPE&PageNumber=${pageNumber}&PageSize=${pageSize}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+    const historyParam = includeHistory ? '&IncludeHistory=true' : '';
+    const url = `${API_BASE_URL}/Inventory/pta/transfer/list?Group=PPE&PageNumber=${pageNumber}&PageSize=${pageSize}${historyParam}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
     const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
     if (!response.ok) throw new Error(`Failed to fetch PTR transfer list: ${response.statusText}`);
     const data = await response.json();
     return {
       items: data.data?.items || [],
       totalCount: data.data?.totalCount || 0,
+      totalPages: data.data?.totalPages || Math.ceil((data.data?.totalCount || 0) / pageSize),
       pageNumber,
       pageSize,
     };
@@ -432,6 +435,7 @@ export const getITRTransferList = async (
     return {
       items: data.data?.items || [],
       totalCount: data.data?.totalCount || 0,
+      totalPages: data.data?.totalPages || Math.ceil((data.data?.totalCount || 0) / pageSize),
       pageNumber,
       pageSize,
     };
@@ -439,6 +443,26 @@ export const getITRTransferList = async (
     console.error('Error fetching ITR transfer list:', error);
     throw error;
   }
+};
+
+/** Load every historical PTR/ITR page for report reprinting. */
+export const getAllPTATransferList = async (
+  group: 'PPE' | 'SE'
+): Promise<any[]> => {
+  const items: any[] = [];
+  let pageNumber = 1;
+  let totalPages = 1;
+
+  do {
+    const page = group === 'PPE'
+      ? await getPTRTransferList(pageNumber, 500, true)
+      : await getITRTransferList(pageNumber, 500, true);
+    items.push(...(page.items || []));
+    totalPages = page.totalPages || (page.items?.length < page.pageSize ? pageNumber : pageNumber + 1);
+    pageNumber += 1;
+  } while (pageNumber <= totalPages);
+
+  return items;
 };
 
 /**
