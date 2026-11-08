@@ -41,10 +41,17 @@ public async Task<IActionResult> GetPTAMovementStatistics([FromQuery] SoloQueryP
 
             try
             {
-                // Get all current movements
+                // Load every non-deleted movement. The dashboard cards need the
+                // same historical scope as the report/list screens; filtering to
+                // IsCurrent here made old but valid PTR/ITR records disappear
+                // from the totals (for example, 15 instead of 56 PTRs).
                 var allMovements = await _getTools.PTA.GetTblPTAMovements(context)
-                    .Where(x => x.IsCurrent == true && !x.IsDeleted)
+                    .Where(x => !x.IsDeleted)
                     .ToListAsync();
+
+                var currentMovements = allMovements
+                    .Where(x => x.IsCurrent == true)
+                    .ToList();
 
                 // PTR/ITR numbers carry NO type prefix (format is yyyy-mm-NNN, see
                 // GetNextTransferNumber) — the only reliable way to tell a PTR (PPE transfer)
@@ -66,39 +73,54 @@ public async Task<IActionResult> GetPTAMovementStatistics([FromQuery] SoloQueryP
 
                 var ptaGroupMap = await context.TblPTAs
                     .AsNoTracking()
-                    .Where(p => transferPtaIds.Contains(p.Id))
+                    .Where(p => transferPtaIds.Contains(p.Id) && !p.IsDeleted)
                     .ToDictionaryAsync(p => p.Id, p => p.Group ?? string.Empty);
 
-                // Count unique Active PTR (linked PTA's Group is PPE)
-                var activePTR = validTransferMovements
-                    .Where(x => x.PTAId.HasValue && ptaGroupMap.TryGetValue(x.PTAId.Value, out var grp) && grp == TblPTA.PPE)
-                    .Select(x => x.PTRITRNumber!.Trim().ToUpperInvariant())
-                    .Distinct()
-                    .Count();
+                int CountTransfers(IEnumerable<PortalDB.Entities.ASSET.PTA.TblPTAMovement> movements, string group)
+                {
+                    return movements
+                        .Where(x => x.PTAId.HasValue
+                            && ptaGroupMap.TryGetValue(x.PTAId.Value, out var ptaGroup)
+                            && string.Equals(ptaGroup, group, StringComparison.OrdinalIgnoreCase))
+                        .Select(x => x.PTRITRNumber!.Trim().ToUpperInvariant())
+                        .Distinct()
+                        .Count();
+                }
 
-                // Count unique Active ITR (linked PTA's Group is SE)
-                var activeITR = validTransferMovements
-                    .Where(x => x.PTAId.HasValue && ptaGroupMap.TryGetValue(x.PTAId.Value, out var grp) && grp == TblPTA.SE)
-                    .Select(x => x.PTRITRNumber!.Trim().ToUpperInvariant())
-                    .Distinct()
-                    .Count();
+                // Historical totals: one count per unique PTR/ITR number.
+                var totalPTR = CountTransfers(validTransferMovements, TblPTA.PPE);
+                var totalITR = CountTransfers(validTransferMovements, TblPTA.SE);
 
-                // Count unique Active Returns PPE (RRPPERRSPNumber starts with "RRPPE")
-                var activeReturnsPPE = allMovements
-                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRPPE"))
-                    .Select(x => x.RRPPERRSPNumber.ToUpper())
-                    .Distinct()
-                    .Count();
+                // Current counts are retained for the UI's secondary context.
+                var currentValidTransferMovements = currentMovements
+                    .Where(x => !string.IsNullOrWhiteSpace(x.PTRITRNumber)
+                        && !invalidPtrItrValues.Contains(x.PTRITRNumber.Trim()))
+                    .ToList();
+                var activePTR = CountTransfers(currentValidTransferMovements, TblPTA.PPE);
+                var activeITR = CountTransfers(currentValidTransferMovements, TblPTA.SE);
 
-                // Count unique Active Returns SE (RRPPERRSPNumber starts with "RRSP")
-                var activeReturnsSE = allMovements
-                    .Where(x => !string.IsNullOrEmpty(x.RRPPERRSPNumber) && x.RRPPERRSPNumber.ToUpper().StartsWith("RRSP"))
-                    .Select(x => x.RRPPERRSPNumber.ToUpper())
-                    .Distinct()
-                    .Count();
+                int CountReturns(IEnumerable<PortalDB.Entities.ASSET.PTA.TblPTAMovement> movements, string prefix)
+                {
+                    return movements
+                        .Where(x => !string.IsNullOrWhiteSpace(x.RRPPERRSPNumber)
+                            && x.RRPPERRSPNumber.Trim().StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                        .Select(x => x.RRPPERRSPNumber!.Trim().ToUpperInvariant())
+                        .Distinct()
+                        .Count();
+                }
+
+                var totalReturnsPPE = CountReturns(allMovements, "RRPPE");
+                var totalReturnsSE = CountReturns(allMovements, "RRSP");
+                var activeReturnsPPE = CountReturns(currentMovements, "RRPPE");
+                var activeReturnsSE = CountReturns(currentMovements, "RRSP");
 
                 var statistics = new
                 {
+                    totalPTR = totalPTR,
+                    totalITR = totalITR,
+                    totalReturnsPPE = totalReturnsPPE,
+                    totalReturnsSE = totalReturnsSE,
+                    totalRecords = totalPTR + totalITR + totalReturnsPPE + totalReturnsSE,
                     activePTR = activePTR,
                     activeITR = activeITR,
                     activeReturnsPPE = activeReturnsPPE,
