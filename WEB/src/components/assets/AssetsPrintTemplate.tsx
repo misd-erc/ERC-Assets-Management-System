@@ -5,7 +5,7 @@ import { getEmployees } from '@/api/user-management/userApi';
 import { getOffices } from '@/api/office-management/officeApi';
 import { getDivisions } from '@/api/office-management/divisionApi';
 import { VwOffice, VwDivision } from '@/types/office';
-import { normalizeEmployee } from '@/utils/employeeUtils';
+import { normalizeEmployee, resolveMovementEmployeeSlots } from '@/utils/employeeUtils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Download, Printer } from 'lucide-react';
@@ -50,6 +50,17 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
     if (!employeeId) return '-';
     const employee = employees.find(emp => emp.id === Number(employeeId));
     return employee ? `${employee.firstName} ${employee.lastName}` : String(employeeId);
+  };
+
+  const getMovementEmployeeName = (
+    movement: { plantillaEmployeeId?: number | null; nonPlantillaEmployeeId?: number | null; employee?: any[] },
+    slot: 'plantilla' | 'nonPlantilla'
+  ) => {
+    const employee = resolveMovementEmployeeSlots(movement, employees)[slot];
+    if (!employee) return '-';
+    return employee.firstName || employee.lastName
+      ? `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim()
+      : getEmployeeName(employee.id ?? null);
   };
 
   const getOfficeName = (officeId: number | null) => {
@@ -272,13 +283,7 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
                     <td style={{ padding: '10px' }}>{movement.parIcsNumber || '-'}</td>
                     <td style={{ padding: '10px' }}>{movement.ptrItrNumber || '-'}</td>
                     <td style={{ padding: '10px' }}>{(movement as any).rrppeRrspNumber || '-'}</td>
-                    <td style={{ padding: '10px' }}>
-                      {movement.plantillaEmployeeId
-                        ? getEmployeeName(movement.plantillaEmployeeId)
-                        : movement.nonPlantillaEmployeeId
-                        ? getEmployeeName(movement.nonPlantillaEmployeeId)
-                        : '-'}
-                    </td>
+                    <td style={{ padding: '10px' }}>{getMovementEmployeeName(movement, 'plantilla')}</td>
                     <td style={{ padding: '10px' }}>
                       {movement.employee?.[0]?.office?.id
                         ? getOfficeName(movement.employee[0].office.id)
@@ -475,13 +480,7 @@ export function AssetsPrintTemplate({ asset, open, onOpenChange }: AssetsPrintTe
                     <td style={{ padding: '10px' }}>{formatDate(movement.dateAssigned)}</td>
                     <td style={{ padding: '10px' }}>{movement.ptrItrNumber || '-'}</td>
                     <td style={{ padding: '10px' }}>{(movement as any).rrppeRrspNumber || '-'}</td>
-                    <td style={{ padding: '10px' }}>
-                      {movement.plantillaEmployeeId
-                        ? getEmployeeName(movement.plantillaEmployeeId)
-                        : movement.nonPlantillaEmployeeId
-                        ? getEmployeeName(movement.nonPlantillaEmployeeId)
-                        : '-'}
-                    </td>
+                    <td style={{ padding: '10px' }}>{getMovementEmployeeName(movement, 'plantilla')}</td>
                     <td style={{ padding: '10px' }}>{getOfficeName(movement.employee?.[0]?.office?.id ?? null)}</td>
                     <td style={{ padding: '10px' }}>{getDivisionName(movement.employee?.[0]?.division?.id ?? null)}</td>
                     <td style={{ padding: '10px', textAlign: 'center', fontWeight: 'bold', color: '#000' }}>

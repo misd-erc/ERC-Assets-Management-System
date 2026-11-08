@@ -101,6 +101,8 @@ const mapIssuanceItem = (m: IssuanceListItem): IssuanceRecord => {
 
 export interface IssuanceListParams {
   group?: 'PPE' | 'SE';
+  /** Include historical PAR/ICS movements for report reprinting. */
+  includeHistory?: boolean;
   searchEmployee?: string;
   parIcsFilter?: string;
   officeId?: number;
@@ -131,6 +133,7 @@ const fetchIssuanceList = async (params: IssuanceListParams = {}, throwOnError =
           ActionBySystemUserId: systemUserId,
           SessionKey: sessionKey,
           ...(params.group ? { group: params.group } : {}),
+          ...(params.includeHistory ? { includeHistory: true } : {}),
           ...(params.searchEmployee ? { searchEmployee: params.searchEmployee } : {}),
           ...(params.parIcsFilter ? { parIcsFilter: params.parIcsFilter } : {}),
           ...(params.officeId ? { officeId: params.officeId } : {}),
@@ -202,6 +205,28 @@ export const getIssuanceStats = async (): Promise<IssuanceStats> => {
 
 export const listIssuances = async (params: IssuanceListParams = {}): Promise<IssuanceListResult> => {
   return fetchIssuanceList(params);
+};
+
+/** Load every issuance page, used by report lists that must retain history. */
+export const listAllIssuances = async (
+  params: Omit<IssuanceListParams, 'pageNumber' | 'pageSize'> = {}
+): Promise<IssuanceRecord[]> => {
+  const records: IssuanceRecord[] = [];
+  let pageNumber = 1;
+  let totalPages = 1;
+
+  do {
+    const page = await fetchIssuanceList({
+      ...params,
+      pageNumber,
+      pageSize: 500,
+    }, true);
+    records.push(...page.items);
+    totalPages = page.totalPages;
+    pageNumber += 1;
+  } while (pageNumber <= totalPages);
+
+  return records;
 };
 
 /** Load renewal candidates independently of the table's filters and pagination. */

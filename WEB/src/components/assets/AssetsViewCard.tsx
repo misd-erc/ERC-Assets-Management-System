@@ -24,7 +24,7 @@ import { SEAsset } from '@/types/supply/se';
 import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { getEmployees } from '@/api/user-management/userApi';
 
-import { normalizeEmployee } from '@/utils/employeeUtils';
+import { normalizeEmployee, resolveMovementEmployeeSlots } from '@/utils/employeeUtils';
 
 interface AssetsViewCardProps {
   asset: Asset;
@@ -53,6 +53,17 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
     if (!employeeId) return '-';
     const employee = employees.find(emp => emp.id === Number(employeeId));
     return employee ? `${employee.firstName} ${employee.lastName}` : String(employeeId);
+  };
+
+  const getMovementEmployeeName = (
+    movement: { plantillaEmployeeId?: number | null; nonPlantillaEmployeeId?: number | null; employee?: any[] },
+    slot: 'plantilla' | 'nonPlantilla'
+  ) => {
+    const employee = resolveMovementEmployeeSlots(movement, employees)[slot];
+    if (!employee) return '-';
+    return employee.firstName || employee.lastName
+      ? `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim()
+      : getEmployeeName(employee.id ?? null);
   };
 
   const getConditionBadge = (condition: string) => {
@@ -266,16 +277,8 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                       <TableCell>{movement.parIcsNumber || '-'}</TableCell>
                       <TableCell>{movement.ptrItrNumber || '-'}</TableCell>
                       <TableCell>{(movement as any).rrppeRrspNumber || '-'}</TableCell>
-                      <TableCell>
-                        {movement.plantillaEmployeeId
-                          ? getEmployeeName(movement.plantillaEmployeeId)
-                          : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {movement.nonPlantillaEmployeeId
-                          ? getEmployeeName(movement.nonPlantillaEmployeeId)
-                          : '-'}
-                      </TableCell>
+                      <TableCell>{getMovementEmployeeName(movement, 'plantilla')}</TableCell>
+                      <TableCell>{getMovementEmployeeName(movement, 'nonPlantilla')}</TableCell>
                       <TableCell>{(movement as any).employee?.[0]?.office?.name || (movement as any).office?.name || '-'}</TableCell>
                       <TableCell>{(movement as any).employee?.[0]?.division?.name || (movement as any).division?.name || '-'}</TableCell>
                       <TableCell>
@@ -508,16 +511,8 @@ export function AssetsViewCard({ asset, onEdit, onClose }: AssetsViewCardProps) 
                       <TableCell>{movement.parIcsNumber || '-'}</TableCell>
                       <TableCell>{movement.ptrItrNumber || '-'}</TableCell>
                       <TableCell>{movement.rrppeRrspNumber || '-'}</TableCell>
-                      <TableCell>
-                        {movement.plantillaEmployeeId
-                          ? getEmployeeName(movement.plantillaEmployeeId)
-                          : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {movement.nonPlantillaEmployeeId
-                          ? getEmployeeName(movement.nonPlantillaEmployeeId)
-                          : '-'}
-                      </TableCell>
+                      <TableCell>{getMovementEmployeeName(movement, 'plantilla')}</TableCell>
+                      <TableCell>{getMovementEmployeeName(movement, 'nonPlantilla')}</TableCell>
                       <TableCell>{(movement as any).employee?.[0]?.office?.name || (movement as any).office?.name || '-'}</TableCell>
                       <TableCell>{(movement as any).employee?.[0]?.division?.name || (movement as any).division?.name || '-'}</TableCell>
                       <TableCell>

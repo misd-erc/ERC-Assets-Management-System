@@ -21,6 +21,7 @@ import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 import { IssuanceRecord } from "@/types/issuance";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 import { formatPositionOffice } from "@/utils/formatters";
+import { resolveIssuanceReportEmployeeInfo } from './issuanceReportEmployee';
 
 const logoSrc =
   typeof window !== "undefined"
@@ -455,34 +456,8 @@ export class PARGenerator {
     if (!records.length) return;
     const first = records[0];
 
-    let employeeName = first.employeeName || 'N/A';
-    let position = 'N/A';
-    let office = first.officeName || 'N/A';
-    let nonPlantillaEmployeeName = first.subEmployeeName || '';
-
-    if (first.employeeId) {
-      try {
-        const empResp = await getEmployeeById(first.employeeId);
-        if (empResp.success && empResp.data.length > 0) {
-          const empData = empResp.data[0];
-          employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
-          position = empData.position?.name || 'N/A';
-          const officeAcronym = empData.office?.acronym || empData.office?.name || first.officeName || '';
-          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
-          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || first.officeName || 'N/A';
-        }
-      } catch { /* use fallback values */ }
-    }
-
-    if (first.subEmployeeId && !nonPlantillaEmployeeName) {
-      try {
-        const npResp = await getEmployeeById(first.subEmployeeId);
-        if (npResp.success && npResp.data.length > 0) {
-          const npData = npResp.data[0];
-          nonPlantillaEmployeeName = `${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''} ${npData.lastName}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
-        }
-      } catch { /* use fallback */ }
-    }
+    const { employeeName, position, office, nonPlantillaEmployeeName } =
+      await resolveIssuanceReportEmployeeInfo(first);
 
     const rows: PARRow[] = sortReportRowsByPropertyAndAmount(
       records.map((r) => ({
@@ -524,34 +499,8 @@ export class PARGenerator {
     if (!records.length) throw new Error('No records provided');
     const first = records[0];
 
-    let employeeName = first.employeeName || 'N/A';
-    let position = 'N/A';
-    let office = first.officeName || 'N/A';
-    let nonPlantillaEmployeeName = first.subEmployeeName || '';
-
-    if (first.employeeId) {
-      try {
-        const empResp = await getEmployeeById(first.employeeId);
-        if (empResp.success && empResp.data.length > 0) {
-          const empData = empResp.data[0];
-          employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
-          position = empData.position?.name || 'N/A';
-          const officeAcronym = empData.office?.acronym || empData.office?.name || first.officeName || '';
-          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
-          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || first.officeName || 'N/A';
-        }
-      } catch { /* use fallback values */ }
-    }
-
-    if (first.subEmployeeId && !nonPlantillaEmployeeName) {
-      try {
-        const npResp = await getEmployeeById(first.subEmployeeId);
-        if (npResp.success && npResp.data.length > 0) {
-          const npData = npResp.data[0];
-          nonPlantillaEmployeeName = `${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''} ${npData.lastName}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
-        }
-      } catch { /* use fallback */ }
-    }
+    const { employeeName, position, office, nonPlantillaEmployeeName } =
+      await resolveIssuanceReportEmployeeInfo(first);
 
     const rows: PARRow[] = sortReportRowsByPropertyAndAmount(
       records.map((r) => ({
@@ -626,34 +575,8 @@ export class PARGenerator {
     if (!records.length) return;
     const first = records[0];
 
-    let employeeName = first.employeeName || 'N/A';
-    let position = 'N/A';
-    let office = first.officeName || 'N/A';
-    let nonPlantillaEmployeeName = first.subEmployeeName || '';
-
-    if (first.employeeId) {
-      try {
-        const empResp = await getEmployeeById(first.employeeId);
-        if (empResp.success && empResp.data.length > 0) {
-          const empData = empResp.data[0];
-          employeeName = `${empData.firstName}${empData.middleName ? ` ${empData.middleName}` : ''} ${empData.lastName}${empData.suffixName ? ` ${empData.suffixName}` : ''}`.trim();
-          position = empData.position?.name || 'N/A';
-          const officeAcronym = empData.office?.acronym || empData.office?.name || first.officeName || '';
-          const divisionAcronym = empData.division?.acronym || empData.division?.name || '';
-          office = [officeAcronym, divisionAcronym].filter(Boolean).join(' - ') || first.officeName || 'N/A';
-        }
-      } catch { /* use fallback values */ }
-    }
-
-    if (first.subEmployeeId && !nonPlantillaEmployeeName) {
-      try {
-        const npResp = await getEmployeeById(first.subEmployeeId);
-        if (npResp.success && npResp.data.length > 0) {
-          const npData = npResp.data[0];
-          nonPlantillaEmployeeName = `${npData.firstName}${npData.middleName ? ` ${npData.middleName}` : ''} ${npData.lastName}${npData.suffixName ? ` ${npData.suffixName}` : ''}`.trim();
-        }
-      } catch { /* use fallback */ }
-    }
+    const { employeeName, position, office, nonPlantillaEmployeeName } =
+      await resolveIssuanceReportEmployeeInfo(first);
 
     const rows: PARRow[] = sortReportRowsByPropertyAndAmount(
       records.map((r) => ({

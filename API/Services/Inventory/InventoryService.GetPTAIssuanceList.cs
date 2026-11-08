@@ -49,12 +49,17 @@ public async Task<IActionResult> GetPTAIssuanceList([FromQuery] PTAIssuanceListQ
                     .Where(x => !x.IsDeleted)
                     .ToListAsync();
 
-                // Keep only the single latest movement per PTA item.
-                // This is more reliable than trusting the IsCurrent flag.
-                allMovements = allMovements
-                    .GroupBy(x => x.PTAId ?? 0)
-                    .Select(g => g.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).First())
-                    .ToList();
+                // The live issuance screen shows only the latest movement per
+                // asset. Report screens can opt into history so old PAR/ICS
+                // numbers remain available after a renewal or transfer.
+                if (!model.IncludeHistory)
+                {
+                    // This is more reliable than trusting the IsCurrent flag.
+                    allMovements = allMovements
+                        .GroupBy(x => x.PTAId ?? 0)
+                        .Select(g => g.OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id).First())
+                        .ToList();
+                }
 
                 // Keep rows that have a real PAR/ICS number (exclude nulls and known placeholders).
                 var invalidParValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase)

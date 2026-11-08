@@ -28,10 +28,13 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 
 interface MovementsListProps {
   transferType?: 'PTR' | 'ITR' | 'RRPPE' | 'RRSP';
 }
+
+type MovementScope = 'active' | 'all';
 
 export interface MovementsListRef {
   loadMovements: (search?: string, page?: number) => Promise<void>;
@@ -77,6 +80,7 @@ interface Movement {
   office?: any;
   division?: any;
   items?: PTAItem[];
+  itemCount?: number;
   remarks?: string;
   reasonForTransfer?: string;
   status?: string;
@@ -175,6 +179,10 @@ const normalizeTransferListItem = (raw: any): Movement => ({
   nonPlantillaEmployeeId: raw.nonPlantillaEmployeeId ?? null,
   employee: getTransferEmployees(raw),
   items: raw.item ? [raw.item] : [],
+  itemCount: Number(raw.itemCount) || (raw.item ? 1 : 0),
+  allMovementIds: Array.isArray(raw.movementIds) && raw.movementIds.length > 0
+    ? raw.movementIds
+    : (raw.id ? [raw.id] : []),
 });
 
 // Merge movements that share the same transfer number so UI shows a single row per PTR/ITR
@@ -233,6 +241,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
   function MovementsListComponent({ transferType }, ref) {
   const [searchInput, setSearchInput] = useState('');
   const [parIcsInput, setParIcsInput] = useState('');
+  const [recordScope, setRecordScope] = useState<MovementScope>('active');
   const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedMovement, setSelectedMovement] = useState<Movement | null>(null);
@@ -302,7 +311,13 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
 
   // Load movements — server now groups by transfer/return number and paginates server-side,
   // so a single direct call returns exactly one lightweight row per record for the requested page.
-  const loadMovements = async (search?: string, page: number = 1, size: number = pageSize, parIcs?: string) => {
+  const loadMovements = async (
+    search?: string,
+    page: number = 1,
+    size: number = pageSize,
+    parIcs?: string,
+    scope: MovementScope = recordScope,
+  ) => {
     try {
       setLoading(true);
       const parIcsValue = (parIcs !== undefined ? parIcs : parIcsInput).trim() || undefined;
@@ -311,6 +326,9 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
         const group = transferType === 'PTR' ? 'PPE' : 'SE';
         const raw = await getPTATransferList({
           group: group as 'PPE' | 'SE',
+          // Active uses current movements only; All records includes historical
+          // movements so old PTR/ITR numbers remain searchable.
+          includeHistory: scope === 'all',
           ptrItrFilter: search || undefined,
           parIcsFilter: parIcsValue,
           pageNumber: page,
@@ -326,6 +344,8 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
         const group = transferType === 'RRPPE' ? 'PPE' : 'SE';
         const raw = await getPTAReturnList({
           group,
+          // Use the same Active/All records behavior for return records.
+          includeHistory: scope === 'all',
           // Classify by the linked asset's Group (via `group` above), not by the RRPPE/RRSP
           // number's text prefix — plenty of valid records don't carry that prefix at all.
           // Only pass this through when the user actually typed something to search for.
@@ -391,6 +411,12 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       return;
     }
     loadMovements(searchInput, 1);
+  };
+
+  const handleScopeChange = (value: string) => {
+    const nextScope = value as MovementScope;
+    setRecordScope(nextScope);
+    loadMovements(searchInput, 1, pageSize, parIcsInput, nextScope);
   };
 
   // Resolve the transfer/return number a movement is keyed by
@@ -1031,13 +1057,27 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
         <CardHeader>
           <CardTitle>Search {transferType ? `${transferType} Movements` : 'Movements'}</CardTitle>
           <CardDescription>
-            Enter a specific {transferType || 'transfer'} number to view all related items
+            {recordScope === 'active'
+              ? 'Showing current active records. Search a number to view all related items.'
+              : 'Showing all records, including historical movements. Search a number to view all related items.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {transferType && (
+            <Tabs
+              value={recordScope}
+              onValueChange={handleScopeChange}
+              className="mb-4"
+            >
+              <TabsList className="grid h-10 w-full grid-cols-2">
+                <TabsTrigger value="active">Active records</TabsTrigger>
+                <TabsTrigger value="all">All records / History</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          )}
           <div className="flex gap-2">
             <Input
-              placeholder={`Enter ${transferType || 'PTR/ITR'} number (e.g., PTR2024001 or ITR2024001)`}
+              placeholder={`Search ${transferType || 'PTR/ITR'} number (e.g., 2026-02-008 or PTR2024001)`}
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -1080,7 +1120,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
           <CardTitle>
             {transferType ? `${transferType} Movements` : 'All Movements'}
             <span className="text-sm font-normal text-muted-foreground ml-2">
-              ({totalCount} total)
+              ({totalCount.toLocaleString()} {recordScope === 'active' ? 'active' : 'all'} records)
             </span>
           </CardTitle>
         </CardHeader>

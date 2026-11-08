@@ -61,6 +61,11 @@ const enrichMovementData = async (movement: any): Promise<any> => {
  * @returns Promise with statistics for PTR, ITR, and Returns
  */
 export const getMovementStatistics = async (): Promise<{
+  totalPTR: number;
+  totalITR: number;
+  totalReturnsPPE: number;
+  totalReturnsSE: number;
+  totalRecords: number;
   activePTR: number;
   activeITR: number;
   activeReturnsPPE: number;
@@ -87,6 +92,11 @@ export const getMovementStatistics = async (): Promise<{
   } catch (error) {
     console.error('Error fetching movement statistics:', error);
     return {
+      totalPTR: 0,
+      totalITR: 0,
+      totalReturnsPPE: 0,
+      totalReturnsSE: 0,
+      totalRecords: 0,
       activePTR: 0,
       activeITR: 0,
       activeReturnsPPE: 0,
@@ -390,18 +400,21 @@ export const getITRMovements = async (
  */
 export const getPTRTransferList = async (
   pageNumber: number = 1,
-  pageSize: number = 1000
+  pageSize: number = 1000,
+  includeHistory: boolean = false
 ): Promise<any> => {
   try {
     const { systemUserId, sessionKey } = getAuthParams();
     const API_BASE_URL = process.env.REACT_APP_API_URL || '';
-    const url = `${API_BASE_URL}/Inventory/pta/transfer/list?Group=PPE&PageNumber=${pageNumber}&PageSize=${pageSize}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
+    const historyParam = includeHistory ? '&IncludeHistory=true' : '';
+    const url = `${API_BASE_URL}/Inventory/pta/transfer/list?Group=PPE&PageNumber=${pageNumber}&PageSize=${pageSize}${historyParam}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
     const response = await fetch(url, { method: 'GET', headers: { Accept: 'application/json' } });
     if (!response.ok) throw new Error(`Failed to fetch PTR transfer list: ${response.statusText}`);
     const data = await response.json();
     return {
       items: data.data?.items || [],
       totalCount: data.data?.totalCount || 0,
+      totalPages: data.data?.totalPages || Math.ceil((data.data?.totalCount || 0) / pageSize),
       pageNumber,
       pageSize,
     };
@@ -432,6 +445,7 @@ export const getITRTransferList = async (
     return {
       items: data.data?.items || [],
       totalCount: data.data?.totalCount || 0,
+      totalPages: data.data?.totalPages || Math.ceil((data.data?.totalCount || 0) / pageSize),
       pageNumber,
       pageSize,
     };
@@ -439,6 +453,26 @@ export const getITRTransferList = async (
     console.error('Error fetching ITR transfer list:', error);
     throw error;
   }
+};
+
+/** Load every historical PTR/ITR page for report reprinting. */
+export const getAllPTATransferList = async (
+  group: 'PPE' | 'SE'
+): Promise<any[]> => {
+  const items: any[] = [];
+  let pageNumber = 1;
+  let totalPages = 1;
+
+  do {
+    const page = group === 'PPE'
+      ? await getPTRTransferList(pageNumber, 500, true)
+      : await getITRTransferList(pageNumber, 500, true);
+    items.push(...(page.items || []));
+    totalPages = page.totalPages || (page.items?.length < page.pageSize ? pageNumber : pageNumber + 1);
+    pageNumber += 1;
+  } while (pageNumber <= totalPages);
+
+  return items;
 };
 
 /**
@@ -659,7 +693,7 @@ export const getPTAReturnList = async (params: {
   /** Include every historical movement that ever carried a RRPPE/RRSP number (for reporting),
    * instead of only each asset's current movement. */
   includeHistory?: boolean;
-}): Promise<{ items: any[]; totalCount: number; pageNumber: number; pageSize: number }> => {
+}): Promise<{ items: any[]; totalCount: number; totalPages: number; pageNumber: number; pageSize: number }> => {
   try {
     const { systemUserId, sessionKey } = getAuthParams();
     const API_BASE_URL = process.env.REACT_APP_API_URL || '';
@@ -693,6 +727,7 @@ export const getPTAReturnList = async (params: {
     return {
       items: data.data?.items || [],
       totalCount: data.data?.totalCount || 0,
+      totalPages: data.data?.totalPages || Math.ceil((data.data?.totalCount || 0) / pageSize),
       pageNumber,
       pageSize,
     };
@@ -828,6 +863,8 @@ export const generateParIcsNumber = async (parType: 'PAR' | 'ICS'): Promise<stri
  */
 export const getPTATransferList = async (params: {
   group?: 'PPE' | 'SE';
+  /** Include historical PTR/ITR movements, not only the current movement per asset. */
+  includeHistory?: boolean;
   searchEmployee?: string;
   ptrItrFilter?: string;
   rrppeRrspFilter?: string;
@@ -838,7 +875,7 @@ export const getPTATransferList = async (params: {
   endDate?: string;
   pageNumber?: number;
   pageSize?: number;
-}): Promise<{ items: any[]; totalCount: number; pageNumber: number; pageSize: number }> => {
+}): Promise<{ items: any[]; totalCount: number; totalPages: number; pageNumber: number; pageSize: number }> => {
   try {
     const { systemUserId, sessionKey } = getAuthParams();
     const API_BASE_URL = process.env.REACT_APP_API_URL || '';
@@ -849,6 +886,7 @@ export const getPTATransferList = async (params: {
     let url = `${API_BASE_URL}/Inventory/pta/transfer/list?PageNumber=${pageNumber}&PageSize=${pageSize}&ActionBySystemUserId=${systemUserId}&SessionKey=${encodeURIComponent(sessionKey)}`;
 
     if (params.group) url += `&Group=${encodeURIComponent(params.group)}`;
+    if (params.includeHistory) url += '&IncludeHistory=true';
     if (params.ptrItrFilter) url += `&PtrItrFilter=${encodeURIComponent(params.ptrItrFilter)}`;
     if (params.rrppeRrspFilter) url += `&RrppeRrspFilter=${encodeURIComponent(params.rrppeRrspFilter)}`;
     if (params.parIcsFilter) url += `&ParIcsFilter=${encodeURIComponent(params.parIcsFilter)}`;
@@ -872,6 +910,7 @@ export const getPTATransferList = async (params: {
     return {
       items: data.data?.items || [],
       totalCount: data.data?.totalCount || 0,
+      totalPages: data.data?.totalPages || Math.ceil((data.data?.totalCount || 0) / pageSize),
       pageNumber,
       pageSize,
     };

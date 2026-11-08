@@ -21,6 +21,11 @@ export function TransfersReturns() {
   
   // Statistics state
   const [statistics, setStatistics] = useState({
+    totalPTR: 0,
+    totalITR: 0,
+    totalReturnsPPE: 0,
+    totalReturnsSE: 0,
+    totalRecords: 0,
     activePTR: 0,
     activeITR: 0,
     activeReturnsPPE: 0,
@@ -75,6 +80,49 @@ export function TransfersReturns() {
     setRrspDialogOpen(false);
   };
 
+  const statCards = [
+    {
+      label: 'PTR',
+      description: 'Property transfers · PPE',
+      value: statistics.totalPTR,
+      activeValue: statistics.activePTR,
+      icon: Package,
+      iconClass: 'text-blue-600',
+      iconBackground: 'bg-blue-50',
+      borderClass: 'hover:border-blue-300',
+    },
+    {
+      label: 'ITR',
+      description: 'Inventory transfers · SE',
+      value: statistics.totalITR,
+      activeValue: statistics.activeITR,
+      icon: Package,
+      iconClass: 'text-purple-600',
+      iconBackground: 'bg-purple-50',
+      borderClass: 'hover:border-purple-300',
+    },
+    {
+      label: 'Returns · PPE',
+      description: 'Returned property and equipment',
+      value: statistics.totalReturnsPPE,
+      activeValue: statistics.activeReturnsPPE,
+      icon: RefreshCw,
+      iconClass: 'text-amber-600',
+      iconBackground: 'bg-amber-50',
+      borderClass: 'hover:border-amber-300',
+    },
+    {
+      label: 'Returns · SE',
+      description: 'Returned supplies and equipment',
+      value: statistics.totalReturnsSE,
+      activeValue: statistics.activeReturnsSE,
+      icon: RefreshCw,
+      iconClass: 'text-emerald-600',
+      iconBackground: 'bg-emerald-50',
+      borderClass: 'hover:border-emerald-300',
+    },
+  ];
+
   return (
     <div className="p-2 pt-5 md:pt-20 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -88,59 +136,46 @@ export function TransfersReturns() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
-        <Card>
-          <CardContent className="p-3 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Active PTR</p>
-                <p className="text-lg sm:text-2xl mt-1">
-                  {statsLoading ? '...' : statistics.activePTR}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-5">
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+
+          return (
+            <Card
+              key={stat.label}
+              className={`group overflow-hidden border-slate-200 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${stat.borderClass}`}
+            >
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                      Total records
+                    </p>
+                    <h3 className="mt-1 text-base sm:text-lg font-semibold text-slate-900 truncate">
+                      {stat.label}
+                    </h3>
+                    <p className="mt-1 text-xs text-muted-foreground truncate" title={stat.description}>
+                      {stat.description}
+                    </p>
+                  </div>
+                  <div className={`shrink-0 rounded-xl p-2.5 sm:p-3 ${stat.iconBackground}`}>
+                    <Icon className={`h-5 w-5 sm:h-6 sm:w-6 ${stat.iconClass}`} strokeWidth={2} />
+                  </div>
+                </div>
+                <p className="mt-4 text-2xl sm:text-3xl font-bold tracking-tight text-slate-950">
+                  {statsLoading ? (
+                    <span className="inline-block h-8 w-12 animate-pulse rounded bg-slate-200" />
+                  ) : (
+                    stat.value.toLocaleString()
+                  )}
                 </p>
-              </div>
-              <Package className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Active ITR</p>
-                <p className="text-lg sm:text-2xl mt-1">
-                  {statsLoading ? '...' : statistics.activeITR}
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {statsLoading ? 'Loading current count…' : `${stat.activeValue.toLocaleString()} active currently`}
                 </p>
-              </div>
-              <Package className="w-6 h-6 sm:w-8 sm:h-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Active Returns PPE</p>
-                <p className="text-lg sm:text-2xl mt-1">
-                  {statsLoading ? '...' : statistics.activeReturnsPPE}
-                </p>
-              </div>
-              <RefreshCw className="w-6 h-6 sm:w-8 sm:h-8 text-amber-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-3 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs sm:text-sm text-muted-foreground">Active Returns SE</p>
-                <p className="text-lg sm:text-2xl mt-1">
-                  {statsLoading ? '...' : statistics.activeReturnsSE}
-                </p>
-              </div>
-              <RefreshCw className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Transfer Types Tabs */}
