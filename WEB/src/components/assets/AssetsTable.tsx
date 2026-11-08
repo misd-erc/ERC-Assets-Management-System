@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Eye, Edit, Trash2, Package } from 'lucide-react';
 import { Asset, NormalizedEmployee } from '@/types/asset/UnifiedAsset';
 import { getEmployees } from '@/api/user-management/userApi';
-import { isPlantillaEmploymentType } from '@/utils/employeeUtils';
+import { isPlantillaEmploymentType, resolveMovementEmployeeSlots } from '@/utils/employeeUtils';
 
 interface AssetsTableProps {
   assets: Asset[];
@@ -96,14 +96,7 @@ export function AssetsTable({
     const latestMovement = getLatestActiveMovement(asset);
     if (!latestMovement) return 'N/A';
 
-    const movementEmployees = Array.isArray(latestMovement.employee) ? latestMovement.employee : [];
-    const plantillaById = latestMovement.plantillaEmployeeId
-      ? movementEmployees.find((emp: any) => emp?.id === latestMovement.plantillaEmployeeId)
-      : undefined;
-    const plantillaByType = movementEmployees.find((emp: any) =>
-      isPlantillaEmploymentType(emp?.employmentType?.name)
-    );
-    const plantillaEmployee = plantillaById ?? plantillaByType;
+    const { plantilla: plantillaEmployee } = resolveMovementEmployeeSlots(latestMovement, employees);
 
     if (plantillaEmployee) {
       return formatMovementEmployeeName(plantillaEmployee);
@@ -121,25 +114,15 @@ export function AssetsTable({
     const latestMovement = getLatestActiveMovement(asset);
     if (!latestMovement) return 'N/A';
 
-    const movementEmployees = Array.isArray(latestMovement.employee) ? latestMovement.employee : [];
-    const nonPlantillaId = latestMovement.nonPlantillaEmployeeId && latestMovement.nonPlantillaEmployeeId > 0
-      ? latestMovement.nonPlantillaEmployeeId
-      : null;
-
-    const nonPlantillaById = nonPlantillaId
-      ? movementEmployees.find((emp: any) => emp?.id === nonPlantillaId)
-      : undefined;
-    const nonPlantillaByType = movementEmployees.find((emp: any) =>
-      !isPlantillaEmploymentType(emp?.employmentType?.name) && emp?.id !== latestMovement.plantillaEmployeeId
-    );
-    const nonPlantillaEmployee = nonPlantillaById ?? nonPlantillaByType;
+    const { nonPlantilla: nonPlantillaEmployee } = resolveMovementEmployeeSlots(latestMovement, employees);
 
     if (nonPlantillaEmployee) {
       return formatMovementEmployeeName(nonPlantillaEmployee);
     }
 
-    if (nonPlantillaId) {
-      const employee = employees.find((e: NormalizedEmployee) => e.id === nonPlantillaId);
+    if (latestMovement.nonPlantillaEmployeeId) {
+      const employee = employees.find((e: NormalizedEmployee) => e.id === latestMovement.nonPlantillaEmployeeId);
+      if (employee && isPlantillaEmploymentType(employee.employmentTypeName)) return 'N/A';
       return employee ? employee.label : 'Unknown Employee';
     }
 

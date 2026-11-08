@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { getITRTransferList, getTransferDetailsByNumber } from '@/api/asset/transferApi';
+import { getAllPTATransferList, getTransferDetailsByNumber } from '@/api/asset/transferApi';
 import { getEmployees } from '@/api/user-management/userApi';
 import { formatPositionOffice } from '@/utils/formatters';
 import { ITRGenerator } from './ITRGenerator';
@@ -75,7 +75,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
       // ITR reports must remain searchable/reprintable even after an asset is
       // transferred again, so include every numbered SE movement, not just its
       // currently assigned movement.
-      const response = await getITRTransferList(1, 1000, true);
+      const response = { items: await getAllPTATransferList('SE') };
       const employeeResponse = await getEmployees().catch(() => ({ data: { items: [] } } as any));
       const employeeById = new Map<number, any>(
         ((employeeResponse as any)?.data?.items || []).map((emp: any) => [emp.id, emp])
@@ -103,7 +103,9 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
           return merged;
         };
 
-        // transfer/list returns a single `item` object per movement row
+        // transfer/list returns itemCount, not the full item object. Keep the
+        // optional item fallback for older API responses; the details endpoint
+        // loads the actual items when an ITR is selected.
         const incomingItems = item.item ? [item.item] : [];
         const mergedItems = mergeItems(existingDetails?.items || [], incomingItems);
 
@@ -153,6 +155,7 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
           middleName: fromEmpParts.length > 2 ? fromEmpParts.slice(1, -1).join(' ') : '',
           lastName: fromEmpParts.length > 1 ? fromEmpParts[fromEmpParts.length - 1] : ''
         } : { firstName: 'N/A', middleName: '', lastName: '' };
+        const itemCount = Math.max(mergedItems.length, Number(item.itemCount) || 0);
 
         const baseRecord = existing || {
           itrNumber: itrNum,
@@ -165,8 +168,9 @@ export function ITRGenerationModal({ isOpen, onClose, employees }: ITRGeneration
 
         const updatedRecord = {
           ...baseRecord,
+          fromEmployee: fromEmpFullName,
           toEmployee: toEmpFullName,
-          itemCount: mergedItems.length,
+          itemCount,
           dateAssigned: baseRecord.dateAssigned || item.dateAssigned,
           transferType: baseRecord.transferType || item.status || 'N/A'
         };
