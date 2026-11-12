@@ -14,6 +14,7 @@ import { NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById } from "@/api/user-management/userApi";
 import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
+import { wrapPdfText } from "./wrapPdfText";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -118,10 +119,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  // overflow: 'hidden' clips text that's still too long even after wrapping (e.g. a long
-  // property number/serial number with no spaces to wrap at) instead of letting it bleed
-  // past the column's border into the next cell, which renders as mixed/overlapping letters.
-  cell: { padding: 2, fontSize: 8, overflow: "hidden", borderRightWidth: 0.5, borderRightColor: "#000" },
+  cell: { padding: 2, fontSize: 8, flexShrink: 1, borderRightWidth: 0.5, borderRightColor: "#000" },
 
   colNo: { width: "6%" },
   colDescription: { width: "30%" },
@@ -226,13 +224,13 @@ const PALDocument = ({
                     </Text>
                   </View>
                   {ppeRows.map((r, i) => (
-                    <View key={`ppe-${i}`} style={styles.tableRow}>
+                    <View key={`ppe-${i}`} style={styles.tableRow} wrap={false}>
                       <Text style={[styles.cell, styles.colNo]}>{r.no}</Text>
-                      <Text style={[styles.cell, styles.colPropertyNo]}>{r.propertyNo}</Text>
-                      <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
+                      <Text style={[styles.cell, styles.colPropertyNo]}>{wrapPdfText(r.propertyNo)}</Text>
+                      <Text style={[styles.cell, styles.colDescription]}>{wrapPdfText(truncate(r.description), 28)}</Text>
                       <Text style={[styles.cell, styles.colDateAcquired]}>{r.dateAcquired}</Text>
                       <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
-                      <Text style={[styles.cell, styles.colRemarks]}>{r.remarks}</Text>
+                      <Text style={[styles.cell, styles.colRemarks]}>{wrapPdfText(r.remarks, 24)}</Text>
                     </View>
                   ))}
                   <View style={styles.subtotalRow}>
@@ -252,13 +250,13 @@ const PALDocument = ({
                     </Text>
                   </View>
                   {seRows.map((r, i) => (
-                    <View key={`se-${i}`} style={styles.tableRow}>
+                    <View key={`se-${i}`} style={styles.tableRow} wrap={false}>
                       <Text style={[styles.cell, styles.colNo]}>{r.no}</Text>
-                      <Text style={[styles.cell, styles.colPropertyNo]}>{r.propertyNo}</Text>
-                      <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
+                      <Text style={[styles.cell, styles.colPropertyNo]}>{wrapPdfText(r.propertyNo)}</Text>
+                      <Text style={[styles.cell, styles.colDescription]}>{wrapPdfText(truncate(r.description), 28)}</Text>
                       <Text style={[styles.cell, styles.colDateAcquired]}>{r.dateAcquired}</Text>
                       <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
-                      <Text style={[styles.cell, styles.colRemarks]}>{r.remarks}</Text>
+                      <Text style={[styles.cell, styles.colRemarks]}>{wrapPdfText(r.remarks, 24)}</Text>
                     </View>
                   ))}
                   <View style={styles.subtotalRow}>
@@ -286,11 +284,31 @@ const PALDocument = ({
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function movementInvolvesEmployee(m: any, employeeId: number): boolean {
+  const sameEmployee = (value: unknown) => value != null && Number(value) === employeeId;
   return (
-    m.plantillaEmployeeId === employeeId ||
-    m.nonPlantillaEmployeeId === employeeId ||
-    (Array.isArray(m.employee) && m.employee.some((e: any) => e.id === employeeId))
+    sameEmployee(m.plantillaEmployeeId) ||
+    sameEmployee(m.nonPlantillaEmployeeId) ||
+    (Array.isArray(m.employee) && m.employee.some((e: any) => sameEmployee(e.id)))
   );
+}
+
+function isActiveFlag(value: unknown): boolean {
+  return value === true || value === 1 || (typeof value === "string" && value.toLowerCase() === "true");
+}
+
+function isCurrentFlag(value: unknown): boolean {
+  return isActiveFlag(value);
+}
+
+function movementDate(movement: any): number {
+  const date = movement?.dateAssigned ? new Date(movement.dateAssigned).getTime() : 0;
+  return Number.isFinite(date) ? date : 0;
+}
+
+function sortMovementsByAssignmentDate(a: any, b: any): number {
+  const dateDifference = movementDate(b) - movementDate(a);
+  if (dateDifference !== 0) return dateDifference;
+  return Number(b?.id || 0) - Number(a?.id || 0);
 }
 
 /**
@@ -305,7 +323,7 @@ function movementInvolvesEmployee(m: any, employeeId: number): boolean {
  *      business-editable dateAssigned) has status "Disposed".
  */
 function isDisposed(asset: any): boolean {
-  if (asset?.isActive === false) return true;
+  if (asset?.isActive === false || asset?.isActive === 0 || asset?.isActive === "false") return true;
 
   const movements: any[] = asset.movements ?? [];
   if (!movements.length) return false;
@@ -313,7 +331,7 @@ function isDisposed(asset: any): boolean {
   const latest = [...movements].sort((a, b) => {
     const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return tb - ta;
+    return (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0) || Number(b?.id || 0) - Number(a?.id || 0);
   })[0];
 
   return typeof latest?.status === "string" && latest.status.toLowerCase() === "disposed";
@@ -331,30 +349,21 @@ function isDisposed(asset: any): boolean {
 function getGoverningMovement(asset: any, employeeId: number): any | null {
   if (isDisposed(asset)) return null;
 
-  const movements: any[] = asset.movements ?? [];
+  const movements: any[] = (asset.movements ?? []).filter((movement: any) => movement?.isDeleted !== true);
   if (!movements.length) return null;
 
-  // 1. Check for an explicit isCurrent movement for this employee
-  const isCurrentFlag = (m: any) =>
-    m.isCurrent === true ||
-    m.isCurrent === 1 ||
-    (typeof m.isCurrent === "string" && m.isCurrent.toLowerCase() === "true");
+  // Match InventoryService.GetAllPTAs: prefer the latest active/current movement,
+  // then fall back to the latest active movement when older data has no current flag.
+  const activeMovements = movements.filter((m) => isActiveFlag(m.isActive));
+  const currentMovements = activeMovements
+    .filter((m) => isCurrentFlag(m.isCurrent))
+    .sort(sortMovementsByAssignmentDate);
+  const current = currentMovements[0];
+  if (current) return movementInvolvesEmployee(current, employeeId) ? current : null;
 
-  const current = movements.find((m) => isCurrentFlag(m) && movementInvolvesEmployee(m, employeeId));
-  if (current) return current;
-
-  // 2. No isCurrent flag set — use the latest ACTIVE movement as the effective holder.
-  // A deleted current holder (isActive=false) must not shadow the previous active assignment.
-  const sortByDate = (a: any, b: any) => {
-    const ta = a.dateAssigned ? new Date(a.dateAssigned).getTime() : 0;
-    const tb = b.dateAssigned ? new Date(b.dateAssigned).getTime() : 0;
-    return tb - ta;
-  };
-
-  const activeMovements = movements.filter((m) => m.isActive === true || m.isActive === 1);
   const sorted = activeMovements.length
-    ? [...activeMovements].sort(sortByDate)
-    : [...movements].sort(sortByDate);
+    ? [...activeMovements].sort(sortMovementsByAssignmentDate)
+    : [...movements].sort(sortMovementsByAssignmentDate);
 
   return movementInvolvesEmployee(sorted[0], employeeId) ? sorted[0] : null;
 }
@@ -370,11 +379,11 @@ function isAssignedToEmployee(asset: any, employeeId: number): boolean {
  */
 function getSubHolderEmployeeId(movement: any, employeeId: number): number | null {
   if (!movement) return null;
-  if (movement.plantillaEmployeeId === employeeId && movement.nonPlantillaEmployeeId) {
-    return movement.nonPlantillaEmployeeId;
+  if (Number(movement.plantillaEmployeeId) === employeeId && movement.nonPlantillaEmployeeId != null) {
+    return Number(movement.nonPlantillaEmployeeId);
   }
-  if (movement.nonPlantillaEmployeeId === employeeId && movement.plantillaEmployeeId) {
-    return movement.plantillaEmployeeId;
+  if (Number(movement.nonPlantillaEmployeeId) === employeeId && movement.plantillaEmployeeId != null) {
+    return Number(movement.plantillaEmployeeId);
   }
   return null;
 }
@@ -427,12 +436,12 @@ async function buildPALData(employee: NormalizedEmployee) {
   }
 
   const ppeFiltered = sortReportRowsByPropertyAndAmount(
-    ppeAssets.filter((a) => isAssignedToEmployee(a, employee.id)),
+    ppeAssets.filter((a) => String(a?.group || "").toUpperCase() === "PPE" && isAssignedToEmployee(a, employee.id)),
     (a: any) => a.propertyNumber,
     (a: any) => a.unitValue
   );
   const seFiltered = sortReportRowsByPropertyAndAmount(
-    seAssets.filter((a) => isAssignedToEmployee(a, employee.id)),
+    seAssets.filter((a) => String(a?.group || "").toUpperCase() === "SE" && isAssignedToEmployee(a, employee.id)),
     (a: any) => a.propertyNumber,
     (a: any) => a.unitValue
   );
@@ -448,7 +457,8 @@ async function buildPALData(employee: NormalizedEmployee) {
   let itemNumber = 1;
 
   const ppeRows: PALRow[] = ppeFiltered.map((asset: any, i: number) => {
-    const subId = getSubHolderEmployeeId(ppeMovements[i], employee.id);    const subName = subId != null ? nameById.get(subId) : undefined;
+    const subId = getSubHolderEmployeeId(ppeMovements[i], employee.id);
+    const subName = subId != null ? nameById.get(subId) : undefined;
     return {
       no: itemNumber++,
       description: asset.description ?? "",

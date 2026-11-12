@@ -15,6 +15,7 @@ import { seApi } from "@/api/asset/se";
 import { secureStorage } from "@/utils/secureStorage";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 import { formatPositionOffice } from "@/utils/formatters";
+import { wrapPdfText } from "./wrapPdfText";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -140,7 +141,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  cell: { padding: 3, fontSize: 8, overflow: "hidden", borderRightWidth: 0.5, borderRightColor: "#000" },
+  cell: { padding: 3, fontSize: 8, flexShrink: 1, borderRightWidth: 0.5, borderRightColor: "#000" },
 
   colDateAcquired: { width: "12%" },
   colItemNo: { width: "16%" },
@@ -390,24 +391,24 @@ const ITRDocument = ({
           </View>
 
           {rows.map((r, i) => (
-            <View key={i} style={styles.tableRow}>
+            <View key={i} style={styles.tableRow} wrap={false}>
               <Text style={[styles.cell, styles.colDateAcquired]}>
                 {r.dateAcquired}
               </Text>
               <Text style={[styles.cell, styles.colItemNo]}>
-                {r.propertyNo}
+                {wrapPdfText(r.propertyNo)}
               </Text>
               <Text style={[styles.cell, styles.colIcsNoDate]}>
-                {r.icsNoDate}
+                {wrapPdfText(r.icsNoDate)}
               </Text>
               <Text style={[styles.cell, styles.colDescription]}>
-                {truncate(r.description)}
+                {wrapPdfText(truncate(r.description), 28)}
               </Text>
               <Text style={[styles.cell, styles.colAmount]}>
                 {currency(r.amount)}
               </Text>
               <Text style={[styles.cell, styles.colCondition]}>
-                {r.condition}
+                {wrapPdfText(r.condition, 16)}
               </Text>
             </View>
           ))}

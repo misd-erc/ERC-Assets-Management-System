@@ -1,162 +1,93 @@
-using API.Attributes;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using PortalAPI.Attributes;
 using PortalCommon.Constants;
 using PortalDB.Entities.ASSET.PTA;
-using PortalDB.Entities.DBO.Account;
-using PortalDB.Entities.DBO.Office;
-using PortalDB.Entities.DBO.Office.Division;
-using PortalDB.Models.ParserModels.PTA;
-using PortalDB.Models.QueryParams.Office;
-using PortalDB.Models.QueryParams.Pagination;
-using PortalDB.Models.QueryParams.PTA;
 using PortalDB.Models.QueryParams.Universal;
-using PortalDB.Models.ResponseModels.Account;
-using PortalDB.Models.ResponseModels.Office;
-using PortalDB.Models.ResponseModels.PPE;
-using PortalDB.Models.ResponseModels.PTA;
 using PortalDB.Models.Responses;
-using PortalDB.Models.ViewModels.PTA;
 using PortalDB.Services;
-using PortalTools.Composition;
 using PortalTools.Services;
-using PortalTools.Services.GetEditTools.ASSET.PTA;
-using PortalTools.Services.GetEditTools.DBO.Account;
-using PortalTools.Services.GetEditTools.DBO.Office;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq.Expressions;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace API.Services.Inventory
 {
     public partial class InventoryService
     {
-public async Task<IActionResult> GetPTATransferDetails([FromQuery] string transferNumber, [FromQuery] SoloQueryParams model)
+        public async Task<IActionResult> GetPTATransferDetails([FromQuery] string transferNumber, [FromQuery] SoloQueryParams model)
         {
             await using var context = new PortalDbContext(_options);
-            await using var transaction = await context.Database.BeginTransactionAsync();
-
             try
             {
                 if (string.IsNullOrWhiteSpace(transferNumber))
-                {
-                    return StatusCode(ApiStatusCode.BadRequest, ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Transfer number (PTR/ITR) is required"));
-                }
+                    return BadRequest(ApiResponse<object>.Fail(ErrorCodes.INVALID_INPUT, "Transfer number (PTR/ITR) is required"));
 
-                // Get all movements for the specific PTR/ITR number.
-                // PTRITRNumber is [NotMapped] (encrypted), so EF can't translate the filter to SQL —
-                // materialize first, then filter in-memory against the decrypted value.
-                var allMovements = (await _getTools.PTA.GetTblPTAMovements(context)
-                        .Where(x => !x.IsDeleted)
-                        .ToListAsync())
-                    // The selected transfer number must be an exact match.  A contains
-                    // search makes 2026-07-234 also include 2026-07-2344124.
-                    .Where(x => !string.IsNullOrWhiteSpace(x.PTRITRNumber)
-                        && string.Equals(x.PTRITRNumber!.Trim(), transferNumber.Trim(), StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-
-                if (!allMovements.Any())
-                {
-                    return Ok(ApiResponse<object>.Ok(new
-                    {
-                        transferNumber = transferNumber,
-                        transferType = transferNumber.ToUpper().StartsWith("PTR") ? "PTR" : "ITR",
-                        movements = new List<object>(),
-                        totalItems = 0,
-                        totalMovements = 0
-                    }, "No movements found for this transfer number"));
-                }
-
-                // Get unique PTA IDs from all movements
-                var ptaIds = allMovements.Select(m => m.PTAId).Distinct().ToList();
-
-                // Fetch all PTAs with their details
-                var ptas = await context.TblPTAs
-                    .AsNoTracking()
-                    .Where(p => ptaIds.Contains(p.Id) && !p.IsDeleted)
+                // Encrypted numbers are not SQL-searchable. Materialize only numbered
+                // movements, then compare exactly so similarly numbered reports cannot mix.
+                var candidates = await context.TblPTAMovements.AsNoTracking()
+                    .Where(m => !m.IsDeleted && m.PTRITRNumberEncrypted != null && m.PTRITRNumberEncrypted != "")
                     .ToListAsync();
-
-                // Build detailed response with movements and their items
-                var enrichedMovements = new List<object>();
-
-                foreach (var movement in allMovements.OrderByDescending(x => x.CreatedAt))
+                var movements = candidates.Where(m => string.Equals(m.PTRITRNumber?.Trim(),
+                    transferNumber.Trim(), StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(m => m.CreatedAt).ThenByDescending(m => m.Id).ToList();
+                var ptaIds = movements.Where(m => m.PTAId.HasValue).Select(m => m.PTAId!.Value).Distinct().ToList();
+                var ptas = await context.TblPTAs.AsNoTracking()
+                    .Where(p => ptaIds.Contains(p.Id) && !p.IsDeleted).ToDictionaryAsync(p => p.Id);
+                var history = await context.TblPTAMovements.AsNoTracking()
+                    .Where(m => !m.IsDeleted && m.PTAId.HasValue && ptaIds.Contains(m.PTAId.Value)).ToListAsync();
+                var previous = new Dictionary<long, TblPTAMovement>();
+                foreach (var group in history.GroupBy(m => m.PTAId))
                 {
-                    var ptaMovementDetail = _getTools.PTA.GetTblPTAMovementsByPTAId(movement.PTAId, context)
-                        .Where(m => m.Id == movement.Id)
-                        .FirstOrDefault();
-
-                    if (ptaMovementDetail == null)
-                        continue;
-
-                    // Get the PTA item for this movement
-                    var pta = ptas.FirstOrDefault(p => p.Id == movement.PTAId);
-
-                    var ptaResponseModel = new PTAResponseModel();
-                    if (pta != null)
+                    var ordered = group.OrderBy(m => m.DateAssigned).ThenBy(m => m.CreatedAt).ThenBy(m => m.Id).ToList();
+                    for (int i = 1; i < ordered.Count; i++) previous[ordered[i].Id] = ordered[i - 1];
+                }
+                var employees = await LoadTransferReportEmployees(context,
+                    movements.Concat(movements.Where(m => previous.ContainsKey(m.Id)).Select(m => previous[m.Id])));
+                var officeIds = movements.Select(m => m.ActualOfficeId).ToList();
+                var divisionIds = movements.Select(m => m.ActualDivisionId).ToList();
+                var categoryIds = ptas.Values.Select(p => p.CategoryId).ToList();
+                var offices = await context.TblOffices.AsNoTracking().Where(o => officeIds.Contains(o.Id)).ToDictionaryAsync(o => o.Id);
+                var divisions = await context.TblDivisions.AsNoTracking().Where(d => divisionIds.Contains(d.Id)).ToDictionaryAsync(d => d.Id);
+                var categories = await context.TblPTACategories.AsNoTracking().Where(c => categoryIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id);
+                var enriched = new List<object>();
+                foreach (var movement in movements)
+                {
+                    if (!ptas.TryGetValue(movement.PTAId ?? 0, out var pta)) continue;
+                    previous.TryGetValue(movement.Id, out var prior);
+                    enriched.Add(new
                     {
-                        ptaResponseModel = new PTAResponseModel
-                        {
-                            Id = pta.Id,
-                            Group = pta.Group,
-                            PropertyNumber = pta.PropertyNumber,
-                            Category = await _getTools.PTA.GetTblPTACategoryAsync(pta.CategoryId, context),
-                            Legend = await _getTools.PTA.GetTblPTALegendAsync(pta.LegendId, context),
-                            Description = pta.Description,
-                            Brand = pta.Brand,
-                            Model = pta.Model,
-                            SerialNumber = pta.SerialNumber,
-                            UnitOfMeasurement = pta.UnitOfMeasurement,
-                            UnitValue = pta.UnitValue,
-                            DateAcquired = pta.DateAcquired,
-                            EstimatedUsefulLife = pta.EstimatedUsefulLife,
-                            FiscalDate = pta.FiscalDate,
-                            IsActive = pta.IsActive,
-                            CreatedAt = pta.CreatedAt
-                        };
-                    }
-
-                    enrichedMovements.Add(new
-                    {
-                        movementId = ptaMovementDetail.Id,
-                        ptaId = ptaMovementDetail.PTAId,
-                        dateAssigned = ptaMovementDetail.DateAssigned,
-                        ptritrNumber = ptaMovementDetail.PtrItrNumber,
-                        paricsNumber = ptaMovementDetail.ParIcsNumber,
-                        office = ptaMovementDetail.Office,
-                        division = ptaMovementDetail.Division,
-                        condition = ptaMovementDetail.Condition,
-                        remarks = movement.Remarks,
-                        reasonForTransfer = movement.ReasonForTransfer,
-                        status = movement.Status,
-                        isActive = ptaMovementDetail.IsActive,
-                        items = new List<object> { new { ptaResponseModel.Id, ptaResponseModel.PropertyNumber, ptaResponseModel.Description, ptaResponseModel.Brand, ptaResponseModel.Model, ptaResponseModel.SerialNumber, category = ptaResponseModel.Category?.Name, ptaResponseModel.UnitOfMeasurement, ptaResponseModel.UnitValue, ptaResponseModel.DateAcquired, ptaResponseModel.Group } },
-                        createdAt = ptaMovementDetail.CreatedAt
+                        movementId = movement.Id, ptaId = movement.PTAId,
+                        dateAssigned = movement.DateAssigned, ptritrNumber = movement.PTRITRNumber,
+                        paricsNumber = movement.PARICSNumber,
+                        plantillaEmployeeId = movement.PlantillaEmployeeId,
+                        nonPlantillaEmployeeId = movement.NonPlantillaEmployeeId,
+                        previousPlantillaEmployeeId = prior?.PlantillaEmployeeId,
+                        previousNonPlantillaEmployeeId = prior?.NonPlantillaEmployeeId,
+                        plantillaEmployee = employees.GetValueOrDefault(movement.PlantillaEmployeeId ?? 0),
+                        nonPlantillaEmployee = employees.GetValueOrDefault(movement.NonPlantillaEmployeeId ?? 0),
+                        previousPlantillaEmployee = employees.GetValueOrDefault(prior?.PlantillaEmployeeId ?? 0),
+                        previousNonPlantillaEmployee = employees.GetValueOrDefault(prior?.NonPlantillaEmployeeId ?? 0),
+                        office = offices.GetValueOrDefault(movement.ActualOfficeId ?? 0),
+                        division = divisions.GetValueOrDefault(movement.ActualDivisionId ?? 0),
+                        // The existing movement writer stores condition in Remarks.
+                        condition = movement.Remarks ?? "",
+                        remarks = movement.Remarks, reasonForTransfer = movement.ReasonForTransfer,
+                        status = movement.Status, isActive = movement.IsActive, createdAt = movement.CreatedAt,
+                        items = new[] { new {
+                            pta.Id, pta.PropertyNumber, pta.Description, pta.Brand, pta.Model, pta.SerialNumber,
+                            category = categories.GetValueOrDefault(pta.CategoryId ?? 0)?.Name,
+                            pta.UnitOfMeasurement, pta.UnitValue, pta.DateAcquired, pta.Group
+                        } }
                     });
                 }
-
-                var response = new
-                {
-                    transferNumber = transferNumber,
-                    transferType = transferNumber.ToUpper().StartsWith("PTR") ? "PTR" : "ITR",
-                    movements = enrichedMovements,
-                    totalItems = ptas.Count,
-                    totalMovements = allMovements.Count,
-                    totalValue = ptas.Sum(p => p.UnitValue)
-                };
-
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                var groups = ptas.Values.Select(p => p.Group).Distinct().ToList();
+                var reportType = groups.Count == 1 ? (groups[0] == "PPE" ? "PTR" : "ITR") : "";
                 await AuditTrailTool.LogActivityAsync(_options, $"Viewed transfer details for {transferNumber}", actionBy: model.ActionBySystemUserId);
-
-                return Ok(ApiResponse<object>.Ok(response, $"Transfer details for {transferNumber} have been retrieved"));
+                return Ok(ApiResponse<object>.Ok(new {
+                    transferNumber, transferType = reportType, movements = enriched,
+                    totalItems = ptas.Count, totalMovements = enriched.Count,
+                    totalValue = ptas.Values.Sum(p => p.UnitValue)
+                }, $"Transfer details for {transferNumber} have been retrieved"));
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 await ErrorTool.ErrorLogAsync(new PortalDbContext(_options), ex, nameof(InventoryService));
                 return StatusCode(ApiStatusCode.InternalServerError, ApiResponse<object>.Fail(ErrorCodes.SERVER_ERROR, "An error occurred while processing your request."));
             }

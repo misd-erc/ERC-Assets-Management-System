@@ -23,6 +23,9 @@ export interface NormalizedEmployee {
   employmentTypeId: number;
   employmentTypeName: string;
   label: string;
+  positionName?: string;
+  officeName?: string;
+  divisionName?: string;
 }
 
 export interface Employee {

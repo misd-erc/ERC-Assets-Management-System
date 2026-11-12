@@ -11,6 +11,7 @@ import { encrypt, decrypt } from '@/utils/encryption';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { toast } from 'sonner';
 import { secureStorage } from '@/utils/secureStorage';
+import { clearAccessMode, setAccessMode } from '@/utils/accessMode';
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   // Initialize from localStorage
@@ -106,6 +107,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const result = await validateUser(userInfo);
 
       secureStorage.setItem('systemUserId', String(result.systemUserId));
+      setAccessMode('ams');
 
       setSessionToken();
 
@@ -137,6 +139,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const result = await validateEmployeeUser(userInfo);
 
       secureStorage.setItem('systemUserId', String(result.systemUserId));
+      setAccessMode('employee');
       if (result.employeeDbId) {
         secureStorage.setItem('employeeDbId', String(result.employeeDbId));
       }
@@ -308,6 +311,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     clearOtpExpiresAt();
     clearSession();
     clearAuthSession();
+    clearAccessMode();
     
     set({
       isAuthenticated: false,
