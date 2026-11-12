@@ -937,7 +937,7 @@ namespace API.Controllers
 
                 // This runs purely in SQL (Extremely Fast) because these columns are NOT encrypted
                 var fullyCompletedRisIds = await context.Set<TblSupplyRIS>()
-                    .Where(r => r.IsApproved)
+                    .Where(r => r.IsApproved && !r.IsDeleted)
                     .Select(r => r.Id)
                     .ToListAsync();
 
@@ -2502,6 +2502,15 @@ namespace API.Controllers
                     // IAR un-approved: cancel any still-pending staged booking items tied to it so they
                     // can no longer be booked. Already-Booked items are left untouched (one-way approval).
                     await _editTools.Booking.CancelPendingBySupplyIARIdAsync(supplyIAR.Id, context);
+
+                    // Keep the delivery status in step with the IAR: no longer approved => not received.
+                    var revertedRecords = _getTools.Delivery.GetTblDeliveryRecords(context)?.Where(x => selectedRecordIds.Contains(x.Id)).ToList() ?? [];
+                    foreach (var revertedRecord in revertedRecords)
+                    {
+                        revertedRecord.IsReceived = false;
+                        await _editTools.Delivery.EditTblDeliveryRecordAsync(revertedRecord, model.ActionBySystemUserId, context);
+                    }
+
                     await _editTools.Supply.EditTblSupplyIARAsync(supplyIAR, model.ActionBySystemUserId, context);
                 }
 

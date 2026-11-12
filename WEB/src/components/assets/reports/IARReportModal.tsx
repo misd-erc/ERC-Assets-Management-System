@@ -938,18 +938,25 @@ export const IARReportModal = ({ isOpen, onClose }: IARReportModalProps) => {
 
         setSelectedIar(iar);
         setPrintDates(getIARPrintDates(iar));
+        // DR date must come from the delivery record, not the IAR's actual delivery date.
+        const applyDrDate = (records: VwDeliveryRecord[]) => {
+            const drDate = toDateInput(records[0]?.deliveryDate);
+            if (drDate) setPrintDates(prev => ({ ...prev, drDate }));
+        };
 
         const recordIds = iar.recordIds?.length ? iar.recordIds : (iar.recordId ? [iar.recordId] : []);
         const matches = deliveryRecords.filter(dr => recordIds.includes(dr.id));
 
         if (matches.length === recordIds.length && matches.every(dr => dr.items && dr.items.length > 0)) {
             setSelectedDeliveryRecords(matches);
+            applyDrDate(matches);
         } else {
             setIsPreviewLoading(true);
             try {
                 if (recordIds.length) {
                     const fetched = (await Promise.all(recordIds.map(id => getDeliveryRecordById(id)))).filter(Boolean) as VwDeliveryRecord[];
                     setSelectedDeliveryRecords(fetched);
+                    applyDrDate(fetched);
                 } else {
                     setSelectedDeliveryRecords([]);
                     toast.error("No linked delivery record details found.");

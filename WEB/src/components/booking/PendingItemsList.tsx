@@ -17,6 +17,7 @@ import {
 } from '../ui/alert-dialog';
 import { getPendingBookingItems, cancelBookingItem } from '@/api/booking/bookingApi';
 import { BookingGroup, PendingBookingItem } from '@/types/booking';
+import { formatCurrency } from '@/utils/formatters';
 import { BookSupplyItemModal } from './BookSupplyItemModal';
 import { BookPTAItemModal } from './BookPTAItemModal';
 
@@ -154,7 +155,7 @@ export const PendingItemsList = forwardRef<PendingItemsListRef, PendingItemsList
                           <TableCell className="font-mono">{item.suggestedPropertyNumber || 'N/A'}</TableCell>
                         )}
                         <TableCell>{item.quantity ?? 'N/A'}</TableCell>
-                        <TableCell>{item.unitCost != null ? `₱${item.unitCost.toLocaleString()}` : 'N/A'}</TableCell>
+                        <TableCell>{item.unitCost != null ? formatCurrency(item.unitCost) : 'N/A'}</TableCell>
                         <TableCell>{item.iarNumber || 'N/A'}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">

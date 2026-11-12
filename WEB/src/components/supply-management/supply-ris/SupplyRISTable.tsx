@@ -549,7 +549,7 @@ export const SupplyRISTable = ({
                       </TableCell>
 
                       <TableCell className="text-slate-700 font-medium">
-                        {ris.requestedBySystemUser?.firstName} {ris.requestedBySystemUser?.lastName}
+                        {ris.requestedBySystemUser ? `${ris.requestedBySystemUser.firstName} ${ris.requestedBySystemUser.lastName}` : '—'}
                       </TableCell>
 
                       <TableCell className="text-center">

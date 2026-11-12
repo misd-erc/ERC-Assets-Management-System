@@ -41,6 +41,18 @@ namespace API.Services.Dashboard
                 var categories = await context.TblPTACategories.AsNoTracking().Where(x => !x.IsDeleted && x.Module == "Supply").ToListAsync();
                 var catDict = categories.ToDictionary(c => c.Id, c => c.Name ?? "Uncategorized");
 
+                // Same unit cost rule as the Supply grouped list and RSMI: latest real batch (qty > 0),
+                // else the latest non-zero cost, so placeholder rows cannot zero out or misprice stock.
+                static decimal GroupUnitCost(IEnumerable<TblSupplyItem> items)
+                {
+                    var batch = items.Where(x => (x.Quantity ?? 0) > 0).OrderByDescending(x => x.CreatedAt).FirstOrDefault()
+                        ?? items.OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                    var cost = batch?.UnitCost ?? 0m;
+                    if (cost <= 0)
+                        cost = items.Where(x => (x.UnitCost ?? 0) > 0).OrderByDescending(x => x.CreatedAt).Select(x => x.UnitCost ?? 0m).FirstOrDefault();
+                    return cost;
+                }
+
                 var groups = supplyItems
                     .GroupBy(x => new { x.Code, x.Description })
                     .Select(g =>
@@ -50,7 +62,7 @@ namespace API.Services.Dashboard
                         var key = (g.Key.Code, g.Key.Description);
                         var issued = issuedStockGroup.GetValueOrDefault(key, 0);
                         var stockOnHand = Math.Max(0, totalStock - issued);
-                        var unitCost = firstItem.UnitCost ?? 0;
+                        var unitCost = GroupUnitCost(g);
                         var reorderPoint = g.Max(x => x.ReorderPoint ?? 0);
                         var categoryName = firstItem.CategoryId.HasValue && catDict.ContainsKey(firstItem.CategoryId.Value)
                             ? catDict[firstItem.CategoryId.Value] : "Uncategorized";
@@ -84,7 +96,7 @@ namespace API.Services.Dashboard
                             var key = (code.Code, code.Description);
                             var issued = issuedStockGroup.GetValueOrDefault(key, 0);
                             var stockOnHand = Math.Max(0, totalStock - issued);
-                            var unitCost = itemsForCode.First().UnitCost ?? 0;
+                            var unitCost = GroupUnitCost(itemsForCode);
                             qty += stockOnHand;
                             val += stockOnHand * unitCost;
                         }

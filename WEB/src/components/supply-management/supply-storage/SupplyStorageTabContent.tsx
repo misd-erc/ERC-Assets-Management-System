@@ -1,16 +1,18 @@
 // src/components/supply-management/supply-storage/SupplyStorageTabContent.tsx
 import { useState, useEffect, useMemo } from 'react';
-import { useSupplyStorageLocation, useSupplyItem } from '@/hooks';
+import { useSupplyStorageLocation } from '@/hooks';
+import { getSupplyItems } from '@/api/supply-management/itemApi';
 import { SupplyStorageTable } from './SupplyStorageTable';
 import { SupplyStorageEditModal } from './SupplyStorageEditModal';
 import { SupplyStorageDeleteModal } from './SupplyStorageDeleteModal';
 // Import new modal
 import { SupplyStorageLinkedItemsModal } from './SupplyStorageLinkedItemsModal';
-import { SupplyStorageLocation } from '@/types';
+import { SupplyStorageLocation, VwSupplyItem } from '@/types';
 
 export const SupplyStorageTabContent = () => {
   const { storagelocations, loading, fetchSupplyStorageLocations } = useSupplyStorageLocation();
-  const { vwSupplies } = useSupplyItem();
+  // Own fetch: the shared store list is only filled when another tab loaded it, so counts read 0.
+  const [vwSupplies, setVwSupplies] = useState<VwSupplyItem[]>([]);
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -22,6 +24,7 @@ export const SupplyStorageTabContent = () => {
 
   useEffect(() => { 
     fetchSupplyStorageLocations();
+    getSupplyItems(1, 10000, '').then(r => setVwSupplies(r.items)).catch(() => setVwSupplies([]));
   }, [fetchSupplyStorageLocations]);
 
   // Calculate usage counts
