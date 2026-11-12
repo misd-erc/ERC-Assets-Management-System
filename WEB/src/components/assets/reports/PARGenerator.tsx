@@ -22,6 +22,7 @@ import { IssuanceRecord } from "@/types/issuance";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 import { formatPositionOffice } from "@/utils/formatters";
 import { resolveIssuanceReportEmployeeInfo } from './issuanceReportEmployee';
+import { wrapPdfText } from "./wrapPdfText";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -97,7 +98,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  cell: { padding: 3, fontSize: 8, overflow: "hidden", borderRightWidth: 0.5, borderRightColor: "#000" },
+  cell: { padding: 3, fontSize: 8, flexShrink: 1, borderRightWidth: 0.5, borderRightColor: "#000" },
 
   colQty: { width: "6%" },
   colUnit: { width: "8%" },
@@ -249,11 +250,11 @@ const PARDocument = ({
           </View>
 
           {rows.map((r, i) => (
-            <View key={i} style={styles.tableRow}>
+            <View key={i} style={styles.tableRow} wrap={false}>
               <Text style={[styles.cell, styles.colQty]}>{r.qty}</Text>
               <Text style={[styles.cell, styles.colUnit]}>{r.unit}</Text>
-              <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
-              <Text style={[styles.cell, styles.colPropertyNo]}>{r.propertyNo}</Text>
+              <Text style={[styles.cell, styles.colDescription]}>{wrapPdfText(truncate(r.description), 28)}</Text>
+              <Text style={[styles.cell, styles.colPropertyNo]}>{wrapPdfText(r.propertyNo)}</Text>
               <Text style={[styles.cell, styles.colDateAcquired]}>{r.dateAcquired}</Text>
               <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
             </View>

@@ -14,6 +14,7 @@ import { NormalizedEmployee } from "@/types/asset/UnifiedAsset";
 import { getEmployeeById } from "@/api/user-management/userApi";
 import { getEmployeeAssets } from "@/api/asset/inventoryApi";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
+import { wrapPdfText } from "./wrapPdfText";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -118,10 +119,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 
-  // overflow: 'hidden' clips text that's still too long even after wrapping (e.g. a long
-  // property number/serial number with no spaces to wrap at) instead of letting it bleed
-  // past the column's border into the next cell, which renders as mixed/overlapping letters.
-  cell: { padding: 2, fontSize: 8, overflow: "hidden", borderRightWidth: 0.5, borderRightColor: "#000" },
+  cell: { padding: 2, fontSize: 8, flexShrink: 1, borderRightWidth: 0.5, borderRightColor: "#000" },
 
   colNo: { width: "6%" },
   colDescription: { width: "30%" },
@@ -226,13 +224,13 @@ const PALDocument = ({
                     </Text>
                   </View>
                   {ppeRows.map((r, i) => (
-                    <View key={`ppe-${i}`} style={styles.tableRow}>
+                    <View key={`ppe-${i}`} style={styles.tableRow} wrap={false}>
                       <Text style={[styles.cell, styles.colNo]}>{r.no}</Text>
-                      <Text style={[styles.cell, styles.colPropertyNo]}>{r.propertyNo}</Text>
-                      <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
+                      <Text style={[styles.cell, styles.colPropertyNo]}>{wrapPdfText(r.propertyNo)}</Text>
+                      <Text style={[styles.cell, styles.colDescription]}>{wrapPdfText(truncate(r.description), 28)}</Text>
                       <Text style={[styles.cell, styles.colDateAcquired]}>{r.dateAcquired}</Text>
                       <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
-                      <Text style={[styles.cell, styles.colRemarks]}>{r.remarks}</Text>
+                      <Text style={[styles.cell, styles.colRemarks]}>{wrapPdfText(r.remarks, 24)}</Text>
                     </View>
                   ))}
                   <View style={styles.subtotalRow}>
@@ -252,13 +250,13 @@ const PALDocument = ({
                     </Text>
                   </View>
                   {seRows.map((r, i) => (
-                    <View key={`se-${i}`} style={styles.tableRow}>
+                    <View key={`se-${i}`} style={styles.tableRow} wrap={false}>
                       <Text style={[styles.cell, styles.colNo]}>{r.no}</Text>
-                      <Text style={[styles.cell, styles.colPropertyNo]}>{r.propertyNo}</Text>
-                      <Text style={[styles.cell, styles.colDescription]}>{truncate(r.description)}</Text>
+                      <Text style={[styles.cell, styles.colPropertyNo]}>{wrapPdfText(r.propertyNo)}</Text>
+                      <Text style={[styles.cell, styles.colDescription]}>{wrapPdfText(truncate(r.description), 28)}</Text>
                       <Text style={[styles.cell, styles.colDateAcquired]}>{r.dateAcquired}</Text>
                       <Text style={[styles.cell, styles.colAmount]}>{currency(r.amount)}</Text>
-                      <Text style={[styles.cell, styles.colRemarks]}>{r.remarks}</Text>
+                      <Text style={[styles.cell, styles.colRemarks]}>{wrapPdfText(r.remarks, 24)}</Text>
                     </View>
                   ))}
                   <View style={styles.subtotalRow}>

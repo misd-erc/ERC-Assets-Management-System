@@ -16,6 +16,7 @@ import { seApi } from "@/api/asset/se";
 import { secureStorage } from "@/utils/secureStorage";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 import { formatPositionOffice } from "@/utils/formatters";
+import { wrapPdfText } from "./wrapPdfText";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -141,7 +142,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  cell: { padding: 3, fontSize: 8, overflow: "hidden", borderRightWidth: 0.5, borderRightColor: "#000" },
+  cell: { padding: 3, fontSize: 8, flexShrink: 1, borderRightWidth: 0.5, borderRightColor: "#000" },
 
   colDateAcquired: { width: "15%" },
   colPropertyNo: { width: "20%" },
@@ -379,18 +380,17 @@ const PTRDocument = ({
               <Text style={[styles.cell, styles.colDateAcquired]}>
                 {r.dateAcquired}
               </Text>
-              {/* Fixed-width lines preserve identifiers without PDF auto-hyphenation or clipping. */}
-              <Text style={[styles.cell, styles.colPropertyNo, { fontFamily: 'Courier' }]} hyphenationCallback={word => [word]}>
-                {r.propertyNo.match(/.{1,20}/g)?.join('\n') || ''}
+              <Text style={[styles.cell, styles.colPropertyNo]}>
+                {wrapPdfText(r.propertyNo)}
               </Text>
               <Text style={[styles.cell, styles.colDescription]}>
-                {r.description}
+                {wrapPdfText(r.description, 28)}
               </Text>
               <Text style={[styles.cell, styles.colAmount]}>
                 {currency(r.amount)}
               </Text>
               <Text style={[styles.cell, styles.colCondition]}>
-                {r.condition}
+                {wrapPdfText(r.condition, 16)}
               </Text>
             </View>
           ))}
