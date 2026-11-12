@@ -520,6 +520,7 @@ export const getTransferDetailsByNumber = async (transferNumber: string): Promis
     
     // Normalize movements for consistent display
     const normalizedMovements = (data.movements || []).map((movement: any) => ({
+      ...movement,
       movementId: movement.movementId || movement.id,
       id: movement.movementId || movement.id,
       ptaId: movement.ptaId,
