@@ -165,10 +165,10 @@ export function LoginScreen() {
         <Card className="shadow-lg border border-slate-200 dark:border-slate-700">
           <CardHeader className="pb-3 text-center">
             <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-100">
-              Select Account Type
+              Choose where to sign in
             </CardTitle>
             <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
-              Sign in with your ERC Microsoft account to continue
+              Select the view you need, then continue with your ERC Microsoft account
             </CardDescription>
           </CardHeader>
 
@@ -179,7 +179,7 @@ export function LoginScreen() {
               </Alert>
             )}
 
-            {/* AMS Personnel */}
+            {/* Full AMS access */}
             <button
               onClick={() => handleMicrosoftLogin('system')}
               disabled={isLoading}
@@ -189,8 +189,8 @@ export function LoginScreen() {
                 <Monitor className="w-4 h-4" />
               </span>
               <span className="flex-1 min-w-0">
-                <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">AMS Personnel</span>
-                <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">Manage modules, records &amp; approvals</span>
+                <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">AMS System</span>
+                <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">Full access to modules, records &amp; approvals</span>
               </span>
               <img src={microsoftLogo} alt="" className="w-4 h-4 flex-shrink-0 opacity-60" />
             </button>
@@ -202,7 +202,7 @@ export function LoginScreen() {
               <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
             </div>
 
-            {/* Employee */}
+            {/* Employee view only */}
             <button
               onClick={() => handleMicrosoftLogin('employee')}
               disabled={isLoading}
@@ -212,8 +212,8 @@ export function LoginScreen() {
                 <User2 className="w-4 h-4" />
               </span>
               <span className="flex-1 min-w-0">
-                <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">Employee</span>
-                <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">View your accountabilities &amp; issued items</span>
+                <span className="block text-sm font-semibold text-slate-900 dark:text-slate-100">Employee View Only</span>
+                <span className="block text-xs text-slate-500 dark:text-slate-400 truncate">View your accountabilities &amp; requests only</span>
               </span>
               <img src={microsoftLogo} alt="" className="w-4 h-4 flex-shrink-0 opacity-60" />
             </button>

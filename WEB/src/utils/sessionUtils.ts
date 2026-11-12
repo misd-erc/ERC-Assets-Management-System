@@ -2,6 +2,7 @@ import { toast } from 'sonner';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { sanitizeSystemUserId } from '@/utils/sanitizationUtils';
 import { secureStorage } from './secureStorage';
+import { clearAccessMode } from '@/utils/accessMode';
 
 /**
  * Session Management Utilities
@@ -42,6 +43,7 @@ export const clearSession = (): void => {
   sessionKeys.forEach(key => {
     secureStorage.removeItem(key);
   });
+  clearAccessMode();
 
   console.log('[Session] All session data cleared');
 };
