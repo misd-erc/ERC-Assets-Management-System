@@ -27,18 +27,6 @@ namespace PortalAPI.Attributes
             try
             {
 
-                // TEMPORARY DEV LOGIN BYPASS - remove this block when no longer needed.
-                // Enable via "DevAuthBypass:Enabled" in appsettings.Development.json.
-                var configuration = context.HttpContext.RequestServices.GetService<IConfiguration>();
-                var environment = context.HttpContext.RequestServices.GetService<IWebHostEnvironment>();
-                if (environment?.IsDevelopment() == true && configuration?.GetValue<bool>("DevAuthBypass:Enabled") == true)
-                {
-                    EnsureDevSessionToken(configuration, context.HttpContext.RequestServices);
-                    Console.WriteLine("[DevAuthBypass] Skipping session token validation.");
-                    await next();
-                    return;
-                }
-
                 var modelObj = context.ActionArguments.Values
                     .FirstOrDefault(arg => arg?.GetType().GetProperty("ActionBySystemUserId") != null && arg?.GetType().GetProperty("SessionKey") != null);
 
@@ -91,64 +79,6 @@ namespace PortalAPI.Attributes
             catch (Exception ex)
             {
                 context.Result = new UnauthorizedObjectResult(ApiResponse<object>.Unauthorized($"Token validation failed: {ex.Message}"));
-            }
-        }
-
-        private static bool _devSessionEnsured;
-        private static readonly object _devSessionLock = new();
-
-        /// <summary>
-        /// TEMPORARY DEV LOGIN BYPASS helper. Skipping the attribute alone is not enough:
-        /// some controllers resolve the caller via GetSystemUserIdBySessionKeyAsync and would
-        /// throw "Session not found". This seeds a real (long-lived) session row for the dev
-        /// user once per process so those lookups succeed.
-        /// </summary>
-        private static void EnsureDevSessionToken(IConfiguration? configuration, IServiceProvider services)
-        {
-            if (_devSessionEnsured)
-                return;
-
-            lock (_devSessionLock)
-            {
-                if (_devSessionEnsured)
-                    return;
-
-                try
-                {
-                    var options = services.GetService<DbContextOptions<PortalDbContext>>();
-                    if (options != null)
-                    {
-                        long devSystemUserId = configuration?.GetValue<long?>("DevAuthBypass:SystemUserId") ?? 1;
-                        string devSessionKey = configuration?.GetValue<string>("DevAuthBypass:SessionKey") ?? "dev-bypass-session";
-
-                        using var db = new PortalDbContext(options);
-                        var token = db.TblSessionTokens.FirstOrDefault(x => x.Key == devSessionKey && !x.IsDeleted);
-                        if (token == null)
-                        {
-                            db.TblSessionTokens.Add(new TblSessionToken
-                            {
-                                SystemUserId = devSystemUserId,
-                                Key = devSessionKey,
-                                ValidUntil = DateTime.UtcNow.AddYears(1),
-                                IsDeleted = false,
-                                CreatedAt = DateTime.UtcNow
-                            });
-                            db.SaveChanges();
-                        }
-                        else if (token.SystemUserId != devSystemUserId || token.ValidUntil < DateTime.UtcNow)
-                        {
-                            token.SystemUserId = devSystemUserId;
-                            token.ValidUntil = DateTime.UtcNow.AddYears(1);
-                            db.SaveChanges();
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[DevAuthBypass] Failed to ensure dev session token: {ex.Message}");
-                }
-
-                _devSessionEnsured = true;
             }
         }
     }
