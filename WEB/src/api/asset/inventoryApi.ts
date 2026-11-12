@@ -89,28 +89,48 @@ export const getConditions = async (): Promise<string[]> => {
 
 export const getEmployeeAssets = async (employeeId: number, group: 'PPE' | 'SE'): Promise<any[]> => {
 	const { systemUserId, sessionKey } = getAuthParams();
+	const pageSize = 1000;
+	const items: any[] = [];
+	let pageNumber = 1;
+	let totalPages = 1;
 
 	try {
-		const response = await axiosInstance.get<ApiResponse<{ items: any[]; totalCount: number }>>('/Inventory/pta/se-ppe/all', {
-			params: {
-				EmployeeId: employeeId,
-				GroupName: group,
-				PageNumber: 1,
-				PageSize: 1000,
-				ActionBySystemUserId: systemUserId,
-				SessionKey: sessionKey,
-			},
-		});
+		do {
+			const response = await axiosInstance.get<ApiResponse<{
+				items: any[];
+				totalCount: number;
+				pageNumber?: number;
+				pageSize?: number;
+				totalPages?: number;
+			}>>('/Inventory/pta/se-ppe/all', {
+				params: {
+					EmployeeId: employeeId,
+					GroupName: group,
+					PageNumber: pageNumber,
+					PageSize: pageSize,
+					ActionBySystemUserId: systemUserId,
+					SessionKey: sessionKey,
+				},
+			});
 
-		if (!response.data.success) {
-			console.error(`Failed to fetch ${group} assets for employee:`, response.data.message);
-			return [];
-		}
+			if (!response.data.success) {
+				throw new Error(response.data.message || `Failed to fetch ${group} assets for employee`);
+			}
 
-		return response.data.data?.items || [];
+			const page = response.data.data;
+			const pageItems = page?.items || [];
+			items.push(...pageItems);
+			totalPages = page?.totalPages || (
+				pageItems.length < pageSize ? pageNumber : Math.ceil((page?.totalCount || items.length) / pageSize)
+			);
+			pageNumber += 1;
+		} while (pageNumber <= totalPages);
+
+		return items;
 	} catch (error) {
 		console.error(`Error fetching ${group} assets for employee:`, error);
-		return [];
+		const reason = error instanceof Error ? error.message : 'Unknown API error';
+		throw new Error(`Unable to load ${group} assets for PAL: ${reason}`);
 	}
 };
 

@@ -3,6 +3,7 @@ import React from "react";
 import { pdf, Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 import { formatPositionOffice } from "@/utils/formatters";
+import { wrapPdfText } from "./wrapPdfText";
 
 const RECEIVED_BY = {
   name: "CHERRY LYNN S. GONZALES",
@@ -95,13 +96,13 @@ const styles = StyleSheet.create({
     borderRightWidth: 0.5,
     borderColor: "#ccc",
     minHeight: 18,
-    overflow: "hidden",
+    flexShrink: 1,
   },
   bodyCellLast: {
     padding: 4,
     fontSize: 9,
     minHeight: 18,
-    overflow: "hidden",
+    flexShrink: 1,
   },
   sigRow: {
     flexDirection: "row",
@@ -231,12 +232,12 @@ const ReturnReceiptDocument = ({
               </View>
             ) : (
               rows.map((r, idx) => (
-                <View key={idx} style={styles.tableRow}>
-                  <Text style={[styles.bodyCell, { width: "36%" }]}>{r.description}</Text>
+                <View key={idx} style={styles.tableRow} wrap={false}>
+                  <Text style={[styles.bodyCell, { width: "36%" }]}>{wrapPdfText(r.description, 28)}</Text>
                   <Text style={[styles.bodyCell, { width: "8%", textAlign: "center" }]}>{r.quantity}</Text>
-                  <Text style={[styles.bodyCell, { width: "28%", fontSize: 7.5 }]}>{r.icsNo}</Text>
-                  <Text style={[styles.bodyCell, { width: "14%" }]}>{r.endUser}</Text>
-                  <Text style={[styles.bodyCellLast, { width: "14%" }]}>{r.remarks}</Text>
+                  <Text style={[styles.bodyCell, { width: "28%", fontSize: 7.5 }]}>{wrapPdfText(r.icsNo, 18)}</Text>
+                  <Text style={[styles.bodyCell, { width: "14%" }]}>{wrapPdfText(r.endUser, 20)}</Text>
+                  <Text style={[styles.bodyCellLast, { width: "14%" }]}>{wrapPdfText(r.remarks, 18)}</Text>
                 </View>
               ))
             )}

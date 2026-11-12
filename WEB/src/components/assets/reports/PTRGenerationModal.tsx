@@ -16,9 +16,11 @@ import { cn } from '@/lib/utils';
 import { NormalizedEmployee, Asset } from '@/types/asset/UnifiedAsset';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getAllPTATransferList, getTransferDetailsByNumber } from '@/api/asset/transferApi';
-import { getEmployees } from '@/api/user-management/userApi';
-import { formatPositionOffice } from '@/utils/formatters';
 import { PTRGenerator } from './PTRGenerator';
+import { ptrPeopleFields } from './ptrReportData';
+import { getEmployeeById } from '@/api/user-management/userApi';
+import { normalizeEmployee } from '@/utils/employeeUtils';
+import { toast } from 'sonner';
 
 interface PTRGenerationModalProps {
   isOpen: boolean;
@@ -50,14 +52,23 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
   const [previewUrl, setPreviewUrl] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const [signatureDate, setSignatureDate] = useState(new Date().toISOString().slice(0, 10));
+  // The official form leaves signature dates blank until the document is signed.
+  const [signatureDate, setSignatureDate] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       resetModal();
       loadPTRRecords();
     }
+    // Load once per opening; the API supplies report people and legacy details fetch the recipient by ID.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const resetModal = () => {
     setCurrentStep('list');
@@ -66,174 +77,78 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
     setSearchQuery('');
     setPreviewUrl('');
     setShowPreview(false);
-    setSignatureDate(new Date().toISOString().slice(0, 10));
+    setSignatureDate('');
   };
 
   const loadPTRRecords = async () => {
     setLoading(true);
     try {
-      const response = { items: await getAllPTATransferList('PPE') };
-      const employeeResponse = await getEmployees().catch(() => ({ data: { items: [] } } as any));
-      const employeeById = new Map<number, any>(
-        ((employeeResponse as any)?.data?.items || []).map((emp: any) => [emp.id, emp])
-      );
-      console.log('PTR Transfer List Response:', response);
-      console.log('PTR Items:', response.items);
-
-      // Create a map to store full details by PTR number
-      const detailsMap = new Map();
-
-      // Group by PTR number
-      const grouped = response.items?.reduce((acc: any, item: any) => {
-        const ptrNum = item.ptrItrNumber;
-        if (!ptrNum) return acc;
-
-        const existing = acc[ptrNum];
-        const existingDetails = detailsMap.get(ptrNum);
-
-        const mergeItems = (base: any[], incoming: any[]) => {
-          const merged = [...(base || [])];
-          (incoming || []).forEach(it => {
-            const found = merged.find(m => (m.id != null && m.id === it.id) || (m.propertyNumber && m.propertyNumber === it.propertyNumber));
-            if (!found) merged.push(it);
-          });
-          return merged;
-        };
-
-        // transfer/list returns itemCount, not the full item object. Keep the
-        // optional item fallback for older API responses; the details endpoint
-        // loads the actual items when a PTR is selected.
-        const incomingItems = item.item ? [item.item] : [];
-        const mergedItems = mergeItems(existingDetails?.items || [], incomingItems);
-
-        // Resolve to employee name string and id
-        const toEmpFullName = item.plantillaEmployeeName || item.nonPlantillaEmployeeName || 'Unknown';
-        const toEmpId = item.plantillaEmployeeId ?? item.nonPlantillaEmployeeId;
-
-        // Split full name into parts for the PDF generator
-        const toEmpParts = toEmpFullName.trim().split(/\s+/);
-        const toEmpObj = {
-          firstName: toEmpParts[0] || '',
-          middleName: toEmpParts.length > 2 ? toEmpParts.slice(1, -1).join(' ') : '',
-          lastName: toEmpParts.length > 1 ? toEmpParts[toEmpParts.length - 1] : ''
-        };
-
-        // Track non-plantilla employee separately for Sub-PAR
-        const nonPlantillaFullName = item.nonPlantillaEmployeeName || null;
-        const nonPlantillaId = item.nonPlantillaEmployeeId || null;
-        const nonPlantillaParts = nonPlantillaFullName ? nonPlantillaFullName.trim().split(/\s+/) : null;
-        const nonPlantillaObj = nonPlantillaParts ? {
-          firstName: nonPlantillaParts[0] || '',
-          middleName: nonPlantillaParts.length > 2 ? nonPlantillaParts.slice(1, -1).join(' ') : '',
-          lastName: nonPlantillaParts.length > 1 ? nonPlantillaParts[nonPlantillaParts.length - 1] : ''
-        } : null;
-
-        // The API resolves the previous holder for the representative
-        // movement. Use these fields instead of defaulting the From officer to
-        // N/A for every historical PTR row.
-        const fromEmpFullName = item.previousPlantillaEmployeeName || item.previousNonPlantillaEmployeeName
-          || existingDetails?.fromEmployeeName
-          || 'N/A';
-        const fromEmpId = item.previousPlantillaEmployeeId ?? item.previousNonPlantillaEmployeeId ?? existingDetails?.fromEmployeeId;
-        const fromEmpParts = (fromEmpFullName && fromEmpFullName !== 'N/A') ? fromEmpFullName.trim().split(/\s+/) : null;
-        const fromEmpObj = fromEmpParts ? {
-          firstName: fromEmpParts[0] || '',
-          middleName: fromEmpParts.length > 2 ? fromEmpParts.slice(1, -1).join(' ') : '',
-          lastName: fromEmpParts.length > 1 ? fromEmpParts[fromEmpParts.length - 1] : ''
-        } : { firstName: 'N/A', middleName: '', lastName: '' };
-        const itemCount = Math.max(mergedItems.length, Number(item.itemCount) || 0);
-
-        // Resolve receiving employee's position/office/division for the "Received by" section
-        const toEmpDetails = toEmpId ? employeeById.get(toEmpId) : null;
-        const toEmpPosition = item.plantillaEmployeeName
-          ? (item.plantillaEmployeePosition || toEmpDetails?.position?.name || '')
-          : (item.nonPlantillaEmployeePosition || toEmpDetails?.position?.name || '');
-        const toEmpOffice = item.plantillaEmployeeName
-          ? (item.plantillaEmployeeOffice || toEmpDetails?.office?.acronym || toEmpDetails?.office?.name || item.office?.acronym || item.office?.name || '')
-          : (item.nonPlantillaEmployeeOffice || toEmpDetails?.office?.acronym || toEmpDetails?.office?.name || item.office?.acronym || item.office?.name || '');
-        const toEmpDivision = item.plantillaEmployeeName
-          ? (item.plantillaEmployeeDivision || toEmpDetails?.division?.acronym || toEmpDetails?.division?.name || item.division?.acronym || item.division?.name || '')
-          : (item.nonPlantillaEmployeeDivision || toEmpDetails?.division?.acronym || toEmpDetails?.division?.name || item.division?.acronym || item.division?.name || '');
-        const toEmpPositionOffice = formatPositionOffice(toEmpPosition, toEmpOffice, toEmpDivision);
-
-        const baseRecord = existing || {
-          ptrNumber: ptrNum,
-          fromEmployee: fromEmpFullName,
-          toEmployee: toEmpFullName,
-          itemCount: 0,
-          dateAssigned: item.dateAssigned,
-          transferType: item.status || 'N/A'
-        };
-
-        const updatedRecord = {
-          ...baseRecord,
-          fromEmployee: fromEmpFullName,
-          toEmployee: toEmpFullName,
-          itemCount,
-          dateAssigned: baseRecord.dateAssigned || item.dateAssigned,
-          transferType: baseRecord.transferType || item.status || 'N/A'
-        };
-
-        acc[ptrNum] = updatedRecord;
-
-        detailsMap.set(ptrNum, {
-          transferNumber: ptrNum,
-          transferType: updatedRecord.transferType || 'TRANSFER',
-          fromEmployeeId: fromEmpId,
-          fromEmployeeName: fromEmpFullName,
-          fromEmployee: fromEmpObj,
-          toEmployeeId: toEmpId ?? existingDetails?.toEmployeeId,
-          toEmployeeName: toEmpFullName,
-          toEmployee: toEmpObj,
-          nonPlantillaEmployeeId: nonPlantillaId ?? existingDetails?.nonPlantillaEmployeeId,
-          nonPlantillaEmployeeName: nonPlantillaFullName ?? existingDetails?.nonPlantillaEmployeeName,
-          nonPlantillaEmployee: nonPlantillaObj ?? existingDetails?.nonPlantillaEmployee,
-          items: mergedItems,
-          dateAssigned: updatedRecord.dateAssigned,
-          remarks: item.remarks || existingDetails?.remarks,
-          status: item.status || existingDetails?.status,
-          toEmployeePositionOffice: toEmpPositionOffice || existingDetails?.toEmployeePositionOffice || ''
-        });
-
-        return acc;
-      }, {});
-
-      console.log('Grouped PTR records:', grouped);
-      const records = Object.values(grouped || {}) as PTRRecord[];
-      console.log('Final PTR records array:', records);
+      const items = await getAllPTATransferList('PPE');
+      const detailsMap = new Map<string, any>();
+      const records: PTRRecord[] = [];
+      for (const item of items) {
+        const ptrNumber = item.ptrItrNumber?.trim();
+        if (!ptrNumber) continue;
+        const people = ptrPeopleFields(item, employees);
+        detailsMap.set(ptrNumber, { ...item, ...people, rawEmployees: item,
+          transferNumber: ptrNumber, transferType: item.status || '', items: [] });
+        records.push({ ptrNumber, fromEmployee: people.fromEmployeeName,
+          toEmployee: people.toEmployeeName, itemCount: Number(item.itemCount) || 0,
+          dateAssigned: item.dateAssigned, transferType: item.status || '' });
+      }
       setPtrRecords(records);
       setPtrDetailsMap(detailsMap);
     } catch (error) {
-      console.error('Failed to load PTR records:', error);
+      setPtrRecords([]);
+      toast.error('Unable to load PTR records. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSelectPTR = async (ptrNumber: string) => {
-    setSelectedPTR(ptrNumber);
-
     const details = ptrDetailsMap.get(ptrNumber);
-    if (details) {
-      try {
-        // list endpoint only returns itemCount; fetch real item details for the PDF
-        const transferDetails = await getTransferDetailsByNumber(ptrNumber);
-        const allItems: any[] = [];
-        const seen = new Set<string | number>();
-        for (const movement of transferDetails.movements || []) {
-          for (const itm of movement.items || []) {
-            const key = itm.propertyNumber || itm.id;
-            if (key && !seen.has(key)) {
-              seen.add(key);
-              allItems.push({ ...itm, condition: movement.condition || itm.condition });
-            }
+    if (!details) return;
+    setLoadingDetails(true);
+    setPtrDetails(null);
+    try {
+      const transferDetails = await getTransferDetailsByNumber(ptrNumber);
+      const movements = transferDetails.movements || [];
+      const representative = movements.find((m: any) => m.movementId === details.id) || movements[0];
+      // New APIs return structured people on both list and details. Keep legacy
+      // list slots only when the details endpoint does not return employee slots.
+      const raw = representative && 'plantillaEmployeeId' in representative
+        ? representative : details.rawEmployees;
+      let people = ptrPeopleFields(raw, employees);
+      // Older deployed APIs and a partially loaded parent employee list still
+      // work: fetch the specific recipient instead of depending on page 1.
+      if (people.toEmployeeId && !raw.plantillaEmployee && !raw.nonPlantillaEmployee) {
+        const response = await getEmployeeById(people.toEmployeeId);
+        const recipient = response.data?.find(e => Number(e.id) === people.toEmployeeId);
+        if (recipient) people = ptrPeopleFields(raw, [...employees.filter(e => Number(e.id) !== people.toEmployeeId), normalizeEmployee(recipient)]);
+      }
+      const allItems: any[] = [];
+      const seen = new Set<number>();
+      for (const movement of movements) {
+        for (const item of movement.items || []) {
+          const id = Number(item.id);
+          if (id > 0 && !seen.has(id)) {
+            seen.add(id);
+            allItems.push({ ...item, condition: movement.condition ?? item.condition ?? '' });
           }
         }
-        setPtrDetails({ ...details, items: allItems });
-      } catch {
-        setPtrDetails(details);
       }
+      if (!allItems.length) throw new Error('No items were returned for this PTR.');
+      setSelectedPTR(ptrNumber);
+      setPtrDetails({ ...details, ...people, items: allItems,
+        dateAssigned: representative?.dateAssigned || details.dateAssigned });
+      setPtrRecords(records => records.map(record => record.ptrNumber === ptrNumber
+        ? { ...record, fromEmployee: people.fromEmployeeName, toEmployee: people.toEmployeeName } : record));
       setCurrentStep('details');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to load PTR details.');
+    } finally {
+      setLoadingDetails(false);
     }
   };
 
@@ -272,7 +187,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
             firstName: ptrDetails.nonPlantillaEmployee.firstName || '',
             middleName: ptrDetails.nonPlantillaEmployee.middleName || '',
             lastName: ptrDetails.nonPlantillaEmployee.lastName || '',
-            suffixName: '',
+            suffixName: ptrDetails.nonPlantillaEmployee.suffixName || '',
             employeeIdOriginal: '',
             employmentTypeId: 0,
             employmentTypeName: '',
@@ -378,7 +293,7 @@ export function PTRGenerationModal({ isOpen, onClose, employees }: PTRGeneration
           firstName: ptrDetails.nonPlantillaEmployee.firstName || '',
           middleName: ptrDetails.nonPlantillaEmployee.middleName || '',
           lastName: ptrDetails.nonPlantillaEmployee.lastName || '',
-          suffixName: '',
+          suffixName: ptrDetails.nonPlantillaEmployee.suffixName || '',
           employeeIdOriginal: '',
           employmentTypeId: 0,
           employmentTypeName: '',

@@ -128,13 +128,13 @@ export const SupplyGeneralHeader = () => {
     let issuedValueMTD = 0;
 
     risSummary.forEach(ris => {
-      // 1. Pending: Requested but not yet approved or issued
-      if (!ris.risApprovedDate && !ris.risIssuedDate) {
+      // 1. Pending: not yet approved (legacy approved RIS have no dates, so use the flag)
+      if (!ris.isApproved) {
         pendingRIS++;
       }
 
       // 2. Completed (MTD): Has been issued, and the issue date is in the current month/year
-      if (ris.risIssuedDate) {
+      if (ris.isApproved && ris.risIssuedDate) {
         const issueDate = new Date(ris.risIssuedDate);
         if (issueDate.getMonth() === currentMonth && issueDate.getFullYear() === currentYear) {
           completedRISThisMonth++;
@@ -142,11 +142,9 @@ export const SupplyGeneralHeader = () => {
           // --- CALCULATE VALUE ISSUED MTD ---
           if (ris.items && ris.items.length > 0) {
             ris.items.forEach(risItem => {
-              const matchedSupply = vwSuppliesSummary.find(s => s.code === risItem.stockNumber);
-              const stock = Number(matchedSupply?.totalCurrentStock || 0);
-              const costPerUnit = stock > 0
-                ? Number(matchedSupply?.totalStockCost || 0) / stock
-                : 0;
+              const matchedSupply = vwSuppliesSummary.find(s => s.code === risItem.stockNumber && s.description === risItem.itemDescription);
+              // Use the item's unit cost; stock-derived cost reads 0 once an item is fully issued.
+              const costPerUnit = Number(matchedSupply?.unitCost || 0);
               const itemTotalValue = Number(risItem.issueQuantity || 0) * costPerUnit;
               issuedValueMTD += itemTotalValue;
             });

@@ -74,6 +74,9 @@ export function normalizeEmployee(e: any): NormalizedEmployee {
   const employmentTypeId = e.employmentType?.id ?? 1;
   const employmentTypeName = e.employmentType?.name ?? 'Plantilla';
   const groupLabel = isPlantillaEmploymentType(employmentTypeName) ? 'Plantilla' : 'Non-Plantilla';
+  const positionName = e.positionName ?? e.position?.name ?? '';
+  const officeName = e.officeName ?? e.office?.acronym ?? e.office?.name ?? '';
+  const divisionName = e.divisionName ?? e.division?.acronym ?? e.division?.name ?? '';
 
   const label = `${lastName}, ${firstName}${middleName ? ` ${middleName}` : ''}${suffixName ? ` ${suffixName}` : ''}${employeeIdOriginal ? ` — ${employeeIdOriginal}` : ''} (${groupLabel})`;
 
@@ -87,6 +90,9 @@ export function normalizeEmployee(e: any): NormalizedEmployee {
     employmentTypeId,
     employmentTypeName,
     label,
+    positionName,
+    officeName,
+    divisionName,
   };
 }
 

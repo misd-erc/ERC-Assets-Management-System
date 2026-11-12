@@ -16,6 +16,7 @@ import { seApi } from "@/api/asset/se";
 import { secureStorage } from "@/utils/secureStorage";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 import { formatPositionOffice } from "@/utils/formatters";
+import { wrapPdfText } from "./wrapPdfText";
 
 /* -------------------------------- CONSTANTS -------------------------------- */
 
@@ -141,7 +142,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  cell: { padding: 3, fontSize: 8, overflow: "hidden", borderRightWidth: 0.5, borderRightColor: "#000" },
+  cell: { padding: 3, fontSize: 8, flexShrink: 1, borderRightWidth: 0.5, borderRightColor: "#000" },
 
   colDateAcquired: { width: "15%" },
   colPropertyNo: { width: "20%" },
@@ -240,8 +241,15 @@ function currency(val?: number | null) {
   );
 }
 
-function truncate(text = "", max = 200) {
-  return text.length > max ? text.slice(0, max) + "…" : text;
+function employeeName(employee: NormalizedEmployee) {
+  const structuredName = [
+    employee.firstName,
+    employee.middleName,
+    employee.lastName,
+    employee.suffixName,
+  ].filter(Boolean).join(" ").trim();
+
+  return structuredName || employee.label || "";
 }
 
 interface PTRRow {
@@ -297,10 +305,10 @@ const PTRDocument = ({
             Entity Name: ENERGY REGULATORY COMMISSION
           </Text>
           <Text style={{ marginTop: 4 }}>
-            From Accountable Officer: {fromEmployee.firstName?.toUpperCase()} {fromEmployee.middleName?.toUpperCase()} {fromEmployee.lastName?.toUpperCase()}
+            From Accountable Officer: {employeeName(fromEmployee).toUpperCase()}
           </Text>
           <Text style={{ marginTop: 4 }}>
-            To Accountable Officer: {toEmployee.firstName?.toUpperCase()} {toEmployee.middleName?.toUpperCase()} {toEmployee.lastName?.toUpperCase()}
+            To Accountable Officer: {employeeName(toEmployee).toUpperCase()}
           </Text>
         </View>
 
@@ -368,21 +376,21 @@ const PTRDocument = ({
           </View>
 
           {rows.map((r, i) => (
-            <View key={i} style={styles.tableRow}>
+            <View key={i} style={styles.tableRow} wrap={false}>
               <Text style={[styles.cell, styles.colDateAcquired]}>
                 {r.dateAcquired}
               </Text>
               <Text style={[styles.cell, styles.colPropertyNo]}>
-                {r.propertyNo}
+                {wrapPdfText(r.propertyNo)}
               </Text>
               <Text style={[styles.cell, styles.colDescription]}>
-                {truncate(r.description)}
+                {wrapPdfText(r.description, 28)}
               </Text>
               <Text style={[styles.cell, styles.colAmount]}>
                 {currency(r.amount)}
               </Text>
               <Text style={[styles.cell, styles.colCondition]}>
-                {r.condition}
+                {wrapPdfText(r.condition, 16)}
               </Text>
             </View>
           ))}
@@ -390,7 +398,7 @@ const PTRDocument = ({
       </View>
 
       {/* SIGNATURES */}
-      <View style={styles.sigRow}>
+      <View style={styles.sigRow} wrap={false}>
         <View style={styles.sigBlock}>
           <Text style={styles.sigTitle}>Approved by:</Text>
           <Text style={styles.sigNameAboveLine}>{APPROVED_BY.name}</Text>
@@ -428,7 +436,7 @@ const PTRDocument = ({
         <View style={styles.sigBlockLast}>
           <Text style={styles.sigTitle}>Received by:</Text>
           <Text style={styles.sigNameAboveLine}>
-            {toEmployee.label?.toUpperCase() || [toEmployee.firstName, toEmployee.middleName, toEmployee.lastName].filter(Boolean).join(' ').toUpperCase()}
+            {employeeName(toEmployee).toUpperCase()}
           </Text>
           <View style={styles.sigLine} />
           <Text style={styles.sigLabel}>Signature Over Printed Name</Text>
@@ -443,7 +451,7 @@ const PTRDocument = ({
             <Text style={styles.sigDateLabel}>DATE</Text>
           </View>
           <Text style={{ fontSize: 8, fontWeight: "bold", marginTop: 8, textAlign: "left", alignSelf: "flex-start" }}>
-            Sub-PAR :{nonPlantillaEmployee ? ` ${nonPlantillaEmployee.label?.toUpperCase() || [nonPlantillaEmployee.firstName, nonPlantillaEmployee.middleName, nonPlantillaEmployee.lastName].filter(Boolean).join(' ').toUpperCase()}` : ""}
+            Sub-PAR :{nonPlantillaEmployee ? ` ${employeeName(nonPlantillaEmployee).toUpperCase()}` : ""}
           </Text>
         </View>
       </View>
@@ -712,7 +720,7 @@ export class PTRGenerator {
     if (!rows.length) return;
 
     const employeeLabel = (e: NormalizedEmployee) =>
-      e.label?.toUpperCase() || [e.firstName, e.middleName, e.lastName].filter(Boolean).join(' ').toUpperCase();
+      employeeName(e).toUpperCase();
 
     await downloadReportExcel({
       filename: `${ptrNumber}.xlsx`,
@@ -753,7 +761,7 @@ export class PTRGenerator {
         propertyNo: asset.propertyNumber ?? "",
         description: asset.description ?? "",
         amount: asset.unitValue ?? null,
-        condition: latestMovement?.condition || (asset as any).condition || "Good",
+        condition: asset.condition ?? latestMovement?.condition ?? "",
       };
     });
     return sortReportRowsByPropertyAndAmount(rows, (r) => r.propertyNo, (r) => r.amount);

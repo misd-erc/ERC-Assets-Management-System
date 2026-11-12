@@ -1,16 +1,18 @@
 // src/components/supply-management/supply-unit/SupplyUnitTabContent.tsx
 import { useState, useEffect, useMemo } from 'react';
-import { useSupplyUnit, useSupplyItem } from '@/hooks';
+import { useSupplyUnit } from '@/hooks';
+import { getSupplyItems } from '@/api/supply-management/itemApi';
 import { SupplyUnitTable } from './SupplyUnitTable';
 import { SupplyUnitEditModal } from './SupplyUnitEditModal';
 import { SupplyUnitDeleteModal } from './SupplyUnitDeleteModal';
 // Import the new modal
 import { SupplyUnitLinkedItemsModal } from './SupplyUnitLinkedItemsModal';
-import { SupplyUnit } from '@/types';
+import { SupplyUnit, VwSupplyItem } from '@/types';
 
 export const SupplyUnitTabContent = () => {
   const { units, loading: unitsLoading, fetchSupplyUnits } = useSupplyUnit();
-  const { vwSupplies } = useSupplyItem();
+  // Own fetch: the shared store list is only filled when another tab loaded it, so counts read 0.
+  const [vwSupplies, setVwSupplies] = useState<VwSupplyItem[]>([]);
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -22,6 +24,7 @@ export const SupplyUnitTabContent = () => {
 
   useEffect(() => { 
     fetchSupplyUnits();
+    getSupplyItems(1, 10000, '').then(r => setVwSupplies(r.items)).catch(() => setVwSupplies([]));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -42,7 +45,7 @@ export const SupplyUnitTabContent = () => {
   const linkedItems = useMemo(() => {
     if (!selectedUnit || !vwSupplies) return [];
     return vwSupplies.filter(item => 
-      (item.measurementUnit?.id || item.measurementUnit?.id) === selectedUnit.id
+      (item.measurementUnit?.id || item.measurementUnitId) === selectedUnit.id
     );
   }, [selectedUnit, vwSupplies]);
 

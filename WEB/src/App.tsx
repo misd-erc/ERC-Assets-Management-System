@@ -18,11 +18,16 @@ import { secureStorage } from './utils/secureStorage';
 import { isMfaPending } from '@/utils/otpTimerUtils';
 import { ChatWidget } from './components/chat/ChatWidget';
 import { CloudVerificationWatcher } from '@/components/system/CloudVerificationWatcher';
+import { getAccessMode } from '@/utils/accessMode';
 
 
 // Helper: Returns the route the current user should land on after auth
 function getRoleBasedRedirect(): string {
   try {
+    const accessMode = getAccessMode();
+    if (accessMode === 'employee') return '/employee-portal';
+    if (accessMode === 'ams') return '/dashboard';
+
     const raw = secureStorage.getItem('userDetails');
     if (!raw) return '/dashboard';
     const d = JSON.parse(decrypt(raw));
@@ -52,6 +57,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (requireMFA || isMfaPending()) {
     return <Navigate to="/mfa" replace />;
+  }
+
+  // Employee-view-only sessions must not be able to open the AMS shell directly.
+  if (getAccessMode() === 'employee') {
+    return <Navigate to="/employee-portal" replace />;
   }
 
   // Check user role access
@@ -95,15 +105,27 @@ function EmployeeRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/mfa" replace />;
   }
 
-  // Verify the user actually holds the Employee role
+  // A selected employee-only session can belong to any AMS personnel role.
+  // The login choice, rather than the system role, determines this view.
   try {
     const raw = secureStorage.getItem('userDetails');
-    if (raw) {
-      const d = JSON.parse(decrypt(raw));
-      const role = Array.isArray(d.systemRole) ? d.systemRole[0]?.roleName : d.systemRole?.roleName;
-      if ((role as string | undefined)?.toLowerCase() !== 'employee') {
-        return <Navigate to="/dashboard" replace />;
-      }
+    if (!raw) {
+      return <Navigate to="/no-role" replace />;
+    }
+
+    const d = JSON.parse(decrypt(raw));
+    const isActive = d.systemUserStatus?.name;
+    if (isActive !== 'Active') {
+      return <Navigate to="/no-role" replace />;
+    }
+
+    if (getAccessMode() === 'employee') {
+      return <>{children}</>;
+    }
+
+    const role = Array.isArray(d.systemRole) ? d.systemRole[0]?.roleName : d.systemRole?.roleName;
+    if ((role as string | undefined)?.toLowerCase() !== 'employee') {
+      return <Navigate to="/dashboard" replace />;
     }
   } catch {
     return <Navigate to="/" replace />;
@@ -211,7 +233,7 @@ export default function App() {
 function AppShell() {
   const { pathname } = useLocation();
   const { isAuthenticated } = useAuthStore();
-  const showChatWidget = isAuthenticated && pathname !== '/mfa';
+  const showChatWidget = isAuthenticated && pathname !== '/mfa' && getAccessMode() !== 'employee';
 
   return (
     <>

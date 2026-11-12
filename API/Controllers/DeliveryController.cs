@@ -393,6 +393,7 @@ namespace API.Controllers
                 foreach (var record in records)
                 {
                     stats.TotalDeliveries++;
+                    stats.DeliveriesMTD++;
                     decimal recordTotal = itemTotalsByRecordId.TryGetValue(record.Id, out var total) ? total : 0;
                     stats.TotalValue += recordTotal;
 
@@ -404,7 +405,6 @@ namespace API.Controllers
                     else
                     {
                         stats.ReceivedDeliveries++;
-                        stats.DeliveriesMTD++;
                         stats.ValueReceivedMTD += recordTotal;
                     }
                 }
@@ -420,6 +420,7 @@ namespace API.Controllers
                     if (iarDate < monthStart || iarDate >= monthEnd) continue;
 
                     stats.TotalDeliveries++;
+                    stats.DeliveriesMTD++;
                     if (!iar.IsApproved)
                     {
                         stats.PendingDeliveries++;
@@ -427,7 +428,6 @@ namespace API.Controllers
                     else
                     {
                         stats.ReceivedDeliveries++;
-                        stats.DeliveriesMTD++;
                     }
                 }
 

@@ -22,6 +22,7 @@ namespace API.Services.Inventory
                 // Report screens can opt into history to reprint every numbered PTR/ITR.
                 // PTRITRNumber is NOT EF-mapped (encrypted, [NotMapped]), so filter in-memory after materialization.
                 var movementsQuery = _getTools.PTA.GetTblPTAMovements(context)
+                    .AsNoTracking()
                     .Where(x => !x.IsDeleted);
                 if (!model.IncludeHistory)
                     movementsQuery = movementsQuery.Where(x => x.IsCurrent == true);
@@ -208,6 +209,7 @@ namespace API.Services.Inventory
                 var movementsByPta = allMovementsForPtas
                     .OrderBy(x => x.DateAssigned)
                     .ThenBy(x => x.CreatedAt)
+                    .ThenBy(x => x.Id)
                     .GroupBy(x => x.PTAId!.Value)
                     .ToDictionary(g => g.Key, g => g.ToList());
 
@@ -258,6 +260,8 @@ namespace API.Services.Inventory
                 }
 
                 // 11. Build lightweight result — only the fields the list view displays
+                var reportEmployees = await LoadTransferReportEmployees(context,
+                    pagedGroups.Select(g => g.Latest).Concat(previousMovementByMovementId.Values));
                 var result = new List<object>();
 
                 foreach (var grp in pagedGroups)
@@ -293,6 +297,10 @@ namespace API.Services.Inventory
                     result.Add(new
                     {
                         id = movement.Id,
+                        plantillaEmployee = reportEmployees.GetValueOrDefault(plantillaId ?? 0),
+                        nonPlantillaEmployee = reportEmployees.GetValueOrDefault(nonPlantillaId ?? 0),
+                        previousPlantillaEmployee = reportEmployees.GetValueOrDefault(previousPlantillaId ?? 0),
+                        previousNonPlantillaEmployee = reportEmployees.GetValueOrDefault(previousNonPlantillaId ?? 0),
                         movementIds = grp.Movements.Select(m => m.Id).Distinct().ToList(),
                         ptaId = movement.PTAId,
                         ptrItrNumber = movement.PTRITRNumber,

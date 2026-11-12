@@ -22,6 +22,7 @@ import { IssuanceRecord } from "@/types/issuance";
 import { downloadReportExcel, sortReportRowsByPropertyAndAmount } from "@/utils/reportExcelExport";
 import { formatPositionOffice } from "@/utils/formatters";
 import { resolveIssuanceReportEmployeeInfo } from './issuanceReportEmployee';
+import { wrapPdfText } from "./wrapPdfText";
 
 const logoSrc =
   typeof window !== "undefined"
@@ -90,7 +91,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  cell: { padding: 4, overflow: "hidden", borderRightWidth: 0.5, borderRightColor: "#000" },
+  cell: { padding: 4, flexShrink: 1, borderRightWidth: 0.5, borderRightColor: "#000" },
 
   metaRow: {
     flexDirection: "row",
@@ -241,14 +242,14 @@ const ICSDocument = ({
             ? (r.value * r.qty).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
             : "";
           return (
-            <View key={i} style={styles.tableRow}>
+            <View key={i} style={styles.tableRow} wrap={false}>
               <Text style={[styles.cell, styles.colQty]}>{r.qty}</Text>
               <Text style={[styles.cell, styles.colUnit]}>{r.unit}</Text>
               <Text style={[styles.cell, styles.colUnitCost]}>{unitCost}</Text>
               <Text style={[styles.cell, styles.colTotalCost]}>{totalCost}</Text>
-              <Text style={[styles.cell, styles.colDesc]}>{r.description}</Text>
-              <Text style={[styles.cell, styles.colInvItemNo]}>{r.propertyNo}</Text>
-              <Text style={[styles.cell, styles.colUsefulLife]}>{r.estimatedUsefulLife || ""}</Text>
+              <Text style={[styles.cell, styles.colDesc]}>{wrapPdfText(r.description, 28)}</Text>
+              <Text style={[styles.cell, styles.colInvItemNo]}>{wrapPdfText(r.propertyNo)}</Text>
+              <Text style={[styles.cell, styles.colUsefulLife]}>{wrapPdfText(r.estimatedUsefulLife || "", 18)}</Text>
             </View>
           );
         })}

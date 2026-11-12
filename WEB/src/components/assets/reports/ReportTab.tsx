@@ -193,9 +193,17 @@ export function ReportTab() {
     if (selectedReport === 'PAL') {
       setShowPreview(true);
       setLoadingPreview(true);
-      const url = await PALGenerator.generatePALPreview(emp);
-      setPreviewUrl(url);
-      setLoadingPreview(false);
+      try {
+        const url = await PALGenerator.generatePALPreview(emp);
+        setPreviewUrl(url);
+      } catch (error) {
+        console.error('PAL preview generation failed:', error);
+        setPreviewUrl('');
+        setShowPreview(false);
+        toast.error(error instanceof Error ? error.message : 'Failed to load PPE/SE assets for PAL');
+      } finally {
+        setLoadingPreview(false);
+      }
     }
   };
 

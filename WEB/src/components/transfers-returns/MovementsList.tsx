@@ -9,9 +9,10 @@ import { toast } from 'sonner';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { getMovementsList, getPTRMovements, getITRMovements, getRRPPEMovements, getRRSPMovements, getPTATransferList, getPTAReturnList, getTransferDetailsByNumber, getReturnDetailsByNumber, editMovement, deleteMovement, getAssetsByEmployee } from '@/api/asset/transferApi';
 import { getConditions } from '@/api/asset/inventoryApi';
-import { getEmployees } from '@/api/user-management/userApi';
+import { getEmployeeById, getEmployees } from '@/api/user-management/userApi';
 import { ApiEmployee } from '@/types/transfer';
 import { EmployeeSelector } from './EmployeeSelector';
+import { ptrPeopleFields, reportEmployeeName } from '@/components/assets/reports/ptrReportData';
 import { PTRGenerator } from '@/components/assets/reports/PTRGenerator';
 import { ITRGenerator } from '@/components/assets/reports/ITRGenerator';
 import { ReturnReceiptGenerator } from '@/components/assets/reports/ReturnReceiptGenerator';
@@ -77,6 +78,7 @@ interface Movement {
   plantillaEmployeeId?: number | null;
   nonPlantillaEmployeeId?: number | null;
   employee?: EmployeeInfo[];
+  subEmployee?: NormalizedEmployee | null;
   office?: any;
   division?: any;
   items?: PTAItem[];
@@ -90,73 +92,16 @@ interface Movement {
   allMovementIds?: number[];
 }
 
-const hasEmployee = (name: unknown, id: unknown): boolean =>
-  Boolean(name || (typeof id === 'number' && id > 0));
-
-const toEmployeeInfo = (
-  name: string | null | undefined,
-  id: number | null | undefined,
-  employeeIdOriginal: string | null | undefined,
-  employeeType: string,
-): EmployeeInfo => ({
-  id: id ?? 0,
-  fullName: name || undefined,
-  employeeIdOriginal,
-  employeeType,
-});
-
-/**
- * The API keeps Plantilla and Non-Plantilla holders in separate slots. A
- * transfer can have both slots populated, but this list has one From/To pair,
- * so display the same accountability slot on both sides. This prevents a
- * previous Sub-PAR holder from being shown as the transfer source when the
- * actual accountable holder is Plantilla.
- */
 const getTransferEmployees = (raw: any): EmployeeInfo[] => {
-  const currentIsPlantilla = hasEmployee(raw.plantillaEmployeeName, raw.plantillaEmployeeId);
-
-  const currentPlantilla = currentIsPlantilla
-    ? toEmployeeInfo(
-        raw.plantillaEmployeeName,
-        raw.plantillaEmployeeId,
-        raw.plantillaEmployeeIdOriginal,
-        raw.plantillaEmployeeType || 'Plantilla',
-      )
-    : null;
-  const currentNonPlantilla = hasEmployee(raw.nonPlantillaEmployeeName, raw.nonPlantillaEmployeeId)
-    ? toEmployeeInfo(
-        raw.nonPlantillaEmployeeName,
-        raw.nonPlantillaEmployeeId,
-        raw.nonPlantillaEmployeeIdOriginal,
-        raw.nonPlantillaEmployeeType || 'Non-Plantilla',
-      )
-    : null;
-
-  const previousPlantilla = hasEmployee(raw.previousPlantillaEmployeeName, raw.previousPlantillaEmployeeId)
-    ? toEmployeeInfo(
-        raw.previousPlantillaEmployeeName,
-        raw.previousPlantillaEmployeeId,
-        raw.previousPlantillaEmployeeIdOriginal,
-        'Plantilla',
-      )
-    : null;
-  const previousNonPlantilla = hasEmployee(raw.previousNonPlantillaEmployeeName, raw.previousNonPlantillaEmployeeId)
-    ? toEmployeeInfo(
-        raw.previousNonPlantillaEmployeeName,
-        raw.previousNonPlantillaEmployeeId,
-        raw.previousNonPlantillaEmployeeIdOriginal,
-        'Non-Plantilla',
-      )
-    : null;
-
-  const fromEmployee = currentIsPlantilla
-    ? (previousPlantilla || previousNonPlantilla)
-    : (previousNonPlantilla || previousPlantilla);
-  const toEmployee = currentIsPlantilla
-    ? (currentPlantilla || currentNonPlantilla)
-    : (currentNonPlantilla || currentPlantilla);
-
-  return [fromEmployee, toEmployee].filter(Boolean) as EmployeeInfo[];
+  const people = ptrPeopleFields(raw);
+  return [people.fromEmployee, people.toEmployee].map(emp => ({
+    id: emp?.id || 0, fullName: reportEmployeeName(emp) || 'N/A',
+    employeeIdOriginal: emp?.employeeIdOriginal,
+    employeeType: emp?.employmentTypeName,
+    position: { name: emp?.positionName || '' },
+    office: { acronym: emp?.officeName || '' },
+    division: { acronym: emp?.divisionName || '' },
+  }));
 };
 
 // Normalize a single item from the new getPTATransferList response shape into Movement
@@ -178,6 +123,7 @@ const normalizeTransferListItem = (raw: any): Movement => ({
   plantillaEmployeeId: raw.plantillaEmployeeId ?? null,
   nonPlantillaEmployeeId: raw.nonPlantillaEmployeeId ?? null,
   employee: getTransferEmployees(raw),
+  subEmployee: ptrPeopleFields(raw).nonPlantillaEmployee,
   items: raw.item ? [raw.item] : [],
   itemCount: Number(raw.itemCount) || (raw.item ? 1 : 0),
   allMovementIds: Array.isArray(raw.movementIds) && raw.movementIds.length > 0
@@ -481,7 +427,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
 
     const cached = detailsCacheRef.current.get(number);
     if (cached) {
-      return { ...movement, items: cached.items, employee: cached.employee?.length ? cached.employee : movement.employee };
+      return { ...movement, items: cached.items, employee: cached.employee?.length ? cached.employee : movement.employee, subEmployee: cached.subEmployee };
     }
 
     const isReturn = transferType === 'RRPPE' || transferType === 'RRSP';
@@ -510,7 +456,13 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
       }
     }
 
-    const fullMovement: Movement = { ...movement, items, employee };
+    let subEmployee = movement.subEmployee;
+    const representative = (detail.movements || []).find((m: any) => m.movementId === movement.id) || detail.movements?.[0];
+    if (!isReturn && representative && 'plantillaEmployeeId' in representative) {
+      employee = getTransferEmployees(representative);
+      subEmployee = ptrPeopleFields(representative).nonPlantillaEmployee;
+    }
+    const fullMovement: Movement = { ...movement, items, employee, subEmployee };
     detailsCacheRef.current.set(number, fullMovement);
     detailRecordsCacheRef.current.set(number, detail.movements || []);
     return fullMovement;
@@ -935,11 +887,11 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     let toEmpOffice = (fullMovement.employee?.[1]?.office as any)?.acronym || (fullMovement.employee?.[1]?.office as any)?.name || '';
     let toEmpDivision = (fullMovement.employee?.[1]?.division as any)?.acronym || (fullMovement.employee?.[1]?.division as any)?.name || '';
 
-    // PTR/ITR transfer details don't include employee position/office, so look it up from the employee list
+    // Older APIs omit designation; fetch only the recipient when it is missing.
     if (!toEmpPosition && !toEmpOffice && toEmp.id) {
       try {
-        const empRes = await getEmployees();
-        const empData = (empRes.data?.items || []).find(e => e.id === toEmp.id) as any;
+        const empRes = await getEmployeeById(toEmp.id);
+        const empData = empRes.data?.find(e => Number(e.id) === Number(toEmp.id));
         if (empData) {
           toEmpPosition = empData.position?.name || empData.positionName || '';
           toEmpOffice = empData.office?.acronym || empData.office?.name || empData.officeName || '';
@@ -976,7 +928,7 @@ export const MovementsList = forwardRef<MovementsListRef, MovementsListProps>(
     try {
       setGenerating(true);
       if (transferType === 'PTR' || prefix.startsWith('PTR')) {
-        const url = await PTRGenerator.generatePTRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, movementType, transferNumber, undefined, undefined, toEmployeePositionOffice);
+        const url = await PTRGenerator.generatePTRPreviewMultiple(fromEmp, toEmp, items as any, transferDate, movementType, transferNumber, undefined, fullMovement.subEmployee, toEmployeePositionOffice);
         const blob = await fetch(url).then(r => r.blob());
         const dlUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
