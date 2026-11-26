@@ -485,8 +485,6 @@ namespace API.Controllers
                 if (model.VendorId.HasValue && model.VendorId > 0)
                     query = query.Where(x => x.VendorId == model.VendorId.Value);
 
-                DateTime? cutoffStartDate = model.StartDate.HasValue ? model.StartDate.Value.Date : null;
-
                 // Guard against DateTime overflow when the UI sends 9999-12-31 as its
                 // "no end date" sentinel (EndDate.Date.AddDays(1) is un-representable).
                 DateTime? cutoffEndDate = null;
@@ -498,11 +496,11 @@ namespace API.Controllers
                         : endDate.AddDays(1).AddTicks(-1);
                 }
 
-                // NOTE: The date range only selects which item groups appear (groups with
-                // additions OR issuances in range); the quantity reported is the item's current
-                // stock. Supply items are therefore NOT pre-filtered by date at the SQL level,
-                // otherwise a group whose addition falls outside the range would be dropped
-                // before its in-range issuance could be considered. Filtering happens below.
+                // NOTE: The end date is the report's "as of" cutoff. EVERY item group in the
+                // selected category is included when it still has stock on that date, even when
+                // it had no delivery or issuance inside the selected period. The previous
+                // in-range movement filter dropped items that were acquired earlier and left
+                // untouched during the period, so the RPCI did not match the manual report.
 
                 // 2. Fetch to memory for decryption-based filtering and grouping
                 var supplyItems = await query.ToListAsync();
@@ -526,17 +524,23 @@ namespace API.Controllers
                     .Select(g =>
                     {
                         var firstItem = g.First();
-                        var additionsInRange = g.Sum(x => (!cutoffStartDate.HasValue || x.CreatedAt >= cutoffStartDate.Value) && (!cutoffEndDate.HasValue || x.CreatedAt <= cutoffEndDate.Value) ? (long)(x.Quantity ?? 0) : 0L);
 
-                        // Pick the most recent real batch (quantity > 0) for the unit cost, falling
-                        // back to the most recent non-zero cost. This stops zero-quantity/zero-cost
-                        // placeholder rows from overriding a valid unit cost (same rule as RMSI).
-                        var realBatch = g.Where(x => (x.Quantity ?? 0) > 0).OrderByDescending(x => x.CreatedAt).FirstOrDefault();
-                        var costBatch = realBatch ?? g.OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                        // Only batches received on or before the cutoff make up the balance as of
+                        // the report date. Without an end date this is simply the current stock.
+                        var batchesInScope = cutoffEndDate.HasValue
+                            ? g.Where(x => x.CreatedAt <= cutoffEndDate.Value)
+                            : g;
+
+                        // Pick the most recent real batch (quantity > 0) as of the cutoff for the
+                        // unit cost, falling back to the most recent non-zero cost. This stops
+                        // zero-quantity/zero-cost placeholder rows from overriding a valid unit
+                        // cost (same rule as RMSI).
+                        var realBatch = batchesInScope.Where(x => (x.Quantity ?? 0) > 0).OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                        var costBatch = realBatch ?? batchesInScope.OrderByDescending(x => x.CreatedAt).FirstOrDefault();
                         var unitCost = costBatch?.UnitCost ?? 0m;
                         if (unitCost <= 0)
                         {
-                            var nonZeroCostBatch = g.Where(x => (x.UnitCost ?? 0) > 0).OrderByDescending(x => x.CreatedAt).FirstOrDefault();
+                            var nonZeroCostBatch = batchesInScope.Where(x => (x.UnitCost ?? 0) > 0).OrderByDescending(x => x.CreatedAt).FirstOrDefault();
                             if (nonZeroCostBatch != null)
                                 unitCost = nonZeroCostBatch.UnitCost ?? 0m;
                         }
@@ -545,8 +549,7 @@ namespace API.Controllers
                         {
                             Code = g.Key.Code,
                             Description = g.Key.Description,
-                            TotalCurrentStock = g.Sum(x => (long)(x.Quantity ?? 0)),
-                            AdditionsInRange = additionsInRange,
+                            TotalCurrentStock = batchesInScope.Sum(x => (long)(x.Quantity ?? 0)),
                             UnitCost = unitCost,
                             // Use the first batch that actually has a unit (id > 0) so the report never shows a blank UoM.
                             MeasurementUnitId = g.Where(x => (x.MeasurementUnitId ?? 0) > 0).Select(x => x.MeasurementUnitId).FirstOrDefault(),
@@ -589,36 +592,22 @@ namespace API.Controllers
                     return item.CreatedAt;
                 }
 
-                var issuanceDict = filteredRisItems
+                // Only issuances effective on or before the cutoff reduce the balance as of the
+                // report date, so a historical RPCI is not affected by later movements.
+                var issuanceItemsInScope = cutoffEndDate.HasValue
+                    ? filteredRisItems.Where(x => EffectiveIssuedAt(x) <= cutoffEndDate.Value).ToList()
+                    : filteredRisItems;
+
+                var issuanceDict = issuanceItemsInScope
                     .Where(x => !string.IsNullOrEmpty(x.StockNumber) && !string.IsNullOrEmpty(x.ItemDescription))
                     .GroupBy(x => new { StockNumber = x.StockNumber ?? string.Empty, ItemDescription = x.ItemDescription ?? string.Empty })
                     .Select(g => new
                     {
                         g.Key.StockNumber,
                         g.Key.ItemDescription,
-                        TotalIssuedQuantity = g.Sum(x => (long)x.IssueQuantity),
-                        IssuancesInRange = g.Sum(x =>
-                        {
-                            var issuedAt = EffectiveIssuedAt(x);
-                            return (!cutoffStartDate.HasValue || issuedAt >= cutoffStartDate.Value)
-                                && (!cutoffEndDate.HasValue || issuedAt <= cutoffEndDate.Value)
-                                ? (long)x.IssueQuantity : 0L;
-                        })
+                        TotalIssuedQuantity = g.Sum(x => (long)x.IssueQuantity)
                     })
                     .ToDictionary(k => (k.StockNumber, k.ItemDescription), v => v);
-
-                if (model.StartDate.HasValue || model.EndDate.HasValue)
-                {
-                    groupedItems = groupedItems
-                        .Where(g =>
-                        {
-                            var key = (g.Code, g.Description);
-                            var issuanceInfo = issuanceDict.GetValueOrDefault(key);
-                            long issuancesInRange = issuanceInfo?.IssuancesInRange ?? 0L;
-                            return g.AdditionsInRange > 0 || issuancesInRange > 0;
-                        })
-                        .ToList();
-                }
 
                 // Compute the final stock once per group so the status filter and pagination use it.
                 var groupsWithStock = groupedItems
