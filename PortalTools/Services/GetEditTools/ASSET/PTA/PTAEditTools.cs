@@ -167,7 +167,8 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                 throw;
             }
         }
-        public async Task<long> EditTblPTAMovementAsync(TblPTAMovement model, long actionBySystemUserId, PortalDbContext context, bool isBatch = false)
+        public async Task<long> EditTblPTAMovementAsync(TblPTAMovement model, long actionBySystemUserId, PortalDbContext context,
+            bool isBatch = false, bool preserveMissingDate = false)
         {
             if (model == null)
                 return 0;
@@ -200,11 +201,12 @@ namespace PortalTools.Services.GetEditTools.ASSET.PTA
                         return 0;
 
                     model.Id = existingPTAMovement.Id;
+                    bool keepExistingDate = preserveMissingDate && model.DateAssignedEncrypted == null;
 
                     await context.TblPTAMovements.Where(u => u.Id == model.Id)
                         .ExecuteUpdateAsync(u => u
                             .SetProperty(x => x.PTAId, model.PTAId)
-                            .SetProperty(x => x.DateAssignedEncrypted, model.DateAssignedEncrypted)
+                            .SetProperty(x => x.DateAssignedEncrypted, x => keepExistingDate ? x.DateAssignedEncrypted : model.DateAssignedEncrypted)
                             .SetProperty(x => x.PTRITRNumberEncrypted, model.PTRITRNumberEncrypted)
                             .SetProperty(x => x.RRPPERRSPNumberEncrypted, model.RRPPERRSPNumberEncrypted)
                             .SetProperty(x => x.PARICSNumberEncrypted, model.PARICSNumberEncrypted)

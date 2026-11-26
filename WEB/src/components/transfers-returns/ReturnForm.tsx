@@ -22,7 +22,6 @@ import { getDivisions } from '@/api/office-management/divisionApi';
 import { getConditions } from '@/api/asset/inventoryApi';
 import { ApiEmployee } from '@/types/transfer';
 import { VwOffice, VwDivision } from '@/types';
-import { toApiDateTime } from '@/utils/dateUtils';
 
 interface ReturnFormProps {
   isOpen: boolean;
@@ -248,11 +247,11 @@ export function ReturnForm({ isOpen, onClose, returnType, onSuccess }: ReturnFor
           const sortedMovements = [...item.movements].sort(
             (a, b) => new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
           );
-          const last = sortedMovements[0];
+          const last = sortedMovements.find(m => m.isCurrent && m.isActive) ?? sortedMovements[0];
           bulkMovements.push({
             id: last.id,
             ptaId: last.ptaId,
-            dateAssigned: toApiDateTime(last.dateAssigned, last.createdAt || item?.dateAcquired),
+            dateAssigned: null,
             ptrItrNumber: last.ptrItrNumber || '',
             rrppeRrspNumber: last.rrppeRrspNumber || '',
             parIcsNumber: last.parIcsNumber || '',

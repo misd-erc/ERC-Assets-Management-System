@@ -111,6 +111,9 @@ public async Task<IActionResult> EditPTAMovementBulk([FromBody] EditPTAMovementB
             if (model.Movements == null || model.Movements.Count == 0)
                 return BadRequest(ApiResponse<object>.Fail("INVALID_INPUT", "Movements list cannot be empty."));
 
+            if (model.Movements.Any(item => item.Id == 0 && item.DateAssigned == null))
+                return BadRequest(ApiResponse<object>.Fail("INVALID_INPUT", "Date assigned is required for new movements."));
+
             await using var context = new PortalDbContext(_options);
             await using var transaction = await context.Database.BeginTransactionAsync();
 
@@ -141,7 +144,8 @@ public async Task<IActionResult> EditPTAMovementBulk([FromBody] EditPTAMovementB
                         IsCurrent = item.IsCurrent,
                     };
 
-                    long id = await _editTools.PTA.EditTblPTAMovementAsync(ptaMovement, model.ActionBySystemUserId, context, isBatch: true);
+                    long id = await _editTools.PTA.EditTblPTAMovementAsync(ptaMovement, model.ActionBySystemUserId, context,
+                        isBatch: true, preserveMissingDate: true);
                     resultIds.Add(id);
                 }
 

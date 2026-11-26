@@ -8,7 +8,7 @@ namespace PortalDB.Models.QueryParams.PTA
     {
         [Required] public long Id { get; set; }
         [Required] public long PTAId { get; set; }
-        [Required] public DateTime DateAssigned { get; set; }
+        public DateTime? DateAssigned { get; set; }
         public string PtrItrNumber { get; set; } = string.Empty;
         public string ParIcsNumber { get; set; } = string.Empty;
         public string RrppeRrspNumber { get; set; } = string.Empty;

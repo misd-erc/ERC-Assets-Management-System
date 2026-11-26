@@ -174,7 +174,7 @@ export const getAssetsForTransfer = async (groupName?: 'ppe' | 'se'): Promise<an
 export interface MovementItemPayload {
   id: number;
   ptaId: number;
-  dateAssigned: string;
+  dateAssigned: string | null;
   ptrItrNumber?: string;
   parIcsNumber?: string;
   rrppeRrspNumber?: string;
@@ -198,12 +198,9 @@ export const editMovementBulk = async (movements: MovementItemPayload[]): Promis
   const { systemUserId, sessionKey } = getAuthParams();
 
   const payload = {
-    // DateAssigned is a required DateTime on the API model. Normalize here as
-    // a final boundary check so nullable/legacy movement dates cannot make the
-    // complete request fail model binding.
     movements: movements.map((movement) => ({
       ...movement,
-      dateAssigned: toApiDateTime(movement.dateAssigned),
+      dateAssigned: movement.dateAssigned === null ? null : toApiDateTime(movement.dateAssigned),
     })),
     actionBySystemUserId: systemUserId,
     sessionKey,

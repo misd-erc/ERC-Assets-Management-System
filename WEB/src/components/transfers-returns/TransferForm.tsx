@@ -27,7 +27,6 @@ import { getOffices } from '@/api/office-management/officeApi';
 import { getDivisions } from '@/api/office-management/divisionApi';
 import { ApiEmployee } from '@/types/transfer';
 import { VwOffice, VwDivision } from '@/types';
-import { toApiDateTime } from '@/utils/dateUtils';
 
 interface TransferFormProps {
   isOpen: boolean;
@@ -311,11 +310,11 @@ export function TransferForm({ isOpen, onClose, transferType, onSuccess }: Trans
             const sortedMovements = [...item.movements].sort((a, b) =>
               new Date(b.dateAssigned).getTime() - new Date(a.dateAssigned).getTime()
             );
-            const latest = sortedMovements[0];
+            const latest = sortedMovements.find(m => m.isCurrent && m.isActive) ?? sortedMovements[0];
             return {
               id: latest.id,
               ptaId: latest.ptaId,
-              dateAssigned: toApiDateTime(latest.dateAssigned, latest.createdAt || item?.dateAcquired),
+              dateAssigned: null,
               ptrItrNumber: latest.ptrItrNumber || '',
               parIcsNumber: latest.parIcsNumber || '',
               rrppeRrspNumber: latest.rrppeRrspNumber || '',
