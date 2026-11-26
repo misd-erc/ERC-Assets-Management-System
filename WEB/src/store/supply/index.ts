@@ -505,7 +505,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       await useDeliveryRecordStore.getState().fetchDeliveryStats();
       toast.success('IAR added successfully');
     } catch (error) {
-      toast.error('Failed to add IAR');
+      toast.error(error instanceof Error ? error.message : 'Failed to add IAR');
       throw error;
     }
   },
@@ -540,7 +540,7 @@ export const useSupplyIARStore = create<SupplyIARState>((set, get) => ({
       await useDeliveryRecordStore.getState().fetchDeliveryStats();
       toast.success('IAR updated successfully');
     } catch (error) {
-      toast.error('Failed to update IAR');
+      toast.error(error instanceof Error ? error.message : 'Failed to update IAR');
       throw error;
     }
   },

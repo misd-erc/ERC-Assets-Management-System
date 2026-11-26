@@ -2347,10 +2347,12 @@ namespace API.Controllers
                     return BadRequest(ApiResponse<object>.BadRequest("At least one Delivery Record is required."));
                 }
 
+                var otherIARs = context.TblSupplyIARs
+                    .Where(x => x.Id != model.Id && (!x.IsDeleted || x.IsApproved));
                 bool hasLinkedDR = await context.TblSupplyIARDeliveryRecords
-                    .AnyAsync(x => selectedRecordIds.Contains(x.DeliveryRecordId) && x.SupplyIARId != model.Id)
-                    || await context.TblSupplyIARs
-                        .AnyAsync(x => x.RecordId.HasValue && selectedRecordIds.Contains(x.RecordId.Value) && x.Id != model.Id);
+                    .AnyAsync(x => selectedRecordIds.Contains(x.DeliveryRecordId) && otherIARs.Any(iar => iar.Id == x.SupplyIARId))
+                    || await otherIARs
+                        .AnyAsync(x => x.RecordId.HasValue && selectedRecordIds.Contains(x.RecordId.Value));
 
                 if (hasLinkedDR)
                 {
@@ -2359,11 +2361,21 @@ namespace API.Controllers
                 }
 
                 bool wasAlreadyApproved = false;
-                if (model.Id > 0)
+                if (model.Id != 0)
                 {
                     TblSupplyIAR? existingIAR = await _getTools.Supply.GetTblSupplyIARAsync(model.Id, context);
-                    wasAlreadyApproved = existingIAR?.IsApproved == true;
+                    if (existingIAR == null)
+                        return NotFound(ApiResponse<object>.NotFound("IAR record not found."));
+
+                    wasAlreadyApproved = existingIAR.IsApproved;
                 }
+
+                // Release links left by pending IARs deleted before link cleanup was added.
+                var deletedPendingIARs = context.TblSupplyIARs.Where(x => x.IsDeleted && !x.IsApproved);
+                await context.TblSupplyIARDeliveryRecords
+                    .Where(x => selectedRecordIds.Contains(x.DeliveryRecordId)
+                        && deletedPendingIARs.Any(iar => iar.Id == x.SupplyIARId))
+                    .ExecuteDeleteAsync();
 
                 TblSupplyIAR supplyIAR = new()
                 {
@@ -2393,12 +2405,14 @@ namespace API.Controllers
                 var existingLinks = await context.TblSupplyIARDeliveryRecords
                     .Where(x => x.SupplyIARId == supplyIARId)
                     .ToListAsync();
-                context.TblSupplyIARDeliveryRecords.RemoveRange(existingLinks);
-                await context.TblSupplyIARDeliveryRecords.AddRangeAsync(selectedRecordIds.Select(recordId => new TblSupplyIARDeliveryRecord
-                {
-                    SupplyIARId = supplyIARId,
-                    DeliveryRecordId = recordId
-                }));
+                context.TblSupplyIARDeliveryRecords.RemoveRange(existingLinks.Where(x => !selectedRecordIds.Contains(x.DeliveryRecordId)));
+                await context.TblSupplyIARDeliveryRecords.AddRangeAsync(selectedRecordIds
+                    .Except(existingLinks.Select(x => x.DeliveryRecordId))
+                    .Select(recordId => new TblSupplyIARDeliveryRecord
+                    {
+                        SupplyIARId = supplyIARId,
+                        DeliveryRecordId = recordId
+                    }));
 
                 if (supplyIAR.IsApproved && !wasAlreadyApproved)
                 {

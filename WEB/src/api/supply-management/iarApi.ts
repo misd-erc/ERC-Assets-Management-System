@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import axiosInstance from '@/lib/axios';
 import { ApiResponse, SupplyIAR, VwSupplyIAR } from '@/types';
 import { toast } from 'sonner';
@@ -148,10 +149,16 @@ export const editSupplyIAR = async (payload: SupplyIAR): Promise<{ message: stri
     SessionKey: sessionKey,
   };
 
-  const response = await axiosInstance.post<ApiResponse<any>>('/Supply/iar/edit', requestPayload);
-  if (!response.data.success) throw new Error(response.data.message || 'Failed to save supply IAR');
-  
-  return { message: response.data.message ?? 'Success' };
+  try {
+    const response = await axiosInstance.post<ApiResponse<any>>('/Supply/iar/edit', requestPayload);
+    if (!response.data.success) throw new Error(response.data.message || 'Failed to save supply IAR');
+    return { message: response.data.message ?? 'Success' };
+  } catch (error) {
+    if (isAxiosError<{ message?: string }>(error) && error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    throw error;
+  }
 };
 
 export const getSupplyIARSummary = async (): Promise<VwSupplyIAR[]> => {

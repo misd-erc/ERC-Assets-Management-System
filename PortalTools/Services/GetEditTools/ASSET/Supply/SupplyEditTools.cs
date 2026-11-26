@@ -158,7 +158,13 @@ namespace PortalTools.Services.GetEditTools.ASSET.Supply
             try
             {
                 TblSupplyIAR? supplyIARModel = await _getTools.Supply.GetTblSupplyIARAsync(id, context);
+                if (supplyIARModel == null)
+                    return false;
+
                 await context.TblSupplyIARs.Where(x => x.Id == id).ExecuteSoftDeleteAsync(context);
+                if (!supplyIARModel.IsApproved)
+                    await context.TblSupplyIARDeliveryRecords.Where(x => x.SupplyIARId == id).ExecuteDeleteAsync();
+
                 await AuditTrailTool.LogActivityAsync(_options, $"Deleted a Supply IAR", actionBy: actionBySystemUserId,
                     linkedAuditTrailId: AuditTrailTool.TrackChanges(context, supplyIARModel, null, nameof(TblSupplyIAR), actionBySystemUserId, "Delete"));
 
